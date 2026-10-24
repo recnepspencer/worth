@@ -18,7 +18,6 @@ use super::super::recovery_handle::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleAuthorityIdentity,
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
-use super::super::WorthQueryUndoAdmission;
 use super::disclose::WorthQueryRecoveryDisclosureAdmission;
 use super::expiry::deny_if_expired;
 
@@ -155,15 +154,6 @@ where
             self.runtime.authority_identity(),
             handle.authority_identity(),
         ))
-    }
-
-    /// Re-read current truth for the exact recovery held by an admitted undo.
-    pub fn admit_undo_recovery_effect_authority<Operation, Input, Scope>(
-        &self,
-        undo: &WorthQueryUndoAdmission,
-        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
-        self.admit_recovery_effect_authority(undo.recovery_handle(), admission)
     }
 
     /// Re-read current truth and mint disclosure-backed inspection authority.

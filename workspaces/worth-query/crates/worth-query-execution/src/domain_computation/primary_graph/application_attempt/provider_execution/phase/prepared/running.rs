@@ -84,6 +84,7 @@ where
         outcome_identity,
         workflow_settlement_publication,
         effect_posture,
+        native_reference_invariants,
         authorization,
         idempotency,
         aftermath_causality,
@@ -102,8 +103,14 @@ where
             crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
                 .into_commit_outcome()
         })?;
-    let operation =
-        bind_execution_operation(application, &admission, &lease, effect_posture, execution)?;
+    let operation = bind_execution_operation(
+        application,
+        &admission,
+        &lease,
+        effect_posture,
+        &native_reference_invariants,
+        execution,
+    )?;
     let reserved = admission
         .graph_work_mut()
         .take_operation_capacity()
@@ -158,6 +165,7 @@ fn bind_execution_operation<Schema, Operation, Input, Scope>(
     admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     lease: &WorthQueryApplicationSnapshotLease,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    native_reference_invariants: &worth_query_installation::facade::WorthQueryInvariantExecutionContract,
     execution: worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>
 where
@@ -200,26 +208,26 @@ where
         .map_err(|_| denied(DenialStage::BasisAdmission))?
         .admit()
         .map_err(|_| denied(DenialStage::BasisAdmission))?;
-    Ok(
-        WorthQueryExecutionBoundOperationAuthority::bind_application(
-            WorthQueryApplicationOperationBindingInput {
-                runtime: &application.runtime,
-                owner: application.installed_schema.owner(),
-                installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
-                operation_slot: admission.operation().into(),
-                resource_binding_identity: admission.retain_resource_binding_identity(),
-                basis: &basis,
-                contracts: admission.allowed_graph_contract(),
-                graph: &application.primary_graph_authority,
-                support: application.primary_provider.application_resource_support(),
-                graph_work_session: admission.graph_work_session_identity(),
-                graph_work_managed_run: admission.graph_work_managed_run_identity(),
-                operation_attempt: admission.admission_identity(),
-                schema_binding: admission.binding_identity(),
-                snapshot,
-                product: lease.product(),
-                effect_posture,
-            },
-        ),
+    WorthQueryExecutionBoundOperationAuthority::bind_application(
+        WorthQueryApplicationOperationBindingInput {
+            runtime: &application.runtime,
+            owner: application.installed_schema.owner(),
+            installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
+            operation_slot: admission.operation().into(),
+            resource_binding_identity: admission.retain_resource_binding_identity(),
+            basis: &basis,
+            contracts: admission.allowed_graph_contract(),
+            graph: &application.primary_graph_authority,
+            support: application.primary_provider.application_resource_support(),
+            graph_work_session: admission.graph_work_session_identity(),
+            graph_work_managed_run: admission.graph_work_managed_run_identity(),
+            operation_attempt: admission.admission_identity(),
+            schema_binding: admission.binding_identity(),
+            snapshot,
+            product: lease.product(),
+            effect_posture,
+            native_reference_invariants,
+        },
     )
+    .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }

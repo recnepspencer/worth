@@ -6,7 +6,12 @@ use bank_http_adapter::{
 };
 use serde::{Deserialize, Serialize};
 
+mod correction_history;
 mod elevation;
+pub use correction_history::{
+    BankUserNodeCorrectionHistoryOutcome, BankUserNodeCorrectionHistoryRequest,
+    BankUserNodeCorrectionHistoryResumeRequest,
+};
 pub use elevation::{
     BankUserNodeElevationApprovalOutcome, BankUserNodeElevationApprovalRequest,
     BankUserNodeElevationRequest, BankUserNodeElevationRequestOutcome,
@@ -70,6 +75,7 @@ pub enum BankUserNodeMutationRequest {
         custody_id: String,
         sequence: u64,
         controls: BankHttpMutationReadControls,
+        account: String,
     },
     ResumeSource {
         request_id: String,

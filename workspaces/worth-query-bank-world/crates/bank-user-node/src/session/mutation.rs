@@ -58,6 +58,7 @@ impl BankUserSession {
                 custody_id,
                 sequence,
                 controls,
+                account,
             } => (
                 BankHttpMutationRequest::Read {
                     protocol,
@@ -66,6 +67,7 @@ impl BankUserSession {
                     custody_id: custody_id.clone(),
                     sequence,
                     controls,
+                    account,
                 },
                 controls.deadline_milliseconds,
                 request_id,

@@ -16,14 +16,24 @@ pub(super) fn bind_journal(
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let mut account_sequences = BTreeMap::<AccountId, AccountJournalRevision>::new();
     for entry in snapshot.journal() {
-        graph.bind_entity(
-            WorthQueryApplicationEntitySeed::new(
-                JournalEntry::reference(),
-                entity_key(journal_key(entry.id())),
-            )
-            .field(JournalIdentityField::reference(), entry.id())
-            .field(JournalPurpose::reference(), entry.purpose()),
-        )?;
+        let seed = WorthQueryApplicationEntitySeed::new(
+            JournalEntry::reference(),
+            entity_key(journal_key(entry.id())),
+        )
+        .field(JournalIdentityField::reference(), entry.id())
+        .field(JournalPurpose::reference(), entry.purpose());
+        let context = entry
+            .postings()
+            .first()
+            .and_then(|posting| snapshot.account(posting.account()));
+        let seed = match context {
+            Some(account) => seed.field(
+                JournalInstitutionContext::reference(),
+                account.institution(),
+            ),
+            None => seed,
+        };
+        graph.bind_entity(seed)?;
         for posting in entry.postings() {
             let sequence = account_sequences.entry(posting.account()).or_default();
             *sequence = sequence

@@ -14,7 +14,7 @@ type Run<Schema, Binding> = Box<
 >;
 
 macro_rules! handler {
-    ($handler:ident, $binding:ident, $publish:ident $(, $observe:ident)?) => {
+    ($handler:ident, $binding:ident, $publish:ident, $observe:ident) => {
         pub(super) struct $handler<Schema: TopologySchemaBinding>(
             Option<Run<Schema, $binding<Schema>>>,
         );
@@ -41,22 +41,28 @@ macro_rules! handler {
                 &self,
                 _: &RegionOutputInput,
                 _: &mut DecisionReader<'_, '_, '_, Schema, $binding<Schema>>,
-            ) -> HandlerResult<u64, PlanarMutationDenial> {
+            ) -> HandlerResult<(u64, bool, u64), PlanarMutationDenial> {
                 HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate)
             }
             fn prepare_decision(
                 &self,
                 input: &RegionOutputInput,
                 reader: &mut DecisionReader<'_, '_, '_, Schema, $binding<Schema>>,
-            ) -> WorthQueryDecisionPlan<u64, PlanarMutationDenial> {
+            ) -> WorthQueryDecisionPlan<(u64, bool, u64), PlanarMutationDenial> {
                 let Some(run) = &self.0 else {
                     return WorthQueryDecisionPlan::immediate(HandlerResult::DomainDenied(
                         PlanarMutationDenial::MissingCoordinate,
                     ));
                 };
-                $(if let Err(error) = $observe(input, reader) {
-                    return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(error));
-                })?
+                let present = match $observe(input, reader) {
+                    Ok(present) => present,
+                    Err(error) => {
+                        return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
+                            error,
+                        ))
+                    }
+                };
+                let command = *reader.idempotency_key();
                 let set = match reader
                     .resolve_entity(facts::EntrySetKey::reference(), input.entries.clone())
                 {
@@ -67,17 +73,16 @@ macro_rules! handler {
                         ))
                     }
                 };
-                run(reader, &set).and_then(|value| match value {
-                    Some(bits) => HandlerResult::Completed(bits),
+                run(reader, &set).and_then(move |value| match value {
+                    Some(bits) => HandlerResult::Completed((bits, present, command)),
                     None => HandlerResult::DomainDenied(PlanarMutationDenial::MissingCoordinate),
                 })
             }
 
-
             fn build_candidate(
                 &self,
                 input: &RegionOutputInput,
-                bits: u64,
+                (bits, present, command): (u64, bool, u64),
                 writer: &mut CandidateWriter<'_, Schema, $binding<Schema>>,
             ) -> HandlerResult<PlanarAdjustmentResult, PlanarMutationDenial> {
                 let value = f64::from_bits(bits);
@@ -90,7 +95,13 @@ macro_rules! handler {
                 }
                 let value =
                     PositiveLength::new(value as u64).expect("checked positive integer total");
-                match $publish(writer, &output_key(&input.scope_key), value) {
+                match $publish(
+                    writer,
+                    &output_key(&input.scope_key),
+                    value,
+                    present,
+                    command,
+                ) {
                     Ok(()) => HandlerResult::Completed(PlanarAdjustmentResult {
                         changed_vertices: 1,
                     }),
@@ -100,7 +111,12 @@ macro_rules! handler {
         }
     };
 }
-handler!(InitialHandler, InitialBinding, create);
+handler!(
+    InitialHandler,
+    InitialBinding,
+    create,
+    observe_initial_topology
+);
 handler!(
     PreserveHandler,
     PreserveBinding,
@@ -111,7 +127,7 @@ handler!(
 fn observe_preserved_topology<Schema: TopologySchemaBinding>(
     input: &RegionOutputInput,
     reader: &mut DecisionReader<'_, '_, '_, Schema, PreserveBinding<Schema>>,
-) -> Result<(), HandlerExecutionDenial> {
+) -> Result<bool, HandlerExecutionDenial> {
     let key = output_key(&input.scope_key);
     for member_key in [key.clone(), format!("{key}:b"), format!("{key}:c")] {
         // Selection alone grants nothing: the real decision reader resolves
@@ -121,13 +137,22 @@ fn observe_preserved_topology<Schema: TopologySchemaBinding>(
         // to the observed entity. The total still comes only from the collection.
         reader.field(&body, Length::reference())?;
     }
-    Ok(())
+    members::observe(input, reader)
+}
+
+fn observe_initial_topology<Schema: TopologySchemaBinding>(
+    _: &RegionOutputInput,
+    _: &mut DecisionReader<'_, '_, '_, Schema, InitialBinding<Schema>>,
+) -> Result<bool, HandlerExecutionDenial> {
+    Ok(false)
 }
 
 fn create<Schema: TopologySchemaBinding>(
     writer: &mut CandidateWriter<'_, Schema, InitialBinding<Schema>>,
     key: &str,
     value: PositiveLength,
+    _: bool,
+    command: u64,
 ) -> Result<(), HandlerExecutionDenial> {
     let mut bodies = Vec::new();
     for (suffix, x, y) in [("", 1, 1), ("b", 2, 1), ("c", 1, 2)] {
@@ -176,6 +201,15 @@ fn create<Schema: TopologySchemaBinding>(
             )
             .map_err(HandlerExecutionDenial::new)?;
     }
+    if members::required(PositiveLength::get(&value)) {
+        members::create_initial(
+            writer,
+            &bodies[0],
+            key,
+            PositiveLength::get(&value),
+            command,
+        )?;
+    }
     Ok(())
 }
 
@@ -183,6 +217,8 @@ fn preserve<Schema: TopologySchemaBinding>(
     writer: &mut CandidateWriter<'_, Schema, PreserveBinding<Schema>>,
     key: &str,
     value: PositiveLength,
+    present: bool,
+    command: u64,
 ) -> Result<(), HandlerExecutionDenial> {
     for suffix in ["", "b", "c"] {
         let member_key = if suffix.is_empty() {
@@ -206,5 +242,5 @@ fn preserve<Schema: TopologySchemaBinding>(
                 .map_err(HandlerExecutionDenial::new)?;
         }
     }
-    Ok(())
+    members::preserve(writer, key, PositiveLength::get(&value), present, command)
 }

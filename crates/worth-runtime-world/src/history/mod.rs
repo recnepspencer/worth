@@ -6,13 +6,14 @@ mod reclamation;
 mod retention;
 
 pub(crate) use catalog::HistoryTraversalControl;
+pub use catalog::{
+    CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
+    RetainedCompositeAncestor, RuntimeWorldPerformedPublicationProtection,
+    RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
+    RuntimeWorldPublicationRow,
+};
 pub(crate) use catalog::{
     CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RuntimeWorldHistoryCatalogContract,
-};
-pub use catalog::{
-    CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
-    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
-    RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage, RuntimeWorldPublicationRow,
 };
 #[allow(
     unused_imports,

@@ -31,7 +31,10 @@ pub use custody::{
     OwnerRetirementWork, ProductBranchRetirementReport,
 };
 pub(crate) use custody::{OwnerCreatedComponentCustodyRegistry, ReservedCustodySlot};
-pub use history::ProductBranchHistoryTraversal;
+pub use history::{
+    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
+    ProductBranchHistoryTraversal,
+};
 pub use name::{ProductBranchName, ProductBranchNameDenial};
 pub use observation::{
     ProductBranchObservation, ProductBranchObservationMismatch,

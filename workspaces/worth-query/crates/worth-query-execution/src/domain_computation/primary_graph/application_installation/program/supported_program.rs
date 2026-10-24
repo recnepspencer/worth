@@ -27,7 +27,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgr
     revision: ApplicationProgramRevision,
     /// The typed installed program, so owners that install against program
     /// vocabulary (such as a workflow spec) can name it by its authoring type.
-    pub(super) installed: Box<dyn WorthQueryErasedInstalledProgramMeaning>,
+    pub(in crate::domain_computation::primary_graph) installed:
+        std::sync::Arc<dyn WorthQueryErasedInstalledProgramMeaning>,
     adoption_admission: Box<dyn Any + Send + Sync>,
     pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
     pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
@@ -36,7 +37,7 @@ pub(in crate::domain_computation::primary_graph) struct WorthQuerySupportedProgr
 
 impl WorthQuerySupportedProgramRecord {
     pub(in crate::domain_computation::primary_graph) fn installed<Schema, Program>(
-        installed: WorthQueryInstalledApplicationProgram<Schema, Program>,
+        installed: std::sync::Arc<WorthQueryInstalledApplicationProgram<Schema, Program>>,
         output_source_bindings: &[TypeId],
         root_graph_types: &[TypeId],
     ) -> Self
@@ -56,7 +57,7 @@ impl WorthQuerySupportedProgramRecord {
             output_source_bindings: output_source_bindings.into(),
             root_graph_types: root_graph_types.into(),
             adoption_admission: Box::new(crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program::<Schema, Program> as crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>),
-            installed: Box::new(installed),
+            installed,
         }
     }
 

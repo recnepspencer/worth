@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
+use worth_runtime_world::facade::{
+    ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPort,
+};
 
 use super::WorthQueryUnpublishedIdempotencyEntry;
 use super::WorthQueryUnpublishedIdempotencyKey;
@@ -23,6 +25,7 @@ pub(in crate::domain_computation::primary_graph::provider) struct ManagedUnpubli
     entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,
     key: WorthQueryUnpublishedIdempotencyKey,
     handle: ProductUnpublishedRecoveryHandle,
+    recovery: RuntimeWorldRecoveryPort,
     prepared_successor: Option<ProductUnpublishedRecoveryHandle>,
     attempt: Option<ManagedUnpublishedAttempt>,
     armed: bool,
@@ -32,7 +35,9 @@ impl ManagedUnpublishedRecoveryGuard {
     pub(super) fn begin(
         store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
         handle: &ProductUnpublishedRecoveryHandle,
+        recovery: RuntimeWorldRecoveryPort,
     ) -> Result<Self, ManagedUnpublishedRecoveryStop> {
+        Self::reconcile_retained_aliases(&store, handle, &recovery)?;
         let owner = store
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -64,10 +69,85 @@ impl ManagedUnpublishedRecoveryGuard {
             entry,
             key,
             handle: handle.clone(),
+            recovery,
             prepared_successor: None,
             attempt: Some(attempt),
             armed: true,
         })
+    }
+
+    /// An unavailable native inspection leaves both pre-reserved mappings intact.
+    /// A later admission resolves them from owner evidence before checking out custody.
+    fn reconcile_retained_aliases(
+        store: &Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
+        requested: &ProductUnpublishedRecoveryHandle,
+        recovery: &RuntimeWorldRecoveryPort,
+    ) -> Result<(), ManagedUnpublishedRecoveryStop> {
+        use ManagedUnpublishedRecoveryStop as Stop;
+        let (key, entry, preferred, alternate) = {
+            let owner = store
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let key = owner
+                .recovery_key(requested)
+                .cloned()
+                .ok_or(Stop::Missing)?;
+            let entry = Arc::clone(owner.by_key.get(&key).ok_or(Stop::Missing)?);
+            let locked = entry
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            if locked.posture != Posture::Retained {
+                return Err(Stop::Busy);
+            }
+            let preferred = locked.recovery_handle.clone();
+            let alternate = owner
+                .by_recovery
+                .iter()
+                .find(|(handle, candidate)| candidate == &key && handle != &preferred)
+                .map(|(handle, _)| handle.clone());
+            drop(locked);
+            (key, entry, preferred, alternate)
+        };
+        let Some(alternate) = alternate else {
+            return Ok(());
+        };
+        // World can materialize abandoned custody here. No Query lock spans inspection.
+        let resolved = match recovery.inspect_effects(&preferred).map(|_| ()) {
+            Ok(()) => preferred.clone(),
+            Err(RuntimeWorldRecoveryDenial::MissingRecord) => {
+                match recovery.inspect_effects(&alternate).map(|_| ()) {
+                    Ok(()) => alternate,
+                    Err(RuntimeWorldRecoveryDenial::MissingRecord) => return Err(Stop::Missing),
+                    Err(_) => return Err(Stop::Busy),
+                }
+            }
+            Err(_) => return Err(Stop::Busy),
+        };
+        let mut owner = store
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if !owner
+            .by_key
+            .get(&key)
+            .is_some_and(|current| Arc::ptr_eq(current, &entry))
+            || owner.recovery_key(&resolved) != Some(&key)
+        {
+            return Err(Stop::Busy);
+        }
+        let mut locked = entry
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if locked.posture != Posture::Retained || locked.recovery_handle != preferred {
+            return Err(Stop::Busy);
+        }
+        locked.recovery_handle = resolved.clone();
+        owner
+            .by_recovery
+            .retain(|(handle, candidate)| candidate != &key || handle == &resolved);
+        if requested != &resolved {
+            return Err(Stop::Missing);
+        }
+        Ok(())
     }
 
     pub(in crate::domain_computation::primary_graph::provider) fn attempt_mut(
@@ -181,6 +261,12 @@ impl Drop for ManagedUnpublishedRecoveryGuard {
         if !self.armed {
             return;
         }
+        // Native attempt Drop has already retained any actual successor effects.
+        // Only authoritative absence permits discarding its reserved mapping.
+        let successor_evidence = self
+            .prepared_successor
+            .as_ref()
+            .map(|handle| self.recovery.inspect_effects(handle).map(|_| ()));
         let mut store = self
             .store
             .lock()
@@ -189,14 +275,26 @@ impl Drop for ManagedUnpublishedRecoveryGuard {
             .entry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        assert!(matches!(entry.posture, Posture::Recovering));
-        assert_eq!(entry.recovery_handle, self.handle);
         if let Some(attempt) = self.attempt.take() {
-            assert!(entry.managed.replace(attempt).is_none());
+            entry.managed = Some(attempt);
         }
         entry.posture = Posture::Retained;
         if let Some(successor) = self.prepared_successor.take() {
-            store.remove_recovery(&successor);
+            match successor_evidence {
+                Some(Ok(())) => {
+                    entry.recovery_handle = successor;
+                    store.remove_recovery(&self.handle);
+                }
+                Some(Err(RuntimeWorldRecoveryDenial::MissingRecord)) => {
+                    store.remove_recovery(&successor);
+                }
+                Some(Err(_)) => {
+                    // Both mappings were reserved before effects. Keep both until
+                    // a fresh admission can resolve the actual native record.
+                    entry.recovery_handle = successor;
+                }
+                None => {}
+            }
         }
     }
 }

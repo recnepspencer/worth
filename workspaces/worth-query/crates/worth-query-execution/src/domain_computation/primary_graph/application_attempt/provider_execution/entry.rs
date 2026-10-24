@@ -175,7 +175,7 @@ where
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
         retain_output_observation: bool,
-        causality: ApplicationCommitCausality<'_>,
+        causality: ApplicationCommitCausality,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
@@ -183,6 +183,18 @@ where
     {
         if let Some(denial) = plain_publication_posture(&program.read_set.admission) {
             return WorthQueryApplicationCommitOutcome::Denied(denial);
+        }
+        if program
+            .read_set
+            .admission
+            .allowed_graph_contract()
+            .aftermath()
+            .is_some_and(|contract| contract.correction_disclosure().is_some())
+            && program.read_set.admission.original_program().is_none()
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::application_program_required(),
+            );
         }
         let program = if retain_output_observation {
             program.with_output_demand_observation()

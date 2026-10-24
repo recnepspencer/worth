@@ -45,6 +45,7 @@ impl ProgramOutputSourcePayload {
 /// Move-only original preparation awaiting program-source retention. Only
 /// the program commit entrance creates it; a receipt cannot reconstruct it.
 pub struct WorthQueryUnpublishedProgramOutputSource {
+    pub(super) correction: Option<UnpublishedCorrectionCommand>,
     pub(super) runtime_authority: u64,
     pub(super) program: AspectValue,
     pub(super) binding: TypeId,
@@ -52,6 +53,49 @@ pub struct WorthQueryUnpublishedProgramOutputSource {
     pub(super) branch: crate::basis::WorthQueryProductBranch,
     pub(super) payload: ProgramOutputSourcePayload,
     pub(super) preparation: WorthQueryRequiredOutputSourcePreparation,
+}
+
+pub(super) struct UnpublishedCorrectionCommand {
+    intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+    inverse_key_identity: [u8; 32],
+}
+
+impl UnpublishedCorrectionCommand {
+    pub(super) fn new(
+        intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
+        binding: &WorthQueryApplicationIdempotencyBinding,
+    ) -> Self {
+        Self {
+            intent,
+            inverse_key_identity: *binding.key_identity(),
+        }
+    }
+
+    pub(super) fn bind(
+        &self,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationIdempotencyBinding {
+        if binding.key_identity() == &self.inverse_key_identity {
+            self.intent.bind_idempotency(binding)
+        } else {
+            binding
+        }
+    }
+}
+
+impl WorthQueryUnpublishedProgramOutputSource {
+    /// Extends a freshly admitted binding with this original correction command.
+    /// Principal, input and scope continue to come from fresh ordinary admission.
+    pub fn bind_recovery_idempotency(
+        &self,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> WorthQueryApplicationIdempotencyBinding {
+        match &self.correction {
+            Some(correction) => correction.bind(binding),
+            None => binding,
+        }
+    }
 }
 
 /// Original performed carrier taken from the filled native terminal before

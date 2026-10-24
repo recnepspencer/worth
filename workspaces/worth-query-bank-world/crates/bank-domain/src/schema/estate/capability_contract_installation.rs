@@ -151,10 +151,6 @@ fn install_operations(
             EstateCapabilityOperation::RetransmitDeathNotice,
         ))
         .operation(contained_operation(
-            FreezeEstateAccountOperation::reference(),
-            EstateCapabilityOperation::FreezeAccount,
-        ))
-        .operation(contained_operation(
             OpenEstateCaseOperation::reference(),
             EstateCapabilityOperation::OpenEstateCase,
         ))

@@ -1,4 +1,6 @@
 use std::sync::Arc;
+mod ancestor;
+pub use ancestor::{ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial};
 
 use crate::history::{CompositeHistoryTraversal, CompositeRuntimeWorldCommit};
 use crate::identity::{

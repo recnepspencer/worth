@@ -3,9 +3,9 @@ use worth_query_decl::facade::application_schema::{
 };
 
 use super::{
-    AccountActivityEffect, AccountingRevision, BankSchema, JournalIdentityField, JournalPosting,
-    JournalPurpose, PostingAccount, PostingAccountSequence, PostingAmount, PostingIdentityField,
-    Purpose,
+    AccountActivityEffect, AccountingRevision, BankSchema, JournalIdentityField,
+    JournalInstitutionContext, JournalPosting, JournalPurpose, PostingAccount,
+    PostingAccountSequence, PostingAmount, PostingIdentityField, Purpose,
 };
 
 pub(crate) trait MoneyMovementProgram {
@@ -15,6 +15,7 @@ pub(crate) trait MoneyMovementProgram {
     ) -> Self
     where
         JournalIdentityField: OperationWrites<Operation>,
+        JournalInstitutionContext: OperationWrites<Operation>,
         JournalPurpose: OperationWrites<Operation>,
         PostingIdentityField: OperationWrites<Operation>,
         PostingAmount: OperationWrites<Operation>,
@@ -34,6 +35,7 @@ impl MoneyMovementProgram for ApplicationSchemaDeclarationBuilder<BankSchema> {
     ) -> Self
     where
         JournalIdentityField: OperationWrites<Operation>,
+        JournalInstitutionContext: OperationWrites<Operation>,
         JournalPurpose: OperationWrites<Operation>,
         PostingIdentityField: OperationWrites<Operation>,
         PostingAmount: OperationWrites<Operation>,
@@ -50,6 +52,7 @@ impl MoneyMovementProgram for ApplicationSchemaDeclarationBuilder<BankSchema> {
             .operation_write(operation, PostingIdentityField::reference())
             .operation_write(operation, Purpose::reference())
             .operation_write(operation, JournalIdentityField::reference())
+            .operation_write(operation, JournalInstitutionContext::reference())
             .operation_write(operation, JournalPurpose::reference())
             .operation_write(operation, AccountingRevision::reference())
             .operation_link(operation, JournalPosting::reference())

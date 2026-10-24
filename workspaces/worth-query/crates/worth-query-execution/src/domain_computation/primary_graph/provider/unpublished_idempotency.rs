@@ -19,7 +19,7 @@ pub(in crate::domain_computation::primary_graph) use reservation::WorthQueryUnpu
 #[cfg(test)]
 mod tests;
 
-type WorthQueryUnpublishedIdempotencyKey = (WorthQueryProductIdempotencyAffinity, [u8; 32]);
+type WorthQueryUnpublishedIdempotencyKey = super::idempotency::WorthQueryIdempotencyLookupKey;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum WorthQueryUnpublishedIdempotencyPosture {
@@ -107,7 +107,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
         ),
         (),
     > {
-        let key = (product, *binding.key_identity());
+        let key = WorthQueryUnpublishedIdempotencyKey::for_binding(&product, &binding);
         if self.by_key.contains_key(&key)
             || self.recovery_key(&recovery_handle).is_some()
             || self
@@ -149,7 +149,7 @@ impl WorthQueryUnpublishedIdempotencyStore {
             return None;
         }
         let removed = self.by_key.remove(key);
-        self.remove_recovery(handle);
+        self.by_recovery.retain(|(_, candidate)| candidate != key);
         removed
     }
 
@@ -175,7 +175,9 @@ impl WorthQueryUnpublishedIdempotencyStore {
     ) -> Option<WorthQueryProviderIdempotencyResolution> {
         let recorded = self
             .by_key
-            .get(&(product.clone(), *binding.key_identity()))?;
+            .get(&WorthQueryUnpublishedIdempotencyKey::for_binding(
+                product, &binding,
+            ))?;
         let recorded = recorded
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -188,15 +190,12 @@ impl WorthQueryUnpublishedIdempotencyStore {
 
     fn inspect_exact(
         &self,
-        product: &WorthQueryProductIdempotencyAffinity,
-        binding: WorthQueryApplicationIdempotencyBinding,
+        key: &WorthQueryUnpublishedIdempotencyKey,
     ) -> Option<(
         WorthQueryApplicationIdempotencyBinding,
         ProductUnpublishedRecoveryHandle,
     )> {
-        let recorded = self
-            .by_key
-            .get(&(product.clone(), *binding.key_identity()))?;
+        let recorded = self.by_key.get(key)?;
         let recorded = recorded
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -226,8 +225,13 @@ impl super::WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph::provider) fn begin_managed_unpublished_recovery(
         &self,
         handle: &ProductUnpublishedRecoveryHandle,
+        recovery: worth_runtime_world::facade::RuntimeWorldRecoveryPort,
     ) -> Result<ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop> {
-        ManagedUnpublishedRecoveryGuard::begin(Arc::clone(&self.unpublished_idempotency), handle)
+        ManagedUnpublishedRecoveryGuard::begin(
+            Arc::clone(&self.unpublished_idempotency),
+            handle,
+            recovery,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn reserve_unpublished_application_idempotency(
@@ -280,7 +284,22 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.unpublished_idempotency
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .inspect_exact(product, binding)
+            .inspect_exact(&WorthQueryUnpublishedIdempotencyKey::for_binding(
+                product, &binding,
+            ))
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn inspect_unpublished_key(
+        &self,
+        key: &WorthQueryUnpublishedIdempotencyKey,
+    ) -> Option<(
+        WorthQueryApplicationIdempotencyBinding,
+        ProductUnpublishedRecoveryHandle,
+    )> {
+        self.unpublished_idempotency
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .inspect_exact(key)
     }
 
     #[cfg(test)]

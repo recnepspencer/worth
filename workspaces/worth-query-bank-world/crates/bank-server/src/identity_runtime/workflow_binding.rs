@@ -81,7 +81,7 @@ impl BankIdentityRuntimeWorkflowBinding {
             Ok(runtime) => Ok(BankIdentityRuntime {
                 runtime,
                 binding,
-                invariant_projection,
+                invariant_projection: std::sync::Arc::new(invariant_projection),
                 approval_authentication,
             }),
             Err(refusal) => {

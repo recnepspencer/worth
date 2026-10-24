@@ -143,7 +143,7 @@ fn installation_extension_applies_only_inside_exact_owner_transaction_and_rolls_
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
             request_execution,
-            publication,
+            &mut Some(publication),
             &basis,
             &mut (),
             &cancellation.token(),
@@ -300,7 +300,7 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
             request_execution,
-            root_publication,
+            &mut Some(root_publication),
             &root,
             &mut (),
             &cancellation.token(),
@@ -320,7 +320,7 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
         .mutation_port()
         .advance_conditional_definition_exact_with_completion(
             request_execution,
-            sibling_publication,
+            &mut Some(sibling_publication),
             sibling.created_basis(),
             &mut (),
             &cancellation.token(),
@@ -338,12 +338,12 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
     let sibling_binding = sibling_advance
         .take_conditional_definition_advance_binding()
         .unwrap();
-    let denial = match root_completion
+    let (root_completion, sibling_binding, denial) = match root_completion
         .unwrap()
         .into_retained_parts(sibling_binding)
     {
         Ok(_) => panic!("a sibling's genuine advance binding opened the root completion"),
-        Err(denial) => denial,
+        Err(returned) => returned,
     };
     assert!(matches!(
         denial,
@@ -352,9 +352,19 @@ fn completion_rejects_a_genuine_same_owner_sibling_advance_binding() {
     let root_binding = root_advance
         .take_conditional_definition_advance_binding()
         .unwrap();
-    let sibling_binding = sibling_completion.unwrap();
+    let (sibling_completion, root_binding, denial) = sibling_completion
+        .unwrap()
+        .into_retained_parts(root_binding)
+        .err()
+        .expect("root binding refuses sibling completion");
     assert!(matches!(
-        sibling_binding.into_retained_parts(root_binding),
-        Err(super::SignalConditionalInstallationExtensionDenial::SuccessorBindingMismatch)
+        denial,
+        super::SignalConditionalInstallationExtensionDenial::SuccessorBindingMismatch
     ));
+    root_completion.into_retained_parts(root_binding).unwrap();
+    sibling_completion
+        .into_retained_parts(sibling_binding)
+        .unwrap();
 }
+#[path = "installation_extension_tests/admitted_publication.rs"]
+mod admitted_publication;

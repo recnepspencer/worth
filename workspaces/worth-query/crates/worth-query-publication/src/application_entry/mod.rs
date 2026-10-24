@@ -8,6 +8,7 @@ pub mod advanced {
     };
 }
 mod capability_command;
+pub use worth_query_execution::publication_boundary::capability_command::WorthQueryCommandSettlementDenial;
 mod capability_delegation;
 pub use capability_command::{
     WorthQueryCapabilityCommand, WorthQueryCapabilityCommandAdvance,
@@ -15,6 +16,21 @@ pub use capability_command::{
     WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand,
 };
 mod capability_revocation;
+mod correction;
+pub use correction::{
+    WorthQueryApplicationCorrection, WorthQueryApplicationCorrectionAlternatives,
+    WorthQueryApplicationCorrectionDenial, WorthQueryApplicationCorrectionOutcome,
+    WorthQueryApplicationCorrectionPreparation, WorthQueryApplicationCorrectionRequest,
+    WorthQueryApplicationCorrections, WorthQueryApplicationReapplication,
+    WorthQueryApplicationReapplicationRequest, WorthQueryCorrectionAlternativeRef,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
+    WorthQueryCorrectionApplicability, WorthQueryCorrectionHistoryLimits,
+    WorthQueryCorrectionValue, WorthQueryKeyedApplicationCorrection,
+    WorthQueryKeyedApplicationReapplication, WorthQueryOperationCorrectionPreparation,
+    WorthQueryPreparedApplicationCorrection, WorthQueryPreparedOperationCorrection,
+    WorthQueryPreparedRequiredCorrection, WorthQueryRequiredCorrectionPreparation,
+    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
+};
 mod demand;
 mod denial;
 mod elevation_approval;
@@ -107,19 +123,20 @@ pub use mutation::{
     WorthQueryApplicationProgramOutputProgress, WorthQueryApplicationProgramOutputSettlement,
     WorthQueryApplicationProgramOutputUnavailable, WorthQueryApplicationProgramWork,
     WorthQueryApplicationRecoveryRequestDenial, WorthQueryApplicationRetainedMutationOutcome,
-    WorthQueryBlockedProgramSource, WorthQueryCurrentAuthorizationAssessment,
-    WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentBodyRequirementAssessmentDenial,
-    WorthQueryDiscoveredOutputRetentionFailure, WorthQueryDiscoveredOutputStartFailure,
-    WorthQueryDiscoveredProgramOutputHandle, WorthQueryDiscoveredProgramOutputProgress,
-    WorthQueryDiscoveredProgramOutputSettlement, WorthQueryDiscoveredRecoveryProgress,
-    WorthQueryMutationSourcePrepared, WorthQueryPerformedApplicationMutation,
-    WorthQueryPerformedDiscoveredApplicationMutation, WorthQueryPerformedMutationExecutionDenial,
-    WorthQueryPreparedProgramMutation, WorthQueryProgramSourceRecoveryProgress,
-    WorthQueryRecoveredDiscoveredOutputs, WorthQueryRecoveredRequiredOutputs,
-    WorthQueryRequiredOutputPreparation, WorthQueryRequiredOutputPreparationDenial,
-    WorthQueryRequiredOutputRecoveryPosture, WorthQueryRequiredOutputRetentionFailure,
-    WorthQueryRequiredOutputStartFailure, WorthQueryStartedDiscoveredOutputs,
-    WorthQueryStartedRequiredOutputs, WorthQueryUnpublishedDiscoveredApplicationMutation,
+    WorthQueryBlockedProgramSource, WorthQueryCapturedMutationInput,
+    WorthQueryCurrentAuthorizationAssessment, WorthQueryCurrentBodyRequirementAssessment,
+    WorthQueryCurrentBodyRequirementAssessmentDenial, WorthQueryDiscoveredOutputRetentionFailure,
+    WorthQueryDiscoveredOutputStartFailure, WorthQueryDiscoveredProgramOutputHandle,
+    WorthQueryDiscoveredProgramOutputProgress, WorthQueryDiscoveredProgramOutputSettlement,
+    WorthQueryDiscoveredRecoveryProgress, WorthQueryMutationSourcePrepared,
+    WorthQueryPerformedApplicationMutation, WorthQueryPerformedDiscoveredApplicationMutation,
+    WorthQueryPerformedMutationExecutionDenial, WorthQueryPreparedProgramMutation,
+    WorthQueryProgramSourceRecoveryProgress, WorthQueryRecoveredDiscoveredOutputs,
+    WorthQueryRecoveredRequiredOutputs, WorthQueryRequiredOutputPreparation,
+    WorthQueryRequiredOutputPreparationDenial, WorthQueryRequiredOutputRecoveryPosture,
+    WorthQueryRequiredOutputRetentionFailure, WorthQueryRequiredOutputStartFailure,
+    WorthQueryStartedDiscoveredOutputs, WorthQueryStartedRequiredOutputs,
+    WorthQueryUnpublishedDiscoveredApplicationMutation,
     WorthQueryUnpublishedRequiredApplicationMutation,
 };
 pub use programs::{

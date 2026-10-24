@@ -7,6 +7,7 @@ use worth_query_decl::facade::{
 };
 
 mod account_access_bindings;
+mod approved_payment_outputs;
 mod create_business_account_binding;
 mod create_personal_account_binding;
 mod initiate_business_payment_binding;
@@ -14,14 +15,18 @@ mod money_movement_bindings;
 mod payment_decision_bindings;
 mod read_capabilities;
 mod reverse_journal_binding;
+mod send_money_access;
+mod send_money_outputs;
 
 pub use account_access_bindings::*;
+pub use approved_payment_outputs::*;
 pub use create_business_account_binding::*;
 pub use create_personal_account_binding::*;
 pub use initiate_business_payment_binding::*;
 pub use money_movement_bindings::*;
 pub use payment_decision_bindings::*;
 pub use reverse_journal_binding::*;
+pub use send_money_outputs::*;
 
 use crate::model::{
     AccountAuthorizationId, AccountId, AccountName, BankPrincipalId, BusinessId, CustomerRole,
@@ -35,8 +40,9 @@ use super::entities::{
 use super::fields::{
     AccountAuthorizationIdentity, AccountDisplayName, AccountIdentity, AccountingRevision,
     AuthorizationRole, BusinessIdentityField, InstitutionIdentityField, JournalIdentityField,
-    JournalPurpose, Kind, PaymentAmount, PaymentIdentityField, PaymentStatusField,
-    PostingAccountSequence, PostingAmount, PostingIdentityField, Purpose, Status,
+    JournalInstitutionContext, JournalPurpose, Kind, PaymentAmount, PaymentIdentityField,
+    PaymentStatusField, PostingAccountSequence, PostingAmount, PostingIdentityField, Purpose,
+    Status,
 };
 use super::governance::AccountActivityEffect;
 use super::relations::{
@@ -194,6 +200,7 @@ worth_query_operation_links!(
 worth_query_operation_writes!(
     ApplyOpeningFundingOperation => [
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,
@@ -205,6 +212,7 @@ worth_query_operation_writes!(
 worth_query_operation_writes!(
     DepositOperation => [
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,
@@ -216,6 +224,7 @@ worth_query_operation_writes!(
 worth_query_operation_writes!(
     WithdrawOperation => [
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,
@@ -227,6 +236,7 @@ worth_query_operation_writes!(
 worth_query_operation_writes!(
     SendMoneyOperation => [
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,
@@ -238,6 +248,7 @@ worth_query_operation_writes!(
 worth_query_operation_writes!(
     ReverseJournalOperation => [
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,
@@ -286,6 +297,7 @@ worth_query_operation_writes!(
         PaymentStatusField,
         AccountingRevision,
         JournalIdentityField,
+        JournalInstitutionContext,
         JournalPurpose,
         PostingIdentityField,
         PostingAmount,

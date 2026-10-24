@@ -63,7 +63,9 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
         .install_estate_rail_completion_verifier(Arc::new(EstateRailSource))
         .expect("the estate rail source installs once");
     world.transport.under(FaultScript::Succeed, world::PATIENT);
-    let receipt = world.commit_notification(82);
+    let (receipt, source) = world.commit_with_source(
+        bank_domain::proposals::BankIdempotencyKey::new("completed-notice-correction").unwrap(),
+    );
     assert_eq!(
         receipt
             .external_dispatch_posture()
@@ -83,6 +85,31 @@ fn safe_retry_of_already_completed_effect_adds_no_contact_and_no_physical_conseq
     let specialist = world.fixture.authenticate_specialist();
     let action = world.specialist_action();
     let scope = request_scope();
+    let coordinates = source.coordinates();
+    assert_eq!(
+        coordinates.world_commit(),
+        terminal.original_world_commit().ordinal()
+    );
+    assert_eq!(
+        coordinates.world_owner(),
+        terminal.original_world_commit().owner_identity().get()
+    );
+    // This is the generic original-source entrance, before selecting any inverse family.
+    // A legacy external aftermath name does not install a typed correction association.
+    let request = world.fixture.world.runtime.request(&specialist, &scope);
+    let corrections = request.corrections();
+    let selection = corrections.select_coordinates(
+        &coordinates,
+        worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimits::new(
+            None,
+            std::num::NonZeroUsize::MIN,
+        ),
+    );
+    assert!(matches!(selection,
+        Err(worth_query_host::facade::application_entry::WorthQueryApplicationCorrectionDenial::Source(
+            worth_query_host::facade::primary_graph::WorthQueryCorrectionSelectionDenial::SourceNotCorrectable
+        ))
+    ), "completed external notice has no installed typed correction");
     // Any contact would run this fault path; completion must win before
     // transport admission, so the rail is never asked (9.17.7 race court).
     world

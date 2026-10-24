@@ -46,6 +46,39 @@ fn failed_commit_carries_attempt_log() {
 }
 
 #[test]
+fn default_publication_admits_more_than_eight_thousand_records_atomically() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let runtime = RelationalRuntimeApi::builder()
+        .profile(crate::config::data::RelationalRuntimeProfile::AiWorkflow)
+        .schema_registry(test_schema_registry())
+        .build();
+    let mut batch = WorkerIntentBatch::new("one-coherent-publication");
+    const RECORDS: usize = 8_193;
+    for index in 0..RECORDS {
+        batch
+            .intents
+            .extend(batch_create(&format!("record-{index}")).intents);
+    }
+    let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    transaction
+        .push_batch(batch, execution.allocation_policy())
+        .unwrap();
+    let outcome = transaction.commit(execution, &runtime).unwrap();
+    assert_eq!(changed_entities(&outcome).len(), RECORDS);
+    assert_eq!(outcome.patch().len(), RECORDS);
+    assert_eq!(
+        outcome.commit_log().patch_budget_summary_event(),
+        Some(&CommitPatchBudgetSummary {
+            patch_record_count: RECORDS,
+            max_patch_records_per_commit: None,
+        })
+    );
+    assert!(outcome.commit_log().has_commit_published());
+    release_test_commit_snapshot(&runtime, &outcome);
+}
+
+#[test]
 fn patch_budget_failure_carries_artifact_phase_decision_trace() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -54,7 +87,7 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 0,
+            max_patch_records_per_commit: Some(0),
             max_published_snapshot_handles: Some(8),
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 8,
@@ -79,7 +112,7 @@ fn patch_budget_failure_carries_artifact_phase_decision_trace() {
         error.commit_log().patch_budget_summary_event(),
         Some(&CommitPatchBudgetSummary {
             patch_record_count: 1,
-            max_patch_records_per_commit: 0,
+            max_patch_records_per_commit: Some(0),
         })
     );
     assert!(error.commit_log().has_rejection(

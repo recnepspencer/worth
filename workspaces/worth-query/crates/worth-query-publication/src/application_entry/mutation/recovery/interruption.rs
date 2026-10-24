@@ -28,6 +28,7 @@ pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
             }
         }
         Request::ExecutionRequest(cause) => Some(*cause),
+        Request::InputCapture(cause) => cause.execution_stop(),
         Request::Authorization(cause) => authorization_interruption(cause.kind()),
         Request::PrincipalResolution(cause) => match cause.kind() {
             Principal::Stopped(stop) => execution_stop(stop),

@@ -3,7 +3,7 @@ use super::super::protocol::*;
 use super::{
     authenticated_owner::BankHttpAuthenticatedOwner,
     authentication::BankHttpApplicationAuthenticator,
-    mutation_command::{reject, AdmittedMoneyCommand, MoneyCommand},
+    mutation_command::{reject, AdmittedMutationCommand, MutationCommand},
     mutation_custody::*,
     mutation_refusal::denial,
 };
@@ -23,7 +23,8 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     records: &mut HashMap<String, MutationRecord>,
     permits: &Arc<Semaphore>,
     quiesced: &AtomicBool,
-    command: AdmittedMoneyCommand,
+    continuations: &super::continuation_registry::SharedContinuationRegistry,
+    command: AdmittedMutationCommand,
     scope: WorthQueryRequestScope,
 ) -> BankHttpMutationOutcome {
     let principal = match application
@@ -41,7 +42,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     let owner = BankHttpAuthenticatedOwner::from_principal(&principal);
     let runtime = application.runtime();
     let request = runtime.request(&principal, &scope);
-    if let MoneyCommand::Create {
+    if let MutationCommand::Create {
         input,
         key,
         history,
@@ -57,11 +58,36 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             Ok(permit) => permit,
             Err(_) => return reject(Some(command.request_id), BankHttpDenialKind::Saturated),
         };
-        let (account, custody) = match super::mutation_construction::construct(
+        let history_page =
+            if let super::mutation_application::AdmittedBankHttpMutation::ReapplySendMoney {
+                history_token,
+                ..
+            } = &input
+            {
+                match super::continuation_registry::access(continuations, |registry| {
+                    registry.correction_page(&owner, history_token)
+                })
+                .await
+                {
+                    Ok(page) => Some(page),
+                    Err(denial) => {
+                        return BankHttpMutationOutcome::Rejected {
+                            request_id: Some(command.request_id),
+                            denial,
+                        }
+                    }
+                }
+            } else {
+                None
+            };
+        let (custody, refusal) = match super::mutation_construction::start(
             runtime,
             &principal,
             input,
             BankMutationControls::new(scope.clone(), key),
+            &request,
+            history,
+            history_page.as_deref(),
         ) {
             Ok(constructed) => constructed,
             Err(denial) => {
@@ -71,16 +97,14 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
                 }
             }
         };
-        let (custody, refusal) = custody.advance(&request, history);
-        let record = MoneyRecord {
+        let record = SourceMutationRecord {
             owner,
             sequence: command.sequence,
-            account,
             custody,
             _permit: permit,
         };
         let outcome = describe(&command.request_id, &command.custody_id, &record, refusal);
-        records.insert(command.custody_id, MutationRecord::Money(record));
+        records.insert(command.custody_id, MutationRecord::Source(record));
         return outcome;
     }
     let Some(record) = records.get(&command.custody_id) else {
@@ -103,7 +127,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     if matches!(record, MutationRecord::Native(_)) {
         return super::native_cleanup_command::execute(application, records, command, scope, owner);
     }
-    let MutationRecord::Money(record) = record else {
+    let MutationRecord::Source(record) = record else {
         unreachable!("native returned")
     };
     if record.owner != owner {
@@ -121,7 +145,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             Some(record.sequence),
         );
     }
-    let MutationRecord::Money(mut record) = records
+    let MutationRecord::Source(mut record) = records
         .remove(&command.custody_id)
         .expect("serialized worker checked custody")
     else {
@@ -129,23 +153,27 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
     };
     record.sequence = command.sequence;
     let outcome = match command.command {
-        MoneyCommand::Resume { history } => {
+        MutationCommand::Resume { history } => {
             let (custody, refusal) = record.custody.advance(&request, history);
             record.custody = custody;
             describe(&command.request_id, &command.custody_id, &record, refusal)
         }
-        MoneyCommand::Read { maximum_results } => retained_read(
+        MutationCommand::Read {
+            account,
+            maximum_results,
+        } => retained_read(
             runtime,
             &principal,
             &scope,
             &command,
             &record,
+            account,
             maximum_results,
         ),
-        MoneyCommand::ResumeSource => {
+        MutationCommand::ResumeSource => {
             refused(&command, denial(BankHttpDenialKind::MalformedRequest))
         }
-        MoneyCommand::ReleaseCleanup => match record.custody.release_cleanup(&request) {
+        MutationCommand::ReleaseCleanup => match record.custody.release_cleanup(&request) {
             Ok(receipt) => BankHttpMutationOutcome::CollectionReleased {
                 request_id: command.request_id.clone(),
                 custody_id: command.custody_id.clone(),
@@ -157,7 +185,7 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
             },
             Err(denial) => refused(&command, denial),
         },
-        MoneyCommand::Close => match record.custody.close(&request) {
+        MutationCommand::Close => match record.custody.close(&request) {
             Ok(()) => {
                 return BankHttpMutationOutcome::Closed {
                     request_id: command.request_id,
@@ -170,15 +198,15 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
                 refused(&command, denial)
             }
         },
-        MoneyCommand::Create { .. } => unreachable!("create returned before record lookup"),
+        MutationCommand::Create { .. } => unreachable!("create returned before record lookup"),
     };
-    records.insert(command.custody_id, MutationRecord::Money(record));
+    records.insert(command.custody_id, MutationRecord::Source(record));
     outcome
 }
 fn describe(
     request_id: &str,
     custody_id: &str,
-    record: &MoneyRecord,
+    record: &SourceMutationRecord,
     refusal: Option<BankHttpDenial>,
 ) -> BankHttpMutationOutcome {
     let request_id = request_id.to_owned();
@@ -201,12 +229,17 @@ fn describe(
             posture,
             cleanup,
         },
-        CustodyDescription::Completed { recovered, commit } => BankHttpMutationOutcome::Completed {
+        CustodyDescription::Completed {
+            recovered,
+            commit,
+            source,
+        } => BankHttpMutationOutcome::Completed {
             request_id,
             custody_id,
             sequence,
             recovered,
             commit,
+            source: source.into(),
         },
         CustodyDescription::Terminal => BankHttpMutationOutcome::Terminal {
             request_id,
@@ -215,7 +248,7 @@ fn describe(
         },
     }
 }
-fn refused(command: &AdmittedMoneyCommand, denial: BankHttpDenial) -> BankHttpMutationOutcome {
+fn refused(command: &AdmittedMutationCommand, denial: BankHttpDenial) -> BankHttpMutationOutcome {
     BankHttpMutationOutcome::Refused {
         request_id: command.request_id.clone(),
         custody_id: command.custody_id.clone(),
@@ -225,7 +258,7 @@ fn refused(command: &AdmittedMoneyCommand, denial: BankHttpDenial) -> BankHttpMu
     }
 }
 fn refusal_before_admission(
-    command: &AdmittedMoneyCommand,
+    command: &AdmittedMutationCommand,
     denial: BankHttpDenial,
     accepted_sequence: Option<u64>,
 ) -> BankHttpMutationOutcome {
@@ -241,8 +274,9 @@ fn retained_read(
     runtime: &bank_server::BankIdentityRuntime,
     principal: &bank_server::BankAuthenticatedPrincipal,
     scope: &WorthQueryRequestScope,
-    command: &AdmittedMoneyCommand,
-    record: &MoneyRecord,
+    command: &AdmittedMutationCommand,
+    record: &SourceMutationRecord,
+    account: bank_domain::model::AccountId,
     maximum_results: usize,
 ) -> BankHttpMutationOutcome {
     let Some(observation) = record.custody.observation() else {
@@ -253,7 +287,7 @@ fn retained_read(
         Err(_) => return refused(command, denial(BankHttpDenialKind::MalformedRequest)),
     };
     let published = match runtime
-        .account_activity(record.account)
+        .account_activity(account)
         .as_principal(principal)
         .retained(observation, controls)
     {

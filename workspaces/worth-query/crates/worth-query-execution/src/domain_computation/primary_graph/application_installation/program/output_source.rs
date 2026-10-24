@@ -8,6 +8,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramOutputsShape,
 };
 
+mod correction;
 mod promotion;
 mod recovery;
 mod selected;
@@ -100,6 +101,7 @@ where
             <Source::ScopeBinding as worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         idempotency: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
         root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
         discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
@@ -131,7 +133,15 @@ where
             (crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(root), Some(discovery)) => recovery::ProgramOutputSourcePayload::Discovered { root, discovery },
             _ => unreachable!("the typed program source entrance supplies its matching payload"),
         };
+        let correction = match &causality {
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
+            _ => None,
+        };
+        let idempotency = correction
+            .as_ref()
+            .map_or(idempotency, |command| command.bind(idempotency));
         let pending = WorthQueryUnpublishedProgramOutputSource {
+            correction,
             runtime_authority: self.backing.runtime.runtime.authority_identity().as_u64(),
             program: selected_program,
             binding: TypeId::of::<Source>(),
@@ -145,6 +155,7 @@ where
                 &presented,
                 program,
                 idempotency,
+                causality,
                 allocation_policy,
             ) {
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Committed(

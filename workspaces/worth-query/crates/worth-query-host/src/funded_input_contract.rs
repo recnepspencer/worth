@@ -14,6 +14,23 @@
 //!     let _:worth_query_decl::facade::application_operation::ApplicationEncodedInput<B>=encoded;
 //! }
 //! ```
+//! Correction owners expose the binding-selected capture for read-only type use.
+//! ```
+//! use worth_query_host::facade::application_entry::WorthQueryCapturedMutationInput;
+//! use worth_query_decl::facade::{application_operation::*, application_schema::ApplicationSchema};
+//! fn original<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(input: &WorthQueryCapturedMutationInput<S, B>) -> &B::Input
+//! where B::Input: ApplicationMutationInputScope<S, B> {
+//!     ApplicationMutationIntent::<S>::input(input)
+//! }
+//! ```
+//! Applications cannot mint that carrier from their own encoded input.
+//! ```compile_fail,E0624
+//! use worth_query_host::facade::application_entry::WorthQueryCapturedMutationInput;
+//! use worth_query_decl::facade::{application_operation::*, application_schema::ApplicationSchema};
+//! fn forge<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(input: ApplicationEncodedInput<B::InputBinding>) {
+//!     let _ = WorthQueryCapturedMutationInput::<S, B>::new(input);
+//! }
+//! ```
 //! Plain owned values remain the consumer construction route, with no custom backer.
 //! ```
 //! use worth_query_host::facade::declaration::application_operation::ApplicationEncodedInput;

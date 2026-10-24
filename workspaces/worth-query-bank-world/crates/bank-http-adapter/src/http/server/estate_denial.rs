@@ -30,6 +30,23 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         | D::ApprovalAuthorization(denial)
         | D::CloseAuthorization(denial)
         | D::ReviewAuthorization(denial) => authorization_denial(denial.kind()),
+        D::Projection(bank_server::BankEstateOperationProjectionDenial::Authorization(cause))
+        | D::Projection(bank_server::BankEstateOperationProjectionDenial::AuthorizationLineageUnavailable(cause)) => authorization_denial(cause.kind()),
+        D::Projection(bank_server::BankEstateOperationProjectionDenial::InvariantAdmission(
+            worth_query_host::facade::primary_graph::WorthQueryInvariantProjectionDenialKind::ExecutionRequest(cause),
+        )) => super::relational_execution_denial::denial(cause),
+        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
+            kind: bank_server::BankApplicationAttemptDenialKind::Cancelled,
+            ..
+        }) => BankHttpDenial::new(BankHttpDenialKind::Cancelled, BankHttpNextAction::Retry),
+        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
+            kind: bank_server::BankApplicationAttemptDenialKind::DeadlineExceeded,
+            ..
+        }) => BankHttpDenial::new(BankHttpDenialKind::DeadlineExceeded, BankHttpNextAction::Retry),
+        D::Attempt(bank_server::BankCommitPreparationDenial::Application {
+            kind: bank_server::BankApplicationAttemptDenialKind::ExecutionRequest(cause),
+            ..
+        }) => super::mutation_application::pending_execution_denial(cause),
         D::CommandInput(_)
         | D::Projection(_)
         | D::DecisionProjection(_)

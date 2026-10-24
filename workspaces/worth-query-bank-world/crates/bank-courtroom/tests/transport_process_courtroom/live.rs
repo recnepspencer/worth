@@ -145,11 +145,7 @@ pub(super) async fn open_stream(
         .post(format!("http://{node}/v1/live/account-activity"))
         .json(&serde_json::json!({
             "request_id": request_id,
-            "controls": {
-                "deadline_milliseconds": deadline_milliseconds,
-                "maximum_results": 8,
-                "maximum_work": 2_048
-            },
+            "controls": bank_http_adapter::BankHttpRequestControls::new(deadline_milliseconds, 8),
             "account": "fixture:100",
             "source_buffer_capacity": 1
         }))

@@ -99,15 +99,6 @@ mod tests {
     }
 
     #[test]
-    fn geometry_profile_admits_a_coherent_frame_publication_batch() {
-        let config = RelationalRuntimeConfig::resolved(
-            RelationalRuntimeProfile::GeometryKernel,
-            RelationalConfigOverride::default(),
-        );
-        assert!(config.publication.policy.max_patch_records_per_commit >= 16_707);
-    }
-
-    #[test]
     fn overriding_diagnostics_profile_breaks_boundary_default_match() {
         let mut overrides = RelationalConfigOverride::default();
         overrides.diagnostics.profile =

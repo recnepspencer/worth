@@ -48,7 +48,16 @@ pub(super) fn validate(
     if row.kind_id() != Some(entry.kind)
         || ends.source != entry.source
         || ends.target != entry.target
-        || write != entry.after_write
+        || !super::materialization::write_matches(
+            &RecordRef::Relation(id),
+            selected.commit.commit_id,
+            entry.after_write,
+            write,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            runtime.history.catalog_len(),
+            context,
+        )?
     {
         return Err(
             "incident relation native position/endpoints differ from producer publication".into(),
@@ -119,7 +128,18 @@ pub(super) fn reconstruct(
             .iter()
             .find(|old| old.id == id)
             .ok_or("relation predecessor membership absent")?;
-        if before != old.after_write || relation.birth != old.birth || relation.kind != old.kind {
+        if !super::materialization::write_matches(
+            &RecordRef::Relation(id),
+            previous.commit.commit_id,
+            old.after_write,
+            before,
+            &mut |commit| runtime.history.canonical_envelope(commit),
+            &mut |version| runtime.history.canonical_envelope_for_version(version),
+            runtime.history.catalog_len(),
+            context,
+        )? || relation.birth != old.birth
+            || relation.kind != old.kind
+        {
             return Err("relation predecessor native coverage differs".into());
         }
         current = previous;

@@ -40,10 +40,14 @@ pub(crate) struct WorthQueryApplicationOperationBindingInput<'a> {
     pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
     pub(crate) product: &'a crate::basis::WorthQueryProductBranchLease,
     pub(crate) effect_posture: WorthQueryApplicationEffectPosture,
+    pub(crate) native_reference_invariants:
+        &'a worth_query_installation::facade::WorthQueryInvariantExecutionContract,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
-    pub(crate) fn bind_application(input: WorthQueryApplicationOperationBindingInput<'_>) -> Self {
+    pub(crate) fn bind_application(
+        input: WorthQueryApplicationOperationBindingInput<'_>,
+    ) -> Result<Self, &'static str> {
         let commit_posture = WorthQueryExecutionCommitPosture::Atomic;
         let topology = resource_topology(
             std::iter::empty(),
@@ -55,7 +59,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             std::iter::once("primary"),
             commit_posture,
         );
-        Self {
+        Ok(Self {
             runtime_authority: input.runtime.authority_identity(),
             installation_runtime_ordinal: input.runtime.installed_packages().runtime_ordinal(),
             binding_identity: Arc::clone(&input.resource_binding_identity),
@@ -72,7 +76,8 @@ impl WorthQueryExecutionBoundOperationAuthority {
                 WorthQueryProviderPlanDeclarations::from_application_contracts(
                     input.contracts,
                     input.effect_posture,
-                ),
+                    input.native_reference_invariants,
+                )?,
             ),
             commit_posture,
             direct_resource_topology: topology,
@@ -94,6 +99,6 @@ impl WorthQueryExecutionBoundOperationAuthority {
             application_schema_binding: Some(input.schema_binding.clone()),
             application_snapshot: Some(input.snapshot.clone()),
             application_product_observation: Some(input.product.observation().clone()),
-        }
+        })
     }
 }

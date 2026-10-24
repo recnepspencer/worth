@@ -1,11 +1,7 @@
 use worth_query_decl::facade::{
-    application_aftermath::{
-        DeclaredAftermathPostcondition, DeclaredApplicationAftermathContract, DeclaredCompensation,
-        DeclaredCorrectionMechanism, DeclaredReconciliationProcedure,
-    },
     application_schema::{
         ApplicationOperationDefinition, ApplicationOperationRef,
-        ApplicationSchemaDeclarationBuilder, WorthQueryExternalEffectCorrelationFamily,
+        ApplicationSchemaDeclarationBuilder,
     },
     worth_query_application_contribution,
 };
@@ -16,7 +12,6 @@ use crate::authorization::{
 };
 
 use super::super::{
-    approved_payment_inbound_binding,
     decision_read_manifest::install_payment_decision_reads,
     entities::*,
     fields::*,
@@ -32,12 +27,13 @@ use super::super::{
     ApprovedBusinessPaymentApprovalBinding, ApprovedBusinessPaymentApprovalOperation,
     ApprovedBusinessPaymentAuthoringBinding, ApprovedBusinessPaymentAuthoringOperation,
     ApprovedBusinessPaymentInstanceStartBinding, ApprovedBusinessPaymentInstanceStartOperation,
-    ApprovedPaymentSettlementEffect, BankSchema, APPROVED_PAYMENT_SETTLEMENT_RAIL,
+    ApprovedPaymentSettlementEffect, BankSchema,
 };
 
 worth_query_application_contribution! {
     pub contribution BankPayments in BankSchema {
         identity: "worth.bank.payments.v1",
+        corrections: [super::super::ReverseSentMoney, super::super::ReverseApprovedPayment],
         members: |schema| {
             let schema = install_payment_members(schema)
                 .ability(ViewPayment::reference())
@@ -52,8 +48,6 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<DepositMutationBinding>()
                 .operation(without_external_effect_or_aftermath(WithdrawOperation::reference()))
                 .application_mutation_binding::<WithdrawMutationBinding>()
-                .operation(without_external_effect_or_aftermath(SendMoneyOperation::reference()))
-                .application_mutation_binding::<SendMoneyMutationBinding>()
                 .operation(without_external_effect_or_aftermath(
                     InitiateBusinessPaymentOperation::reference(),
                 ))
@@ -73,7 +67,6 @@ worth_query_application_contribution! {
                     ApprovedBusinessPaymentAdvanceOperation::reference(),
                 ))
                 .application_mutation_binding::<ApprovedBusinessPaymentAdvanceBinding>()
-                .operation(approved_payment_operation())
                 .operation(without_external_effect_or_aftermath(
                     RejectPaymentOperation::reference(),
                 ))
@@ -95,7 +88,6 @@ worth_query_application_contribution! {
                 .effect(ApprovedPaymentSettlementEffect::reference())
                 .application_query(crate::queries::payment_detail_definition())
                 .application_mutation_binding::<InitiateBusinessPaymentMutationBinding>()
-                .application_mutation_binding::<ApprovePaymentMutationBinding>()
                 .application_mutation_binding::<RejectPaymentMutationBinding>()
                 .application_query_binding::<crate::queries::PaymentDetailQueryBinding>()
                 .application_query(crate::queries::payment_amount_definition())
@@ -131,6 +123,10 @@ fn install_payment_members(
         .field(Posting::reference(), PostingIdentityField::reference())
         .field(Posting::reference(), Purpose::reference())
         .field(JournalEntry::reference(), JournalIdentityField::reference())
+        .field(
+            JournalEntry::reference(),
+            JournalInstitutionContext::reference(),
+        )
         .field(JournalEntry::reference(), JournalPurpose::reference())
         .field(PaymentIntent::reference(), PaymentStatusField::reference())
         .field(PaymentIntent::reference(), PaymentAmount::reference())
@@ -228,33 +224,5 @@ fn without_external_effect_or_aftermath<Operation, Input>(
         .definition()
         .no_external_effect()
         .no_aftermath()
-        .finish()
-}
-
-fn approved_payment_operation(
-) -> ApplicationOperationDefinition<BankSchema, ApprovePaymentOperation, ApprovePayment> {
-    ApprovePaymentOperation::reference()
-        .definition()
-        .external_effect_with_inbound(
-            ApprovedPaymentSettlementEffect::reference(),
-            WorthQueryExternalEffectCorrelationFamily::new(APPROVED_PAYMENT_SETTLEMENT_RAIL)
-                .expect("the approved-payment settlement rail is an atomic identity"),
-            approved_payment_inbound_binding(),
-        )
-        .aftermath(
-            DeclaredApplicationAftermathContract::runtime_with_external_owner(
-                DeclaredCorrectionMechanism::Compensation(
-                    DeclaredCompensation::new(
-                        "reverse-approved-payment-journal",
-                        DeclaredAftermathPostcondition::BusinessPostcondition {
-                            identity: "approved-payment-settlement-corrected".into(),
-                        },
-                    )
-                    .expect("approved-payment compensation is well-formed"),
-                ),
-                DeclaredReconciliationProcedure::new("confirm-approved-payment-settlement")
-                    .expect("approved-payment reconciliation is well-formed"),
-            ),
-        )
         .finish()
 }

@@ -276,7 +276,7 @@ fn apply_guards(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn read_governed_root_guard(
+pub(super) fn read_governed_root_guard(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     _projection: crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationInternalProjectionAdmission<'_>,
@@ -315,7 +315,7 @@ fn work_limit_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial 
     )
 }
 
-fn frontier_denial<L>(
+pub(super) fn frontier_denial<L>(
     stop: worth_relational::facade::runtime::BoundedFrontierReadStop<
         L,
         worth_execution::WorkCeilingDenial,

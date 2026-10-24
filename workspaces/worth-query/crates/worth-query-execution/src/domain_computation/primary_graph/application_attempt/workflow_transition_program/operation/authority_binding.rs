@@ -44,9 +44,11 @@ impl<Schema, Operation, Input, Scope>
         {
             return Err(mismatch("workflow operation authority"));
         }
+        let authority_fact_start = self.read_set.facts.len();
         self.read_set
             .append_authority_facts(execution, authority.facts(), allocation_policy)?;
         self.read_set.workflow_authority_binding = Some(WorkflowOperationBindingProof {
+            authority_fact_range: authority_fact_start..self.read_set.facts.len(),
             captured_input: authority.captured_input.clone(),
             binding: authority.binding.clone(),
             transition_identity: authority.transition_identity,

@@ -13,6 +13,19 @@ pub struct BridgeAppliedConditionalInstallationExtension {
 }
 
 impl BridgeOwnedSignalRuntime {
+    pub(crate) fn admit_prepared_conditional_installation(
+        &self,
+        prepared: &super::BridgePreparedConditionalInstallationExtension,
+    ) -> Result<(), BridgeConditionalDenial> {
+        self.require_live_installed_lowering(&prepared.activation.predecessor)
+    }
+
+    pub(crate) fn admit_applied_conditional_installation(
+        &self,
+        applied: &BridgeAppliedConditionalInstallationExtension,
+    ) -> Result<(), BridgeConditionalDenial> {
+        self.require_live_installed_lowering(&applied.activation.predecessor)
+    }
     pub(crate) fn apply_owned_conditional_installation_extension<E, Ctx>(
         &self,
         transaction: &mut worth_signal::facade::SignalTransaction<'_, (), (), E, Ctx, ()>,
@@ -40,17 +53,32 @@ impl BridgeOwnedSignalRuntime {
         &self,
         applied: &mut BridgeAppliedConditionalInstallationExtension,
         binding: worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
-    ) -> Result<(), BridgeConditionalDenial> {
+    ) -> Result<
+        (),
+        (
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+            BridgeConditionalDenial,
+        ),
+    > {
         if let Some(signal) = applied.signal.take() {
             let (signal_contract, definition_custody, signal_port) =
-                signal.into_retained_parts(binding).map_err(|denial| {
-                    BridgeConditionalDenial::new(
-                        BridgeConditionalDenialKind::SignalExecution(
-                            super::super::BridgeSignalDenial::InstallationExtension(denial.clone()),
-                        ),
-                        format!("Signal successor activation was denied: {denial:?}"),
-                    )
-                })?;
+                match signal.into_retained_parts(binding) {
+                    Ok(parts) => parts,
+                    Err((signal, binding, denial)) => {
+                        applied.signal = Some(signal);
+                        return Err((
+                            binding,
+                            BridgeConditionalDenial::new(
+                                BridgeConditionalDenialKind::SignalExecution(
+                                    super::super::BridgeSignalDenial::InstallationExtension(
+                                        denial.clone(),
+                                    ),
+                                ),
+                                format!("Signal successor activation was denied: {denial:?}"),
+                            ),
+                        ));
+                    }
+                };
             applied
                 .activation
                 .lowering

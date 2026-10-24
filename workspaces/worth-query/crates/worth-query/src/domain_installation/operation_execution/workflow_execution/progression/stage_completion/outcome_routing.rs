@@ -31,6 +31,7 @@ impl<D: 'static, O: 'static, F: 'static, L: BasisOperationLane> WorthQueryWorkfl
             | Kind::ResourceAdmissionMissing
             | Kind::ConditionalExecution(_)
             | Kind::ComputationPanic { .. }
+            | Kind::ComputationAccountingUnavailable { .. }
             | Kind::ComputationResultCapacity { .. }
             | Kind::ComputationNestedStopped { .. } => (false, false, true),
             Kind::ExecutionRequest(_)

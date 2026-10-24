@@ -38,8 +38,8 @@ impl WorthQueryRetainedQueryDependencies {
                 cancellation: worth_execution::CancellationToken::new(),
             })
             .unwrap();
-        let refusal = retain_descriptors(
-            std::iter::once(self.sources.elements()),
+        let refusal = retain_joined_descriptors(
+            std::iter::once(self),
             count,
             &worth_execution::ExecutionRequest::leased(&narrowed),
         )
@@ -49,9 +49,7 @@ impl WorthQueryRetainedQueryDependencies {
             matches!(refusal, WorthQueryRequiredSetCurrentnessDenial::Source(ref cause) if cause.allocation_denial().is_some())
         );
         assert_eq!(self.sources.len(), count);
-        let retained =
-            retain_descriptors(std::iter::once(self.sources.elements()), count, &execution)
-                .unwrap();
+        let retained = retain_joined_descriptors(std::iter::once(self), count, &execution).unwrap();
         assert_eq!(retained.sources.len(), count);
         assert_eq!(retained.sources.charged_payload_bytes(), Some(quote));
         let serial_stop = CancellationSource::new();
@@ -60,9 +58,8 @@ impl WorthQueryRetainedQueryDependencies {
             serial_stop.token(),
             None,
         );
-        let stopped_parts =
-            std::iter::once(self.sources.elements()).inspect(|_| serial_stop.cancel());
-        let refused = retain_descriptors(
+        let stopped_parts = std::iter::once(self).inspect(|_| serial_stop.cancel());
+        let refused = retain_joined_descriptors(
             stopped_parts,
             count,
             &worth_execution::ExecutionRequest::serial(&serial),
@@ -81,8 +78,8 @@ impl WorthQueryRetainedQueryDependencies {
             worth_execution::CancellationToken::new(),
             None,
         );
-        let serial_retained = retain_descriptors(
-            std::iter::once(self.sources.elements()),
+        let serial_retained = retain_joined_descriptors(
+            std::iter::once(self),
             count,
             &worth_execution::ExecutionRequest::serial(&fresh_serial),
         )

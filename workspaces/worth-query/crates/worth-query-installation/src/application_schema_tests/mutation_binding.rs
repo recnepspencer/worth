@@ -361,3 +361,4 @@ fn changed_principal_binding() -> ApplicationPrincipalBindingRef<
 }
 
 mod contract_checks;
+mod correction_binding;

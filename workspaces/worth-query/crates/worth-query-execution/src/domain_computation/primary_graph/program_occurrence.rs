@@ -20,7 +20,9 @@ use worth_query_installation::facade::{
 use super::WorthQueryApplicationCommitDenial;
 
 mod activation_cell;
+mod original_meaning;
 mod presented_program;
+pub(in crate::domain_computation) use original_meaning::OriginalProgramMeaning;
 mod revision_rendering;
 mod support_lifecycle;
 
@@ -34,6 +36,7 @@ pub(in crate::domain_computation::primary_graph) use support_lifecycle::{
 
 /// The program support one published application runtime retains.
 pub(in crate::domain_computation::primary_graph) struct WorthQueryInstalledProgramSupport<Schema> {
+    native_programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
     roster: Arc<WorthQueryProgramSupportRoster<Schema>>,
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
@@ -58,12 +61,37 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
             .map(|entry| program_revision_rendering(entry.revision()))
             .collect();
         Self {
+            native_programs: Box::new([]),
             lifecycle: support_lifecycle::WorthQueryProgramSupportLifecycle::installed(&roster),
             adoption_admissions: std::collections::BTreeMap::new(),
             roster,
             renderings,
             activation,
         }
+    }
+
+    /// Completes the existing support owner before the assembled runtime is published.
+    pub(in crate::domain_computation::primary_graph) fn complete_native_installation(
+        &mut self,
+        programs: Box<[Arc<super::application_installation::WorthQuerySupportedProgramRecord>]>,
+    ) {
+        assert!(self.native_programs.is_empty());
+        assert_eq!(programs.len(), self.roster.entries().len());
+        assert!(self.roster.entries().iter().all(|entry| programs
+            .iter()
+            .any(|program| entry.revision() == program.revision())));
+        self.native_programs = programs;
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn native_program(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Option<&super::application_installation::WorthQuerySupportedProgramRecord> {
+        self.present(revision)?;
+        self.native_programs
+            .iter()
+            .find(|program| program.revision() == revision)
+            .map(AsRef::as_ref)
     }
 
     pub(in crate::domain_computation::primary_graph) fn adoption_authorization_matches(

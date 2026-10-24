@@ -141,10 +141,14 @@ impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn reserve_application_publication_recovery(
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
+        binding: Option<
+            crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
+        >,
     ) -> Result<WorthQueryApplicationPublicationRecoveryReservation, &'static str> {
         registry::WorthQueryPendingApplicationPublicationRegistry::reserve(
             &self.pending_application_publications,
             observation.lifecycle_incarnation(),
+            binding,
         )
     }
 

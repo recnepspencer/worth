@@ -44,6 +44,14 @@ pub(in crate::domain_computation) enum WorthQueryOperationAuthorizationBasis<Inp
 
 impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
     pub(super) fn capability_input(&self) -> Option<&Input> {
+        self.shared_capability_input().map(AsRef::as_ref)
+    }
+
+    pub(super) fn shared_capability_input(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
+    > {
         match self {
             Self::Conventional => None,
             Self::Capability { input }
@@ -52,7 +60,7 @@ impl<Input> WorthQueryOperationAuthorizationBasis<Input> {
             | Self::ElevationRequest { input, .. }
             | Self::ElevationApproval { input, .. }
             | Self::ElevationClose { input, .. }
-            | Self::MandatoryReview { input, .. } => Some(input.as_ref()),
+            | Self::MandatoryReview { input, .. } => Some(input),
         }
     }
 

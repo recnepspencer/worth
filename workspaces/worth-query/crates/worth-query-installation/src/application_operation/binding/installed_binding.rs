@@ -97,8 +97,19 @@ where
         self.meaning.descriptor().handler().identity()
     }
 
+    pub fn correction_binding(
+        &self,
+    ) -> Option<&crate::application_aftermath::InstalledCorrectionBinding> {
+        self.meaning.correction_binding()
+    }
+
     pub fn idempotency_identity(&self) -> &str {
         self.meaning.descriptor().idempotency().identity()
+    }
+    pub fn retain_correction_binding(
+        &self,
+    ) -> Option<std::sync::Arc<crate::application_aftermath::InstalledCorrectionBinding>> {
+        self.meaning.retain_correction_binding()
     }
 }
 

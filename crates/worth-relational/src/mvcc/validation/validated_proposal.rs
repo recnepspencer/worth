@@ -50,6 +50,8 @@ impl RelationalMutationInvariantEvidence {
 /// rechecks the exact branch-qualified validation basis before publication.
 pub struct ValidatedRelationalProposal {
     pub(crate) required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    pub(crate) required_output_materialization:
+        Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
     // Owned accounting data, never a retained request or execution authority.
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) mutation_authority: crate::branch::RelationalBranchMutationAuthority,

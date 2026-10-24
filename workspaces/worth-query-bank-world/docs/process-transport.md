@@ -26,8 +26,8 @@ authority.
 - `BankHttpServerBinding` and `BankUserNodeBinding` provide embedded process
   composition when the caller owns lifecycle orchestration.
 
-The runtime `cold_certification` setting selects TLS trust for the disposable
-Docker courtroom. Its implementation always compiles.
+For the disposable test environment, see the
+[identity courtroom's TLS setup](async-identity-courtroom.md#courtroom-tls-trust).
 
 ## Core Mental Model
 
@@ -42,9 +42,32 @@ request. A query publication envelope describes the exact query identity,
 parameter binding, basis, capability purpose, and disclosure or omission
 posture without exposing an executable handle.
 
-The current linear undo/redo routes are provisional experiments retained for
-regression work toward Milestone 9.18. They are not a supported transport
-contract and do not close any Bank Phase 5 obligation.
+Use [owning HTTP mutations](http-owning-money.md) to execute and close money or
+estate commands. A completed occurrence supplies descriptive `source`
+coordinates for its installed recorded correction. The server resolves that
+source and checks current authority when the participant requests correction.
+
+For historical SendMoney reapplication, use `POST /v1/corrections/history` with
+that source and explicit history/disclosure/page bounds. Follow
+`POST /v1/corrections/history/resume` until `complete` is true, retaining the
+desired row's `source`. Create `reapply_send_money` through `/v1/mutations` with
+`history_token`, that chosen source and its command key. The Bank resolves the
+choice under fresh authority and retains the original action's ordinary delivery
+owner before replying. See the [worked chooser request](http-owning-money.md#choosing-and-reapplying-historical-sendmoney).
+
+Retain completed mutation custody for each source, reversal and reapplication
+occurrence that historical selection or retries still need. Each completed
+owner holds its own native World observation. Finish the historical journey,
+then close those custody IDs using their next sequences. Later publications
+can retire optional history after its last observation is released.
+
+History tokens use the existing authenticated, expiring continuation inventory.
+The server retains only the latest native page and bounded initial/latest response
+descriptions. Replayed history responses require current source disclosure.
+A changed branch basis requires fresh history; a refreshed chooser can select the
+same historical source for an exact command retry after later transactions.
+Mutation response loss continues through its saved custody ID and sequencing,
+independently of chooser token expiry.
 
 ## How It Executes
 
@@ -192,7 +215,7 @@ The close result can transfer the original installed route into a
 after owner recovery without reinstalling a verifier or opening another HTTP
 listener.
 Dropping the handle forces termination and gives no delivery survival promise;
-the sender and Query custody in this phase are process-local.
+the sender and Query custody are process-local.
 
 ## Small Example
 
@@ -268,9 +291,8 @@ purpose-specific recovery token.
   boundaries are part of the product.
 - Query owns continuation, live, recovery, and publication semantics. The
   adapter translates them; it does not reproduce them.
-- Linear undo/redo remains provisional pending the separately governed
-  tree-based product. Its transport types are usable but are not a promise of
-  final history semantics.
+- Recorded corrections use the completed source coordinates and current
+  authorization through [owning HTTP mutations](http-owning-money.md).
 
 ## Inspection And Debugging
 
@@ -284,28 +306,17 @@ purpose-specific recovery token.
 - `RequestSaturated` and `Saturated` are retryable only after capacity is
   released. `DeadlineExceeded` means the original attempt has ended.
 
-## Anti-Patterns
+## Deployment and session lifetime
 
-- Do not send branch, provider, snapshot, generation, or Query authority fields.
-- Do not put banking policy, default branch selection, or token decoding in a
-  route or node.
-- Do not treat an opaque token as authentication or authorization.
-- Do not retry an SSE overflow from an inferred cursor; start a bounded page
-  query and then reopen live delivery.
-- Do not enable the `cold_certification` runtime setting in a deployed process.
+The process protocol accepts one installation document and one shutdown command.
+The deployment owner supplies process supervision and keeps the authoritative
+Bank installation alive through operation cleanup. Each user node acquires its
+own fresh authenticated session after restart.
 
-## Current Limits
-
-- The process protocol accepts one installation document and one shutdown
-  command; orchestration and supervision belong to the deployment owner.
-- The Docker/Authentik process courtroom is the final cold certification. On a
-  host without Docker, the court can compile but cannot establish runtime
-  evidence.
-- The transport does not provide distributed Bank-server replication or
-  authoritative failover.
-- The transport exposes no program-adoption endpoint. Adding one requires a
-  separately versioned protocol that preserves Query's move-only preparation
-  and unpublished-recovery custody; raw revision IDs are insufficient.
+After SSE overflow, read a fresh activity page and reopen live delivery. Keep
+recovery tokens intact and submit them with current credentials to their named
+endpoints. Program adoption uses the authenticated same-process Bank runtime
+entrance described above.
 
 ## Related Docs
 

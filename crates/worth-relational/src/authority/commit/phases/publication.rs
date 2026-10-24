@@ -18,7 +18,9 @@ pub(crate) fn enforce_patch_budget(
     runtime: &(impl DiagnosticArtifactSink + PublicationPolicySource),
     patch: &CanonicalAuthoritativePatch,
 ) -> Result<(), TransactionCommitError> {
-    let max_patch_records_per_commit = runtime.max_patch_records_per_commit();
+    let Some(max_patch_records_per_commit) = runtime.max_patch_records_per_commit() else {
+        return Ok(());
+    };
     if patch.authoritative_record_patches.len() > max_patch_records_per_commit {
         runtime.emit_failure_diagnostic(
             DiagnosticsScope::PatchPublication,

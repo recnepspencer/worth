@@ -6,6 +6,14 @@ use crate::transactions::data::RecordRef;
 use serde::{Deserialize, Serialize};
 use worth_foundational::facade::AspectKey;
 
+/// The actual allocated relation's structural birth, independent of exposed aspects.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PublishedRelationBirth {
+    pub kind: crate::identity::data::KindId,
+    pub source: crate::identity::data::EntityId,
+    pub target: crate::identity::data::EntityId,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PublishedAuthoritativeRecordPatch {
     pub target: RecordRef,
@@ -15,6 +23,10 @@ pub struct PublishedAuthoritativeRecordPatch {
     pub semantic_changes: Vec<super::PublishedAuthoritativeAspectChange>,
     pub contains_opaque_aspect: bool,
     pub detail: PatchDetail,
+    /// Emitted only by native relation creation; descriptive journal evidence,
+    /// consumed with the exact allocation and Created patch, never publication custody.
+    #[serde(default)]
+    pub relation_birth: Option<PublishedRelationBirth>,
 }
 
 impl PublishedAuthoritativeRecordPatch {
@@ -52,6 +64,7 @@ impl PublishedAuthoritativeRecordPatch {
             },
             contains_opaque_aspect: self.contains_opaque_aspect,
             detail: self.detail.canonicalized(),
+            relation_birth: self.relation_birth,
         }
     }
 

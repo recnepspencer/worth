@@ -95,7 +95,12 @@ pub(super) fn select_at(
                 return Ok(Some(RequiredOutputRoutePosition::Published(commit)));
             }
         }
-        next = envelope.commit.parents.first().copied();
+        if let Some(event) = &envelope.required_output_materialization {
+            super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+            next = Some(event.source_commit);
+        } else {
+            next = envelope.commit.parents.first().copied();
+        }
     }
     if next.is_none() {
         Ok(None)

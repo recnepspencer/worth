@@ -329,6 +329,7 @@ pub(super) fn server_configuration(
                 "assignment": 11,
                 "notice": 12,
                 "grant": 14,
+                "correction": { "freeze_grant": 26, "revoke_grant": 27 },
                 "aftermath": {
                     "destination_account": "fixture:102",
                     "beneficiary_principal": 3,

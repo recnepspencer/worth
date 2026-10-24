@@ -92,6 +92,19 @@ where
             .map_err(super::map_observation_denial)
     }
 
+    fn select_product_branch_ancestor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &ProductBranchObservation,
+        source: &crate::identity::CompositeCommitIdentity,
+        maximum: Option<NonZeroUsize>,
+    ) -> Result<
+        crate::branch::ProductBranchAncestorSelection,
+        crate::branch::ProductBranchAncestorSelectionDenial,
+    > {
+        super::history::select_ancestor(self, execution, target, source, maximum)
+    }
+
     fn trace_product_branch_ancestry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

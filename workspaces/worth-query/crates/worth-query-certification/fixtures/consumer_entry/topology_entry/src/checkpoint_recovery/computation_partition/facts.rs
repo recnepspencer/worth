@@ -134,6 +134,17 @@ pub(super) fn seed_member(graph: &mut Graph, set: &str, entry_key: &str) {
         .unwrap();
 }
 
+pub(super) fn seed_owned_set(graph: &mut Graph, scope: &str, set: &str) {
+    graph
+        .bind_relation(WorthQueryApplicationRelationSeed::new(
+            BodyEntrySet::reference(),
+            format!("{scope}-owns-{set}"),
+            key(scope),
+            key(&format!("entries-{set}")),
+        ))
+        .unwrap();
+}
+
 pub(super) fn key<Entity>(key: &str) -> WorthQueryApplicationEntityKey<CheckpointSchema, Entity> {
     WorthQueryApplicationEntityKey::new(key).unwrap()
 }

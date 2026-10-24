@@ -27,6 +27,9 @@ pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationCo
         Scope,
     >,
     idempotency: WorthQueryApplicationIdempotencyBinding,
+    original_authority: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    >,
     outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
     aftermath_causality: Option<
         &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
@@ -36,7 +39,7 @@ pub(in crate::domain_computation) struct WorthQueryProviderAttemptRegistrationCo
 impl<'a, Schema, Operation, Input, Scope>
     WorthQueryProviderAttemptRegistrationContext<'a, Schema, Operation, Input, Scope>
 {
-    pub(super) const fn new(
+    pub(super) fn new(
         provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
             Schema,
@@ -49,11 +52,19 @@ impl<'a, Schema, Operation, Input, Scope>
         aftermath_causality: Option<
             &'a crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
         >,
-    ) -> Self {
+    ) -> Self
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
         Self {
             provider,
             admission,
             idempotency,
+            original_authority: std::sync::Arc::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding::from_admission(
+                    admission, idempotency,
+                ),
+            ),
             outcome_identity,
             aftermath_causality,
         }
@@ -90,6 +101,15 @@ impl<'a, Schema, Operation, Input, Scope>
         _permit: &WorthQueryProviderRegistrationInspectionPermit,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity{
         self.outcome_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn original_authority(
+        &self,
+        _permit: &WorthQueryProviderRegistrationInspectionPermit,
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    > {
+        std::sync::Arc::clone(&self.original_authority)
     }
 
     pub(in crate::domain_computation::primary_graph::application_attempt) const fn aftermath_causality(

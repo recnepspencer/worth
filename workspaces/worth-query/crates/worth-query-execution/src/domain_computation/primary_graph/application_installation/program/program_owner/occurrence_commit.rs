@@ -34,7 +34,7 @@ pub(super) fn commit_program_action<Schema, Binding, Owner>(
 
     owner: &Owner,
     program: ActionProgram<Schema, Binding>,
-    causality: ApplicationCommitCausality<'_>,
+    causality: ApplicationCommitCausality,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> WorthQueryApplicationCommitOutcome

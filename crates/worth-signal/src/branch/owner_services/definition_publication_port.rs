@@ -46,6 +46,8 @@ where
         Ok(AdmittedSignalConditionalDefinitionPublication { operation })
     }
 
+    /// Returns the original admitted permit when no canonical movement consumed it.
+    /// Secure that custody before inspecting completion or resuming its unwind.
     pub fn advance_exact_with_completion<F>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
@@ -55,18 +57,27 @@ where
         runtime_ctx: &mut Ctx,
         cancellation: &SignalOwnerCancellationToken,
         apply: F,
-    ) -> SignalBranchAdvanceCompletion
+    ) -> (
+        SignalBranchAdvanceCompletion,
+        Option<AdmittedSignalConditionalDefinitionPublication>,
+    )
     where
         F: FnOnce(&mut SignalTransaction<'_, D, I, E, Ctx, T>) -> Result<(), SignalError>,
     {
-        self.mutation
+        let mut operation = Some(admitted.operation);
+        let completion = self
+            .mutation
             .advance_conditional_definition_exact_with_completion(
                 execution,
-                admitted.operation,
+                &mut operation,
                 expected,
                 runtime_ctx,
                 cancellation,
                 apply,
-            )
+            );
+        (
+            completion,
+            operation.map(|operation| AdmittedSignalConditionalDefinitionPublication { operation }),
+        )
     }
 }

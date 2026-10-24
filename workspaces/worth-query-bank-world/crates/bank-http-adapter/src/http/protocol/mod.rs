@@ -2,6 +2,8 @@ mod account_activity;
 mod account_summary;
 mod aftermath;
 mod controls;
+mod correction_history;
+mod correction_source;
 mod credential;
 mod denial;
 mod elevation;
@@ -22,6 +24,12 @@ pub use account_summary::{
 };
 pub use aftermath::{BankHttpEstateDisbursementOutcome, BankHttpEstateDisbursementRequest};
 pub use controls::{BankHttpEffectControls, BankHttpProtocolVersion, BankHttpRequestControls};
+pub use correction_history::{
+    BankHttpCorrectionAlternative, BankHttpCorrectionHistoryControls,
+    BankHttpCorrectionHistoryOutcome, BankHttpCorrectionHistoryRequest,
+    BankHttpCorrectionHistoryResumeRequest,
+};
+pub use correction_source::{BankHttpCorrectionCommit, BankHttpCorrectionSource};
 pub use credential::BankHttpCredential;
 pub use denial::{BankHttpDenial, BankHttpDenialKind, BankHttpNextAction};
 pub use elevation::{

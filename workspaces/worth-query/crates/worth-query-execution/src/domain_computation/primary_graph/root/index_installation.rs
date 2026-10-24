@@ -1,4 +1,5 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use worth_relational::facade::indexes::{
     DerivedIndexDefinition, DerivedIndexDefinitionLookup, DerivedIndexKind,
@@ -112,6 +113,35 @@ pub(super) fn register_primary_graph_indexes(
         branch_scoped: false,
     })?;
     aftermath_causality.key_index_id = installed.index_id;
+    let lineage = &mut aftermath_causality.lineage;
+    for (name, locator, index_id) in [
+        (
+            "correction-reversal-root",
+            &lineage.reversed_root,
+            &mut lineage.reversal_root_index,
+        ),
+        (
+            "correction-reversed-source",
+            &lineage.reversed_source,
+            &mut lineage.reversed_source_index,
+        ),
+        (
+            "correction-consumed-reversal",
+            &lineage.consumed_reversal,
+            &mut lineage.consumed_reversal_index,
+        ),
+    ] {
+        *index_id = installation
+            .install(DerivedIndexDefinition {
+                index_id: worth_relational::facade::indexes::DerivedIndexId(0),
+                name: format!("worth-query-provider.{name}"),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: locator.clone(),
+                },
+                branch_scoped: false,
+            })?
+            .index_id;
+    }
     super::super::workflow::schema::register_indexes(layout.workflow_mut(), |definition| {
         installation.install(definition)
     })?;
@@ -121,6 +151,63 @@ pub(super) fn register_primary_graph_indexes(
     )?;
     layout.set_workflow_reads(read_indexes);
     Ok(())
+}
+
+/// The complete installed inventory, in the native identity order used by maintenance.
+pub(super) fn primary_index_inventory(
+    layout: &WorthQueryPrimaryGraphLayout,
+) -> Arc<[worth_relational::facade::indexes::DerivedIndexId]> {
+    let principal_identity_index_ids = layout
+        .principal_bindings()
+        .map(|(_, binding)| binding.index_id)
+        .collect::<BTreeSet<_>>();
+    principal_identity_index_ids
+        .iter()
+        .copied()
+        .chain(layout.equality_index_ids())
+        .chain(layout.continuation_ordering_index_ids())
+        .chain(layout.capability_grant_join_index_ids())
+        .chain(
+            layout
+                .workflow_reads()
+                .into_iter()
+                .flat_map(|indexes| [indexes.instances, indexes.transitions]),
+        )
+        .chain(std::iter::once(layout.provider_idempotency().key_index_id))
+        .chain(std::iter::once(
+            layout.provider_aftermath_causality().key_index_id,
+        ))
+        .chain([
+            layout
+                .provider_aftermath_causality()
+                .lineage
+                .reversal_root_index,
+            layout
+                .provider_aftermath_causality()
+                .lineage
+                .reversed_source_index,
+            layout
+                .provider_aftermath_causality()
+                .lineage
+                .consumed_reversal_index,
+        ])
+        .chain(std::iter::once(
+            layout.workflow().instance.identity_index_id,
+        ))
+        .chain(std::iter::once(layout.workflow().lineage.identity_index_id))
+        .chain(std::iter::once(
+            layout.workflow().definition.content_identity_index_id,
+        ))
+        .chain(std::iter::once(
+            layout.workflow().captured_input.identity_index_id,
+        ))
+        .chain(std::iter::once(
+            layout.workflow().transition.identity_index_id,
+        ))
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>()
+        .into()
 }
 
 #[cfg(test)]

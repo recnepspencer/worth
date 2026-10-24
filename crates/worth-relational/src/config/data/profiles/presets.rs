@@ -126,7 +126,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CascadeDeletePolicy::CascadeDeleteRelations,
             PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 4096,
+                max_patch_records_per_commit: None,
                 max_published_snapshot_handles: None,
                 max_active_snapshot_handles: None,
                 max_transaction_savepoints: 4_096,
@@ -185,7 +185,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CascadeDeletePolicy::CascadeDeleteRelations,
             PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 65_536,
+                max_patch_records_per_commit: None,
                 max_published_snapshot_handles: None,
                 max_active_snapshot_handles: None,
                 max_transaction_savepoints: 1_024,
@@ -244,7 +244,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CascadeDeletePolicy::RetainDanglingForAudit,
             PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 16384,
+                max_patch_records_per_commit: None,
                 max_published_snapshot_handles: None,
                 max_active_snapshot_handles: None,
                 max_transaction_savepoints: 1_024,
@@ -303,7 +303,7 @@ pub(super) fn default_profile_config(profile: RelationalRuntimeProfile) -> Relat
             CascadeDeletePolicy::CascadeDeleteRelations,
             PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 8192,
+                max_patch_records_per_commit: None,
                 max_published_snapshot_handles: None,
                 max_active_snapshot_handles: None,
                 max_transaction_savepoints: 4_096,

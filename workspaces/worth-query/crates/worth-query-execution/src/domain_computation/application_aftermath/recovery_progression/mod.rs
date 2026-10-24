@@ -2,7 +2,6 @@
 
 mod authority;
 mod binding_axis;
-pub(crate) use binding_axis::WorthQueryRecoveryBindingCurrentTruth;
 mod compensate;
 mod disclose;
 mod dispose;

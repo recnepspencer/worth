@@ -223,6 +223,7 @@ fn record_entity_publication_fragment(
         canonical_delta,
         patch_detail_for_entity(detail_kind, entity_id),
         authoritative_patch,
+        None,
     )
 }
 
@@ -235,6 +236,13 @@ fn record_relation_publication_fragment(
     target: crate::identity::data::EntityId,
     authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
+    let relation_birth = (canonical_delta.structural_change
+        == crate::publication::patch::data::RecordStructuralChange::Created)
+        .then_some(crate::publication::patch::data::PublishedRelationBirth {
+            kind: canonical_delta.kind_id,
+            source,
+            target,
+        });
     effect
         .publication
         .changed_records
@@ -244,6 +252,7 @@ fn record_relation_publication_fragment(
         canonical_delta,
         patch_detail_for_relation(detail_kind, relation_id, source, target),
         authoritative_patch,
+        relation_birth,
     )
 }
 
@@ -280,9 +289,11 @@ fn record_patch_fragment(
     canonical_delta: crate::authority::mutation::CanonicalRecordAspectDelta,
     detail: PatchDetail,
     authoritative_patch: Option<worth_foundational::facade::AuthoritativeRecordAspectPatch>,
+    relation_birth: Option<crate::publication::patch::data::PublishedRelationBirth>,
 ) -> Result<(), crate::transactions::data::CommitConflict> {
-    let patch_fragment =
+    let mut patch_fragment =
         canonical_publication_fragment(&canonical_delta, detail, authoritative_patch)?;
+    patch_fragment.relation_birth = relation_birth;
     effect.publication.canonical_deltas.push(canonical_delta);
     effect.publication.patch_fragments.push(patch_fragment);
     Ok(())
@@ -314,6 +325,7 @@ pub(super) fn canonical_publication_fragment(
                 ),
                 contains_opaque_aspect: canonical_delta.contains_opaque_aspect,
                 detail,
+                relation_birth: None,
                 patch,
                 published_patch,
             }

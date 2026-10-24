@@ -15,6 +15,7 @@ use crate::domain_computation::primary_graph::provider::{
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCommitEvidence {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     provider_session_binding:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
     idempotency:
@@ -23,6 +24,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPrimaryGraphCo
     mutation_work: WorthQueryPrimaryMutationWorkEvidence,
     retained_preimage:
         Option<crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage>,
+    original_authority: std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    >,
     committed_dispatch_outbox: WorthQueryCommittedDispatchOutboxResolution,
     committed_changes: crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
     output_correspondence: std::sync::Arc<
@@ -86,11 +90,13 @@ pub(super) fn seal(
         )
     });
     WorthQueryPrimaryGraphCommitEvidence {
+        workflow_origin: committed.attempt().workflow_origin().cloned(),
         provider_session_binding: committed.attempt().affinity().provider_session().clone(),
         idempotency: committed.attempt().idempotency(),
         commit: committed.committed().envelope().commit.clone(),
         mutation_work,
         retained_preimage: committed.retained_preimage().cloned(),
+        original_authority: std::sync::Arc::clone(committed.attempt().original_authority()),
         committed_dispatch_outbox,
         output_correspondence: std::sync::Arc::new(output_correspondence),
         operation_scope: committed.attempt().affinity().operation_scope().clone(),
@@ -122,6 +128,20 @@ impl WorthQueryMutationWorkCommitSeal {
 }
 
 impl WorthQueryPrimaryGraphCommitEvidence {
+    pub(in crate::domain_computation::primary_graph) fn workflow_origin(
+        &self,
+    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
+        self.workflow_origin.as_ref()
+    }
+    /// Original admitted meaning co-retained with the performed occurrence.
+    /// This is historical evidence; current authority is admitted separately.
+    pub(in crate::domain_computation::primary_graph) fn original_authority(
+        &self,
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding
+    {
+        &self.original_authority
+    }
+
     pub(in crate::domain_computation::primary_graph) const fn provider_session_binding(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding

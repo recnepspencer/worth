@@ -46,13 +46,12 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryProgramRuntime
     pub(in crate::domain_computation::primary_graph) runtime:
         WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     pub(in crate::domain_computation::primary_graph) program:
-        WorthQueryInstalledApplicationProgram<Schema, Program>,
+        std::sync::Arc<WorthQueryInstalledApplicationProgram<Schema, Program>>,
     pub(in crate::domain_computation::primary_graph) connection_types: Box<[TypeId]>,
-    pub(in crate::domain_computation::primary_graph) root_graph_types: Box<[TypeId]>,
-    pub(in crate::domain_computation::primary_graph) output_source_bindings: Box<[TypeId]>,
-    pub(in crate::domain_computation::primary_graph) action_bindings: Box<[TypeId]>,
+    pub(in crate::domain_computation::primary_graph) initial:
+        std::sync::Arc<WorthQuerySupportedProgramRecord>,
     pub(in crate::domain_computation::primary_graph) supported:
-        Box<[WorthQuerySupportedProgramRecord]>,
+        Box<[std::sync::Arc<WorthQuerySupportedProgramRecord>]>,
 }
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
@@ -83,6 +82,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         Root: ApplicationOutputGraphShape<Schema>,
     {
         self.backing
+            .initial
             .root_graph_types
             .contains(&TypeId::of::<Root>())
     }
@@ -95,14 +95,17 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
         &self,
         binding: TypeId,
     ) -> bool {
-        self.backing.action_bindings.contains(&binding)
+        self.backing.initial.action_bindings.contains(&binding)
     }
 
     pub(in crate::domain_computation::primary_graph) fn requires_output_source(
         &self,
         binding: TypeId,
     ) -> bool {
-        self.backing.output_source_bindings.contains(&binding)
+        self.backing
+            .initial
+            .output_source_bindings
+            .contains(&binding)
     }
 
     /// Resolves this host's initial program against its own support roster.

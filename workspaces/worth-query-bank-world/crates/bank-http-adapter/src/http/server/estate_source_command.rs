@@ -2,7 +2,7 @@
 use super::super::protocol::{BankHttpDenial, BankHttpDenialKind, BankHttpMutationOutcome};
 use super::{
     estate_source_custody::EstateSourceCustody,
-    mutation_command::{AdmittedMoneyCommand, MoneyCommand},
+    mutation_command::{AdmittedMutationCommand, MutationCommand},
     mutation_custody::MutationRecord,
     mutation_refusal::denial,
 };
@@ -12,7 +12,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequ
 pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthenticator>(
     application: &A,
     records: &mut HashMap<String, MutationRecord>,
-    command: AdmittedMoneyCommand,
+    command: AdmittedMutationCommand,
     scope: WorthQueryRequestScope,
     principal: &bank_server::BankAuthenticatedPrincipal,
     owner: super::authenticated_owner::BankHttpAuthenticatedOwner,
@@ -37,7 +37,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
     record.sequence = command.sequence;
     let request = application.runtime().request(principal, &scope);
     let outcome = match command.command {
-        MoneyCommand::ResumeSource => {
+        MutationCommand::ResumeSource => {
             let (custody, cause) = record.custody.advance(&request);
             record.custody = custody;
             match cause {
@@ -49,7 +49,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
                 ),
             }
         }
-        MoneyCommand::ReleaseCleanup => match record.custody.release(&request) {
+        MutationCommand::ReleaseCleanup => match record.custody.release(&request) {
             Ok(receipt) => BankHttpMutationOutcome::CollectionReleased {
                 request_id: command.request_id.clone(),
                 custody_id: command.custody_id.clone(),
@@ -61,7 +61,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
             },
             Err(cause) => refused(&command, cause, Some(command.sequence)),
         },
-        MoneyCommand::Close => {
+        MutationCommand::Close => {
             let mut registry = record.registry.lock().await;
             registry.purge_expired(application.runtime());
             let replay = match record.action {
@@ -262,7 +262,7 @@ pub(super) async fn execute<A: super::authentication::BankHttpApplicationAuthent
     outcome
 }
 fn refused(
-    command: &AdmittedMoneyCommand,
+    command: &AdmittedMutationCommand,
     cause: BankHttpDenial,
     accepted_sequence: Option<u64>,
 ) -> BankHttpMutationOutcome {

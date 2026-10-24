@@ -73,18 +73,26 @@ impl BankIdentityRuntime {
         clippy::result_large_err,
         reason = "Capture refusal returns the original action, key, preparation owner and typed denial without another allocation"
     )]
-    pub fn retain_estate_capability_revocation<'runtime>(
-        &'runtime self,
+    pub fn retain_estate_capability_revocation(
+        &self,
         principal: &BankAuthenticatedPrincipal,
         action: EstateAction,
         key: BankIdempotencyKey,
         request: &WorthQueryRequestScope,
-    ) -> Result<super::BankRevocationCommand<'runtime>, super::BankRevocationCaptureFailure<'runtime>>
+    ) -> Result<super::BankRevocationCommand<'static>, super::BankRevocationCaptureFailure<'static>>
     {
-        let prepare: super::BankRevocationPreparation<'runtime> =
+        let projection = self.retain_invariant_projection();
+        let program = self.application_program().clone();
+        let prepare: super::BankRevocationPreparation<'static> =
             Box::new(move |phase, admission| {
                 let grant = revocation_target_grant(action)?;
-                self.materialize_capability_revocation(phase, admission, grant)
+                materialize_capability_revocation(
+                    program.runtime(),
+                    &projection,
+                    phase,
+                    admission,
+                    grant,
+                )
             });
         self.request(principal, request)
             .retain_capability_revocation_in_program(
@@ -138,49 +146,50 @@ impl BankIdentityRuntime {
             )
             .map_err(BankEstateProgressionDenial::from_authorization)
     }
+}
 
-    fn materialize_capability_revocation(
-        &self,
-        phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
-        admission: AdmittedCapabilityRevocation,
-        expected_grant: CapabilityGrantId,
-    ) -> Result<CapabilityRevocationProgram, BankEstateProgressionDenial> {
-        let projected = self
-            .invariant_projection()
-            .project_admitted_operation(
-                phase,
-                &admission,
-                |reader, estate| project_active_estate_grant(reader, estate, expected_grant),
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(BankEstateProgressionDenial::from_projection)?;
-        let (result, projection, _) = projected.into_parts();
-        result.map_err(BankEstateProgressionDenial::CapabilityRevocationProjection)?;
-        let reads = self
-            .application_runtime()
-            .begin_projected_application_read_attempt(
-                phase,
-                admission,
-                projection,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        let grant = reads
-            .resolve_entity(
-                phase,
-                CapabilityGrantIdentityField::reference(),
-                expected_grant,
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?;
-        reads
-            .complete_projected_dependencies(
-                phase,
-                worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .map_err(BankEstateProgressionDenial::from_attempt)?
-            .materialize_capability_revocation_program(&grant)
-            .map_err(BankEstateProgressionDenial::from_attempt)
-    }
+fn materialize_capability_revocation(
+    application: &worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        BankSchema,
+    >,
+    projection: &worth_query_host::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
+    phase: &worth_query_host::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
+    admission: AdmittedCapabilityRevocation,
+    expected_grant: CapabilityGrantId,
+) -> Result<CapabilityRevocationProgram, BankEstateProgressionDenial> {
+    let projected = projection
+        .project_admitted_operation(
+            phase,
+            &admission,
+            |reader, estate| project_active_estate_grant(reader, estate, expected_grant),
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(BankEstateProgressionDenial::from_projection)?;
+    let (result, projection, _) = projected.into_parts();
+    result.map_err(BankEstateProgressionDenial::CapabilityRevocationProjection)?;
+    let reads = application
+        .begin_projected_application_read_attempt(
+            phase,
+            admission,
+            projection,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(BankEstateProgressionDenial::from_attempt)?;
+    let grant = reads
+        .resolve_entity(
+            phase,
+            CapabilityGrantIdentityField::reference(),
+            expected_grant,
+        )
+        .map_err(BankEstateProgressionDenial::from_attempt)?;
+    reads
+        .complete_projected_dependencies(
+            phase,
+            worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .map_err(BankEstateProgressionDenial::from_attempt)?
+        .materialize_capability_revocation_program(&grant)
+        .map_err(BankEstateProgressionDenial::from_attempt)
 }
 
 fn revocation_target_grant(

@@ -75,6 +75,15 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
+    Ok(ApplicationSchemaMember::ApplicationMutation {
+        description: decode_description(input, budget)?,
+    })
+}
+
+pub(super) fn decode_description(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+) -> Result<ApplicationMutationDescription, Denial> {
     budget.require_nesting_depth(2)?;
     let binding_identity = decode_type_identity(input)?;
     let operation = input.text()?.to_owned();
@@ -126,19 +135,17 @@ pub(super) fn decode(
     })?;
     let workflow_execution_requirements = worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements::from_persistence_identity(input.text()?)
         .ok_or_else(|| Denial::new(Kind::UnsupportedRecordVariant))?;
-    Ok(ApplicationSchemaMember::ApplicationMutation {
-        description: ApplicationMutationDescription::from_untrusted_parts(
-            ApplicationMutationDescriptionParts {
-                binding_identity,
-                operation,
-                input_identity,
-                result_identity,
-                denial_identity,
-                scope,
-                output_roles,
-                output_role_families,
-                workflow_execution_requirements,
-            },
-        ),
-    })
+    Ok(ApplicationMutationDescription::from_untrusted_parts(
+        ApplicationMutationDescriptionParts {
+            binding_identity,
+            operation,
+            input_identity,
+            result_identity,
+            denial_identity,
+            scope,
+            output_roles,
+            output_role_families,
+            workflow_execution_requirements,
+        },
+    ))
 }

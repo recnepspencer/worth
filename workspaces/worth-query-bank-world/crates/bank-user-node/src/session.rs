@@ -23,6 +23,7 @@ use crate::protocol::{
 };
 
 mod aftermath;
+mod correction_history;
 mod elevation;
 mod mutation;
 mod recovery;
@@ -40,6 +41,8 @@ pub(super) struct BankUserSession {
     account_activity_page_endpoint: url::Url,
     account_activity_resume_endpoint: url::Url,
     mutation_endpoint: url::Url,
+    correction_history_endpoint: url::Url,
+    correction_history_resume_endpoint: url::Url,
     estate_notification_endpoint: url::Url,
     recovery_inspection_endpoint: url::Url,
     recovery_safe_retry_endpoint: url::Url,
@@ -80,6 +83,12 @@ impl BankUserSession {
             .bank_server_origin
             .join("v1/queries/account-activity/resume")?;
         let mutation_endpoint = configuration.bank_server_origin.join("v1/mutations")?;
+        let correction_history_endpoint = configuration
+            .bank_server_origin
+            .join("v1/corrections/history")?;
+        let correction_history_resume_endpoint = configuration
+            .bank_server_origin
+            .join("v1/corrections/history/resume")?;
         let estate_notification_endpoint = configuration
             .bank_server_origin
             .join("v1/estate/notify-death")?;
@@ -117,6 +126,8 @@ impl BankUserSession {
             account_activity_page_endpoint,
             account_activity_resume_endpoint,
             mutation_endpoint,
+            correction_history_endpoint,
+            correction_history_resume_endpoint,
             estate_notification_endpoint,
             recovery_inspection_endpoint,
             recovery_safe_retry_endpoint,

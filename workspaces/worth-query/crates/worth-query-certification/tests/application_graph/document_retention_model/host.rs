@@ -108,6 +108,11 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         setup
             .handler::<SetRetentionBinding, _>(SetRetentionHandler)
             .and_then(|()| {
+                setup.handler::<super::correctable_retention::CorrectableRetentionBinding, _>(
+                    ReviewedSetRetentionHandler,
+                )
+            })
+            .and_then(|()| {
                 setup.handler::<ReviewedSetRetentionBinding, _>(ReviewedSetRetentionHandler)
             })
             .and_then(|()| {

@@ -27,6 +27,17 @@ macro_rules! worth_query_application {
                 $(let membership = membership.register::<$Contribution>()?;)+
                 membership.build()
             }
+
+            fn visit_correction<Visitor: $crate::facade::application_aftermath::ApplicationCorrectionVisitor<Self>>(
+                source_binding: ::std::any::TypeId,
+                visitor: Visitor,
+            ) -> Visitor::Output {
+                $(let visitor = match <$Contribution as $crate::facade::application_schema::ApplicationSchemaContribution<Self>>::visit_correction(source_binding, visitor) {
+                    Ok(output) => return output,
+                    Err(visitor) => visitor,
+                };)+
+                visitor.unavailable()
+            }
         }
 
         impl $crate::facade::application_schema::ApplicationSchemaComposition for $Schema {
@@ -60,6 +71,7 @@ macro_rules! worth_query_application_contribution {
     (
         $vis:vis contribution $Contribution:ident for $Schema:ident : $Binding:path {
             identity: $identity:literal,
+            $(corrections: [$($Correction:path),* $(,)?],)?
             members: |$builder:ident| $body:block
         }
     ) => {
@@ -83,7 +95,20 @@ macro_rules! worth_query_application_contribution {
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<
                 $Schema,
             > {
-                $body
+                let $builder = $body;
+                $($(let $builder = $builder.correction::<$Correction>();)*)?
+                $builder
+            }
+
+            fn visit_correction<Visitor: $crate::facade::application_aftermath::ApplicationCorrectionVisitor<$Schema>>(
+                source_binding: ::std::any::TypeId,
+                visitor: Visitor,
+            ) -> Result<Visitor::Output, Visitor> {
+                $($(if source_binding == ::std::any::TypeId::of::<<$Correction as $crate::facade::application_aftermath::ApplicationCorrectionBinding<$Schema>>::Source>() {
+                    return Ok($crate::facade::application_aftermath::dispatch_application_correction::<$Schema, $Correction, Visitor>(visitor));
+                })*)?
+                let _ = source_binding;
+                Err(visitor)
             }
         }
 
@@ -102,6 +127,7 @@ macro_rules! worth_query_application_contribution {
     (
         $vis:vis contribution $Contribution:ident in $Schema:ty {
             identity: $identity:literal,
+            $(corrections: [$($Correction:path),* $(,)?],)?
             members: |$builder:ident| $body:block
         }
     ) => {
@@ -121,7 +147,20 @@ macro_rules! worth_query_application_contribution {
             ) -> $crate::facade::application_schema::ApplicationSchemaDeclarationBuilder<
                 $Schema,
             > {
-                $body
+                let $builder = $body;
+                $($(let $builder = $builder.correction::<$Correction>();)*)?
+                $builder
+            }
+
+            fn visit_correction<Visitor: $crate::facade::application_aftermath::ApplicationCorrectionVisitor<$Schema>>(
+                source_binding: ::std::any::TypeId,
+                visitor: Visitor,
+            ) -> Result<Visitor::Output, Visitor> {
+                $($(if source_binding == ::std::any::TypeId::of::<<$Correction as $crate::facade::application_aftermath::ApplicationCorrectionBinding<$Schema>>::Source>() {
+                    return Ok($crate::facade::application_aftermath::dispatch_application_correction::<$Schema, $Correction, Visitor>(visitor));
+                })*)?
+                let _ = source_binding;
+                Err(visitor)
             }
         }
 

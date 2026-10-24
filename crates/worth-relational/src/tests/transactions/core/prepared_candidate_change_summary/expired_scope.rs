@@ -10,7 +10,7 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
         .schema_registry(test_schema_registry())
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(1),
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,

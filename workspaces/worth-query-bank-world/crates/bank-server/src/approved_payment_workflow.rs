@@ -88,6 +88,13 @@ impl BankApprovedPaymentApplyOutcome {
 }
 
 impl BankApprovedPaymentPerformedOperation {
+    /// Locates this actual performed occurrence for a freshly admitted correction request.
+    pub fn correction_source(
+        &self,
+    ) -> worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource {
+        self.receipt.correction_source()
+    }
+
     pub const fn newly_committed(&self) -> bool {
         self.newly_committed
     }

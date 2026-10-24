@@ -47,6 +47,7 @@ fn field_precision_and_structural_change_survive_one_bridge_envelope() {
         authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
             target: RecordRef::Entity(EntityId::new(PartitionId::main(), 9, 2)),
             structural_change: RecordStructuralChange::Updated,
+            relation_birth: None,
             authoritative_patch: published_patch(vec![WireOperation::FieldLevelPatch {
                 aspect_key: key.clone(),
                 aspect_identity: AspectIdentity(41),
@@ -122,6 +123,7 @@ fn structural_only_publication_does_not_fabricate_an_aspect() {
         authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
             target: RecordRef::Entity(EntityId::new(PartitionId::main(), 10, 1)),
             structural_change: RecordStructuralChange::Deleted,
+            relation_birth: None,
             authoritative_patch: PublishedAuthoritativePatch::empty(),
             semantic_changes: Vec::new(),
             contains_opaque_aspect: false,
@@ -152,6 +154,7 @@ fn opaque_change_requires_explicit_precision_admission() {
         authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
             target: RecordRef::Entity(EntityId::new(PartitionId::main(), 12, 1)),
             structural_change: RecordStructuralChange::Updated,
+            relation_birth: None,
             authoritative_patch: published_patch(vec![WireOperation::WholeAspectSet {
                 aspect_key: key.clone(),
                 aspect_identity: AspectIdentity(51),

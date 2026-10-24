@@ -18,6 +18,12 @@ pub(super) enum Preparation {
     Selected(selected::SelectedRebase),
 }
 impl PreparedSourceFactRebase {
+    pub(in crate::domain_computation::primary_graph) fn admit_correction(
+        facts: FactPayload,
+        control: StorageControl<'_, '_>,
+    ) -> Result<Self, PreparedRebaseDenial> {
+        Self::full_payload(facts, Arc::from([]), control)
+    }
     pub(in crate::domain_computation::primary_graph) fn admit(
         facts: Vec<WorthQueryApplicationObservedFact>,
         moved: Arc<[usize]>,

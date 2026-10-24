@@ -26,6 +26,8 @@ impl WorthQueryPrimaryGraphProvider {
         worth_relational::facade::history::RelationalCommitReceipt,
         WorthQueryApplicationSettlementRecoveryError,
     > {
+        let command_lane = self.correction_commit_lane(&idempotency);
+        let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self.application_branch_commit_lane_for_occurrence(product.incarnation());
         let _coordination = commit_lane.enter();
         let repaired = self

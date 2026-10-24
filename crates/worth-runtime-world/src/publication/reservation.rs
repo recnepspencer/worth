@@ -88,10 +88,22 @@ impl std::fmt::Debug for ReservedCompositePublicationAttempt {
 }
 
 impl ReservedCompositePublicationAttempt {
+    pub(crate) fn retain_conditional_definition_custody(
+        &mut self,
+        custody: std::sync::Arc<super::ConditionalDefinitionAttemptCustody>,
+    ) {
+        self.custody.retain_conditional_definition_custody(custody);
+    }
     pub(crate) fn reserve_conditional_definition_custody(
         &mut self,
     ) -> std::sync::Arc<super::ConditionalDefinitionAttemptCustody> {
         self.custody.reserve_conditional_definition_custody()
+    }
+
+    pub(crate) fn conditional_definition_custody(
+        &mut self,
+    ) -> Option<std::sync::Arc<super::ConditionalDefinitionAttemptCustody>> {
+        self.custody.conditional_definition_custody()
     }
 
     pub(crate) fn new(

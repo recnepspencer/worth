@@ -239,6 +239,18 @@ fn actual_birth_endpoints(
     if native.is_some_and(|birth| birth.0 != kind) {
         return Err("relation native birth kind differs".into());
     }
+    let native = match patch.relation_birth {
+        Some(birth) => {
+            let structural = (birth.kind, birth.source, birth.target);
+            if birth.kind != kind || native.is_some_and(|native| native != structural) {
+                return Err(
+                    "relation structural birth differs from native birth metadata/kind".into(),
+                );
+            }
+            Some(structural)
+        }
+        None => native,
+    };
     let (mut source, mut target) = match native {
         Some((_, source, target)) => (Some(source), Some(target)),
         None => (None, None),

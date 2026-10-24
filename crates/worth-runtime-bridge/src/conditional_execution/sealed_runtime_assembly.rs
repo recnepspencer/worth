@@ -158,6 +158,20 @@ impl BridgeSealedRuntimeAssembly {
         self.signal_services.clone()
     }
 
+    /// Delegates certification scheduling and fault control to the original
+    /// Signal owner retained by this sealed assembly.
+    #[doc(hidden)]
+    pub fn signal_operation_control_for_test(
+        &self,
+    ) -> Result<
+        worth_signal::facade::branch::SignalOwnerOperationControlForTest,
+        worth_signal::facade::branch::SignalOwnerUnavailable,
+    > {
+        self.runtime
+            .lock_signal_runtime()
+            .owner_operation_control_for_test()
+    }
+
     /// The Signal-owner limits installed before this assembly was sealed.
     /// Query uses the slot ceiling to bound idle derived-evaluation custody;
     /// the retained sessions continue to own the actual Signal charges.
@@ -258,9 +272,32 @@ impl BridgeSealedRuntimeAssembly {
         &self,
         applied: &mut BridgeAppliedConditionalInstallationExtension,
         binding: worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
-    ) -> Result<(), BridgeConditionalDenial> {
+    ) -> Result<
+        (),
+        (
+            worth_signal::facade::branch::SignalConditionalDefinitionAdvanceBinding,
+            BridgeConditionalDenial,
+        ),
+    > {
         self.runtime
             .complete_owned_conditional_installation_activation(applied, binding)
+    }
+
+    #[doc(hidden)]
+    pub fn admit_prepared_conditional_installation(
+        &self,
+        prepared: &super::BridgePreparedConditionalInstallationExtension,
+    ) -> Result<(), BridgeConditionalDenial> {
+        self.runtime
+            .admit_prepared_conditional_installation(prepared)
+    }
+
+    #[doc(hidden)]
+    pub fn admit_applied_conditional_installation(
+        &self,
+        applied: &super::BridgeAppliedConditionalInstallationExtension,
+    ) -> Result<(), BridgeConditionalDenial> {
+        self.runtime.admit_applied_conditional_installation(applied)
     }
 
     #[doc(hidden)]

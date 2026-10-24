@@ -23,6 +23,7 @@ use super::*;
 mod advancement_currentness;
 mod clean_reuse;
 pub(crate) mod computation_partition;
+mod contribution;
 mod current_family_output;
 mod current_output;
 mod demand_contact;
@@ -52,25 +53,17 @@ worth_query_application! {
     CheckpointSchema {
         owner: "worth.query.certification.checkpoint",
         version: (1, 0),
-        contributions: [TopologyContribution],
+        contributions: [contribution::CheckpointContribution],
     }
 }
 
 impl TopologySchemaBinding for CheckpointSchema {
     const PLANAR_EDIT_PROJECTION_WORK: Option<usize> = None;
 
-    // Keep the planar allowance, plus the bootstrap's LARGEST_SET entries,
-    // LARGEST_SET sets and 2 * LARGEST_SET membership edges in total: the
-    // large-entry rows use two sets; the high-fanout rows use one entry.
-    // Unrelated
-    // entities pay one slot visit + one intent; relations pay one slot visit
-    // + one intent + two bulk endpoint visits, even when filtered out of Body.
-    fn planar_invariant_work() -> u64 {
-        let entities = u64::try_from(computation_partition::BOOTSTRAP_ENTITIES)
-            .expect("fixture entity count fits u64");
-        let relations = u64::try_from(computation_partition::BOOTSTRAP_RELATIONS)
-            .expect("fixture relation count fits u64");
-        1024 + 2 * entities + 4 * relations
+    // Bootstrap validates every newly authored ring. Its population is not a
+    // rule-local resource policy; the original request still meters all work.
+    fn planar_invariant_work() -> Option<std::num::NonZeroU64> {
+        None
     }
 }
 

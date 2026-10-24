@@ -10,8 +10,8 @@ use worth_query_decl::facade::{
 /// `TopologySchemaBinding`, stays with that program.
 pub trait TopologyModelBinding: ApplicationSchema {
     /// The work the checked planar invariant may spend.
-    fn planar_invariant_work() -> u64 {
-        super::planar_topology::PLANAR_CHECKED_WORK
+    fn planar_invariant_work() -> Option<std::num::NonZeroU64> {
+        std::num::NonZeroU64::new(super::planar_topology::PLANAR_CHECKED_WORK)
     }
 }
 

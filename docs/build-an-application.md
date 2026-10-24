@@ -18,6 +18,7 @@ this guide explain the underlying contracts and support specialized composition.
 
 | Your next task | Start here | What you supply |
 |---|---|---|
+| Correct a recorded source operation | [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md) | A source receipt, current principal, target branch and client key; the contribution declares the inverse and disclosure query. |
 | Add an ordinary feature | [Complete feature definitions](#complete-feature-definitions) | Typed members, actual handlers and domain configuration |
 | Declare operation access | [Operation access](#21-declare-operation-access-once) | Reads, effects and preconditions in one declaration |
 | Compute from tracked inputs | [Managed computation](#36-declare-and-install-a-partitioned-managed-computation) | Tracked gathering, pure numerical data and original-owner completion |
@@ -2195,6 +2196,17 @@ entities; required roles and cardinalities remain checked before publication. Ty
 validation, checked sizes, request cancellation and fallible effect-buffer growth
 remain with their original owners. Invariant validation and atomic commit still
 precede successful publication.
+
+For an authored deletion, declare the entity read with
+`operation_read_entity(Operation::reference(), Entity::reference())` alongside
+the delete grant. In `decide`, resolve the target, call
+`reader.entity(&identity, Entity::reference())`, then carry
+`reader.mutation_target(&identity)` into the candidate. The entity observation
+supplies the native dependency used by deletion lowering. In `build_candidate`,
+project that target, call `writer.delete_entity(...)`, and bind its declared
+Retire role with `writer.retire_output::<Role>(&target)`. The
+[compiled retirement handler](../workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/source_output_handlers.rs)
+shows this sequence with ordinary installed read and delete authority.
 
 The full, compiling version of all three is
 `.../examples/product_workflow_support/application_entry.rs` (about 320

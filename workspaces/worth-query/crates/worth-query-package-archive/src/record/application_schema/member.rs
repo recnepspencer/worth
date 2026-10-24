@@ -30,6 +30,12 @@ pub(super) fn require_encoding_contract(
     {
         return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
     }
+    if matches!(member, ApplicationSchemaMember::OperationAftermath { contract, .. }
+        if contract.correction_binding().is_some())
+        && maximum_depth < 2
+    {
+        return Err(Denial::new(Kind::NestingDepthBudgetExceeded));
+    }
     if let ApplicationSchemaMember::OperationBody { body, .. } = member {
         crate::record::operation_body::require_nesting_depth(body, maximum_depth)?;
     }
@@ -88,7 +94,9 @@ pub(super) fn decode(
     match input.u16()? {
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
-        tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30) => operation::decode(tag, input, budget),
+        tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
+            operation::decode(tag, input, budget)
+        }
         tag @ 19..=22 => authorization::decode(tag, input, budget),
         tag @ 23..=24 => vocabulary::decode(tag, input),
         tag @ (27 | 34) => invariant::decode(tag, input, budget),
@@ -132,6 +140,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationProjectionWorkBudget { .. } => 16,
         ApplicationSchemaMember::OperationExternalEffect { .. } => 17,
         ApplicationSchemaMember::OperationInboundOccurrence { .. } => 30,
+        ApplicationSchemaMember::OperationAftermath { contract, .. }
+            if contract.correction_binding().is_some() => 35,
         ApplicationSchemaMember::OperationAftermath { .. } => 18,
         ApplicationSchemaMember::OperationBody { .. } => 32,
         ApplicationSchemaMember::Policy { .. } => 19,

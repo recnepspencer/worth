@@ -7,6 +7,23 @@ pub(super) enum NativePriorCheckpointLocator {
 }
 
 impl NativePriorCheckpointLocator {
+    /// Retain descriptive predecessor coordinates; native readmission grants custody.
+    pub(super) fn try_retain(&self) -> Option<Self> {
+        Some(match self {
+            Self::Performed { producer, source } => {
+                let mut retained = String::new();
+                retained.try_reserve_exact(producer.len()).ok()?;
+                retained.push_str(producer);
+                Self::Performed {
+                    producer: retained,
+                    source: *source,
+                }
+            }
+            // The accepted descriptor shares its immutable heaps and original payer.
+            Self::Recovered(checkpoint) => Self::Recovered(checkpoint.clone()),
+        })
+    }
+
     pub(super) fn recovered(&self) -> Option<&WorthQueryAcceptedOutputCheckpointIdentity> {
         match self {
             Self::Recovered(checkpoint) => Some(checkpoint),

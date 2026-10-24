@@ -139,6 +139,31 @@ fn authored_body_input_snapshot_survives_preencoded_owned_and_clone_handoffs() {
         AspectValue::UInt64(56)
     );
     assert_eq!(owned_calls.load(Ordering::SeqCst), 1);
+    let retained = ApplicationOwnedMutationIdentities::<
+        DocumentRetentionSchema<100>,
+        BodyBinding<100>,
+    >::with_encoded_input(key, &encoded)
+    .unwrap();
+    drop(encoded);
+    drop(clone);
+    drop(rebound);
+    drop(original);
+    assert_eq!(retained.borrow().mutation_input().retention_days, 55);
+    assert_eq!(
+        retained
+            .borrow()
+            .canonical_input()
+            .unwrap()
+            .scalar_member("retention_days", ScalarAspectType::UInt64)
+            .unwrap()
+            .into_value(),
+        AspectValue::UInt64(55)
+    );
+    assert_eq!(
+        calls.load(Ordering::SeqCst),
+        1,
+        "owning the existing captured input must not serialize it again"
+    );
     let direct = ApplicationEncodedInput::<BodyInputBinding<100>>::encode(SetRetentionInput {
         retention_days: 57,
         ..Default::default()

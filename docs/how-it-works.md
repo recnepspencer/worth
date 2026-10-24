@@ -1855,25 +1855,35 @@ Real calls:
 ### 14.1 Declared aftermath
 
 Each operation declares its aftermath posture: **reversible**,
-**compensatable**, **reconcilable**, or **irreversible**. An escaping external
-effect cannot be reversible. Provisional aftermath is never accepted state.
+**compensatable**, **reconcilable**, or **irreversible**. A typed correction
+binding connects that meaning to an installed operation and a disclosure query.
+Recorded inverses restore captured prior truth; compensations create an offsetting
+change; reconciliations bring local records into agreement with an outside party.
+External effects use their declared compensation or reconciliation policy.
 
 ### 14.2 Undo, redo, reconciliation
 
-The host `provisional_aftermath` module provides `admit_undo`,
-`progress_admitted_undo`, `progress_admitted_redo`,
-`progress_admitted_reconciliation`, and related functions.
+Start at `request(&principal, &scope).on_branch(branch).corrections()`.
+Select the retained occurrence to correct. Inspection runs the binding's
+disclosure query under current authority; preparation derives its declared
+inverse from the retained input and captured pre-image, then admits the new
+operation on the selected branch. A successful correction appends a child of
+the current branch head and preserves intervening unrelated edits.
 
-- An undo request is one of three kinds:
-  - `RecordedInverse`: the recorded inverse of the change;
-  - `Compensation`: a new change that offsets it;
-  - `Reconciliation`: brings recorded state back in line with an outside
-    party.
-- Undo is built from the commit-sealed touched records and the retained
-  pre-image, never from caller claims.
-- An irreversible effect cannot be undone (`deny_irreversible_undo_attempt`).
-- A completed undo proves inversion. It does not authorize a redo: a redo is
-  admitted afresh.
+`alternatives()` pages the retained correction lineage. Finish its continuation
+before selecting an alternative; `reapply()` then executes the retained original
+input under current authority and current handler rules. This supports choosing
+an older alternative after further edits and correction cycles. Each command
+uses its own idempotency key, so retrying a performed command returns its
+existing result.
+
+The returned ordinary operation owns publication, required-output delivery and
+close. Observe source publication separately from derived-output completion.
+If retained material has expired or current admission refuses the operation,
+handle the typed outcome and let the user choose a currently supported action.
+
+See [Recorded source correction](../workspaces/worth-query/crates/worth-query/docs/execution/recorded-source-correction.md)
+for binding declarations, complete caller examples, alternatives, retry and recovery.
 
 ### 14.3 Settlement recovery
 

@@ -72,8 +72,9 @@ pub use polled::{
     application_computation_partition_digest_polled,
 };
 pub use request::{
-    ApplicationMutationIdentities, ApplicationMutationIdentityAdmittedDenial,
-    ApplicationMutationIdentityDenial, ApplicationOwnedMutationIdentities,
+    ApplicationEncodedMutationKey, ApplicationMutationIdentities,
+    ApplicationMutationIdentityAdmittedDenial, ApplicationMutationIdentityDenial,
+    ApplicationOwnedMutationIdentities,
 };
 pub use work::ApplicationCanonicalWork;
 
@@ -114,6 +115,8 @@ pub enum ApplicationValueIdentityDomain {
     HostCommitIntent,
     /// The installed semantic meaning of one output producer binding.
     ProducerImplementationEdition,
+    /// One caller's client key for a recorded correction across target branches.
+    RecordedCorrectionKey,
 }
 
 impl ApplicationValueIdentityDomain {
@@ -125,6 +128,7 @@ impl ApplicationValueIdentityDomain {
             Self::HostCommitKey => "worth-query.host-commit-key.v1",
             Self::HostCommitIntent => "worth-query.host-commit-intent.v1",
             Self::ProducerImplementationEdition => "worth-query.producer-implementation-edition.v1",
+            Self::RecordedCorrectionKey => "worth-query.recorded-correction-key.v1",
         }
     }
 }

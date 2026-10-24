@@ -88,7 +88,8 @@ pub struct BankIdentityRuntime {
         BankApplication,
     >,
     binding: InstalledBankPrincipalBinding,
-    invariant_projection: WorthQueryApplicationInvariantProjectionAuthority<BankSchema>,
+    invariant_projection:
+        std::sync::Arc<WorthQueryApplicationInvariantProjectionAuthority<BankSchema>>,
     approval_authentication: BankApprovalAuthenticationOwner,
 }
 
@@ -309,10 +310,16 @@ impl BankIdentityRuntime {
             .clone()
     }
 
-    pub(crate) const fn invariant_projection(
+    pub(crate) fn invariant_projection(
         &self,
     ) -> &WorthQueryApplicationInvariantProjectionAuthority<BankSchema> {
         &self.invariant_projection
+    }
+
+    pub(crate) fn retain_invariant_projection(
+        &self,
+    ) -> std::sync::Arc<WorthQueryApplicationInvariantProjectionAuthority<BankSchema>> {
+        std::sync::Arc::clone(&self.invariant_projection)
     }
 }
 

@@ -289,6 +289,7 @@ where
             component_intent,
             prepared_candidate,
             settled_adoption,
+            settled_signal_adoption,
             successor_observation_requested,
         ) = intent.into_parts();
         let resolved = match ResolvedExpectedProductHead::from_current(
@@ -306,7 +307,12 @@ where
                 ));
             }
         };
-        let plan = lower_component_plans(resolved, prepared_candidate, settled_adoption)?;
+        let plan = lower_component_plans(
+            resolved,
+            prepared_candidate,
+            settled_adoption,
+            settled_signal_adoption,
+        )?;
         let attempt = RuntimeWorldOwnerRoot::reserve(
             self,
             plan,

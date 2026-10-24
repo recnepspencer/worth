@@ -14,6 +14,7 @@ pub use binding::WorthQuerySourceOperationBinding;
 mod completion;
 mod entrance;
 mod native_posture;
+mod recorded_correction;
 mod retained_delivery;
 pub use completion::{WorthQueryCompletedSourceOperation, WorthQueryTerminalSourceOperation};
 

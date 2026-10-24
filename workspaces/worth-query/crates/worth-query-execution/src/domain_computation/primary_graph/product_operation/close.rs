@@ -40,11 +40,34 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .execution_request_for(&self.application.product_runtime)
             .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
         let occurrence = self.branch.occurrence();
+        let pending_correction = self
+            .application
+            .primary_provider
+            .inspect_pending_application_idempotency(occurrence)
+            .flatten()
+            .filter(|binding| binding.correction_identity().is_some());
+        let command_lane = pending_correction.as_ref().and_then(|binding| {
+            self.application
+                .primary_provider
+                .correction_commit_lane(binding)
+        });
+        let _command = command_lane.as_ref().map(|lane| lane.enter());
         let commit_lane = self
             .application
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = commit_lane.enter();
+        let current_correction = self
+            .application
+            .primary_provider
+            .inspect_pending_application_idempotency(occurrence)
+            .flatten()
+            .filter(|binding| binding.correction_identity().is_some());
+        if current_correction != pending_correction {
+            return Err(
+                WorthQueryApplicationProductBranchCloseDenial::ApplicationSettlementPending,
+            );
+        }
         self.application
             .primary_provider
             .settle_before_product_retirement(&execution, occurrence)

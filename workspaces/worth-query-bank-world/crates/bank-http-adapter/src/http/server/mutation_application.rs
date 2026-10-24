@@ -9,6 +9,18 @@ pub(super) use denial::{
     pending_execution_denial, pending_execution_stop, request_mutation_denial,
 };
 pub(super) enum AdmittedBankHttpMutation {
+    RevokeEstateCapability(bank_domain::estate::EstateAction),
+    FreezeEstateAccount(bank_domain::schema::FreezeEstateAccount),
+    CorrectEstateFreeze(
+        worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+    ),
+    CorrectSendMoney(
+        worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+    ),
+    ReapplySendMoney {
+        history_token: String,
+        source: worth_query_host::facade::primary_graph::WorthQueryCorrectionSourceCoordinates,
+    },
     Deposit(Deposit),
     Withdraw(Withdraw),
     SendMoney(

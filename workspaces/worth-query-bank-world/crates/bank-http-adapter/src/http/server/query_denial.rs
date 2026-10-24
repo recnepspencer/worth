@@ -26,8 +26,8 @@ pub(super) fn query_denial(denial: BankApplicationQueryDenial) -> BankHttpDenial
         | BankApplicationQueryDenial::ContinuationExecution(_)
         | BankApplicationQueryDenial::LiveOpen(_) => unavailable(),
         BankApplicationQueryDenial::PrincipalResolution(
-            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(Ok(kind)),
-        ) => super::mutation_application::pending_execution_denial(kind),
+            worth_query_host::facade::primary_graph::WorthQueryPrincipalResolutionDenialKind::Stopped(stop),
+        ) => super::mutation_application::pending_execution_stop(stop),
         BankApplicationQueryDenial::PrincipalResolution(_) => stale(),
         BankApplicationQueryDenial::Limit(_) => exhausted(),
         BankApplicationQueryDenial::ProductSelection(kind) => product_selection(kind),

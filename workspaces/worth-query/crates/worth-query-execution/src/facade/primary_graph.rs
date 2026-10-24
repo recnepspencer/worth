@@ -1,5 +1,12 @@
 //! Primary Graph application contracts.
+pub use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
+pub use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
+pub use crate::domain_computation::application_aftermath::{
+    WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
+    WorthQueryCorrectionLineageBinding,
+};
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
+pub use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial;
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryExecutionLeaseDenial, WorthQueryPublicationFaultGuardForTest,
@@ -36,34 +43,35 @@ pub use worth_relational::facade::indexes::{
     DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
 };
 pub use worth_relational::facade::lineage::{LineageEventKind, LineageEventRecord};
-pub use worth_relational::facade::mvcc::CompanionPreflightStop;
+pub use worth_relational::facade::mvcc::{
+    CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+};
 pub use worth_relational::facade::publication::RecordStructuralChange;
 pub use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
 pub use crate::domain_computation::application_aftermath::{
     compensate_recovery_handle, dispose_recovery_handle, expire_recovery_handle,
-    inspect_recovery_handle, map_ordinary_commit_conflict, reconcile_recovery_handle,
-    resolve_recovery_handle, safe_retry_recovery_handle, ExternalEffectCausalLink,
-    ExternalEffectClassification, ExternalEffectCorrelationIdentity, ExternalEffectPosture,
-    ExternalEffectPostureIdentity, ExternalEffectPostureKind, ExternalRailTransportFault,
-    WorthQueryAdmittedIdempotencyRead, WorthQueryAftermathDerivationFailure,
-    WorthQueryDispatchOutboxDurabilityPosture, WorthQueryDispatchOutboxRecord,
-    WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
-    WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
-    WorthQueryExternalEffectCausalLadder, WorthQueryExternalEffectDispatch,
-    WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,
-    WorthQueryInboundOccurrenceClaims, WorthQueryInboundOccurrenceVerifier,
-    WorthQueryInboundVerificationDenial, WorthQueryOpaqueRecoveryWireIdentity,
-    WorthQueryPerformedExternalRedispatch, WorthQueryRecoveryClaimStatus,
-    WorthQueryRecoveryCompensateAdmission, WorthQueryRecoveryCurrentDecision,
-    WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryDisposalDenial,
-    WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDurabilityPosture,
-    WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryExpiryDecision,
-    WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
-    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
-    WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
-    WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
-    WorthQueryRecoverySafeRetryDenial,
+    inspect_recovery_handle, reconcile_recovery_handle, resolve_recovery_handle,
+    safe_retry_recovery_handle, ExternalEffectCausalLink, ExternalEffectClassification,
+    ExternalEffectCorrelationIdentity, ExternalEffectPosture, ExternalEffectPostureIdentity,
+    ExternalEffectPostureKind, ExternalRailTransportFault, WorthQueryAdmittedIdempotencyRead,
+    WorthQueryAftermathDerivationFailure, WorthQueryDispatchOutboxDurabilityPosture,
+    WorthQueryDispatchOutboxRecord, WorthQueryExternalDispatchCausalRelation,
+    WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
+    WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
+    WorthQueryExternalEffectDispatch, WorthQueryExternalEffectTransport,
+    WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
+    WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
+    WorthQueryOpaqueRecoveryWireIdentity, WorthQueryPerformedExternalRedispatch,
+    WorthQueryRecoveryClaimStatus, WorthQueryRecoveryCompensateAdmission,
+    WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryDisclosureAdmission,
+    WorthQueryRecoveryDisposalDenial, WorthQueryRecoveryDisposalReceipt,
+    WorthQueryRecoveryDurabilityPosture, WorthQueryRecoveryEffectAuthority,
+    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle,
+    WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
+    WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
+    WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
+    WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
@@ -165,19 +173,22 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,
-    WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentBodyRequirementAssessment,
-    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
-    WorthQueryCurrentOutputSelection, WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan,
-    WorthQueryDelegationActivationProgram, WorthQueryElevationApprovalAuthorizationDenial,
-    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
-    WorthQueryElevationCloseAuthorizationDenial, WorthQueryElevationCloseOutcome,
-    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
-    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryEntityResolutionRefusalKind, WorthQueryExternalDispatchAttemptDenial,
-    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
-    WorthQueryExternalTransportInstallationDenial, WorthQueryGeneratedEntity,
-    WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
+    WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
+    WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionOutputProjectionDenial,
+    WorthQueryCorrectionSelectionDenial, WorthQueryCorrelatedInboundOccurrence,
+    WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentOutputDenial,
+    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
+    WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan, WorthQueryDelegationActivationProgram,
+    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
+    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
+    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
+    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
+    WorthQueryElevationRequestProgram, WorthQueryEntityResolutionDenial,
+    WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
+    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
+    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
+    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,
@@ -259,7 +270,8 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryRequiredOutputSourcePreparationFailure, WorthQueryRestoredGeneratedOutput,
     WorthQueryRetainedBatchQueryAdmissionDenial, WorthQueryRetainedGeneratedOutputEntity,
     WorthQueryReviewedElevation, WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
-    WorthQuerySelectedApplicationProducer, WorthQuerySelectedProductOperation,
+    WorthQuerySelectedApplicationProducer, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation,
     WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
     WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
@@ -281,9 +293,12 @@ pub use crate::domain_computation::{
 };
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
-    ProductUnpublishedNextAction, ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
-    RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial, RuntimeWorldRecoveryPage,
-    RuntimeWorldServiceDenial, RuntimeWorldSettledRelationalAdoptionDenial,
+    CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
+    ProductBranchAncestorSelectionDenial, ProductUnpublishedNextAction,
+    ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
+    RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
+    RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
+    RuntimeWorldSettledRelationalAdoptionDenial,
 };
 pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 

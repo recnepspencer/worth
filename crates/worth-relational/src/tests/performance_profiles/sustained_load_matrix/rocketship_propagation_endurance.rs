@@ -19,10 +19,6 @@ pub(super) fn certify_rocketship_propagation_endurance(
                 &mut runtime,
                 PerfDiagnosticsPolicy::GeometryOperationalHotPath,
             );
-            runtime.configure_for_test(|config| {
-                config.publication.policy.max_patch_records_per_commit =
-                    rocketship_endurance_node_count * 2
-            });
             let seeded = seed_pseudorealistic_rocketship_world(
                 execution,
                 &runtime,

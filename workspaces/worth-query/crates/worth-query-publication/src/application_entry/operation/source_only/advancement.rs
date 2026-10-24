@@ -109,7 +109,7 @@ where
                     .map_err(WorthQuerySourceOnlyDenial::Cleanup)?;
                 let resolution = self
                     .admission
-                    .resolve_keyed_in_advancement(phase, request)
+                    .resolve_keyed_in_advancement(phase, request, Some(performed))
                     .map_err(WorthQuerySourceOnlyDenial::Recovery)?
                     .into_resolution();
                 self.accept_keyed(resolution)
@@ -117,15 +117,21 @@ where
             SourceState::<S, I>::Keyed(_) | SourceState::<S, I>::UnresolvedAdvancement(_) => {
                 let resolution = self
                     .admission
-                    .resolve_keyed_in_advancement(phase, request)
+                    .resolve_keyed_in_advancement(phase, request, None)
                     .map_err(WorthQuerySourceOnlyDenial::Recovery)?
                     .into_resolution();
                 self.accept_keyed(resolution)
             }
-            SourceState::<S, I>::RetainedPending(_) => {
+            SourceState::<S, I>::RetainedPending(evidence) => {
+                let performed = match evidence {
+                    WorthQuerySourceCompletion::Recovered { publication, .. } => {
+                        publication.as_ref()
+                    }
+                    WorthQuerySourceCompletion::Fresh { .. } => None,
+                };
                 match self
                     .admission
-                    .resolve_keyed_in_advancement(phase, request)
+                    .resolve_keyed_in_advancement(phase, request, performed)
                     .map_err(WorthQuerySourceOnlyDenial::Recovery)?
                     .into_resolution()
                 {
@@ -145,7 +151,7 @@ where
         }
     }
 
-    fn accept_initial(
+    pub(super) fn accept_initial(
         &mut self,
         outcome: NativeOutcome<S, I>,
     ) -> Result<Step, WorthQuerySourceOnlyDenial> {
@@ -196,6 +202,7 @@ where
         match outcome {
             other
                 if self.admission.description.source.is_none()
+                    && self.admission.recorded_correction.is_none()
                     && native_posture::fresh_retry_eligible::<S, I>(&other) =>
             {
                 self.state = SourceState::<S, I>::RetryableNoEffect(other);

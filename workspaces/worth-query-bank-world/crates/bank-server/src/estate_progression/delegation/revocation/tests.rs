@@ -66,9 +66,13 @@ fn target_status_drift_after_materialization_stales_provider_commit() {
         .expect("the exact command should admit while the target is active");
     let program =
         crate::test_host_policy::with_phase(fixture.runtime.application_runtime(), |phase| {
-            fixture
-                .runtime
-                .materialize_capability_revocation(phase, admission, GRANT)
+            materialize_capability_revocation(
+                fixture.runtime.application_runtime(),
+                fixture.runtime.invariant_projection(),
+                phase,
+                admission,
+                GRANT,
+            )
         })
         .expect("the exact Active -> Revoked program should materialize");
 

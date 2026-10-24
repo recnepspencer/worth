@@ -54,6 +54,7 @@ fn envelope_with_patch_and_update(
             authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
                 target: patch_target,
                 structural_change: RecordStructuralChange::Updated,
+                relation_birth: None,
                 authoritative_patch:
                     crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
                 semantic_changes: Vec::new(),

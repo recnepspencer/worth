@@ -115,6 +115,7 @@ fn execution_request_denial(
         kind @ (Session::ExecutionResource {
             denial:
                 Resource::WorkCounterOverflow
+                | Resource::AccountingUnavailable
                 | Resource::RetainedBytesExhausted
                 | Resource::CapacityOverflow
                 | Resource::NativeAllocationRefused { .. }
@@ -123,8 +124,7 @@ fn execution_request_denial(
                 | Resource::NestedAdvancementOpening
                 | Resource::ForeignAdvancementPhase
                 | Resource::NoActiveExecutionScope
-                | Resource::EquivalenceContractUnavailable
-                | Resource::AccountingUnavailable,
+                | Resource::EquivalenceContractUnavailable,
             ..
         }
         | Session::ExecutionWorkerPanicked { .. }

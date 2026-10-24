@@ -35,6 +35,7 @@ mod retention_custody;
 
 pub use retention_custody::ProductUnpublishedRetentionPosture;
 mod abandoned;
+mod conditional_definition;
 
 /// Catalog-owned recovery custody. The public returned value below is only a
 /// view over this allocation, so dropping the caller capability cannot drop

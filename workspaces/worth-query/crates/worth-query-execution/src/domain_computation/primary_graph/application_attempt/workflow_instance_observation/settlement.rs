@@ -54,7 +54,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn observe
         TransitionReadPurpose::Command,
     )
 }
-pub(in crate::domain_computation::primary_graph::application_attempt) fn observe_transition_state(
+pub(in crate::domain_computation::primary_graph) fn observe_transition_state(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

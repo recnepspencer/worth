@@ -30,6 +30,8 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 pub(in crate::domain_computation::primary_graph) struct RepublishedOutput {
     producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
+    native_prior_checkpoint:
+        Option<super::super::native_prior_checkpoint::NativePriorCheckpointLocator>,
     computation_source: super::super::ComputationSourceEvidence,
     predecessor: Arc<RecordedSettlementIdentity>,
     facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
@@ -64,6 +66,9 @@ impl RepublishedOutput {
     /// its own: its witness covers the re-created entities.
     pub(super) fn continue_in(self, row: &mut RecordedOutput) {
         row.producing_implementation = self.producing_implementation;
+        // Preserve only the proven origin's descriptor. The new row has no warm
+        // publication custody; native cold readmission must validate succession.
+        row.native_prior_checkpoint = self.native_prior_checkpoint;
         row.computation_source = self.computation_source;
         row.consumed_outputs = self.consumed_outputs;
         row.completed_handler_facts = Some(self.completed_handler_facts);
@@ -158,8 +163,13 @@ impl WorthQueryApplicationOutputLineage {
         if !self.implementation_is_current(origin) {
             return None;
         }
+        let native_prior_checkpoint = match origin.native_prior_checkpoint.as_ref() {
+            Some(locator) => Some(locator.try_retain()?),
+            None => None,
+        };
         Some(RepublishedOutput {
             producing_implementation: origin.producing_implementation,
+            native_prior_checkpoint,
             computation_source: suspended.computation_source,
             predecessor: Arc::clone(&suspended.settlement_identity),
             facts,

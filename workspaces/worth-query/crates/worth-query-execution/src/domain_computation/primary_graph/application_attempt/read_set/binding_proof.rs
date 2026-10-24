@@ -2,6 +2,8 @@
 
 pub(in crate::domain_computation::primary_graph::application_attempt) struct WorkflowOperationBindingProof
 {
+    /// Facts added only by workflow authority; overlapping handler reads stay outside.
+    pub authority_fact_range: std::ops::Range<usize>,
     pub captured_input: Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
     pub(in crate::domain_computation::primary_graph::application_attempt) binding: String,
     pub(in crate::domain_computation::primary_graph::application_attempt) transition_identity:

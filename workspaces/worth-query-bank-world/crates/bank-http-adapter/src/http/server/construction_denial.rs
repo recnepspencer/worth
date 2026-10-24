@@ -19,7 +19,7 @@ pub(super) fn construction<I: ApplicationMutationIntent<bank_domain::schema::Ban
     // Dropping this pre-effect owner declines the command; it neither releases
     // a native failed run nor claims that a workflow slot or business effect ran.
 }
-fn capture(cause: &Capture) -> BankHttpDenial {
+pub(super) fn capture(cause: &Capture) -> BankHttpDenial {
     match cause {
         Capture::Execution(cause) => super::advancement_denial::advancement(*cause),
         Capture::Encoding(_) => BankHttpDenial::new(Kind::MalformedRequest, Next::CorrectRequest),

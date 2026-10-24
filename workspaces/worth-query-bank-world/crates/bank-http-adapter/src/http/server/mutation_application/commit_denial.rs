@@ -103,7 +103,8 @@ pub(in crate::http::server) fn commit_denial(
         | Denial::ProgramSupportRetired
         | Denial::MutationBindingMismatch
         | Denial::MutationInputMismatch
-        | Denial::RecoveryHandoffMismatch { .. } => BankHttpDenial::new(
+        | Denial::CorrectionContextMismatch
+        | Denial::CorrectionIdentityMismatch => BankHttpDenial::new(
             BankHttpDenialKind::Unavailable,
             BankHttpNextAction::ContactOperator,
         ),
@@ -155,13 +156,13 @@ pub(in crate::http::server) fn execution_resource(denial: Resource) -> BankHttpD
             BankHttpNextAction::ContactOperator,
         ),
         Resource::WorkerLimit
+        | Resource::AccountingUnavailable
         | Resource::WorkCounterOverflow
         | Resource::CapacityOverflow
         | Resource::ChargedBytesOverflow
         | Resource::NestedLeaseMisuse
         | Resource::NoActiveExecutionScope
-        | Resource::EquivalenceContractUnavailable
-        | Resource::AccountingUnavailable => (
+        | Resource::EquivalenceContractUnavailable => (
             BankHttpDenialKind::InternalDenied,
             BankHttpNextAction::ContactOperator,
         ),

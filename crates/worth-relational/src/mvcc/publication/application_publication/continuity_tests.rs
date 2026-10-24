@@ -314,3 +314,6 @@ mod fieldless;
 
 #[path = "continuity_tests/payload_forms.rs"]
 mod payload_forms;
+
+#[path = "continuity_tests/materialization.rs"]
+mod materialization;

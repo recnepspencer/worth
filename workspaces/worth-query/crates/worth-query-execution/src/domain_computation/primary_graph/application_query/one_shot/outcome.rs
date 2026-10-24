@@ -17,15 +17,16 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 mod ordinary;
 pub(in crate::domain_computation::primary_graph::application_query) use ordinary::{
-    complete_one_shot, finalize_one_shot, finalize_one_shot_with_decode,
+    complete_one_shot, complete_one_shot_with_decode, finalize_one_shot,
+    finalize_one_shot_with_decode,
 };
 mod completed;
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 mod result_set_footprint;
-use result_set_footprint::ResultSetFootprint;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
-pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_decode<
+use result_set_footprint::ResultSetFootprint;
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_projection<
     Schema,
     Query,
     Parameters,
@@ -33,6 +34,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     Principal,
     PrincipalIdentity,
     Scope,
+    Projected,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -50,10 +52,18 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
     mut kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
-) -> Result<CompletedOneShotRead<Query, QueryResult>, WorthQueryApplicationOneShotDenial>
+    project: impl FnOnce(
+        RawNonLiveKernelOutcome,
+        &super::super::disclosure::WorthQueryApplicationQueryGovernance,
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        &str,
+    ) -> Result<
+        super::super::read_execution::ProjectedNonLiveKernelOutcome<Projected>,
+        WorthQueryApplicationOneShotDenial,
+    >,
+) -> Result<CompletedOneShotRead<Query, Projected>, WorthQueryApplicationOneShotDenial>
 where
     Schema: ApplicationSchema,
-    QueryResult: WorthQueryApplicationProjection<Schema, Query>,
 {
     if let Some(cause) = decode.denial() {
         return Err(value_decode_denial(cause, plan.query.name()));
@@ -101,15 +111,8 @@ where
     let basis_identity = plan.basis.identity().clone();
     let basis_version = plan.basis.version_id();
     let parameter_binding_identity = *plan.parameters.identity();
-    let scope_locator = plan.scope.identity_locator();
-    let scope_value = plan.scope.identity_value();
     admit_request(request, plan.query.name())?;
-    let scope_selector = std::sync::Arc::new(
-        super::super::observed_source::WorthQueryObservedScopeSelector::new(
-            scope_locator,
-            scope_value,
-        ),
-    );
+    let scope_selector = plan.scope.retain_scope_selector();
     let source_parameters = std::sync::Arc::new(
         super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
     );
@@ -201,20 +204,7 @@ where
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
 
-    let projected = project_non_live_kernel_with_decode::<Schema, Query, QueryResult, _>(
-        execution,
-        decode,
-        kernel,
-        &plan.governance,
-        || admit_request(request, plan.query.name()),
-        |projection: crate::domain_computation::primary_graph::WorthQueryApplicationProjectionDenial| {
-            denial(
-                WorthQueryApplicationOneShotDenialKind::Projection(projection.kind()),
-                plan.query.name(),
-                projection.subject(),
-            )
-        },
-    );
+    let projected = project(kernel, &plan.governance, request, plan.query.name());
     decode
         .check(execution)
         .map_err(|cause| value_decode_denial(cause, plan.query.name()))?;

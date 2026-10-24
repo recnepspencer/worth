@@ -39,8 +39,8 @@ mod held_authentication;
 use estate::estate_world;
 pub(super) use held_authentication::held_authentication_application;
 
-pub(super) struct CausalHttpApplication {
-    pub(super) runtime: BankIdentityRuntime,
+pub(in crate::http::server) struct CausalHttpApplication {
+    pub(in crate::http::server) runtime: BankIdentityRuntime,
     authentication: BankAuthenticationBoundary<CausalAuthenticationAdapter>,
 }
 
@@ -90,7 +90,7 @@ struct CausalCredential {
 }
 
 impl CausalHttpApplication {
-    pub(super) async fn authenticate(
+    pub(in crate::http::server) async fn authenticate(
         &self,
         scope: &WorthQueryRequestScope,
     ) -> BankAuthenticatedPrincipal {
@@ -156,7 +156,7 @@ impl WorthQueryAuthenticationAdapter for CausalAuthenticationAdapter {
     }
 }
 
-pub(super) fn application(account: AccountId) -> CausalHttpApplication {
+pub(in crate::http::server) fn application(account: AccountId) -> CausalHttpApplication {
     let runtime = BankIdentityRuntime::install_world(world_seed(account))
         .expect("bank HTTP runtime should install");
     application_from_runtime(runtime)

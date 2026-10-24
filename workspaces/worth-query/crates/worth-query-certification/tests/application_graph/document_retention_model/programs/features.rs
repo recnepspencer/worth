@@ -4,6 +4,8 @@ use super::*;
 pub(super) fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
     vec![
         ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
+            .action::<super::super::correctable_retention::CorrectableRetentionBinding, RetentionCompletion>()
+            .finish_action()
             .action::<SetRetentionBinding, RetentionCompletion>()
             .finish_action()
             .action::<ReviewedSetRetentionBinding, RetentionCompletion>()

@@ -4,7 +4,31 @@
 //! axes. Published law-14 posture names are derived only at installation.
 
 mod contract;
+mod correction_binding;
+pub use correction_binding::{
+    dispatch_application_correction, ApplicationCorrectionBinding,
+    ApplicationCorrectionDerivationDenial, ApplicationCorrectionDispatch,
+    ApplicationCorrectionPreImage, ApplicationCorrectionSourceMaterial,
+    ApplicationCorrectionVisitor, ApplicationInverseBinding, DeclaredCorrectionBinding,
+    DeclaredCorrectionBindingParts,
+};
+pub use correction_binding::{
+    dispatch_application_reapplication, ApplicationReapplicationDispatch,
+    ApplicationReapplicationVisitor,
+};
+pub use correction_binding::{
+    ApplicationAuthoredCorrection, ApplicationAuthoredCorrectionFamily,
+    ApplicationAuthoredLogicalKey, DeclaredAuthoredCorrection, DeclaredAuthoredCorrectionParts,
+};
+pub use correction_binding::{DeclaredCorrectionDisclosure, DeclaredCorrectionDisclosureParts};
 mod correction_authority;
+pub use correction_binding::{
+    ApplicationCorrectionOutput, ApplicationCorrectionOutputField, DeclaredCorrectionOutputField,
+    DeclaredCorrectionOutputFieldParts,
+};
+pub use correction_binding::{
+    ApplicationCorrectionSourceFieldDenial, ApplicationCorrectionSourceOutputs,
+};
 mod correction_mechanism;
 mod postcondition;
 mod reconciliation;

@@ -26,9 +26,7 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         MapKernelStop::DeadlineElapsed => {
             WorkflowFrontierFailure::Denied(Denial::ComputationDeadline { stage_identity })
         }
-        MapKernelStop::WorkCounterOverflow
-        | MapKernelStop::AccountingUnavailable
-        | MapKernelStop::WorkCeiling => {
+        MapKernelStop::WorkCounterOverflow | MapKernelStop::WorkCeiling => {
             WorkflowFrontierFailure::Denied(Denial::ComputationWorkExhausted {
                 stage_identity,
                 cause,
@@ -36,6 +34,11 @@ fn checkpoint(cause: MapKernelStop, stage_identity: Option<String>) -> WorkflowF
         }
         MapKernelStop::NestedStopped => {
             WorkflowFrontierFailure::Denied(Denial::ComputationNestedStopped { stage_identity })
+        }
+        MapKernelStop::AccountingUnavailable => {
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity,
+            })
         }
     }
 }
@@ -65,9 +68,21 @@ mod tests {
             .unwrap_err();
         assert!(matches!(
             scope(stop),
-            WorkflowFrontierFailure::Denied(Denial::ComputationWorkExhausted {
-                stage_identity: None,
-                cause: MapKernelStop::AccountingUnavailable,
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity: None
+            })
+        ));
+    }
+
+    #[test]
+    fn unavailable_accounting_retains_its_own_workflow_stop() {
+        let stopped = scope(WorkCeilingDenial::Stopped(
+            MapKernelStop::AccountingUnavailable,
+        ));
+        assert!(matches!(
+            stopped,
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity: None
             })
         ));
     }

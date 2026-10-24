@@ -16,6 +16,9 @@ where
     Binding:
         WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
 {
+    pub(in crate::application_entry) recorded_input: Option<std::sync::Arc<
+        worth_query_declaration::facade::application_operation::ApplicationOwnedMutationIdentities<Schema, Binding>,
+    >>,
     pub(super) receipt: WorthQueryApplicationCommitReceipt,
     pub(super) result: MutationResult<Schema, Binding>,
     pub(super) denial: WorthQueryRequiredOutputPreparationDenial,

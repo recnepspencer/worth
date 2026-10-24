@@ -2,6 +2,9 @@
 
 mod canonical_basis;
 mod correction_authority;
+mod correction_binding;
+pub(crate) use correction_binding::resolve_correction_binding;
+pub use correction_binding::InstalledCorrectionBinding;
 mod correction_mechanism;
 mod denial;
 mod external_effect_contract;

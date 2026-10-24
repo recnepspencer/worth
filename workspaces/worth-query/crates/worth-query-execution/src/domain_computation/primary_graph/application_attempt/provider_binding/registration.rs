@@ -11,12 +11,14 @@ pub(in crate::domain_computation::primary_graph) use provider_registration::Wort
 
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationAttemptRegistration<'a>
 {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     effect_owner: WorthQueryProviderEffectRegistrationSeal,
     affinity: super::super::provider_execution::WorthQueryApplicationAttemptAffinity,
     decision_facts: crate::domain_computation::authorization::WorthQueryProviderDecisionFactBinding,
     effects: super::effect_accumulator::WorthQueryRegisteredProviderEffects,
     idempotency: super::super::WorthQueryApplicationIdempotencyBinding,
+    original_authority: std::sync::Arc<super::super::WorthQueryApplicationCommitAuthorityBinding>,
     outcome_identity: super::super::WorthQueryApplicationCommitOutcomeIdentity,
     retained_authorization_fact_count: usize,
     external_effect: &'a worth_query_installation::facade::InstalledExternalEffectContract,
@@ -71,6 +73,7 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
 ) -> Result<WorthQueryRegisteredProviderAttempt<'run>, WorthQueryProviderProgressionOutcome> {
     let inspection = WorthQueryProviderRegistrationInspectionPermit::mint();
     let WorthQueryPreparedApplicationProviderAttempt {
+        workflow_origin,
         local_action_settlement,
         required_output_demand,
         installed_read_scopes,
@@ -103,6 +106,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     }
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
     let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
+    // The completed handler payload precedes fresh authorization's overlay.
+    // Correctable ordinary sources retain all semantic reads, including the
+    // projected prefix, rather than only output-source observations.
+    let correction_facts = context
+        .admission(&inspection)
+        .allowed_graph_contract()
+        .aftermath()
+        .filter(|contract| contract.correction_disclosure().is_some())
+        .map(|_| facts.clone());
     let application = crate::domain_computation::primary_graph::CompletedApplicationFacts::new(
         installed_read_scopes,
         facts,
@@ -145,6 +157,15 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Some(facts) => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_output(
             facts.facts().clone(), facts.moved_by_own_effect(), facts.rebase_carry(), control,
         ),
+        None if correction_facts.is_some() => {
+            let facts = correction_facts.expect("declared correction retained the completed payload");
+            let semantic = match &workflow_origin {
+                Some(origin) => origin.semantic_facts(&facts, control),
+                None => Ok(facts),
+            };
+            semantic.map_err(Into::into).and_then(|facts|
+                crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit_correction(facts, control))
+        },
         None => crate::domain_computation::primary_graph::provider::PreparedSourceFactRebase::admit(
             decision_facts.facts().explicit_values().filter_map(|fact| fact.observed_source_fact().cloned()).collect(),
             std::sync::Arc::from([]), control,
@@ -163,6 +184,44 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         }
     };
     let expected_steps = effects.shared_expected_steps();
+    if let Some(source) = context
+        .aftermath_causality(&inspection)
+        .map(|causality| causality.prepared_correction())
+        && let Err(denial) = source.validate_authored_candidate(
+            effects.native_publication_roles(),
+            effects.batch(),
+            context.admission(&inspection).publication_request(),
+        )
+    {
+        let _ = staged.abort();
+        use crate::domain_computation::primary_graph::product_operation::correction_source::AuthoredCorrectionCandidateDenial;
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+        return Err(match denial {
+            AuthoredCorrectionCandidateDenial::Identity(detail) => {
+                WorthQueryProviderProgressionOutcome::Denied(
+                    super::super::WorthQueryApplicationCommitDenial::correction_identity_mismatch(
+                        detail,
+                    ),
+                )
+            }
+            AuthoredCorrectionCandidateDenial::Interrupted(Stop::Cancelled) => {
+                WorthQueryProviderProgressionOutcome::Cancelled
+            }
+            AuthoredCorrectionCandidateDenial::Interrupted(Stop::DeadlineExceeded) => {
+                WorthQueryProviderProgressionOutcome::TimedOut
+            }
+        });
+    }
+    if let Some(source) = context
+        .aftermath_causality(&inspection)
+        .map(|causality| causality.prepared_correction())
+        && let Err(denial) = source.validate_workflow_candidate(effects.batch())
+    {
+        let _ = staged.abort();
+        return Err(WorthQueryProviderProgressionOutcome::Denied(
+            super::super::WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),
+        ));
+    }
     let no_external_effect =
         worth_query_installation::facade::InstalledExternalEffectContract::None;
     let external_effect = match effects.selected_external_contract(
@@ -177,12 +236,14 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     };
     let dispatch_outbox = context.provider(&inspection).register_application_attempt(
         WorthQueryApplicationAttemptRegistration {
+            workflow_origin,
             required_output_demand,
             effect_owner: WorthQueryProviderEffectRegistrationSeal::mint(),
             affinity,
             decision_facts,
             effects,
             idempotency: context.idempotency(&inspection),
+            original_authority: context.original_authority(&inspection),
             outcome_identity: context.outcome_identity(&inspection),
             retained_authorization_fact_count: context
                 .admission(&inspection)

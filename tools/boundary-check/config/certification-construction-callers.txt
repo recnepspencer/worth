@@ -1,4 +1,6 @@
 # Closed callers recorded at the one-build inventory; owners are allowed by the rule.
+# 9.18: native root disclosure court; fixture queries remain inside Execution certification.
+installation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/correction_disclosure.rs
 bridge workspaces/worth-query/crates/worth-query/src/domain_installation/dependency_impact/compiled/invalidation_manifest/structural_manifest_tests.rs
 installation workspaces/worth-query/crates/worth-query-admission/src/application_query/tests.rs
 installation workspaces/worth-query/crates/worth-query-certification/examples/product_workflow_support/conditional_contribution.rs

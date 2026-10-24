@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph::application_attempt) fn deny_en
 /// The transition whose external operation last committed into its owner's
 /// custody, if any, and the fact that pins that reading. A commit that moves
 /// the custody makes the fact stale.
-pub(in crate::domain_computation::primary_graph::application_attempt) fn owner_custody(
+pub(in crate::domain_computation::primary_graph) fn owner_custody(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,

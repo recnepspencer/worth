@@ -30,7 +30,21 @@ where
         >,
     ) -> Result<WorthQuerySelectedProgramOwner<'_, Schema>, WorthQuerySelectedProgramOwnerDenial>
     {
-        if !std::ptr::eq(selected.application(), &self.backing.runtime) {
+        self.runtime().selected_program_owner(selected)
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Resolves the same installed owner from a plain application's selected branch.
+    pub fn selected_program_owner(
+        &self,
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
+    ) -> Result<WorthQuerySelectedProgramOwner<'_, Schema>, WorthQuerySelectedProgramOwnerDenial>
+    {
+        if !std::ptr::eq(selected.application(), self) {
             return Err(WorthQuerySelectedProgramOwnerDenial::ProductSelection(
                 crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
                     AdmissionRefusal::ForeignOwner,
@@ -41,24 +55,12 @@ where
             .inspect_selected_program()
             .map_err(WorthQuerySelectedProgramOwnerDenial::Inspection)?;
         let revision = inspection.revision();
-        if revision == self.backing.program.revision() {
-            return Ok(WorthQuerySelectedProgramOwner {
-                runtime: &self.backing.runtime,
-                revision: self.backing.program.revision(),
-                action_bindings: &self.backing.action_bindings,
-                output_source_bindings: &self.backing.output_source_bindings,
-                root_graph_types: &self.backing.root_graph_types,
-                action_inventory: self.backing.program.action_inventory(),
-            });
-        }
         let record = self
-            .backing
-            .supported
-            .iter()
-            .find(|record| record.revision() == revision)
+            .installed_program_support()
+            .and_then(|support| support.native_program(revision))
             .ok_or(WorthQuerySelectedProgramOwnerDenial::InstalledOwnerUnavailable)?;
         Ok(WorthQuerySelectedProgramOwner {
-            runtime: &self.backing.runtime,
+            runtime: self,
             revision: record.revision(),
             action_bindings: &record.action_bindings,
             output_source_bindings: &record.output_source_bindings,

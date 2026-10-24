@@ -36,6 +36,27 @@ impl<Schema, Program> WorthQueryInstalledApplicationProgram<Schema, Program> {
     }
 }
 impl<'installed> WorthQueryInstalledActionInventory<'installed> {
+    /// Resolve a binding only when exactly one installed feature occurrence owns it.
+    /// Callers retaining a declaration can subsequently resolve that complete meaning.
+    pub fn resolve_unique_binding<Schema, Binding>(
+        &self,
+    ) -> Result<&'installed ApplicationActionDeclaration, WorthQueryActionResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        let mut matching = self.actions.iter().filter(|action| {
+            action.mutation_binding_type() == Some(std::any::TypeId::of::<Binding>())
+        });
+        let actual = matching
+            .next()
+            .ok_or(WorthQueryActionResolutionDenial::Missing)?;
+        if matching.next().is_some() {
+            return Err(WorthQueryActionResolutionDenial::Ambiguous);
+        }
+        Ok(actual)
+    }
+
     /// Resolve selection facts, returning complete installed metadata for later comparison.
     pub fn resolve_action<Schema, Binding, Action>(
         &self,

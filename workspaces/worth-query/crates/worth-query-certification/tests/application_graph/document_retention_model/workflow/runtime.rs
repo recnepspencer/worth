@@ -100,6 +100,8 @@ where
     .expect("the workflow operation is installed")
     .operation::<ReviewedSetRetentionBinding>()
     .expect("the workflow apply operation is installed")
+    .operation::<super::super::correctable_retention::CorrectableRetentionBinding>()
+    .expect("the correctable workflow apply operation is installed")
     .operation::<OccurrenceSetRetentionBinding>()
     .expect("the workflow occurrence-only operation is installed")
     .operation::<ExplicitReviewedSetRetentionBinding>()

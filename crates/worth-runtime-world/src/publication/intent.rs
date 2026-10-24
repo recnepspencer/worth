@@ -62,6 +62,7 @@ pub struct CompositePublicationIntent<S> {
     change: CompositeComponentIntent,
     prepared_relational_candidate: Option<PreparedRelationalCommitCandidate>,
     settled_relational_adoption: Option<SettledRelationalPublicationAdoption>,
+    settled_signal_adoption: Option<super::SignalAttemptProgress>,
     successor_observation_requested: bool,
     _stage: PhantomData<S>,
 }
@@ -75,6 +76,7 @@ impl CompositePublicationIntent<WithoutSignal> {
             change: CompositeComponentIntent::RelationalOnly(change),
             prepared_relational_candidate: None,
             settled_relational_adoption: None,
+            settled_signal_adoption: None,
             successor_observation_requested: false,
             _stage: PhantomData,
         }
@@ -93,6 +95,7 @@ impl CompositePublicationIntent<WithSignal> {
             change,
             prepared_relational_candidate: None,
             settled_relational_adoption: None,
+            settled_signal_adoption: None,
             successor_observation_requested: false,
             _stage: PhantomData,
         }
@@ -100,6 +103,13 @@ impl CompositePublicationIntent<WithSignal> {
 }
 
 impl<S> CompositePublicationIntent<S> {
+    pub(crate) fn with_settled_signal_adoption(
+        mut self,
+        progress: super::SignalAttemptProgress,
+    ) -> Self {
+        self.settled_signal_adoption = Some(progress);
+        self
+    }
     /// Reserve and carry the exact successor observation in the performed
     /// delivery. Callers request this only when an admitted downstream lane
     /// already owns bounded capacity for that observation.
@@ -137,12 +147,14 @@ impl<S> CompositePublicationIntent<S> {
         CompositeComponentIntent,
         Option<PreparedRelationalCommitCandidate>,
         Option<SettledRelationalPublicationAdoption>,
+        Option<super::SignalAttemptProgress>,
         bool,
     ) {
         (
             self.change,
             self.prepared_relational_candidate,
             self.settled_relational_adoption,
+            self.settled_signal_adoption,
             self.successor_observation_requested,
         )
     }

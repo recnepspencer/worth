@@ -37,6 +37,22 @@ pub type EstateAccountFreezeAction = ApplicationActionReference<
     FreezeEstateAccountMutationBinding,
     EstateAccountFreezeDelivery,
 >;
+/// Completion of a recorded freeze restoration under current capability admission.
+pub struct RestoreFrozenAccountDelivery;
+impl ApplicationActionDelivery<BankSchema, RestoreFrozenEstateAccountBinding>
+    for RestoreFrozenAccountDelivery
+{
+    type Mode = ApplicationSourceCompletion;
+    const IDENTITY: &'static str = "bank.estate.restore-frozen-account.completion.v1";
+}
+/// The ordinary source-only restoration action.
+pub type RestoreFrozenAccountAction = ApplicationActionReference<
+    BankSchema,
+    ApplicationRootComposition,
+    BankEstateFeature,
+    RestoreFrozenEstateAccountBinding,
+    RestoreFrozenAccountDelivery,
+>;
 /// Source completion for the exact OpenEstateCase occurrence.
 pub struct EstateCaseOpeningDelivery;
 impl ApplicationActionDelivery<BankSchema, OpenEstateCaseMutationBinding>

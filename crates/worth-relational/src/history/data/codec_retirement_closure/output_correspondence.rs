@@ -58,7 +58,7 @@ pub(crate) fn validate_codec_output_correspondence(
                     }
                     context.checkpoint_cost(work, navigation).map_err(request)?;
                     let origin = if role.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
-                        let selected = super::membership::latest(runtime, basis, id, context)?;
+                        let selected = super::membership::latest(runtime, basis, id, context, lease)?;
                         super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?
                     } else { branch
                         .with_exact_entity_state(id, |metadata, payload| {
@@ -73,7 +73,7 @@ pub(crate) fn validate_codec_output_correspondence(
                                     charge(context, value.semantic_byte_width())?;
                                 }
                             }
-                            let selected = super::membership::latest(runtime, basis, id, context)?;
+                            let selected = super::membership::latest(runtime, basis, id, context, lease)?;
                             super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)
                         })
                         .map_err(|_| Stop::from("output correspondence native probe refused"))?

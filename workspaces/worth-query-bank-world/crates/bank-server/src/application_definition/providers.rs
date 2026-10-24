@@ -8,9 +8,9 @@ use bank_domain::schema::{
     GrantAccountAccessMutationBinding, InitiateBusinessPaymentMutationBinding,
     NotifyEstateDeathMutationBinding, OpenEstateCaseMutationBinding,
     RecognizeEstateExecutorMutationBinding, RejectPaymentMutationBinding,
-    ReleaseEstateMutationBinding, RetransmitEstateDeathNoticeMutationBinding,
-    ReverseJournalMutationBinding, RevokeAccountAccessMutationBinding, SendMoneyMutationBinding,
-    WithdrawMutationBinding,
+    ReleaseEstateMutationBinding, RestoreFrozenEstateAccountBinding,
+    RetransmitEstateDeathNoticeMutationBinding, ReverseJournalMutationBinding,
+    RevokeAccountAccessMutationBinding, SendMoneyMutationBinding, WithdrawMutationBinding,
 };
 use worth_query_host::facade::{
     application_contribution::{
@@ -31,8 +31,8 @@ use crate::mutation_handlers::{
     DisburseEstateHandler, FreezeEstateAccountHandler, GrantAccountAccessHandler,
     InitiateBusinessPaymentHandler, NotifyEstateDeathHandler, OpenEstateCaseHandler,
     RecognizeEstateExecutorHandler, RejectPaymentHandler, ReleaseEstateHandler,
-    RetransmitEstateDeathNoticeHandler, ReverseJournalHandler, RevokeAccountAccessHandler,
-    SendMoneyHandler, WithdrawHandler,
+    RestoreFrozenEstateAccountHandler, RetransmitEstateDeathNoticeHandler, ReverseJournalHandler,
+    RevokeAccountAccessHandler, SendMoneyHandler, WithdrawHandler,
 };
 
 macro_rules! bank_provider_contribution {
@@ -123,6 +123,7 @@ impl WorthQueryApplicationContribution<BankSchema> for BankEstateProvider {
             RetransmitEstateDeathNoticeHandler,
         )?;
         setup.handler::<FreezeEstateAccountMutationBinding, _>(FreezeEstateAccountHandler)?;
+        setup.handler::<RestoreFrozenEstateAccountBinding, _>(RestoreFrozenEstateAccountHandler)?;
         setup.handler::<OpenEstateCaseMutationBinding, _>(OpenEstateCaseHandler)?;
         setup
             .handler::<RecognizeEstateExecutorMutationBinding, _>(RecognizeEstateExecutorHandler)?;

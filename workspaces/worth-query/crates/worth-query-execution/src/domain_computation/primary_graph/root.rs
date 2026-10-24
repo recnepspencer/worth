@@ -2,7 +2,6 @@ pub(super) mod application_publication;
 mod runtime_access;
 mod snapshot_release;
 
-use std::collections::BTreeSet;
 use std::sync::{Arc, Mutex};
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
@@ -15,7 +14,9 @@ mod index_installation;
 mod selected_runtime;
 #[cfg(test)]
 mod test_inspection;
-use index_installation::{register_primary_graph_indexes, IndexInstallationPosture};
+use index_installation::{
+    primary_index_inventory, register_primary_graph_indexes, IndexInstallationPosture,
+};
 
 /// Execution-owned primary logical graph for one installed application schema.
 ///
@@ -152,45 +153,7 @@ impl WorthQueryPrimaryGraph {
     }
 
     pub(crate) fn integration_handle(&self) -> WorthQueryPrimaryGraphIntegrationHandle {
-        let principal_identity_index_ids = self
-            .layout
-            .principal_bindings()
-            .map(|(_, binding)| binding.index_id)
-            .collect::<BTreeSet<_>>();
-        let primary_index_ids = principal_identity_index_ids
-            .iter()
-            .copied()
-            .chain(self.layout.equality_index_ids())
-            .chain(self.layout.continuation_ordering_index_ids())
-            .chain(self.layout.capability_grant_join_index_ids())
-            .chain(
-                self.layout
-                    .workflow_reads()
-                    .into_iter()
-                    .flat_map(|indexes| [indexes.instances, indexes.transitions]),
-            )
-            .chain(std::iter::once(
-                self.layout.provider_idempotency().key_index_id,
-            ))
-            .chain(std::iter::once(
-                self.layout.provider_aftermath_causality().key_index_id,
-            ))
-            .chain(std::iter::once(
-                self.layout.workflow().instance.identity_index_id,
-            ))
-            .chain(std::iter::once(
-                self.layout.workflow().lineage.identity_index_id,
-            ))
-            .chain(std::iter::once(
-                self.layout.workflow().definition.content_identity_index_id,
-            ))
-            .chain(std::iter::once(
-                self.layout.workflow().captured_input.identity_index_id,
-            ))
-            .collect::<BTreeSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>()
-            .into();
+        let primary_index_ids = primary_index_inventory(&self.layout);
         WorthQueryPrimaryGraphIntegrationHandle {
             application_publication: self.application_publication.clone(),
             source_owner: self.source_owner.clone(),

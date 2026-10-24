@@ -208,6 +208,17 @@ impl WorthQueryApplicationOutputCorrespondence {
         Ok(Some(binding.entity))
     }
 
+    /// Correction projection additionally requires its exact source mutation binding.
+    pub(in crate::domain_computation::primary_graph) fn require_source_binding<B: 'static>(
+        &self,
+    ) -> Result<(), WorthQueryApplicationOutputProjectionDenial> {
+        if self.binding_type == Some(TypeId::of::<B>()) {
+            Ok(())
+        } else {
+            Err(WorthQueryApplicationOutputProjectionDenial::ForeignBinding)
+        }
+    }
+
     pub(in crate::domain_computation::primary_graph) fn entity_for_binding_role<
         Binding: 'static,
     >(

@@ -95,6 +95,9 @@ pub enum WorthQueryApplicationCommitDenialKind {
     /// programming error in the caller, not intent drift: build the binding from
     /// the same key and input the handler ran with.
     MutationInputMismatch,
+    CorrectionContextMismatch,
+    /// The actual inverse output does not preserve its installed authored family correspondence.
+    CorrectionIdentityMismatch,
     /// The installed operation owns an executable body, but the candidate was
     /// not produced by its native executor. Caller-authored effects cannot
     /// substitute another implementation, even within the declared footprint.
@@ -108,10 +111,6 @@ pub enum WorthQueryApplicationCommitDenialKind {
     SigningLifecycleSubjectCapacity { maximum_subjects: usize },
     SigningLifecycleRepresentationCapacity,
     SigningLifecycleObservation { kind: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind },
-    /// A sealed undo or redo handoff belongs to different admitted truth.
-    RecoveryHandoffMismatch {
-        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
-    },
     /// The operation is bound to an elevation lifecycle and must be committed
     /// through its elevation lane, not as a plain commit.
     ElevationTransitionRequired,
@@ -212,11 +211,17 @@ pub struct WorthQueryApplicationCommitDenial {
 }
 
 impl WorthQueryApplicationCommitDenial {
-    pub(crate) const fn recovery_handoff_mismatch(
-        kind: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind,
-    ) -> Self {
+    pub(crate) fn correction_identity_mismatch(detail: &'static str) -> Self {
         Self {
-            kind: WorthQueryApplicationCommitDenialKind::RecoveryHandoffMismatch { kind },
+            kind: WorthQueryApplicationCommitDenialKind::CorrectionIdentityMismatch,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: Some(detail.into()),
+            cause: None,
+        }
+    }
+    pub(crate) const fn correction_context_mismatch() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::CorrectionContextMismatch,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
             detail: None,
             cause: None,

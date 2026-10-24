@@ -104,7 +104,7 @@ impl WorthQueryApplicationCommitReceipt {
             external_dispatch_preparation_denial: None,
             authority_binding,
             retained_preimage,
-            aftermath_causality: None,
+            aftermath_causality: provider.aftermath_causality().cloned(),
             expected_retry_session,
             performed_product_change: None,
             output_correspondence: provider.commit_evidence().retain_output_correspondence(),

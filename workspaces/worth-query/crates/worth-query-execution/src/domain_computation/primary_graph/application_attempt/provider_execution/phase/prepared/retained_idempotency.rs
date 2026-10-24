@@ -17,6 +17,10 @@ where
     Input: Clone + Send + Sync + 'static,
 {
     let product = product.publication_binding();
+    let command_lane = application
+        .primary_provider
+        .correction_commit_lane(&idempotency);
+    let _command = command_lane.as_ref().map(|lane| lane.enter());
     let commit_lane = application
         .primary_provider
         .application_branch_commit_lane(product.observation());

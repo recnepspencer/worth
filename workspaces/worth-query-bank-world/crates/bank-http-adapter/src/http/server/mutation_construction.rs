@@ -3,49 +3,85 @@ use super::super::protocol::{BankHttpDenial, BankHttpDenialKind};
 use super::{
     mutation_application::AdmittedBankHttpMutation, mutation_custody::*, mutation_refusal::denial,
 };
-use bank_domain::model::AccountId;
 use bank_server::{
     mutations, BankAuthenticatedPrincipal, BankIdentityRuntime, BankMutationControls,
 };
-pub(super) fn construct(
+mod capability_revocation;
+pub(super) mod correction;
+pub(super) fn start(
     runtime: &BankIdentityRuntime,
     principal: &BankAuthenticatedPrincipal,
     input: AdmittedBankHttpMutation,
     controls: BankMutationControls,
-) -> Result<(AccountId, MoneyCustody), BankHttpDenial> {
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        bank_domain::schema::BankSchema,
+    >,
+    history: std::num::NonZeroUsize,
+    history_page: Option<
+        &worth_query_host::facade::primary_graph::WorthQueryCorrectionAlternativesPage,
+    >,
+) -> Result<(SourceMutationCustody, Option<BankHttpDenial>), BankHttpDenial> {
     let constructed = match input {
+        AdmittedBankHttpMutation::ReapplySendMoney { source, .. } => {
+            return correction::reapplication::start(
+                runtime,
+                principal,
+                &source,
+                controls,
+                history,
+                history_page.ok_or_else(|| denial(BankHttpDenialKind::Stale))?,
+            );
+        }
+        AdmittedBankHttpMutation::RevokeEstateCapability(action) => {
+            return capability_revocation::start(runtime, principal, action, controls, request);
+        }
+        AdmittedBankHttpMutation::CorrectEstateFreeze(source) => {
+            return correction::estate::start(runtime, principal, &source, controls, history);
+        }
+        AdmittedBankHttpMutation::FreezeEstateAccount(input) => {
+            match runtime
+                .mutate(mutations::freeze_estate_account(input))
+                .as_principal(principal)
+                .controls(controls)
+                .retain_operation()
+            {
+                Ok(operation) => {
+                    SourceMutationCustody::EstateFreeze(EstateFreezeCustody::Active(operation))
+                }
+                Err(refusal) => return Err(super::construction_denial::construction(refusal)),
+            }
+        }
+        AdmittedBankHttpMutation::CorrectSendMoney(source) => {
+            return correction::start(runtime, principal, &source, controls, history);
+        }
         AdmittedBankHttpMutation::Deposit(input) => {
-            let account = input.account;
             match runtime
                 .mutate(mutations::deposit(input))
                 .as_principal(principal)
                 .controls(controls)
                 .retain_operation()
             {
-                Ok(operation) => (
-                    account,
-                    MoneyCustody::Deposit(DepositCustody::Active(operation)),
-                ),
+                Ok(operation) => SourceMutationCustody::Deposit(DepositCustody::Active(operation)),
                 Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
         AdmittedBankHttpMutation::Withdraw(input) => {
-            let account = input.account;
             match runtime
                 .mutate(mutations::withdraw(input))
                 .as_principal(principal)
                 .controls(controls)
                 .retain_operation()
             {
-                Ok(operation) => (
-                    account,
-                    MoneyCustody::Withdraw(WithdrawalCustody::Active(operation)),
-                ),
+                Ok(operation) => {
+                    SourceMutationCustody::Withdraw(WithdrawalCustody::Active(operation))
+                }
                 Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
         AdmittedBankHttpMutation::SendMoney(input, expected_revision, expected_status) => {
-            let account = input.from;
             let mut original = runtime
                 .mutate(mutations::send_money(input))
                 .as_principal(principal);
@@ -67,13 +103,12 @@ pub(super) fn construct(
                 };
             }
             match original.controls(controls).retain_operation() {
-                Ok(operation) => (
-                    account,
-                    MoneyCustody::SendMoney(SendMoneyCustody::Active(operation)),
-                ),
+                Ok(operation) => {
+                    SourceMutationCustody::SendMoney(SendMoneyCustody::Active(operation))
+                }
                 Err(refusal) => return Err(super::construction_denial::construction(refusal)),
             }
         }
     };
-    Ok(constructed)
+    Ok(constructed.advance(request, history))
 }

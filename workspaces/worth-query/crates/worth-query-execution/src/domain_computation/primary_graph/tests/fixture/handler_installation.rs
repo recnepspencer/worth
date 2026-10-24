@@ -10,6 +10,7 @@ pub(super) fn install_fixture_handlers(
     schema: &WorthQueryInstalledApplicationSchema<IdentityExecutionSchema>,
     bootstrap: &mut WorthQueryPrimaryGraphBootstrap<IdentityExecutionSchema>,
 ) {
+    super::correction_source::install_handler(schema, bootstrap);
     let program_required = schema
         .installed_mutation_binding::<ProgramRequiredMutationBinding>()
         .unwrap();

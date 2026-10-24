@@ -10,6 +10,111 @@ pub(super) fn append_declared_aftermath(
 ) {
     append_authority(basis, prefix, contract.authority());
     append_mechanism(basis, prefix, contract.mechanism());
+    if let Some(binding) = contract.correction_binding() {
+        basis.optional_text(
+            format!("{prefix}.correction.reapplication-source"),
+            binding
+                .reapplication_source()
+                .map(|identity| identity.as_str()),
+        );
+        basis.optional_text(
+            format!("{prefix}.correction.completed-external-reconciliation"),
+            binding
+                .completed_external_reconciliation()
+                .map(|procedure| procedure.procedure_slot()),
+        );
+        basis.bool(
+            format!("{prefix}.correction.authored-identity.present"),
+            binding.authored_identity().is_some(),
+        );
+        if let Some(identity) = binding.authored_identity() {
+            let parts = identity.parts();
+            let locus = format!("{prefix}.correction.authored-identity");
+            basis.text(format!("{locus}.family"), parts.family.as_str());
+            basis.text(format!("{locus}.source-role"), &parts.source_role);
+            basis.text(format!("{locus}.inverse-role"), &parts.inverse_role);
+            basis.text(
+                format!("{locus}.source-posture"),
+                match parts.source_posture {
+                    crate::application_operation::ApplicationMutationOutputPosture::Create => {
+                        "create"
+                    }
+                    crate::application_operation::ApplicationMutationOutputPosture::Retire => {
+                        "retire"
+                    }
+                    crate::application_operation::ApplicationMutationOutputPosture::Preserve => {
+                        "preserve"
+                    }
+                },
+            );
+            basis.optional_text(
+                format!("{locus}.binding-unit"),
+                parts.binding_unit.as_deref(),
+            );
+            super::field::append_schema_field(basis, &format!("{locus}.key"), &parts.logical_key);
+        }
+        basis.u64(
+            format!("{prefix}.correction.source-output-fields.count"),
+            binding.source_output_fields().len() as u64,
+        );
+        for (index, field) in binding.source_output_fields().iter().enumerate() {
+            let locus = format!("{prefix}.correction.source-output-fields.{index}");
+            basis.text(
+                format!("{locus}.source-binding"),
+                field.parts().source_binding.as_str(),
+            );
+            basis.text(format!("{locus}.role"), &field.parts().role);
+            basis.optional_text(
+                format!("{locus}.binding-unit"),
+                field.parts().binding_unit.as_deref(),
+            );
+            super::field::append_schema_field(basis, &locus, &field.projected_value_member());
+        }
+        for (field, value) in binding.disclosure().canonical_fields() {
+            basis.text(
+                format!("{prefix}.inverse-binding.disclosure.{field}"),
+                value,
+            );
+        }
+        basis.text(
+            format!("{prefix}.inverse-binding.identity"),
+            binding.identity().as_str(),
+        );
+        super::mutation_description::append(
+            basis,
+            &format!("{prefix}.inverse-binding.source"),
+            binding.source(),
+        );
+        super::mutation_description::append(
+            basis,
+            &format!("{prefix}.inverse-binding.inverse"),
+            binding.inverse(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.source-handler"),
+            binding.source_handler(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.inverse-handler"),
+            binding.inverse_handler(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.source-query"),
+            binding.source_query().unwrap_or_default(),
+        );
+        basis.bool(
+            format!("{prefix}.inverse-binding.source-query-present"),
+            binding.source_query().is_some(),
+        );
+        basis.text(
+            format!("{prefix}.inverse-binding.inverse-query"),
+            binding.inverse_query().unwrap_or_default(),
+        );
+        basis.bool(
+            format!("{prefix}.inverse-binding.inverse-query-present"),
+            binding.inverse_query().is_some(),
+        );
+    }
     basis.text(
         format!("{prefix}.reconciliation"),
         contract

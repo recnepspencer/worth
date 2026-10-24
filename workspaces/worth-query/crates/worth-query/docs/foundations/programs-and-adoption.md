@@ -22,6 +22,9 @@ each branch publishes separately, and a stopped set can be resumed, canceled,
 or recovered. A host can stop supporting a program with
 `retire_program_support` only after nothing still depends on it.
 
+For operations retained across adoption, see
+[correcting an operation from an earlier program](#correcting-an-operation-from-an-earlier-program).
+
 ## Contents
 
 1. [Terms](#terms)
@@ -266,6 +269,34 @@ let outcome = host
 - `WorthQueryApplicationRequestMutationDenial::ProgramSelection(..)` means the
   branch's program could not be inspected, so no installed owner was chosen.
 - Neither request-time refusal claims the idempotency key.
+
+## Correcting an operation from an earlier program
+
+Select the retained operation through
+`runtime.request(&principal, &scope).on_branch(branch).corrections()`.
+Its source program supplies the recorded operation's meaning. The branch's
+current program supplies the action that will execute now. Preparation compares
+those meanings and resolves the complete installed corrective action, including
+its handler and delivery contract, under fresh caller authority.
+
+An equivalent successor program can correct the older operation while retaining
+its current activation. The correction appends a new occurrence to the target
+branch. A Relational-only correction retains that target's exact Signal basis;
+an authored conditional-definition correction supplies the corresponding Signal
+successor. The [compiled adoption example](../../../worth-query-certification/examples/application_correction_support/adoption_courts.rs)
+shows correction after adoption, changed source and inverse meaning refusals,
+and an equivalent retry returning the same performed receipt.
+
+When adoption changes meaning needed by the source or corrective action,
+preparation returns its program-comparison or action-resolution refusal. Use
+that result to explain which installed contract differs. Adoption after
+preparation also invalidates the prepared target; prepare again against the
+current branch. Reapplication follows the same comparison using the original
+source binding, retained input and current source-action delivery.
+
+The [recorded correction guide](../execution/recorded-source-correction.md)
+covers declaration, current disclosure, explicit alternatives and the ordinary
+source and output owners that complete the action.
 
 ## Program commit denials
 

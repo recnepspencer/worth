@@ -43,6 +43,16 @@ impl ManagedUnpublishedAttempt {
     ) -> bool {
         self.publication_mode == ManagedUnpublishedPublicationMode::Ordinary
     }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn conditional_definition_identity(
+        &self,
+    ) -> Option<[u8; 32]> {
+        if self.ordinary_adoption_supported() {
+            None
+        } else {
+            self.attempt.idempotency().conditional_definition_identity()
+        }
+    }
     pub(in crate::domain_computation::primary_graph::provider) fn matches_fresh_binding(
         &self,
         idempotency: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,

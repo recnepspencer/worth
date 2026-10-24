@@ -5,6 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
+mod correction_disclosure;
 mod dependent_pair;
 pub use dependent_pair::WorthQueryDependentPairReadContext;
 mod batch;

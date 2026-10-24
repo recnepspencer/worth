@@ -14,4 +14,13 @@ where
     fn register_members(
         builder: ApplicationSchemaDeclarationBuilder<Schema>,
     ) -> ApplicationSchemaDeclarationBuilder<Schema>;
+
+    fn visit_correction<
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<Schema>,
+    >(
+        _source_binding: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor> {
+        Err(visitor)
+    }
 }

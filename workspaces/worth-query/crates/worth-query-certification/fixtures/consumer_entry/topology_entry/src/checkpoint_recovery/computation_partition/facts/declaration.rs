@@ -43,6 +43,19 @@ entry_facts!(read_write: EntryNumber, EntryRegion, EntryValueBits, EntryFault);
 /// A set holds its entries.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(super) struct EntrySetMember;
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct BodyEntrySet;
+impl BodyEntrySet {
+    pub(super) fn reference<Schema: TopologyModelBinding>(
+    ) -> ApplicationRelationRef<Schema, Self, Body, EntrySet> {
+        ApplicationRelationRef::from_schema_identifiers(
+            "BodyEntrySet",
+            "Body",
+            "EntrySet",
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        )
+    }
+}
 impl EntrySetMember {
     pub(super) fn reference<Schema: TopologyModelBinding>(
     ) -> ApplicationRelationRef<Schema, Self, EntrySet, SetEntry> {
@@ -74,5 +87,10 @@ pub(super) fn declare<Schema: TopologyModelBinding>(
             EntrySetMember::reference(),
             EntrySet::reference(),
             SetEntry::reference(),
+        )
+        .relation(
+            BodyEntrySet::reference(),
+            Body::reference(),
+            EntrySet::reference(),
         )
 }

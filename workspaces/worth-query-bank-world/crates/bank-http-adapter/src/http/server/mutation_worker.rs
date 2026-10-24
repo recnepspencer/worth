@@ -20,6 +20,7 @@ pub(super) async fn run<A: BankHttpApplicationAuthenticator>(
     permits: Arc<Semaphore>,
     quiesced: Arc<AtomicBool>,
     recovery: Arc<tokio::sync::Mutex<super::recovery_registry::BankHttpRecoveryRegistry>>,
+    continuations: super::continuation_registry::SharedContinuationRegistry,
 ) {
     let mut records = HashMap::new();
     while let Some(command) = receiver.recv().await {
@@ -37,6 +38,7 @@ pub(super) async fn run<A: BankHttpApplicationAuthenticator>(
                     &mut records,
                     &permits,
                     &quiesced,
+                    &continuations,
                     command,
                     scope,
                 )

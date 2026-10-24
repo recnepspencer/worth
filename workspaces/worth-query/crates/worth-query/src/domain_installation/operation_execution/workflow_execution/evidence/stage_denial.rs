@@ -52,6 +52,10 @@ pub enum WorthQueryWorkflowAdvanceDenialKind {
         stage_identity: Option<String>,
         cause: worth_execution::MapKernelStop,
     },
+    /// The native computation could not retain its required accounting evidence.
+    ComputationAccountingUnavailable {
+        stage_identity: Option<String>,
+    },
     /// Cancellation stopped computation at this canonical member (or entry).
     ComputationCancelled {
         stage_identity: Option<String>,

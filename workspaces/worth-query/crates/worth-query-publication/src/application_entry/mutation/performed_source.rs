@@ -39,7 +39,7 @@ type SourceCommit = Result<
 
 /// Requires that `application` is the program runtime this request's host
 /// installed, and that its output shape declares `Root`.
-pub(super) fn require_program_output_root<Schema, Program, Root>(
+pub(in crate::application_entry) fn require_program_output_root<Schema, Program, Root>(
     request_application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     application: &WorthQueryProgramApplicationRuntime<Schema, Program>,
 ) -> Result<(), WorthQueryPerformedMutationExecutionDenial>
@@ -62,7 +62,7 @@ where
 
 /// What one source commit handed back beside its commit outcome.
 #[derive(Default)]
-pub(super) struct PerformedSourceCommit {
+pub(in crate::application_entry) struct PerformedSourceCommit {
     failure: RefCell<Option<WorthQueryRequiredOutputSourcePreparationFailure>>,
     prepared: RefCell<Option<PreparedCustody>>,
     unpublished: RefCell<Option<worth_query_execution::facade::application_installation::WorthQueryUnpublishedProgramOutputSource>>,
@@ -72,7 +72,10 @@ impl PerformedSourceCommit {
     /// Keeps the custody or failure a source commit produced and returns the
     /// commit outcome the mutation lane settles. A source that committed but
     /// could not prepare custody still reports its committed receipt.
-    pub(super) fn record(&self, commit: SourceCommit) -> WorthQueryApplicationCommitOutcome {
+    pub(in crate::application_entry) fn record(
+        &self,
+        commit: SourceCommit,
+    ) -> WorthQueryApplicationCommitOutcome {
         match commit {
             Ok((outcome, prepared, unpublished)) => {
                 self.unpublished.replace(unpublished);

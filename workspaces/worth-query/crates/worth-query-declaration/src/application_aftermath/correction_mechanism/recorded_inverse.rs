@@ -105,6 +105,12 @@ pub struct DeclaredPreImageDemand<Schema> {
 }
 
 impl<Schema> DeclaredPreImageDemand<Schema> {
+    pub(super) fn created_entity() -> Self {
+        Self {
+            loci: Vec::new(),
+            maximum_encoded_bytes: 0,
+        }
+    }
     pub fn new(
         loci: impl IntoIterator<Item = DeclaredPreImageLocus<Schema>>,
         maximum_encoded_bytes: usize,
@@ -249,6 +255,23 @@ pub struct DeclaredRecordedInverse<Schema> {
 }
 
 impl<Schema> DeclaredRecordedInverse<Schema> {
+    pub(crate) fn from_binding<Correction>(preimage_demand: DeclaredPreImageDemand<Schema>) -> Self
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Correction: super::super::ApplicationCorrectionBinding<Schema>,
+    {
+        use crate::application_operation::ApplicationMutationBinding;
+        let inverse = super::super::ApplicationInverseBinding::<Schema, Correction>::descriptor();
+        Self {
+            inverse_operation_slot: inverse.operation_name().to_owned(),
+            lowering_correspondence: DeclaredLoweringCorrespondenceRef {
+                correspondence_slot: Correction::IDENTITY.to_owned(),
+            },
+            postcondition: DeclaredAftermathPostcondition::ExactPriorTruth,
+            preimage_demand,
+        }
+    }
+
     pub fn new(
         inverse_operation_slot: impl Into<String>,
         lowering_correspondence: DeclaredLoweringCorrespondenceRef,

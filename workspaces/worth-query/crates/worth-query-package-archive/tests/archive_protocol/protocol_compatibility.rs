@@ -113,6 +113,21 @@ fn zero_and_future_versions_report_the_exact_protocol_layer_and_posture() {
 }
 
 #[test]
+fn displaced_correction_record_grammars_are_refused_before_payload_decode() {
+    for version in [10_u16, 11_u16, 12_u16] {
+        let mut archive = package_archive_bytes();
+        put_u16(&mut archive, MANIFEST_FRAME_BYTES, version);
+        let denial =
+            decode_package_archive(&archive, WorthQueryPackageArchiveLimits::DEFAULT).unwrap_err();
+        assert_eq!(
+            denial.kind(),
+            WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+        );
+        assert_eq!(denial.compatibility().unwrap().observed_version(), version);
+    }
+}
+
+#[test]
 fn unsupported_headers_win_before_hostile_body_claims() {
     let mut envelope = release_envelope_bytes();
     put_u16(

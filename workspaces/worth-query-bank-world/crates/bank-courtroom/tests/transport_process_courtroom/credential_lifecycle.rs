@@ -57,11 +57,7 @@ async fn summary(world: &TransportProcessWorld) -> BankUserNodeAccountSummaryOut
         ))
         .json(&serde_json::json!({
             "request_id": "process-expired-summary",
-            "controls": {
-                "deadline_milliseconds": 5_000,
-                "maximum_results": 1,
-                "maximum_work": 20_000
-            },
+            "controls": super::request_controls(1),
             "account": "fixture:100"
         }))
         .send()

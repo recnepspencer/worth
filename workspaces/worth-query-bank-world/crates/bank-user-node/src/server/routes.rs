@@ -19,6 +19,7 @@ use crate::protocol::{
 };
 
 mod aftermath;
+mod correction_history;
 mod elevation;
 mod live;
 
@@ -48,6 +49,7 @@ pub(super) fn router() -> Router<UserNodeState> {
         .route("/v1/recovery/inspect", post(inspect_recovery))
         .route("/v1/recovery/safe-retry", post(safe_retry_recovery))
         .merge(aftermath::router())
+        .merge(correction_history::router())
         .merge(elevation::router())
         .merge(live::router())
 }

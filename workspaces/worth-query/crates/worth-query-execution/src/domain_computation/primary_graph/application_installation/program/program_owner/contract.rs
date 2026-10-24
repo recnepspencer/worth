@@ -100,9 +100,11 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         )
     }
 
-    /// Commits an admitted undo through the same occurrence and action gates.
-    fn compare_and_commit_program_undo<Binding>(
+    /// Publishes a freshly admitted recorded inverse through the ordinary action gate.
+    fn commit_program_correction_in_advancement<Binding>(
         &self,
+        _access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<
             Schema,
             Binding::Operation,
@@ -110,10 +112,10 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
-        extend: impl FnOnce(
-            WorthQueryApplicationIdempotencyBinding,
-        ) -> WorthQueryApplicationIdempotencyBinding,
-        handoff: &crate::domain_computation::application_aftermath::WorthQueryUndoProgressionHandoff,
+        source: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQueryApplicationCommitOutcome
     where
         Self: Sized,
@@ -121,28 +123,32 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
-        let request = program.request_scope().clone();
-        self.runtime()
-            .with_application_advancement(&request, |active_phase| {
-                commit_program_action::<Schema, Binding, Self>(
-                    &active_phase,
-                    self,
-                    program,
-                    ApplicationCommitCausality::undo(handoff),
-                    extend(
-                        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
-                            identities,
-                        ),
-                    ),
-                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-            })
-            .unwrap_or_else(|denial| denial.into_commit_outcome())
+        if !source.is_action_binding::<Binding>()
+            || !source.matches_input(identities.input_identity())
+            || !source.requires_root(None)
+        {
+            return WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::correction_context_mismatch(),
+            );
+        }
+        let idempotency = source.intent().bind_idempotency(
+            WorthQueryApplicationIdempotencyBinding::for_mutation_identities(identities),
+        );
+        commit_program_action::<Schema, Binding, Self>(
+            phase,
+            self,
+            program,
+            ApplicationCommitCausality::RecordedCorrection(source),
+            idempotency,
+            allocation_policy,
+        )
     }
 
-    /// Commits an admitted redo through the same occurrence and action gates.
-    fn compare_and_commit_program_redo<Binding>(
+    /// Publishes the same recorded inverse while retaining its exact commit observation.
+    fn commit_program_correction_retained_in_advancement<Binding>(
         &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<
             Schema,
             Binding::Operation,
@@ -150,34 +156,26 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
-        extend: impl FnOnce(
-            WorthQueryApplicationIdempotencyBinding,
-        ) -> WorthQueryApplicationIdempotencyBinding,
-        handoff: &crate::domain_computation::application_aftermath::WorthQueryRedoProgressionHandoff,
-    ) -> WorthQueryApplicationCommitOutcome
+        source: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryPreparedCorrectionSource,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationRetainedCommitOutcome
     where
         Self: Sized,
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema>,
         Binding::Input: Clone + Send + Sync + 'static,
     {
-        let request = program.request_scope().clone();
-        self.runtime()
-            .with_application_advancement(&request, |active_phase| {
-                commit_program_action::<Schema, Binding, Self>(
-                    &active_phase,
-                    self,
-                    program,
-                    ApplicationCommitCausality::redo(handoff),
-                    extend(
-                        WorthQueryApplicationIdempotencyBinding::for_mutation_identities(
-                            identities,
-                        ),
-                    ),
-                    crate::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-            })
-            .unwrap_or_else(|denial| denial.into_commit_outcome())
+        let outcome = self.commit_program_correction_in_advancement(
+            access,
+            phase,
+            program.with_client_observation(),
+            identities,
+            source,
+            allocation_policy,
+        );
+        self.owned_runtime().retained_commit_outcome(outcome)
     }
 
     /// Commits one action through the presented program and retains its

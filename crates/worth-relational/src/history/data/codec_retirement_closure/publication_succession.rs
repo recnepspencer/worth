@@ -10,6 +10,7 @@ use crate::transactions::data::RecordRef;
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate_succession(
+    runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     prior: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
@@ -56,7 +57,22 @@ pub(super) fn validate_succession(
                 .ok_or("successor revives or invents prior live membership")?;
             if member.kind != old.kind
                 || member.entity_name != old.entity_name
-                || member.before_write != Some(old.after_write)
+                || !member
+                    .before_write
+                    .map(|before| {
+                        super::materialization::write_matches(
+                            &RecordRef::Entity(member.id),
+                            prior.commit.commit_id,
+                            old.after_write,
+                            before,
+                            &mut |commit| runtime.history.canonical_envelope(commit),
+                            &mut |version| runtime.history.canonical_envelope_for_version(version),
+                            runtime.history.catalog_len(),
+                            context,
+                        )
+                    })
+                    .transpose()?
+                    .unwrap_or(false)
                 || member.birth != old.birth
                 || member.birth_producer != old.birth_producer
                 || member.birth_dependency != old.birth_dependency
@@ -84,7 +100,17 @@ pub(super) fn validate_succession(
         let old = prior.relations.iter().find(|old| old.id == relation.id);
         if let Some(before) = relation.before_write {
             let old = old.ok_or("relation invents predecessor membership")?;
-            if before != old.after_write || relation.birth != old.birth || relation.kind != old.kind
+            if !super::materialization::write_matches(
+                &RecordRef::Relation(relation.id),
+                prior.commit.commit_id,
+                old.after_write,
+                before,
+                &mut |commit| runtime.history.canonical_envelope(commit),
+                &mut |version| runtime.history.canonical_envelope_for_version(version),
+                runtime.history.catalog_len(),
+                context,
+            )? || relation.birth != old.birth
+                || relation.kind != old.kind
             {
                 return Err("relation predecessor native position differs".into());
             }
@@ -126,6 +152,8 @@ pub(super) fn validate_gap(
     predecessor: CommitId,
     origin: &CanonicalRequiredOutputOrigin,
     context: &mut MapKernelContext<'_, '_>,
+    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    validate_payload: bool,
 ) -> Result<(), Stop> {
     let mut next = current.commit.parents.first().copied();
     let bound = runtime.history.catalog_len();
@@ -168,6 +196,42 @@ pub(super) fn validate_gap(
                     "intervening governed codec disposition ended producer continuity".into(),
                 );
             }
+        }
+        if let Some(event) = &envelope.required_output_materialization {
+            if validate_payload {
+                super::materialization::validate_semantics(runtime, &envelope, context, lease)?;
+            } else {
+                super::materialization::validate_header(
+                    &envelope,
+                    &mut |commit| runtime.history.canonical_envelope(commit),
+                    bound,
+                    context,
+                )?;
+            }
+            for record in origin
+                .members
+                .iter()
+                .map(|member| RecordRef::Entity(member.id))
+                .chain(
+                    origin
+                        .relations
+                        .iter()
+                        .map(|relation| RecordRef::Relation(relation.id)),
+                )
+            {
+                let wrote = match record {
+                    RecordRef::Entity(id) => writes(&envelope, id, context)?,
+                    RecordRef::Relation(id) => relation_writes(&envelope, id, context)?,
+                };
+                if wrote
+                    && (!event.producer_publications.contains(&predecessor)
+                        || !event.records.iter().any(|member| member.record == record))
+                {
+                    return Err("maintenance does not explain exact predecessor writes".into());
+                }
+            }
+            next = Some(event.source_commit);
+            continue;
         }
         for member in &origin.members {
             if writes(&envelope, member.id, context)?

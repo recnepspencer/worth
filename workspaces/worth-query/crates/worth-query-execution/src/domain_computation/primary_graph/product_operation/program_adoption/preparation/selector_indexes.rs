@@ -1,4 +1,4 @@
-//! Candidate-owned maintenance of installed authorization selector generations.
+//! Candidate-owned maintenance of installed read and authorization generations.
 use super::{
     WorthQueryBranchAdoptionPreparationDenial as Denial, WorthQuerySelectedProductOperation,
 };
@@ -13,6 +13,10 @@ pub(super) fn prepare<Schema: ApplicationSchema>(
     let application = selected.application();
     let graph = &application.primary_provider.graph;
     let mut indexes = std::collections::BTreeSet::new();
+    // Every ordinary read selects a generation at this exact successor. Carry
+    // query predicate/order indexes with the adoption candidate, rather than
+    // forcing the next read to reconstruct a population without its predecessor.
+    indexes.extend(graph.primary_index_ids.iter().copied());
     indexes.extend(
         graph
             .layout

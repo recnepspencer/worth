@@ -31,7 +31,7 @@ worth_query_aspect!(pub AuthorizationIdentity for BankSchema, AccountAuthorizati
 worth_query_aspect!(pub EmployeeScope for BankSchema, EmployeeAssignment; identity = AspectIdentity(0x91611012), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub PostingValue for BankSchema, Posting; identity = AspectIdentity(0x91611013), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub PostingIdentity for BankSchema, Posting; identity = AspectIdentity(0x91611014), revision = AspectContractRevision(1),);
-worth_query_aspect!(pub JournalIdentity for BankSchema, JournalEntry; identity = AspectIdentity(0x91611015), revision = AspectContractRevision(1),);
+worth_query_aspect!(pub JournalIdentity for BankSchema, JournalEntry; identity = AspectIdentity(0x91611015), revision = AspectContractRevision(2),);
 worth_query_aspect!(pub JournalState for BankSchema, JournalEntry; identity = AspectIdentity(0x91611016), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub PaymentState for BankSchema, PaymentIntent; identity = AspectIdentity(0x91611017), revision = AspectContractRevision(1),);
 worth_query_aspect!(pub PaymentValue for BankSchema, PaymentIntent; identity = AspectIdentity(0x91611018), revision = AspectContractRevision(1),);
@@ -107,6 +107,10 @@ worth_query_field!(
 worth_query_field!(
     pub JournalIdentityField for BankSchema, JournalEntry, JournalIdentity:
     JournalEntryId => JournalEntryIdBinding, read_only, equality
+);
+worth_query_field!(
+    pub JournalInstitutionContext for BankSchema, JournalEntry, JournalIdentity:
+    InstitutionId => InstitutionIdBinding, read_only, equality
 );
 worth_query_field!(
     pub JournalPurpose for BankSchema, JournalEntry, JournalState:

@@ -228,7 +228,7 @@ where
 
 /// Settles a performed source's commit into its public outcome: not
 /// performed, committed without output custody, or performed with custody.
-fn performed_outcome<Schema, Binding, Program, Root>(
+pub(in crate::application_entry) fn performed_outcome<Schema, Binding, Program, Root>(
     demand: ProgramDemand<Schema, Root>,
     outcome: WorthQueryApplicationMutationOutcome<
         <Binding as ApplicationMutationBinding<Schema>>::Denial,
@@ -274,6 +274,7 @@ where
         Err((denial, custody)) => {
             WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(
                 WorthQueryRequiredOutputRetentionFailure {
+                    recorded_input: None,
                     receipt,
                     result,
                     denial,

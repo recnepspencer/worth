@@ -292,3 +292,6 @@ fn assert_admission_only_work(
 
 #[path = "capability_governed_input/funded_capture.rs"]
 mod funded_capture;
+
+#[path = "capability_governed_input/committed_source.rs"]
+mod committed_source;

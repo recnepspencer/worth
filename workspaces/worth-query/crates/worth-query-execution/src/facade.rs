@@ -90,23 +90,6 @@ pub mod provider_session {
 
 pub mod primary_graph;
 
-/// Compatibility surface for the current undo/redo experiment.
-///
-/// These types remain compiled but are not accepted Phase 8 product contracts.
-pub mod provisional_aftermath {
-    pub use crate::domain_computation::application_aftermath::{
-        admit_undo, consume_redo_progression, consume_unresolved_undo_progression,
-        deny_irreversible_undo_attempt, map_ordinary_commit_conflict_to_redo,
-        progress_admitted_reconciliation, progress_admitted_redo, progress_admitted_undo,
-        WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality, WorthQueryProvedUndo,
-        WorthQueryRedoAdmission, WorthQueryRedoDenial, WorthQueryRedoDenialKind,
-        WorthQueryRedoIntent, WorthQueryRedoIntentIdentity, WorthQueryRedoProgressionHandoff,
-        WorthQueryRedoRecovery, WorthQueryRetainedPreImage, WorthQueryUndoAdmission,
-        WorthQueryUndoDenial, WorthQueryUndoDenialKind, WorthQueryUndoDerivedRequest,
-        WorthQueryUndoIntentIdentity, WorthQueryUndoProgressionHandoff,
-    };
-}
-
 /// Convergence epochs: bounded iteration of a run toward a stable result, with
 /// domain providers that compare, measure progress, and detect repeated
 /// states, plus terminal reports.
@@ -235,7 +218,7 @@ pub mod integration {
             .profile(worth_relational::facade::config::RelationalRuntimeProfile::AiWorkflow)
             .publication(worth_relational::facade::config::PublicationConfig {
                 coherent_publication_required: true,
-                max_patch_records_per_commit: 4_096,
+                max_patch_records_per_commit: None,
                 max_published_snapshot_handles: Some(256),
                 max_active_snapshot_handles: Some(maximum_active_snapshots),
                 max_transaction_savepoints: 4_096,

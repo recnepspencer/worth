@@ -329,7 +329,7 @@ where
         Ok(())
     }
 
-    pub(super) fn resolve_idempotency(
+    pub(in crate::application_entry) fn resolve_idempotency(
         &self,
         phase: &AdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<

@@ -146,6 +146,7 @@ pub enum WorthQueryApplicationRequestMutationDenialKind {
     /// cannot be checked against this request.
     IdempotencyIntentUnverifiable,
     Identity,
+    InputCapture,
     /// The handler ran and refused, or its projection, read attempt or
     /// candidate program failed.
     Handler,
@@ -189,6 +190,9 @@ pub enum WorthQueryApplicationRequestMutationDenial {
     /// identity, so no retry could be told apart from a changed request. The
     /// payload names which of the two failed.
     Identity(ApplicationMutationIdentityDenial),
+    InputCapture(
+        worth_query_execution::publication_boundary::operation_input_capture::WorthQueryOperationInputCaptureDenial,
+    ),
     Handler(MutationHandlerExecutionDenial),
     SourceExpectation(
         worth_query_execution::facade::primary_graph::WorthQuerySourceExpectationDenial,
@@ -218,6 +222,7 @@ pub enum WorthQueryApplicationRequestMutationDenial {
 impl WorthQueryApplicationRequestMutationDenial {
     pub fn kind(&self) -> WorthQueryApplicationRequestMutationDenialKind {
         match self {
+            Self::InputCapture(_) => WorthQueryApplicationRequestMutationDenialKind::InputCapture,
             Self::WorkflowCapturedInput(_) => {
                 WorthQueryApplicationRequestMutationDenialKind::WorkflowCapturedInput
             }

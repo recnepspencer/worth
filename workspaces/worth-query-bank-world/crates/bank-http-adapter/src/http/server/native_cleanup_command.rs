@@ -1,7 +1,7 @@
 //! Fresh issuer admission on the original execution thread, without business execution.
 use super::super::protocol::{BankHttpDenialKind, BankHttpMutationOutcome};
 use super::{
-    mutation_command::{AdmittedMoneyCommand, MoneyCommand},
+    mutation_command::{AdmittedMutationCommand, MutationCommand},
     mutation_custody::MutationRecord,
     mutation_refusal::denial,
     native_cleanup_custody::NativeCleanupCustody,
@@ -12,7 +12,7 @@ use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequ
 pub(super) fn execute<A: super::authentication::BankHttpApplicationAuthenticator>(
     application: &A,
     records: &mut HashMap<String, MutationRecord>,
-    command: AdmittedMoneyCommand,
+    command: AdmittedMutationCommand,
     scope: WorthQueryRequestScope,
     owner: super::authenticated_owner::BankHttpAuthenticatedOwner,
 ) -> BankHttpMutationOutcome {
@@ -33,7 +33,7 @@ pub(super) fn execute<A: super::authentication::BankHttpApplicationAuthenticator
     if record.sequence.checked_add(1) != Some(command.sequence) {
         return refused(BankHttpDenialKind::Stale, Some(record.sequence));
     }
-    if !matches!(command.command, MoneyCommand::ReleaseCleanup) {
+    if !matches!(command.command, MutationCommand::ReleaseCleanup) {
         return refused(
             BankHttpDenialKind::ManagedCleanupRequired,
             Some(record.sequence),
@@ -90,7 +90,7 @@ pub(super) fn execute<A: super::authentication::BankHttpApplicationAuthenticator
     outcome
 }
 fn released(
-    command: &AdmittedMoneyCommand,
+    command: &AdmittedMutationCommand,
     evidence: &bank_server::BankReleasedManagedCleanup,
 ) -> BankHttpMutationOutcome {
     let inspection = evidence.receipt().inspection();

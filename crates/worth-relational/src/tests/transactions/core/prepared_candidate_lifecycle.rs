@@ -10,7 +10,7 @@ fn expired_candidate_is_typed_deferred_before_reference_movement() {
         .schema_registry(test_schema_registry())
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(1),
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
@@ -82,7 +82,7 @@ fn candidate_that_expires_while_waiting_for_coordination_does_not_move_reference
         .schema_registry(test_schema_registry())
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(8),
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,
@@ -198,7 +198,7 @@ fn candidate_population_exhaustion_is_typed_and_released_by_discard() {
         .schema_registry(test_schema_registry())
         .publication(crate::facade::config::PublicationConfig {
             coherent_publication_required: true,
-            max_patch_records_per_commit: 4_096,
+            max_patch_records_per_commit: None,
             max_published_snapshot_handles: Some(8),
             max_active_snapshot_handles: Some(8),
             max_transaction_savepoints: 8,

@@ -55,5 +55,11 @@ fn signal_plan_is_compatible(plan: &SignalComponentPlan, changes: bool) -> bool 
     match plan.posture() {
         SignalComponentPlanPosture::RetainExact => !changes,
         SignalComponentPlanPosture::AdvanceExact => changes,
+        SignalComponentPlanPosture::AdoptSettled => {
+            changes
+                && plan
+                    .settled_adoption()
+                    .is_some_and(|progress| progress.successor_basis().is_some())
+        }
     }
 }

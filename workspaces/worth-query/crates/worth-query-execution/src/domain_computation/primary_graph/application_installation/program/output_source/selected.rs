@@ -30,7 +30,7 @@ use crate::domain_computation::primary_graph::{
 };
 use crate::publication_boundary::WorthQueryProgramPublicationAccess;
 
-type SourceProgram<Schema, Source> = WorthQueryApplicationEffectProgram<
+pub(super) type SourceProgram<Schema, Source> = WorthQueryApplicationEffectProgram<
     Schema,
     <Source as ApplicationMutationBinding<Schema>>::Operation,
     <Source as ApplicationMutationBinding<Schema>>::Input,
@@ -55,6 +55,34 @@ where
         owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
         program: SourceProgram<Schema, Source>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> ProgramSourceCommit
+    where
+        Source: ApplicationMutationBinding<Schema>,
+        Root: ApplicationOutputGraphShape<Schema>,
+        RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
+        Source: WorthQueryApplicationRequiredOutputSource<Schema, RootConnection<Schema, Root>>,
+        Source::Input: Clone + Send + Sync + 'static,
+    {
+        self.commit_selected_required_source::<Root, Source>(
+            phase,
+            access,
+            owner,
+            program,
+            idempotency,
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
+            allocation_policy,
+        )
+    }
+
+    pub(super) fn commit_selected_required_source<Root, Source>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        access: &WorthQueryProgramPublicationAccess,
+        owner: &WorthQuerySelectedProgramOwner<'_, Schema>,
+        program: SourceProgram<Schema, Source>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        causality: crate::domain_computation::application_aftermath::ApplicationCommitCausality,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> ProgramSourceCommit
     where
@@ -96,6 +124,7 @@ where
             Some(presented),
             program,
             idempotency,
+            causality,
             PreparedOutputRootKind::Required(root),
             None,
             allocation_policy,
@@ -154,6 +183,7 @@ where
             Some(presented),
             program,
             idempotency,
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::Ordinary,
             PreparedOutputRootKind::Discovered(root),
             Some(std::sync::Arc::new(discovery)),
             allocation_policy,
@@ -173,7 +203,7 @@ where
 
         let source = TypeId::of::<Source>();
         if !std::ptr::eq(owner.owned_runtime(), &self.backing.runtime)
-            || !self.backing.root_graph_types.contains(&root)
+            || !self.backing.initial.root_graph_types.contains(&root)
             || !owner.owns_output_root(root)
             || !owner.owns_output_source(source.into_external())
         {

@@ -205,8 +205,8 @@ use worth_query_declaration::facade::authentication::{
     WorthQueryExternalPrincipalIdentity, WorthQueryPrincipalMappingStatus,
 };
 use worth_query_declaration::{
-    worth_query_ability, worth_query_application_schema, worth_query_aspect, worth_query_effect,
-    worth_query_entity, worth_query_field, worth_query_operation, worth_query_operation_emits,
+    worth_query_ability, worth_query_aspect, worth_query_effect, worth_query_entity,
+    worth_query_field, worth_query_operation, worth_query_operation_emits,
     worth_query_operation_expects_fact, worth_query_operation_links, worth_query_operation_reads,
     worth_query_operation_requires, worth_query_operation_unlinks, worth_query_operation_writes,
     worth_query_policy, worth_query_principal_binding, worth_query_relation,
@@ -230,167 +230,12 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationRelationSeed, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-worth_query_application_schema! {
-    pub schema IdentityExecutionSchema {
-        owner: identity_execution_test,
-        version: (1, 0),
-        members: |schema| {
-            let schema = schema
-                .entity(ExternalMapping::reference())
-                .entity(Principal::reference())
-                .entity(Account::reference())
-                .entity(Activity::reference())
-                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-                .aspect(Principal::reference(), PrincipalIdentity::reference())
-                .field(ExternalMapping::reference(), ExternalIdentityField::reference())
-                .field(ExternalMapping::reference(), MappingStatusField::reference())
-                .field(Principal::reference(), PrincipalIdentityField::reference())
-                .aspect(Account::reference(), AccountPolicy::reference())
-                .field(Account::reference(), AccountIdentity::reference())
-                .field(Account::reference(), AccountStatus::reference())
-                .field(Account::reference(), AccountLabel::reference())
-                .field(Account::reference(), AccountNote::reference())
-                .field(Account::reference(), AccountScore::reference())
-                .aspect(Account::reference(), AccountMembership::reference())
-                .field(Account::reference(), AccountMembershipTag::reference())
-                .aspect(Account::reference(), AccountAnnotations::reference())
-                .field(Account::reference(), AccountAnnotation::reference())
-                .aspect(Activity::reference(), ActivityFacts::reference())
-                .field(Activity::reference(), ActivityIdentity::reference())
-                .field(Activity::reference(), ActivitySequence::reference())
-                .relation(
-                    MappingTarget::reference(),
-                    ExternalMapping::reference(),
-                    Principal::reference(),
-                )
-                .relation(
-                    AccountOwner::reference(),
-                    Principal::reference(),
-                    Account::reference(),
-                )
-                .relation(
-                    AccountBlocked::reference(),
-                    Principal::reference(),
-                    Account::reference(),
-                )
-                .relation(
-                    AccountPrimaryActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    AccountSecondaryActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    AccountAllActivity::reference(),
-                    Account::reference(),
-                    Activity::reference(),
-                )
-                .relation(
-                    ActivityAccount::reference(),
-                    Activity::reference(),
-                    Account::reference(),
-                )
-                .principal_binding(IdentityBinding::reference())
-                .ability(ViewAccount::reference())
-                .ability(EditAccount::reference())
-                .ability(ManageOwnership::reference())
-                .effect(AccountActivityEffect::reference())
-                .effect(RetainedStatusEffect::reference())
-                .effect(MutationFreeExternalEffect::reference())
-                .effect(LiveActivityEffect::reference());
-            let schema = optional_output_binding::declare(operation_contracts::install(schema))
-                .application_mutation_binding::<
-                    program_required_binding::ProgramRequiredMutationBinding,
-                >()
-                .application_mutation_binding::<CapabilityTouchMutationBinding>()
-
-                .policy(AccountAccessPolicy::reference())
-                .ability_policy(
-                    ViewAccount::reference(),
-                    AccountAccessPolicy::reference(),
-                    [
-                        worth_query_declaration::facade::application_schema::ApplicationAuthorizationPathBuilder::from_principal(
-                            Principal::reference(),
-                        )
-                        .forward(AccountOwner::reference())
-                        .allow(Account::reference()),
-                        worth_query_declaration::facade::application_schema::ApplicationAuthorizationPathBuilder::from_principal(
-                            Principal::reference(),
-                        )
-                        .forward(AccountBlocked::reference())
-                        .deny(Account::reference()),
-                    ],
-                )
-                .ability_policy(
-                    EditAccount::reference(),
-                    AccountAccessPolicy::reference(),
-                    [
-                        worth_query_declaration::facade::application_schema::ApplicationAuthorizationPathBuilder::from_principal(
-                            Principal::reference(),
-                        )
-                        .forward(AccountOwner::reference())
-                        .allow(Account::reference()),
-                        worth_query_declaration::facade::application_schema::ApplicationAuthorizationPathBuilder::from_principal(
-                            Principal::reference(),
-                        )
-                        .forward(AccountBlocked::reference())
-                        .deny(Account::reference()),
-                    ],
-                )
-                .ability_policy(
-                    ManageOwnership::reference(),
-                    AccountAccessPolicy::reference(),
-                    [worth_query_declaration::facade::application_schema::ApplicationAuthorizationPathBuilder::from_principal(
-                        Principal::reference(),
-                    )
-                    .allow(Principal::reference())],
-                )
-                .application_query_binding::<TestAccountSourceBinding>()
-                .application_query(application_queries::account_summary_definition())
-                .application_query(application_queries::scoped_account_summary_definition())
-                .application_query(application_queries::public_scoped_definition())
-                .application_query(application_queries::public_membership_definition())
-                .application_query(application_queries::cross_root_definition("open"))
-                .application_query(application_queries::governed_account_summary_definition())
-                .application_query(application_queries::ordered_account_summary_definition())
-                .application_query(optional_account_field_query::optional_account_field_definition())
-                .application_query(optional_account_owner_query::definition())
-                .application_query(owner_members_query::definition())
-                .application_query(nested_account::nested_account_definition())
-                .application_query(filtered_activity_query::selected_activity_definition())
-                .application_query(forged_selector::forged_selector_definition())
-                .application_query(live_account_query::live_account_activity_definition())
-                .application_query(governed_live_query::governed_live_account_definition())
-                .application_query(capability::elevated_account_activity_definition())
-                .application_query(governed_omission_query::governed_account_omission_definition())
-                .application_query(
-                    governed_hidden_ordering_query::governed_hidden_ordering_definition(),
-                )
-                .application_query(
-                    forbidden_hidden_ordering_query::forbidden_hidden_ordering_definition(),
-                )
-                .application_query(
-                    forbidden_live_identity_queries::forbidden_live_scope_identity_definition(),
-                )
-                .application_query(
-                    forbidden_live_identity_queries::forbidden_live_target_identity_definition(),
-                )
-                .application_query(governed_root_guard_query::governed_root_guard_definition())
-                .application_query(governed_root_guard_query::forbidden_root_guard_definition())
-                .application_query(invalid_disclosure_queries::incomplete_disclosure_definition())
-                .application_query(invalid_disclosure_queries::forbidden_influence_definition())
-                .application_query(
-                    invalid_disclosure_queries::result_rule_predicate_definition(),
-                );
-            capability::install(schema)
-        }
-    }
-}
-
+#[path = "fixture/schema_declaration.rs"]
+mod schema_declaration;
+pub(in crate::domain_computation) use schema_declaration::IdentityExecutionSchema;
 mod advancement_host;
+#[path = "fixture/correction_source.rs"]
+pub(in crate::domain_computation::primary_graph) mod correction_source;
 pub(crate) use advancement_host::AdvancementHost;
 mod reconstruction_execution;
 pub(in crate::domain_computation::primary_graph) use reconstruction_execution::isolated_request_owner;

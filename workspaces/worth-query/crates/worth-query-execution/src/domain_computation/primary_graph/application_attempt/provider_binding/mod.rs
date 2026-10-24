@@ -26,6 +26,7 @@ use super::{
 };
 
 pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAttempt {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
     installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
@@ -45,6 +46,13 @@ pub(in crate::domain_computation) struct WorthQueryPreparedApplicationProviderAt
 }
 
 impl WorthQueryPreparedApplicationProviderAttempt {
+    pub(in crate::domain_computation::primary_graph::application_attempt) fn with_workflow_origin(
+        mut self,
+        origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    ) -> Self {
+        self.workflow_origin = origin;
+        self
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt) fn with_local_action_settlement(
         mut self,
         proof: Option<super::workflow_transition_program::LocalActionSettlementProof>,
@@ -105,7 +113,8 @@ pub(super) fn installed_preimage_demand(
 ) -> Option<InstalledPreImageDemand> {
     match aftermath?.mechanism()? {
         InstalledCorrectionMechanism::RecordedInverse(inverse) => {
-            Some(inverse.preimage_demand().clone())
+            (!inverse.preimage_demand().loci().is_empty())
+                .then(|| inverse.preimage_demand().clone())
         }
         InstalledCorrectionMechanism::Compensation(_) => None,
     }
@@ -160,6 +169,7 @@ pub(super) fn prepare_provider_attempt<'layout>(
     }
     let completed = accumulator.finish(output_correspondence)?;
     Ok(WorthQueryPreparedApplicationProviderAttempt {
+        workflow_origin: None,
         local_action_settlement: None,
         required_output_demand: None,
         installed_read_scopes,

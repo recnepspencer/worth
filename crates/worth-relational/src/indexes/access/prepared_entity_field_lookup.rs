@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+mod page;
+
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 use crate::identity::data::{EntityId, KindId};

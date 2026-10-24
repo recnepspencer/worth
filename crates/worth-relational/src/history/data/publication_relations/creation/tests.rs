@@ -214,6 +214,30 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         "{denied:?}"
     );
 
+    let mut contradictory_endpoints = birth_envelope.as_ref().clone();
+    contradictory_endpoints
+        .patch
+        .authoritative_record_patches
+        .iter_mut()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .relation_birth
+        .as_mut()
+        .unwrap()
+        .source = output_id;
+    assert!(
+        run(
+            execution,
+            &edition,
+            id,
+            origin,
+            &contradictory_endpoints,
+            &write_envelope,
+            false
+        )
+        .is_err(),
+        "structural birth and exposed endpoint operations must agree"
+    );
     let mut missing = birth_envelope.as_ref().clone();
     let patch = missing
         .patch
@@ -238,6 +262,54 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
         .cloned()
         .collect();
     patch.authoritative_patch = PublishedAuthoritativePatch::new(operations);
+    assert!(
+        patch.relation_birth.is_some(),
+        "actual native creation publishes structural birth independently of optional aspects"
+    );
+    assert!(
+        run(
+            execution,
+            &edition,
+            id,
+            origin,
+            &missing,
+            &write_envelope,
+            false
+        )
+        .is_ok(),
+        "retired metadata plus absent endpoint aspects still has the actual structural birth"
+    );
+    let mut contradictory = missing.clone();
+    contradictory
+        .patch
+        .authoritative_record_patches
+        .iter_mut()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .relation_birth
+        .as_mut()
+        .unwrap()
+        .kind = KindId(999);
+    assert!(
+        run(
+            execution,
+            &edition,
+            id,
+            origin,
+            &contradictory,
+            &write_envelope,
+            false
+        )
+        .is_err(),
+        "a contradictory native structural kind cannot support custody"
+    );
+    missing
+        .patch
+        .authoritative_record_patches
+        .iter_mut()
+        .find(|patch| patch.target == RecordRef::Relation(id))
+        .unwrap()
+        .relation_birth = None;
     let denied = run(
         execution,
         &edition,

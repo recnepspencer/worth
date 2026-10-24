@@ -78,6 +78,25 @@ where
     runtime
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
+    let installed = std::sync::Arc::new(installed);
+    let initial = std::sync::Arc::new(WorthQuerySupportedProgramRecord::installed(
+        std::sync::Arc::clone(&installed),
+        &output_source_bindings,
+        &Program::Outputs::root_graph_types()
+            .into_iter()
+            .map(TypeId::from)
+            .collect::<Vec<_>>(),
+    ));
+    let supported: Box<[_]> = supported.into_iter().map(std::sync::Arc::new).collect();
+    runtime
+        .program_support
+        .as_mut()
+        .ok_or(WorthQueryInMemoryApplicationDenial::ProgramAdmissionIncomplete)?
+        .complete_native_installation(
+            std::iter::once(std::sync::Arc::clone(&initial))
+                .chain(supported.iter().cloned())
+                .collect(),
+        );
     Ok(WorthQueryProgramApplicationRuntime {
         backing: std::sync::Arc::new(super::program_runtime::WorthQueryProgramRuntimeBacking {
             runtime,
@@ -86,13 +105,8 @@ where
                 .into_iter()
                 .map(TypeId::from)
                 .collect(),
-            root_graph_types: Program::Outputs::root_graph_types()
-                .into_iter()
-                .map(TypeId::from)
-                .collect(),
-            output_source_bindings: output_source_bindings.into_boxed_slice(),
-            action_bindings: action_bindings.into_iter().collect(),
-            supported: supported.into_boxed_slice(),
+            initial,
+            supported,
         }),
     })
 }

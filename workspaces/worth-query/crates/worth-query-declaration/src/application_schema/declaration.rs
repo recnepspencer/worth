@@ -27,6 +27,15 @@ pub trait ApplicationSchema: Sized + 'static {
 
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial>;
+
+    fn visit_correction<
+        Visitor: crate::application_aftermath::ApplicationCorrectionVisitor<Self>,
+    >(
+        _source_binding: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Visitor::Output {
+        visitor.unavailable()
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

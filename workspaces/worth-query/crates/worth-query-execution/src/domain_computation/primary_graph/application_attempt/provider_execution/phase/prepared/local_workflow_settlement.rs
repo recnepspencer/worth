@@ -66,6 +66,11 @@ impl WorthQueryProviderAttemptPreparation {
             outcome_identity.get(),
             admission.operation_authority_identity_bytes(),
         );
+        self.workflow_origin = Some(
+            crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin::from_settlement(
+                &binding.settlement_basis, &binding.workflow_layout, binding.authority_fact_range.clone(), receipt_identity,
+            ),
+        );
         let mut settlement_effects = Vec::new();
         if external {
             // External custody is not performed at product publication; its

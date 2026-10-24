@@ -18,6 +18,11 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryPresentedProgr
 }
 
 impl<'support> WorthQueryPresentedProgram<'support> {
+    pub(in crate::domain_computation::primary_graph) fn revision(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramRevision {
+        self.entry.revision()
+    }
     pub(super) const fn rostered(
         entry: &'support WorthQueryProgramSupportEntry,
         rendering: &'support AspectValue,

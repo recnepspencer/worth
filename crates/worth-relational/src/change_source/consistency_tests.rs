@@ -221,6 +221,7 @@ fn field_patch_with(
         authoritative_record_patches: vec![PublishedAuthoritativeRecordPatch {
             target: RecordRef::Entity(EntityId::new(PartitionId::main(), 11, 1)),
             structural_change: RecordStructuralChange::Updated,
+            relation_birth: None,
             authoritative_patch: PublishedAuthoritativePatch::new(vec![
                 PublishedAuthoritativePatchOperation::FieldLevelPatch {
                     aspect_key: AspectKey::new("profile").unwrap(),

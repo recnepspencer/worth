@@ -50,6 +50,8 @@ mod idempotency_binding;
 mod identity_admitted;
 #[path = "operation_admission/mandatory_review.rs"]
 mod mandatory_review;
+#[path = "operation_admission/original_input.rs"]
+mod original_input;
 #[path = "operation_admission/output_demand.rs"]
 mod output_demand;
 #[path = "operation_admission/selected_conventional.rs"]
@@ -135,6 +137,9 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     mutation_preconditions: WorthQueryBoundMutationPreconditions,
     authorization: Option<WorthQueryRetainedAuthorizationDecisionFacts>,
     governed_input_identity: Option<[u8; 32]>,
+    original_input: Option<original_input::OriginalOperationInput<Input>>,
+    original_scope:
+        Option<Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>>,
     authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_partition_identity: Option<[u8; 32]>,

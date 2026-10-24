@@ -101,6 +101,12 @@ pub(super) fn validate_preimage_coverage(
         return Ok(());
     };
     let demand = inverse.preimage_demand();
+    if demand.loci().is_empty() && demand.maximum_encoded_bytes() == 0
+        && portable.correction_binding().and_then(|binding| binding.authored_identity())
+            .is_some_and(|identity| identity.parts().source_posture == worth_query_declaration::facade::application_operation::ApplicationMutationOutputPosture::Create)
+    {
+        return Ok(());
+    }
     if demand.maximum_encoded_bytes() == 0 {
         return Err(WorthQueryAftermathInstallationDenial::new(
             WorthQueryAftermathInstallationDenialKind::PreImageDemandExceedsBound,

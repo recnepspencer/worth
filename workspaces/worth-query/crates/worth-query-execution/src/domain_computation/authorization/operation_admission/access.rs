@@ -148,6 +148,14 @@ impl<Schema, Operation, Input, Scope>
         self.authorization_basis.capability_input()
     }
 
+    pub(in crate::domain_computation) fn shared_capability_input(
+        &self,
+    ) -> Option<
+        &worth_query_declaration::facade::application_operation::ApplicationSharedInput<Input>,
+    > {
+        self.authorization_basis.shared_capability_input()
+    }
+
     pub(in crate::domain_computation) const fn has_elevation_lifecycle_binding(&self) -> bool {
         self.authorization_basis.is_elevation_lifecycle()
     }

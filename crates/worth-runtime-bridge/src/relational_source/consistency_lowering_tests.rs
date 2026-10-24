@@ -189,6 +189,7 @@ fn field_record(
     PublishedAuthoritativeRecordPatch {
         target: RecordRef::Entity(EntityId::new(PartitionId::main(), 11, 1)),
         structural_change: RecordStructuralChange::Updated,
+        relation_birth: None,
         authoritative_patch: published_patch(vec![WireOperation::FieldLevelPatch {
             aspect_key: AspectKey::new("profile").unwrap(),
             aspect_identity: AspectIdentity(41),
@@ -216,6 +217,7 @@ fn opaque_record(contains_opaque_aspect: bool) -> PublishedAuthoritativeRecordPa
     PublishedAuthoritativeRecordPatch {
         target: RecordRef::Entity(EntityId::new(PartitionId::main(), 12, 1)),
         structural_change: RecordStructuralChange::Updated,
+        relation_birth: None,
         authoritative_patch: published_patch(vec![WireOperation::WholeAspectSet {
             aspect_key: key.clone(),
             aspect_identity: AspectIdentity(51),

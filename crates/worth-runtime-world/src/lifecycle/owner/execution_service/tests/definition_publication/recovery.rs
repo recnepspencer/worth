@@ -29,14 +29,13 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
         .bridge
         .admit_conditional_signal_basis(&fixture.lowering, fixture.root.basis().signal_basis())
         .unwrap();
-    let mut prepared_bridge = fixture
+    let prepared_bridge = fixture
         .bridge
         .prepare_owned_conditional_definition_successor(&predecessor, source_free_request(2))
         .unwrap();
     let candidate_retention = lifecycle.bridge_conditional_retention().unwrap();
     assert_eq!(candidate_retention.retained_definition_candidates(), 1);
     assert!(candidate_retention.retained_bytes() > baseline.retained_bytes());
-    let publication = prepared_bridge.take_runtime_world_publication_operation();
     let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         fixture
             .owner
@@ -44,7 +43,7 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
             .execute_conditional_definition_with_signal(
                 execution,
                 prepared_world,
-                publication,
+                prepared_bridge,
                 &mut (),
                 &cancellation.token(),
                 |transaction, custody| {
@@ -53,7 +52,7 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
                             .bridge
                             .apply_owned_conditional_installation_extension(
                                 transaction,
-                                prepared_bridge,
+                                custody.take_prepared(),
                             )
                             .map_err(|denial| {
                                 worth_signal::facade::SignalError::invalid_input(format!(
@@ -63,15 +62,8 @@ fn activation_unwind_retains_complete_definition_custody_in_first_catalog_observ
                     );
                     Ok(())
                 },
-                |binding, custody| {
-                    let mut applied = custody.lease_applied();
-                    fixture
-                        .bridge
-                        .complete_owned_conditional_installation_activation(
-                            applied.applied_mut(),
-                            binding,
-                        )
-                        .unwrap();
+                |custody| {
+                    custody.complete_activation(&fixture.bridge).unwrap();
                     panic!("forced unwind after definition activation preparation");
                 },
             )
@@ -158,21 +150,20 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
         .bridge
         .admit_conditional_signal_basis(&fixture.lowering, fixture.root.basis().signal_basis())
         .unwrap();
-    let mut prepared_bridge = fixture
+    let prepared_bridge = fixture
         .bridge
         .prepare_owned_conditional_definition_successor(&predecessor, source_free_request(2))
         .unwrap();
     let candidate_retention = lifecycle.bridge_conditional_retention().unwrap();
     assert_eq!(candidate_retention.retained_definition_candidates(), 1);
     assert!(candidate_retention.retained_bytes() > baseline.retained_bytes());
-    let publication = prepared_bridge.take_runtime_world_publication_operation();
     let (outcome, custody) = fixture
         .owner
         .publication_port()
         .execute_conditional_definition_with_signal(
             execution,
             prepared_world,
-            publication,
+            prepared_bridge,
             &mut (),
             &cancellation.token(),
             |transaction, custody| {
@@ -181,7 +172,7 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
                         .bridge
                         .apply_owned_conditional_installation_extension(
                             transaction,
-                            prepared_bridge,
+                            custody.take_prepared(),
                         )
                         .map_err(|denial| {
                             worth_signal::facade::SignalError::invalid_input(format!("{denial:?}"))
@@ -189,15 +180,8 @@ fn activation_denial_retains_signal_successor_without_bridge_or_product_visibili
                 );
                 Ok(())
             },
-            |binding, custody| {
-                let mut applied = custody.lease_applied();
-                fixture
-                    .bridge
-                    .complete_owned_conditional_installation_activation(
-                        applied.applied_mut(),
-                        binding,
-                    )
-                    .unwrap();
+            |custody| {
+                custody.complete_activation(&fixture.bridge).unwrap();
                 Err(worth_signal::facade::SignalError::invalid_input(
                     "forced activation denial",
                 ))

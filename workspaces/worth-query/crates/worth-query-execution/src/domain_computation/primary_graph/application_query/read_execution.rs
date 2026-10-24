@@ -32,7 +32,8 @@ pub(super) use denial::{
     WorthQueryApplicationReadExecutionDenial, WorthQueryApplicationReadExecutionDenialKind,
 };
 pub(super) use kernel_outcome::{
-    project_non_live_kernel_with_decode, NonLiveKernelReceiptEvidence,
+    project_non_live_kernel_roots, project_non_live_kernel_with_decode,
+    NonLiveKernelReceiptEvidence, ProjectedNonLiveKernelOutcome,
 };
 pub(super) use live_target::read_live_target;
 use root_selection::select_bounded_roots;
@@ -100,7 +101,6 @@ pub(super) fn read_bounded_root_rows<
     let pinned = pin_runtime_read(
         runtime,
         execution,
-        graph,
         &read,
         &[],
         WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,

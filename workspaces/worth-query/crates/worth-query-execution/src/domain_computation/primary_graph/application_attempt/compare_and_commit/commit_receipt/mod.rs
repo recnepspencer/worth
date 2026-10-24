@@ -3,6 +3,8 @@
 mod committed_changes;
 mod construction;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
+#[cfg(doctest)]
+mod disclosure_fences;
 mod output_source_identity;
 mod pending;
 mod projection;
@@ -130,6 +132,16 @@ impl WorthQueryApplicationCommitReceipt {
 
     pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         &self.commit
+    }
+
+    /// Exact historical coordinates for selection after this receipt is released.
+    pub fn correction_source(
+        &self,
+    ) -> crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource {
+        crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource::from_untrusted_parts(
+            self.committed_product_publication.composite_commit().clone(),
+            self.commit.clone(),
+        )
     }
 
     pub const fn committed_product_publication(
@@ -304,8 +316,13 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.idempotency_binding()
     }
 
-    pub const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
+    }
+
+    /// Whether the performed occurrence retained values for a declared correction.
+    pub const fn has_retained_preimage(&self) -> bool {
+        self.retained_preimage.is_some()
     }
 
     pub const fn aftermath_causality(&self) -> Option<&WorthQueryCommittedAftermathCausality> {

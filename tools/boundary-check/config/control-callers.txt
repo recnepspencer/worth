@@ -1,4 +1,12 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/history.rs
+# Combined publication courts exercise actual owner settlement, cancellation and World CAS.
+crates/worth-relational/ crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/definition_publication/combined_recovery.rs
+crates/worth-relational/ crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/definition_publication/combined_recovery/continuation.rs
+crates/worth-relational/ crates/worth-runtime-world/src/lifecycle/owner/execution_service/tests/definition_publication/combined_recovery/refusals.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/court/operation_control/combined_cancellation.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/correction_race_court.rs
 crates/worth-relational/ crates/worth-runtime-world/src/branch/reference_test_fixture.rs
 crates/worth-relational/ crates/worth-runtime-world/tests/runtime_world_certification/court/operation_control/combined_race.rs
 crates/worth-relational/ crates/worth-runtime-world/tests/runtime_world_certification/court/operation_control/settlement.rs
@@ -162,6 +170,9 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/request_stops.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/required_chain/required_queue/steady_retention/pressure.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/required_output_recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/composite_definition_recovery.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/correction_race_court.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/branch_adoption_recovery.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/authorization/lifecycle.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/adoption/authorization/progression_expiry.rs
@@ -504,6 +515,12 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/selected_meaning.rs
 
 # 9.17.6.6: exact-observation closed certification courts observe producer contacts.
+# Exact combined-source recovery exercises the installed Signal outcome fault.
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/sealed_runtime_assembly.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
+crates/worth-runtime-bridge/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/operation_control.rs
+crates/worth-signal/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/composite_definition_recovery/unwind.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/composite_definition_recovery/unwind.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/closed_delivery/exact_observation/selected_action.rs
 
@@ -531,3 +548,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races/nested.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/output_availability/races/interruption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/tests/shared_execution.rs
+
+# 9.18: exact family/locality courts observe native owner work and selected roots.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/correction.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/locality.rs

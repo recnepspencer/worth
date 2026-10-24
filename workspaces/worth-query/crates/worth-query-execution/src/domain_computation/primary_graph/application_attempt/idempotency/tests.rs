@@ -8,6 +8,41 @@ use super::{
 use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
 
 #[test]
+fn correction_source_extends_intent_without_replacing_the_actual_inverse_input() {
+    use super::WorthQueryRecordedIntentMatch;
+    let inverse = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
+    let first = inverse
+        .bind_correction_command(&[6; 32], &[3; 32])
+        .bind_operation(&[5; 32]);
+    let retry = inverse
+        .bind_correction_command(&[6; 32], &[3; 32])
+        .bind_operation(&[5; 32]);
+    let different_source = inverse
+        .bind_correction_command(&[6; 32], &[4; 32])
+        .bind_operation(&[5; 32]);
+    assert_eq!(first.key_identity(), &[6; 32]);
+    assert_eq!(first.intent_identity(), inverse.intent_identity());
+    assert_eq!(first.correction_identity(), Some(&[3; 32]));
+    assert_eq!(
+        first.match_recorded_intent(&retry.intent_text()).unwrap(),
+        WorthQueryRecordedIntentMatch::Same
+    );
+    assert_eq!(
+        first
+            .match_recorded_intent(&different_source.intent_text())
+            .unwrap(),
+        WorthQueryRecordedIntentMatch::Drift
+    );
+    assert_ne!(
+        first.intent_text(),
+        inverse
+            .bind_source(Some(&[3; 32]))
+            .bind_operation(&[5; 32])
+            .intent_text()
+    );
+}
+
+#[test]
 fn governed_proposal_is_a_private_part_of_idempotency_intent() {
     let baseline = WorthQueryApplicationIdempotencyBinding::new([1; 32], [2; 32]);
     let first = baseline.bind_governed_proposal(Some(&[3; 32]));

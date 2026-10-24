@@ -15,13 +15,23 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
     for OracleContribution<REUSE, WORK, RUNS, MODE>
 {
     const IDENTITY: ApplicationSchemaContributionIdentity =
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
+        <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::IDENTITY;
     fn register_members(
         builder: ApplicationSchemaDeclarationBuilder<CheckpointSchema>,
     ) -> ApplicationSchemaDeclarationBuilder<CheckpointSchema> {
-        <TopologyContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
+        <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::register_members(
             builder,
         )
+    }
+    fn visit_correction<
+        Visitor: worth_query_decl::facade::application_aftermath::ApplicationCorrectionVisitor<
+            CheckpointSchema,
+        >,
+    >(
+        source_binding: std::any::TypeId,
+        visitor: Visitor,
+    ) -> Result<Visitor::Output, Visitor> {
+        <crate::checkpoint_recovery::contribution::CheckpointContribution as ApplicationSchemaContribution<CheckpointSchema>>::visit_correction(source_binding, visitor)
     }
 }
 impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
@@ -172,7 +182,6 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                 .conditional_operation::<TotalRegionOutput>()
                 .action::<EntryEditBinding<CheckpointSchema>, super::source_delivery::RetainedEntry>().finish_action()
                 .action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema>, super::source_delivery::CorrectEntryCompletion>().finish_action()
-                .native_action::<super::super::entry_correction::EntryCorrectionBinding<CheckpointSchema, true>>().finish_action()
                 .native_action::<RegionTotalsDemandBinding<CheckpointSchema>>().finish_action();
         let output = if collection::declared(MODE) {
             output.derived_collection::<collection::RegionCollection<WORK>>()
@@ -227,7 +236,13 @@ pub(super) fn install_variant<
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
-    install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(checkpoint, profile, 0, seed)
+    install_variant_with_observations::<REUSE, WORK, RUNS, MODE>(
+        checkpoint,
+        profile,
+        0,
+        support::observation::CHECKPOINT_EXECUTION_POLICY,
+        seed,
+    )
 }
 
 pub(super) fn install_variant_with_observations<
@@ -239,16 +254,18 @@ pub(super) fn install_variant_with_observations<
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     profile: worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile,
     additional_observations: u64,
+    execution_policy: worth_foundational::ExecutionRequestPolicy,
     seed: impl FnOnce(&mut Graph),
 ) -> Application<REUSE, WORK, RUNS, MODE> {
     const RETAINED_COMMITS: u64 = 32;
     let invalidation = worth_query_host::facade::runtime::WorthQueryInvalidationResources::new();
-    let limits = support::observation::limits_with_history_room(
+    let limits = support::limits_with_history_and_policy(
         RETAINED_COMMITS + additional_observations,
         16 + additional_observations,
         64 + 3 * additional_observations,
         invalidation,
         524_288 + 4_096 * additional_observations,
+        execution_policy,
     );
     support::install_program_with_limits::<OracleProgram<REUSE, WORK, RUNS, MODE>>(
         checkpoint,

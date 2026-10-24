@@ -59,10 +59,7 @@ fn judge(
             "branch decision {index}"
         );
         assert_eq!(
-            run.tree_runs
-                .iter()
-                .map(|tree| tree.metrics_for_test().recombined_nodes)
-                .sum::<u128>(),
+            tree_work::completed_nodes(run),
             tree::expected_nodes(&now, prior.as_ref())
         );
         *prior = now.completes().then(|| now.clone());

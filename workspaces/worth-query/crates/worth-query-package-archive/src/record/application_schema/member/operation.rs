@@ -144,9 +144,9 @@ pub(super) fn decode(
             )
             .map_err(|_| Denial::new(Kind::InvalidRecordShape))?,
         },
-        18 => ApplicationSchemaMember::OperationAftermath {
+        18 | 35 => ApplicationSchemaMember::OperationAftermath {
             operation,
-            contract: aftermath::decode(input, budget)?,
+            contract: aftermath::decode(input, budget, tag == 35)?,
         },
         29 | 30 => ApplicationSchemaMember::OperationInboundOccurrence {
             operation,

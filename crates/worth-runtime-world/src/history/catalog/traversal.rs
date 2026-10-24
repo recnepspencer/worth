@@ -148,7 +148,7 @@ impl CompositeHistoryCatalog {
     }
 }
 
-fn protect_installed(
+pub(super) fn protect_installed(
     state: &CompositeHistoryCatalogState,
     identity: &CompositeCommitIdentity,
 ) -> Result<CompositeHistoryProtectionObligation, CompositeHistoryCatalogDenial> {
@@ -187,7 +187,7 @@ impl HistoryTraversalControl<'_, '_> {
             Self::Request { maximum, .. } => *maximum,
         }
     }
-    fn check_live(&self) -> Result<(), CompositeHistoryCatalogDenial> {
+    pub(super) fn check_live(&self) -> Result<(), CompositeHistoryCatalogDenial> {
         match self {
             Self::Inspection(_) => Ok(()),
             Self::Request { execution, .. } => check_live(execution),

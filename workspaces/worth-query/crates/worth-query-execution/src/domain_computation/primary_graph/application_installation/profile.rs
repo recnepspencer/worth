@@ -6,7 +6,7 @@
 pub enum WorthQueryInMemoryApplicationProfile {
     GeneralPurpose,
     GeometryKernel,
-    /// Finite 10k-node workflow publication over GeometryKernel policies.
+    /// 10k-node workflow workload over GeometryKernel policies.
     WorkflowScale,
 }
 
@@ -15,21 +15,14 @@ impl WorthQueryInMemoryApplicationProfile {
         self,
         maximum_records: Option<std::num::NonZeroUsize>,
     ) -> Option<worth_relational::facade::config::PublicationConfig> {
-        if maximum_records.is_none() && self != Self::WorkflowScale {
-            return None;
-        }
+        let maximum = maximum_records?;
         let mut policy = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
             self.relational_profile(),
             Default::default(),
         )
         .publication
         .policy;
-        if self == Self::WorkflowScale {
-            policy.max_patch_records_per_commit = 240_000;
-        }
-        if let Some(maximum) = maximum_records {
-            policy.max_patch_records_per_commit = maximum.get();
-        }
+        policy.max_patch_records_per_commit = Some(maximum.get());
         Some(policy)
     }
 
@@ -56,6 +49,7 @@ mod tests {
         for profile in [
             WorthQueryInMemoryApplicationProfile::GeneralPurpose,
             WorthQueryInMemoryApplicationProfile::GeometryKernel,
+            WorthQueryInMemoryApplicationProfile::WorkflowScale,
         ] {
             assert_eq!(profile.publication_override(None), None, "omission must preserve profile-default provenance, not install a numerically equal override");
             let default = worth_relational::facade::runtime::RelationalRuntimeConfig::resolved(
@@ -66,19 +60,12 @@ mod tests {
             .policy;
             for maximum in [1, 65_536] {
                 let mut expected = default.clone();
-                expected.max_patch_records_per_commit = maximum;
+                expected.max_patch_records_per_commit = Some(maximum);
                 assert_eq!(
                     profile.publication_override(std::num::NonZeroUsize::new(maximum)),
                     Some(expected)
                 );
             }
         }
-    }
-
-    #[test]
-    fn workflow_scale_has_finite_patch_publication_envelope() {
-        let profile = WorthQueryInMemoryApplicationProfile::WorkflowScale;
-        let publication = profile.publication_override(None).unwrap();
-        assert_eq!(publication.max_patch_records_per_commit, 240_000);
     }
 }

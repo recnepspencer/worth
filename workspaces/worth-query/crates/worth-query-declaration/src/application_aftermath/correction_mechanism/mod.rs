@@ -23,6 +23,32 @@ pub enum DeclaredCorrectionMechanism<Schema> {
     Compensation(DeclaredCompensation),
 }
 
+impl<Schema: crate::application_schema::ApplicationSchema> DeclaredCorrectionMechanism<Schema> {
+    /// A created entity has no prior fields; installation requires its authored
+    /// Create-to-Retire family correspondence before accepting this posture.
+    pub fn recorded_create_inverse_binding<C: super::ApplicationCorrectionBinding<Schema>>() -> Self
+    {
+        Self::RecordedInverse(DeclaredRecordedInverse::from_binding::<C>(
+            DeclaredPreImageDemand::created_entity(),
+        ))
+    }
+    /// Derives the inverse operation and exact capture from one typed binding.
+    pub fn recorded_inverse_binding<C: super::ApplicationCorrectionBinding<Schema>>(
+        demand: DeclaredPreImageDemand<Schema>,
+    ) -> Self {
+        Self::RecordedInverse(DeclaredRecordedInverse::from_binding::<C>(demand))
+    }
+
+    /// Derives the actual compensating operation from its concrete mutation binding.
+    pub fn compensation_binding<C: super::ApplicationCorrectionBinding<Schema>>(
+        postcondition: super::DeclaredAftermathPostcondition,
+    ) -> Result<Self, &'static str> {
+        use crate::application_operation::ApplicationMutationBinding;
+        let action = super::ApplicationInverseBinding::<Schema, C>::descriptor();
+        DeclaredCompensation::new(action.operation_name(), postcondition).map(Self::Compensation)
+    }
+}
+
 impl<Schema> Clone for DeclaredCorrectionMechanism<Schema> {
     fn clone(&self) -> Self {
         match self {

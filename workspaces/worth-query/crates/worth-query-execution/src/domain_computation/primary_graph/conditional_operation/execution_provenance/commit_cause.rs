@@ -50,8 +50,7 @@ pub(super) fn application_commit_cause(
         | Kind::ProgramNotActiveOnOccurrence { .. }
         | Kind::ProgramSupportRetired
         | Kind::ProgramActivationUnresolved
-        | Kind::RecoveryHandoffMismatch { .. } => {
-            WorthQueryConditionalExecutionCause::TerminalFailure
-        }
+        | Kind::CorrectionContextMismatch
+        | Kind::CorrectionIdentityMismatch => WorthQueryConditionalExecutionCause::TerminalFailure,
     }
 }

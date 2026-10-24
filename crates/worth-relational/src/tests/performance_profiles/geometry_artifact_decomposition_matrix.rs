@@ -14,14 +14,11 @@ fn perf_geometry_artifact_decomposition_matrix() {
         suite,
         "hundred_k_nodes_pseudorealistic_rich_artifact_classes",
         || {
-            let mut runtime = runtime_with_test_schema_profile_and_chunks(
+            let runtime = runtime_with_test_schema_profile_and_chunks(
                 RelationalRuntimeProfile::GeometryKernel,
                 ROCKETSHIP_CHUNK_SIZE,
                 ROCKETSHIP_CHUNK_SIZE,
             );
-            runtime.configure_for_test(|config| {
-                config.publication.policy.max_patch_records_per_commit = node_count * 4
-            });
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
             let seeded = seed_pseudorealistic_rocketship_world(
                 execution,

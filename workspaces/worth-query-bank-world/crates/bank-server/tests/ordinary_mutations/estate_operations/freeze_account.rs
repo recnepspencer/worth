@@ -1,5 +1,11 @@
+#[path = "freeze_account/correction.rs"]
+mod correction;
+#[path = "freeze_account/correction_owner.rs"]
+mod correction_owner;
 #[path = "freeze_account/fixture.rs"]
 pub(crate) mod fixture;
+#[path = "freeze_account/reapplication_owner.rs"]
+mod reapplication_owner;
 
 use bank_domain::{
     estate::EstateWorkflowStage, proposals::BankIdempotencyKey, schema::AccountStatus,

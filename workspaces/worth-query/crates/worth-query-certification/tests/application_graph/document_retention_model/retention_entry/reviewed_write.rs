@@ -8,7 +8,8 @@ use worth_query_host::facade::{
         },
         application_schema::{
             ApplicationFieldRef, ApplicationPrincipalBindingRef, EqualityPredicate,
-            NoApplicationUnit, ReadOnly, U64ApplicationValueBinding,
+            NoApplicationUnit, OperationReads, OperationWrites, ReadOnly,
+            U64ApplicationValueBinding,
         },
     },
     primary_graph::{
@@ -109,12 +110,14 @@ impl<Binding> OperationHandler<DocumentRetentionSchema, Binding> for ReviewedSet
 where
     Binding: ApplicationMutationBinding<
         DocumentRetentionSchema,
-        Operation = SetRetention,
         Input = SetRetentionInput,
         Result = DocumentRetentionWritten,
         Decision = WorthQueryInvariantMutationTarget<DocumentRetentionSchema, Document>,
         Denial = SetRetentionDenial,
     >,
+    DocumentIdentityField: OperationReads<Binding::Operation>,
+    DocumentRetentionField:
+        OperationReads<Binding::Operation> + OperationWrites<Binding::Operation>,
 {
     fn decide(
         &self,

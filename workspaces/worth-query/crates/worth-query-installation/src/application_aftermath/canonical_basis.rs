@@ -86,6 +86,61 @@ pub(super) fn prepare_aftermath_basis(
     builder.text("operation", operation_slot);
     builder.text("authority", authority_label(portable.authority()));
     push_correction_contract(&mut builder, portable, reconciliation);
+    if let Some(inverse) = portable.correction_binding() {
+        builder.text(
+            "reapplication-source-present",
+            inverse.reapplication_source().is_some().to_string(),
+        );
+        builder.text(
+            "reapplication-source",
+            inverse
+                .reapplication_source()
+                .map_or("", |identity| identity.as_str()),
+        );
+        builder.text(
+            "inverse-completed-external-reconciliation-present",
+            inverse
+                .completed_external_reconciliation()
+                .is_some()
+                .to_string(),
+        );
+        builder.text(
+            "inverse-completed-external-reconciliation",
+            inverse
+                .completed_external_reconciliation()
+                .map_or("", |procedure| procedure.procedure_slot()),
+        );
+        for (field, value) in inverse.disclosure().canonical_fields() {
+            builder.text(format!("inverse-disclosure-{field}"), value);
+        }
+        builder.text("inverse-binding", inverse.identity().as_str());
+        builder.text(
+            "inverse-source-binding",
+            inverse.source().binding_identity().as_str(),
+        );
+        builder.text(
+            "inverse-target-binding",
+            inverse.inverse().binding_identity().as_str(),
+        );
+        builder.text("inverse-source-handler", inverse.source_handler());
+        builder.text("inverse-target-handler", inverse.inverse_handler());
+        builder.text(
+            "inverse-source-query",
+            inverse.source_query().unwrap_or_default(),
+        );
+        builder.text(
+            "inverse-source-query-present",
+            inverse.source_query().is_some().to_string(),
+        );
+        builder.text(
+            "inverse-target-query",
+            inverse.inverse_query().unwrap_or_default(),
+        );
+        builder.text(
+            "inverse-target-query-present",
+            inverse.inverse_query().is_some().to_string(),
+        );
+    }
     push_external_effect(&mut builder, external_effect);
     builder.finish()
 }

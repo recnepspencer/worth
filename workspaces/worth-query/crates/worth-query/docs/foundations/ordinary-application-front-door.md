@@ -18,6 +18,7 @@ plumbing.
 - bind conditional providers and named clocks without owning Signal scheduling;
 - request bounded produced outputs and consume their exact retained occurrence;
 - perform source-bound edits and current, exact, or live reads through one request;
+- [correct a recorded operation](../execution/recorded-source-correction.md) under current authority while preserving intervening disjoint edits;
 - keep transport code descriptive rather than authoritative.
 
 ## Stable Entry Points
@@ -79,6 +80,31 @@ The main owners remain separate:
 - Signal owns policy decisions and temporal wake eligibility;
 - Query owns application installation, admission, progression, and publication;
 - the host supplies adapters and resources but does not reinterpret decisions.
+
+### Correct a performed operation
+
+Use `request.corrections()` to select a performed source and apply its declared
+inverse or compensating action. The application declares an
+`ApplicationCorrectionBinding`; the caller selects its source, supplies an
+idempotency key, prepares against the current target, then publishes. The new
+commit records the original source and preserves unrelated intervening edits.
+
+For retained reapplication, enable `visit_reapplication` and implement
+`reapplication_key` on that declaration. Read
+`corrections().alternatives(&source, limits, maximum_entries)` through its
+continuation, and select the caller's chosen reversal from the completed page.
+Then use `corrections().reapply(&alternative).idempotency(key).limits(limits)`
+with the original source action's delivery. The source input is retained, while
+the current request supplies fresh authority. Ordinary edits preserve the
+history choices; the selected branch's canonical relationships determine which
+reversal a new reapplication consumes.
+
+Keep the source selection alive through the correction and its retries. Choose
+`prepare_operation` for an action with source-completion or retained-commit
+delivery, and advance and close the returned owning handle. Fixed required
+outputs use `prepare_performed`. The
+[recorded source correction guide](../execution/recorded-source-correction.md)
+provides the declaration, request, retention, delivery and recovery examples.
 
 ### Keep the original branch across a host default switch
 
@@ -1162,12 +1188,8 @@ real local archive ingress and the complete owning caller loop, with marker-boun
 excerpts. The [workflow guide](workflows.md)
 owns the detailed read policies and outcomes.
 
-## Current Limits
+## Request and lifetime contracts
 
-- The synchronous M0 contribution, request, handler, candidate, invariant,
-  producer, conditional, bounded output-demand, exact/live read, correspondence,
-  discovery, and branch-local program-evolution foundation is certified.
-  Deferred producer completion belongs to the later producer extension.
 - Authored workflow definitions are available: an application builds a
   definition with `ApplicationWorkflowDefinitionBuilder`, publishes validated
   revisions, discovers the current one through
@@ -1181,29 +1203,26 @@ owns the detailed read policies and outcomes.
   advances the workflow. Callback bytes do not resume an instance.
 - Historical, preview, continuation, and live lanes are available only for an
   installed query whose declared support and current admission allow that lane.
-- Conditional providers and managed clocks are stable on the primary-graph
-  application runtime. Query does not publish a separate general-purpose
-  temporal workspace API.
+- Conditional providers and managed clocks use the primary-graph application
+  runtime and its installed temporal bindings.
 - Recovery handles and temporal wake state are runtime-local. An application
   may capture Query's opaque native checkpoint with its accepted-output
   identities, then readmit it through its installed schema on restart; the
-  application owns the enclosing artifact and Store transport. This is not a
-  general Query Save/Open API. Temporal wakes reconstruct from surviving
+  application owns the enclosing artifact and Store transport. Temporal wakes reconstruct from surviving
   authoritative domain truth rather than persisted wake handles.
 - Product branches, retained observations, and pending cleanup are
   memory-resident live capabilities. Process loss releases them; checkpoint
   readmission restores native committed truth and accepted output identities,
   not these handles or producer execution.
-- Linear undo and redo remain provisional experiments. Milestone 9.18 owns any
-  accepted public correction-history contract.
-- Certification replay remains certification-only.
+- Recorded correction requires retained source history and fresh disclosure
+  and inverse admission. Its source selection owns the optional history pin;
+  the corrective action owns its publication, delivery and cleanup custody.
 
 Completed touched-record evidence is sealed from the exact native prepared
 candidate before effects using the caller's explicit `ExecutionAllocationPolicy`.
 The shared immutable array retains its checked payload allocation through
 receipt observers and unpublished recovery, including after the request lease
-drops. There is no aggregate completed-evidence byte window or quota-driven
-receipt eviction. Durable idempotency rows prevent re-execution when a fresh
+drops. Durable idempotency rows prevent re-execution when a fresh
 process or retired product occurrence no longer retains its performed receipt.
 Arc headers, native preparation and evidence indexes remain separate owners.
 
@@ -1214,6 +1233,7 @@ Arc headers, native preparation and evidence indexes remain separate owners.
 - [Runtime-Installed Domains And Operations](../domain-capabilities/runtime-installed-domains.md)
 - [Conditional Installed Operations](../domain-capabilities/conditional-installed-operations.md)
 - [Application Aftermath, External Effects, And Recovery](../execution/application-aftermath-and-recovery.md)
+- [Correct A Recorded Source Operation](../execution/recorded-source-correction.md)
 - [Support Matrix And Admission](./support-matrix-and-admission.md)
 - [Typed Stops And Remediation Guidance](../domain-capabilities/typed-stops-and-remediation-guidance.md)
 

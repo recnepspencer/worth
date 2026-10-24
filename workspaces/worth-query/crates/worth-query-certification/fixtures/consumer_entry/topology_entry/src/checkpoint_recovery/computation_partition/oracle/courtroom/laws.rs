@@ -70,10 +70,7 @@ fn named_edit_laws_have_the_declared_occurrences_and_exact_calls() {
                 Some(&case.after)
             };
             assert_eq!(
-                run.tree_runs
-                    .iter()
-                    .map(|r| r.metrics_for_test().recombined_nodes)
-                    .sum::<u128>(),
+                tree_work::completed_nodes(run),
                 tree::expected_nodes(&now, prior),
                 "{}: tree law",
                 case.name

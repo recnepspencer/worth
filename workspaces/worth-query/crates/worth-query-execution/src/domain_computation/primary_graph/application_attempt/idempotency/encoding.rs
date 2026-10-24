@@ -84,6 +84,9 @@ impl WorthQueryApplicationIdempotencyBinding {
             self.workflow_approval_identity,
         );
         mutation_binding::append_identity_slot(&mut encoded, self.mutation_binding_identity);
+        if self.correction_identity.is_some() {
+            append_identity_slot(&mut encoded, "correction", self.correction_identity);
+        }
         encoded
     }
 }

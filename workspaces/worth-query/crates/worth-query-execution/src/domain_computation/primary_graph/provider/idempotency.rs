@@ -11,7 +11,9 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::primary_graph::schema_layout::WorthQueryProviderIdempotencyLayout;
 
+mod lookup_key;
 mod product_affinity;
+pub(in crate::domain_computation::primary_graph) use lookup_key::WorthQueryIdempotencyLookupKey;
 pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQueryProductIdempotencyAffinity;
 mod snapshot_resolution;
 use snapshot_resolution::resolve_at_snapshot;
@@ -166,6 +168,20 @@ impl WorthQueryPrimaryGraphProvider {
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
         self.graph.with_runtime_mut_unwind_isolated(execution, |runtime| {
+            if binding.correction_identity().is_some()
+                && self.inspect_pending_correction_idempotency(binding.key_identity())
+                    .is_some_and(|recorded| recorded != binding)
+            {
+                return Ok(WorthQueryProviderIdempotencyResolution::Drift);
+            }
+            if let Some(Some(recorded)) = self.inspect_pending_application_idempotency(
+                product.observation().lifecycle_incarnation())
+                && recorded.correction_identity().is_some() && recorded != binding
+            {
+                return Ok(if recorded.key_identity() == binding.key_identity() {
+                    WorthQueryProviderIdempotencyResolution::Drift
+                } else { WorthQueryProviderIdempotencyResolution::Unpublished });
+            }
             self.resume_pending_application_publication(execution,
                 runtime,
                 product.observation().lifecycle_incarnation(),

@@ -45,6 +45,7 @@ pub enum BankHttpMutationRequest {
         custody_id: String,
         sequence: u64,
         controls: BankHttpMutationReadControls,
+        account: String,
     },
     ResumeSource {
         protocol: BankHttpProtocolVersion,
@@ -90,6 +91,24 @@ pub enum BankHttpMutationOperation {
         amount_minor_units: i64,
         expected_accounting_revision: Option<u64>,
         expected_status: Option<BankHttpExpectedAccountStatus>,
+    },
+    CorrectSendMoney {
+        source: super::BankHttpCorrectionSource,
+    },
+    ReapplySendMoney {
+        history_token: String,
+        source: super::BankHttpCorrectionSource,
+    },
+    FreezeEstateAccount {
+        estate: u64,
+        account: String,
+    },
+    CorrectEstateFreeze {
+        source: super::BankHttpCorrectionSource,
+    },
+    RevokeEstateCapability {
+        estate: u64,
+        grant: u64,
     },
 }
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -138,6 +157,7 @@ pub enum BankHttpMutationOutcome {
         sequence: u64,
         recovered: bool,
         commit: BankHttpCommitDescription,
+        source: super::BankHttpCorrectionSource,
     },
     Terminal {
         request_id: String,

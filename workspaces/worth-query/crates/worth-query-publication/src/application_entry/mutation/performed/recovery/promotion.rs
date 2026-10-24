@@ -146,6 +146,7 @@ where
             Err(denial) => return Err((denial, recovery)),
         };
         let WorthQueryUnpublishedRequiredApplicationMutation {
+            recorded_input,
             source,
             demand,
             phase,
@@ -162,6 +163,7 @@ where
                 return Err((
                     binding_mismatch(),
                     WorthQueryUnpublishedRequiredApplicationMutation {
+                        recorded_input,
                         source,
                         demand,
                         phase,
@@ -185,6 +187,7 @@ where
                         WorthQueryManagedApplicationRecoveryDenial::Demand(denial),
                     ),
                     WorthQueryUnpublishedRequiredApplicationMutation {
+                        recorded_input,
                         source,
                         demand,
                         phase: ProgramSourceRecoveryPhase::Performed {

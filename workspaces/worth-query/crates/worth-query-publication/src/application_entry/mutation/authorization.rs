@@ -374,6 +374,7 @@ where
         workflow_transition: request.workflow_transition_identity,
         workflow_birth: request.workflow_birth_identity,
         workflow_succession: request.workflow_succession_identity,
+        correction: None,
     };
     Ok(PreparedMutation {
         principal_identity,

@@ -60,7 +60,7 @@ behavior.
 | `worth-query-declaration` | Authored intent, canonicalization, schema-visible validation, binding grammar, result shapes, collection declarations, and the declaration macros | Installation, execution, publication, replay | `worth_query_decl::facade`; `worth_query_host::facade::declaration` |
 | `worth-query-installation` | Callback-free domain package meaning, installation admission, generation affinity, conflict semantics, installed indexes, and installed operation contracts such as `WorthQueryOperationTouchContract` | Execution providers and workspaces | `worth_query_host::facade::domain` |
 | `worth-query-admission` | Basis, policy, support, resource, and descriptive graph-read planning decisions, and the proof-bearing handoffs that execution accepts | Executable plans, allocation, provider contact, execution, publication | `worth_query_host::facade::admission` |
-| `worth-query-execution` | Consuming admission proof, attempt-local provider sessions, and execution evidence. It also holds the primary-graph application runtime: installation, contributions, handlers, request admission, candidate touch admission, compare-and-commit, commit receipts and outcomes, settlement deferral, product branches, program adoption, discovery, workflows, and provisional aftermath | Derived publication and disclosure copies | `worth_query_host::facade::{application_installation, application_contribution, application_discovery, application_invariants, installed, primary_graph, product, runtime, convergence_epoch, provisional_aftermath}` |
+| `worth-query-execution` | Consuming admission proof, attempt-local provider sessions, and execution evidence. It also holds the primary-graph application runtime: installation, contributions, handlers, request admission, candidate touch admission, compare-and-commit, commit receipts and outcomes, settlement deferral, product branches, program adoption, discovery, workflows, recorded correction and recovery | Derived publication and disclosure copies | `worth_query_host::facade::{application_installation, application_contribution, application_discovery, application_invariants, installed, primary_graph, product, runtime, convergence_epoch}` |
 | `worth-query-publication` | Derived publication: policy-materialized decision attachments, canonical disclosure copies, published application results, application aftermath publication, and the borrowed request API (`WorthQueryApplicationRequestExt`, mutation outcomes, output demand, live reads) | Execution | `worth_query_host::facade::{publication, application_entry}` |
 | `worth-query-package-archive` | The store-neutral, authority-free archive protocol for portable packages | Trust, activation, or runtime authority | Release tooling only |
 | `worth-query` | The Workspace engine surface (`WorthQueryWorkspace`), typed query authoring, and the engine modules for live views, subscriptions, continuations, policy narrowing, and the consumer kit | Anything an application imports | Nothing. See [Engine consumers](#engine-consumers). |
@@ -76,7 +76,7 @@ behavior.
 
 `tools/boundary-check/snapshots/facades.toml` snapshots the exports of
 `worth-query-decl`, `worth-query-host`, `worth-query-host::primary_graph`,
-`worth-query-host::provisional_aftermath`, `worth-query-replay`, and
+`worth-query-replay`, and
 `worth-query-certification`. Adding, removing, or renaming one of those exports
 is a deliberate snapshot update, not a side effect.
 
@@ -139,7 +139,7 @@ exposes it. Read the linked section for the behavior; change the owner crate.
 | Branches, programs, adoption | [§12](../../../../../docs/how-it-works.md#12-branches-programs-and-adoption); calls in [Build an Application §7](../../../../../docs/build-an-application.md#7-adopt-a-new-program-on-a-branch); full guide [foundations/programs-and-adoption.md](foundations/programs-and-adoption.md) | `worth-query-execution` for rosters, activation, and adoption publication; `worth-query-publication` for `programs()` and branch-set requests | `application_entry`, `application_installation`, `product`, `primary_graph` |
 | Workflows | [§13](../../../../../docs/how-it-works.md#13-workflows); calls in [Build an Application §6](../../../../../docs/build-an-application.md#6-author-publish-and-run-workflows); full guide [foundations/workflows.md](foundations/workflows.md) | `worth-query-declaration` for specs, builders, and node kinds; `worth-query-installation` for vocabulary installation and resource ceilings; `worth-query-execution` for the workflow kernel, runtime, outcomes, discovery, and adoption inventory; `worth-query-publication` for workflow requests and their preparation denials | `application_program`, `domain`, `application_installation`, `application_discovery`, `application_entry`, `primary_graph` |
 | Workflow-bound operation checks (operation authorization, occurrence authority, approval evidence) | [workflows guide, Operations](foundations/workflows.md#operations); summary in [three independent checks](#three-independent-checks) | `worth-query-declaration` for `workflow_authority` and `ApplicationWorkflowExecutionRequirements`; `worth-query-execution` for admission, authority issue, and commit rechecks; `worth-query-publication` for `for_workflow_operation` | `worth_query_decl::facade::application_operation`; `declaration`, `application_entry`, `primary_graph` |
-| Aftermath and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery) | `worth-query-execution` for recovery and provisional aftermath; `worth-query-publication` for published aftermath | `primary_graph`, `publication`, `provisional_aftermath` |
+| Correction and recovery | [§14](../../../../../docs/how-it-works.md#14-aftermath-and-recovery); full guide [recorded source correction](execution/recorded-source-correction.md) | `worth-query-execution` for canonical source selection, correction lineage and recovery; `worth-query-publication` for `corrections()` and ordinary operation delivery | `application_entry`, `primary_graph`, `publication` |
 
 ## Engine Laws
 
@@ -179,9 +179,9 @@ lists where the code enforces them. Their engine consequences:
   only the canonical World publication makes it terminal. A workflow
   `await_inbound` node observes the owner on fresh advance, never from callback
   bytes or a receipt-local status alone.
-- **Support is explicit.** An exported type may be accepted, provisional,
-  deferred, or vocabulary-only. `provisional_aftermath` is a compiled undo and
-  redo experiment, not an accepted product contract.
+- **Correction uses current admission.** `corrections()` selects retained
+  source meaning and prepares a new operation on the current target branch.
+  Reapplication runs the retained input through the original installed binding.
 
 Inbound meaning starts in
 `worth-query-declaration/src/application_schema/inbound_occurrence`;
@@ -209,9 +209,11 @@ a maintainer keeps when changing the facades.
   engine.** It does not expose raw primary-graph handles that would let a
   consumer bypass Query. Program-output publication custody is deliberately
   absent; the boundary checker reserves its issuer to the publication owner.
-- **Stable aftermath enters through `primary_graph` and
-  `publication::application_aftermath`.** Do not teach
-  `facade::provisional_aftermath` as stable undo or redo support.
+- **Correction enters through `application_entry`.** Use the request's
+  `corrections()` methods for source inspection, preparation and alternative
+  selection. The returned ordinary operation owns source publication,
+  required-output delivery and close. Recovery products remain available through
+  `primary_graph` and `publication::application_aftermath`.
 - **Settlement recovery stays opaque.** The host reaches it through
   `WorthQueryApplicationSettlementDeferred` and
   `WorthQueryPrimaryGraphApplicationRuntime::recover_deferred_application_settlement`.
@@ -1377,7 +1379,6 @@ Do not:
   authority;
 - treat a recovery cursor as retained owner effects, cleanup authority, or a
   product-history continuation;
-- use `provisional_aftermath` as accepted undo or redo support;
 - treat proposed state as committed truth;
 - treat selected invariants as executed invariants;
 - publish protected fields and mask them afterward;

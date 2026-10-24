@@ -48,7 +48,7 @@ impl WorthQueryPrimaryGraphProvider {
                     .commit_receipt()
                     .cloned()
                     .ok_or_else(aftermath_failure)?;
-                if pending.parent() != &observed_parent {
+                if pending.parent() != &observed_parent || pending.target_branch() != branch {
                     return Err(aftermath_failure());
                 }
             }

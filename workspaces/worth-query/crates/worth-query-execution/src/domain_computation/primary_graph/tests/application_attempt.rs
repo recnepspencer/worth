@@ -18,6 +18,8 @@ use crate::domain_computation::primary_graph::{
 mod authority_lifecycle;
 #[path = "application_attempt/authorization_causality.rs"]
 mod authorization_causality;
+#[path = "application_attempt/correction_output_preflight.rs"]
+mod correction_output_preflight;
 #[path = "application_attempt/decision_adjacency.rs"]
 mod decision_adjacency;
 #[path = "application_attempt/decision_manifest_ceiling.rs"]

@@ -212,11 +212,13 @@ impl SignalAttemptProgress {
     }
 
     pub(crate) fn advanced(outcome: SignalBranchAdvanceOutcome) -> Self {
+        Self::advanced_arc(std::sync::Arc::new(outcome))
+    }
+
+    pub(crate) fn advanced_arc(outcome: std::sync::Arc<SignalBranchAdvanceOutcome>) -> Self {
         Self {
             posture: SignalAttemptProgressPosture::Performed,
-            evidence: Some(SignalProgressEvidence::Advanced(std::sync::Arc::new(
-                outcome,
-            ))),
+            evidence: Some(SignalProgressEvidence::Advanced(outcome)),
         }
     }
 

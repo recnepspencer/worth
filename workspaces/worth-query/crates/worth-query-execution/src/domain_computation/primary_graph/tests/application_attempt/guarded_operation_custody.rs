@@ -311,6 +311,7 @@ fn reserved_publication_custody_is_indeterminate_until_its_owner_releases_it() {
                         .selected_product(&(phase).test_host_request())
                         .product()
                         .observation(),
+                    None,
                 )
                 .expect("the owner reserves the exact product incarnation")
         })

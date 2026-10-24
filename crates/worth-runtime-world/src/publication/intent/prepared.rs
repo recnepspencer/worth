@@ -83,6 +83,12 @@ pub struct PreparedCompositePublicationWithSignal {
 }
 
 impl PreparedCompositePublicationWithSignal {
+    pub(crate) fn retain_conditional_definition_custody(
+        &mut self,
+        custody: std::sync::Arc<crate::publication::ConditionalDefinitionAttemptCustody>,
+    ) {
+        self.attempt.retain_conditional_definition_custody(custody);
+    }
     pub fn planned_successor(&self) -> &PlannedProductReferenceSuccessor {
         self.attempt.planned_successor()
     }

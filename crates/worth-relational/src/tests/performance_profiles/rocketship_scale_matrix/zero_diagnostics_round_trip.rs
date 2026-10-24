@@ -15,9 +15,6 @@ pub(super) fn certify_hundred_k_nodes_zero_diagnostics_narrow_round_trip(
                 ROCKETSHIP_CHUNK_SIZE,
                 ROCKETSHIP_CHUNK_SIZE,
             );
-            runtime.configure_for_test(|config| {
-                config.publication.policy.max_patch_records_per_commit = node_count * 2
-            });
             runtime.configure_diagnostics_for_test(|profile| {
                 profile.detailed_traces_enabled = false;
                 profile.max_entries_per_artifact = 0;

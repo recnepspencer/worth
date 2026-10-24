@@ -27,6 +27,7 @@ use crate::domain_computation::primary_graph::{
 
 mod currentness;
 mod local_workflow_settlement;
+mod native_reference_invariants;
 use currentness::{
     readmit_current_basis, select_current_product, validate_elevation_currentness,
     validate_operation_currentness, validate_workflow_deadline,
@@ -51,6 +52,8 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
     outcome_identity: super::super::super::WorthQueryApplicationCommitOutcomeIdentity,
     workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    native_reference_invariants:
+        worth_query_installation::facade::WorthQueryInvariantExecutionContract,
     authorization: WorthQueryProviderCommitAuthorization,
     idempotency: WorthQueryApplicationIdempotencyBinding,
     aftermath_causality: Option<
@@ -110,6 +113,7 @@ impl<Schema, Operation, Input, Scope>
 }
 
 struct WorthQueryProviderAttemptPreparation {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
     local_action_settlement: Option<super::super::super::workflow_transition_program::LocalActionSettlementProof>,
     body_external_emission: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
     required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
@@ -153,7 +157,10 @@ pub(in crate::domain_computation::primary_graph::application_attempt::provider_e
 fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     current: WorthQueryCurrentApplicationCommit<Schema, Operation, Input, Scope>,
-) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope> {
+) -> WorthQueryApplicationCommitPreparation<Schema, Operation, Input, Scope>
+where
+    Schema: ApplicationSchema,
+{
     let WorthQueryCurrentApplicationCommit {
         mut admission,
         lease,
@@ -185,6 +192,16 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         return terminal(denied(DenialStage::ProposalBinding));
     };
     let effect_posture = provider.effect_posture;
+    let native_reference_invariants = match native_reference_invariants::derive(
+        &application.primary_provider.graph.layout,
+        application.installed_schema.invariants(),
+        &provider.effects,
+    ) {
+        Ok(requirements) => requirements,
+        Err(detail) => {
+            return terminal(denied_with_detail(DenialStage::InvariantExecution, detail))
+        }
+    };
     let provider_attempt =
         match prepare_application_provider_attempt(&lease, provider, mutation_partition) {
             Ok(prepared) => prepared,
@@ -201,6 +218,7 @@ fn prepare_authorized_application_commit<Schema, Operation, Input, Scope>(
         outcome_identity,
         workflow_settlement_publication,
         effect_posture,
+        native_reference_invariants,
         authorization,
         idempotency,
         aftermath_causality,

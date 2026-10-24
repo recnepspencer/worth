@@ -29,6 +29,16 @@ pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
     WorthQueryProgramPublicationAccess { _private: () }
 }
 
+pub mod recorded_correction {
+    pub use crate::domain_computation::primary_graph::{
+        WorthQueryCorrectionActionInputSelection, WorthQueryCorrectionAlternativeRef,
+        WorthQueryCorrectionAlternativeResolution, WorthQueryCorrectionAlternativesContinuation,
+        WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionCommandKey,
+        WorthQueryCorrectionInputSelection, WorthQueryCorrectionIntent,
+        WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
+    };
+}
+
 pub mod capability_workflow {
     pub use crate::domain_computation::primary_graph::application_attempt::WorthQueryCapabilityWorkflowIdempotency;
 }

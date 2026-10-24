@@ -8,9 +8,9 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationEntityMarkerIdentity,
 };
 use worth_query_installation::facade::{
-    ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,
-    ApplicationRelationRef, ApplicationSchema, DeclaredApplicationFieldValue, OperationReads,
-    WritePosture,
+    ApplicationEntityRef, ApplicationFieldRef, ApplicationFieldUnit,
+    ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,
+    DeclaredApplicationFieldValue, OperationReads, WritePosture,
 };
 
 use super::super::invariant_projection::WorthQueryPriorOutputRead;
@@ -327,6 +327,28 @@ where
                 Err(WorthQueryInvariantProjectionTraversalDenial::multiple_sources(relation.name()))
             }
         }
+    }
+
+    /// Observe the entity as a decision dependency. Retirement requires this
+    /// entity fact in addition to any fields used to select or inspect it.
+    pub fn entity<Entity>(
+        &mut self,
+        identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
+        entity: ApplicationEntityRef<Schema, Entity>,
+    ) -> Result<(), HandlerExecutionDenial>
+    where
+        Entity: OperationReads<Binding::Operation>,
+    {
+        let _execution = self.execution().execution_request().map_err(|cause| {
+            HandlerExecutionDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    cause,
+                ),
+            )
+        })?;
+        self.reader
+            .require_decision_entity(identity, entity)
+            .map_err(HandlerExecutionDenial::new)
     }
 
     /// Admit an observed entity as a target for the candidate phase of this

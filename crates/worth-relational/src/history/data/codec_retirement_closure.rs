@@ -6,7 +6,12 @@ use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::runtime::{CodecFieldLocus, RelationalRuntime};
 
 mod codec_disposition;
+pub(super) mod materialization;
 mod membership;
+pub(crate) use materialization::{
+    capture_materialization_producers, prepare_materialization_continuity,
+    write_matches as output_materialization_write_matches,
+};
 mod output_correspondence;
 mod payload_reconstruction;
 mod publication_succession;
@@ -280,7 +285,7 @@ fn derive_metered(
             .authoritative_aspect_state
             .as_ref()
             .ok_or("affected output payload missing")?;
-        let selected = membership::latest(runtime, basis, id, context)?;
+        let selected = membership::latest(runtime, basis, id, context, lease)?;
         let origin = membership::validate_member(
             runtime,
             basis,

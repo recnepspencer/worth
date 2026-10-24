@@ -1,14 +1,6 @@
-//! Typed internal derivation failures for Phase 8 aftermath identity work.
-//!
-//! Consumer-visible denials remain typed kinds (`WorthQueryUndoDenialKind`,
-//! `WorthQueryRedoDenialKind`, …). These variants replace `Result<_, &'static str>`
-//! on digest-preparation paths so the residue cannot be rediscovered as a
-//! third stringly error surface (Gate 8.5 finding / Gate 8.6 residue sweep).
+//! Typed derivation failures for external-effect identity and recovery.
 
 /// Internal digest-preparation failure for aftermath identity derivation.
-///
-/// Consumer-visible denials remain the typed undo/redo/recovery kinds. This
-/// enum exists so preparation failures are not `&'static str` (Gate 8.6 residue).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryAftermathDerivationFailure {
     /// The Relational owner could not retain the exact current branch basis.

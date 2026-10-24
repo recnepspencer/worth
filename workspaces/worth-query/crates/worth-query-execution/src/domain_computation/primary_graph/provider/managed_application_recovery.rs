@@ -9,7 +9,6 @@ use worth_runtime_world::facade::{
 };
 
 use super::{publish_recovered, unpublished_idempotency::ManagedUnpublishedRecoveryStop};
-use crate::domain_computation::application_aftermath::WorthQueryAdmittedIdempotencyRead;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationIdempotencyBinding,
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyResolutionDenial,
@@ -17,58 +16,17 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use crate::domain_computation::{
-    WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
-    WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
+    WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
+
+mod performed;
+mod publication;
+pub use performed::WorthQueryManagedApplicationRecoveryPerformed;
 
 enum RecoveredPublicationDelivery {
     Ordinary,
     ProgramSource,
     OwningSource,
-}
-
-/// A performed World successor has been handed to the normal Query pending
-/// publication owner before this result is returned. A failed reply or pending
-/// projection remains visible in the admitted idempotency read's posture.
-pub struct WorthQueryManagedApplicationRecoveryPerformed {
-    read:
-        Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>,
-    publication_failure: Option<WorthQueryProviderSessionFailure>,
-    prior_cleanup_failure: Option<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
-    pending_cleanup: Option<WorthQueryProductUnpublishedRecovery>,
-}
-
-impl WorthQueryManagedApplicationRecoveryPerformed {
-    /// Transfers the actual old record's cleanup custody without claiming refusal or completion.
-    pub fn take_pending_cleanup(
-        &mut self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    ) -> Option<WorthQueryProductUnpublishedRecovery> {
-        self.pending_cleanup.take()
-    }
-
-    pub fn take_prior_cleanup_failure(
-        &mut self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
-    ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
-        self.prior_cleanup_failure.take()
-    }
-
-    pub fn into_parts(
-        self,
-    ) -> (
-        Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>,
-        Option<WorthQueryProviderSessionFailure>,
-        Option<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
-        Option<WorthQueryProductUnpublishedRecovery>,
-    ) {
-        (
-            self.read,
-            self.publication_failure,
-            self.prior_cleanup_failure,
-            self.pending_cleanup,
-        )
-    }
 }
 
 /// Owner result of an admitted recovery: performed publication, no effect, or
@@ -93,7 +51,6 @@ pub enum WorthQueryManagedApplicationRecoveryDenial {
     Authorization(WorthQueryOperationAuthorizationDenial),
     ForeignAdmission,
     BindingMismatch,
-    ConditionalDefinitionRequired,
     ProviderBusy,
     ProviderCapacity,
     ProviderAdmission(worth_relational::facade::mvcc::CompanionPreflightStop),
@@ -118,7 +75,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    /// Continues the exact retained ordinary application partial with a fresh
+    /// Continues the exact retained application partial with a fresh
     /// admitted operation. It never reruns the Relational candidate or handler.
     pub fn recover_admitted_unpublished_application<Operation, Input, Scope>(
         &self,
@@ -248,23 +205,35 @@ where
                 .bind_preconditions(admission.mutation_preconditions().identity())
                 .bind_governed_input(admission.governed_input_identity())
                 .bind_governed_proposal(admission.governed_proposal_identity());
+            let command_lane = self.primary_provider.correction_commit_lane(&bound);
+            let command_coordination = command_lane.as_ref().map(|lane| lane.enter());
             let lane = self
                 .primary_provider
                 .application_branch_commit_lane(product.observation());
             let coordination = lane.enter();
             let mut guard = self
                 .primary_provider
-                .begin_managed_unpublished_recovery(recovery.record_handle())
+                .begin_managed_unpublished_recovery(recovery.record_handle(), product.recovery())
                 .map_err(Denial::from)?;
+            // The handler already supplied this component to the retained attempt.
+            // Fresh authority, scope, input and preconditions still compare in full.
+            let definition_identity = guard.attempt_mut().conditional_definition_identity();
+            let idempotency = if idempotency.conditional_definition_identity().is_none() {
+                idempotency.bind_conditional_definition(definition_identity.as_ref())
+            } else {
+                idempotency
+            };
+            let bound = if bound.conditional_definition_identity().is_none() {
+                bound.bind_conditional_definition(definition_identity.as_ref())
+            } else {
+                bound
+            };
             if !guard.attempt_mut().matches_fresh_binding(
                 bound,
                 admission.operation_scope_binding(),
                 product.observation(),
             ) {
                 return Err(Denial::BindingMismatch);
-            }
-            if !guard.attempt_mut().ordinary_adoption_supported() {
-                return Err(Denial::ConditionalDefinitionRequired);
             }
             let needs_settlement = recovery
                 .inspect()
@@ -284,27 +253,15 @@ where
             if unpublished.expected_product() != binding.observation() {
                 return Err(Denial::BindingMismatch);
             }
-            let prepared = binding
-                .prepare_settled_relational_adoption(&unpublished, admission.publication_request())
-                .map_err(|denial| match denial {
-                    PublicationDenial::Stopped(stop) => {
-                        Denial::ExecutionDenied(advancement_denial(stop))
-                    }
-                    PublicationDenial::Refused(denial) => Denial::Adoption(denial),
-                })?;
-            let successor = prepared.unpublished_recovery_handle();
-            guard
-                .attempt_mut()
-                .prepare_fresh_slot(&self.primary_provider, prepared.planned_successor())
-                .map_err(Denial::Demand)?;
-            guard.reserve_successor(&successor).map_err(Denial::from)?;
-            guard
-                .attempt_mut()
-                .prepare_fresh_terminal(successor.clone())
-                .map_err(Denial::ProviderAdmission)?;
-            let world_recovery = binding.recovery();
-            drop(unpublished);
-            let outcome = prepared.execute(request);
+            let outcome = publication::publish(
+                self,
+                request,
+                admission.publication_request(),
+                &binding,
+                recovery,
+                unpublished,
+                &mut guard,
+            )?;
             drop(binding);
             drop(lease);
             match outcome {
@@ -315,12 +272,7 @@ where
                     Ok((WorthQueryManagedApplicationRecoveryOutcome::NoEffect, None))
                 }
                 Ok(PublicationOutcome::ProductUnpublished(effects)) => {
-                    let next = WorthQueryProductUnpublishedApplication::new(
-                        effects,
-                        world_recovery,
-                        self.primary_provider.unpublished_idempotency_disposition(),
-                    )
-                    .into_recovery();
+                    let next = effects.into_recovery();
                     guard.retain_successor(next.record_handle());
                     let prior_cleanup_failure = self
                         .release_product_publication_recovery_in_advancement(
@@ -337,8 +289,10 @@ where
                         None,
                     ))
                 }
-                Ok(PublicationOutcome::Performed(publication)) => {
-                    let session = guard.take_attempt().complete(publication, None);
+                Ok(PublicationOutcome::Performed((publication, definition_generation))) => {
+                    let session = guard
+                        .take_attempt()
+                        .complete(publication, definition_generation);
                     let source = match delivery {
                         RecoveredPublicationDelivery::Ordinary
                         | RecoveredPublicationDelivery::OwningSource => None,
@@ -369,6 +323,8 @@ where
                         }
                     };
                     drop(coordination);
+                    // The installed pending/completed handoff now owns visibility.
+                    drop(command_coordination);
                     let read = self.resolve_admitted_application_idempotency(
                         phase,
                         admission,
@@ -377,6 +333,7 @@ where
                     Ok((
                         WorthQueryManagedApplicationRecoveryOutcome::Performed(
                             WorthQueryManagedApplicationRecoveryPerformed {
+                                conditional_definition_identity: definition_identity,
                                 read,
                                 publication_failure,
                                 prior_cleanup_failure,

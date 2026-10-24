@@ -89,6 +89,9 @@ pub(super) fn try_with_reader<Output>(
                     &execution,
                     &context,
                     &interruption,
+                    crate::domain_computation::primary_graph::handler::ConditionalDefinitionAdmission::new(
+                        &world.application, admission.graph_work().mutation_product(),
+                    ),
                 );
                 action(&mut decision)
             },

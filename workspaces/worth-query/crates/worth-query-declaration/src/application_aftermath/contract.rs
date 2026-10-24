@@ -16,6 +16,7 @@ pub struct DeclaredApplicationAftermathContract<Schema> {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<DeclaredCorrectionMechanism<Schema>>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
+    correction_binding: Option<super::DeclaredCorrectionBinding>,
 }
 
 impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
@@ -24,6 +25,7 @@ impl<Schema> Clone for DeclaredApplicationAftermathContract<Schema> {
             authority: self.authority,
             mechanism: self.mechanism.clone(),
             reconciliation: self.reconciliation.clone(),
+            correction_binding: self.correction_binding.clone(),
         }
     }
 }
@@ -35,6 +37,7 @@ impl<Schema> std::fmt::Debug for DeclaredApplicationAftermathContract<Schema> {
             .field("authority", &self.authority)
             .field("mechanism", &self.mechanism)
             .field("reconciliation", &self.reconciliation)
+            .field("correction_binding", &self.correction_binding)
             .finish()
     }
 }
@@ -44,6 +47,7 @@ impl<Schema> PartialEq for DeclaredApplicationAftermathContract<Schema> {
         self.authority == other.authority
             && self.mechanism == other.mechanism
             && self.reconciliation == other.reconciliation
+            && self.correction_binding == other.correction_binding
     }
 }
 
@@ -57,11 +61,18 @@ impl<Schema> PartialOrd for DeclaredApplicationAftermathContract<Schema> {
 
 impl<Schema> Ord for DeclaredApplicationAftermathContract<Schema> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        (&self.authority, &self.mechanism, &self.reconciliation).cmp(&(
-            &other.authority,
-            &other.mechanism,
-            &other.reconciliation,
-        ))
+        (
+            &self.authority,
+            &self.mechanism,
+            &self.reconciliation,
+            &self.correction_binding,
+        )
+            .cmp(&(
+                &other.authority,
+                &other.mechanism,
+                &other.reconciliation,
+                &other.correction_binding,
+            ))
     }
 }
 
@@ -71,6 +82,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeAlone,
             mechanism: Some(mechanism),
             reconciliation: None,
+            correction_binding: None,
         }
     }
 
@@ -82,6 +94,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::RuntimeWithExternalOwner,
             mechanism: Some(mechanism),
             reconciliation: Some(reconciliation),
+            correction_binding: None,
         }
     }
 
@@ -90,11 +103,31 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
             authority: DeclaredCorrectionAuthority::NotCorrectable,
             mechanism: None,
             reconciliation: None,
+            correction_binding: None,
         }
     }
 
     pub const fn authority(&self) -> DeclaredCorrectionAuthority {
         self.authority
+    }
+
+    /// Derives the mechanism and corrective association from one typed declaration.
+    pub fn correction_binding<Correction>() -> Self
+    where
+        Schema: crate::application_schema::ApplicationSchema,
+        Correction: super::ApplicationCorrectionBinding<Schema>,
+    {
+        let reconciliation = Correction::completed_external_reconciliation();
+        Self {
+            authority: if reconciliation.is_some() {
+                DeclaredCorrectionAuthority::RuntimeWithExternalOwner
+            } else {
+                DeclaredCorrectionAuthority::RuntimeAlone
+            },
+            mechanism: Some(Correction::mechanism()),
+            reconciliation,
+            correction_binding: Some(super::DeclaredCorrectionBinding::of::<Schema, Correction>()),
+        }
     }
 
     pub const fn mechanism(&self) -> Option<&DeclaredCorrectionMechanism<Schema>> {
@@ -115,6 +148,7 @@ impl<Schema> DeclaredApplicationAftermathContract<Schema> {
                 .mechanism
                 .map(DeclaredCorrectionMechanism::into_portable),
             reconciliation: self.reconciliation,
+            correction_binding: self.correction_binding,
         }
     }
 }
@@ -125,6 +159,7 @@ pub struct PortableApplicationAftermathContract {
     authority: DeclaredCorrectionAuthority,
     mechanism: Option<PortableCorrectionMechanism>,
     reconciliation: Option<DeclaredReconciliationProcedure>,
+    correction_binding: Option<super::DeclaredCorrectionBinding>,
 }
 
 impl PortableApplicationAftermathContract {
@@ -139,11 +174,25 @@ impl PortableApplicationAftermathContract {
             authority,
             mechanism,
             reconciliation,
+            correction_binding: None,
         }
     }
 
     pub const fn authority(&self) -> DeclaredCorrectionAuthority {
         self.authority
+    }
+
+    pub fn correction_binding(&self) -> Option<&super::DeclaredCorrectionBinding> {
+        self.correction_binding.as_ref()
+    }
+
+    /// Reconstructs descriptive association; installation still resolves its bindings.
+    pub fn with_untrusted_correction_binding(
+        mut self,
+        binding: super::DeclaredCorrectionBinding,
+    ) -> Self {
+        self.correction_binding = Some(binding);
+        self
     }
 
     pub const fn mechanism(&self) -> Option<&PortableCorrectionMechanism> {

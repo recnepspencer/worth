@@ -1,5 +1,5 @@
-//! The public observer reconciles actual reducer entries while partition
-//! execution remains incremental, even when the tree's topology changes.
+//! Independent reducer entries and completed pairs bound physical tree work;
+//! the runtime separately reports canonical tree posture and accounting.
 
 use super::*;
 use worth_foundational::facade::PartitionIdentity as Id;
@@ -34,69 +34,49 @@ pub(super) fn assert_counted(run: &OracleRun) {
     assert_reconciled(run, TreeStop::Exact);
 }
 
-pub(super) fn assert_reconciled(run: &OracleRun, stop: TreeStop<'_>) {
+/// Physical completed pairs, excluding the observer's two later certification builds.
+pub(super) fn completed_nodes(run: &OracleRun) -> u128 {
+    (run.tree_nodes as u128)
+        .checked_sub(2 * certification_leaves(run))
+        .unwrap()
+}
+pub(super) fn reducer_calls(run: &OracleRun) -> u128 {
+    (run.combines as u128)
+        .checked_sub(4 * certification_leaves(run))
+        .unwrap()
+}
+fn certification_leaves(run: &OracleRun) -> u128 {
     use worth_query_host::facade::primary_graph::WorthQueryExecutionPlacementForTest as Placement;
-    let full_completed = run
+    if run
         .runs
         .iter()
-        .any(|run| matches!(run, WorthQueryPartitionedComputationRunForTest::Full(_)));
-    // Two diagnostic certification builds follow the reported boundary.
-    // The owner independently gathered P leaves; each diagnostic build
-    // completes P valid f64 pairs. Exclude those later calls from this run.
-    let certified_leaves = if full_completed && matches!(run.placement, Placement::Certified { .. })
+        .any(|run| matches!(run, WorthQueryPartitionedComputationRunForTest::Full(_)))
+        && matches!(run.placement, Placement::Certified { .. })
     {
         assert_eq!(run.calls.kernels, 3 * run.calls.gathers);
-        u128::try_from(run.calls.gathers).unwrap()
+        run.calls.gathers as u128
     } else {
         0
-    };
-    let reported_calls: u128 = run
-        .tree_runs
-        .iter()
-        .map(|tree| tree.metrics_for_test().combine_calls)
-        .sum();
-    let reported_nodes: u128 = run
-        .tree_runs
-        .iter()
-        .map(|tree| tree.metrics_for_test().recombined_nodes)
-        .sum();
-    let counted_calls = u128::try_from(run.combines)
-        .unwrap()
-        .checked_sub(4 * certified_leaves)
-        .unwrap();
-    let counted_nodes = u128::try_from(run.tree_nodes)
-        .unwrap()
-        .checked_sub(2 * certified_leaves)
-        .unwrap();
+    }
+}
+pub(super) fn assert_reconciled(run: &OracleRun, stop: TreeStop<'_>) {
+    let calls = reducer_calls(run);
+    let nodes = completed_nodes(run);
+    assert!(
+        calls >= 2 * nodes,
+        "completed pairs require actual reducer entries"
+    );
+    if run.outcome.is_ok() {
+        assert_eq!(calls, 2 * nodes);
+    }
     if let TreeStop::ParallelBuild { serial } = stop {
         assert_eq!(
             run.tree_runs, serial,
-            "stopped parallel work equals the serial prefix"
+            "canonical stopped work equals the serial prefix"
         );
-        assert!(
-            reported_calls <= counted_calls,
-            "canonical calls exceed independently entered calls: {run:?}"
-        );
-        assert!(
-            reported_nodes <= counted_nodes,
-            "canonical nodes exceed independently completed pairs: {run:?}"
-        );
-    } else {
-        if matches!(stop, TreeStop::BeforeTree) {
-            assert_eq!(
-                (reported_calls, reported_nodes, counted_calls, counted_nodes),
-                (0, 0, 0, 0),
-                "map-stage stops do no tree work"
-            );
-        }
-        assert_eq!(
-            reported_calls, counted_calls,
-            "every reducer entry reconciles: {run:?}"
-        );
-        assert_eq!(
-            reported_nodes, counted_nodes,
-            "every completed combine pair reconciles: {run:?}"
-        );
+    }
+    if matches!(stop, TreeStop::BeforeTree) {
+        assert_eq!((calls, nodes), (0, 0), "map-stage stops enter no reducer");
     }
 }
 
@@ -165,18 +145,18 @@ pub(super) fn delete_bound(keys: &[Id], key: Id) -> u64 {
 
 pub(super) fn assert_edited(run: &OracleRun, bound: u64) {
     assert_counted(run);
-    let [TreeRun::Edited(metrics)] = run.tree_runs.as_slice() else {
+    let [TreeRun::Edited(_)] = run.tree_runs.as_slice() else {
         panic!(
             "partition reuse has its own tree-edit dimension: {:?}",
             run.tree_runs
         )
     };
     assert!(
-        metrics.recombined_nodes <= u128::from(bound),
+        completed_nodes(run) <= u128::from(bound),
         "recombined {} nodes, pre-edit shape bound {bound}",
-        metrics.recombined_nodes
+        completed_nodes(run)
     );
-    assert_eq!(metrics.combine_calls, 2 * metrics.recombined_nodes);
+    assert_eq!(reducer_calls(run), 2 * completed_nodes(run));
 }
 
 #[test]

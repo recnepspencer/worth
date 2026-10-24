@@ -48,8 +48,14 @@ impl OperationHandler<BankSchema, SendMoneyMutationBinding> for SendMoneyHandler
                 InvalidSendMoneyCandidate,
             ));
         };
-        if let Err(error) = author_journal(candidate, journal, decision.proposed_snapshot()) {
-            return HandlerResult::ExecutionDenied(error);
+        let entity = match author_journal(candidate, journal, decision.proposed_snapshot()) {
+            Ok(entity) => entity,
+            Err(error) => return HandlerResult::ExecutionDenied(error),
+        };
+        if let Err(error) =
+            candidate.create_output::<bank_domain::schema::SendMoneyJournal>(&entity)
+        {
+            return HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(error));
         }
         HandlerResult::Completed(MoneyMovementResult {
             journal: journal.id(),

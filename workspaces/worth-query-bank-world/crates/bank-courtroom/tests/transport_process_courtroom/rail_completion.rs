@@ -13,7 +13,7 @@ use bank_http_adapter::{
     BankHttpProcessConfiguration, BankHttpServerBinding, BankHttpServerConfiguration,
     BankRailCompletionServerInstallation,
 };
-use bank_user_node::{BankUserNodeEstateNotificationOutcome, BankUserNodeRecoverySafeRetryOutcome};
+use bank_user_node::BankUserNodeRecoverySafeRetryOutcome;
 use ed25519_dalek::{Signer, SigningKey};
 use tokio::sync::oneshot;
 
@@ -27,6 +27,8 @@ use super::world::{
 
 #[path = "rail_completion/contact_barrier.rs"]
 mod contact_barrier;
+#[path = "rail_completion/correction.rs"]
+mod correction;
 #[path = "rail_completion/duplicate.rs"]
 mod duplicate;
 #[path = "rail_completion/initiating_client.rs"]
@@ -190,7 +192,10 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
     let original_custody = request["request_id"].as_str().unwrap();
     let resumed = super::node_mutation(&client, node_address, &serde_json::json!({"request_id":"callback-original-resume", "command":"resume_source", "custody_id":original_custody, "sequence":2, "controls":{"deadline_milliseconds":5000}})).await;
     let bank_user_node::BankUserNodeMutationOutcome::Forwarded {
-        response: bank_http_adapter::BankHttpMutationOutcome::Completed { sequence, .. },
+        response:
+            bank_http_adapter::BankHttpMutationOutcome::Completed {
+                sequence, source, ..
+            },
     } = resumed
     else {
         panic!("lost notification owner must resume natively: {resumed:?}")
@@ -286,23 +291,20 @@ async fn completed_rail_callback_survives_lost_ack_and_publishes_world_once() {
         contacts_before_retry + 1,
     )
     .await;
-
-    let mut replay_request = request.clone();
-    replay_request["request_id"] = serde_json::json!("callback-key-replay");
-    let replay = post_node::<BankUserNodeEstateNotificationOutcome>(
+    let original_world = terminal.original_world_commit();
+    correction::assert_completed_notice_refuses_journal_inverse(
         &client,
         node_address,
-        "/v1/estate/notify-death",
-        &replay_request,
+        rail.local_addr(),
+        &source,
+        (
+            original_world.owner_identity().get(),
+            original_world.ordinal(),
+        ),
     )
     .await;
-    let closed = super::recovery::close_notification_source(&client, node_address, replay).await;
-    assert!(matches!(
-        closed,
-        bank_user_node::BankUserNodeMutationOutcome::Forwarded {
-            response: bank_http_adapter::BankHttpMutationOutcome::RailRecoveryReady { .. }
-        }
-    ));
+
+    correction::assert_original_notice_replays(&client, node_address, &request).await;
     assert_eq!(proxy.captured().len(), 2, "replay cannot dispatch again");
 
     duplicate::assert_exact_callbacks(&client, bank_address, &captured[0]).await;

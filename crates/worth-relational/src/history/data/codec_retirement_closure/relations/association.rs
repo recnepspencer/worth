@@ -41,7 +41,9 @@ pub(in super::super) fn validate_complete_publication(
         None,
         origin,
         None,
+        &mut |commit| runtime.history.canonical_envelope(commit),
         &mut |version| runtime.history.canonical_envelope_for_version(version),
+        runtime.history.catalog_len(),
         lease,
         context,
     )

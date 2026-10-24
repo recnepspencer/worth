@@ -130,6 +130,7 @@ where
             .take()
             .expect("admission checked the owned custody");
         let WorthQueryRequiredOutputRetentionFailure {
+            recorded_input,
             receipt,
             result,
             denial,
@@ -162,6 +163,7 @@ where
                         WorthQueryManagedApplicationRecoveryDenial::Demand(next_denial),
                     ),
                     WorthQueryRequiredOutputRetentionFailure {
+                        recorded_input,
                         receipt,
                         result,
                         denial,

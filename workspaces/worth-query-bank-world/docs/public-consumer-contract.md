@@ -6,8 +6,6 @@ Bank product code consumes Query only through `worth-query-decl` and
 `worth-query-host`. It does not import Query authority packages, the Query
 monolith, replay, Relational, Signal, or the runtime bridge.
 
-Runtime replay remains confined to a later certification consumer.
-
 ## Read target
 
 ```rust,ignore
@@ -91,9 +89,8 @@ let authorization = bank
     .build()?;
 ```
 
-These four blocks are Phase 1 compile targets and are exercised by
-`public_consumer_transcript.rs`. They author installed-bound declarations; they
-do not claim authentication, policy admission, execution, or commit authority.
+These builders author declarations bound to the installed schema. Execute an
+installed operation through a request carrying current authenticated authority.
 
 ## Ordinary execution target
 
@@ -264,11 +261,28 @@ It transfers the original input, typed preconditions and owned idempotency key
 into the installed `BankApplication` deposit action. Construction retains no
 principal or request scope. The five money actions declare distinct retained
 delivery contracts. Deposit, withdrawal and send-money builders expose owning
-construction; opening funding and reversal consumer cutovers remain separate.
+construction. Recorded journal correction enters through
+`prepare_send_money_correction` and retains the installed reversal's delivery.
+
+Historical SendMoney reapplication uses the retained original source input.
+Keep each needed occurrence's completed operation owner alive through historical
+selection and retries; its retained observation owns that occurrence's World
+history lease. Close those owners normally when the history is no longer needed.
+Read bounded `request.corrections().alternatives(...)` pages and continue until
+the native traversal completes. `into_page()` retains the latest page independently
+of the old request. Under a fresh request, call
+`corrections().select_alternative_coordinates(&page, &chosen_source, limits)` and
+pass the selected alternative to
+`prepare_send_money_reapplication(&principal, &scope, &alternative, key, limits)`.
+Publish its preparation and retain the returned ordinary SendMoney owner through
+delivery and close. A changed target requires refreshed history; an exact retry
+uses the same historical source and command key.
 
 Advance the returned operation with `operation.advance(&fresh_request,
 maximum_history_work)`, using `runtime.request(&fresh_principal, &fresh_scope)`
-and an explicit `NonZeroUsize` history bound for that attempt. Keep the owner
+and an `Option<NonZeroUsize>` history allowance for that attempt. Use `None` to
+follow history under the request's execution controls, or `Some(limit)` when the
+caller needs a specific traversal bound. Keep the owner
 returned by `Progress` or `Refused`. Native unpublished recovery uses fresh
 authorization and adopts the original journal/posting effects without executing
 the deposit handler again. A fresh stranger cannot recover a teller's deposit.
@@ -286,10 +300,9 @@ executes the real append-partial, unauthorized recovery, authorized recovery,
 historical read and cancelled-close/fresh-close journey. It also verifies all five
 installed money deliveries and preserves the deployed program capability meaning.
 HTTP stores these actual owning money operations in finite transport custody.
-Use the [owning HTTP money contract](http-owning-money.md) for create, resume,
-historical read, close and independent listener-loss continuation. Remaining
-Bank consumers still require their owning cutovers. Do not hide advancement in a
-loop or reconstruct original meaning to discard returned custody.
+Use the [owning HTTP mutation contract](http-owning-money.md) for create, resume,
+historical read, close and independent listener-loss continuation. Match each
+advance result and retain its returned owner for the next request.
 
 ## Workflow, history, and live target
 
@@ -444,8 +457,21 @@ account-activity page/resume and live paths, `/v1/mutations`, the estate
 notification and disbursement paths, recovery inspection, and the four
 `/v1/estate/elevation/*` transitions. The same application request shapes are
 available at a user node without a credential field; that process supplies its
-own authenticated session. Linear undo/redo routes remain provisional
-Milestone 9.18 experiments rather than a Bank Phase 5 product contract.
+own authenticated session. Recorded send-money and estate-freeze corrections
+enter through `/v1/mutations` with the completed original occurrence's `source`
+coordinates and a fresh command key. See [owning HTTP corrections](http-owning-money.md).
+
+The same authenticated node exposes `/v1/corrections/history` and
+`/v1/corrections/history/resume`. Save a row's descriptive `source`, finish all
+bounded pages, then create `reapply_send_money` with that source and the completed
+chooser token. Native selection rechecks current disclosure and original source
+admission. The chooser retains one native page under the configured token
+capacity/lifetime; the resulting mutation retains its separate delivery custody.
+Keep the original, reversal and reapplication custody IDs whose occurrences the
+journey needs. Each completed owner retains its own World observation. The chooser
+token retains traversal progress; keep completed owners alive through historical use.
+After these owners close, later publications may retire optional source history
+and fresh history requests return `stale`/`refresh`.
 
 Every Bank server request body declares `"protocol": "v4"`. The server admits
 that one version and refuses earlier versions before effects. Money commands
@@ -475,34 +501,19 @@ postures are `AcceptedPending`, `AlreadyAccepted`, `Performed`, and
 The rail retains immutable signed bytes through bounded retry and reports
 exhausted obligations for reconciliation. HTTPS installation requires pinned
 Bank TLS trust plus a distinct pinned Bank ACK key. Both rail delivery and
-Query accepted custody are process-local in this phase; orderly rail close
+Query accepted custody are process-local; orderly rail close
 reports unresolved obligations, while forced process death has no persistence
 promise.
 
-Bank Phase 5 is closed. The Docker-backed Authentik courtroom executed the
-complete separate-process failure matrix through the production Bank server and
-independent user-node binaries; its evidence is recorded in
-`front-door-closure-ledger.md`. Runtime Phases 9 and 10 are also closed: the
-host conditional-operation surface is complete, the audience facades are
-contracted, and public cutover residue is enforced. Bank Phase 6 is the next
-milestone frontier and must compose the complete consumer journeys through this
-same public contract.
+## Request and continuation handling
 
-## Prohibitions
+Use the typed Bank intents, field references and currency values when authoring
+application operations. Supply fresh authenticated authority for each request.
+Pass workflow and activity continuations intact to their respective resume
+entrances. After live overflow, resynchronize with an ordinary query.
 
-Application paths contain no semantic aspect, field, relation, operation,
-policy, or currency strings. A dynamic extension, if admitted later, uses an
-explicit dynamic key and schema-readmission result. Caller-cast values and raw
-`AspectValue` construction are not the ordinary bank API.
-
-Do not retain an authenticated principal, workflow continuation, or activity
-continuation as a substitute for a new request. Do not copy pagination
-identity into an offset or rebuild it from result values. Do not retry overflow
-from the live cursor; resynchronize with an ordinary query.
-Do not interpret a successful proposal as a commit—the public mutation outcome
-is the authoritative terminal surface.
-- Do not choose a program in an HTTP route, deserialize a program revision as
-  authority, or retry an operation removed by the selected branch program.
+The public mutation outcome identifies committed work. Query selects the active
+branch program and checks the requested operation against that occurrence.
 
 ## Related docs
 
@@ -522,7 +533,7 @@ A release refusal preserves the original owner, and pending cleanup blocks shutd
 The local host handoff `take_released_cleanup` transfers original uncommitted evidence
 with an exact installed-runtime keeper after lawful physical release. Reply loss
 before host receipt returns the evidence through a reserved transport slot.
-See [owning HTTP commands](http-owning-money.md#estate-and-native-cleanup-custody)
+See [owning HTTP commands](http-owning-money.md#estate-effects-and-native-cleanup-custody)
 for current wire and host usage. Abandonment has no disposal or crash-durability promise.
 
 
@@ -535,6 +546,15 @@ unpublished or dispatch custody on refusal. `Fresh` includes the real handler
 result; `Recovered` reports native evidence without inventing that result.
 `accept_owned_applied` returns the same completed owner on refusal and retains it
 alongside native workflow progression on success. Close that owner explicitly.
+
+To compensate the committed payment's journal, retain its receipt's
+`correction_source().coordinates()` and call
+`prepare_approved_payment_correction(&teller, &scope, &coordinates, key, limits)`.
+The original rail completion and workflow settlement must both be complete.
+The returned preparation owns the installed reversal's retained delivery;
+publish or continue it, inspect its original receipt and close its owner with a
+fresh request. Current teller authority governs the journal compensation while
+the original payment and remote settlement keep their completed dispositions.
 
 `retain_payment_assessment` owns a separate admitted observation and
 `advance_payment_assessment` supplies the current authenticated request. Closing

@@ -63,9 +63,9 @@ pub(super) fn request(
         )
         | Request::Stopped(
             MapKernelStop::WorkCounterOverflow
+            | MapKernelStop::AccountingUnavailable
             | MapKernelStop::WorkCeiling
-            | MapKernelStop::NestedStopped
-            | MapKernelStop::AccountingUnavailable,
+            | MapKernelStop::NestedStopped,
         )
         | Request::Panicked => operator_denial(),
     }

@@ -106,6 +106,7 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
                     0,
                 )),
                 structural_change: RecordStructuralChange::Updated,
+                relation_birth: None,
                 authoritative_patch:
                     crate::publication::patch::data::PublishedAuthoritativePatch::empty(),
                 semantic_changes: Vec::new(),

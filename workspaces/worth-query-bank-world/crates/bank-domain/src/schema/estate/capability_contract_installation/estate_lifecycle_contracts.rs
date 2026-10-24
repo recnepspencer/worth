@@ -35,6 +35,16 @@ pub(super) fn install(
     );
     let schema = install_contract!(
         schema,
+        RestoreFrozenEstateAccountCapability,
+        RestoreFrozenEstateAccountOperation,
+        EstateCapabilityOperation::FreezeAccount,
+        EstateCapabilityPurpose::EstateAdministration,
+        account_relation,
+        no_field,
+        no_magnitude
+    );
+    let schema = install_contract!(
+        schema,
         OpenEstateCaseCapability,
         OpenEstateCaseOperation,
         EstateCapabilityOperation::OpenEstateCase,
