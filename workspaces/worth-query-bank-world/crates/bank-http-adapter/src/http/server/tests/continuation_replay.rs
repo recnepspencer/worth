@@ -143,6 +143,59 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
 }
 
 #[tokio::test]
+async fn replay_revalidation_keeps_the_cache_on_retry_and_scrubs_it_on_drift() {
+    use super::super::continuation_executor::replay_fault::fail_next_replay_read;
+    use super::super::super::protocol::{BankHttpDenial, BankHttpNextAction};
+
+    let account = AccountId::new(100).unwrap();
+    let application = Arc::new(application(account));
+    let (server, _mutation_continuation) =
+        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
+            .await
+            .expect("HTTP server should bind")
+            .into_parts();
+    let server = server.activate();
+    let client = reqwest::Client::new();
+    let endpoint = format!(
+        "http://{}/v1/queries/account-activity/page",
+        server.local_address()
+    );
+    let request = page_request(account, "replay-revalidation-fault");
+    let first = post_page(&client, &endpoint, &request).await;
+    let _token = continuation(&first);
+    let denied = |kind| {
+        move |outcome: &BankHttpAccountActivityPageOutcome| {
+            matches!(
+                outcome,
+                BankHttpAccountActivityPageOutcome::Denied { denial, .. } if denial.kind == kind
+            )
+        }
+    };
+
+    // A temporary revalidation failure refuses this replay and keeps the
+    // cached publication for the next one.
+    fail_next_replay_read(
+        "replay-revalidation-fault",
+        BankHttpDenial::new(BankHttpDenialKind::ResourceExhausted, BankHttpNextAction::Retry),
+    );
+    let refused = post_page(&client, &endpoint, &request).await;
+    assert!(denied(BankHttpDenialKind::ResourceExhausted)(&refused), "{refused:?}");
+    assert_eq!(post_page(&client, &endpoint, &request).await, first);
+
+    // A drifted basis refuses the replay and retires the cached response.
+    fail_next_replay_read(
+        "replay-revalidation-fault",
+        BankHttpDenial::new(BankHttpDenialKind::Stale, BankHttpNextAction::Refresh),
+    );
+    for _ in 0..2 {
+        let replay = post_page(&client, &endpoint, &request).await;
+        assert!(denied(BankHttpDenialKind::Stale)(&replay), "{replay:?}");
+    }
+    server.shutdown().await.expect("server should shut down");
+    assert!(_mutation_continuation.finish().await.is_ok());
+}
+
+#[tokio::test]
 async fn abandoned_resume_finishes_and_replays_its_exact_response() {
     let account = AccountId::new(100).unwrap();
     let (application, gate) = held_authentication_application(account);
