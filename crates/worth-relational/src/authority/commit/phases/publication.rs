@@ -106,10 +106,20 @@ pub(crate) fn canonical_commit_envelope(
                 detail,
             ))
         })?;
+    // The envelope records process-local identities in the canonical runtime
+    // frame, so its bytes do not depend on which process produced it (D11).
+    envelope.merged_plan.transaction_id = crate::branch::CANONICAL_TRANSACTION_ID;
     envelope.branch_cell_checkpoint = runtime
         .history
         .branch_cell(branch_id)
-        .map(|cell| cell.checkpoint());
+        .map(|cell| cell.checkpoint().in_canonical_frame())
+        .transpose()
+        .map_err(|denial| {
+            TransactionCommitError::publication(PublicationError::new(
+                PublicationStage::BundleAssembly,
+                format!("branch cell cannot be recorded in the canonical frame: {denial:?}"),
+            ))
+        })?;
     validate_schema_continuity_publication(runtime, branch_id, schema_continuity, &envelope)?;
     Ok(envelope)
 }

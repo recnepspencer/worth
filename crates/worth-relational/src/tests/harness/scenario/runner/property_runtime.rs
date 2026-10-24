@@ -25,9 +25,8 @@ pub(crate) fn build_property_runtime(mode: RuntimeHarnessMode) -> RelationalRunt
         RuntimeHarnessMode::Persisted => crate::facade::runtime::RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(test_schema_registry())
-            .durable_medium(crate::tests::support::TestDurableMedium::new())
             .mvcc(property_mvcc_config())
-            .build(),
+            .build_durable(crate::tests::support::TestDurableMedium::new().attachment()),
     }
 }
 

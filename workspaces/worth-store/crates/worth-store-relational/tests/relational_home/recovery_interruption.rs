@@ -15,7 +15,7 @@ use worth_store::physical_runtime::{
 use worth_store_relational::{RelationalStoreHome, RelationalStoreHomeRequest};
 
 use super::crash_oracle::{assert_continues, assert_recovered, InFlight};
-use super::durable_run::{assert_holds, open};
+use super::durable_run::{assert_holds, open, recorded_schema};
 use super::killed_child::{self, ChildEnd};
 use super::process_kill::{self, Stop, SEED};
 use super::schema_transition;
@@ -114,8 +114,16 @@ fn recovery_interruption_child() {
         yieldpoint,
         &execution,
     );
-    opened
-        .expect("a recovery that never parks completes")
-        .close();
+    // The killed commit is the script's durable schema transition, so the
+    // recovered home serves its target: an open that declared the source
+    // completed recovery and was refused for it, and serves once it declares
+    // the target.
+    let home = match opened {
+        Err(refusal) if recorded_schema(&refusal) == Some(schema_transition::TARGET) => {
+            open(&location, &execution)
+        }
+        opened => opened,
+    };
+    home.expect("a recovery that never parks completes").close();
     fs::write(markers.join("finished"), b"1").unwrap();
 }

@@ -10,11 +10,12 @@ use worth_relational::facade::runtime::RelationalRuntimeApi;
 
 use super::*;
 
-/// A durable medium that commits until it is told to leave the next
-/// publication's fate unknown, as a crash after the medium's effect would.
+/// A durable medium that commits until it is told, through the switch the
+/// test keeps, to leave the next publication's fate unknown, as a crash after
+/// the medium's effect would.
 #[derive(Debug, Default)]
 struct UnresolvingMedium {
-    unresolve_next: AtomicBool,
+    unresolve_next: Arc<AtomicBool>,
 }
 
 impl RelationalDurableMedium for UnresolvingMedium {
@@ -33,10 +34,9 @@ impl RelationalDurableMedium for UnresolvingMedium {
 
 #[test]
 fn unresolved_relational_durability_retains_a_possible_effect() {
-    let medium = Arc::new(UnresolvingMedium::default());
-    let relational = RelationalRuntimeApi::builder()
-        .durable_medium(medium.clone())
-        .build();
+    let medium = UnresolvingMedium::default();
+    let unresolve_next = Arc::clone(&medium.unresolve_next);
+    let relational = RelationalRuntimeApi::builder().build_durable(Box::new(medium));
     let mut fixture =
         reference_test_fixture::real_fixture_with_relational_runtime(relational, 12, 12);
     let owner = Arc::new(
@@ -58,7 +58,7 @@ fn unresolved_relational_durability_retains_a_possible_effect() {
     );
     let execution = worth_execution::ExecutionRequest::serial(&serial_request);
     let prepared = prepare_relational(&execution, &fixture, &owner, &expected, "unresolved");
-    medium.unresolve_next.store(true, Ordering::Release);
+    unresolve_next.store(true, Ordering::Release);
 
     let retained = match execute_without_signal(execution, &owner, prepared) {
         OwnerExecutionOutcome::ProductUnpublished(retained) => retained,

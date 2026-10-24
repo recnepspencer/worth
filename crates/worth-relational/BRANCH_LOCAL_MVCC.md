@@ -151,7 +151,7 @@ The terminal outcomes are intentionally distinct:
 - `Denied` means owner, runtime, branch, or lifecycle admission failed.
 - `Interrupted` means cancellation or timeout won before linearization.
 - `Deferred` means one bounded mechanical condition stopped this attempt:
-  `PatchPositionReservationContended`, `RetentionBackpressure`, or
+  `PatchPositionReservationContended` (memory-only runtimes), `RetentionBackpressure`, or
   `CandidateLifetimeExpired`. The two capacity variants of
   `RelationalPublicationDeferred` are refused earlier, during preparation, and
   never arrive here.
@@ -174,6 +174,14 @@ the caller's observation and does not require paying for a second one. The owner
 never retries, never rebases, and never reuses a candidate on the caller's
 behalf. Retries must be bounded and must fail by name when the bound is
 exhausted; `examples/branch_local_mvcc.rs` implements exactly this loop.
+
+Only memory-only runtimes defer. With a durable medium attached, the holder of
+the reservation is making its own commit durable, so a publisher that meets it
+waits instead, first come first served, within its execution request: a
+cancelled or expired request stops with `RequestStopped` (a commit's
+`TransactionCommitError::Execution`) before any effect, holding no position.
+The wait holds only the waiter's own branch; the holder never takes another
+branch's critical section, so the two cannot deadlock.
 
 ## Concurrency boundary
 
@@ -277,7 +285,7 @@ reclamation are explicit cold paths.
 ## Current limits
 
 The owner catalog, immutable roots, branch cells, and retention accounting are
-memory-resident. With a durable medium attached (`durable_medium(..)`), each
+memory-resident. With a durable medium attached (`build_durable(..)`), each
 publication is made durable before its cutover installs the new head, so a
 selected head is always durable; a refusal (`DurablePublicationRefused`) or an
 unknown fate (`DurabilityUnresolved`) installs nothing. Restart reconstructs

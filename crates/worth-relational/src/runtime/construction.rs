@@ -30,7 +30,7 @@ pub(crate) struct RuntimeExtensions {
     custom_invariants: Vec<CustomInvariantRegistration>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
-    durable_medium: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>>,
+    durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
 }
 
 impl RuntimeExtensions {
@@ -56,9 +56,7 @@ impl RuntimeExtensions {
 
     pub(crate) fn with_durable_medium(
         mut self,
-        durable_medium: Option<
-            std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>,
-        >,
+        durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
     ) -> Self {
         self.durable_medium = durable_medium;
         self
@@ -142,7 +140,7 @@ impl RelationalRuntime {
 
     pub(crate) fn build_from_extensions(
         config: super::RelationalRuntimeConfig,
-        extensions: RuntimeExtensions,
+        mut extensions: RuntimeExtensions,
     ) -> Self {
         let services = extensions.build_runtime_services();
         services
@@ -160,7 +158,7 @@ impl RelationalRuntime {
         let schema_contract_runtime = extensions.build_schema_contract_runtime_subsystem(&config);
         let commit_strategies = extensions.build_commit_strategy_subsystem(&config);
         let mut durability = <DurabilitySubsystem as RuntimeSubsystem>::new(&config);
-        if let Some(medium) = extensions.durable_medium.clone() {
+        if let Some(medium) = extensions.durable_medium.take() {
             durability.attach_medium(medium);
         }
         let visibility = <VisibilitySubsystem as RuntimeSubsystem>::new(&config);

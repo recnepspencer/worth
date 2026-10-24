@@ -102,7 +102,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
         }
     );
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
         .durability_recovery()

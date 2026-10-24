@@ -1,9 +1,9 @@
 //! The oracle's workload: a seeded script of Relational operations, generated
-//! once by a memory-only reference runtime. The reference's per-branch record
-//! states after each commit are the expected result for any durable run of
-//! the same script. Canonical artifacts embed the producing runtime's
-//! process-local instance identity, so a durable run's artifacts are compared
-//! with that run's own acknowledged artifacts, not the reference's.
+//! once by a memory-only reference runtime. The reference's canonical
+//! artifacts and per-branch record states after each commit are the expected
+//! result for any durable run of the same script: canonical artifacts are
+//! runtime-neutral (D11), so a durable run, recovered or not, must reproduce
+//! the reference's artifacts byte for byte at every position.
 
 use std::collections::BTreeMap;
 
@@ -72,6 +72,8 @@ pub(crate) struct Script {
     /// commits.
     pub(crate) states: Vec<BranchStates>,
     pub(crate) records: Vec<RecordRef>,
+    /// The reference's canonical artifact bytes; index `k` is position `k + 1`.
+    pub(crate) artifacts: Vec<Vec<u8>>,
 }
 
 pub(crate) const RUNTIME_NAME: &str = "relational-home-oracle";
@@ -156,8 +158,9 @@ impl Script {
                 steps.push(Step::Checkpoint);
             }
         }
+        let artifacts = artifacts_of(&runtime);
         assert_eq!(
-            artifacts_of(&runtime).len(),
+            artifacts.len(),
             commits,
             "every reference commit is retained"
         );
@@ -168,6 +171,7 @@ impl Script {
             steps,
             states,
             records,
+            artifacts,
         }
     }
 }

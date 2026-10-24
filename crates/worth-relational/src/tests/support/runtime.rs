@@ -141,8 +141,7 @@ pub(crate) fn durable_runtime_with_test_schema_profile(
     RelationalRuntimeApi::builder()
         .profile(profile)
         .schema_registry(test_schema_registry())
-        .durable_medium(TestDurableMedium::new())
-        .build()
+        .build_durable(TestDurableMedium::new().attachment())
 }
 
 pub(crate) fn durable_runtime_with_declared_aspect_schema(
@@ -151,8 +150,7 @@ pub(crate) fn durable_runtime_with_declared_aspect_schema(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(cascade_delete_policy))
-        .durable_medium(TestDurableMedium::new())
-        .build()
+        .build_durable(TestDurableMedium::new().attachment())
 }
 
 pub(crate) fn runtime_with_test_schema_and_chunks(

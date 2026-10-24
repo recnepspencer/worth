@@ -280,13 +280,14 @@ impl FintechWorld {
         scale: FintechScale,
         persisted: bool,
     ) -> Self {
-        let mut builder = RelationalRuntimeApi::builder()
+        let builder = RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::AiWorkflow)
             .schema_registry(fintech_schema_registry());
-        if persisted {
-            builder = builder.durable_medium(crate::tests::support::TestDurableMedium::new());
-        }
-        let runtime = builder.build();
+        let runtime = if persisted {
+            builder.build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+        } else {
+            builder.build()
+        };
         let case_seeds = seeded_trade_cases(scale);
         let seeded = seed_entities(execution, &runtime, &case_seeds);
         let workflow_cases = build_workflow_cases(&case_seeds, &seeded);

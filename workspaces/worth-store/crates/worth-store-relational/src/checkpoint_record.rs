@@ -94,8 +94,10 @@ pub(crate) fn publish(
         ))
         .map_err(Refusal::Publication)?
     {
-        AnchoredRecordPublished::Published(version)
-        | AnchoredRecordPublished::AlreadyPublished(version) => Ok(version.generation()),
+        AnchoredRecordPublished::Published(membership)
+        | AnchoredRecordPublished::AlreadyPublished(membership) => {
+            Ok(membership.version().generation())
+        }
     }
 }
 

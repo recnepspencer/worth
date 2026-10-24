@@ -62,8 +62,7 @@ pub(super) fn runtime_with_collaboration_merge_history() -> RelationalRuntime {
         .expect("phase 13 schema registry");
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .durable_medium(crate::tests::support::TestDurableMedium::new())
-        .build()
+        .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
 }
 
 pub(super) fn execute_feature_merge(

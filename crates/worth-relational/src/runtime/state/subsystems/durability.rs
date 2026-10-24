@@ -21,8 +21,15 @@ pub(crate) struct DurabilitySubsystem {
 }
 
 impl DurabilitySubsystem {
-    pub(crate) fn attach_medium(&mut self, medium: Arc<dyn RelationalDurableMedium>) {
+    pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         self.medium = Some(Arc::new(RelationalDurableMediumBinding::new(medium)));
+    }
+
+    /// Move the medium out so it can move into the runtime recovery rebuilt.
+    /// This runtime, and every port that holds its attachment, then refuses
+    /// to publish. `None` when it has no medium or the medium already moved.
+    pub(crate) fn detach_medium(&self) -> Option<Box<dyn RelationalDurableMedium>> {
+        self.medium.as_ref().and_then(|binding| binding.detach())
     }
 
     pub(crate) fn medium(&self) -> Option<Arc<RelationalDurableMediumBinding>> {

@@ -42,7 +42,11 @@ sequencing and checkpoint publication for a home (Milestone 1 D1).
 
 A medium is moved into exactly one runtime when that runtime is built or
 recovered. It is not cloneable through the builder, and a forked runtime never
-inherits it, so two runtimes cannot publish to one medium.
+inherits it, so two runtimes cannot publish to one medium. The builder never
+holds it: `build_durable(Box<dyn RelationalDurableMedium>)` moves it into the
+runtime it builds. Recovery moves it out of the recovering runtime into the
+rebuilt one; the attachment it left refuses every later publication with the
+pre-effect `MediumMoved`.
 
 **D2. Durable before live.** With a medium attached, publication runs in this
 order: preparation and validation against the exact admitted basis;
@@ -60,7 +64,12 @@ Live state never selects a commit the medium has not made durable.
 - A commit waiting for the patch-position reservation while another commit's
   durable publication is in flight waits within its execution deadline. It is
   not deferred because a concurrent publisher holds the reservation for I/O.
-  Memory-only runtimes keep their existing reservation behavior.
+  Waiters are served first come, first served and observe the request's
+  cancellation and deadline; a stopped waiter returns `RequestStopped` before
+  any effect, holding no position. The wait cannot deadlock: a publisher takes
+  its own branch's critical section before the reservation, and the holder
+  takes no other branch's while holding it. Memory-only runtimes keep their
+  existing reservation behavior.
 - The settlement-time append and its "performed but durability deferred"
   repair path are deleted: durability can no longer fail after the cutover.
   Settlement that fails for another reason keeps the durable commit under its
@@ -175,11 +184,20 @@ hidden doors run the production admission path. Relational's own durability
 tests use a `cfg(test)` in-crate medium; that is not a second durable path.
 
 **D11. Canonical artifacts are runtime-neutral.** A canonical artifact's bytes
-depend only on durable history, never on which process produced it. Branch cell
-state carried in an envelope (`branch_cell_checkpoint`, including fork
-provenance) is recorded in a runtime-neutral form. Recovery rebinds it to the
-recovering runtime, as it already does for checkpointed cells. Re-executing the
-same operations in any process produces byte-identical artifacts.
+depend only on durable history, never on which process produced it. Every
+runtime identity an envelope records is recorded in one canonical runtime
+frame: a reserved runtime instance id that no live runtime is issued, with the
+same text width as live ids. That covers the branch cell state
+(`branch_cell_checkpoint`, including fork provenance), a required output's
+producer basis and a codec retirement's source basis. A recorded basis
+descriptor also omits its process-local root identity, which is a per-process
+allocation rather than durable history. Envelope checks that compare recorded
+identities with each other compare within the frame; a check against live
+state first moves the live side into the frame. Recovery rebinds recorded cells
+to the recovering runtime, as it already does for checkpointed cells.
+Checkpoint images stay runtime-affine: they are derived, not canonical.
+Re-executing the same operations in any process, recovered or not, produces
+byte-identical artifacts.
 
 ## Durable artifacts
 

@@ -9,14 +9,17 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[path = "canonical_publication_routes/patch_position_reservation.rs"]
+mod patch_position_reservation;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
 
+pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
+pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
-pub use performed_stream::RelationalPatchPositionReservationCounters;
-use performed_stream::{PerformedPublicationRecordError, PerformedPublicationStream};
+use performed_stream::PerformedPublicationStream;
 pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
 pub(crate) use position_admission::{
     readmit_positioned_canonical_commit, CanonicalPositionAdmission,
@@ -53,8 +56,14 @@ struct CanonicalPublicationHandoff {
 }
 
 pub(crate) enum CanonicalPublicationRecordError {
+    /// A memory-only publisher met a held reservation; nothing moved.
     ReservationContended,
+    /// A durable publisher's request stopped while it waited for the
+    /// reservation; it was assigned nothing.
+    ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
+    /// The durable step did not make the positioned commit durable, so the
+    /// position was not consumed and nothing was installed.
     Durable(crate::durability::medium::RelationalDurableStepStop),
 }
 
@@ -297,6 +306,7 @@ impl PreparedCanonicalPublicationRoute {
     pub(crate) fn record_performed_with_cutover(
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
+        admission: PatchPositionReservationAdmission<'_, '_, '_>,
         durable: impl FnOnce(
             &PositionedCanonicalCommit,
         )
@@ -310,22 +320,12 @@ impl PreparedCanonicalPublicationRoute {
             .as_mut()
             .expect("prepared route retains its handoff until movement")
             .publication_cell = Some(publication_cell);
-        let positioned = self
-            .routes
-            .performed_stream
-            .record_with_cutover(Arc::clone(&self.route), durable, cutover)
-            .map_err(|error| match error {
-                PerformedPublicationRecordError::ReservationContended => {
-                    CanonicalPublicationRecordError::ReservationContended
-                }
-                PerformedPublicationRecordError::PositionCapacityExhausted => {
-                    CanonicalPublicationRecordError::PositionCapacityExhausted
-                }
-                PerformedPublicationRecordError::Durable(stop) => {
-                    CanonicalPublicationRecordError::Durable(stop)
-                }
-            })?;
-        Ok(positioned)
+        self.routes.performed_stream.record_with_cutover(
+            Arc::clone(&self.route),
+            admission,
+            durable,
+            cutover,
+        )
     }
 }
 

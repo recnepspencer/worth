@@ -77,11 +77,8 @@ impl RelationalStoreHome {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
         let serving = Arc::new(serving);
-        let medium = Arc::new(StoreJournalMedium::new(
-            Arc::clone(&serving),
-            physical_store::placement(),
-        ));
-        let mut runtime = builder.durable_medium(medium).build();
+        let medium = StoreJournalMedium::new(Arc::clone(&serving), physical_store::placement());
+        let mut runtime = builder.build_durable(Box::new(medium));
         let readmitted = admit_descriptor(&serving, &runtime)
             .and_then(|()| readmit_history(&serving, &mut runtime, execution));
         match readmitted {

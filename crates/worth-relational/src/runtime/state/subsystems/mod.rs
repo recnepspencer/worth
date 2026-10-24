@@ -25,10 +25,11 @@ pub(crate) use durability::DurabilitySubsystem;
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    HistorySubsystem, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    HistorySubsystem, PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{

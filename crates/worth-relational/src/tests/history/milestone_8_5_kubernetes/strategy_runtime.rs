@@ -30,7 +30,6 @@ pub(super) fn persisted_strategy_runtime(
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durable_medium(medium)
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 intent_descriptor.clone(),
@@ -49,7 +48,7 @@ pub(super) fn persisted_strategy_runtime(
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &replica_descriptor,
         ))
-        .build()
+        .build_durable(medium.attachment())
 }
 
 pub(super) fn execute_strategy_commit(

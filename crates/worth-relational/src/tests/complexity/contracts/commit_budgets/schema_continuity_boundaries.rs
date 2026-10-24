@@ -208,8 +208,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
             }
             .build_registry(),
         )
-        .durable_medium(TestDurableMedium::new())
-        .build();
+        .build_durable(TestDurableMedium::new().attachment());
     let _ = recovered
         .durability_recovery()
         .recover(execution, plan)

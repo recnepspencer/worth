@@ -249,7 +249,10 @@ observation is owed merely because the attempt did not move the branch.
 is a loss on the runtime-wide patch-position allocator, taken before any branch
 movement and shared across branches. The losing attempt performed no movement
 and did not make this branch stale, so a same-basis retry is the correct
-response.
+response. Only memory-only runtimes return it: a runtime with a durable medium
+waits for the reservation within the execution request instead, and a
+cancelled or expired wait is `RelationalPublicationOutcome::RequestStopped`,
+before any effect.
 
 Ordinary validation still answers when the branch really did move: admission
 returns `RelationalBranchTransactionAdmissionDenial::StaleBasis`, and comparison
@@ -513,7 +516,7 @@ Milestone 9.17.2 may not:
 
 Relational branch cells, roots, owner admission, the pending-settlement
 registry, and retention accounting are memory-resident. Canonical history is
-Relational-owned. A runtime built with `durable_medium(..)` publishes each
+Relational-owned. A runtime built with `build_durable(..)` publishes each
 commit's canonical artifact to that medium before the live cutover; the medium
 (Worth Store's Relational home) makes it durable and, on reopen, hands back a
 `RelationalDurableRecoverySource` that `recovery_plan_from_source(..)` readmits.

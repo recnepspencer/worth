@@ -254,9 +254,9 @@ fn runtime_with_schema_declared_entity_policy_builder(
             })
         })
         .expect("strategy witness registry");
-    let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
-    if let Some(medium) = medium {
-        builder = builder.durable_medium(medium);
+    let builder = RelationalRuntimeApi::builder().schema_registry(registry);
+    match medium {
+        Some(medium) => builder.build_durable(medium.attachment()),
+        None => builder.build(),
     }
-    builder.build()
 }

@@ -139,11 +139,18 @@ impl PreparedBranchPublicationPreflight {
         let reservation_pause = &self.control;
         let medium = self.medium.clone();
         let durable_policy = execution.allocation_policy();
+        // A durable publisher waits for a publisher whose durable I/O holds
+        // the reservation; a memory-only one defers (D2).
+        let admission = match &medium {
+            Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
+            None => crate::runtime::PatchPositionReservationAdmission::DeferWhenHeld,
+        };
         let positioned_commit = match self
             .movement
             .canonical_publication_route
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
+                admission,
                 |positioned| match &medium {
                     Some(medium) => medium.publish(positioned, durable_policy),
                     None => Ok(()),
@@ -169,6 +176,9 @@ impl PreparedBranchPublicationPreflight {
                 return RelationalPublicationOutcome::deferred(
                     RelationalPublicationDeferred::PatchPositionReservationContended,
                 );
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
+                return RelationalPublicationOutcome::RequestStopped(stop);
             }
             Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
                 return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(

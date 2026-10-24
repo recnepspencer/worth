@@ -22,7 +22,7 @@ use std::sync::Mutex;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_store::physical_runtime::certification::MediaOperationRole;
 
-use super::durable_run::apply;
+use super::durable_run::{apply, served_schema};
 use super::media_case::{run_case, Ended, Target};
 use super::media_faults;
 use super::prepared_home::PreparedHome;
@@ -101,6 +101,7 @@ impl SeedSweep {
         let prepared = PreparedHome::prepare(self.prefix(), execution);
         let (home, activations) = media_faults::open_with_faults(
             prepared.location(),
+            served_schema(self.prefix()),
             &media_faults::counters(),
             execution,
         )

@@ -60,11 +60,12 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
             })
         })
         .expect("schema registry");
-    let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
+    let builder = RelationalRuntimeApi::builder().schema_registry(registry);
     if persisted {
-        builder = builder.durable_medium(crate::tests::support::TestDurableMedium::new());
+        builder.build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+    } else {
+        builder.build()
     }
-    builder.build()
 }
 
 pub(super) fn prepared_merge(

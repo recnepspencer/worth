@@ -1,0 +1,10 @@
+error[E0382]: use of moved value: `medium`
+  --> tests/ui/durable_medium/medium_cannot_reach_two_runtimes.rs:19:41
+   |
+16 |     let medium: Box<dyn RelationalDurableMedium> = Box::new(Journal);
+   |         ------ move occurs because `medium` has type `Box<dyn RelationalDurableMedium>`, which does not implement the `Copy` trait
+17 |     let builder = RelationalRuntimeApi::builder();
+18 |     let _first = builder.clone().build_durable(medium);
+   |                                                ------ value moved here
+19 |     let _second = builder.build_durable(medium);
+   |                                         ^^^^^^ value used here after move

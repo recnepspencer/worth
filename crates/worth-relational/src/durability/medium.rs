@@ -29,6 +29,12 @@ use crate::publication::patch::data::PatchStreamPosition;
 /// Implementations publish each artifact at exactly its position, which is
 /// always one past the last position the medium made durable for this
 /// runtime. Publications are issued one at a time.
+///
+/// A medium is moved into exactly one runtime, as a
+/// `Box<dyn RelationalDurableMedium>`, by
+/// [`RelationalRuntimeBuilder::build_durable`](crate::facade::runtime::RelationalRuntimeBuilder::build_durable).
+/// Relational never clones or shares it: recovery moves it into the rebuilt
+/// runtime, and a forked runtime never inherits it.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// Make one artifact durable, or say exactly why not.
     ///
@@ -39,12 +45,14 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     fn publish(&self, artifact: &RelationalCanonicalCommitArtifact)
         -> RelationalDurablePublication;
 
-    /// The in-crate test medium behind this binding, so Relational's own
-    /// durability tests can recover from the medium a runtime publishes to.
-    /// Exists only in this crate's unit-test build.
+    /// The in-crate test medium's durable contents behind this medium, so
+    /// Relational's own durability tests can recover from the medium a
+    /// runtime publishes to. Exists only in this crate's unit-test build.
     #[cfg(test)]
     #[doc(hidden)]
-    fn in_crate_test_medium(&self) -> Option<&crate::tests::support::TestDurableMedium> {
+    fn in_crate_test_medium(
+        &self,
+    ) -> Option<std::sync::Arc<crate::tests::support::TestDurableMedium>> {
         None
     }
 }
@@ -115,6 +123,9 @@ impl RelationalDurabilityUnresolved {
 pub enum RelationalDurablePublicationRefusal {
     /// The medium proved the publication had no durable effect.
     ProvenNoEffect { detail: String },
+    /// The medium moved into the runtime recovery rebuilt, so this runtime no
+    /// longer owns it and publishes nothing (D1).
+    MediumMoved,
     /// The commit could not be encoded as its canonical artifact.
     Encoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,

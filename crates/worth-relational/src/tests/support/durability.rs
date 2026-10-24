@@ -56,7 +56,7 @@ pub(crate) fn medium_recovery_plan(
 ) -> Result<crate::durability::data::RecoveryPlan, crate::durability::data::RelationalRecoveryStop>
 {
     let recovery_source = durable_recovery_source(source);
-    bind_durable_medium(recovering, attached_test_medium(source).shared());
+    bind_durable_medium(recovering, attached_test_medium(source).attachment());
     recovering
         .durability()
         .recovery_plan_from_source(execution, recovery_source, mode)

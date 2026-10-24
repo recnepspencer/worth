@@ -4,6 +4,7 @@ pub(crate) use codec_transition::{
 };
 pub(super) mod admission;
 pub(super) mod codec_transition;
+mod declared_schema;
 
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{DurabilityError, RecoveryCoverage, RecoveryPlan};
@@ -101,7 +102,8 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
         let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        rebind_durable_medium(self.runtime, &mut material.restored)?;
+        declared_schema::require_declared_schema_of_recovered_main(&material.restored)?;
+        move_durable_medium(self.runtime, &mut material.restored)?;
         let outcome = publish_recovered_runtime(self.runtime, material);
         Ok(outcome)
     }
@@ -151,23 +153,31 @@ fn rebuild_admitted_recovery_or_emit(
     }
 }
 
-/// Bind the recovering runtime's medium to the rebuilt runtime only after
-/// replay, so rebuilding history never republishes it. The rebuilt runtime
-/// starts with no unresolved durable fate.
-fn rebind_durable_medium(
-    runtime: &RelationalRuntime,
+/// Move the recovering runtime's medium into the rebuilt runtime only after
+/// replay, so rebuilding history never republishes it. The medium is owned by
+/// exactly one runtime (D1): it leaves the recovering runtime as it enters
+/// the rebuilt one, which starts with no unresolved durable fate.
+fn move_durable_medium(
+    runtime: &mut RelationalRuntime,
     restored: &mut RelationalRuntime,
 ) -> Result<(), DurabilityError> {
-    let Some(binding) = runtime.durability.medium() else {
+    if runtime.durability.medium().is_none() {
         return Ok(());
-    };
-    let state = restored.unshared_state_mut().ok_or_else(|| {
+    }
+    let unmovable = |detail: &str| {
         DurabilityError::new(
             crate::durability::data::RecoveryFailureClass::ReplayFailure,
-            "a rebuilt runtime is shared before its durable medium is bound",
+            detail,
         )
+    };
+    let rebuilt = restored.unshared_state_mut().ok_or_else(|| {
+        unmovable("a rebuilt runtime is shared before its durable medium is bound")
     })?;
-    state.durability.attach_medium(binding.medium());
+    let medium = runtime
+        .durability
+        .detach_medium()
+        .ok_or_else(|| unmovable("the recovering runtime's durable medium already moved"))?;
+    rebuilt.durability.attach_medium(medium);
     Ok(())
 }
 

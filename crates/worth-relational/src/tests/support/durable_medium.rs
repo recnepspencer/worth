@@ -5,6 +5,12 @@
 //! position (or an identical retry), holds the latest native checkpoint with
 //! the position it was filed under, and hands both back as a
 //! `RelationalDurableRecoverySource` the way a home does on reopen.
+//!
+//! `TestDurableMedium` is the durable contents, standing in for a home's
+//! Store; it outlives runtimes. A runtime publishes through an `attachment()`,
+//! as each opening of a home builds its own journal medium over the Store.
+//! The attachment is the medium a runtime owns, and is moved into exactly one
+//! runtime.
 
 mod journal;
 mod runtime_attachment;
@@ -14,7 +20,7 @@ mod tamper;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) use runtime_attachment::{
-    attached_durable_medium, attached_test_medium, bind_durable_medium,
+    attached_durable_medium, attached_test_medium, bind_durable_medium, TestDurableMediumAttachment,
 };
 pub(crate) use scripted_publication::ScriptedPublication;
 pub(crate) use tamper::ARTIFACT_HEADER_COMMIT_ID_OFFSET;
@@ -38,6 +44,11 @@ pub struct TestDurableMedium {
 impl TestDurableMedium {
     pub(crate) fn new() -> Arc<Self> {
         Arc::new(Self::default())
+    }
+
+    /// A medium publishing to these durable contents, for one runtime to own.
+    pub(crate) fn attachment(self: &Arc<Self>) -> Box<dyn RelationalDurableMedium> {
+        Box::new(TestDurableMediumAttachment::new(Arc::clone(self)))
     }
 
     /// The last position this medium made durable, or zero.
@@ -110,9 +121,8 @@ impl TestDurableMedium {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
-}
 
-impl RelationalDurableMedium for TestDurableMedium {
+    /// Answer one publication: as scripted, otherwise by position.
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
@@ -123,9 +133,5 @@ impl RelationalDurableMedium for TestDurableMedium {
             Some(answer) => answer.answer(&mut journal, artifact),
             None => journal.publish_at_head(artifact),
         }
-    }
-
-    fn in_crate_test_medium(&self) -> Option<&TestDurableMedium> {
-        Some(self)
     }
 }

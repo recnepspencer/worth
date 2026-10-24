@@ -42,7 +42,7 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
     });
     let malformed = medium.artifact_bytes(tail_position).unwrap();
     let mut target = crate::runtime::RelationalRuntime::new(config);
-    bind_durable_medium(&mut target, medium.shared());
+    bind_durable_medium(&mut target, medium.attachment());
     let identity = target.main_branch_identity();
     let before = target.observe_branch(&identity).unwrap().0;
     let symbols = target.services.symbols.snapshot();

@@ -26,7 +26,6 @@ pub struct RelationalRuntimeBuilder {
     custom_invariants: Vec<CustomInvariantRegistration>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
-    durable_medium: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>>,
 }
 
 impl Default for RelationalRuntimeBuilder {
@@ -37,7 +36,6 @@ impl Default for RelationalRuntimeBuilder {
             custom_invariants: Vec::new(),
             commit_strategy_executors: Vec::new(),
             post_commit_consumer: crate::publication::production_post_commit_consumer(),
-            durable_medium: None,
         }
     }
 }
@@ -133,19 +131,6 @@ impl RelationalRuntimeBuilder {
         self
     }
 
-    /// Publish every commit to `medium` before it becomes live.
-    ///
-    /// A runtime has at most one medium, and a medium serves one runtime at a
-    /// time. A new home attaches it here; a recovered home receives it from
-    /// recovery instead, after its history has been rebuilt.
-    pub fn durable_medium(
-        mut self,
-        medium: std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>,
-    ) -> Self {
-        self.durable_medium = Some(medium);
-        self
-    }
-
     pub fn entity_capacity(mut self, capacity: usize) -> Self {
         self.overrides.storage.initial_entity_capacity = Some(capacity);
         self
@@ -217,12 +202,34 @@ impl RelationalRuntimeBuilder {
         self
     }
 
+    /// Build a memory-only runtime: its canonical history is its in-memory
+    /// log.
     pub fn build(self) -> RelationalRuntime {
+        self.build_with(None)
+    }
+
+    /// Build a runtime that owns `medium` and publishes every commit to it
+    /// before the commit becomes live.
+    ///
+    /// The medium is moved into this one runtime (D1): the builder never holds
+    /// it, so cloning the builder cannot share it, recovery moves it into the
+    /// rebuilt runtime, and a forked runtime never inherits it.
+    pub fn build_durable(
+        self,
+        medium: Box<dyn crate::durability::medium::RelationalDurableMedium>,
+    ) -> RelationalRuntime {
+        self.build_with(Some(medium))
+    }
+
+    fn build_with(
+        self,
+        medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+    ) -> RelationalRuntime {
         RelationalRuntime::build_from_extensions(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
             RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)
                 .with_post_commit_consumer(self.post_commit_consumer)
-                .with_durable_medium(self.durable_medium),
+                .with_durable_medium(medium),
         )
     }
 }

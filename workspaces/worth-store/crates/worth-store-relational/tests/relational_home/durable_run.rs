@@ -8,16 +8,61 @@ use worth_store_relational::{
     RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStoreHomeRequest,
 };
 
+use worth_relational::facade::durability::{
+    RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RelationalRecoveryStop,
+};
 use worth_relational::facade::schema::SchemaVersionId;
 
 use super::schema_transition;
 use super::workload::{self, Script, Step};
 
+/// Open the home declaring the schema it serves (D5): the script's source
+/// schema until its durable transition, the target after. A crash can leave
+/// the transition's fate to recovery, so when the home refuses the source
+/// because its recovered main head records the target, open declaring that.
 pub(crate) fn open(
     location: &Path,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<RelationalStoreHome, RelationalStoreHomeOpenRefusal> {
-    open_declaring(location, schema_transition::SOURCE, execution)
+    match open_declaring(location, schema_transition::SOURCE, execution) {
+        Err(refusal) if recorded_schema(&refusal) == Some(schema_transition::TARGET) => {
+            open_declaring(location, schema_transition::TARGET, execution)
+        }
+        opened => opened,
+    }
+}
+
+/// The schema a refused open's recovered main head records, when the refusal
+/// is that the declared schema differs from it.
+pub(crate) fn recorded_schema(refusal: &RelationalStoreHomeOpenRefusal) -> Option<SchemaVersionId> {
+    let RelationalStoreHomeOpenRefusal::Readmission(RelationalRecoveryStop::Durability(error)) =
+        refusal
+    else {
+        return None;
+    };
+    match (&error.class, &error.authority_continuity_mismatch) {
+        (
+            RecoveryFailureClass::DeclaredSchemaMismatch,
+            Some(RecoveryAuthorityContinuityMismatch::SchemaRegistryShape {
+                expected_primary_schema_version,
+                ..
+            }),
+        ) => Some(*expected_primary_schema_version),
+        _ => None,
+    }
+}
+
+/// The schema a cleanly closed home holding `steps` serves: the transition's
+/// target once the script's transition is among them, the source before.
+pub(crate) fn served_schema(steps: &[Step]) -> SchemaVersionId {
+    if steps
+        .iter()
+        .any(|step| matches!(step, Step::Transition { .. }))
+    {
+        schema_transition::TARGET
+    } else {
+        schema_transition::SOURCE
+    }
 }
 
 /// Open the home with a runtime that declares the schema registry at `schema`.
@@ -62,11 +107,9 @@ pub(crate) fn apply(
     acknowledged
 }
 
-/// Require the home to hold exactly the commits the durable run itself
-/// acknowledged (`acknowledged`, byte-identical canonical artifacts), and the
-/// reference's record states after that many commits. Artifacts embed the
-/// producing runtime's process-local identity, so they compare against the
-/// durable run's own; record states compare against the reference.
+/// Require the home to hold exactly the commits the durable run acknowledged
+/// (`acknowledged`), each byte-identical to the reference's artifact at its
+/// position (D11), and the reference's record states after that many commits.
 pub(crate) fn assert_holds(home: &RelationalStoreHome, script: &Script, acknowledged: &[Vec<u8>]) {
     let artifacts = workload::artifacts_of(home.runtime());
     let commits = acknowledged.len();
@@ -74,15 +117,31 @@ pub(crate) fn assert_holds(home: &RelationalStoreHome, script: &Script, acknowle
     for (index, (found, expected)) in artifacts.iter().zip(acknowledged).enumerate() {
         assert!(
             found == expected,
-            "artifact at position {} differs",
+            "artifact at position {} differs from the acknowledged one",
             index + 1
         );
     }
+    assert_reference_artifacts(&artifacts, script, "held");
     assert_eq!(
         workload::states_of(home.runtime(), &script.records),
         script.states[commits],
         "branch states after {commits} commits"
     );
+}
+
+/// Require every artifact to equal the reference's at its position.
+pub(crate) fn assert_reference_artifacts(artifacts: &[Vec<u8>], script: &Script, case: &str) {
+    assert!(
+        artifacts.len() <= script.artifacts.len(),
+        "{case}: more artifacts than the reference"
+    );
+    for (index, (found, reference)) in artifacts.iter().zip(&script.artifacts).enumerate() {
+        assert!(
+            found == reference,
+            "{case}: artifact at position {} differs from the reference's",
+            index + 1
+        );
+    }
 }
 
 /// The steps that follow the `commits`-th commit (and any checkpoint after it).

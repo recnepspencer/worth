@@ -13,7 +13,7 @@ use worth_store_relational::{
 
 use super::batches;
 use super::crash_oracle::{assert_continues, assert_recovered, InFlight};
-use super::durable_run::{apply, open};
+use super::durable_run::{apply, open, served_schema};
 use super::media_faults::{self, Fault};
 use super::prepared_home::PreparedHome;
 use super::selected_checkpoint;
@@ -61,9 +61,12 @@ pub(crate) fn run_case(
     case: &str,
 ) -> Ended {
     let prepared = PreparedHome::prepare(prefix, execution);
-    let Some((home, activations)) =
-        media_faults::open_with_faults(prepared.location(), &[fault], execution)
-    else {
+    let Some((home, activations)) = media_faults::open_with_faults(
+        prepared.location(),
+        served_schema(prefix),
+        &[fault],
+        execution,
+    ) else {
         return Ended::Skipped;
     };
     apply(&home, execution, lead);

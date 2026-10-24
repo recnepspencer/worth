@@ -28,5 +28,7 @@ pub enum RelationalStoreHomeOpenRefusal {
     /// The journal could not be handed to Relational.
     Journal(RelationalStoreJournalRefusal),
     /// Relational refused to readmit or rebuild the recovered history.
+    /// This includes a declared schema other than the one the recovered main
+    /// head records (`RecoveryFailureClass::DeclaredSchemaMismatch`).
     Readmission(RelationalRecoveryStop),
 }

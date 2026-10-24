@@ -88,8 +88,7 @@ fn v1_ordering_runtime(
     let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .durable_medium(medium)
-        .build();
+        .build_durable(medium.attachment());
     let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
     let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
     let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];

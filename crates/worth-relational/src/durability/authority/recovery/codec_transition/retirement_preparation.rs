@@ -97,6 +97,11 @@ impl RecoveredCodecPublicationCustody {
         use crate::publication::patch::data::RecordStructuralChange as Change;
         use crate::transactions::data::RecordRef;
         let denied = |detail| crate::mvcc::origin_denial(detail);
+        // The envelope records identity in the canonical frame (D11); compare
+        // the live source there, and record it there.
+        let recorded_source = source.descriptor().in_canonical_frame().map_err(|_| {
+            denied("codec retirement source cannot be recorded in the canonical frame")
+        })?;
         if self.source.descriptor() != source.descriptor()
             || envelope.schema_transition.is_none()
             || !envelope.is_unmerged_output_publication_step()
@@ -105,7 +110,7 @@ impl RecoveredCodecPublicationCustody {
                 .branch_cell_checkpoint
                 .as_ref()
                 .map(|cell| &cell.observation)
-                != Some(source.reference())
+                != Some(recorded_source.reference())
         {
             return Err(denied(
                 "codec retirement custody does not cover this exact native candidate",
@@ -172,7 +177,7 @@ impl RecoveredCodecPublicationCustody {
                             CanonicalRequiredOutputCodecRetirement {
                                 publication: origin.commit.commit_id,
                                 meaning: origin.meaning.clone(),
-                                source: source.descriptor().clone(),
+                                source: recorded_source.clone(),
                                 retiring: envelope.commit.clone(),
                                 kinds: Arc::clone(&prepared.kinds),
                                 activation: Arc::clone(&self.activation),

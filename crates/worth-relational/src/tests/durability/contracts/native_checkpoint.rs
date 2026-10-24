@@ -64,7 +64,7 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
         .expect("the canonical committed world encodes as one opaque checkpoint");
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let pre_recovery_identity = recovered.runtime_instance_id();
     let outcome = recovered
         .durability_recovery()
@@ -101,7 +101,10 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
         .unwrap();
 
     let mut exact_recovery = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut exact_recovery, attached_test_medium(&source).shared());
+    bind_durable_medium(
+        &mut exact_recovery,
+        attached_test_medium(&source).attachment(),
+    );
     let (_, exact_authority) = exact_recovery
         .durability_recovery()
         .restore_native_checkpoint_with_authority(execution, &checkpoint)
@@ -112,7 +115,10 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
     assert!(exact_authority.admit_basis(exact_basis).is_ok());
 
     let mut moved_recovery = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut moved_recovery, attached_test_medium(&source).shared());
+    bind_durable_medium(
+        &mut moved_recovery,
+        attached_test_medium(&source).attachment(),
+    );
     let (_, moved_authority) = moved_recovery
         .durability_recovery()
         .restore_native_checkpoint_with_authority(execution, &checkpoint)
@@ -176,7 +182,7 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
         .unwrap();
 
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)
@@ -238,7 +244,7 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
 
     assert_eq!(runtime.durability.checkpoints().len(), retained_before);
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .restore_native_checkpoint(execution, &checkpoint)
@@ -281,8 +287,7 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .runtime_name("foreign-runtime")
-        .durable_medium(TestDurableMedium::new())
-        .build();
+        .build_durable(TestDurableMedium::new().attachment());
 
     let error = recovered
         .durability_recovery()
@@ -306,7 +311,7 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     let mut recovered = durable_runtime_with_builder_invariant();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
 
     recovered
         .durability_recovery()
@@ -335,6 +340,5 @@ fn durable_runtime_with_builder_invariant() -> crate::runtime::RelationalRuntime
     RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .custom_invariant(CustomInvariantRegistration::new(NativeCheckpointRule).unwrap())
-        .durable_medium(TestDurableMedium::new())
-        .build()
+        .build_durable(TestDurableMedium::new().attachment())
 }

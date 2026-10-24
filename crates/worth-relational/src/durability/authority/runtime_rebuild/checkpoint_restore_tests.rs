@@ -72,7 +72,7 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     .unwrap()
     .checkpoint;
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
     let outcome = recovered
         .durability_recovery()
         .restore_native_checkpoint(execution, &native)
@@ -134,7 +134,7 @@ fn shared_restored_substrate_keeps_a_pinned_reader_exact_after_next_write() {
     )
     .unwrap();
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -202,7 +202,7 @@ fn divergent_sibling_is_not_reused_as_the_storage_mirror() {
     .unwrap();
     plan.checkpoint = Some(checkpoint);
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -309,7 +309,7 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
     )
     .unwrap();
     let mut recovered = durable_runtime_with_test_schema();
-    bind_durable_medium(&mut recovered, attached_test_medium(&source).shared());
+    bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());
     recovered
         .durability_recovery()
         .recover(execution, plan)
