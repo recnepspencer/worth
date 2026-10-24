@@ -115,23 +115,24 @@ impl WorthQueryPrimaryGraphProvider {
 
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
+        // A retained World partial keeps its publication slot reserved for
+        // resumption, and a reserved slot reports its binding, so exact
+        // unpublished custody is read before that reservation.
+        if let Some((recorded, handle)) =
+            self.inspect_unpublished_application_idempotency(&affinity, binding)
+        {
+            return if recorded == binding {
+                Custody::ProductUnpublished(handle)
+            } else {
+                Custody::IntentDrift
+            };
+        }
         let pending = self.inspect_pending_application_idempotency(affinity.incarnation());
         if let Some(Some(recorded)) = pending
             && recorded.key_identity() == binding.key_identity()
         {
             return if recorded == binding {
                 Custody::PublicationPending
-            } else {
-                Custody::IntentDrift
-            };
-        }
-        // A retained World partial keeps its publication slot reserved for
-        // resumption, so exact unpublished custody outranks that reservation.
-        if let Some((recorded, handle)) =
-            self.inspect_unpublished_application_idempotency(&affinity, binding)
-        {
-            return if recorded == binding {
-                Custody::ProductUnpublished(handle)
             } else {
                 Custody::IntentDrift
             };
