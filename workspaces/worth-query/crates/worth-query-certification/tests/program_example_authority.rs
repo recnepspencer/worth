@@ -277,7 +277,7 @@ fn installed_conditional_requires_its_declared_program_action() {
     let denial = application_installation::in_memory_program(
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
-        (TemporalContributionConfiguration { clock_source },),
+        (TemporalContributionConfiguration::new(clock_source),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         example_limits(None),
         |_phase, graph, installed| {
@@ -308,7 +308,7 @@ fn installed_conditional_rejects_a_client_action_for_its_operation() {
     let denial = application_installation::in_memory_program(
         program,
         TemporalHostSchema::declaration().expect("the temporal schema is valid"),
-        (TemporalContributionConfiguration { clock_source },),
+        (TemporalContributionConfiguration::new(clock_source),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         example_limits(None),
         |_phase, graph, installed| {
@@ -375,3 +375,4 @@ fn amendment(input: &str, revision: u64) -> AmendTemporalIntent {
 }
 
 mod temporal_integrity_lease;
+mod temporal_integrity_reentry;

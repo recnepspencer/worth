@@ -120,6 +120,7 @@ fn cancellation_during_evaluation_is_not_a_domain_violation() {
         Some(Err(WorthQueryProviderSessionControlStopKind::Cancelled))
     );
     assert!(case.denial.invariant_refusal_bytes().is_none());
+    assert!(case.denial.custom_invariant_denial().is_none());
     assert_eq!(case.visits, [1]);
     assert_eq!(case.before, case.after);
 }

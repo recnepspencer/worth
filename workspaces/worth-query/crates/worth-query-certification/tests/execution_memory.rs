@@ -36,7 +36,7 @@ fn install(
     checkpoint: Option<WorthQueryApplicationCheckpoint>,
 ) -> ExampleApplication {
     let (clock_source, clock_control) = ClockSource::due();
-    let configuration = (TemporalContributionConfiguration { clock_source },);
+    let configuration = (TemporalContributionConfiguration::new(clock_source),);
     // Installation performs the example's checked bootstrap, not one ordinary
     // read. Keep this proof's exact memory bound and the example's declared work.
     let work = product_workflow_support::application::product_world_resources()
