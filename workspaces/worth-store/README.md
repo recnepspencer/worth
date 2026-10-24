@@ -1,5 +1,10 @@
 # Worth Store Rebuild Workspace
 
+The active integration plan is the
+[Database Foundation Roadmap](../../plans/database-foundation/roadmap.md).
+It connects canonical durable publication to Relational and the production
+Query host, then closes database scale and complete runtime recovery.
+
 This workspace is the clean rebuild of Worth Store. It separates the semantic
 durability roadmap from the physical database foundation so the new store does
 not inherit the heap-shaped implementation boundary from the legacy crate.

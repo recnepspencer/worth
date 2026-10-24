@@ -1,64 +1,30 @@
 # Worth Store Physical Database Roadmap
 
-## Purpose
+## Purpose and current sequence
 
-This is Part I of the active Worth Store program. It builds the physical
-database foundation that every runtime-integrated Store claim must consume.
+This document retains the physical foundation requirements and later Store
+capability portfolios. The active path to a working database is the
+[Database Foundation Roadmap](../database-foundation/roadmap.md).
 
-`worth-store` must first become a real physical database engine rather than a
-heap-shaped persistence harness surrounded by strong semantic vocabulary. The
-implementation surface is the dedicated Worth Store workspace and crate family.
-This roadmap does not rely on any prior Store topology, persistence path,
-semantic milestone, or compatibility lane as an architectural premise.
+C.1 through C.10 remain historical foundations. Their affected guarantees
+must survive current changes; their completed portfolios are not reopened.
+The new Milestone 1 through Milestone 5 sequence establishes canonical durable publication,
+Relational cutover, the production-host lost-response/retry journey, sustained
+database operation, and complete runtime recovery.
 
-Part II is the fresh
-[Worth Store Runtime And Query Integration Roadmap](runtime-integration-roadmap.md).
-Part II Milestone 1 begins when the Runtime Integration Entry Gate holds;
-Part II platform readiness requires the Platform Readiness Gate. The
-former semantic roadmap and its implementation order are not predecessors,
-compatibility requirements, or earned milestone credit for either roadmap.
+C.11's remaining portfolio, C.12, C.13's broad campaign and S.10 through S.12
+are deferred after the working database to the capability triggers in that
+roadmap and [deferred work](../deferred-work.md#worth-store). They are not
+prerequisites that must close wholesale before database integration starts.
+Necessary physical prerequisites remain part of the consuming D milestone.
 
-The mandatory
-[Physical Foundation Reconstruction Roadmap](physical-foundation-reconstruction-roadmap.md)
-now sits inside Part I after the current S.9 implementation state. It reopens
-S.1 through S.9 closure, repairs the proof loop, and joins the existing
-physical mechanisms into one real sealed database runtime. Historical green
-runs do not bypass that reconstruction gate. Its C.13 handoff opens Runtime
-Integration Milestone 1; S.10 through S.12 follow later, each before the
-Part II milestone that consumes it.
-
-## Roadmap Position
-
-The Worth Store critical path begins here:
-
-`Aspect-Native Workspace Gate` -> `S.0` -> `S.1`
--> `S.2` -> `S.3` -> `S.4` -> `S.4.5` -> `S.5` -> `S.5.1`
--> `S.6` -> `S.7` -> `S.7.1` -> `S.8` -> `S.9`
--> `Physical Foundation Reconstruction C.1 through C.13`
--> `Runtime And Query Integration Milestone 1`
-
-S.10, S.11 and S.12 are not on the path to Runtime Integration entry.
-Each runs immediately before the first Part II milestone that consumes it:
-
-| Sequence | Runs before | Consumer |
-| --- | --- | --- |
-| `S.10` | Runtime Integration Milestone 8 | bounded bootstrap, recovery, PITR and readmission |
-| `S.11` | Runtime Integration Milestone 10 | security-scope and key-lifecycle contracts for Milestones 10 through 12, then capsules (16) and trust integration (18) |
-| `S.12` | Runtime Integration Milestone 14 | bulk ingest envelopes, then joined certification (19) |
-
-The physical facade that Part II binds to is the C.13 handoff. S.10 through
-S.12 extend it behind that facade; a Part II milestone never builds a
-substitute for a sequence that has not run yet. Until a sequence runs, its
-capabilities report `Absent` through capability negotiation.
-
-The `S.*` numbers are storage-foundation sequence numbers, not ordinary feature
-milestones. They express dependency order for the physical database substrate.
-
-The aspect-native gate is not an `S.*` storage sequence because it is a
-workspace truth-shape prerequisite. It closes before `S.0` so every source
-boundary, evidence artifact, handoff, digest basis, and certification row in
-the physical roadmap starts from native Foundational aspect material instead
-of JSON-shaped payloads.
+The historical S sequence and physical capability specifications below remain
+design requirements for their respective owners. Their references to old
+Part II milestones do not establish the current implementation order. Full
+physical platform qualification remains distinct from a working database.
+Current coding guidelines govern evidence and resource design. Historical
+blanket counter or certificate requirements below do not impose exact-count
+cost assertions or a new evidence registry on the database program.
 
 ## Global Adversarial Constraint
 
@@ -1060,21 +1026,18 @@ bound-exhausted run reported as proof, or model verdict used as production
 authority blocks completion. Current validity is the current checker and test
 result, not a stored status or certificate.
 
-## Mandatory Physical Foundation Reconstruction Gate
+## Historical reconstruction and current handoff
 
 Roadmap: [physical-foundation-reconstruction-roadmap.md](physical-foundation-reconstruction-roadmap.md)
 
-S.1 through S.9 are reopened until the reconstruction roadmap closes. The gate
-begins with test execution cleanup, then seals the sole physical runtime,
-establishes one production media boundary, makes pages and manifests real,
-joins the buffer pool and durability progression, proves fresh-process
-recovery and independent offline truth, binds isolation/layout/blob/model
-mechanisms to the production path, and recertifies the joined foundation.
+C.1 through C.10 established the physical foundations used by the current
+[Database Foundation Roadmap](../database-foundation/roadmap.md). Their
+completed portfolios stay historical; affected regressions block the current
+integration rather than reopening S.1 through S.9 or imposing a C.13 gate.
 
-S.10 work already present may remain as unadmitted substrate, but S.10 cannot
-close until it binds to the facade ports the C.13 handoff exposes. Query,
-Relational, Signal, and Runtime Bridge integration remains Part II and is
-outside this correction gate; Part II Milestone 1 consumes that handoff.
+Existing S.10 work remains substrate to assess in its later operational
+program. It grants no unrun qualification and is not a prerequisite for the
+Milestone 1 through Milestone 3 ordinary crash/reopen journey.
 
 ## S.10: Operational Safety, Backup, PITR, Disaster Recovery, And Forensics
 
@@ -1279,36 +1242,29 @@ blob scale, cross-backend parity, and hazard-analysis residual risk. Results
 may be retained by CI, but no generated certification bundle or source
 fingerprint is required to make them valid.
 
-## Runtime Integration Entry Gate
+## Database integration gates
 
-Part II Milestone 1 may begin only when:
+The [Database Foundation Roadmap](../database-foundation/roadmap.md) replaces
+the old C.13/Part II entry gate:
 
-- the Aspect-Native Workspace Gate is closed, proving JSON is confined to
-  terminal projection or hostile/readmission boundaries
-- C.13 is closed on the
-  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
-  and its sealed handoff names the physical facade ports Milestone 1 consumes.
-  C.11 and C.12 stay open; each remaining item is named debt with an owner and
-  the Part II milestone it returns before
-- `S.0` through `S.9`, including `S.4.5`, `S.5.1`, and `S.7.1`, are
-  implemented or explicitly scoped with named, non-platform-grade debt
-- every deferred physical capability reports `Absent` through capability
-  negotiation and is listed with its owner and the milestone that brings it
-  back
-- a fresh store reopens after every crash point declared by the C.7 and C.8
-  crash matrices and the C.11 seams named in
-  [fast track](physical-reconstruction-fast-track-to-runtime-integration.md)
-  slice 6, and the C.13 journey reproduces this through the facade, including
-  before the first checkpoint. The blob-ingest, publication, drop, rebuild and
-  LSM seams return with their capabilities
-- the Physical Database Roadmap workspace crates expose the typed source,
-  claim, handoff, and certification contracts required by Milestone 1
+- Milestone 1 supplies canonical durable publication and physical recovery.
+- Milestone 2 cuts Relational onto that boundary and removes its independent durable
+  filesystem engine.
+- Milestone 3 proves the real host's mutation, lost response, process death, reopen
+  and original-result retry journey.
+- Milestone 4 closes larger-than-memory access, branch lifecycle and reclamation.
+- Milestone 5 closes the declared runtime's complete recovery obligations.
+
+Detailed D specifications select the real physical prerequisites and preserve
+their guarantees. A missing physical capability cannot be fabricated by an
+integration-side backend. No D gate grants an unrun S capability or platform
+qualification.
 
 ## Platform Readiness Gate
 
-Part II may claim platform readiness, and Milestone 19 may close, only when:
+A future joined qualification program may claim platform readiness only when:
 
-- the Runtime Integration Entry Gate holds
+- Database Foundation Milestone 5 and its inherited Milestone 1 through Milestone 4 gates hold
 - `S.10`, `S.11` and `S.12` are implemented or explicitly scoped with named,
   non-platform-grade debt, and C.12 has rebound the S.9 models to their
   executable owners
@@ -1333,26 +1289,23 @@ Part II may claim platform readiness, and Milestone 19 may close, only when:
 - formal models exist for the crash/concurrency state machines named in `S.9`
 - required Physical Database Roadmap qualification lanes pass
 
-## Relationship To Runtime And Query Integration
+## Relationship to runtime integration
 
-- Runtime Integration Milestones 1 through 3 must consume `S.4`, `S.5`, `S.6`,
-  and `S.8` through the C.13 facade rather than manufacturing durability,
-  stable-read, concurrency, or access-path guarantees above the physical layer.
-  They rely on the executable owners that `S.9` models; until C.12 rebinds those
-  models, no Milestone 1 to 3 claim cites an `S.9` model as evidence.
-- Runtime Integration Milestone 8 must consume `S.10` recovery and operational
-  evidence for bootstrap, PITR, rollback, and readmission.
-- Runtime Integration Milestones 4 and 9 must lower persistent Query access
-  requirements onto `S.2`, `S.5`, `S.6`, and `S.8` bounded physical plans.
-- Runtime Integration Milestones 10 through 12 must consume the physical blob,
-  maintenance, compatibility, security-scope, key-lifecycle, and operational
-  contracts from `S.5.1`, `S.6`, `S.7`, `S.8`, `S.10`, and `S.11`.
-- Runtime Integration Milestone 14 must run the relevant current `S.12` lanes
-  before promoting semantic parity. Semantic parity cannot promote a backend
-  whose required physical qualification is failing or unrun.
-- Before its consuming sequence runs, a Part II milestone may use only the
-  capabilities the C.13 handoff reports `Present`. It may not manufacture a
-  missing physical guarantee above the facade.
+The [Database Foundation Roadmap](../database-foundation/roadmap.md) governs
+near-term integration. Relational supplies semantic commits; Store preserves
+their canonical artifacts and physical survival; World and Query retain their
+semantic occurrence and recovery ownership.
+
+The [previous Runtime Integration roadmap](runtime-integration-roadmap.md)
+remains a reference inventory for later pushdown, subscriptions, replication,
+operations and other vision capabilities. Its old milestone numbering and
+C.13 handoff are not current prerequisites or scheduled return points.
+
+Deferred physical capability owners must qualify their real implementation
+before a future consumer advertises the corresponding guarantee. In
+particular, ordinary crash/reopen belongs in Milestone 1 through Milestone 3, whereas S.10's
+broader backup/PITR/repair portfolio remains deferred. S.11 and S.12 are not
+silently earned by Milestone 5.
 
 ## Completion Standard
 
