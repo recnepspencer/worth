@@ -120,16 +120,21 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
     let rejects = || CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap();
     let shared = StructuralWorld::install(execution, [structural(), rejects()]);
     // Each rule installed alone materializes every input it asks for. Sharing
-    // must answer exactly that demand, so the shared lookups equal their sum.
+    // must answer exactly that demand, so the shared lookups equal their sum,
+    // and it must read fewer inputs physically: an input both rules ask for is
+    // read once and reused, beyond what each rule already reuses alone.
     let alone = [
         StructuralWorld::install(execution, [structural()]),
         StructuralWorld::install(execution, [rejects()]),
     ];
-    let lookups_alone = |worlds: &[StructuralWorld; 2]| {
-        worlds
-            .iter()
-            .map(|world| candidate_lookups(&world.evaluate().1))
-            .sum::<usize>()
+    let lookups_and_reuse_alone = |worlds: &[StructuralWorld; 2]| {
+        worlds.iter().fold((0, 0), |(lookups, reuse), world| {
+            let counters = world.evaluate().1;
+            (
+                lookups + candidate_lookups(&counters),
+                reuse + counters.custom_invariant_candidate_reuse_hits,
+            )
+        })
     };
 
     let (results, counters) = shared.evaluate();
@@ -151,8 +156,9 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         0
     );
     assert_eq!(counters.custom_invariant_candidate_entity_reads, 2);
-    assert_eq!(candidate_lookups(&counters), lookups_alone(&alone));
-    assert!(counters.custom_invariant_candidate_reuse_hits > 0);
+    let (lookups, reuse) = lookups_and_reuse_alone(&alone);
+    assert_eq!(candidate_lookups(&counters), lookups);
+    assert!(counters.custom_invariant_candidate_reuse_hits > reuse);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
     shared.commit_edge(execution);
@@ -171,8 +177,9 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         changed_counters.custom_invariant_candidate_adjacency_relation_ids,
         2
     );
-    assert_eq!(candidate_lookups(&changed_counters), lookups_alone(&alone));
-    assert!(changed_counters.custom_invariant_candidate_reuse_hits > 0);
+    let (lookups, reuse) = lookups_and_reuse_alone(&alone);
+    assert_eq!(candidate_lookups(&changed_counters), lookups);
+    assert!(changed_counters.custom_invariant_candidate_reuse_hits > reuse);
 }
 
 #[test]
