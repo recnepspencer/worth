@@ -17,6 +17,8 @@ pub(in super::super) fn retire_stale_records(
 
     let keys = super::super::refreshed_rejoin::source_rows(&state.records, successor)
         .filter(|(key, record)| {
+            #[cfg(test)]
+            super::retirement_observation::record_sweep_contact();
             record.product_occurrence == occurrence
                 && record.source_scope == Some(scope)
                 && key.source.replacement_order(successor) == Some(Ordering::Less)

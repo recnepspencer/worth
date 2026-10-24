@@ -12,6 +12,12 @@ mod supersession;
 pub(super) fn sweep_contacts() -> u64 {
     retirement_observation::sweep_contacts()
 }
+/// A registry-wide retirement pass records each row it contacts, wherever the
+/// pass body lives, so the sweep bound courts see every pass.
+#[cfg(test)]
+pub(super) fn record_sweep_contact() {
+    retirement_observation::record_sweep_contact();
+}
 pub(super) use advancement::release_completed_member;
 pub(super) use advancement::release_completed_prerequisites;
 pub(super) use publication::release_published_member;
