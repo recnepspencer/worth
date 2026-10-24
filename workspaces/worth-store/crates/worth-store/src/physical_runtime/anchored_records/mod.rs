@@ -1,12 +1,35 @@
 //! Anchored records: named "current value" records that a Store home replaces
-//! whole, one generation at a time.
+//! whole, one generation at a time, each value with an optional set of
+//! content-addressed member records.
 //!
 //! Each name is a root anchor selecting exactly one record. A publication
 //! writes one framed record and advances the anchor from the generation the
 //! caller observed to the next one in the same root generation, so the value
 //! is current exactly when that root is durably selected. Store treats the
-//! payload as opaque owner bytes; the frame binds it to its anchor name and
-//! generation.
+//! payload and member bytes as opaque owner bytes; the frame binds the payload
+//! and the member table to the anchor name and generation.
+//!
+//! Members. A value lists its members' locators in its frame. New members are
+//! written as ordinary unanchored records in root generations before the
+//! anchored record's, in as many batches as the batch capacity needs; carried
+//! members are members of the current value and are not rewritten. The
+//! anchor advance is the single commit point: a member batch is acknowledged
+//! only once its root generation is durably selected, so every new member is
+//! durable before the anchored record's batch starts, and until that batch's
+//! root is selected no anchor lists the new members. A crash therefore leaves
+//! the old value with its members, or the new value with its members.
+//!
+//! Residue and reachability. New member records of a publication that never
+//! committed, and members a replacement dropped, stay routed and
+//! unreferenced: Store never reads them as current, because a member is read
+//! or carried only through the table of the value its anchor selects. Before
+//! Milestone 4 reclamation nothing removes such a record: manifest routing
+//! carries every published record into every successor root; maintenance
+//! rewrites and displaced-artifact retirement move placements without
+//! changing record identities; the only record removal, blob reclamation
+//! (which recovery may complete), names blob records only; and recovery rolls
+//! back only an unselected pending append. A member of a current value was
+//! selected in a generation before its anchor's, so it stays reachable.
 //!
 //! The canonical commit journal is also anchored, but it keeps its own door:
 //! its name is reserved and cannot be named here.
@@ -15,17 +38,30 @@ use std::collections::BTreeSet;
 
 use worth_store_physical_format::RecordAnchorName;
 
-use crate::physical_runtime::{
-    AdmittedRecordPlacementPolicy, IndeterminatePhysicalMutation, PhysicalMutationDeadline,
-    PhysicalMutationIdempotencyIssuanceDenial, PhysicalMutationPreparationOutcome,
-    PhysicalReadProtectionDenial, PhysicalRecordId, ProvenNoEffectPhysicalMutation,
-    RecordAppendDenial, RecordReadError, RecordStreamFailure, ServingPhysicalRuntime,
-    RELATIONAL_CANONICAL_COMMITS,
-};
+use crate::physical_runtime::{ServingPhysicalRuntime, RELATIONAL_CANONICAL_COMMITS};
 
+mod failure;
 mod frame;
+mod member;
+mod member_read;
+mod membership;
 mod publication;
 mod read;
+mod value;
+mod verified_value;
+
+pub use failure::{
+    AnchoredRecordDamage, AnchoredRecordMemberDamage, AnchoredRecordMemberReadFailure,
+    AnchoredRecordMemberWriteFailure, AnchoredRecordPublicationFailure, AnchoredRecordReadFailure,
+    AnchoredRecordsDenial,
+};
+pub use member::{
+    AnchoredRecordMember, AnchoredRecordMemberLocator, ANCHORED_RECORD_MEMBER_LOCATOR_BYTES,
+    MAXIMUM_ANCHORED_RECORD_MEMBERS,
+};
+pub(in crate::physical_runtime) use membership::AnchoredMembershipCache;
+pub use publication::{AnchoredRecordPublication, AnchoredRecordPublished};
+pub use value::{AnchoredRecord, AnchoredRecordMembership, AnchoredRecordVersion};
 
 /// The name of one anchored record: a valid anchor name that no other Store
 /// door owns.
@@ -57,193 +93,6 @@ impl AnchoredRecordName {
     pub(in crate::physical_runtime) const fn anchor(self) -> RecordAnchorName {
         self.0
     }
-}
-
-/// The identity of one durable value of an anchored record.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AnchoredRecordVersion {
-    name: AnchoredRecordName,
-    generation: u64,
-    record: PhysicalRecordId,
-    payload_sha256: [u8; 32],
-    payload_bytes: u64,
-}
-
-impl AnchoredRecordVersion {
-    pub const fn name(&self) -> AnchoredRecordName {
-        self.name
-    }
-    /// One for the first value; each replacement adds one.
-    pub const fn generation(&self) -> u64 {
-        self.generation
-    }
-    pub const fn record(&self) -> PhysicalRecordId {
-        self.record
-    }
-    pub const fn payload_sha256(&self) -> [u8; 32] {
-        self.payload_sha256
-    }
-    pub const fn payload_bytes(&self) -> u64 {
-        self.payload_bytes
-    }
-}
-
-/// The current value of an anchored record, verified against its anchor.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct AnchoredRecord {
-    version: AnchoredRecordVersion,
-    bytes: Vec<u8>,
-}
-
-impl AnchoredRecord {
-    pub const fn version(&self) -> AnchoredRecordVersion {
-        self.version
-    }
-    pub fn bytes(&self) -> &[u8] {
-        &self.bytes
-    }
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.bytes
-    }
-}
-
-/// One requested replacement: the value at `expected_generation` (zero when
-/// the record is absent) becomes `payload` at the next generation.
-pub struct AnchoredRecordPublication {
-    name: AnchoredRecordName,
-    expected_generation: u64,
-    payload: Vec<u8>,
-    placement: AdmittedRecordPlacementPolicy,
-    deadline: PhysicalMutationDeadline,
-}
-
-impl AnchoredRecordPublication {
-    pub fn new(
-        name: AnchoredRecordName,
-        expected_generation: u64,
-        payload: Vec<u8>,
-        placement: AdmittedRecordPlacementPolicy,
-        deadline: PhysicalMutationDeadline,
-    ) -> Self {
-        Self {
-            name,
-            expected_generation,
-            payload,
-            placement,
-            deadline,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AnchoredRecordPublished {
-    /// This call made the value durable.
-    Published(AnchoredRecordVersion),
-    /// The identical value was already durable at the requested generation;
-    /// nothing was written.
-    AlreadyPublished(AnchoredRecordVersion),
-}
-
-impl AnchoredRecordPublished {
-    pub const fn version(&self) -> AnchoredRecordVersion {
-        match self {
-            Self::Published(version) | Self::AlreadyPublished(version) => *version,
-        }
-    }
-}
-
-/// A publication that did not make its value durable. Only `Indeterminate`
-/// and `CompletedWithoutRecord` may have had an effect.
-#[non_exhaustive]
-pub enum AnchoredRecordPublicationFailure {
-    EmptyPayload,
-    /// The anchor is not at the expected generation. No effect.
-    GenerationConflict {
-        current: u64,
-    },
-    /// A new name would exceed the root's anchor table. No effect.
-    AnchorTableFull,
-    /// An earlier publication to this name has an indeterminate fate; recovery
-    /// must establish it before the name admits another. No effect.
-    Unresolved,
-    /// The record could not form an admissible batch. No effect.
-    Batch(RecordAppendDenial),
-    Idempotency(PhysicalMutationIdempotencyIssuanceDenial),
-    /// Physical preparation refused before any WAL effect.
-    Preparation(PhysicalMutationPreparationOutcome),
-    ProvenNoEffect(ProvenNoEffectPhysicalMutation),
-    /// The publication may or may not be durable.
-    Indeterminate(IndeterminatePhysicalMutation),
-    /// The mutation completed but did not report exactly one record. It may
-    /// be durable; reopening establishes the current value.
-    CompletedWithoutRecord,
-    /// Reading the current anchor failed before any effect.
-    Read(AnchoredRecordReadFailure),
-}
-
-impl std::fmt::Debug for AnchoredRecordPublicationFailure {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::EmptyPayload => f.write_str("EmptyPayload"),
-            Self::GenerationConflict { current } => f
-                .debug_struct("GenerationConflict")
-                .field("current", current)
-                .finish(),
-            Self::AnchorTableFull => f.write_str("AnchorTableFull"),
-            Self::Unresolved => f.write_str("Unresolved"),
-            Self::Batch(denial) => f.debug_tuple("Batch").field(denial).finish(),
-            Self::Idempotency(_) => f.write_str("Idempotency"),
-            Self::Preparation(_) => f.write_str("Preparation"),
-            Self::ProvenNoEffect(fate) => f
-                .debug_struct("ProvenNoEffect")
-                .field("cause", &fate.cause())
-                .finish(),
-            Self::Indeterminate(fate) => f
-                .debug_struct("Indeterminate")
-                .field("stage", &fate.stage())
-                .finish(),
-            Self::CompletedWithoutRecord => f.write_str("CompletedWithoutRecord"),
-            Self::Read(failure) => f.debug_tuple("Read").field(failure).finish(),
-        }
-    }
-}
-
-#[derive(Debug)]
-#[non_exhaustive]
-pub enum AnchoredRecordReadFailure {
-    Protection(PhysicalReadProtectionDenial),
-    Open(RecordReadError),
-    Stream(RecordStreamFailure),
-    /// The anchored record failed frame or digest validation.
-    Damaged(AnchoredRecordDamage),
-    /// The payload exceeds the caller's limit; nothing was allocated for it.
-    LimitExceeded {
-        payload_bytes: u64,
-    },
-}
-
-/// Why an anchored record is not the value its anchor selected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum AnchoredRecordDamage {
-    Truncated,
-    WrongMagic,
-    /// The frame names a different anchor.
-    WrongAnchor,
-    /// The frame's generation is not the anchor's.
-    WrongGeneration,
-    /// The record is longer than its frame declares.
-    TrailingBytes,
-    /// The whole record does not hash to the anchor's record digest.
-    RecordDigestMismatch,
-    /// The payload does not hash to the frame's payload digest.
-    PayloadDigestMismatch,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum AnchoredRecordsDenial {
-    ServingRequiresInspection,
 }
 
 /// Serializes anchored-record publications and remembers, per name, those
