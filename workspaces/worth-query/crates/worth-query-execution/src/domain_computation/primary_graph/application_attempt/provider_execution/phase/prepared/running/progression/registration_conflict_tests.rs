@@ -25,7 +25,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryProviderAttemptRegistrationContext,
 };
 
-pub(super) type RetainedProgram = WorthQueryApplicationEffectProgram<
+type RetainedProgram = WorthQueryApplicationEffectProgram<
     IdentityExecutionSchema,
     ExactStatusRetentionOperation,
     ExactStatusRetentionInput,
@@ -284,7 +284,7 @@ fn while_peer_is_registered(
     victim
 }
 
-pub(super) fn start(
+fn start(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     world: &AuthorizationWorld,
@@ -309,7 +309,7 @@ pub(super) fn start(
         .unwrap_or_else(|outcome| panic!("registration fixture must start: {outcome:?}"))
 }
 
-pub(super) fn equivalent_programs(
+fn equivalent_programs(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

@@ -113,6 +113,10 @@ impl<'run> WorthQueryAdmittedProviderSession<'run> {
 #[cfg(test)]
 mod registration_conflict_tests {
     include!("registration_conflict_tests.rs");
+    // A child, so the court reuses these private helpers without widening them.
+    mod interrupted_registration_tests {
+        include!("session_admission/interrupted_registration_tests.rs");
+    }
 }
 
 impl WorthQueryProviderSessionAdmissionFailure {
@@ -186,7 +190,3 @@ mod comparison_scope_tests;
 
 #[cfg(test)]
 mod principal_comparison_tests;
-
-#[cfg(test)]
-#[path = "session_admission/interrupted_registration_tests.rs"]
-mod interrupted_registration_tests;

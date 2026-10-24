@@ -1,10 +1,10 @@
-//! A request stopped before registration admits its decision-fact binding
-//! keeps that control outcome and releases every attempt-local resource.
-use super::super::{
+// A request stopped before registration admits its decision-fact binding
+// keeps that control outcome and releases every attempt-local resource.
+use super::super::super::{
     WorthQueryProgressedApplicationCommit, WorthQueryProviderProgressionCompletion,
 };
-use super::admit_provider_session;
-use super::registration_conflict_tests::{equivalent_programs, start};
+use super::super::admit_provider_session;
+use super::{equivalent_programs, start};
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::{
     finish_application_commit, WorthQueryRunningApplicationCommit,
 };
