@@ -57,11 +57,13 @@ mod history_recovery_validation;
 mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
-pub use canonical_publication_routes::RelationalPatchPositionReservationCounters;
 pub(crate) use canonical_publication_routes::{
     readmit_positioned_canonical_commit, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+};
+pub use canonical_publication_routes::{
+    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;

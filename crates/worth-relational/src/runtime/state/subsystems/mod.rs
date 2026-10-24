@@ -22,7 +22,6 @@ pub(crate) trait RuntimeSubsystem: Sized {
 
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::DurabilitySubsystem;
-pub use history::RelationalPatchPositionReservationCounters;
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
@@ -32,6 +31,9 @@ pub(crate) use history::{
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
+pub use history::{
+    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
+};
 pub(crate) use indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };

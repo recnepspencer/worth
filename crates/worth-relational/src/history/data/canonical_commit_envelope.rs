@@ -20,6 +20,8 @@ use crate::transactions::data::{
     RecordRef,
 };
 
+mod authoritative_artifact_encoding;
+pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 #[path = "canonical_commit_envelope/checkpoint_encoding.rs"]
 mod checkpoint_encoding;
 pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;

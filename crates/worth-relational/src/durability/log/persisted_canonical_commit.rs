@@ -127,6 +127,7 @@ impl PersistedCanonicalCommit {
             self.position,
             self.canonical,
         )
+        .map_err(|denial| denial.to_string())
     }
 }
 

@@ -38,6 +38,9 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 #[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
+    AuthoritativeArtifactEnvelopeRef, CheckpointCanonicalEnvelopeRef, CommittedRecordChange,
+};
+pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,
     CanonicalRequiredOutputMaterialization, CanonicalRequiredOutputMaterializationRecord,
     CanonicalRequiredOutputOrigin,
@@ -47,7 +50,6 @@ pub use canonical_commit_envelope::{
     RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision, RelationalReplayRecord,
     RelationalTouchAdjacencyDirection, ReplaySchemaVersion,
 };
-pub(crate) use canonical_commit_envelope::{CheckpointCanonicalEnvelopeRef, CommittedRecordChange};
 pub use canonical_record_allocation::RecordAllocationClass;
 pub(crate) use canonical_record_allocation::{CanonicalRecordAllocation, RecordAllocationOrigin};
 pub use committed_version::CommittedVersionSummary;

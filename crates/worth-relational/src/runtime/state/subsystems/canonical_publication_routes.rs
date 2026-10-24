@@ -17,6 +17,7 @@ mod position_admission;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
 pub use performed_stream::RelationalPatchPositionReservationCounters;
 use performed_stream::{PerformedPublicationRecordError, PerformedPublicationStream};
+pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
 pub(crate) use position_admission::{
     readmit_positioned_canonical_commit, CanonicalPositionAdmission,
 };

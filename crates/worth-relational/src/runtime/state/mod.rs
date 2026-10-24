@@ -36,6 +36,6 @@ pub(crate) use subsystems::{
     ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
-    RelationalBranchSharingCostCounters, RelationalPatchPositionReservationCounters,
-    RelationalPhase4ReferenceCostCounters,
+    RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,
+    RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };

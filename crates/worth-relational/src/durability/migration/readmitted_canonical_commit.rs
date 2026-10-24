@@ -1,9 +1,12 @@
-use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
+use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
+use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 
-/// Current recovery input retaining its exact positioned canonical admission.
+/// A canonical commit that passed current readmission at its stream
+/// position. Only Relational readmission doors construct it; holding one
+/// confers no runtime authority beyond read access to the admitted commit.
 #[derive(Debug, Clone)]
-pub(crate) struct ReadmittedCanonicalCommit {
+pub struct ReadmittedCanonicalCommit {
     positioned: PositionedCanonicalCommit,
 }
 
@@ -15,7 +18,7 @@ impl ReadmittedCanonicalCommit {
     pub(crate) fn readmit_current(
         position: PatchStreamPosition,
         canonical: CanonicalCommitEnvelope,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, RelationalCanonicalPositionAdmissionDenial> {
         crate::runtime::readmit_positioned_canonical_commit(
             position,
             std::sync::Arc::new(canonical),
@@ -23,10 +26,13 @@ impl ReadmittedCanonicalCommit {
         .map(Self::exact)
     }
 
-    pub(crate) fn position(&self) -> PatchStreamPosition {
+    pub fn position(&self) -> PatchStreamPosition {
         self.positioned.position()
     }
-    pub(crate) fn envelope(&self) -> &CanonicalCommitEnvelope {
+    pub fn commit_id(&self) -> CommitId {
+        self.positioned.envelope().commit.commit_id
+    }
+    pub fn envelope(&self) -> &CanonicalCommitEnvelope {
         self.positioned.envelope()
     }
     pub(crate) fn positioned(&self) -> &PositionedCanonicalCommit {
