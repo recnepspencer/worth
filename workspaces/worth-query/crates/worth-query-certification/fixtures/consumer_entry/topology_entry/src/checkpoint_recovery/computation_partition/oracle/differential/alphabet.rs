@@ -53,14 +53,13 @@ pub(in super::super) enum Kind {
     /// A value edit at each real runtime absence boundary.
     Evict,
     Unretained,
-    ObservationOverBudget,
     Several,
     /// The faulted entry's fault cleared.
     Repair,
 }
 
 /// Every kind a round shuffles; `Repair` follows each `Fault`.
-pub(in super::super) const KINDS: [Kind; 19] = [
+pub(in super::super) const KINDS: [Kind; 18] = [
     Kind::Value,
     Kind::SignedZero,
     Kind::SharedWeight,
@@ -78,7 +77,6 @@ pub(in super::super) const KINDS: [Kind; 19] = [
     Kind::Swap,
     Kind::Evict,
     Kind::Unretained,
-    Kind::ObservationOverBudget,
     Kind::Several,
 ];
 

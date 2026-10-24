@@ -22,7 +22,6 @@ impl Model {
             | Kind::BlindWrite
             | Kind::Evict
             | Kind::Unretained
-            | Kind::ObservationOverBudget
             | Kind::Several => {
                 let value = rng.value();
                 self.entries[entry].as_mut().unwrap().value = value;
