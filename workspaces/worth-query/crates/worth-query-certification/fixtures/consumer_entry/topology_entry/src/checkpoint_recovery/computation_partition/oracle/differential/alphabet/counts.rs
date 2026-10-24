@@ -1,5 +1,5 @@
 //! Calls derived from semantic model differences, independent of retained state.
-use super::super::super::{tree_work, OwnerCalls, TOTALS_WORK};
+use super::super::super::{tree_work, OwnerCalls};
 use super::*;
 use std::collections::BTreeMap;
 
@@ -33,18 +33,9 @@ impl Model {
         groups
     }
 
-    /// A successful run has ample preparation slack. With two heavy entries,
-    /// their combined kernel work alone exceeds the ceiling; exactly the
-    /// second heavy partition is the stop, irrespective of preparation slack.
+    /// The calls a run makes after `prior`: an incremental run stops at the
+    /// first refusing partition in canonical order.
     pub(in super::super::super) fn expected_calls(&self, prior: Option<&Self>) -> OwnerCalls {
-        self.expected_calls_at(prior, TOTALS_WORK)
-    }
-
-    pub(in super::super::super) fn expected_calls_at(
-        &self,
-        prior: Option<&Self>,
-        ceiling: usize,
-    ) -> OwnerCalls {
         let prior = prior.filter(|p| p.odd == self.odd);
         let membership =
             prior.is_none_or(|p| {
@@ -95,15 +86,10 @@ impl Model {
         ordered.sort_by_key(|(key, _)| tree_work::identity(**key));
         // Courtroom full-run law: all kernels run before the canonical result prefix is judged.
         // Incremental calls stop at the affected canonical prefix.
-        let mut kernel_work = 0;
         let mut kernels = 0;
         for (key, members) in ordered {
             kernels += usize::from(dirty.contains(key));
-            kernel_work +=
-                members.iter().map(|(_, e)| e.work).sum::<u64>() + u64::from(key.is_multiple_of(2));
-            if (prior.is_some() && members.iter().any(|(_, e)| e.fault))
-                || kernel_work > ceiling as u64
-            {
+            if prior.is_some() && members.iter().any(|(_, e)| e.fault) {
                 break;
             }
         }

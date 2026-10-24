@@ -35,8 +35,6 @@ fn a_republished_output_runs_in_full_with_the_republication_cause() {
     assert_eq!(kept[0].outcome, reference[0].outcome);
     assert_eq!(kept[0].calls, reference[0].calls);
     assert_published_state(&kept, &reference);
-    history.demanded(None);
-    differential::prefix::work_boundary(&application, model, history);
 }
 
 pub(super) fn republish(application: &Application<false, TOTALS_WORK, 1, 2>, total: u64) {

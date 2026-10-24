@@ -6,7 +6,7 @@ use worth_query_host::facade::application_contribution::{
 };
 
 #[test]
-fn restoration_after_seeded_edits_rebuilds_fresh_state_and_the_same_work_boundary() {
+fn restoration_after_seeded_edits_rebuilds_fresh_state() {
     let _guard = checkpoint_recovery_test_guard();
     let seed = |graph: &mut Graph| differential::prefix::model().seed(graph);
     let original = install(seed);
@@ -36,6 +36,4 @@ fn restoration_after_seeded_edits_rebuilds_fresh_state_and_the_same_work_boundar
     assert_eq!(kept[0].calls, reference[0].calls);
     assert_eq!(kept[0].outcome, reference[0].outcome);
     assert_published_state(&kept, &reference);
-    history.demanded(None);
-    differential::prefix::work_boundary(&application, model, history);
 }

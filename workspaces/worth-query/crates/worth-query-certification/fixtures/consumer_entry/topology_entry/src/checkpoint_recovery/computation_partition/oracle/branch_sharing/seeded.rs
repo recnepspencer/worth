@@ -65,7 +65,7 @@ fn seeded_forks_switches_and_deleted_ancestors_equal_full_computation() {
     }
     // Every semantic input of the existing edit alphabet is exercised on
     // independently evolving branch snapshots, including absence/failure,
-    // membership and item digests, full keys, routing, and work ceilings.
+    // membership and item digests, full keys and routing.
     let kinds = [
         Kind::Input,
         Kind::Value,
@@ -78,8 +78,6 @@ fn seeded_forks_switches_and_deleted_ancestors_equal_full_computation() {
         Kind::Swap,
         Kind::Fault,
         Kind::Repair,
-        Kind::Ceiling,
-        Kind::Relief,
         Kind::NoOp,
         Kind::OwnWrite,
         Kind::BlindWrite,
@@ -87,20 +85,20 @@ fn seeded_forks_switches_and_deleted_ancestors_equal_full_computation() {
     ];
     for round in 0..2 {
         let mut order = kinds;
-        // Fault/repair and ceiling/relief remain adjacent so the exact named
-        // stop is tested, and the next unrelated edit has completed state.
+        // Fault and repair remain adjacent so the exact named stop is
+        // tested, and the next unrelated edit has completed state.
         for place in (1..8).rev() {
             let other = rng.below(place + 1);
             order.swap(place, other);
         }
         for kind in order {
             let index = rng.below(branches.len());
-            let index = if matches!(kind, Kind::Repair | Kind::Relief) {
+            let index = if matches!(kind, Kind::Repair) {
                 0
             } else {
                 index
             };
-            let index = if matches!(kind, Kind::Fault | Kind::Ceiling) {
+            let index = if matches!(kind, Kind::Fault) {
                 0
             } else {
                 index

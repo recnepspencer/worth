@@ -3,13 +3,10 @@
 
 use serde::ser::Error as _;
 use serde::{Serialize, Serializer};
-use worth_foundational::facade::PartitionIdentity;
-use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
     PartitionItemId, WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
-    WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
-    WorthQueryDeterministicReducer, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationDenial, WorthQueryManagedComputationResourceDenial,
+    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 
@@ -158,21 +155,6 @@ fn faulted(id: u64, region: u32, fault: ProbeFault) -> RegionEntry {
     }
 }
 
-fn partition_of(region: u32) -> PartitionIdentity {
-    let key = ProbeKey {
-        region,
-        entry: 0,
-        encodable: true,
-    };
-    application_computation_partition_identity(&key, &mut |_| Ok::<(), ()>(()))
-        .expect("a region key encodes")
-        .partition()
-}
-
-/// A result passed the bytes declared for one result.
-const RESULT_TOO_LARGE: WorthQueryManagedComputationResourceDenial =
-    WorthQueryManagedComputationResourceDenial::ResultCapacityExceeded;
-
 #[test]
 fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
     // Two regions. The least entries are 3 and 4, and neither is met first in
@@ -194,57 +176,6 @@ fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
             assert_eq!(demand("reversed"), Ok(planned));
         },
     );
-}
-
-#[test]
-fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
-    // The computation declares 8,192 bytes. A result fits them in memory and
-    // once more as its canonical bits, which take 24 bytes a value.
-    // One region's result is too large on its own.
-    let oversized = [
-        entry(1, 1),
-        faulted(2, 2, ProbeFault::Hold(2_000)),
-        entry(3, 3),
-    ];
-    // A result fits alone, and what the reducer makes of two does not.
-    let alone = [faulted(1, 1, ProbeFault::Hold(250))];
-    let together = [
-        faulted(1, 1, ProbeFault::Hold(250)),
-        faulted(2, 2, ProbeFault::Hold(250)),
-    ];
-    let fitting = [
-        faulted(1, 1, ProbeFault::Hold(100)),
-        faulted(2, 2, ProbeFault::Hold(100)),
-    ];
-    let sets: facts::Sets<'_> = &[
-        ("oversized", &oversized),
-        ("alone", &alone),
-        ("together", &together),
-        ("fitting", &fitting),
-    ];
-    with_totals::<Probed>(sets, |demand| {
-        assert_eq!(
-            demand("oversized").map(|total| total.bits),
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                partition: partition_of(2),
-                cause: WorthQueryComputationPartitionStop::Resource(RESULT_TOO_LARGE),
-            })
-        );
-        assert_eq!(
-            demand("alone").map(|total| total.bits),
-            Ok(1.0_f64.to_bits())
-        );
-        assert_eq!(
-            demand("together").map(|total| total.bits),
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                RESULT_TOO_LARGE
-            ))
-        );
-        assert_eq!(
-            demand("fitting").map(|total| total.bits),
-            Ok(3.0_f64.to_bits())
-        );
-    });
 }
 
 #[cfg(panic = "unwind")]

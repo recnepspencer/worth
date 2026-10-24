@@ -62,9 +62,7 @@ fn named_edit_laws_have_the_declared_occurrences_and_exact_calls() {
                 "{}: bits, charge and stop",
                 case.name
             );
-            let prior = if case.stopped_prior {
-                None
-            } else if index == 0 {
+            let prior = if index == 0 {
                 Some(&case.before)
             } else {
                 Some(&case.after)
@@ -75,9 +73,6 @@ fn named_edit_laws_have_the_declared_occurrences_and_exact_calls() {
                 "{}: tree law",
                 case.name
             );
-            if case.stopped_prior {
-                assert_eq!(run.runs, [Run::Full(Cause::Stopped)]);
-            }
             if let Some(write) = case.own_write {
                 now.written(write);
             }

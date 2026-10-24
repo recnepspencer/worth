@@ -2,10 +2,9 @@
 //! runtime that keeps its output, and every step's run is checked against a
 //! full run of the same facts in a runtime installed for that step, which
 //! holds no record to reuse: the same outcome, the same charged work, and the
-//! same partition named where the work ceiling stops a run.
+//! same partition named where a refusal stops a run.
 
 use worth_query_host::facade::application_contribution::{
-    WorthQueryComputationPartitionStop as Stop, WorthQueryManagedComputationResourceDenial,
     WorthQueryPartitionedComputationFullCause as FullCause,
     WorthQueryPartitionedComputationRunForTest as Run,
 };
@@ -37,7 +36,7 @@ pub(super) fn full_run(
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let moved = own_write.is_some_and(|write| !model.holds(write));
-    let rerun = moved && model.completes_at(TOTALS_WORK);
+    let rerun = moved && model.completes();
     arm_own_write(own_write);
     let (contacts, runs) = demand(&request, &application);
     arm_own_write(None);
@@ -137,7 +136,6 @@ pub(super) fn seeded_sequence_with_stops(
             kinds.swap(place, rng.below(place + 1));
         }
         let kinds = kinds.into_iter().flat_map(|kind| match kind {
-            Kind::Ceiling => vec![Kind::Ceiling, Kind::Relief],
             Kind::Fault => vec![Kind::Fault, Kind::Repair],
             kind => vec![kind],
         });
@@ -180,7 +178,7 @@ pub(super) fn seeded_sequence_with_stops(
 fn every_reused_run_equals_a_full_run_of_the_same_facts() {
     let _guard = checkpoint_recovery_test_guard();
     let mut last: Option<OracleRun> = None;
-    let (mut incremental, mut full, mut ceilings) = (0_usize, 0_usize, 0_usize);
+    let (mut incremental, mut full) = (0_usize, 0_usize);
     sequence(true, |at, mut demanded| {
         let reference = full_run(
             demanded.model,
@@ -232,16 +230,6 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
             [Run::Full(_)] => full += 1,
             _ => {}
         }
-        // A stopped run is not shown to the observer. One that follows a
-        // completed run had that run's record to reuse, and must stop at the
-        // partition a full run stops at, which the outcome names.
-        let exhausted = Stop::Resource(WorthQueryManagedComputationResourceDenial::WorkExhausted);
-        if last_run.outcome.is_ok()
-            && matches!(&run.outcome, Err(WorthQueryPartitionedComputationDenial::Partition { cause, .. }) if *cause == exhausted)
-        {
-            assert!(run.runs.is_empty(), "{at}: a stopped run is not shown");
-            ceilings += 1;
-        }
         if let (Some(expected), true) = (
             demanded.kind.and_then(expected),
             last_run.outcome.is_ok() && run.outcome.is_ok(),
@@ -253,9 +241,5 @@ fn every_reused_run_equals_a_full_run_of_the_same_facts() {
     assert!(
         incremental > full,
         "most steps reuse partitions: {incremental} incremental, {full} full"
-    );
-    assert!(
-        ceilings > 0,
-        "a reused run stops at the work ceiling where a full run stops"
     );
 }

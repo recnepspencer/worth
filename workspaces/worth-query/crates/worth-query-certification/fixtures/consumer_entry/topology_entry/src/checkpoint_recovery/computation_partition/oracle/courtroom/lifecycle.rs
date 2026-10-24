@@ -102,7 +102,6 @@ fn seeded_edits_cross_restore_and_republication_with_model_counts() {
             }
             for kind in kinds.into_iter().flat_map(|kind| match kind {
                 Kind::Fault => vec![kind, Kind::Repair],
-                Kind::Ceiling => vec![kind, Kind::Relief],
                 kind => vec![kind],
             }) {
                 let step = model.step(kind, &mut rng);

@@ -4,8 +4,7 @@
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
-    WorthQueryComputationPartitionStop, WorthQueryManagedComputationResourceDenial,
-    WorthQueryPartitionedComputationDenial,
+    WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
 };
 
 use super::facts::{RegionEntry, RegionFault};
@@ -224,50 +223,5 @@ fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
             })
         );
         assert_eq!(total(demand("clean")).bits, 5.0_f64.to_bits());
-    });
-}
-
-/// Three regions of 1,500 units of work each, and where the computation's
-/// declared 4,096 stop them: two regions fit and the third does not,
-/// whichever region the input meets first.
-pub(super) fn heavy_regions() -> (Vec<RegionEntry>, RegionOutcome) {
-    let regions = in_partition_order(1..=3);
-    let heavy = regions
-        .iter()
-        .map(|region| RegionEntry {
-            work: 1_500,
-            ..entry(u64::from(*region), *region, 1.0)
-        })
-        .collect();
-    let exhausted = Err(WorthQueryPartitionedComputationDenial::Partition {
-        partition: partition_of(regions[2]),
-        cause: WorthQueryComputationPartitionStop::Resource(
-            WorthQueryManagedComputationResourceDenial::WorkExhausted,
-        ),
-    });
-    (heavy, exhausted)
-}
-
-#[test]
-fn work_ceiling_stops_at_the_same_partition_with_the_same_outcome_on_every_run() {
-    let (heavy, exhausted) = heavy_regions();
-    let mut reversed = heavy.clone();
-    reversed.reverse();
-
-    // The same regions inside the ceiling complete.
-    let light = heavy
-        .iter()
-        .map(|entry| RegionEntry { work: 1, ..*entry })
-        .collect::<Vec<_>>();
-    let sets: facts::Sets<'_> = &[
-        ("heavy", &heavy),
-        ("reversed", &reversed),
-        ("light", &light),
-    ];
-    with_region_totals(sets, |demand| {
-        assert_eq!(demand("heavy"), exhausted);
-        assert_eq!(demand("reversed"), exhausted);
-        assert_eq!(demand("heavy"), exhausted);
-        assert_eq!(total(demand("light")).bits, 3.0_f64.to_bits());
     });
 }

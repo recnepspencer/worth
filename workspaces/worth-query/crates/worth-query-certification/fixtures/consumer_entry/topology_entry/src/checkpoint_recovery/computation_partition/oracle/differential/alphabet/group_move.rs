@@ -26,10 +26,8 @@ impl Model {
         Self {
             entries,
             next_binding: (unrelated + 3) as u64,
-            heavy: TOTALS_WORK as u64 + 1,
             weights: [-0.0, -0.0],
             odd: false,
-            ceiling: None,
         }
     }
     pub(in super::super::super) fn move_first_to(&mut self, region: u32) -> Change {

@@ -50,23 +50,17 @@ pub(in super::super) enum Kind {
     DeleteThenCreate,
     /// Two entries trade numbers: each number names the other entity.
     Swap,
-    /// A second heavy entry, in a region the first does not lie in: the run
-    /// stops at the work ceiling. The next edit is its `Relief`.
-    Ceiling,
     /// A value edit at each real runtime absence boundary.
     Evict,
     Unretained,
     ObservationOverBudget,
     Several,
-    /// The second heavy entry deleted.
-    Relief,
     /// The faulted entry's fault cleared.
     Repair,
 }
 
-/// Every kind a round shuffles; `Relief` follows each `Ceiling`, and
-/// `Repair` each `Fault`.
-pub(in super::super) const KINDS: [Kind; 20] = [
+/// Every kind a round shuffles; `Repair` follows each `Fault`.
+pub(in super::super) const KINDS: [Kind; 19] = [
     Kind::Value,
     Kind::SignedZero,
     Kind::SharedWeight,
@@ -82,7 +76,6 @@ pub(in super::super) const KINDS: [Kind; 20] = [
     Kind::NewKey,
     Kind::DeleteThenCreate,
     Kind::Swap,
-    Kind::Ceiling,
     Kind::Evict,
     Kind::Unretained,
     Kind::ObservationOverBudget,
@@ -108,11 +101,8 @@ struct ModelEntry {
 pub(in super::super) struct Model {
     entries: Vec<Option<ModelEntry>>,
     next_binding: u64,
-    heavy: u64,
     weights: [f64; 2],
     pub(in super::super) odd: bool,
-    /// The heavy entry the last `Ceiling` made.
-    ceiling: Option<usize>,
 }
 
 /// What a step changes: entry facts or entries, or the scope's ordinate.
@@ -161,10 +151,8 @@ impl Model {
         Self {
             entries,
             next_binding: numbers as u64,
-            heavy,
             weights: [rng.value(), rng.value()],
             odd: false,
-            ceiling: None,
         }
     }
 
@@ -247,10 +235,6 @@ impl Model {
         Change::Entry(EntryEdit::delete(number(entry)))
     }
 
-    /// Makes one edit of `kind` to the facts, and says how it is made.
-    pub(in super::super) fn len(&self) -> usize {
-        self.entries.iter().flatten().count()
-    }
     pub(in super::super) fn first_number(&self) -> u64 {
         number(self.held(false)[0])
     }

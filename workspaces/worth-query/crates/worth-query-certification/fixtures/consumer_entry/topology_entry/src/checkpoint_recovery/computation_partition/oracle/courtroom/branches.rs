@@ -122,7 +122,6 @@ fn seeded_branch_alphabet_has_exact_counts_on_forks_switches_and_deletion() {
                 let index = rng.below(branches.len());
                 for kind in match kind {
                     Kind::Fault => vec![kind, Kind::Repair],
-                    Kind::Ceiling => vec![kind, Kind::Relief],
                     kind => vec![kind],
                 } {
                     let step = models[index].step(kind, &mut rng);

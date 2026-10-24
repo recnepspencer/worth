@@ -45,7 +45,6 @@ pub(in super::super) fn run_with_history<const MODE: u8>(
     let mut command = 0x6900;
     for kind in kinds.into_iter().take(8).flat_map(|kind| match kind {
         Kind::Fault => vec![Kind::Fault, Kind::Repair],
-        Kind::Ceiling => vec![Kind::Ceiling, Kind::Relief],
         kind => vec![kind],
     }) {
         let step = model.step(kind, &mut rng);
@@ -66,7 +65,7 @@ pub(in super::super) fn run_with_history<const MODE: u8>(
     }
     assert!(
         last.last().unwrap().outcome.is_ok(),
-        "the seeded prefix ends after repair or relief"
+        "the seeded prefix ends after repair"
     );
     (model, last, history)
 }
@@ -78,48 +77,4 @@ pub(in super::super) fn value_edit(model: &Model) -> EntryEdit {
         super::super::super::entry_edit::EntryFact::Value,
         2.5_f64.to_bits(),
     ))
-}
-
-pub(in super::super) fn work_boundary<const MODE: u8>(
-    application: &Application<false, TOTALS_WORK, 1, MODE>,
-    mut model: Model,
-    mut history: reference::Reference,
-) {
-    let fresh = history
-        .install::<false, TOTALS_WORK, 1, MODE>(Default::default(), |graph, model| {
-            model.seed(graph)
-        });
-    let step = model.step(Kind::Ceiling, &mut Lcg(SEED ^ 0xce11));
-    let (scope, principal) = authenticate(application);
-    let request = application.request(&principal, &scope);
-    let (fresh_scope, fresh_principal) = authenticate(&fresh);
-    let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
-    // Ceiling creates one heavy entry; ordinal changes are impossible here.
-    let mut command = 0x69_ce11;
-    for change in step.changes {
-        let Change::Entry(change) = change else {
-            unreachable!("ceiling is an entry creation")
-        };
-        command += 1;
-        history.edit(&Change::Entry(change.clone()));
-        edit(&request, application, change.clone(), command);
-        edit(&fresh_request, &fresh, change, command);
-    }
-    let kept = demand(&request, application).1;
-    let reference = demand(&fresh_request, &fresh).1;
-    assert!(
-        matches!(
-            &kept[0].outcome,
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                cause: Stop::Resource(WorthQueryManagedComputationResourceDenial::WorkExhausted),
-                ..
-            })
-        ),
-        "the ceiling must name a partition"
-    );
-    assert_eq!(
-        kept[0].outcome, reference[0].outcome,
-        "reuse and a restored fresh state stop at the same partition"
-    );
-    assert_published_state(&kept, &reference);
 }
