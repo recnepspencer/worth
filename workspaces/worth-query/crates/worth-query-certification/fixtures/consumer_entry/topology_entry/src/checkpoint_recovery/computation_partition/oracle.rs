@@ -64,8 +64,6 @@ use program::{OracleRoot, RegionArtifact, RegionConnection, TOTALS_WORK};
 const WORK_PER_ENTRY: usize = 512;
 /// The input's digest.
 const WORK_BESIDE_ENTRIES: usize = 4_096;
-/// The width every other operation of the program fits, the host's default.
-
 /// The totals of one region output, declared for the largest set its
 /// decision reads.
 mod application;

@@ -17,6 +17,8 @@ use worth_query_topology_entry::*;
 
 #[path = "required_feature/program.rs"]
 mod program;
+// The required_feature example owns and lints this setup; this example uses a part.
+#[allow(dead_code)]
 #[path = "required_feature/installation.rs"]
 mod setup;
 use program::{ExampleProgram, ExampleSchema, FinalConnection, Root};
