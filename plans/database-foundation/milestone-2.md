@@ -208,8 +208,8 @@ not rewritten, while their content is unchanged.
     position, parents, branch, root descriptor, payload digest and schema
     version.
 - **Members (lazy, content-addressed by SHA-256).** A member is one of:
-  - a region image (`RelationalRegionImage`: partition, schema carrier digest,
-    region payload);
+  - a region head image and a region history image (`RelationalRegionImage`:
+    partition, schema carrier digest, kind, payload);
   - a symbol page;
   - a lineage page;
   - a derived-index image.
@@ -251,6 +251,33 @@ pure-looking accessor:
     escalates to the whole root.
   - Discarding a round equals abandoning a candidate, which never reuses an
     identity (D7).
+
+**Residency leases.** Every accepted demand returns a counted
+`RelationalResidencyLease` for the regions it made resident. The operation
+holds the lease for as long as it can read those regions: a transaction until
+it commits or is dropped, an observation or read view for its lifetime, an
+accepted probe round for the candidate it produced, a retained root while it
+is retained. Reads go through views that are only obtainable from a lease, so
+reading resident data without one is unrepresentable. Milestone 2 never evicts
+anything, but every reader of a residency cell is already counted. Milestone 4
+adds release and eviction without retrofitting a lease onto any reader.
+
+**Head and history are separate.** A region's checkpoint content is two
+member kinds:
+
+- a head image: each slot's current record version, the slot directory,
+  lifecycle and adjacency;
+- a history image: earlier record versions.
+
+A region cell is resident at `Head` or `Full`. Current-state reads,
+validation and commit preparation demand `Head`. Version-filtered reads,
+historical observations, aspect history and retention demand `Full`.
+
+A head-resident region is exposed through a head-only view that has no
+history accessors, so a historical read against a head-only region is
+unrepresentable rather than silently answered from the latest version.
+Writes append history in memory to a resident region of either level, and
+capture writes the changed head and history members.
 
 **Typed failures** (`RelationalStorageUnavailable{subject, cause}`, with
 subject region, envelope, symbols, lineage or index, and cause source
@@ -295,7 +322,6 @@ followed by a checkpoint writes O(1) new members.
 
 **Placed by the roadmap in Milestone 4, not deferred from this one:**
 
-- separating head working data from version history inside a region;
 - kind and adjacency summaries, so that a first scan need not warm a whole
   branch;
 - moving pins and lifecycle out of the mirror so it stops being a separate
