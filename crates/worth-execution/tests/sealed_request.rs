@@ -141,16 +141,18 @@ fn charged_scan(lease: Option<&worth_execution::ExecutionResourceLease<'_>>) -> 
     }
 }
 
+/// docs/how-it-works.md, "One work ceiling": the policy's work ceiling bounds
+/// the whole advancement in both placements.
 #[test]
-fn serial_policy_work_ceiling_does_not_bound_the_request() {
+fn serial_policy_work_ceiling_bounds_the_request_like_its_lease() {
     let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
     let result = ExecutionRequest::serial(&request)
         .in_scope(charged_scan)
         .unwrap();
     assert_eq!(
         result,
-        (true, 32 * 64),
-        "all declared checkpoints are metered beyond one unit"
+        (false, 0),
+        "the one-unit policy refuses the first 64-unit checkpoint"
     );
 }
 
@@ -174,12 +176,24 @@ fn leased_policy_work_ceiling_still_bounds_the_same_scan() {
 
 #[test]
 fn serial_computation_declared_work_ceiling_still_bounds_the_same_scan() {
-    let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
+    let absent_work = ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(1 << 20), None),
+    );
+    let request = SerialRequest::from_policy(&absent_work, CancellationToken::new(), None);
     let (result, report) = ExecutionRequest::serial(&request)
         .run(ExecutionWorkCeiling::new(Some(100)), charged_scan)
         .unwrap();
     assert_eq!(result, (false, 64));
     assert_eq!(report.charged_work(), 64);
+    // A declaration never widens the request: the narrower policy ceiling binds.
+    let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
+    let (result, report) = ExecutionRequest::serial(&request)
+        .run(ExecutionWorkCeiling::new(Some(100)), charged_scan)
+        .unwrap();
+    assert_eq!(result, (false, 0));
+    assert_eq!(report.charged_work(), 0);
 }
 
 fn authority() -> &'static ExecutionAuthority {
