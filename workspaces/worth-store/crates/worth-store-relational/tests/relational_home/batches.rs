@@ -61,7 +61,7 @@ pub(super) fn create(step: usize) -> WorkerIntentBatch {
     ))
 }
 
-fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
+pub(super) fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
     WorkerIntentBatch::new(format!("update-{step}")).push(MutationIntent::Entity(
         EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
             entity_id,
@@ -70,7 +70,7 @@ fn update(entity_id: EntityId, step: usize) -> WorkerIntentBatch {
     ))
 }
 
-fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch {
+pub(super) fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch {
     let label = format!("link-{step}");
     WorkerIntentBatch::new(format!("relate-{step}")).push(MutationIntent::Create(
         CreateIntent::Relation(RelationSpec {
@@ -84,7 +84,7 @@ fn relate(source: EntityId, target: EntityId, step: usize) -> WorkerIntentBatch 
     ))
 }
 
-fn delete(entity_id: EntityId) -> WorkerIntentBatch {
+pub(super) fn delete(entity_id: EntityId) -> WorkerIntentBatch {
     WorkerIntentBatch::new("delete").push(MutationIntent::Entity(EntityMutationIntent::Delete(
         DeleteEntityIntent { entity_id },
     )))
