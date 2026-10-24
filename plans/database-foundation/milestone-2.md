@@ -136,7 +136,8 @@ Relational installs it live. Relational's own durability tests use a
   `DurableStore`, segment and checkpoint manifests, compaction types, the
   local store, segment codec, file locking, persisted recovery planning and
   filesystem checkpoint persistence, with their builder setters and config
-  fields. `DurabilityMode` keeps `InMemoryCanonical` and gains `Medium`.
+  fields, and `DurabilityMode` itself: whether a medium is attached is the
+  only mode, so a separate mode would be a second source of truth.
 - Durability contract tests that asserted recovered semantics run against the
   in-crate medium through the public recovery door. Tests that only exercised
   segment files, manifests or locks are deleted.
@@ -164,12 +165,17 @@ Location: `worth-store-relational` tests.
   aspect edits, relations, deletes, a schema transition, a fork followed by
   commits on the fork, and checkpoints. Its artifacts and state are the
   expected result.
-- **State comparison.** After recovery the journal holds an exact reference
-  prefix containing every acknowledged commit; every live record, relation and
-  aspect value on every durable branch equals the reference at that prefix;
-  the recovered runtime then executes the remaining operations and must
-  produce byte-identical artifacts to the reference, which checks identity
-  allocation and schema continuity.
+- **State comparison.** Canonical artifacts embed the producing runtime's
+  process-local instance identity (branch cell checkpoints and fork
+  provenance), so a durable run's artifacts are not byte-equal to the
+  reference's. After recovery the home must hold exactly the artifacts the
+  crashed run acknowledged, byte for byte, plus at most the one in-flight
+  commit, present exactly when `resolve` says it is committed; and every
+  record and relation on every durable branch, read through Relational's
+  ordinary transaction reads, must equal the reference's after that many
+  commits. The recovered runtime then runs the rest of the script and must
+  reach the reference's final records; new creates must never reuse an
+  identity that was ever committed, including deleted ones.
 - **Media sweep.** Store fault schedules interrupt every media operation of a
   commit and of a checkpoint with `FailBefore` and `IndeterminateAfterEffect`.
 - **Real processes.** A child is killed before commitment (before the WAL
