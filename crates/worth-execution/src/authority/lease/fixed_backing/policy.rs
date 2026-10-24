@@ -70,8 +70,12 @@ impl<'scope, 'authority> ExecutionAllocationPolicy<'scope, 'authority> {
         let active = original.current_descendant();
         let lease = active.as_ref().unwrap_or(original);
         if active.is_none() && !lease.accepts_current_worker_context() {
+            // Misuse inside another lease's worker stops that invoking run,
+            // as every other unrelated admission does, even when swallowed.
             return Err(ExecutionAllocationDenial::new(
-                ExecutionAllocationDenialKind::Lease(LeaseDenial::unrelated_nested_lease()),
+                ExecutionAllocationDenialKind::Lease(crate::backend::request_stop(
+                    LeaseDenial::UnrelatedNestedLease,
+                )),
                 quote,
             ));
         }
