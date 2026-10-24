@@ -312,14 +312,17 @@ mod tests {
     }
 
     #[test]
-    fn text_comparison_meters_initialized_utf8_not_spare_capacity() {
+    fn text_comparison_reads_initialized_utf8_not_spare_capacity() {
         let mut spare = String::with_capacity(4096);
         spare.push_str("open");
-        let mut work = 0;
-        assert!(same_text(&spare, "open"));
-        assert_eq!(work, 1 + "open".len());
-        let mut work = 0;
-        assert!(!same_text(&spare, "closed"));
-        assert_eq!(work, 1, "different lengths compare without reading payload");
+        // Stale bytes past the initialized length stay in the spare capacity.
+        let mut truncated = String::from("openXYZ");
+        truncated.truncate("open".len());
+        for left in [spare.as_str(), truncated.as_str()] {
+            for right in ["open", "openXYZ", "opal", "closed", ""] {
+                assert_eq!(same_text(left, right), left == right, "{left:?} {right:?}");
+            }
+        }
+        assert!(same_text(&spare, &truncated));
     }
 }
