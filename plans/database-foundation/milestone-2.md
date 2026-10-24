@@ -163,9 +163,117 @@ same operations in any process produces byte-identical artifacts.
 
 ## Residency
 
-To be completed from the design pass: the read port, the guard types and their
-placement, the operations that acquire residency, the history indexes that stay
-resident, and the typed failure each public path returns.
+**Checkpoint layout.** `relational.checkpoint` holds a manifest. Its member
+records are published with it in one root decision and are carried forward,
+not rewritten, while their content is unchanged.
+
+- **Manifest (eager).** The manifest holds:
+  - coverage and runtime name;
+  - branch cells, schema images and record-identity facts;
+  - aspect contracts and index definitions;
+  - for each root, its commit id, schema carrier digest and region leaves
+    `{partition_id, content_digest, slot counts, unavailable count, member}`;
+  - mirror leaves;
+  - the commit index: one small entry per commit with its id, version,
+    position, parents, branch, root descriptor, payload digest and schema
+    version.
+- **Members (lazy, content-addressed by SHA-256).** A member is one of:
+  - a region image (`RelationalRegionImage`: partition, schema carrier digest,
+    region payload);
+  - a symbol page;
+  - a lineage page;
+  - a derived-index image.
+
+  Equal content is stored once across roots, the mirror and checkpoints.
+- **Verification without loading.** Reopen recomputes each root's region
+  commitment from its leaves and compares it with the root descriptor. Each
+  member is verified against its leaf when it loads.
+- **Embedded checkpoints** used by the Query host carry the same members
+  inline. Placement is an artifact-policy parameter of one format.
+
+**Read port.** `RelationalDurableColdSource` sits beside the medium:
+`read_member(locator, limit)` and `read_commit(position, limit)`. The home
+implements it over anchored-record members and the journal. The recovery
+source carries it, because recovery needs it before the medium is bound.
+
+**Residency cells** (`storage/residency`):
+
+- `RelationalRegionResidency` is shared by every root and the mirror that hold
+  the region, and is `Cold`, `Resident` or sticky `Damaged`. One load serves
+  concurrent demands.
+- A load reads, checks the frame and digest, decodes under that root's schema,
+  readmits required text, rebuilds kind buckets and verifies the content
+  digest.
+- Residency never relocates an identity or changes a slot directory.
+
+**Guards.** Loads happen only in operation orchestrators, never behind a
+pure-looking accessor:
+
+- **Declared demand** where the footprint is known: a point read demands its
+  partition, a mirror write its touched set, and scans, maintenance and
+  inspection the whole root or mirror.
+- **Probe and retry** where the footprint depends on data, as in commit
+  preparation, visibility reads and invariant reads:
+  - A round runs over views whose cold entries record a miss.
+  - A round with any miss is discarded, its misses are loaded (the fallible
+    step) and the round runs again. Only a round without misses is accepted.
+  - Retries are bounded by the distinct regions read, and a policy ceiling
+    escalates to the whole root.
+  - Discarding a round equals abandoning a candidate, which never reuses an
+    identity (D7).
+
+**Typed failures** (`RelationalStorageUnavailable{subject, cause}`, with
+subject region, envelope, symbols, lineage or index, and cause source
+unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
+
+- transaction reads: `RelationalTransactionReadDenial::StorageUnavailable`;
+- commit and merge preparation:
+  `CommitPreparationReason::StorageUnavailable`, before any effect;
+- visibility and invariant reads:
+  `RelationalExecutionDenialCause::StorageUnavailable`;
+- storage statistics, retention passes and inspection: `Result` with the same
+  failure;
+- tail replay: `RecoveryFailureClass::ColdStorageUnavailable`;
+- pinning requires a resident witness, so pinning a cold partition is
+  unrepresentable.
+
+**History on demand.**
+
+- The commit catalog keeps index entries only.
+- Envelopes live in `RelationalCommitEnvelopeResidency` cells. One is held
+  resident only while it is a branch head, an unsettled route or in flight;
+  otherwise it is read from the journal, readmitted and checked against the
+  index digest.
+- History queries (patch streams, aspect history, envelope surfaces,
+  retained export, index builds) read through the cold source and become
+  fallible and bounded.
+- Memory-only runtimes keep envelopes resident: they have no other copy.
+
+**Symbols and lineage.**
+
+- Field text and lineage events are paged as members too:
+  - symbol pages are keyed by id range for reads, with hash-bucket pages
+    giving text-to-id lookup for interning;
+  - lineage pages are keyed by node range.
+- Reopen loads neither the full symbol table nor all lineage. A new text is
+  interned after its bucket page is resident, so deduplication still holds.
+
+**Capture.** A checkpoint walks leaves and never loads. It carries a region
+that has a locator and is unchanged, encodes a resident region that changed,
+and records new locators once publication completes. A one-partition commit
+followed by a checkpoint writes O(1) new members.
+
+**Placed by the roadmap in Milestone 4, not deferred from this one:**
+
+- separating head working data from version history inside a region;
+- kind and adjacency summaries, so that a first scan need not warm a whole
+  branch;
+- moving pins and lifecycle out of the mirror so it stops being a separate
+  working copy of main;
+- eviction and larger-than-memory serving.
+
+This milestone builds the cells, port, guards and member format that those
+extend without reshaping.
 
 ## Relational changes
 
