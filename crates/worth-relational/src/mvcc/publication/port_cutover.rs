@@ -137,24 +137,33 @@ impl PreparedBranchPublicationPreflight {
         let head_retirement = &mut self.head_retirement;
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
+        let medium = self.medium.clone();
+        let durable_policy = execution.allocation_policy();
         let positioned_commit = match self
             .movement
             .canonical_publication_route
-            .record_performed_with_cutover(self.publication_cell.clone(), |position| {
-                // The cutover is the only orchestration this port runs while the
-                // global patch-position reservation is held, so this is where a
-                // concurrent publisher can be made to meet it.
-                reservation_pause.pause_holding_patch_position_reservation_for_test();
-                let previous_root = publication_state.replace_with(self.next_state);
-                if let Some(companion) = &mut companion_cutover {
-                    companion.install_at(position);
-                }
-                head_retirement.transfer_head(&previous_root, next_root);
-                self.branch_head_versions
-                    .move_head(previous_head_version, next_head_version);
-                *retired_root.borrow_mut() = Some(previous_root);
-                drop(publication_state);
-            }) {
+            .record_performed_with_cutover(
+                self.publication_cell.clone(),
+                |positioned| match &medium {
+                    Some(medium) => medium.publish(positioned, durable_policy),
+                    None => Ok(()),
+                },
+                |position| {
+                    // The cutover is the only orchestration this port runs while the
+                    // global patch-position reservation is held, so this is where a
+                    // concurrent publisher can be made to meet it.
+                    reservation_pause.pause_holding_patch_position_reservation_for_test();
+                    let previous_root = publication_state.replace_with(self.next_state);
+                    if let Some(companion) = &mut companion_cutover {
+                        companion.install_at(position);
+                    }
+                    head_retirement.transfer_head(&previous_root, next_root);
+                    self.branch_head_versions
+                        .move_head(previous_head_version, next_head_version);
+                    *retired_root.borrow_mut() = Some(previous_root);
+                    drop(publication_state);
+                },
+            ) {
             Ok(positioned) => positioned,
             Err(crate::runtime::CanonicalPublicationRecordError::ReservationContended) => {
                 return RelationalPublicationOutcome::deferred(
@@ -166,6 +175,9 @@ impl PreparedBranchPublicationPreflight {
                     RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
                     "performed publication stream position capacity exhausted",
                 ));
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
+                return durable_stop_outcome(stop);
             }
         };
         drop(companion_cutover);
@@ -203,5 +215,23 @@ impl PreparedBranchPublicationPreflight {
             record,
             late_interruption,
         ))
+    }
+}
+
+/// The answer for a commit the medium did not make durable. Nothing was
+/// installed, so a refusal is a pre-effect denial; an unknown fate is neither
+/// denied nor performed.
+fn durable_stop_outcome(
+    stop: crate::durability::medium::RelationalDurableStepStop,
+) -> RelationalPublicationOutcome {
+    match stop {
+        crate::durability::medium::RelationalDurableStepStop::Refused(refusal) => {
+            RelationalPublicationOutcome::denied(
+                RelationalPublicationDenial::DurablePublicationRefused(refusal),
+            )
+        }
+        crate::durability::medium::RelationalDurableStepStop::Unresolved(unresolved) => {
+            RelationalPublicationOutcome::DurabilityUnresolved(unresolved)
+        }
     }
 }

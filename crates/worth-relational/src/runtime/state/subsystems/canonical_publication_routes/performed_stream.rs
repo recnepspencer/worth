@@ -8,6 +8,7 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::publication::patch::data::PatchStreamPosition;
 
 use super::CanonicalPublicationRoute;
+use crate::durability::medium::RelationalDurableStepStop as DurableStepStop;
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
@@ -46,6 +47,9 @@ pub struct RelationalPatchPositionReservationCounters {
 pub(super) enum PerformedPublicationRecordError {
     ReservationContended,
     PositionCapacityExhausted,
+    /// The durable step did not make the positioned commit durable, so the
+    /// position was not consumed and nothing was installed.
+    Durable(DurableStepStop),
 }
 
 #[derive(Default)]
@@ -93,6 +97,7 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover(
         &self,
         route: Arc<CanonicalPublicationRoute>,
+        durable: impl FnOnce(&PositionedCanonicalCommit) -> Result<(), DurableStepStop>,
         cutover: impl FnOnce(PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, PerformedPublicationRecordError> {
         let _reservation = self.reservation.try_enter()?;
@@ -112,6 +117,9 @@ impl PerformedPublicationStream {
                 Arc::clone(&route.envelope),
             ),
         ));
+        // Durable before live: the position is assigned only once the medium
+        // holds it, and the cutover below runs only after that.
+        durable(&positioned).map_err(PerformedPublicationRecordError::Durable)?;
         let node = Arc::new(PerformedPublicationNode {
             positioned: Arc::clone(&positioned),
             route: Arc::clone(&route),

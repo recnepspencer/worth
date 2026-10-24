@@ -16,6 +16,7 @@ pub struct RelationalNativeCheckpoint {
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
+    captured_coverage: Option<crate::publication::patch::data::PatchStreamPosition>,
 }
 
 /// Actual MessagePack value bytes emitted during one native capture. The
@@ -37,6 +38,7 @@ impl Clone for RelationalNativeCheckpoint {
             bytes: self.bytes.clone(),
             region: self.region.clone(),
             captured_sections: self.captured_sections,
+            captured_coverage: self.captured_coverage,
         }
     }
 }
@@ -66,6 +68,7 @@ impl RelationalNativeCheckpoint {
             bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes)),
             region,
             captured_sections: None,
+            captured_coverage: None,
         }
     }
 
@@ -83,6 +86,7 @@ impl RelationalNativeCheckpoint {
             bytes,
             region,
             captured_sections: None,
+            captured_coverage: None,
         })
     }
 
@@ -99,12 +103,21 @@ impl RelationalNativeCheckpoint {
     pub(crate) fn from_captured_bytes(
         bytes: ExecutionImmutableBytes,
         sections: NativeCheckpointSectionBytes,
+        coverage: crate::publication::patch::data::PatchStreamPosition,
     ) -> Self {
         let region = 0..bytes.len();
         Self {
             bytes,
             region,
             captured_sections: Some(sections),
+            captured_coverage: Some(coverage),
         }
+    }
+
+    /// The last canonical position this checkpoint includes, known only for a
+    /// checkpoint this process captured. A medium files the checkpoint under
+    /// this position; recovery checks the decoded checkpoint against it.
+    pub fn covered_position(&self) -> Option<crate::publication::patch::data::PatchStreamPosition> {
+        self.captured_coverage
     }
 }

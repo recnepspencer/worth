@@ -14,6 +14,7 @@ impl PreparedCanonicalBranchMovement {
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
+        medium: Option<std::sync::Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
             companion_read,
@@ -277,6 +278,7 @@ impl PreparedCanonicalBranchMovement {
             expires_at,
             maximum_lifetime_millis,
             branch_head_versions,
+            medium,
         })
     }
 }

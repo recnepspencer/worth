@@ -82,6 +82,11 @@ pub mod durability {
         RelationIntegrityContractFamily, RelationalNativeCheckpoint,
         RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop, SegmentRetentionClass,
     };
+    pub use crate::durability::medium::{
+        RelationalDurabilityUnresolved, RelationalDurableCheckpointSource, RelationalDurableMedium,
+        RelationalDurablePublication, RelationalDurablePublicationRefusal,
+        RelationalDurableRecoverySource,
+    };
     pub use crate::durability::migration::ReadmittedCanonicalCommit;
     pub use crate::durability::{
         DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,

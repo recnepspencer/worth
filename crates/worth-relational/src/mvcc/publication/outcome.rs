@@ -206,6 +206,9 @@ pub enum RelationalPublicationDenial {
     BranchUnavailable,
     Archived,
     Deleting,
+    /// The durable medium refused the commit before any durable effect; it
+    /// was never installed.
+    DurablePublicationRefused(crate::durability::medium::RelationalDurablePublicationRefusal),
 }
 
 /// A bounded resource turned this publication attempt away without moving
@@ -369,6 +372,9 @@ pub enum RelationalPublicationOutcome {
     Interrupted(crate::runtime::RelationalInterruptionEvent),
     Deferred(RelationalPublicationDeferred),
     Failed(RelationalPublicationFailure),
+    /// The medium could not say whether the commit became durable. It was not
+    /// installed; reopening the runtime resolves its fate.
+    DurabilityUnresolved(crate::durability::medium::RelationalDurabilityUnresolved),
 }
 
 impl RelationalPublicationOutcome {

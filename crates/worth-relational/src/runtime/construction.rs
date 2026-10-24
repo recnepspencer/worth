@@ -30,6 +30,7 @@ pub(crate) struct RuntimeExtensions {
     custom_invariants: Vec<CustomInvariantRegistration>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
+    durable_medium: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>>,
 }
 
 impl RuntimeExtensions {
@@ -41,6 +42,7 @@ impl RuntimeExtensions {
             custom_invariants,
             commit_strategy_executors,
             post_commit_consumer: None,
+            durable_medium: None,
         }
     }
 
@@ -49,6 +51,16 @@ impl RuntimeExtensions {
         post_commit_consumer: std::sync::Arc<dyn crate::publication::PostCommitConsumer>,
     ) -> Self {
         self.post_commit_consumer = Some(post_commit_consumer);
+        self
+    }
+
+    pub(crate) fn with_durable_medium(
+        mut self,
+        durable_medium: Option<
+            std::sync::Arc<dyn crate::durability::medium::RelationalDurableMedium>,
+        >,
+    ) -> Self {
+        self.durable_medium = durable_medium;
         self
     }
 
@@ -147,7 +159,10 @@ impl RelationalRuntime {
             .expect("the configured main branch fits the initial retention budget");
         let schema_contract_runtime = extensions.build_schema_contract_runtime_subsystem(&config);
         let commit_strategies = extensions.build_commit_strategy_subsystem(&config);
-        let durability = <DurabilitySubsystem as RuntimeSubsystem>::new(&config);
+        let mut durability = <DurabilitySubsystem as RuntimeSubsystem>::new(&config);
+        if let Some(medium) = extensions.durable_medium.clone() {
+            durability.attach_medium(medium);
+        }
         let visibility = <VisibilitySubsystem as RuntimeSubsystem>::new(&config);
         Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,

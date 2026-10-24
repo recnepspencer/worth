@@ -91,7 +91,11 @@ fn captured_native_clones_preserve_sections_and_share_payload_custody() {
         derived_indexes: 4,
         framing_and_metadata: 4,
     };
-    let checkpoint = RelationalNativeCheckpoint::from_captured_bytes(bytes, sections);
+    let checkpoint = RelationalNativeCheckpoint::from_captured_bytes(
+        bytes,
+        sections,
+        crate::publication::patch::data::PatchStreamPosition(0),
+    );
     let cloned = checkpoint.clone();
     assert_eq!(checkpoint.bytes().as_ptr(), cloned.bytes().as_ptr());
     assert_eq!(cloned.region, checkpoint.region);

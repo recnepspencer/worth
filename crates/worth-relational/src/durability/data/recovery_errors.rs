@@ -15,6 +15,10 @@ pub enum RecoveryFailureClass {
     RuntimeNameMismatch,
     CorruptCheckpoint,
     CorruptSegment,
+    /// A canonical commit artifact a medium returned did not readmit.
+    CorruptCanonicalArtifact,
+    /// A medium's tail skipped or repeated a position after the checkpoint.
+    NonContiguousCanonicalTail,
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
@@ -220,6 +224,8 @@ impl DurabilityError {
             }
             RecoveryFailureClass::CorruptCheckpoint
             | RecoveryFailureClass::CorruptSegment
+            | RecoveryFailureClass::CorruptCanonicalArtifact
+            | RecoveryFailureClass::NonContiguousCanonicalTail
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure

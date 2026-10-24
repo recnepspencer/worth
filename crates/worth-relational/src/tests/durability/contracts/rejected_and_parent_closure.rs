@@ -88,7 +88,8 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         | TransactionCommitError::PublicationFailed { .. } => {
             panic!("expected relation-integrity conflict, got typed publication outcome")
         }
-        TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+        TransactionCommitError::PerformedButDurabilityDeferred { .. }
+        | TransactionCommitError::DurabilityUnresolved { .. } => {
             panic!("relation-integrity denial must happen before movement")
         }
     }

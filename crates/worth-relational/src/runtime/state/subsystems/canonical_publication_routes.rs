@@ -55,6 +55,7 @@ struct CanonicalPublicationHandoff {
 pub(crate) enum CanonicalPublicationRecordError {
     ReservationContended,
     PositionCapacityExhausted,
+    Durable(crate::durability::medium::RelationalDurableStepStop),
 }
 
 pub(crate) enum CanonicalCheckpointAdmissionError {
@@ -296,6 +297,10 @@ impl PreparedCanonicalPublicationRoute {
     pub(crate) fn record_performed_with_cutover(
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
+        durable: impl FnOnce(
+            &PositionedCanonicalCommit,
+        )
+            -> Result<(), crate::durability::medium::RelationalDurableStepStop>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
         self.route
@@ -308,13 +313,16 @@ impl PreparedCanonicalPublicationRoute {
         let positioned = self
             .routes
             .performed_stream
-            .record_with_cutover(Arc::clone(&self.route), cutover)
+            .record_with_cutover(Arc::clone(&self.route), durable, cutover)
             .map_err(|error| match error {
                 PerformedPublicationRecordError::ReservationContended => {
                     CanonicalPublicationRecordError::ReservationContended
                 }
                 PerformedPublicationRecordError::PositionCapacityExhausted => {
                     CanonicalPublicationRecordError::PositionCapacityExhausted
+                }
+                PerformedPublicationRecordError::Durable(stop) => {
+                    CanonicalPublicationRecordError::Durable(stop)
                 }
             })?;
         Ok(positioned)

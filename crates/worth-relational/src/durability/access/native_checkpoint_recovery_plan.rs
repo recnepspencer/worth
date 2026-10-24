@@ -44,7 +44,7 @@ pub(crate) fn native_checkpoint_recovery_plan(
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
 }
 
-fn bind_source_runtime_identity(
+pub(super) fn bind_source_runtime_identity(
     runtime: &RelationalRuntime,
     checkpoint: &DurableCheckpoint,
     continuity: &mut crate::durability::data::RecoveryAuthorityContinuityCheck,

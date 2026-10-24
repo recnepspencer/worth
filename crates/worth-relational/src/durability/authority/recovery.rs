@@ -99,8 +99,9 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let admitted = admit_recovery_or_emit(self.runtime, plan)?;
-        let material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
+        let mut material = rebuild_admitted_recovery_or_emit(execution, self.runtime, admitted)?;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        rebind_durable_medium(self.runtime, &mut material.restored)?;
         let outcome = publish_recovered_runtime(self.runtime, material);
         Ok(outcome)
     }
@@ -148,6 +149,26 @@ fn rebuild_admitted_recovery_or_emit(
             Err(RelationalRecoveryStop::Allocation(cause))
         }
     }
+}
+
+/// Bind the recovering runtime's medium to the rebuilt runtime only after
+/// replay, so rebuilding history never republishes it. The rebuilt runtime
+/// starts with no unresolved durable fate.
+fn rebind_durable_medium(
+    runtime: &RelationalRuntime,
+    restored: &mut RelationalRuntime,
+) -> Result<(), DurabilityError> {
+    let Some(binding) = runtime.durability.medium() else {
+        return Ok(());
+    };
+    let state = restored.unshared_state_mut().ok_or_else(|| {
+        DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::ReplayFailure,
+            "a rebuilt runtime is shared before its durable medium is bound",
+        )
+    })?;
+    state.durability.attach_medium(binding.medium());
+    Ok(())
 }
 
 fn publish_recovered_runtime(

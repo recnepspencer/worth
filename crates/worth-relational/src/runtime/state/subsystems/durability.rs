@@ -2,6 +2,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::durability::data::{DurableCheckpoint, DurableStore};
+use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
@@ -17,9 +18,20 @@ pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
     fail_next_append: AtomicBool,
     store_io: Arc<Mutex<()>>,
+    /// The durable medium every commit is published to before it becomes
+    /// live. A forked runtime is a speculative copy and never inherits it.
+    medium: Option<Arc<RelationalDurableMediumBinding>>,
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn attach_medium(&mut self, medium: Arc<dyn RelationalDurableMedium>) {
+        self.medium = Some(Arc::new(RelationalDurableMediumBinding::new(medium)));
+    }
+
+    pub(crate) fn medium(&self) -> Option<Arc<RelationalDurableMediumBinding>> {
+        self.medium.clone()
+    }
+
     pub(crate) fn lock_store(&self) -> MutexGuard<'_, ()> {
         self.store_io
             .lock()
@@ -111,6 +123,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             state: RuntimeOwnedState::new(DurabilityState::build_from_config(config)),
             fail_next_append: AtomicBool::new(false),
             store_io: Arc::new(Mutex::new(())),
+            medium: None,
         }
     }
 
@@ -119,6 +132,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             state: self.state.detached(),
             fail_next_append: AtomicBool::new(self.fail_next_append.load(Ordering::Acquire)),
             store_io: Arc::clone(&self.store_io),
+            medium: None,
         }
     }
 }

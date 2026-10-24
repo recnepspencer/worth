@@ -102,6 +102,9 @@ pub(super) fn commit_error_to_harness_error(
             error,
             ..
         } => RelationalHarnessError(error.detail),
+        error @ crate::facade::transactions::TransactionCommitError::DurabilityUnresolved {
+            ..
+        } => RelationalHarnessError(error.detail()),
     }
 }
 

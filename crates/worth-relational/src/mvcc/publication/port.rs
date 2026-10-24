@@ -20,6 +20,7 @@ pub struct RelationalPublicationPort {
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
+    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
 }
 
 pub(crate) struct PreparedCanonicalBranchMovement {
@@ -44,6 +45,7 @@ struct PreparedBranchPublicationPreflight {
     expires_at: std::time::Instant,
     maximum_lifetime_millis: u64,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
+    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
 }
 
 impl RelationalPublicationPort {
@@ -54,6 +56,7 @@ impl RelationalPublicationPort {
         publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
+        medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -62,6 +65,7 @@ impl RelationalPublicationPort {
             publication_binding,
             branch_head_versions,
             history,
+            medium,
         }
     }
 
@@ -204,6 +208,7 @@ impl RelationalPublicationPort {
             retention_binding,
             self.branch_head_versions.clone(),
             &companion_epoch,
+            self.medium.clone(),
         );
         drop(companion_epoch);
         outcome
@@ -232,6 +237,7 @@ impl PreparedCanonicalBranchMovement {
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::CompanionRegistrationEpoch<'_>,
+        medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> RelationalPublicationOutcome {
         match Self::preflight(
             execution,
@@ -239,6 +245,7 @@ impl PreparedCanonicalBranchMovement {
             retention_binding,
             branch_head_versions,
             companion_epoch,
+            medium,
         ) {
             Ok(preflight) => preflight.perform_cutover(execution),
             Err(outcome) => outcome,
@@ -271,6 +278,7 @@ impl crate::runtime::RelationalRuntime {
             self.publication_binding(),
             self.history.branch_head_version_index(),
             self.history.preparation_binding(),
+            self.durability.medium(),
         )
     }
 

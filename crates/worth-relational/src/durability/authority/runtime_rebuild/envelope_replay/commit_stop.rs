@@ -30,7 +30,10 @@ pub(crate) fn replay_commit_stop(
         | TransactionCommitError::PublicationDenied { .. }
         | TransactionCommitError::PublicationDeferred { .. }
         | TransactionCommitError::PublicationFailed { .. }
-        | TransactionCommitError::PerformedButDurabilityDeferred { .. } => {
+        | TransactionCommitError::PerformedButDurabilityDeferred { .. }
+        // Replay runs before a medium is attached, so this cannot occur; it
+        // would still be replay failure rather than a durable fact.
+        | TransactionCommitError::DurabilityUnresolved { .. } => {
             DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into()
         }
     }

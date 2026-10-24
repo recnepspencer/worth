@@ -217,6 +217,9 @@ pub(crate) fn publish_prepared_authoritative_commit(
         crate::mvcc::RelationalPublicationOutcome::Failed(failure) => {
             return Err(TransactionCommitError::publication_failed(failure));
         }
+        crate::mvcc::RelationalPublicationOutcome::DurabilityUnresolved(unresolved) => {
+            return Err(TransactionCommitError::durability_unresolved(unresolved));
+        }
     };
     runtime.settle_performed_publication(performed)
 }
