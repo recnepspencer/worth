@@ -112,6 +112,16 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Ok(application) => application,
         Err(failure) => {
             let _ = staged.abort();
+            // The read owner already named the request's first stop: keep that
+            // control outcome, as the source-rebase admission below does.
+            use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
+            use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+            if let Kind::RequestInterrupted(stop) = failure.kind() {
+                return Err(match stop {
+                    Stop::Cancelled => WorthQueryProviderProgressionOutcome::Cancelled,
+                    Stop::DeadlineExceeded => WorthQueryProviderProgressionOutcome::TimedOut,
+                });
+            }
             return Err(WorthQueryProviderProgressionOutcome::Denied(
                 super::super::WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
             ));
