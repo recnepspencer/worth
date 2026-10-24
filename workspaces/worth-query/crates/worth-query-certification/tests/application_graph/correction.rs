@@ -1,4 +1,6 @@
 //! Exact performed selection uses real public installation, publication and disclosure.
+// The example owns this model and lints all of it; this court uses a part.
+#[allow(dead_code, unused_imports)]
 #[path = "../../examples/application_correction_support/mod.rs"]
 mod model;
 use model::{authentication::*, edit::Value, host};

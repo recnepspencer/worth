@@ -9,6 +9,8 @@ use worth_query_host::facade::{
     runtime,
 };
 
+// The application graph court owns and lints these resources; the example uses a part.
+#[allow(dead_code)]
 #[path = "../../tests/application_graph/document_retention_model/host/world_resources.rs"]
 mod world_resources;
 pub type Host = WorthQueryProgramApplicationRuntime<NumericSchema, Program>;
