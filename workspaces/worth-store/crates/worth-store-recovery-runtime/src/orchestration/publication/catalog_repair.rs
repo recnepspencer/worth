@@ -35,22 +35,26 @@ pub(super) struct RootRepublication {
     pub(super) generation: u64,
 }
 
-/// `Ok(None)` when the catalog names the selected generation and nothing
-/// forces a republication. `Err` refuses an inconsistent root protocol.
+/// `Ok(None)` when the catalog names the selected generation, or is absent,
+/// and nothing forces a republication. `Err` refuses an inconsistent root protocol.
 pub(super) fn plan(
     media: &worth_store::physical_runtime::AdmittedRecoveryFilesystemMedia,
     expectation: &RecoveryPublicationExpectation,
     unproven_effects: bool,
 ) -> Result<Option<RootRepublication>, ()> {
-    let read = |artifact| {
+    let read_present = |artifact| {
         media
             .read_recovery_root_protocol_artifact(artifact, MAXIMUM_PROTOCOL_ARTIFACT_BYTES)
-            .map_err(|_| ())?
-            .ok_or(())
+            .map_err(|_| ())
     };
+    let read = |artifact| read_present(artifact)?.ok_or(());
     let store = media.store_identity();
-    let catalog =
-        BootstrapCatalog::decode(&read(RecordArtifactFile::BootstrapCatalog)?).map_err(|_| ())?;
+    // Recovery that publishes nothing does not vouch for a catalog it did not
+    // find; only a forced republication needs one to replace.
+    let Some(catalog) = read_present(RecordArtifactFile::BootstrapCatalog)? else {
+        return if unproven_effects { Err(()) } else { Ok(None) };
+    };
+    let catalog = BootstrapCatalog::decode(&catalog).map_err(|_| ())?;
     let selected_root = expectation.recovered_root();
     let selected = selected_root.generation();
     let cataloged = catalog.current_root().generation().get();

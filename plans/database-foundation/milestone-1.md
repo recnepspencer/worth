@@ -97,7 +97,8 @@ no new Cargo feature and no production behavior.
   residue publications must leave it unchanged.
 - A record batch may request one anchor advance. Planning checks it against the
   source root before the WAL append (`RecordAnchorConflict`), and the request is
-  part of the idempotency fingerprint. A group merge refuses two advances.
+  part of the idempotency fingerprint. A WAL group with two advances of one
+  anchor is refused before its append.
 - The WAL recovery projection records the advance (`RecordAnchorAdvanced`).
   Recovery replays it into the staged root, refuses a verified drop of an
   anchored record, and validates published roots against it.
@@ -121,12 +122,20 @@ store that recovered but could not serve. Recovery now settles each case:
 
 - Root-protocol candidates a killed runtime left in record staging are removed
   after recovery's own publication.
-- Physical-work obligations of the dead runtime that recovery adjudicated (WAL
-  intervals, record ranges, artifact, catalog and namespace synchronization,
-  record removal) are discharged. Checkpoint and WAL reclamation obligations
-  and undecodable records remain and still require inspection.
-- A root-protocol replacement interrupted after its selectors but before its
-  catalog is completed by republishing the selected root.
+- The dead runtime's physical-work obligations are admitted through the same
+  integrity admission serving uses. WAL intervals are always settled by
+  recovery's WAL admission. Namespace, catalog, synchronization and range
+  obligations are settled only by recovery's own root-protocol publication,
+  and ranges and synchronizations only for artifacts recovery rewrote or the
+  recovered root does not reach. Removal, checkpoint and WAL-reclamation
+  obligations, records that do not admit, and records of more than one
+  incarnation are retained and still require inspection.
+- Recovery republishes the selected root, verified against what it admitted,
+  when its catalog lags the selectors after an interrupted replacement or when
+  obligations need its own publication. A catalog that is not the previous
+  selector's generation refuses.
+- Damaged residue evidence blocks recovery as damage; a removal that started
+  but did not settle reports an indeterminate publication.
 - A never-written WAL origin segment is an empty WAL, and an empty successor
   root is a torn, unpublished candidate that staging completes only from an
   exact prefix.
