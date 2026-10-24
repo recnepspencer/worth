@@ -9,7 +9,7 @@ pub(crate) fn with_bootstrap_request<R>(
         DeterminismContract::CanonicalBitwise,
         ExecutionBudget::new(
             std::num::NonZeroUsize::MIN,
-            128 * 1024 * 1024,
+            Some(128 * 1024 * 1024),
             Some(16_000_000),
         ),
     );
