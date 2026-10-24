@@ -52,13 +52,7 @@ impl CustomInvariantWorkMeter {
         let current = leased.claimed_memory.load(Ordering::Relaxed);
         let Some(next) = current.checked_add(bytes) else {
             drop(memory);
-            self.stop(CustomPreparationStop::MemoryAdmission(
-                worth_execution::MemoryLimitDenial::CounterOverflow {
-                    requested: bytes,
-                    charged: current,
-                    level: worth_execution::MemoryLimitLevel::Declared,
-                },
-            ));
+            self.stop(overflow_stop(leased, bytes, current));
             return false;
         };
         if leased.memory_ceiling.is_some_and(|ceiling| next > ceiling) {
@@ -93,13 +87,7 @@ impl CustomInvariantWorkMeter {
         let current = leased.claimed_memory.load(Ordering::Relaxed);
         let Some(peak) = current.checked_add(bytes) else {
             drop(memory);
-            self.stop(CustomPreparationStop::MemoryAdmission(
-                MemoryLimitDenial::CounterOverflow {
-                    requested: bytes,
-                    charged: current,
-                    level: MemoryLimitLevel::Declared,
-                },
-            ));
+            self.stop(overflow_stop(leased, bytes, current));
             return false;
         };
         if leased.memory_ceiling.is_some_and(|ceiling| peak > ceiling) {
@@ -118,4 +106,21 @@ impl CustomInvariantWorkMeter {
         }
         true
     }
+}
+
+/// An overflowing sum compared against a declared ceiling exceeds that
+/// ceiling, as packet scratch does; only an uncapped meter's counter overflows.
+fn overflow_stop(
+    leased: &super::LeasedCustomMeter,
+    requested: u64,
+    charged: u64,
+) -> CustomPreparationStop {
+    if leased.memory_ceiling.is_some() {
+        return CustomPreparationStop::MemoryExhausted;
+    }
+    CustomPreparationStop::MemoryAdmission(MemoryLimitDenial::CounterOverflow {
+        requested,
+        charged,
+        level: MemoryLimitLevel::Declared,
+    })
 }
