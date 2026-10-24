@@ -71,8 +71,9 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
 }
 
 #[test]
-fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custody() {
+fn exclusive_basis_refuses_identity_copy_and_releases_its_sole_owner() {
     let world = installed_authorization_world(true);
+    let observer = world.application.application_query_basis_observer();
     let selected = world
         .application
         .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
@@ -81,11 +82,13 @@ fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custod
     // ee07da2b0e removed the work/byte forecast from promotion, so promotion
     // has no quota refusal. Before promotion the exclusive owner still refuses
     // every identity copy without allocating a shared owner.
+    let before = observer.observe();
     let stop = match selected.application_basis().retain_shared() {
         Ok(_) => panic!("exclusive custody cannot be copied before promotion"),
         Err(stop) => stop,
     };
     assert_eq!(stop, CompanionPreflightStop::SelectedSourceMismatch);
+    assert_eq!(observer.observe().active(), before.active());
 
     let (_, product, basis) = selected.into_parts();
     drop(product);
