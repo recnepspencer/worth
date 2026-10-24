@@ -73,35 +73,23 @@ impl DemandRegistryState {
                 return Ok(false);
             };
             let dependents = claimants_where(&self.records, &key, |_| true);
-            let priced = &mut *self;
-            let retired_row = {
-                let priced: &mut DemandRegistryState = priced;
-                {
-                    for dependent in dependents {
-                        priced.follow_newest(&dependent, &key);
-                    }
-                    // A claim that did not move still resolves through this row.
-                    if priced
-                    .records
-                    .get(&key)
-                    .is_some_and(|record| {
-                        let claimed = record.framework_required_count != 0;
-                        if !claimed {
-                            crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
-                                crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::CachedReclamation,
-                                record.settlements.len(), record.prerequisites.len(),
-                            );
-                        }
-                        claimed
-                    })
-                {
-                    return Ok(false);
+            for dependent in dependents {
+                self.follow_newest(&dependent, &key);
+            }
+            // A claim that did not move still resolves through this row: pass
+            // over it and keep looking, so a refusal names no reclaimable row.
+            let claimed = self.records.get(&key).is_some_and(|record| {
+                let claimed = record.framework_required_count != 0;
+                if !claimed {
+                    crate::domain_computation::primary_graph::fact_verification_observation::registry_custody(
+                        crate::domain_computation::primary_graph::WorthQueryRegistryCustodyTransitionForTest::CachedReclamation,
+                        record.settlements.len(), record.prerequisites.len(),
+                    );
                 }
-                    claims.extend(priced.retire_row(&key, retired));
-                    true
-                }
-            };
-            if retired_row {
+                claimed
+            });
+            if !claimed {
+                claims.extend(self.retire_row(&key, retired));
                 return Ok(true);
             }
             *still_claimed = Some(key);
