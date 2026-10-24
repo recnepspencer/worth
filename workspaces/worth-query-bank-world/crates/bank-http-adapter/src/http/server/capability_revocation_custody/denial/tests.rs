@@ -5,18 +5,16 @@ use worth_query_host::facade::application_contribution::{
 };
 
 #[test]
-fn command_preparation_recovery_and_settlement_keep_native_refusals() {
-    for (interruption, relational, control, expected) in [
+fn command_preparation_and_recovery_keep_native_refusals() {
+    for (interruption, relational, expected) in [
         (
             WorthQueryManagedComputationInterruption::Cancelled,
             RelationalExecutionDenialCause::Cancelled,
-            WorthQueryProviderSessionControlStopKind::Cancelled,
             Kind::Cancelled,
         ),
         (
             WorthQueryManagedComputationInterruption::DeadlineExceeded,
             RelationalExecutionDenialCause::DeadlineElapsed,
-            WorthQueryProviderSessionControlStopKind::TimedOut,
             Kind::DeadlineExceeded,
         ),
     ] {
@@ -63,14 +61,6 @@ fn command_preparation_recovery_and_settlement_keep_native_refusals() {
                 ),
             )),
             expected,
-        );
-        assert_eq!(
-            native_denial(NativeDenial::Settlement(
-                WorthQueryCommandSettlementDenial::Recovery(
-                    WorthQueryApplicationSettlementRecoveryError::ExecutionDenied(Err(control))
-                )
-            )),
-            expected
         );
     }
     assert_eq!(

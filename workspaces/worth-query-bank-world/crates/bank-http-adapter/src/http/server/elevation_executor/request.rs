@@ -104,7 +104,6 @@ where
             return (request_denied(Some(request_id), unavailable())).into();
         }
         BankEstateElevationRequestOutcome::Deferred(_)
-        | BankEstateElevationRequestOutcome::SettlementDeferred(_)
         | BankEstateElevationRequestOutcome::Indeterminate => {
             return (request_denied(Some(request_id), indeterminate())).into();
         }

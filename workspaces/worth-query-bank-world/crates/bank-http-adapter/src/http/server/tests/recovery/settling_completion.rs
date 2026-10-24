@@ -1,8 +1,8 @@
 //! Safe retry of an effect whose completion is settling, then settled.
 //!
-//! A rail completion that is still publishing, or whose terminal index cannot
-//! answer yet, asks the caller to try again later. Once the completion holds,
-//! retry answers already-completed with the original commit and no refresh.
+//! A rail completion that is still publishing asks the caller to try again
+//! later. Once the completion holds, retry answers already-completed with the
+//! original commit and no refresh.
 //! Protocol v2 introduced that outcome; a v1 decoder cannot read it, so a v1
 //! request is refused before any answer.
 
@@ -13,11 +13,7 @@ use super::super::super::super::protocol::{
 use super::*;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
 use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
-use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryCancellationSource, WorthQueryRequestScope,
-};
 use worth_query_host::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
     WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
@@ -161,27 +157,10 @@ async fn settling_completion_asks_to_retry_later_then_answers_already_completed(
     let pending = safe_retry(&client, address, &action, "publication-pending", &token).await;
     assert_try_again_later(&pending, "a pending completion publication");
 
-    let route = application
+    application
         .runtime
         .install_estate_rail_completion_verifier(Arc::new(EstateRailSource))
         .expect("the estate rail source installs once");
-    // The retained completion's World publication fails durably, leaving the
-    // terminal index unable to answer until maintenance settles it.
-    application.runtime.fail_next_durable_append_for_test();
-    let failed = safe_retry(&client, address, &action, "publication-failed", &token).await;
-    assert_try_again_later(&failed, "a failed completion publication");
-    let unindexed = safe_retry(&client, address, &action, "index-unavailable", &token).await;
-    assert_try_again_later(&unindexed, "an unavailable terminal index");
-
-    let cancellation = WorthQueryCancellationSource::new();
-    let scope = WorthQueryRequestScope::new(
-        Some(Instant::now() + Duration::from_secs(60)),
-        cancellation.token(),
-    );
-    application
-        .runtime
-        .maintain_estate_rail_completion(&route, &scope)
-        .expect("maintenance resumes the unpublished completion");
     let completed = safe_retry(&client, address, &action, "completed", &token).await;
     assert!(
         decodes_as_protocol_v1(&pending),

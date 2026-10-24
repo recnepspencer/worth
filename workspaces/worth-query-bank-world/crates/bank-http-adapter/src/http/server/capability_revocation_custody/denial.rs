@@ -33,7 +33,6 @@ pub(in crate::http::server) fn native_denial(cause: NativeDenial) -> BankHttpDen
         D::PrincipalMismatch => BankHttpDenial::new(Kind::PermissionDenied, Next::None),
         D::InputCapture(cause) => construction_denial::capture(&cause),
         D::Recovery(cause) => recovery::managed(cause),
-        D::Settlement(cause) => recovery::settlement(cause),
         D::ProductSelection(cause) => query(
             WorthQueryApplicationRequestQueryDenial::ProductSelection(cause),
         ),
