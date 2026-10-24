@@ -137,7 +137,7 @@ fn phase3_settlement_port_settles_a_performed_publication_from_another_thread() 
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3-offthread-anchor");
     let performed = perform_write(execution, &runtime, "main", "phase3-offthread-write");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -173,7 +173,7 @@ fn phase3_settlement_port_repairs_a_deferred_append_by_route_and_by_identity() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3-repair-anchor");
     let settlement = runtime.settlement_port();
 
@@ -229,13 +229,13 @@ fn phase3_foreign_settlement_denial_preserves_source_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(
         execution,
         &source,
         "phase3-foreign-settlement-source-anchor",
     );
-    let foreign = persisted_runtime_with_test_schema();
+    let foreign = durable_runtime_with_test_schema();
     create_entity(
         execution,
         &foreign,

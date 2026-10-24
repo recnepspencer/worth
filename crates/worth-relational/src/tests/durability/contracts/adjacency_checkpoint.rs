@@ -5,7 +5,7 @@ fn checkpoint_rebuilds_current_and_historical_adjacency_kind_buckets() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let created =
@@ -16,7 +16,7 @@ fn checkpoint_rebuilds_current_and_historical_adjacency_kind_buckets() {
         delete_relation_on_branch(execution, &runtime, relation, BranchId("main".to_string()));
 
     let (_, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let relation_kind = crate::facade::identity::KindId(2);
     let historical = recovered
         .read_truth()

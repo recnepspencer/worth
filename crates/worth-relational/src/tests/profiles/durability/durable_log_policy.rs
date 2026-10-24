@@ -15,10 +15,7 @@ fn durable_log_compaction_respects_checkpoint_policy() {
         .build();
 
     create_entity(execution, &runtime, "first");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     create_entity(execution, &runtime, "second");
     create_entity(execution, &runtime, "third");
 

@@ -6,13 +6,13 @@ pub mod branch;
 mod runtime_validation_exports;
 pub mod config {
     pub use crate::config::data::{
-        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CheckpointPolicy,
-        CommitStrategiesConfig, CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry,
-        ConfigValueSource, CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy,
-        DurableLogPolicy, DurableLogRetentionMode, MvccConfig, PublicationConfig,
-        RelationalConfigOverride, RelationalRuntimeProfile, RetentionBackend, RetentionPolicy,
-        RuntimeExecutionLane, RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy,
-        StorageLayoutConfig, VisibilityCachePolicy,
+        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CommitStrategiesConfig,
+        CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource,
+        CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy,
+        DurableLogRetentionMode, MvccConfig, PublicationConfig, RelationalConfigOverride,
+        RelationalRuntimeProfile, RetentionBackend, RetentionPolicy, RuntimeExecutionLane,
+        RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy, StorageLayoutConfig,
+        VisibilityCachePolicy,
     };
 }
 pub mod commit_strategies {
@@ -71,16 +71,12 @@ pub mod durability {
         RelationalCanonicalCommitArtifacts,
     };
     pub use crate::durability::data::{
-        CheckpointCoverage, CheckpointRestoreWork, CompactionOutcome, CompactionPlan,
-        CompactionPolicy, DurabilityError, DurabilityMode, DurableCheckpoint, DurableCheckpointId,
-        DurableCheckpointManifest, DurableIntegrityStatus, DurableSegmentId,
-        DurableSegmentManifest, DurableStore, DurableStoreLayout, NativeCheckpointSectionBytes,
-        PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
+        CheckpointCoverage, CheckpointRestoreWork, DurabilityError, DurableCheckpoint,
+        NativeCheckpointSectionBytes, PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
         RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
-        RecoveryCursor, RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan,
-        RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,
-        RelationIntegrityContractFamily, RelationalNativeCheckpoint,
-        RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop, SegmentRetentionClass,
+        RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
+        RecoveryVerificationPlan, RelationIntegrityContractFamily, RelationalNativeCheckpoint,
+        RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
     };
     pub use crate::durability::medium::{
         RelationalDurabilityUnresolved, RelationalDurableCheckpointSource, RelationalDurableMedium,

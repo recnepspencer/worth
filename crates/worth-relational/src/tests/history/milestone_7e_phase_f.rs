@@ -9,7 +9,7 @@ use crate::facade::merge::{
 use crate::facade::runtime::RelationalRuntime;
 use crate::tests::support::{
     checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, persisted_runtime_with_test_schema,
+    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
 };
 use worth_foundational::{CanonicalBasisLocus, CanonicalBasisValue, InternedString};
 
@@ -28,7 +28,7 @@ fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery()
         .clone();
     let published_basis = lower_packet(&runtime, &published_packet);
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_packet = published_merge_authority(&recovered, outcome.commit.commit.commit_id)
         .execution_summary
         .proof_packet
@@ -202,7 +202,7 @@ fn merge_proof_packet_canonical_basis_localizes_single_field_drift() {
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_branch_from_main(&runtime, "alt");

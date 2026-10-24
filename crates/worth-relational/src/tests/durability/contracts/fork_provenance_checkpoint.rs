@@ -7,7 +7,7 @@ fn fork_checkpoint_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint),
 ) -> RecoveryPlan {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "fork-source");
     let source = BranchId("main".to_owned());
     let (_, basis) = runtime
@@ -16,17 +16,13 @@ fn fork_checkpoint_plan(
     runtime
         .fork_branch(BranchId("storm".to_owned()), basis)
         .expect("fork checkpoint fixture");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint is selected");
     let cell = checkpoint
         .branch_cells
@@ -41,7 +37,7 @@ fn fork_tail_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     mutate: fn(&mut crate::branch::RelationalBranchCellCheckpoint),
 ) -> RecoveryPlan {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "fork-source");
     let source = BranchId("main".to_owned());
     let (_, basis) = runtime
@@ -50,23 +46,19 @@ fn fork_tail_plan(
     runtime
         .fork_branch(BranchId("storm".to_owned()), basis)
         .expect("fork tail fixture");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     create_entity_outcome_on_branch(
         execution,
         &runtime,
         "fork-tail",
         BranchId("storm".to_owned()),
     );
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let envelope = plan
         .tail_log
         .iter_mut()
@@ -86,7 +78,7 @@ fn assert_recovery_rejects_fork_checkpoint(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: RecoveryPlan,
 ) {
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

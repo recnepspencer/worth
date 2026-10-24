@@ -2,8 +2,7 @@ use super::*;
 use crate::identity::data::{KindId, PartitionId};
 use crate::mvcc::{RelationalBranchTransactionAdmissionDenial, RelationalTransactionIntent};
 use crate::tests::support::{
-    changed_entities, changed_relations, persisted_runtime_with_test_schema,
-    runtime_with_test_schema,
+    changed_entities, changed_relations, durable_runtime_with_test_schema, runtime_with_test_schema,
 };
 use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, EntityReference, EntitySpec, MaterializationMutationIntent,
@@ -20,16 +19,14 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let (created, entity_fields, relation_fields) = create_generated_group(execution, &runtime);
     assert_cold_inventory(&runtime);
     let entities = changed_entities(&created);
     let relation = changed_relations(&created)[0];
     let identity = runtime.main_branch_identity();
     let services = runtime.owner_component_services();
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("the create publication is the suspension replay checkpoint");
     let (_, source_basis) = services
         .basis_port()
@@ -41,11 +38,8 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .expect("the durable source suspends through owner authority");
     assert_cold_inventory(&runtime);
 
-    let (_, recovered) = crate::tests::support::recover_with(
-        execution,
-        &runtime,
-        persisted_runtime_with_test_schema,
-    );
+    let (_, recovered) =
+        crate::tests::support::recover_with(execution, &runtime, durable_runtime_with_test_schema);
     assert_cold_inventory(&recovered);
     let recovered_identity = recovered.main_branch_identity();
     let (_, recovered_basis) = recovered
@@ -62,9 +56,7 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .basis_port()
         .observe_branch(&identity)
         .expect("the original owner retains the suspended basis");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("the suspended publication is the restoration replay checkpoint");
     let restored = services
         .materialization_port()
@@ -91,11 +83,8 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
         .release_snapshot(&restored.snapshot)
         .expect("the durable test releases its restoration snapshot");
 
-    let (_, recovered_restored) = crate::tests::support::recover_with(
-        execution,
-        &runtime,
-        persisted_runtime_with_test_schema,
-    );
+    let (_, recovered_restored) =
+        crate::tests::support::recover_with(execution, &runtime, durable_runtime_with_test_schema);
     assert_cold_inventory(&recovered_restored);
     let current = recovered_restored.visibility_authority().snapshot();
     let read = recovered_restored

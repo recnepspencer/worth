@@ -171,10 +171,12 @@ pub(crate) fn certify_replay_recovery(
         visible_truth: live_visible_truth,
     };
 
-    let recovery_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::AuditRecoveryVerification)
-        .unwrap();
+    let recovery_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::AuditRecoveryVerification,
+    )
+    .unwrap();
 
     let (missing_executor_mismatch_present, failing_executor_mismatch_present) =
         executor_faults::certify(

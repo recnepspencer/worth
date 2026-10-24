@@ -11,25 +11,6 @@ use crate::durability::data::{
 mod writer;
 use writer::{frame_mismatch, EmissionWriter, SizingWriter};
 
-/// Same count/admit/borrowed-emission owner for prepared durable envelopes.
-pub(crate) fn encode_payload(
-    value: &impl serde::Serialize,
-    policy: ExecutionAllocationPolicy<'_, '_>,
-) -> Result<ExecutionImmutableBytes, RelationalNativeCheckpointCaptureDenial> {
-    policy.check_live()?;
-    let mut sizing = SizingWriter::new(policy);
-    let counted = rmp_serde::encode::write_named(&mut sizing, value);
-    let total = sizing.finish(counted)?;
-    let mut bytes = ExecutionByteBuffer::allocate(total, policy)?;
-    let mut emission = EmissionWriter::new(&mut bytes);
-    let emitted = rmp_serde::encode::write_named(&mut emission, value);
-    emission.finish(emitted)?;
-    if bytes.len() != total {
-        return Err(frame_mismatch("native count and emission lengths differ"));
-    }
-    Ok(bytes.seal()?)
-}
-
 /// Count and emit the same borrowed image. Image/alias/serializer metadata heaps
 /// remain separate from the selected fixed payload backing admission.
 pub(crate) fn encode_checkpoint(

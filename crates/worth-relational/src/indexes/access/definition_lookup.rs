@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn lookup_snapshot_is_detached_from_subsequent_owner_registration() {
-        let runtime = crate::tests::support::persisted_runtime_with_test_schema();
+        let runtime = crate::tests::support::durable_runtime_with_test_schema();
         let expected = DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "snapshot-index".to_owned(),

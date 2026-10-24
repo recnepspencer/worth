@@ -145,7 +145,7 @@ pub(super) fn apply_operation(
             let _ = runtime.retention().run_pass();
             refresh_live_world(execution, runtime, entities, relations);
         }
-        ScenarioOperation::DurableCheckpoint | ScenarioOperation::CompactDurableStore => {}
+        ScenarioOperation::DurableCheckpoint => {}
     }
 }
 

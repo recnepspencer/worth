@@ -28,10 +28,10 @@ fn main() {
         .expect("original request admits native recovery input");
 
     println!(
-        "validation_results={} blocking_violation={} durable_log_len={} recovery_segments={}",
+        "validation_results={} blocking_violation={} durable_log_len={} recovery_checkpoint={:?}",
         validation.summary().result_count(),
         validation.summary().has_blocking_violation(),
         runtime.durability().durable_commit_count(),
-        recovery_plan.cursor.segment_ids.len()
+        recovery_plan.checkpoint_covered_position()
     );
 }

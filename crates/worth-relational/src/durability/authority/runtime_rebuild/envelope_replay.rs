@@ -34,7 +34,9 @@ pub(super) fn replay_readmitted_envelope(
         .services
         .symbols
         .import_canonical_snapshot(&envelope.symbol_texts)
-        .map_err(|detail| DurabilityError::new(RecoveryFailureClass::CorruptSegment, detail))?;
+        .map_err(|detail| {
+            DurabilityError::new(RecoveryFailureClass::CorruptCanonicalArtifact, detail)
+        })?;
     let had_checkpoint_artifact = prepare_replay_context(
         restored,
         envelope,

@@ -9,9 +9,8 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
         suite,
         "geometry_rich_publication_hot_vs_replay_truth",
         || {
-            let runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
             let source =
@@ -77,19 +76,18 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
                 fresh_diagnostics_metrics(&runtime, diagnostics_start);
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("geometry rich hot/cold checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::GeometryKernel,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
             recovered.performance_access().reset_counters();
             let recover_started_at = Instant::now();
             recovered

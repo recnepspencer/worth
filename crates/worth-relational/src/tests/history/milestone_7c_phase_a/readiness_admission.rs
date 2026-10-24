@@ -10,8 +10,8 @@ use crate::facade::schema::{
     RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::tests::support::{
-    create_branch_from_main, create_entity, create_entity_outcome_on_branch, entity_field_aspect,
-    persisted_runtime_with_test_schema, update_entity, update_entity_on_branch,
+    create_branch_from_main, create_entity, create_entity_outcome_on_branch,
+    durable_runtime_with_test_schema, entity_field_aspect, update_entity, update_entity_on_branch,
     CascadeDeletePolicy, CrossContextPolicy,
 };
 use worth_foundational::facade::AspectKey;
@@ -21,7 +21,7 @@ fn prepare_merge_execution_admits_fully_ready_source_only_addition() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -65,7 +65,7 @@ fn prepare_merge_execution_rejects_blocked_merge_plans() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, shared, "shared-main");
@@ -183,7 +183,7 @@ fn runtime_prepare_merge_execution_matches_merge_access_surface() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

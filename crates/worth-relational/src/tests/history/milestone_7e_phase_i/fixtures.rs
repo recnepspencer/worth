@@ -13,8 +13,8 @@ use crate::facade::schema::{
     RelationKindRegistration, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 use crate::tests::support::{
-    aspect_key, entity_field_aspect, field_key, string_aspect_field_patch, unique_test_store_path,
-    CascadeDeletePolicy, CrossContextPolicy, DurabilityMode, DurableStoreLayout,
+    aspect_key, entity_field_aspect, field_key, string_aspect_field_patch, CascadeDeletePolicy,
+    CrossContextPolicy,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 use std::sync::Arc;
@@ -25,14 +25,12 @@ pub(super) fn runtime_with_schema_declared_entity_policy(
     runtime_with_schema_declared_entity_policy_builder(policy, None)
 }
 
-pub(super) fn persisted_runtime_with_schema_declared_entity_policy(
+pub(super) fn durable_runtime_with_schema_declared_entity_policy(
     policy: AspectMergePolicyKind,
 ) -> RelationalRuntime {
     runtime_with_schema_declared_entity_policy_builder(
         policy,
-        Some(unique_test_store_path(
-            "worth-relational-7e-phase-i-strategy",
-        )),
+        Some(crate::tests::support::TestDurableMedium::new()),
     )
 }
 
@@ -224,7 +222,7 @@ pub(super) fn strategy_witness(
 
 fn runtime_with_schema_declared_entity_policy_builder(
     policy: AspectMergePolicyKind,
-    root_path: Option<std::path::PathBuf>,
+    medium: Option<std::sync::Arc<crate::tests::support::TestDurableMedium>>,
 ) -> RelationalRuntime {
     let name_key = aspect_key("name");
     let status_key = aspect_key("status");
@@ -257,13 +255,8 @@ fn runtime_with_schema_declared_entity_policy_builder(
         })
         .expect("strategy witness registry");
     let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
-    if let Some(root_path) = root_path {
-        builder = builder
-            .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-            .durable_store_layout(DurableStoreLayout {
-                root_path,
-                segment_commit_capacity: 2,
-            });
+    if let Some(medium) = medium {
+        builder = builder.durable_medium(medium);
     }
     builder.build()
 }

@@ -118,13 +118,10 @@ pub(crate) fn append_durable_commit(
     runtime: &(impl DiagnosticArtifactSink + DurabilityWrite),
     append_authority: crate::durability::authority::DurableAppendAuthority,
     positioned_commit: &crate::history::data::PositionedCanonicalCommit,
-    durable_bytes: Option<&worth_execution::ExecutionImmutableBytes>,
 ) -> Result<(), TransactionCommitError> {
     let commit_id = append_authority.commit_id();
     let branch_id = append_authority.branch_id().clone();
-    if let Err(error) =
-        runtime.append_durable_envelope(append_authority, positioned_commit, durable_bytes)
-    {
+    if let Err(error) = runtime.append_durable_envelope(append_authority, positioned_commit) {
         runtime.emit_failure_diagnostic(
             DiagnosticsScope::History,
             DiagnosticCode::DurableAppendFailed,

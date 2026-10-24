@@ -111,7 +111,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
@@ -180,10 +180,12 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
     assert_eq!(cdc_counters.replay_deep_artifact_parity_checks, 0);
 
     runtime.performance_access().reset_counters();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let plan_counters = runtime.performance_access().counters();
 
     assert!(plan_counters.replay_digest_parity_checks >= 1);
@@ -206,11 +208,7 @@ fn complexity_budget_milestone5_closeout_keeps_schema_cdc_and_recovery_boundary_
             }
             .build_registry(),
         )
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path: unique_test_store_path("worth-relational-m5-performance-closeout"),
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(TestDurableMedium::new())
         .build();
     let _ = recovered
         .durability_recovery()

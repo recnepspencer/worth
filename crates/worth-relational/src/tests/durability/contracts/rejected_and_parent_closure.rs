@@ -28,14 +28,10 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         ),
         ..RelationIntegritySchemaFixture::default()
     };
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("worth-relational-rejected-relation-integrity-recovery"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout.clone())
+        .durable_medium(medium.clone())
         .build();
     let source = create_entity(execution, &runtime, "source");
     let target_a = create_entity(execution, &runtime, "target-a");
@@ -109,18 +105,16 @@ fn durability_contract_recovery_ignores_rejected_relation_integrity_attempts() {
         main_digest_before
     );
 
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(fixture.build_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
+        .durable_medium(medium)
         .build();
     let outcome = recovered
         .durability_recovery()
@@ -157,18 +151,6 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         .unwrap();
     let corrupt_plan = RecoveryPlan::new(
         runtime.config().clone(),
-        runtime
-            .config()
-            .durability
-            .policy
-            .store_layout
-            .clone()
-            .map(|layout| DurableStore {
-                layout,
-                segments: Vec::new(),
-                checkpoints: Vec::new(),
-            }),
-        None,
         None,
         vec![
             crate::durability::migration::ReadmittedCanonicalCommit::exact(
@@ -178,16 +160,6 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
                 ),
             ),
         ],
-        RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         RecoveryAuthorityContinuityCheck::verified_at(ReplayVerificationLayer::DigestParity),
         RecoveryVerificationMode::NormalRecoveryVerification,
         DescriptorSemanticsVersion::default(),

@@ -12,7 +12,7 @@ fn dropping_the_performed_witness_leaves_settlement_recoverable() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "abandoned-witness-anchor");
     let performed = perform_main_write(execution, &runtime, "abandoned-witness");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -71,7 +71,7 @@ fn repeated_terminal_settlement_returns_one_receipt_and_one_durable_append() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "repeated-settlement-anchor");
     let performed = perform_main_write(execution, &runtime, "repeated-settlement");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -101,7 +101,7 @@ fn repair_and_witness_settlement_execute_exactly_once() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "single-execution-anchor");
     let performed = perform_main_write(execution, &runtime, "single-execution");
     let commit_id = performed.canonical_commit().commit.commit_id;
@@ -234,86 +234,6 @@ fn interruption_after_movement_retains_its_pending_settlement() {
         assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
         release_test_commit_snapshot(&runtime, &settled);
     }
-}
-
-/// Commit-identity repair can drive a record into durability deferral while the
-/// performed witness is still live, so the repair that finally succeeds may not
-/// close the published snapshot that witness is still owed.
-#[test]
-fn durability_repair_leaves_a_live_witness_its_usable_published_snapshot() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = persisted_runtime_with_test_schema();
-    create_entity(execution, &runtime, "live-witness-repair-anchor");
-    let performed = perform_main_write(execution, &runtime, "live-witness-repair");
-    let commit_id = performed.canonical_commit().commit.commit_id;
-    let occupied_before = runtime
-        .preparation_runtime_snapshot()
-        .published_snapshot_count();
-
-    runtime.durability.arm_append_failure_for_test();
-    assert!(matches!(
-        runtime
-            .repair_pending_publication_settlement(commit_id)
-            .expect_err("the injected append fault defers this commit-identity repair"),
-        crate::publication::data::DeferredPublicationSettlementError::DurableAppend(_)
-    ));
-    assert_eq!(
-        runtime.publication_binding().pending_settlement_count(),
-        1,
-        "a durability-deferred record is retained for repair"
-    );
-    assert_eq!(
-        runtime.visibility.published_snapshot_handle_count(),
-        1,
-        "the deferred lane keeps the published snapshot it already opened"
-    );
-
-    let repaired = runtime
-        .repair_pending_publication_settlement(commit_id)
-        .expect("the retried repair performs the one missing durable append");
-    assert_eq!(repaired.commit_id, commit_id);
-    assert_eq!(runtime.publication_binding().pending_settlement_count(), 0);
-
-    let settled = runtime
-        .settle_performed_publication(performed)
-        .expect("the still-live witness receives its exact commit result");
-    assert_eq!(settled.commit, repaired);
-    assert!(
-        runtime
-            .read_truth()
-            .read_snapshot(&settled.snapshot, execution)
-            .expect("read request remains live")
-            .is_some(),
-        "durability repair may not close a snapshot its live witness still owns"
-    );
-    assert!(
-        runtime
-            .snapshots()
-            .release_snapshot(&settled.snapshot)
-            .is_ok(),
-        "the claiming witness took the release obligation with its result"
-    );
-    assert!(
-        runtime
-            .snapshots()
-            .release_snapshot(&settled.snapshot)
-            .is_err(),
-        "one published handle is released exactly once"
-    );
-    assert_eq!(
-        runtime
-            .preparation_runtime_snapshot()
-            .published_snapshot_count(),
-        occupied_before - 1,
-        "the repaired settlement leaks no published-snapshot capacity"
-    );
-    assert_eq!(
-        durable_appends(&runtime, commit_id),
-        1,
-        "a deferred then repaired then witnessed settlement appends exactly once"
-    );
 }
 
 fn perform_main_write(

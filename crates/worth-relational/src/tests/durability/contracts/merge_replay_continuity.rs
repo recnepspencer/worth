@@ -6,7 +6,7 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let main = create_entity_outcome(execution, &runtime, "main");
     runtime
         .history_authority()
@@ -27,11 +27,13 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
         BranchId("main".to_string()),
         vec![BranchId("feature".to_string())],
     );
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -60,7 +62,7 @@ fn durability_contract_replays_empty_intent_merge_currentness_once() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -84,14 +86,13 @@ fn durability_contract_replays_empty_intent_merge_currentness_once() {
         .as_basis()
         .expect("empty-intent merge still publishes a truth target");
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -127,7 +128,7 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -150,53 +151,36 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         .execute_prepared_merge(execution, prepared)
         .expect("executed prepared merge");
 
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap()
-        .store
-        .unwrap()
-        .segments
-        .last()
-        .expect("persisted segment after merge")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    let merge_entry = file
-        .entries
-        .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
-        .find(|entry| entry.commit.commit_id == merge.commit.commit.commit_id)
-        .expect("merge entry in durable segment");
-    assert!(merge_entry.merge_execution_authority.is_some());
-    let populated_nested_bytes = merge_entry
-        .allocation_inventory()
-        .authoritative_nested_bytes;
-    let mut omitted_merge_authority = merge_entry.clone();
-    omitted_merge_authority.merge_execution_authority = None;
-    assert!(
-        populated_nested_bytes
-            > omitted_merge_authority
+    crate::tests::support::attached_test_medium(&runtime).rewrite_commit_envelope(
+        execution,
+        merge.commit.commit.commit_id,
+        |merge_entry| {
+            assert!(merge_entry.merge_execution_authority.is_some());
+            let populated_nested_bytes = merge_entry
                 .allocation_inventory()
-                .authoritative_nested_bytes
+                .authoritative_nested_bytes;
+            let mut omitted_merge_authority = merge_entry.clone();
+            omitted_merge_authority.merge_execution_authority = None;
+            assert!(
+                populated_nested_bytes
+                    > omitted_merge_authority
+                        .allocation_inventory()
+                        .authoritative_nested_bytes
+            );
+            assert!(
+                merge_entry.diagnostics_summary.entries.is_empty(),
+                "diagnostics never reach the durable artifact"
+            );
+        },
     );
-    merge_entry.diagnostics_summary.entries.clear();
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -219,11 +203,11 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
 }
 
 #[test]
-fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is_tampered() {
+fn durability_contract_reports_parent_order_parity_drift_when_durable_artifact_is_tampered() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let main = create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
     let feature = create_entity_outcome_on_branch(
@@ -239,39 +223,25 @@ fn durability_contract_reports_parent_order_parity_drift_when_durable_segment_is
         vec![BranchId("feature".to_string())],
     );
 
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap()
-        .store
-        .unwrap()
-        .segments
-        .last()
-        .expect("persisted segment after merge")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    let merge_entry = file
-        .entries
-        .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
-        .find(|entry| entry.commit.commit_id == merge.commit.commit_id)
-        .expect("merge entry in durable segment");
-    assert_eq!(
-        merge_entry.commit.parents,
-        vec![main.commit.commit_id, feature.commit.commit_id]
+    crate::tests::support::attached_test_medium(&runtime).rewrite_commit_envelope(
+        execution,
+        merge.commit.commit_id,
+        |merge_entry| {
+            assert_eq!(
+                merge_entry.commit.parents,
+                vec![main.commit.commit_id, feature.commit.commit_id]
+            );
+            merge_entry.commit.parents.reverse();
+        },
     );
-    merge_entry.commit.parents.reverse();
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -291,7 +261,7 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "main");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -314,43 +284,22 @@ fn durability_contract_does_not_reconstruct_missing_merge_authority_from_diagnos
         .execute_prepared_merge(execution, prepared)
         .expect("executed prepared merge");
 
-    let segment_path = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap()
-        .store
-        .unwrap()
-        .segments
-        .last()
-        .expect("persisted segment after merge")
-        .path
-        .clone();
-    let mut file =
-        crate::durability::log::native_file_codec::read_segment_file(execution, &segment_path)
-            .unwrap();
-    let merge_entry = file
-        .entries
-        .iter_mut()
-        .map(|commit| commit.envelope_mut_for_test())
-        .find(|entry| entry.commit.commit_id == merge.commit.commit.commit_id)
-        .expect("merge entry in durable segment");
-    assert!(merge_entry.merge_execution_authority.is_some());
-    assert!(!merge_entry.diagnostics_summary.entries.is_empty());
-    merge_entry.merge_execution_authority = None;
-    crate::durability::log::native_file_codec::write_segment_file(execution, &segment_path, &file)
-        .unwrap();
+    crate::tests::support::attached_test_medium(&runtime).rewrite_commit_envelope(
+        execution,
+        merge.commit.commit.commit_id,
+        |merge_entry| {
+            assert!(merge_entry.merge_execution_authority.is_some());
+            merge_entry.merge_execution_authority = None;
+        },
+    );
 
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

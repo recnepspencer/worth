@@ -6,7 +6,7 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
 ) {
     let trade_correction_samples =
         capture_perf_samples(suite, "trade_correction_analysis_round_trip", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             let account = create_entity_in_partition(
                 execution,
                 &runtime,

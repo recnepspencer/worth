@@ -2,7 +2,7 @@ use crate::diagnostics::data::RelationalDiagnosticValue;
 use crate::facade::diagnostics::DiagnosticCode;
 use crate::tests::support::{
     capture_aspect_truth_bundle, checkpoint_and_recover_with, diagnostic_field,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 use super::fixtures::execute_feature_into_main_merge;
@@ -21,7 +21,7 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
         .expect("live merge envelope");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_bundle = capture_aspect_truth_bundle(execution, &recovered, &[], &[], &[]);
     let recovered_envelope = recovered
         .replay()

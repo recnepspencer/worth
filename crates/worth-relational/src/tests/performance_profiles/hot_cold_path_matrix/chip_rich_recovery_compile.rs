@@ -9,9 +9,8 @@ pub(super) fn certify_chip_rich_compile_hot_vs_recovery_compile(
         suite,
         "chip_rich_compile_hot_vs_recovery_compile",
         || {
-            let mut runtime = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let mut runtime =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             apply_perf_diagnostics_policy(
                 &mut runtime,
                 PerfDiagnosticsPolicy::ChipRichCertification,
@@ -77,19 +76,18 @@ pub(super) fn certify_chip_rich_compile_hot_vs_recovery_compile(
                 fresh_diagnostics_metrics(&runtime, diagnostics_start);
 
             let checkpoint_started_at = Instant::now();
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
+            crate::tests::support::checkpoint_durably(execution, &runtime)
                 .expect("chip rich hot/cold checkpoint");
             let checkpoint_micros = checkpoint_started_at.elapsed().as_micros();
 
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = persisted_runtime_with_test_schema_profile(
-                RelationalRuntimeProfile::ChipSimulation,
-            );
+            let plan = crate::tests::support::recovery_plan_for(
+                execution,
+                &runtime,
+                RecoveryMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+            let mut recovered =
+                durable_runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
             apply_perf_diagnostics_policy(
                 &mut recovered,
                 PerfDiagnosticsPolicy::ChipRichCertification,

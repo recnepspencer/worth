@@ -1,6 +1,5 @@
 use crate::commit_strategies::data::CommitStrategyRegistration;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 use crate::history::data::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::{ClientKeySymbolPolicy, SymbolTableSnapshot};
@@ -72,9 +71,7 @@ pub struct PublicationConfigOverride {
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct DurabilityConfigOverride {
     pub policy: Option<DurabilityPolicy>,
-    pub mode: Option<DurabilityMode>,
     pub log: Option<DurableLogPolicy>,
-    pub store_layout: Option<DurableStoreLayout>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

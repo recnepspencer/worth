@@ -13,7 +13,20 @@ Use:
 - `storage_setup(...)`
 - `durability_setup(...)`
 - `strategy_setup(...)`
+- `durable_medium(...)` when commits must be durable before they are live
 - `build()`
+
+## Reopen a durable runtime
+
+Use:
+
+- a fresh builder with the same schema and the same `durable_medium(...)`
+- `durability().recovery_plan_from_source(...)` with the medium's
+  `RelationalDurableRecoverySource`
+- `durability_recovery().recover(...)`
+
+Damage, a gap in the journal or a misfiled checkpoint refuses with a typed
+`RecoveryFailureClass` before the runtime serves anything.
 
 ## Write truth
 

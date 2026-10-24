@@ -3,9 +3,8 @@ use crate::durability::access::{
     authority_continuity_for_envelopes, descriptor_semantics_version_for_envelopes,
 };
 use crate::durability::data::{
-    DurableCheckpoint, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
-    RecoveryCursor, RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode,
-    RecoveryVerificationOutcome,
+    DurableCheckpoint, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryPlan,
+    RecoveryVerificationMode, RecoveryVerificationOutcome,
 };
 use crate::replay::data::ReplayVerificationLayer;
 use crate::runtime::RelationalRuntime;
@@ -22,20 +21,8 @@ pub(crate) fn native_checkpoint_recovery_plan(
     bind_source_runtime_identity(runtime, &checkpoint, &mut continuity);
     RecoveryPlan::new(
         runtime.runtime_config().clone(),
-        None,
-        None,
         Some(checkpoint),
         Vec::new(),
-        RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         continuity,
         verification_mode,
         descriptor_semantics_version,

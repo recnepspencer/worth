@@ -27,7 +27,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "native-custody-source");
     let head = runtime.history().branch_head(&BranchId("main".into()));
     let system = runtime
@@ -101,7 +101,8 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
             level: MemoryLimitLevel::Policy { ancestor: 0 }
         }
     );
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).shared());
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
         .durability_recovery()

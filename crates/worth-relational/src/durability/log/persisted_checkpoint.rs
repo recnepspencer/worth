@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 use crate::history::data::PositionedCanonicalCommit;
 
-use super::local_store::DurableCheckpointFile;
+use super::native_checkpoint_codec::DecodedNativeCheckpoint;
 use super::persisted_canonical_commit::{PersistedCanonicalCommit, PersistedCheckpointCommitRef};
 
 mod partition_aliases;
@@ -307,7 +307,7 @@ impl PersistedDurableCheckpointFile {
         }
     }
 
-    pub(super) fn readmit(self) -> Result<DurableCheckpointFile, DurabilityError> {
+    pub(super) fn readmit(self) -> Result<DecodedNativeCheckpoint, DurabilityError> {
         if self.checkpoint_protocol_version != CHECKPOINT_PROTOCOL_VERSION {
             return Err(DurabilityError::new(
                 RecoveryFailureClass::UnsupportedLegacySemantics,
@@ -336,7 +336,7 @@ impl PersistedDurableCheckpointFile {
                     })
             })
             .collect::<Result<Vec<_>, _>>()?;
-        Ok(DurableCheckpointFile {
+        Ok(DecodedNativeCheckpoint {
             checkpoint: DurableCheckpoint {
                 coverage: checkpoint.coverage,
                 branch_cells: checkpoint.branch_cells,

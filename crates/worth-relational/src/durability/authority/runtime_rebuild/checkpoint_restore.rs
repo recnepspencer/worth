@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use crate::durability::data::{
-    CheckpointRestoreWork, DurabilityError, DurabilityMode, DurableCheckpoint,
-    RelationalRecoveryStop,
+    CheckpointRestoreWork, DurabilityError, DurableCheckpoint, RelationalRecoveryStop,
 };
 use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, IndexingState, LineageState, RelationalRuntime};
@@ -263,9 +262,7 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
 pub(super) fn finalize_restored_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
-    original_durability_mode: DurabilityMode,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-    restored.set_durability_mode(original_durability_mode);
     restored
         .index_authority()
         .rebuild_unique_entity_aspect_field_indexes(execution)

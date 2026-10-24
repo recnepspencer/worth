@@ -5,9 +5,9 @@ fn phase3_foreign_deferred_repair_reports_affinity_and_preserves_source_recovery
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     create_entity(execution, &source, "phase3-foreign-deferred-source-anchor");
-    let foreign = persisted_runtime_with_test_schema();
+    let foreign = durable_runtime_with_test_schema();
     create_entity(execution, &foreign, "phase3-foreign-deferred-target-anchor");
 
     let performed = perform_write(execution, &source, "main", "phase3-foreign-deferred-write");

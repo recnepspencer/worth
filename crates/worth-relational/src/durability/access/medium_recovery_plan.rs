@@ -13,8 +13,8 @@ use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal,
 };
 use crate::durability::data::{
-    DurabilityError, DurableCheckpoint, RecoveryCursor, RecoveryFailureClass,
-    RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode, RelationalRecoveryStop,
+    DurabilityError, DurableCheckpoint, RecoveryFailureClass, RecoveryPlan,
+    RecoveryVerificationMode, RelationalRecoveryStop,
 };
 use crate::durability::medium::{
     RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
@@ -58,20 +58,8 @@ pub(super) fn medium_recovery_plan(
         .collect();
     Ok(RecoveryPlan::new(
         runtime.runtime_config().clone(),
-        None,
-        None,
         checkpoint,
         tail,
-        RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         continuity,
         verification_mode,
         descriptor_semantics_version,
@@ -87,7 +75,7 @@ fn readmit_covered_checkpoint(
     source: RelationalDurableCheckpointSource,
 ) -> Result<(DurableCheckpoint, PatchStreamPosition), RelationalRecoveryStop> {
     let filed_under = source.covered();
-    let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
+    let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
         execution,
         source.into_checkpoint().bytes(),
     )?

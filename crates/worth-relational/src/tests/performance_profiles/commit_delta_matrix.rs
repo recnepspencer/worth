@@ -104,7 +104,7 @@ fn perf_commit_delta_matrix() {
 
     let persisted_single_create_samples =
         capture_perf_samples(suite, "persisted_single_entity_create", || {
-            let runtime = persisted_runtime_with_test_schema();
+            let runtime = durable_runtime_with_test_schema();
             commit_measurement(&runtime, |runtime| {
                 let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
                 txn.push_batch(

@@ -9,8 +9,8 @@ use crate::commit_strategies::data::{
     StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
     StrategyTraversalBasis,
 };
+use crate::config::data::{DurableLogPolicy, DurableLogRetentionMode};
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::DurabilityMode;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::validation::data::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
@@ -235,7 +235,11 @@ fn builder_grouped_setup_sections_apply_overrides() {
             storage.entity_capacity(42).relation_capacity(24);
         })
         .durability_setup(|durability| {
-            durability.durability_mode(DurabilityMode::InMemoryCanonical);
+            durability.durable_log_policy(DurableLogPolicy {
+                retention_mode: DurableLogRetentionMode::CompactAfterCheckpoint,
+                max_in_memory_envelopes: 7,
+                compact_after_checkpoint: true,
+            });
         })
         .build();
 
@@ -243,8 +247,13 @@ fn builder_grouped_setup_sections_apply_overrides() {
     assert_eq!(runtime.config().storage.initial_entity_capacity, 42);
     assert_eq!(runtime.config().storage.initial_relation_capacity, 24);
     assert_eq!(
-        runtime.config().durability.policy.mode,
-        DurabilityMode::InMemoryCanonical
+        runtime
+            .config()
+            .durability
+            .policy
+            .log
+            .max_in_memory_envelopes,
+        7
     );
     assert_eq!(
         runtime.config().diagnostics.profile,

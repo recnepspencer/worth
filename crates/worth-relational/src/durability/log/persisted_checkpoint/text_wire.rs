@@ -78,7 +78,7 @@ impl CheckpointFileWire<'_> {
     pub(crate) fn readmit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<DurableCheckpointFile, crate::durability::data::RelationalRecoveryStop> {
+    ) -> Result<DecodedNativeCheckpoint, crate::durability::data::RelationalRecoveryStop> {
         let input = self.checkpoint;
         super::partition_aliases::require_partition_delta_format(input.partition_alias_format)?;
         let symbol_table = input

@@ -37,7 +37,6 @@ fn facade_namespaces_expose_domain_groupings() {
         .build();
     let _txn_options =
         crate::tests::support::test_owner_transaction_validation_input_for_main(&runtime);
-    let _durability_mode = facade::durability::DurabilityMode::InMemoryCanonical;
     let _diagnostics_scope = facade::diagnostics::DiagnosticsScope::Transaction;
     let _patch_mode = facade::publication::PatchPublicationMode::CommitNative;
     let _snapshot_policy = facade::snapshots::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation;

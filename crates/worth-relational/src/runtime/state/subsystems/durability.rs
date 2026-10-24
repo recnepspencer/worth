@@ -1,7 +1,7 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::Arc;
 
-use crate::durability::data::{DurableCheckpoint, DurableStore};
+use crate::durability::data::DurableCheckpoint;
 use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
@@ -11,13 +11,12 @@ mod state;
 
 use state::DurabilityState;
 
-/// The runtime's durable log and checkpoint authority, owned behind its own
-/// lock so durability I/O never demands exclusive access to the runtime.
+/// The runtime's canonical log and checkpoint authority, owned behind its own
+/// lock, plus its attachment to a durable medium when it has one.
 #[derive(Debug, Default)]
 pub(crate) struct DurabilitySubsystem {
     state: RuntimeOwnedState<DurabilityState>,
     fail_next_append: AtomicBool,
-    store_io: Arc<Mutex<()>>,
     /// The durable medium every commit is published to before it becomes
     /// live. A forked runtime is a speculative copy and never inherits it.
     medium: Option<Arc<RelationalDurableMediumBinding>>,
@@ -32,14 +31,6 @@ impl DurabilitySubsystem {
         self.medium.clone()
     }
 
-    pub(crate) fn lock_store(&self) -> MutexGuard<'_, ()> {
-        self.store_io
-            .lock()
-            .expect("native store I/O lock poisoned")
-    }
-    pub(crate) fn try_lock_store(&self) -> std::sync::TryLockResult<MutexGuard<'_, ()>> {
-        self.store_io.try_lock()
-    }
     pub(crate) fn push_log_envelope(&self, commit: PositionedCanonicalCommit) {
         self.state.write().push_log_envelope(commit);
     }
@@ -97,14 +88,6 @@ impl DurabilitySubsystem {
         self.state.read().checkpoints.last().map(Arc::clone)
     }
 
-    pub(crate) fn store(&self) -> Option<Arc<DurableStore>> {
-        self.state.read().store.clone()
-    }
-
-    pub(crate) fn set_store(&self, store: Option<DurableStore>) {
-        self.state.write().store = store.map(Arc::new);
-    }
-
     pub(crate) fn arm_append_failure_for_test(&self) {
         self.fail_next_append.store(true, Ordering::Release);
     }
@@ -118,11 +101,10 @@ impl DurabilitySubsystem {
 impl RuntimeSubsystem for DurabilitySubsystem {
     type Config = RelationalRuntimeConfig;
 
-    fn new(config: &Self::Config) -> Self {
+    fn new(_config: &Self::Config) -> Self {
         Self {
-            state: RuntimeOwnedState::new(DurabilityState::build_from_config(config)),
+            state: RuntimeOwnedState::new(DurabilityState::default()),
             fail_next_append: AtomicBool::new(false),
-            store_io: Arc::new(Mutex::new(())),
             medium: None,
         }
     }
@@ -131,7 +113,6 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: self.state.detached(),
             fail_next_append: AtomicBool::new(self.fail_next_append.load(Ordering::Acquire)),
-            store_io: Arc::clone(&self.store_io),
             medium: None,
         }
     }

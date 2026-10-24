@@ -2,7 +2,7 @@ use super::*;
 
 pub(super) struct FinalRecoveryCertificationInput {
     pub(super) runtime: RelationalRuntime,
-    pub(super) recovered_root: std::path::PathBuf,
+    pub(super) recovered_root: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     pub(super) entity: crate::facade::identity::EntityId,
     pub(super) main_branch: BranchId,
     pub(super) controller_branch: BranchId,
@@ -46,7 +46,7 @@ pub(super) fn certify_final_recovery(
     let recovered_overlap_from_final = recover_stage_from_final_history(
         execution,
         &recovered,
-        unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-overlap"),
+        crate::tests::support::TestDurableMedium::new(),
         overlap_controller_head,
         overlap_main_head,
     );
@@ -68,7 +68,7 @@ pub(super) fn certify_final_recovery(
     let recovered_narrowed_from_final = recover_stage_from_final_history(
         execution,
         &recovered,
-        unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-narrowed"),
+        crate::tests::support::TestDurableMedium::new(),
         narrowed_controller_head,
         narrowed_main_head,
     );
@@ -90,7 +90,7 @@ pub(super) fn certify_final_recovery(
     let recovered_rebroadened_from_final = recover_stage_from_final_history(
         execution,
         &recovered,
-        unique_test_store_path("worth-relational-m8-5-kubernetes-style-final-rebroadened"),
+        crate::tests::support::TestDurableMedium::new(),
         rebroadened_controller_head,
         rebroadened_main_head,
     );

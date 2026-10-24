@@ -1,32 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
-    DurableCheckpoint, DurableCheckpointId, DurableCheckpointManifest, DurableSegmentId,
-    DurableStore, RecoveryAuthorityContinuityMismatch,
-};
+use super::{DurableCheckpoint, RecoveryAuthorityContinuityMismatch};
 use crate::history::data::{CommitId, RelationalCommitReceipt};
+use crate::publication::patch::data::PatchStreamPosition;
 use crate::replay::data::ReplayVerificationLayer;
 use crate::schema::data::DescriptorSemanticsVersion;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RecoveryCursor {
-    pub checkpoint_id: Option<DurableCheckpointId>,
-    pub segment_ids: Vec<DurableSegmentId>,
-}
-
+/// What a recovery rebuilt from: the checkpoint it started from (if any) and
+/// the canonical tail it replayed after that checkpoint's coverage.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RecoveryCoverage {
+    /// The last position the selected checkpoint covers; `None` when recovery
+    /// replayed history from the first position.
+    pub checkpoint_covered_position: Option<PatchStreamPosition>,
     pub checkpoint_commits: usize,
     pub replayed_tail_commits: usize,
     pub recovered_through_commit: Option<RelationalCommitReceipt>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RecoveryIntegrityReport {
-    pub selected_checkpoint_id: Option<DurableCheckpointId>,
-    pub skipped_corrupt_checkpoints: Vec<DurableCheckpointId>,
-    pub verified_segment_ids: Vec<DurableSegmentId>,
-    pub corrupt_segment_id: Option<DurableSegmentId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -84,17 +73,13 @@ pub enum RecoveryAuthorityParity {
 #[derive(Debug, Clone)]
 pub struct RecoveryPlan {
     pub config: crate::runtime::RelationalRuntimeConfig,
-    pub store: Option<DurableStore>,
-    pub checkpoint_manifest: Option<DurableCheckpointManifest>,
     pub checkpoint: Option<DurableCheckpoint>,
     pub(crate) tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
-    pub cursor: RecoveryCursor,
-    pub integrity_report: RecoveryIntegrityReport,
     pub authority_continuity: RecoveryAuthorityContinuityCheck,
     pub verification_plan: RecoveryVerificationPlan,
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
     pub restore_authoritative_envelope_commit_ids: Vec<CommitId>,
-    pub(crate) persisted_tail_error: Option<super::DurabilityError>,
+    checkpoint_covered_position: Option<PatchStreamPosition>,
     pub(crate) commit_strategy_executors:
         crate::commit_strategies::FrozenCommitStrategyExecutorRegistry,
 }
@@ -159,15 +144,10 @@ impl RecoveryAuthorityContinuityCheck {
 }
 
 impl RecoveryPlan {
-    #[allow(clippy::too_many_arguments)]
     pub(crate) fn new(
         config: crate::runtime::RelationalRuntimeConfig,
-        store: Option<DurableStore>,
-        checkpoint_manifest: Option<DurableCheckpointManifest>,
         checkpoint: Option<DurableCheckpoint>,
         tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
-        cursor: RecoveryCursor,
-        integrity_report: RecoveryIntegrityReport,
         authority_continuity: RecoveryAuthorityContinuityCheck,
         verification_mode: RecoveryVerificationMode,
         descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -175,19 +155,18 @@ impl RecoveryPlan {
     ) -> Self {
         restore_authoritative_envelope_commit_ids.sort_unstable();
         restore_authoritative_envelope_commit_ids.dedup();
+        let checkpoint_covered_position = checkpoint
+            .as_ref()
+            .map(crate::durability::access::checkpoint_coverage);
         Self {
             config,
-            store,
-            checkpoint_manifest,
             checkpoint,
             tail_log,
-            cursor,
-            integrity_report,
             authority_continuity,
             verification_plan: RecoveryVerificationPlan::from_mode(verification_mode),
             descriptor_semantics_version,
             restore_authoritative_envelope_commit_ids,
-            persisted_tail_error: None,
+            checkpoint_covered_position,
             commit_strategy_executors:
                 crate::commit_strategies::FrozenCommitStrategyExecutorRegistry::default(),
         }
@@ -205,12 +184,10 @@ impl RecoveryPlan {
         self
     }
 
-    pub(crate) fn with_persisted_tail_error(
-        mut self,
-        error: Option<super::DurabilityError>,
-    ) -> Self {
-        self.persisted_tail_error = error;
-        self
+    /// The last position the plan's checkpoint covers, fixed when the plan was
+    /// built so it survives the rebuild taking the checkpoint image.
+    pub fn checkpoint_covered_position(&self) -> Option<PatchStreamPosition> {
+        self.checkpoint_covered_position
     }
 
     pub(crate) fn tail_commit_count(&self) -> usize {

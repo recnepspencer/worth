@@ -1,6 +1,5 @@
 //! Real native payload custody through current checkpoint and post-checkpoint tail.
 use super::*;
-use crate::capabilities::DurabilityRead;
 use crate::durability::data::{RecoveryVerificationMode, RelationalRecoveryStop};
 use crate::identity::data::{EntityId, VersionId};
 use crate::mvcc::RelationalTransactionIntent;
@@ -82,20 +81,16 @@ fn read_exact(
 fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop() {
     let original = test_execution_lease();
     let execution = &ExecutionRequest::leased(&original);
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &source, "checkpoint-before-managed-text");
     release_test_commit_snapshot(&source, &baseline);
     let recovery_config = source.config(); // no managed text exists here
-    source.durability_authority().checkpoint(execution).unwrap();
+    crate::tests::support::checkpoint_durably(execution, &source).unwrap();
     let committed = commit_text(execution, &source).unwrap();
     let entity = changed_entities(&committed)[0];
     let version = committed.version_id;
     release_test_commit_snapshot(&source, &committed);
-    assert_eq!(
-        source.durable_store().unwrap().segments.len(),
-        1,
-        "same current segment accepts tail; no per-commit rotation"
-    );
+    let medium = attached_test_medium(&source);
     drop(committed);
     drop(baseline);
     drop(source);
@@ -104,10 +99,12 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     let recovery_lease = test_execution_lease();
     let execution = &ExecutionRequest::leased(&recovery_lease);
     let mut restored = crate::runtime::RelationalRuntime::new(recovery_config);
+    bind_durable_medium(&mut restored, medium.shared());
     let plan = restored
         .durability()
-        .recovery_plan(
+        .recovery_plan_from_source(
             execution,
+            medium.recovery_source().unwrap(),
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
@@ -149,7 +146,7 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
 fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact() {
     let lease = test_execution_lease();
     let execution = &ExecutionRequest::leased(&lease);
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let committed = commit_text(execution, &source).unwrap();
     release_test_commit_snapshot(&source, &committed);
     let native = source
@@ -230,7 +227,7 @@ fn native_field_text_configuration_requires_current_explicit_readmission() {
 fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let source = persisted_runtime_with_test_schema();
+    let source = durable_runtime_with_test_schema();
     let committed = commit_text(execution, &source).unwrap();
     release_test_commit_snapshot(&source, &committed);
     let native = source
@@ -239,105 +236,21 @@ fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
         .unwrap();
     let unframed = native
         .bytes()
-        .strip_prefix(crate::durability::log::native_file_codec::CHECKPOINT_MAGIC)
+        .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
         .unwrap();
-    let error = crate::durability::log::native_file_codec::decode_checkpoint(execution, unframed)
-        .unwrap_err();
+    let error =
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, unframed)
+            .unwrap_err();
     assert!(
         matches!(error,RelationalRecoveryStop::Durability(ref error) if error.class == RecoveryFailureClass::UnsupportedLegacySemantics)
     );
     assert!(
-        crate::durability::log::native_file_codec::decode_checkpoint(execution, native.bytes())
-            .is_ok()
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+            execution,
+            native.bytes()
+        )
+        .is_ok()
     );
-}
-
-#[test]
-fn native_field_text_deferred_settlement_keeps_prepared_bytes_after_request_drop() {
-    let lease = test_execution_lease();
-    let execution = &ExecutionRequest::leased(&lease);
-    let runtime = persisted_runtime_with_test_schema();
-    let baseline = create_entity_outcome(execution, &runtime, "before-manifest-failure");
-    release_test_commit_snapshot(&runtime, &baseline);
-    let store = runtime.durable_store().unwrap();
-    let root = std::fs::canonicalize(&store.layout.root_path).unwrap();
-    let obstruction =
-        crate::durability::log::local_store::manifest_path(&store.layout).with_extension("tmp");
-    assert_eq!(obstruction.parent().unwrap().canonicalize().unwrap(), root);
-    assert!(!obstruction.exists());
-    std::fs::create_dir(&obstruction).unwrap();
-    let failure = commit_text(execution, &runtime).unwrap_err();
-    let settlement = failure.deferred_settlement().unwrap().clone();
-    let entity = changed_entities(settlement.performed_result())[0];
-    let version = settlement.performed_result().version_id;
-    let commit = settlement.commit().commit_id;
-    let segment = &store.segments[0].path;
-    assert_eq!(
-        runtime.durable_log().len(),
-        1,
-        "failed manifest did not publish logical append"
-    );
-    let manifest_path = crate::durability::log::local_store::manifest_path(&store.layout);
-    assert_eq!(
-        crate::durability::log::native_file_codec::read_store_manifest_file(&manifest_path)
-            .unwrap()
-            .store
-            .segments[0]
-            .commit_count,
-        1
-    );
-    let inventory =
-        crate::durability::log::native_file_codec::read_segment_inventory(segment).unwrap();
-    assert_eq!(inventory, vec![baseline.commit.commit_id, commit]);
-    let frames =
-        crate::durability::log::local_store::read_segment_entries(execution, segment).unwrap();
-    assert_eq!(frames.len(), 2);
-    assert_eq!(frames[1].envelope().commit.commit_id, commit);
-    let position = frames[1].position();
-    assert!(position > frames[0].position());
-    let published_bytes = std::fs::read(segment).unwrap();
-    drop((frames, failure, baseline));
-    drop(lease);
-    // Remove only the empty directory this fixture created, beneath its verified root.
-    assert_eq!(obstruction.canonicalize().unwrap().parent().unwrap(), root);
-    std::fs::remove_dir(&obstruction).unwrap();
-    let receipt = runtime
-        .repair_deferred_publication_settlement(&settlement)
-        .unwrap();
-    assert_eq!(receipt.commit_id, commit);
-    assert_eq!(runtime.durable_log().len(), 2);
-    let repaired_store = runtime.durable_store().unwrap();
-    assert_eq!(repaired_store.segments.len(), 1);
-    assert_eq!(repaired_store.segments[0].commit_count, inventory.len());
-    assert_eq!(
-        crate::durability::log::native_file_codec::read_store_manifest_file(&manifest_path)
-            .unwrap()
-            .store
-            .segments[0]
-            .commit_count,
-        inventory.len()
-    );
-    assert_eq!(
-        runtime
-            .repair_deferred_publication_settlement(&settlement)
-            .unwrap(),
-        receipt
-    );
-    assert_eq!(runtime.durable_log().len(), 2);
-    assert_eq!(std::fs::read(segment).unwrap(), published_bytes);
-    assert_eq!(
-        crate::durability::log::native_file_codec::read_segment_inventory(segment).unwrap(),
-        inventory
-    );
-    let read_lease = test_execution_lease();
-    let read_execution = ExecutionRequest::leased(&read_lease);
-    let repaired =
-        crate::durability::log::local_store::read_segment_entries(&read_execution, segment)
-            .unwrap();
-    assert_eq!(repaired.len(), 2);
-    assert_eq!(repaired[1].position(), position);
-    assert_eq!(repaired[1].envelope().commit.commit_id, commit);
-    read_exact(&read_execution, &runtime, entity, version);
 }
 
 mod missing_dictionary;

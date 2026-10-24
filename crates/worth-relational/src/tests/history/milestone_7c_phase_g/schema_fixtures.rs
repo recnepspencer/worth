@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::sync::Arc;
 
 use crate::facade::identity::KindId;
@@ -13,8 +12,7 @@ use crate::facade::schema::{
 };
 use crate::schema::data::RelationIntegrityDeclarations;
 use crate::tests::support::{
-    entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy, DurabilityMode,
-    DurableStoreLayout, RelationalRuntimeProfile,
+    entity_field_aspect, CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeProfile,
 };
 use worth_foundational::facade::AspectKey;
 
@@ -94,17 +92,13 @@ pub(super) fn drifted_schema_registry() -> RelationalSchemaRegistry {
         .expect("drifted schema registry")
 }
 
-pub(super) fn persisted_runtime_with_registry(
+pub(super) fn durable_runtime_with_registry(
     registry: RelationalSchemaRegistry,
-    root_path: PathBuf,
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
+        .durable_medium(medium)
         .build()
 }

@@ -8,7 +8,7 @@ use crate::merge::data::{RelationalMergeProofPacket, RelationalMergeTopologyStra
 use crate::tests::support::{checkpoint_and_recover_with, create_branch_from_main, create_entity};
 
 use fixtures::{
-    deletion_row, merge_request, persisted_runtime_with_schema_declared_entity_policy, policy_row,
+    deletion_row, durable_runtime_with_schema_declared_entity_policy, merge_request, policy_row,
     published_merge_authority, runtime_with_schema_declared_entity_policy, strategy_witness,
     topology_row, update_entity_status_on_branch,
 };
@@ -209,7 +209,7 @@ fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_r
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime =
-        persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
+        durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
     let shared = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
@@ -227,7 +227,7 @@ fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_r
         .expect("executed merge");
     let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
-        persisted_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
+        durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
         published_merge_authority(&recovered, outcome.commit.commit.commit_id);

@@ -12,7 +12,7 @@ use crate::facade::schema::{
 use crate::merge::data::PreparedMergeExecution;
 use crate::tests::support::{
     aspect_key, create_branch_from_main, create_entity, entity_field_aspect, field_key,
-    string_aspect_field_patch, unique_test_store_path, DurabilityMode, DurableStoreLayout,
+    string_aspect_field_patch,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 
@@ -62,12 +62,7 @@ pub(super) fn runtime_with_schema_declared_entity_policy(persisted: bool) -> Rel
         .expect("schema registry");
     let mut builder = RelationalRuntimeApi::builder().schema_registry(registry);
     if persisted {
-        builder = builder
-            .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-            .durable_store_layout(DurableStoreLayout {
-                root_path: unique_test_store_path("worth-relational-7e-phase-l-support"),
-                segment_commit_capacity: 2,
-            });
+        builder = builder.durable_medium(crate::tests::support::TestDurableMedium::new());
     }
     builder.build()
 }

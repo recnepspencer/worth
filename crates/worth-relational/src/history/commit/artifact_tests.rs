@@ -8,7 +8,7 @@ use crate::indexes::data::{
     DerivedIndexApplicability, DerivedIndexArtifacts, DerivedIndexEntries, DerivedIndexGeneration,
     DerivedIndexGenerationId, DerivedIndexId, DerivedIndexPublicationStatus,
 };
-use crate::tests::support::{create_entity_outcome, persisted_runtime_with_test_schema};
+use crate::tests::support::{create_entity_outcome, durable_runtime_with_test_schema};
 
 #[test]
 fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
@@ -20,7 +20,7 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
     use crate::tests::support::test_execution_lease;
 
     for checked in [false, true] {
-        let runtime = persisted_runtime_with_test_schema();
+        let runtime = durable_runtime_with_test_schema();
         let committed = if checked {
             create_entity_outcome(
                 &worth_execution::ExecutionRequest::leased(&test_execution_lease()),
@@ -67,7 +67,7 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
     use worth_foundational::facade::AspectValue;
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let index = runtime.index_authority().register(DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "touch-index".into(),
@@ -104,7 +104,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "preencoded-recovery-root");
     let root = runtime
         .history
@@ -154,7 +154,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
     let mut envelope = runtime
         .replay()
@@ -250,7 +250,7 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "derived-index-allocation-basis");
     let mut envelope = runtime
         .replay()

@@ -180,17 +180,13 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
         .unwrap()
         .to_wire(execution)
         .unwrap();
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let recovery = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let recovery = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = runtime_with_test_schema();
     recovered
         .durability_recovery()

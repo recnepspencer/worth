@@ -16,7 +16,7 @@ impl CanonicalCommitWire<'_> {
     {
         if self.canonical_protocol_version != super::CANONICAL_PROTOCOL_VERSION {
             return Err(crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptSegment,
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
                 "unsupported native canonical protocol; managed text requires v6",
             )
             .into());

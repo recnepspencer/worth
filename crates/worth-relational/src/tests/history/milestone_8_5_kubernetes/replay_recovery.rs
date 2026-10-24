@@ -82,7 +82,7 @@ pub(super) fn planning_evidence(
 pub(super) fn recover_stage(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
-    root_path: std::path::PathBuf,
+    root_path: std::sync::Arc<crate::tests::support::TestDurableMedium>,
 ) -> RelationalRuntime {
     let (_recovery, recovered) =
         checkpoint_and_recover_with(execution, runtime, || persisted_strategy_runtime(root_path));
@@ -92,7 +92,7 @@ pub(super) fn recover_stage(
 pub(super) fn recover_stage_from_final_history(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: &RelationalRuntime,
-    root_path: std::path::PathBuf,
+    root_path: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     source_head: crate::history::data::RelationalCommitReceipt,
     target_head: crate::history::data::RelationalCommitReceipt,
 ) -> RelationalRuntime {
@@ -154,23 +154,11 @@ pub(super) fn recover_stage_from_final_history(
         .unwrap_or_default();
     let plan = crate::durability::data::RecoveryPlan::new(
         source.config().clone(),
-        source.durable_store().map(|store| store.as_ref().clone()),
-        None,
         checkpoint,
         tail_log
             .into_iter()
             .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
             .collect(),
-        crate::durability::data::RecoveryCursor {
-            checkpoint_id: None,
-            segment_ids: Vec::new(),
-        },
-        crate::durability::data::RecoveryIntegrityReport {
-            selected_checkpoint_id: None,
-            skipped_corrupt_checkpoints: Vec::new(),
-            verified_segment_ids: Vec::new(),
-            corrupt_segment_id: None,
-        },
         crate::durability::data::RecoveryAuthorityContinuityCheck::verified_at(
             crate::replay::data::ReplayVerificationLayer::DigestParity,
         ),

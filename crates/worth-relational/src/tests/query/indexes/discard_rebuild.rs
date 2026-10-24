@@ -19,7 +19,7 @@ struct OrderingFixture {
 
 impl OrderingFixture {
     fn new(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Self {
-        let runtime = persisted_runtime_with_index_field_aspects();
+        let runtime = durable_runtime_with_index_field_aspects();
         let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
         let alpha_one = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
         let beta = changed_entities(&create_entity_outcome(execution, &runtime, "beta"))[0];

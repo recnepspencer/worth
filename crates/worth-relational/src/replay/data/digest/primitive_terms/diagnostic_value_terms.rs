@@ -67,8 +67,8 @@ impl ReplayDigestBuilder {
             RelationalDiagnosticValue::AspectValueLocator(value) => self.tag(25).label(value),
             RelationalDiagnosticValue::DiagnosticMask(value) => self.tag(26).label(value),
             RelationalDiagnosticValue::SnapshotId(value) => self.tag(27).label(value),
-            RelationalDiagnosticValue::DurableCheckpointId(value) => self.tag(28).label(value),
-            RelationalDiagnosticValue::DurableSegmentId(value) => self.tag(29).label(value),
+            // Tags 28 and 29 named retired filesystem checkpoint and segment
+            // identifiers; they are never reassigned.
             RelationalDiagnosticValue::DerivedIndexId(value) => self.tag(30).label(value),
             RelationalDiagnosticValue::DerivedIndexGenerationId(value) => self.tag(31).label(value),
             RelationalDiagnosticValue::CorrespondenceCandidateId(value) => self.tag(32).u64(*value),

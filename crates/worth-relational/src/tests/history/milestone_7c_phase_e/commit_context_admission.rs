@@ -2,7 +2,7 @@ use crate::facade::history::BranchId;
 use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
 use crate::tests::support::{
     create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 #[test]
@@ -10,7 +10,7 @@ fn merge_commit_context_rejects_mismatched_parent_branch_metadata() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

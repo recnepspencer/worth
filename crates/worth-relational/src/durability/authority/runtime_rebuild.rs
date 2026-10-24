@@ -13,7 +13,7 @@ mod root_inventory;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use crate::durability::data::{DurabilityError, DurabilityMode};
+use crate::durability::data::DurabilityError;
 use crate::runtime::RelationalRuntime;
 
 use checkpoint_restore::{
@@ -63,12 +63,9 @@ pub(super) fn rebuild_runtime_from_plan(
     validate_tail_lineage_allocator_capacity(tail_envelopes.iter().copied())?;
     validate_recovered_lineage_artifacts(plan.checkpoint.as_ref(), tail_envelopes.iter().copied())?;
     drop(tail_envelopes);
-    let original_durability_mode = plan.config.durability.policy.mode;
+    // The rebuilt runtime has no durable medium until recovery binds one after
+    // replay, so replaying history never republishes it.
     let mut restored = RelationalRuntime::new(plan.config.clone());
-    // Replay runs against the in-memory canonical log. The configured mode is
-    // put back when the rebuilt runtime is finalized.
-    restored.set_durability_mode(DurabilityMode::InMemoryCanonical);
-    restored.durability.set_store(None);
     unshared_state(&mut restored)?.commit_strategies.executors =
         plan.commit_strategy_executors.clone();
 
@@ -154,7 +151,7 @@ pub(super) fn rebuild_runtime_from_plan(
     refresh_checkpoint_counters(&mut restored)?;
     restored.durability.set_log(finalized_tail);
 
-    finalize_restored_runtime(execution, &mut restored, original_durability_mode)?;
+    finalize_restored_runtime(execution, &mut restored)?;
     recovered_roots.finish();
     Ok((restored, plan, checkpoint_work))
 }

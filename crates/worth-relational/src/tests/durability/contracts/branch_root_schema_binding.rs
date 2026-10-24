@@ -5,7 +5,7 @@ fn branch_roots_with_one_schema_deduplicate_the_durable_carrier() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let created = create_entity_outcome(execution, &runtime, "schema-carrier-deduplication");
     let entity = changed_entities(&created)[0];
     create_branch_from_main(&runtime, "feature");
@@ -17,9 +17,7 @@ fn branch_roots_with_one_schema_deduplicate_the_durable_carrier() {
         BranchId("feature".to_owned()),
     );
 
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
+    let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("production checkpoint succeeds");
 
     assert!(checkpoint.branch_roots.len() >= 2);
@@ -62,7 +60,7 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime =
-        persisted_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity_outcome(execution, &runtime, "schema-v1");
     create_branch_from_main(&runtime, "legacy");
     runtime.set_schema_registry_for_test(
@@ -100,17 +98,14 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
     transaction
         .commit(execution, &runtime)
         .expect("schema transition commits");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("production checkpoint succeeds");
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let checkpoint = plan.checkpoint.as_mut().expect("checkpoint exists");
     assert_eq!(checkpoint.branch_root_schema_images.len(), 2);
     let replacement = checkpoint.branch_roots[1].schema_carrier_digest;
@@ -156,19 +151,16 @@ fn checkpoint_plan_with_one_root(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
 ) -> RecoveryPlan {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, label);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("production checkpoint succeeds");
-    runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap()
+    crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap()
 }
 
 fn assert_corrupt_schema_recovery(
@@ -190,7 +182,7 @@ fn assert_schema_recovery_denial(
     expected_class: RecoveryFailureClass,
     expected_detail: &str,
 ) {
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

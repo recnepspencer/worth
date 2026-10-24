@@ -49,7 +49,7 @@ impl<'runtime> DurabilityRecoveryAuthority<'runtime> {
     ) -> Result<RuntimeRecoveryOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
         let native_bytes_read = checkpoint.bytes().len();
-        let checkpoint = crate::durability::log::native_file_codec::decode_checkpoint(
+        let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
             execution,
             checkpoint.bytes(),
         )?
@@ -188,7 +188,7 @@ fn publish_recovered_runtime(
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes.len())
         .unwrap_or(0);
-    restored.durability.set_store(plan.store.clone());
+    let checkpoint_covered_position = plan.checkpoint_covered_position();
     record_recovery_verification_counters(&restored, &plan.authority_continuity);
     restored.publication_authority().push_bounded_diagnostic(
         DiagnosticsScope::History,
@@ -199,24 +199,20 @@ fn publish_recovered_runtime(
         DiagnosticsScope::History,
         DiagnosticsArtifactKind::MinimalSummary,
         vec![
-            recovery_checkpoint_selected(
-                plan.cursor.checkpoint_id,
-                &plan.integrity_report.skipped_corrupt_checkpoints,
-            ),
-            recovery_range_replayed(&plan.cursor.segment_ids, tail_commits),
+            recovery_checkpoint_selected(checkpoint_covered_position),
+            recovery_range_replayed(tail_commits),
         ],
     );
     let outcome = RuntimeRecoveryOutcome {
         recovered_commits: restored.history.recorded_commit_envelope_count(),
         latest_commit: restored.history().latest_commit(),
         restored_branches: restored.history.branch_count(),
-        cursor: plan.cursor,
         coverage: RecoveryCoverage {
+            checkpoint_covered_position,
             checkpoint_commits,
             replayed_tail_commits: tail_commits,
             recovered_through_commit: restored.history().latest_commit(),
         },
-        integrity_report: plan.integrity_report,
         checkpoint_restore_work,
     };
     *runtime = restored;
@@ -231,9 +227,6 @@ impl RelationalRuntime {
     ) -> Result<RelationalRuntime, RelationalRecoveryStop> {
         let admitted =
             admission::admit_recovery(self, plan).map_err(|rejection| rejection.into_error())?;
-        rebuild_runtime_from_plan(execution, admitted).map(|(restored, plan, _)| {
-            restored.durability.set_store(plan.store);
-            restored
-        })
+        rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _)| restored)
     }
 }

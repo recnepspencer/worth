@@ -2,7 +2,7 @@ use crate::facade::history::{BranchId, CommitId};
 use crate::facade::merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent};
 use crate::tests::support::{
     create_branch_from_main, create_entity_outcome, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 pub(super) fn execute_feature_into_main_merge(
@@ -13,7 +13,7 @@ pub(super) fn execute_feature_into_main_merge(
     CommitId,
     CommitId,
 ) {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     let feature_head = create_entity_outcome_on_branch(

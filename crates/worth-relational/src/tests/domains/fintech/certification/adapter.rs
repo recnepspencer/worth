@@ -278,11 +278,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
         let host_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         session.checkpoints.push(checkpoint.checkpoint_name.clone());
-        session
-            .world
-            .runtime
-            .durability_authority()
-            .checkpoint(execution)
+        crate::tests::support::checkpoint_durably(execution, &session.world.runtime)
             .map(|_| ())
             .map_err(|error| error.to_string())
     }

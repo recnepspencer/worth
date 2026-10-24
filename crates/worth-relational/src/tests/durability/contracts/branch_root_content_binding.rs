@@ -98,20 +98,17 @@ fn tail_rejects_same_commit_root_descriptor_substitution() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "tail-descriptor-checkpoint");
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("production checkpoint succeeds");
     let tail_commit = create_entity_outcome(execution, &runtime, "tail-descriptor-commit");
-    let mut plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let mut plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let checkpoint = plan
         .tail_log
         .iter_mut()
@@ -138,18 +135,17 @@ fn tail_replay_reconstructs_the_owner_content_root() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "tail-content-root-parity");
     let expected = current_main_descriptor(&runtime);
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
 
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, plan)
@@ -179,19 +175,16 @@ fn checkpoint_recovery_plan(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
 ) -> RecoveryPlan {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, label);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("production checkpoint succeeds");
-    runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap()
+    crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap()
 }
 
 fn selected_root_image(
@@ -307,7 +300,7 @@ fn corrupt_recovery_error(
     plan: RecoveryPlan,
     detail: &str,
 ) -> crate::durability::data::DurabilityError {
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
     let initial_cells = recovered.history.branch_cells_snapshot();
     assert!(initial_cells
         .iter()

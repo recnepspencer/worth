@@ -21,14 +21,11 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     for name in ["a", "b", "c", "d", "e", "f"] {
         let _ = create_entity_outcome(execution, &runtime, name);
         if ["b", "d"].contains(&name) {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .unwrap();
+            crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
         }
     }
 
@@ -62,11 +59,13 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
     );
     assert_eq!(durable_mid_stitched, expected_mid);
 
-    let recovery_plan = runtime
-        .durability()
-        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-        .unwrap();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let recovery_plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryMode::NormalRecoveryVerification,
+    )
+    .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)
@@ -103,11 +102,12 @@ fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_
             &full_from_head,
         );
 
-        let recovery_plan = world
-            .runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
+        let recovery_plan = crate::tests::support::recovery_plan_for(
+            execution,
+            &world.runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
+        .unwrap();
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
         recovered
             .durability_recovery()

@@ -1,5 +1,5 @@
 use super::*;
-use crate::facade::durability::{DurabilityMode, DurableStoreLayout, RecoveryVerificationMode};
+use crate::facade::durability::RecoveryVerificationMode;
 use crate::facade::indexes::{
     BoundedIndexParityMode, BoundedRelatedEntityOrderedLookupRequest, RelatedEntityEndpoint,
     RelatedEntityOrderingDirection, RelatedEntityOrderingField,
@@ -85,14 +85,10 @@ fn v1_ordering_runtime(
         CascadeDeletePolicy::CascadeDeleteRelations,
     )
     .build_registry();
-    let store_layout = DurableStoreLayout {
-        root_path: unique_test_store_path("related-ordering-schema-carrier"),
-        segment_commit_capacity: 2,
-    };
+    let medium = TestDurableMedium::new();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(v1_registry)
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(store_layout)
+        .durable_medium(medium)
         .build();
     let parent = changed_entities(&create_entity_outcome(execution, &runtime, "parent"))[0];
     let alpha = changed_entities(&create_entity_outcome(execution, &runtime, "alpha"))[0];
@@ -176,17 +172,14 @@ fn transition_checkpoint_and_recover(
     );
     assert!(v2_build.failed_indexes.is_empty());
 
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
+    crate::tests::support::checkpoint_durably(execution, &runtime)
         .expect("checkpoint preserves both schema-qualified generations");
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(v2_registry)
         .build();

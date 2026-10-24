@@ -29,7 +29,7 @@ pub(super) fn validate_recovered_lineage_artifacts<'a>(
         let mut previous_created_lineage_id = Some(crate::identity::data::LineageId(0));
         validate_envelope_lineage(
             envelope,
-            RecoveryFailureClass::CorruptSegment,
+            RecoveryFailureClass::CorruptCanonicalArtifact,
             &mut seen_event_ids,
             &mut seen_created_lineage_ids,
             &mut previous_event_id,
