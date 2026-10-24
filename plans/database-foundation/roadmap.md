@@ -74,9 +74,11 @@ correct.
   narrows what a run can claim; it does not replace the filesystem lane.
 - Generate seeded, reproducible operation sequences alongside the fixed
   journeys. A failing seed must reproduce deterministically.
-- Interruption controls follow the repository's control rules: `cfg(test)`
-  hooks or sealed owned handles, never Cargo features. They must not change
-  production semantics or composition.
+- Interruption controls follow the owning workspace's control rules and add no
+  new Cargo features. Outside Store they are `cfg(test)` hooks or sealed owned
+  handles; Store uses its existing certification fault authority under its
+  one-build exemption. They must not change production semantics or
+  composition.
 - Run cheap seeds in focused lanes and broad campaigns in scheduled lanes with
   stated resource budgets. The harness is ordinary test infrastructure, not a
   proof ledger.
@@ -86,6 +88,8 @@ correct.
 Store can durably publish and recover a complete semantic commit. This is the
 durability boundary consumed by Relational, rather than an application result
 or a replacement for semantic transaction validation.
+
+Specification: [Milestone 1](milestone-1.md).
 
 ### Requirements
 
