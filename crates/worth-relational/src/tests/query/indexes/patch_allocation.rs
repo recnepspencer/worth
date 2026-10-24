@@ -68,8 +68,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         ),
         PATCH_BYTES
     );
-    // The singleton scan also holds 320 framework bytes on this lease.
-    const FRAMEWORK_BYTES: u64 = 320;
+    // The singleton scan also holds 384 framework bytes on this lease.
+    const FRAMEWORK_BYTES: u64 = 384;
     for memory in [PATCH_BYTES + FRAMEWORK_BYTES - 1, MEMORY] {
         let lease = test_execution_authority()
             .request_lease(LeaseRequest {
