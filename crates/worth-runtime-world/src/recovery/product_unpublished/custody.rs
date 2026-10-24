@@ -91,34 +91,6 @@ impl ProductUnpublishedOwnerEffectsRecord {
         ));
     }
 
-    pub(crate) fn retain_pending_relational_settlement(
-        &mut self,
-        mut state: RelationalRecoveryRecordState,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    ) {
-        self.progress = state.pending_progress(settlement.clone());
-        self.component_results = state
-            .component_results
-            .take()
-            .expect("recovery result projection remains while settlement is pending")
-            .with_relational_settlement_pending(
-                state.commit_identity.clone(),
-                state.successor_basis.clone(),
-                settlement,
-            );
-        state.route = None;
-        let next_actions = super::next_actions_for_progress(&self.progress, self.cause);
-        // This record owes settlement: `recovery_continuation` reaches these
-        // transitions only for a record whose Relational leg requires it, so
-        // the derived continuation names settlement first.
-        debug_assert_eq!(
-            next_actions.first(),
-            Some(&ProductUnpublishedNextAction::SettleOwnerEffects),
-            "a retained record that owes settlement names settlement first"
-        );
-        self.next_actions = super::RetainedNextActions::from_vec(next_actions);
-    }
-
     pub(crate) fn retain_identity_repair(&mut self, mut state: RelationalRecoveryRecordState) {
         self.progress = state.identity_required_progress();
         self.component_results = state

@@ -27,20 +27,8 @@ pub(crate) struct PerformedRelationalSettlement {
     pub(crate) late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
 }
 
-/// Settlement whose derived completion already ran and whose only missing step
-/// is the exact durable append.
-///
-/// `snapshot_closeout` is the runtime's sole obligation for this deferral. The
-/// external carrier this record exposes is a view of the record, so it may not
-/// hold a second copy of the obligation.
-pub(crate) struct DeferredRelationalSettlement {
-    pub(crate) positioned: Arc<PositionedCanonicalCommit>,
-    pub(crate) performed_result: Arc<CommitResult>,
-    pub(crate) snapshot_closeout: crate::runtime::PublishedSnapshotCloseout,
-}
-
 /// The one terminal answer for a settled commit identity. Every later caller
-/// reads this instead of repeating a durable or derived effect.
+/// reads this instead of repeating a derived effect.
 ///
 /// `result` is retained only when the executor was not the natural owner of the
 /// commit result, which is exactly the repair case. Immediate settlement hands
@@ -59,20 +47,15 @@ pub(crate) struct SettledRelationalSettlement {
 enum PendingRelationalSettlementState {
     Reserved(Box<ReservedRelationalSettlement>),
     Performed(Box<PerformedRelationalSettlement>),
-    DurabilityDeferred(Box<DeferredRelationalSettlement>),
     Executing,
     Settled(Box<SettledRelationalSettlement>),
-    /// The derived completion consumed its single-use inputs and then failed.
-    /// The route cannot be replayed, so repair reports this as a typed
-    /// unavailability rather than pretending work remains claimable.
-    Unrecoverable,
 }
 
 /// One runtime-owned pending publication settlement, keyed by the candidate's
 /// owner-issued commit identity.
 ///
-/// `execution_gate` is the single-executor gate shared by immediate settlement,
-/// deferred-carrier repair, and commit-identity repair. It is per-commit and is
+/// `execution_gate` is the single-executor gate shared by immediate settlement
+/// and commit-identity repair. It is per-commit and is
 /// deliberately not the registry index lock, which never spans an effect.
 pub(crate) struct PendingRelationalPublicationSettlement {
     commit_id: CommitId,
@@ -85,10 +68,8 @@ pub(crate) struct PendingRelationalPublicationSettlement {
 /// What the single executor is authorized to do for one claim.
 pub(crate) enum RelationalSettlementClaim {
     Immediate(Box<PerformedRelationalSettlement>),
-    DurabilityRepair(Box<DeferredRelationalSettlement>),
     AlreadySettled(Box<SettledRelationalSettlement>),
     NotYetPerformed,
-    Unrecoverable,
 }
 
 /// Proof that its holder is the one executor for this exact record.
@@ -128,7 +109,7 @@ impl PendingRelationalPublicationSettlement {
     }
 
     /// Enter the single-executor gate. Concurrent immediate settlement and
-    /// repair converge here instead of repeating durability or derived work.
+    /// repair converge here instead of repeating derived work.
     pub(crate) fn enter_execution(&self) -> RelationalSettlementExecution<'_> {
         RelationalSettlementExecution {
             _gate: self
@@ -183,9 +164,6 @@ impl PendingRelationalPublicationSettlement {
             PendingRelationalSettlementState::Performed(performed) => {
                 RelationalSettlementClaim::Immediate(performed)
             }
-            PendingRelationalSettlementState::DurabilityDeferred(deferred) => {
-                RelationalSettlementClaim::DurabilityRepair(deferred)
-            }
             PendingRelationalSettlementState::Settled(mut settled) => {
                 // The terminal answer stays; the one commit result and its
                 // published-snapshot closeout transfer to this single claimant.
@@ -196,10 +174,6 @@ impl PendingRelationalPublicationSettlement {
                 };
                 *state = PendingRelationalSettlementState::Settled(settled);
                 RelationalSettlementClaim::AlreadySettled(Box::new(claimed))
-            }
-            PendingRelationalSettlementState::Unrecoverable => {
-                *state = PendingRelationalSettlementState::Unrecoverable;
-                RelationalSettlementClaim::Unrecoverable
             }
             PendingRelationalSettlementState::Executing => {
                 unreachable!("the executor gate excludes a second in-flight claim")
@@ -223,22 +197,6 @@ impl PendingRelationalPublicationSettlement {
             }));
     }
 
-    /// The derived completion failed after consuming its single-use inputs.
-    pub(crate) fn record_unrecoverable(&self) {
-        *self.state() = PendingRelationalSettlementState::Unrecoverable;
-    }
-
-    /// Durability failed after the derived completion ran. The record is
-    /// retained so repair stays addressable by commit identity alone.
-    pub(crate) fn record_durability_deferred(&self, deferred: DeferredRelationalSettlement) {
-        *self.state() = PendingRelationalSettlementState::DurabilityDeferred(Box::new(deferred));
-    }
-
-    /// Return unclaimed work when the executor stopped before any effect.
-    pub(crate) fn restore_deferred(&self, deferred: Box<DeferredRelationalSettlement>) {
-        *self.state() = PendingRelationalSettlementState::DurabilityDeferred(deferred);
-    }
-
     /// Dropping `PerformedRelationalCommit` records abandonment only. It may
     /// not release the obligation, mark the route settled, remove this record,
     /// or make repair unavailable.
@@ -249,34 +207,6 @@ impl PendingRelationalPublicationSettlement {
     #[cfg(test)]
     pub(crate) fn abandoned_capability_count(&self) -> u64 {
         self.abandoned_capabilities.load(Ordering::Relaxed)
-    }
-
-    /// The accepted external carrier for a durability-deferred settlement.
-    /// It is a view of this record, never a second registry.
-    pub(crate) fn deferred_carrier(
-        &self,
-    ) -> Option<crate::publication::data::DeferredPublicationSettlement> {
-        match &*self.state() {
-            PendingRelationalSettlementState::DurabilityDeferred(deferred) => Some(
-                crate::publication::data::DeferredPublicationSettlement::new(
-                    self.runtime_instance_id,
-                    Arc::clone(&deferred.positioned),
-                    deferred.performed_result.as_ref().clone(),
-                ),
-            ),
-            _ => None,
-        }
-    }
-
-    /// Exact route retained by a durability-deferred record, so a presented
-    /// carrier can be checked against it before any repair effect.
-    pub(crate) fn deferred_route(&self) -> Option<Arc<PositionedCanonicalCommit>> {
-        match &*self.state() {
-            PendingRelationalSettlementState::DurabilityDeferred(deferred) => {
-                Some(Arc::clone(&deferred.positioned))
-            }
-            _ => None,
-        }
     }
 }
 

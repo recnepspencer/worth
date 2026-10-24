@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::durability::data::{DurabilityError, DurableCheckpoint};
+use crate::durability::data::DurableCheckpoint;
 use crate::history::data::PositionedCanonicalCommit;
 use crate::runtime::RelationalRuntime;
 
@@ -18,23 +18,5 @@ impl DurabilityRead for RelationalRuntime {
 
     fn durable_log(&self) -> Vec<Arc<PositionedCanonicalCommit>> {
         self.durability.log()
-    }
-}
-
-pub(crate) trait DurabilityWrite {
-    fn append_durable_envelope(
-        &self,
-        authority: crate::durability::authority::DurableAppendAuthority,
-        commit: &PositionedCanonicalCommit,
-    ) -> Result<(), DurabilityError>;
-}
-
-impl DurabilityWrite for RelationalRuntime {
-    fn append_durable_envelope(
-        &self,
-        authority: crate::durability::authority::DurableAppendAuthority,
-        commit: &PositionedCanonicalCommit,
-    ) -> Result<(), DurabilityError> {
-        self.durability_authority().append_commit(authority, commit)
     }
 }

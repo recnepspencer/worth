@@ -2,9 +2,8 @@ pub(crate) use authority::{AdmittedRecoveredCodecPublication, RecoveredCodecPubl
 pub mod access;
 pub mod authority;
 pub use authority::{
-    DeferredRecoveredCheckpointTransition, RecoveredCheckpointTransition,
-    RecoveredCheckpointTransitionDenial, RecoveredCheckpointTransitionError,
-    RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
+    RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
+    RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
 };
 pub(crate) mod canonical_commit_artifact;

@@ -86,17 +86,12 @@ where
                         successor_basis,
                         result,
                     )),
-                    Err(error) => Ok(match error.deferred_settlement() {
-                        Some(settlement) => RelationalAttemptProgress::settlement_pending(
-                            commit_identity,
-                            successor_basis,
-                            settlement.clone(),
-                        ),
-                        None => RelationalAttemptProgress::settlement_required(
-                            commit_identity,
-                            successor_basis,
-                        ),
-                    }),
+                    // The commit is durable and live; only settlement stopped,
+                    // so the owner-issued identity names its repair.
+                    Err(_) => Ok(RelationalAttemptProgress::settlement_required(
+                        commit_identity,
+                        successor_basis,
+                    )),
                 }
             }
             RelationalPublicationOutcome::Stale(_) => {
@@ -116,6 +111,9 @@ where
             | RelationalPublicationOutcome::Failed(_) => {
                 Err(pre_effect_failure(NoEffectCause::PreEffectFailure))
             }
+            RelationalPublicationOutcome::DurabilityUnresolved(unresolved) => {
+                Err(durability_unresolved(unresolved))
+            }
         }
     }
 }
@@ -125,6 +123,19 @@ fn pre_effect_failure(no_effect: NoEffectCause) -> RelationalExecutionFailure {
         cause: ProductUnpublishedCause::SiblingOwnerDenied,
         no_effect,
         partial: RelationalAttemptProgress::untouched(),
+    }
+}
+
+/// The medium may have made the commit durable, so the attempt keeps it as an
+/// owner effect. Nothing was installed live and the Relational owner refuses
+/// every later publication until it is reopened, which is what resolves it.
+fn durability_unresolved(
+    unresolved: worth_relational::facade::durability::RelationalDurabilityUnresolved,
+) -> RelationalExecutionFailure {
+    RelationalExecutionFailure {
+        cause: ProductUnpublishedCause::RelationalDurabilityUnresolved,
+        no_effect: NoEffectCause::PreEffectFailure,
+        partial: RelationalAttemptProgress::durability_unresolved(unresolved),
     }
 }
 

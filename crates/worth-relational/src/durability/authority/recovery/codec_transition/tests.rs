@@ -6,7 +6,6 @@ mod fixture;
 mod output_correspondence;
 mod publication_custody;
 mod related;
-mod settlement;
 mod source_head_admission;
 use crate::durability::authority::{
     RecoveredCheckpointTransitionError, RecoveredRelationalRuntimeAuthority,

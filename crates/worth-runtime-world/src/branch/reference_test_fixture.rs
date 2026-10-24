@@ -55,14 +55,22 @@ pub(crate) struct RealReferenceFixture {
     _correspondence_port: worth_runtime_bridge::facade::RuntimeWorldCorrespondencePort,
 }
 
-impl RealReferenceFixture {
-    pub(crate) fn fail_next_relational_durable_append(&self) {
-        self._relational_runtime.fail_next_durable_append_for_test();
-    }
+pub(crate) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealReferenceFixture {
+    real_fixture_with_relational_runtime(
+        RelationalRuntimeApi::builder().build(),
+        unique_pin_limit,
+        reservation_limit,
+    )
 }
 
-pub(crate) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealReferenceFixture {
-    let relational_runtime = Arc::new(RelationalRuntimeApi::builder().build());
+/// The same reference world over a Relational owner the caller built, such as
+/// one publishing to a scripted durable medium.
+pub(crate) fn real_fixture_with_relational_runtime(
+    relational_runtime: worth_relational::facade::runtime::RelationalRuntime,
+    unique_pin_limit: u64,
+    reservation_limit: u64,
+) -> RealReferenceFixture {
+    let relational_runtime = Arc::new(relational_runtime);
     let relational_port = relational_runtime.owner_component_services().basis_port();
     let relational_identity = relational_runtime.main_branch_identity();
     let (_, relational) = relational_runtime

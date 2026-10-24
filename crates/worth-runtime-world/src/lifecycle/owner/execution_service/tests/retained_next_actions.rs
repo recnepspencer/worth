@@ -9,10 +9,10 @@
 //! (`assert_finalization_record_contract`), and a minted record advertising a
 //! settled publication is proved by
 //! `missing_signal_sibling_after_relational_movement_retains_exact_progress` in
-//! `failures.rs`. `SettlementPending` is not reachable from this crate at all:
-//! `DeferredPublicationSettlement::new` is `pub(crate)` to `worth-relational`.
-//! It drives the same `requires_settlement()` predicate as the `Performed` and
-//! `SettlementRequired` shapes proved below.
+//! `failures.rs`. The `DurabilityUnresolved` shape is proved against a real
+//! unresolved medium answer by
+//! `unresolved_relational_durability_retains_a_possible_effect` in
+//! `durability_unresolved.rs`.
 
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::history::RelationalCommitIdentity;
@@ -110,7 +110,7 @@ const LIVE_OWNER_CAUSE: ProductUnpublishedCause = ProductUnpublishedCause::Sibli
 
 /// Every cause a retained record can carry, so the cause axis is proved total
 /// rather than sampled.
-const EVERY_CAUSE: [ProductUnpublishedCause; 7] = [
+const EVERY_CAUSE: [ProductUnpublishedCause; 8] = [
     ProductUnpublishedCause::SiblingOwnerDenied,
     ProductUnpublishedCause::SettlementPending,
     ProductUnpublishedCause::CancellationAfterEffect,
@@ -118,6 +118,7 @@ const EVERY_CAUSE: [ProductUnpublishedCause; 7] = [
     ProductUnpublishedCause::StaleProductHead,
     ProductUnpublishedCause::OwnerLost,
     ProductUnpublishedCause::ProductPublicationLost,
+    ProductUnpublishedCause::RelationalDurabilityUnresolved,
 ];
 
 fn assert_derives(progress: &CompositeAttemptProgress, expected: &[ProductUnpublishedNextAction]) {
@@ -254,8 +255,12 @@ fn assert_cause_axis(progress: &CompositeAttemptProgress) {
             .count();
         assert_eq!(
             closures,
-            usize::from(cause == ProductUnpublishedCause::OwnerLost),
-            "{cause:?} permits closing the owner exactly when the owner is lost"
+            usize::from(matches!(
+                cause,
+                ProductUnpublishedCause::OwnerLost
+                    | ProductUnpublishedCause::RelationalDurabilityUnresolved
+            )),
+            "{cause:?} permits closing the owner exactly when the owner must be reopened"
         );
         assert!(
             actions.len() <= RETAINED_NEXT_ACTION_BOUND,

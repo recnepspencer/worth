@@ -69,12 +69,6 @@ pub enum TransactionCommitError {
         context: ErrorContext,
         commit_log: CommitLog,
     },
-    #[serde(skip)]
-    PerformedButDurabilityDeferred {
-        settlement: crate::publication::data::DeferredPublicationSettlement,
-        error: PublicationError,
-        commit_log: CommitLog,
-    },
 }
 
 impl TransactionCommitError {
@@ -166,25 +160,6 @@ impl TransactionCommitError {
         }
     }
 
-    pub(crate) fn performed_but_durability_deferred(
-        settlement: crate::publication::data::DeferredPublicationSettlement,
-        cause: Self,
-    ) -> Self {
-        let commit_log = cause.commit_log().clone();
-        let error = match cause {
-            Self::Publication { error, .. } => error,
-            other => PublicationError::new(
-                crate::publication::bundle::PublicationStage::DurableAppend,
-                other.detail(),
-            ),
-        };
-        Self::PerformedButDurabilityDeferred {
-            settlement,
-            error,
-            commit_log,
-        }
-    }
-
     pub fn with_commit_log(self, commit_log: CommitLog) -> Self {
         match self {
             Self::Conflict { error, .. } => Self::Conflict { error, commit_log },
@@ -236,13 +211,6 @@ impl TransactionCommitError {
                 context,
                 commit_log,
             },
-            Self::PerformedButDurabilityDeferred {
-                settlement, error, ..
-            } => Self::PerformedButDurabilityDeferred {
-                settlement,
-                error,
-                commit_log,
-            },
         }
     }
 
@@ -257,7 +225,6 @@ impl TransactionCommitError {
             | Self::PublicationDeferred { context, .. }
             | Self::PublicationFailed { context, .. }
             | Self::DurabilityUnresolved { context, .. } => context,
-            Self::PerformedButDurabilityDeferred { error, .. } => &error.context,
         }
     }
 
@@ -289,7 +256,6 @@ impl TransactionCommitError {
                 unresolved.position().0,
                 unresolved.detail()
             ),
-            Self::PerformedButDurabilityDeferred { error, .. } => error.detail.clone(),
         }
     }
 
@@ -304,14 +270,6 @@ impl TransactionCommitError {
             | Self::PublicationDeferred { commit_log, .. }
             | Self::PublicationFailed { commit_log, .. }
             | Self::DurabilityUnresolved { commit_log, .. } => commit_log,
-            Self::PerformedButDurabilityDeferred { commit_log, .. } => commit_log,
-        }
-    }
-
-    pub fn performed_commit(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
-        match self {
-            Self::PerformedButDurabilityDeferred { settlement, .. } => Some(settlement.commit()),
-            _ => None,
         }
     }
 
@@ -321,15 +279,6 @@ impl TransactionCommitError {
     ) -> Option<&crate::durability::medium::RelationalDurabilityUnresolved> {
         match self {
             Self::DurabilityUnresolved { unresolved, .. } => Some(unresolved),
-            _ => None,
-        }
-    }
-
-    pub fn deferred_settlement(
-        &self,
-    ) -> Option<&crate::publication::data::DeferredPublicationSettlement> {
-        match self {
-            Self::PerformedButDurabilityDeferred { settlement, .. } => Some(settlement),
             _ => None,
         }
     }

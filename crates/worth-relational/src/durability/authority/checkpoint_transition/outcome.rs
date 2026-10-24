@@ -1,8 +1,7 @@
-//! Linear outcomes and repair custody for recovered checkpoint transitions.
+//! Linear outcomes for recovered checkpoint transitions.
 use crate::branch::RelationalBranchBasisDescriptor;
 use crate::history::data::RelationalCommitReceipt;
 use crate::mvcc::RelationalPublicationOutcome;
-use crate::publication::data::DeferredPublicationSettlementError;
 use crate::transactions::data::TransactionCommitError;
 
 use super::super::RecoveredRelationalRuntimeAuthority;
@@ -65,54 +64,10 @@ impl RefusedRecoveredCheckpointTransition {
     }
 }
 
-/// Native publication performed, but durability did not acknowledge it. This
-/// linear value retains the original recovery authority and exact successor
-/// alongside the existing owner-held settlement route. It grants no successor
-/// authority until the recovery owner repairs that route.
-///
-/// Deferred performance has no acknowledged successor to extract:
-/// ```compile_fail
-/// use worth_relational::facade::durability::DeferredRecoveredCheckpointTransition;
-/// fn install_before_acknowledgment(transition: DeferredRecoveredCheckpointTransition) {
-///     let (_receipt, successor_authority) = transition.into_parts();
-/// }
-/// ```
-#[derive(Debug)]
-#[must_use = "repair the performed transition before recovered installation"]
-pub struct DeferredRecoveredCheckpointTransition {
-    pub(super) recovered: RecoveredRelationalRuntimeAuthority,
-    pub(super) successor: RelationalBranchBasisDescriptor,
-    pub(super) cause: TransactionCommitError,
-}
-
-impl DeferredRecoveredCheckpointTransition {
-    pub fn cause(&self) -> &TransactionCommitError {
-        &self.cause
-    }
-}
-
 #[derive(Debug)]
 pub enum RecoveredCheckpointTransitionError {
     Refused(Box<RefusedRecoveredCheckpointTransition>),
-    DurabilityDeferred(Box<DeferredRecoveredCheckpointTransition>),
-    /// Native settlement stopped without a recoverable durability route. No
-    /// successor authority was issued; the native error retains its posture.
+    /// Native settlement refused the performed witness. No successor authority
+    /// was issued; the native error retains its posture.
     SettlementFailed(Box<TransactionCommitError>),
-}
-
-/// Repair stopped; the same linear transition remains available for retry.
-#[derive(Debug)]
-pub struct RecoveredCheckpointTransitionRepairError {
-    pub(super) transition: Box<DeferredRecoveredCheckpointTransition>,
-    pub(super) cause: DeferredPublicationSettlementError,
-}
-
-impl RecoveredCheckpointTransitionRepairError {
-    pub fn cause(&self) -> &DeferredPublicationSettlementError {
-        &self.cause
-    }
-
-    pub fn into_transition(self) -> DeferredRecoveredCheckpointTransition {
-        *self.transition
-    }
 }

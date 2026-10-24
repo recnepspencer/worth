@@ -35,10 +35,9 @@ pub(crate) use publication_lifecycle::{
     RelationalCandidateRegistrationDenial, RelationalRuntimePublicationBinding,
 };
 pub(crate) use publication_settlement_registry::{
-    DeferredRelationalSettlement, PendingRelationalPublicationSettlement,
-    PerformedRelationalSettlement, RelationalPendingSettlementReservation,
-    RelationalPublicationSettlementRegistry, RelationalSettlementClaim,
-    RelationalSettlementReservationDenial, ReservedRelationalSettlement,
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
+    RelationalPendingSettlementReservation, RelationalPublicationSettlementRegistry,
+    RelationalSettlementClaim, RelationalSettlementReservationDenial, ReservedRelationalSettlement,
 };
 pub(in crate::runtime) use tenure::RelationalRuntimeTenure;
 

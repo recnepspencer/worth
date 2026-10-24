@@ -1,5 +1,5 @@
 use crate::authority::commit::phases::schema_continuity::validate_schema_continuity_publication;
-use crate::capabilities::{DiagnosticArtifactSink, DurabilityWrite, PublicationPolicySource};
+use crate::capabilities::{DiagnosticArtifactSink, PublicationPolicySource};
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsScope, RelationalDiagnosticFields, RelationalDiagnosticValue,
 };
@@ -114,28 +114,6 @@ pub(crate) fn canonical_commit_envelope(
     Ok(envelope)
 }
 
-pub(crate) fn append_durable_commit(
-    runtime: &(impl DiagnosticArtifactSink + DurabilityWrite),
-    append_authority: crate::durability::authority::DurableAppendAuthority,
-    positioned_commit: &crate::history::data::PositionedCanonicalCommit,
-) -> Result<(), TransactionCommitError> {
-    let commit_id = append_authority.commit_id();
-    let branch_id = append_authority.branch_id().clone();
-    if let Err(error) = runtime.append_durable_envelope(append_authority, positioned_commit) {
-        runtime.emit_failure_diagnostic(
-            DiagnosticsScope::History,
-            DiagnosticCode::DurableAppendFailed,
-            error.detail.clone(),
-            durable_append_failure_fields(commit_id, &branch_id),
-        );
-        return Err(TransactionCommitError::publication(PublicationError::new(
-            PublicationStage::DurableAppend,
-            error.detail,
-        )));
-    }
-    Ok(())
-}
-
 pub(crate) fn canonicalize_changed_records(records: &mut Vec<RecordRef>) {
     records.sort_unstable();
     records.dedup();
@@ -170,23 +148,6 @@ fn lineage_branch_scope_mismatch_fields(
         (
             "artifact_branch_id",
             RelationalDiagnosticValue::string(artifact_branch.0.clone()),
-        ),
-    ])
-    .into()
-}
-
-fn durable_append_failure_fields(
-    commit_id: CommitId,
-    branch_id: &BranchId,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "commit_id",
-            RelationalDiagnosticValue::Unsigned(commit_id.0),
-        ),
-        (
-            "branch_id",
-            RelationalDiagnosticValue::string(branch_id.0.clone()),
         ),
     ])
     .into()

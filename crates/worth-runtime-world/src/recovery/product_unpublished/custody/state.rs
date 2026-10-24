@@ -12,27 +12,10 @@ pub(super) enum RelationalRecoveryRecordRoute {
     Performed {
         performed: worth_relational::facade::mvcc::PerformedRelationalCommit,
     },
-    SettlementPending {
-        commit_identity: worth_relational::facade::history::RelationalCommitIdentity,
-        successor_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    },
     IdentityRequired {
         commit_identity: worth_relational::facade::history::RelationalCommitIdentity,
         successor_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     },
-}
-
-impl RelationalRecoveryRecordRoute {
-    fn settlement(
-        &self,
-    ) -> Option<&worth_relational::facade::publication::DeferredPublicationSettlement> {
-        match self {
-            Self::Performed { .. } => None,
-            Self::SettlementPending { settlement, .. } => Some(settlement),
-            Self::IdentityRequired { .. } => None,
-        }
-    }
 }
 
 impl RelationalRecoveryRecordState {
@@ -46,13 +29,6 @@ impl RelationalRecoveryRecordState {
         let route = match recovery_route {
             crate::publication::RelationalRecoveryRoute::Performed { performed } => {
                 RelationalRecoveryRecordRoute::Performed { performed }
-            }
-            crate::publication::RelationalRecoveryRoute::SettlementPending { settlement } => {
-                RelationalRecoveryRecordRoute::SettlementPending {
-                    commit_identity: commit_identity.clone(),
-                    successor_basis: successor_basis.clone(),
-                    settlement,
-                }
             }
             crate::publication::RelationalRecoveryRoute::IdentityRequired => {
                 RelationalRecoveryRecordRoute::IdentityRequired {
@@ -74,14 +50,6 @@ impl RelationalRecoveryRecordState {
         &self,
     ) -> &worth_relational::facade::history::RelationalCommitIdentity {
         &self.commit_identity
-    }
-
-    pub(crate) fn settlement(
-        &self,
-    ) -> Option<&worth_relational::facade::publication::DeferredPublicationSettlement> {
-        self.route
-            .as_ref()
-            .and_then(RelationalRecoveryRecordRoute::settlement)
     }
 
     pub(crate) fn take_performed(
@@ -133,18 +101,6 @@ impl RelationalRecoveryRecordState {
                     crate::publication::SignalAttemptProgress::summary(signal_posture),
                 )
             }
-            RelationalRecoveryRecordRoute::SettlementPending {
-                commit_identity,
-                successor_basis,
-                settlement,
-            } => CompositeAttemptProgress::new(
-                crate::publication::RelationalAttemptProgress::settlement_pending(
-                    commit_identity,
-                    successor_basis,
-                    settlement,
-                ),
-                crate::publication::SignalAttemptProgress::summary(signal_posture),
-            ),
             RelationalRecoveryRecordRoute::IdentityRequired {
                 commit_identity,
                 successor_basis,
@@ -166,21 +122,6 @@ impl RelationalRecoveryRecordState {
             self.commit_identity.clone(),
             self.successor_basis.clone(),
             result,
-        );
-        CompositeAttemptProgress::new(
-            progress,
-            crate::publication::SignalAttemptProgress::summary(self.signal_posture),
-        )
-    }
-
-    pub(super) fn pending_progress(
-        &self,
-        settlement: worth_relational::facade::publication::DeferredPublicationSettlement,
-    ) -> CompositeAttemptProgress {
-        let progress = crate::publication::RelationalAttemptProgress::settlement_pending(
-            self.commit_identity.clone(),
-            self.successor_basis.clone(),
-            settlement,
         );
         CompositeAttemptProgress::new(
             progress,

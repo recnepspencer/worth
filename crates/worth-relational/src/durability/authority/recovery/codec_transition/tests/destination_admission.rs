@@ -115,7 +115,7 @@ fn fresh_destination_actual_weak_state_binding_refuses_without_closing_settlemen
         settlement
             .repair_pending_publication_settlement(missing)
             .unwrap_err(),
-        crate::publication::data::DeferredPublicationSettlementError::RecoveryUnavailable {
+        crate::publication::data::PublicationSettlementRepairError::RecoveryUnavailable {
             commit_id: missing
         }
     );

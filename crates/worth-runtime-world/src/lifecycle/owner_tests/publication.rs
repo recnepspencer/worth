@@ -28,21 +28,6 @@ pub(super) fn setup() -> (
     setup_with_budgets(8, 8, super::bootstrap_budgets())
 }
 
-pub(super) fn setup_with_retention_capacity(
-    unique_pin_limit: u64,
-    reservation_limit: u64,
-) -> (
-    RealReferenceFixture,
-    Arc<TestOwner>,
-    ProductBranchObservation,
-) {
-    setup_with_budgets(
-        unique_pin_limit,
-        reservation_limit,
-        super::bootstrap_budgets_with_retention(unique_pin_limit, reservation_limit),
-    )
-}
-
 fn setup_with_budgets(
     unique_pin_limit: u64,
     reservation_limit: u64,

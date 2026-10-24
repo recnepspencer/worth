@@ -65,6 +65,8 @@ pub(crate) fn next_actions_for_progress(
 /// an owner-issued authority this world depended on is gone; every other cause
 /// leaves a live owner the caller can still settle or release against, so
 /// offering closure there would advertise an action the record cannot justify.
+/// An unresolved Relational durable publication is such a record: its owner
+/// refuses every later publication until it is reopened.
 ///
 /// `ProductPublicationLost` is deliberately not that record. It names a product
 /// reference race whose loser observed a live owner on both sides, and the
@@ -73,7 +75,11 @@ pub(crate) fn next_actions_for_progress(
 /// guesses: if that route ever has to permit closure, it must carry the
 /// evidence that justifies it, not a wider match here.
 fn owner_closure_is_permitted(cause: ProductUnpublishedCause) -> bool {
-    matches!(cause, ProductUnpublishedCause::OwnerLost)
+    matches!(
+        cause,
+        ProductUnpublishedCause::OwnerLost
+            | ProductUnpublishedCause::RelationalDurabilityUnresolved
+    )
 }
 
 /// A record owes settlement while its Relational commit is performed but not

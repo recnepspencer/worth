@@ -1,7 +1,6 @@
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 use worth_relational::facade::history::RelationalCommitIdentity;
 use worth_relational::facade::mvcc::PerformedRelationalCommit;
-use worth_relational::facade::publication::DeferredPublicationSettlement;
 
 use super::{
     CompositeAttemptProgress, RelationalAttemptProgress, RelationalAttemptProgressPosture,
@@ -44,15 +43,6 @@ impl RelationalAttemptProgress {
                     RelationalRecoveryRoute::Performed { performed },
                 ))
             }
-            Some(RelationalProgressEvidence::SettlementPending {
-                commit_identity,
-                successor_basis,
-                settlement,
-            }) if posture == RelationalAttemptProgressPosture::SettlementPending => Ok((
-                commit_identity,
-                successor_basis,
-                RelationalRecoveryRoute::SettlementPending { settlement },
-            )),
             Some(RelationalProgressEvidence::SettlementRequired {
                 commit_identity,
                 successor_basis,
@@ -96,11 +86,9 @@ impl CompositeAttemptProgress {
     }
 
     /// Turn the one legal incomplete owner state into recovery evidence. A
-    /// pending Relational settlement is already an owner effect, but it is
-    /// not publication-ready and it must prevent any Signal contact. The
-    /// deferred settlement is cloneable route evidence; the original stays
-    /// in the retained progress row while the result projection describes
-    /// the same exact occurrence.
+    /// pending Relational settlement or an unresolved durable publication is
+    /// already an owner effect, but it is not publication-ready and it must
+    /// prevent any Signal contact.
     pub(crate) fn into_recovery_results(
         self,
     ) -> Result<(Self, crate::publication::CompositeOwnerExecutionResults), Self> {
@@ -150,15 +138,9 @@ fn recovery_result(
                 performed.next_basis().clone(),
             ),
         ),
-        Some(RelationalProgressEvidence::SettlementPending {
-            commit_identity,
-            successor_basis,
-            settlement,
-        }) => Some(
-            crate::publication::CompositeRelationalOwnerResult::settlement_pending(
-                commit_identity.clone(),
-                successor_basis.clone(),
-                settlement.clone(),
+        Some(RelationalProgressEvidence::DurabilityUnresolved(unresolved)) => Some(
+            crate::publication::CompositeRelationalOwnerResult::durability_unresolved(
+                unresolved.clone(),
             ),
         ),
         Some(RelationalProgressEvidence::SettlementRequired {
@@ -188,9 +170,6 @@ fn recovery_result(
 pub(crate) enum RelationalRecoveryRoute {
     Performed {
         performed: PerformedRelationalCommit,
-    },
-    SettlementPending {
-        settlement: DeferredPublicationSettlement,
     },
     IdentityRequired,
 }

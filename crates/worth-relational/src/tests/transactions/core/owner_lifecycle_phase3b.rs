@@ -3,7 +3,7 @@ use std::sync::mpsc::{sync_channel, RecvTimeoutError};
 use std::sync::{Arc, Barrier};
 use std::time::{Duration, Instant};
 
-use crate::publication::data::DeferredPublicationSettlementError;
+use crate::publication::data::PublicationSettlementRepairError;
 use crate::tests::support::*;
 
 /// Every wait in this module is bounded. A court that is red because a thread
@@ -82,7 +82,7 @@ fn phase3b_owner_drop_during_off_thread_settlement_completes() {
     assert!(!port.retains_pending_settlement(commit_id));
     assert!(matches!(
         port.repair_pending_publication_settlement(commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable {
+        Err(PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: observed,
         }) if observed == runtime_instance_id
     ));
@@ -143,7 +143,7 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
     );
     assert!(matches!(
         port.repair_pending_publication_settlement(late_commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable { .. })
+        Err(PublicationSettlementRepairError::OwnerUnavailable { .. })
     ));
 
     release.wait();
@@ -196,7 +196,7 @@ fn phase3b_recovery_replacement_closes_the_prior_runtimes_ports() {
     );
     assert!(matches!(
         port.repair_pending_publication_settlement(seeded_commit_id),
-        Err(DeferredPublicationSettlementError::OwnerUnavailable {
+        Err(PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: observed,
         }) if observed == replaced_instance_id
     ));

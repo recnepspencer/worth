@@ -29,15 +29,9 @@ impl RelationalAttemptProgress {
                 commit_identity: commit_identity.clone(),
                 successor_basis: successor_basis.clone(),
             }),
-            Some(RelationalProgressEvidence::SettlementPending {
-                commit_identity,
-                successor_basis,
-                settlement,
-            }) => Some(RelationalProgressEvidence::SettlementPending {
-                commit_identity: commit_identity.clone(),
-                successor_basis: successor_basis.clone(),
-                settlement: settlement.clone(),
-            }),
+            Some(RelationalProgressEvidence::DurabilityUnresolved(unresolved)) => Some(
+                RelationalProgressEvidence::DurabilityUnresolved(unresolved.clone()),
+            ),
             Some(RelationalProgressEvidence::SettledReceipt {
                 commit_identity,
                 successor_basis,
