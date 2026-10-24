@@ -3,205 +3,250 @@
 Governing roadmap: [Database Foundation Roadmap](roadmap.md#milestone-2-relational-cutover-to-store).
 Builds on: [Milestone 1](milestone-1.md).
 
-Relational's only durable path is Store. A commit becomes visible in live
-state only after Store has made it durable. A fresh process reconstructs the
-runtime from Store's checkpoint and journal through Relational's own
-readmission. The segmented local-filesystem engine is deleted.
+Relational's only durable path is Store. A commit, and every branch lifecycle
+transition, becomes visible in live state only after Store has made it
+durable. A fresh process reconstructs the runtime from Store through
+Relational's own readmission without materializing all records or all history:
+committed data is read from Store on demand behind fallible residency guards.
+The segmented local-filesystem engine is deleted.
+
+## Adversarial constraint
+
+A home is killed at any durable I/O boundary of any operation, including
+commits, branch transitions, checkpoints and recovery itself, and is reopened
+any number of times. Each reopen must:
+
+- recover exactly the acknowledged prefix plus at most the one in-flight
+  operation, decided from durable state;
+- reach records, identities, schema boundaries and branches equal to a
+  memory-only reference at that prefix, with canonical artifacts byte-identical
+  to the reference's;
+- never reissue a committed identity;
+- cost work proportional to the checkpoint manifest and the journal after it,
+  not to the number of records or the length of history. A home holding N
+  partitions and H commits that reopens and reads one partition loads one
+  partition and no historical envelope beyond the tail.
+
+A storage read that fails is a typed refusal, never absence. An unresolved fate
+blocks only what depends on it and is decided by recovery alone.
 
 ## Decisions
 
-**D1. The seam is a Relational port that Store implements.** Relational
-defines `RelationalDurableMedium`, a public object-safe trait with one
-operation: publish one `RelationalCanonicalCommitArtifact` at its position and
-report `Committed`, `ProvenNoEffect` or `Indeterminate`. Relational never
-depends on Store. A new Store-workspace crate, `worth-store-relational`,
-depends on Relational and Store, implements the port over the Milestone 1
-journal, and owns opening, recovery sequencing and checkpoint publication for a
-Relational home (Milestone 1 D1). This follows the Store vision's structural
-rule (the runtime produces artifacts; Store persists them and owns the durable
-lifecycle) and keeps Signal and Store's certification crates out of
-Relational's dependency graph.
+**D1. The seam is a Relational port that Store implements, owned by one
+runtime.** Relational defines the medium port: publish a canonical commit
+artifact, publish a branch transition artifact, and read committed data back
+(D9). Answers are `Committed`, `ProvenNoEffect` and `Indeterminate`.
+Relational never depends on Store. The Store-workspace crate
+`worth-store-relational` implements the port and owns opening, recovery
+sequencing and checkpoint publication for a home (Milestone 1 D1).
+
+A medium is moved into exactly one runtime when that runtime is built or
+recovered. It is not cloneable through the builder, and a forked runtime never
+inherits it, so two runtimes cannot publish to one medium.
 
 **D2. Durable before live.** With a medium attached, publication runs in this
-order: preparation and validation against the exact admitted basis; the
-next patch position is reserved; the positioned commit is encoded as its
-canonical artifact and published to the medium; only a `Committed` answer lets
-the live cutover install the new head; settlement follows. Live state never
-selects a commit the medium has not made durable, and acknowledgment follows
-settlement as before.
+order: preparation and validation against the exact admitted basis;
+reservation of the next patch position; publication of the positioned commit's
+canonical artifact; only on `Committed`, the live cutover; then settlement.
+Live state never selects a commit the medium has not made durable.
 
-- `ProvenNoEffect` is a pre-effect denial: the position is not consumed, the
-  cutover does not run and the transaction returns
-  `TransactionCommitError::PublicationDenied` with
-  `RelationalPublicationDenial::DurablePublicationRefused`.
-- `Indeterminate` returns `TransactionCommitError::DurabilityUnresolved` with
-  the position, commit id and artifact digest. The cutover does not run. The
-  runtime refuses every later publication with the same outcome until it is
-  reopened; after reopen, recovery and the journal's `resolve` establish the
-  fate.
-- A commit that is durable but whose settlement does not finish returns
-  `TransactionCommitError::PerformedButSettlementDeferred` (renamed from
-  `PerformedButDurabilityDeferred`; settlement no longer appends to any
-  medium). Its repair finishes settlement under the original identity; a crash
-  instead recovers it from the journal. Neither path re-executes a mutation
-  handler or issues a replacement commit.
-- Memory-only runtimes keep their in-memory canonical log and do not change.
+- `ProvenNoEffect` is a pre-effect denial
+  (`PublicationDenied(DurablePublicationRefused)`). The position is not
+  consumed and nothing is installed.
+- `Indeterminate` returns `DurabilityUnresolved` with the position, commit id
+  and artifact digest. Nothing is installed, and later publications refuse with
+  the same answer until the home is reopened. Then recovery decides the fate,
+  and `resolve` answers it by Relational's digest.
+- A commit waiting for the patch-position reservation while another commit's
+  durable publication is in flight waits within its execution deadline. It is
+  not deferred because a concurrent publisher holds the reservation for I/O.
+  Memory-only runtimes keep their existing reservation behavior.
+- The settlement-time append and its "performed but durability deferred"
+  repair path are deleted: durability can no longer fail after the cutover.
+  Settlement that fails for another reason keeps the durable commit under its
+  original identity; a crash recovers it from the journal. Neither path
+  re-executes a mutation handler or issues a replacement commit.
+- Memory-only runtimes keep their in-memory canonical log.
 
 **D3. Recovery is Store-sequenced and Relational-readmitted.** The home reads
-the selected checkpoint (if any) and the journal positions after its coverage,
-and passes the bytes to Relational as a `RelationalDurableRecoverySource`.
-`runtime.durability().recovery_plan_from_source(..)` readmits every artifact
-through `RelationalCanonicalCommitArtifact::readmit`, requires the tail to be
-contiguous from the checkpoint's covered position, requires the checkpoint's
-own coverage to equal the position Store recorded for it, and builds the
-existing `RecoveryPlan`. The existing `recover` rebuilds the runtime with its
-schema, profile, runtime-name and codec continuity checks. The medium is
-attached only after the rebuild, so replay never republishes. Any refusal is
-typed and happens before service.
+the checkpoint manifest, the journal tail after its coverage, and the branch
+transitions after its coverage, then hands them to Relational as a
+`RelationalDurableRecoverySource`. Relational readmits every artifact, requires
+the tail to be contiguous from the checkpoint's coverage, and rebuilds through
+its existing continuity checks. The medium is bound only after the rebuild, so
+replay never republishes. Any refusal is typed and happens before service.
 
-**D4. Checkpoints are anchored Store records.** `home.checkpoint()` captures
-Relational's native checkpoint and publishes it as one record under the anchor
-`relational.checkpoint`, framed with its covered position, in one root
-decision. It then completes a Store physical checkpoint, so Store's own
-recovery replays only the WAL after it. Recovery is bounded by both
-checkpoints and the journal after the Relational one. The journal is retained
-in this milestone; covered-journal reclamation belongs to Milestone 4.
+**D4. Checkpoints are a manifest plus content-addressed regions.** A checkpoint
+is a small manifest record under `relational.checkpoint` that names its covered
+position, branch cells, schema images, identity allocation state, lineage,
+index definitions, symbols and a region directory. Each partition region and
+mirror partition is its own Store record, addressed by its content digest. A
+checkpoint writes only the regions whose digest changed since the previous
+checkpoint and reuses the rest. Publishing the manifest is one root decision.
+The home then completes a Store physical checkpoint, so Store's own recovery is
+bounded too. A crash at any point of a checkpoint, first or later, leaves the
+previous or the new checkpoint selected and a home that serves.
 
-**D5. Home identity is an anchored descriptor.** Initialization publishes
-`relational.home` (format version, runtime name, profile) once. Opening a home
-whose descriptor disagrees with the requested runtime refuses before recovery.
+**D5. Home identity binds runtime and schema.** Initialization publishes
+`relational.home` with the format version, runtime name and profile. The
+schema a home serves is the one its recovered main branch head records: the
+initial schema, or the target of the last durable schema transition. Opening
+refuses before service when the requested runtime name or profile differs
+from the descriptor, or when the declared schema registry differs from the
+recovered main head's schema, including a different version label with
+identical contracts. Only a durable schema transition changes a home's schema.
 A directory with no Store is initialized; anything else is recovered or
-refused. An unreadable or damaged descriptor, checkpoint or journal is never
-treated as an empty home.
+refused. Damaged or unreadable home data is never treated as an empty home.
 
-**D6. Store adds a generic anchored-record door.** The Milestone 1 anchor
-mechanism gains `ServingPhysicalRuntime::anchored_records()`: read the record
-an anchor names, and publish a replacement at `generation + 1` with the same
-durable-root and fate semantics as the journal. The journal keeps its own API.
-A home uses three of the four anchor slots.
+**D6. Store adds a generic anchored-record door** (`anchored_records()`), with
+the journal's fate semantics. A home uses three anchors: descriptor,
+checkpoint manifest and branch transitions. The canonical journal is the
+fourth.
 
 **D7. Identity continuity.** Record identity facts (generation high-water
 marks, reusable slots, append frontiers, outstanding reservations) are restored
-from the checkpoint and then advanced by each tail commit's recorded
-allocations. Commit, version and lineage frontiers are restored as one past the
-largest durable value. An identity that was neither durable nor acknowledged
-when the process died was never authority, so it is not a reservation whose loss
-permits unsafe reuse. A committed or deleted identity is never reissued; the
-oracle checks this by re-executing the suffix on the recovered runtime.
+from the checkpoint and advanced by each tail commit's recorded allocations.
+Commit, version and lineage frontiers resume one past the largest durable
+value. An identity that was never durable or acknowledged was never authority,
+so its loss on process death is not unsafe reuse. A committed or deleted
+identity is never reissued; the oracle checks this after every crash.
 
-**D8. Branch lifecycle scope.** A fork is a branch-reference transition, not a
-canonical commit. In this milestone a branch becomes durable with its first
-commit (the envelope carries the branch cell's prior state) or when a
-checkpoint covers it. Durable fork, archive and delete as their own operations
-are Milestone 4. The oracle forks and then commits on the new branch.
+**D8. Branch lifecycle transitions are durable before live.** Fork, archive and
+delete each produce a Relational branch transition artifact. It names the
+transition, the branch, its source and source commit, and the patch position
+the transition follows. The artifact is published to the medium before the
+transition becomes live, under the D2 fates. Recovery replays transitions in
+order, interleaved with the commit tail by the position each follows. A
+transition the medium refused or left unresolved is not live. Milestone 4 adds
+fork-by-sharing at scale, retained readers of deleted branches and retention;
+this milestone makes every acknowledged transition survive a crash.
 
-**D9. Residency.** The native working state stays fully resident. Store holds
-the only authoritative copy; memory holds working state derived from it, so
-there is no second authoritative database. A commit writes only its own
-artifact, never the record set. Reopen materializes the checkpoint image and
-replays only the tail after it, not all history. Partition-granular cold access
-behind fallible guards requires replacing about 230 infallible partition reads
-and is Milestone 4's cold-data work. In this milestone every read of committed
-data from Store (descriptor, checkpoint, journal) is fallible and typed and
-refuses service rather than skipping data.
+**D9. Committed data is read on demand behind residency guards.** Reopen
+loads the checkpoint manifest and replays the tail. Partition regions, mirror
+partitions and historical envelopes are read from Store only when an operation
+needs them, through a Relational-defined read port the home implements.
+
+An operation acquires residency for what it will read before it reads it: a
+transaction or observation at basis admission, a mirror read at edition
+acquisition. A residency failure is a typed refusal of that operation
+(transaction outcome, read denial or recovery stop), never absence or empty
+data. Resident working state is derived from Store, the only authoritative
+copy, so there is no second authoritative database.
+
+Partition identity and placement never change with residency. Cold and warm
+reads must agree. Milestone 4 extends the same guards to bounded chunks,
+eviction, larger-than-memory serving and historical selection. Detailed types
+are in "Residency" below.
 
 **D10. Interruption controls.** Store fault schedules use the existing
-certification authority. The home crate forwards it as its own
-`certification-test-authority` feature (inside Store's one-build exemption),
-which adds two hidden doors: open a home on a Store the test opened with a
-fault schedule, and reach the home's Store to park a publication at a mutation
-seam. Both run the production admission path. Parking at
-`AfterRootReplacement` stops a commit after Store made it durable and before
-Relational installs it live. Relational's own durability tests use a
-`cfg(test)` in-crate medium; it is not a second durable path.
+certification authority, forwarded by the home crate's
+`certification-test-authority` feature inside Store's one-build exemption. Its
+hidden doors run the production admission path. Relational's own durability
+tests use a `cfg(test)` in-crate medium; that is not a second durable path.
+
+**D11. Canonical artifacts are runtime-neutral.** A canonical artifact's bytes
+depend only on durable history, never on which process produced it. Branch cell
+state carried in an envelope (`branch_cell_checkpoint`, including fork
+provenance) is recorded in a runtime-neutral form. Recovery rebinds it to the
+recovering runtime, as it already does for checkpointed cells. Re-executing the
+same operations in any process produces byte-identical artifacts.
 
 ## Durable artifacts
 
 | Artifact | Classification | Owner |
 |---|---|---|
 | Canonical commit artifact (journal payload) | Authoritative | Relational format; Store journal ordering |
-| Native checkpoint (anchored record payload) | Derived (reconstructible from the journal) | Relational format; Store framing and anchor |
+| Branch transition artifact | Authoritative | Relational format; Store anchored log |
+| Checkpoint manifest | Derived (reconstructible from journal and transitions) | Relational format; Store anchor |
+| Partition region record | Derived | Relational format; Store content-addressed placement |
 | Home descriptor | Authoritative | Store home |
+
+## Residency
+
+To be completed from the design pass: the read port, the guard types and their
+placement, the operations that acquire residency, the history indexes that stay
+resident, and the typed failure each public path returns.
 
 ## Relational changes
 
-- `RelationalDurableMedium` and its publication answer types, exported through
-  the facade.
-- The runtime carries an optional medium. The builder attaches one with
-  `durable_medium(..)`; recovery transfers it to the rebuilt runtime.
-- Durable publication inside the position reservation, before cutover (D2).
-- `RelationalDurableRecoverySource` and `recovery_plan_from_source` (D3).
-- `RelationalNativeCheckpoint::covered_position()`.
-- Deleted: `DurabilityMode::PersistedSegmentedLocalFs`, `DurableStoreLayout`,
-  `DurableStore`, segment and checkpoint manifests, compaction types, the
-  local store, segment codec, file locking, persisted recovery planning and
-  filesystem checkpoint persistence, with their builder setters and config
-  fields, and `DurabilityMode` itself: whether a medium is attached is the
-  only mode, so a separate mode would be a second source of truth.
-- Durability contract tests that asserted recovered semantics run against the
-  in-crate medium through the public recovery door. Tests that only exercised
-  segment files, manifests or locks are deleted.
+- The medium port (commit and branch-transition publication, committed-data
+  reads), its answer types and the recovery source, exported through the
+  facade. The runtime owns its medium (D1).
+- Durable publication inside the position reservation, before the cutover,
+  with waiting instead of deferral when a medium is attached (D2).
+- Runtime-neutral branch cell state in envelopes (D11).
+- Durable branch transitions (D8) and the schema identity check on recovery
+  (D5).
+- The split checkpoint and residency guards (D4, D9).
+- Deleted: the segmented filesystem engine, `DurabilityMode`, its config and
+  setters, and the settlement-time append with its deferred-durability
+  carrier, repair API, test hooks and downstream branches in World and Query.
+- Durability contract tests run against the in-crate medium through the public
+  recovery door. Tests that only exercised retired storage or the retired
+  deferral are deleted.
 - README, owner-component and durability guidance describe commitment,
-  recovery and the typed outcomes.
+  recovery, residency and the typed outcomes.
 
 ## Store changes
 
-- `anchored_records()` (D6).
-- `worth-store-relational`:
-  - `RelationalStoreHome::open(request)` initializes a new home or recovers an
-    existing one through the production recovery entry, readmits the
-    descriptor, checkpoint and tail, and returns a live runtime with the
-    journal medium attached and fresh owner capabilities.
-  - `checkpoint()`, `resolve(position, digest)`, `close()`.
-  - The medium adapter maps journal outcomes to the port: `Committed` and an
-    identical `AlreadyCommitted` are durable; proven-no-effect failures before
-    the append are `ProvenNoEffect`; everything else is `Indeterminate`.
+- `anchored_records()` (D6). Recovery adjudicates an interrupted Store
+  physical checkpoint so that a crash during one never leaves a Store that
+  requires inspection forever.
+- `worth-store-relational`: `RelationalStoreHome::open`, `checkpoint`,
+  `resolve`, `close`, the medium adapter, the region and history read port, and
+  the branch transition log.
 
 ## Crash-consistency oracle
 
 Location: `worth-store-relational` tests.
 
-- **Reference.** A memory-only runtime executes a seeded sequence of creates,
-  aspect edits, relations, deletes, a schema transition, a fork followed by
-  commits on the fork, and checkpoints. Its artifacts and state are the
-  expected result.
-- **State comparison.** Canonical artifacts embed the producing runtime's
-  process-local instance identity (branch cell checkpoints and fork
-  provenance), so a durable run's artifacts are not byte-equal to the
-  reference's. After recovery the home must hold exactly the artifacts the
-  crashed run acknowledged, byte for byte, plus at most the one in-flight
-  commit, present exactly when `resolve` says it is committed; and every
-  record and relation on every durable branch, read through Relational's
-  ordinary transaction reads, must equal the reference's after that many
-  commits. The recovered runtime then runs the rest of the script and must
-  reach the reference's final records; new creates must never reuse an
-  identity that was ever committed, including deleted ones.
-- **Media sweep.** Store fault schedules interrupt every media operation of a
-  commit and of a checkpoint with `FailBefore` and `IndeterminateAfterEffect`.
-- **Real processes.** A child is killed before commitment (before the WAL
-  append), at each later Store mutation seam including after root replacement
-  (durable, not yet live), during a checkpoint, and on both sides of the first
-  checkpoint.
-- **Recovery interruption.** Recovery is interrupted and repeated; a second and
-  third recovery reach the same state.
+- **Reference.** A memory-only runtime executes a seeded script of creates,
+  edits, relations, deletes, a schema transition, forks, archives, deletes of
+  branches, commits on every live branch, and checkpoints. Its artifacts and
+  records are the expected result. Every seed in a tested range generates.
+- **State comparison.** After recovery the home holds the reference's artifacts
+  byte for byte (D11) up to the acknowledged prefix, plus at most the one
+  in-flight operation, present exactly when `resolve` says it is committed.
+  Every record and relation on every durable branch, read through ordinary
+  transaction reads both cold (just reopened) and warm, equals the reference.
+  The rest of the script then runs to the reference's final state, and new
+  creates never reuse a committed identity.
+- **Residency.** A reopened home with many partitions and a long history loads
+  only the manifest and the partitions an operation touches (measured through
+  the read port with headroom, not exact counts). A region or history read that
+  fails refuses the operation with its typed outcome. Cold and warm reads agree.
+- **Media sweep.** Every media operation of a commit, a branch transition, the
+  first checkpoint and a later checkpoint, and a region load, with
+  `FailBefore` and `IndeterminateAfterEffect`.
+- **Real processes.** A child is killed at every Store mutation seam of a
+  commit (before the WAL append through durable-not-yet-live), during a branch
+  transition, during a checkpoint including Store's physical checkpoint, and
+  idle on both sides of the first checkpoint.
+- **Recovery interruption.** Recovery is killed at each Store recovery stage
+  and during Relational readmission. Repeated recoveries reach the same state.
 - **Refusals.** A stale candidate, a conflicting write and an invalid
-  transaction publish nothing. A home with a foreign descriptor, a damaged
-  checkpoint or a damaged journal entry refuses before service.
+  transaction publish nothing. A foreign runtime, a foreign schema, a damaged
+  descriptor, manifest, region or journal entry each refuse before service.
+  A medium cannot be shared by two runtimes.
 
 ## Completion
 
 Milestone 2 is complete when:
 
-1. No `PersistedSegmentedLocalFs` path, type, setter or test remains, and the
-   medium is Relational's only durable path.
-2. Commits are durable before live installation, with the D2 outcomes covered
-   by tests.
-3. A home survives process death on both sides of the first checkpoint, before
-   commitment and after durable publication before live installation, with
-   exact records, identities, schema and canonical history, and supports
-   another edit and safe allocation afterwards.
-4. The oracle's generated sequences pass against the memory-only reference.
-5. Relational owner lanes, Store lanes, boundary-check, agent-context,
-   formatting and line caps pass with no new failures against the base commit.
-6. An independent reviewer has certified the work against this specification
-   and the roadmap.
+1. The medium is Relational's only durable path. No filesystem engine, mode,
+   deferred-durability path or test remains.
+2. Commits and branch transitions are durable before they are live, with the D2
+   outcomes covered by tests.
+3. A home survives process death at every boundary in the oracle, on both sides
+   of the first checkpoint, with records, identities, schema, branches and
+   byte-identical canonical history equal to the reference. It then supports
+   further edits and safe allocation.
+4. Reopen and ordinary operations read committed data on demand. The residency
+   tests show that untouched partitions and history are not loaded, and that
+   read failures are typed refusals.
+5. The oracle's generated sequences pass.
+6. Relational, World, Query and Store owner lanes, boundary-check,
+   agent-context, formatting and line caps pass with no new failures against
+   the base commit.
+7. An independent reviewer certifies the work against this specification and
+   the roadmap.
