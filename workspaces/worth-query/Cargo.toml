@@ -89,6 +89,9 @@ worth-schema-graph.opt-level = 0
 # the 4 GiB PDB symbol-stream limit, so rust-lld cannot link them on Windows.
 # Panic locations stay exact; backtraces name these frames without lines.
 worth-query-certification.debug = false
+# The worth-query-execution lib-test binary carries the whole primary-graph
+# court suite; its line tables pass the same PDB limit on Windows.
+worth-query-execution.debug = false
 
 [profile.test]
 opt-level = 0
@@ -106,6 +109,7 @@ worth-harness.opt-level = 0
 worth-schema-graph.opt-level = 0
 # Certification symbols exceed the PDB limit; see [profile.dev.package].
 worth-query-certification.debug = false
+worth-query-execution.debug = false
 
 [profile.perf]
 inherits = "dev"
