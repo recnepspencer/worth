@@ -1,11 +1,42 @@
-error[E0451]: fields `memory`, `cancellation` and `deadline` of struct `SerialRequest` are private
+error[E0308]: mismatched types
   --> tests/ui/serial_without_policy.rs:15:9
    |
-14 |     let _request = SerialRequest {
-   |                    ------------- in this type
 15 |         memory,
-   |         ^^^^^^ private field
+   |         ^^^^^^ expected `Option<SerialMemoryBudget>`, found `SerialMemoryBudget`
+   |
+   = note: expected enum `std::option::Option<SerialMemoryBudget>`
+            found struct `SerialMemoryBudget`
+help: try wrapping the expression in `Some`
+   |
+15 |         memory: Some(memory),
+   |         +++++++++++++      +
+
+error: cannot construct `SerialRequest` with struct literal syntax due to private fields
+  --> tests/ui/serial_without_policy.rs:14:20
+   |
+14 |     let _request = SerialRequest {
+   |                    ^^^^^^^^^^^^^
+15 |         memory,
+   |         ------ private field
 16 |         cancellation,
-   |         ^^^^^^^^^^^^ private field
+   |         ------------ private field
 17 |         deadline,
-   |         ^^^^^^^^ private field
+   |         -------- private field
+   |
+   = note: ...and other private field `work_ceiling` that was not provided
+help: you might have meant to use an associated function to build this type
+   |
+14 -     let _request = SerialRequest {
+15 -         memory,
+16 -         cancellation,
+17 -         deadline,
+18 -     };
+14 +     let _request = SerialRequest::from_policy(_, _, _);
+   |
+14 -     let _request = SerialRequest {
+15 -         memory,
+16 -         cancellation,
+17 -         deadline,
+18 -     };
+14 +     let _request = SerialRequest::from_memory(_, _, _);
+   |
