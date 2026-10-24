@@ -126,3 +126,43 @@ fn query_cause(denial: QueryDenial) -> Denial {
         other => panic!("opening cause lost: {other:?}"),
     }
 }
+
+/// Runs `read` with every advancement request on this thread bound to `work`
+/// units under the Bank's installed 128 MiB memory ceiling, then restores the
+/// installed policy.
+pub(super) fn with_work_ceiling<R>(work: u64, read: impl FnOnce() -> R) -> R {
+    struct Installed(Option<worth_foundational::ExecutionBudget>);
+    impl Drop for Installed {
+        fn drop(&mut self) {
+            bound(self.0);
+        }
+    }
+    let _installed = Installed(bound(Some(worth_foundational::ExecutionBudget::new(
+        NonZeroUsize::MIN,
+        Some(128 * 1_024 * 1_024),
+        Some(work),
+    ))));
+    read()
+}
+
+/// The least request work ceiling that admits `read`: doubling finds an
+/// admitting ceiling, then bisection keeps `low` refused and `high` admitted.
+/// A zero ceiling refuses every entry before its reader.
+pub(super) fn least_admitting_work<T, E>(mut read: impl FnMut() -> Result<T, E>) -> u64 {
+    let mut high = 1_u64;
+    while with_work_ceiling(high, &mut read).is_err() {
+        high = high
+            .checked_mul(2)
+            .expect("an admitted read has a finite work ceiling");
+    }
+    let mut low = 0_u64;
+    while high - low > 1 {
+        let middle = low + (high - low) / 2;
+        if with_work_ceiling(middle, &mut read).is_ok() {
+            high = middle;
+        } else {
+            low = middle;
+        }
+    }
+    high
+}

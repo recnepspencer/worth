@@ -16,7 +16,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::RevokeAccountAuthorization;
 use bank_server::{
     mutations, BankAccountActivityLiveOutcome, BankApplicationLiveCloseOutcome,
-    BankApplicationLiveOpenDenialKind, BankApplicationQueryDenial, BankMutationControls,
+    BankApplicationQueryDenial, BankMutationControls,
 };
 
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
@@ -205,48 +205,84 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     ));
 }
 
+/// Live declarations carry no resource contract (capability-index: "Request
+/// Live controls retain channel buffer capacity"), so a caller buffer wider
+/// than the removed 64-cause installed queue ceiling opens and governs delivery.
 #[test]
-fn caller_cannot_enlarge_the_installed_live_buffer_ceiling() {
+fn caller_live_buffer_wider_than_the_removed_installed_ceiling_governs_the_queue() {
     let fixture = ordinary_read_world("live-buffer-ceiling", 0);
     let owner = fixture.authenticate(OWNER);
-    let denial = match fixture
+    let teller = fixture.authenticate(TELLER);
+    let mut live = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
         .subscribe(live_controls_for(request_scope(), 65))
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("caller buffer wider than installed queue authority must fail"),
-    };
-    assert!(matches!(
-        denial,
-        BankApplicationQueryDenial::LiveOpen(error)
-            if error.kind()
-                == BankApplicationLiveOpenDenialKind::BufferCapacityExceedsInstalled
-    ));
+        .expect("the caller's 65-cause buffer opens without an installed queue ceiling");
+    for ordinal in 0..3 {
+        commit_deposit(
+            &fixture,
+            &teller,
+            fixture.personal_account,
+            &format!("wide-buffer-live-deposit-{ordinal}"),
+        );
+    }
+    for remaining in (0..3).rev() {
+        let BankAccountActivityLiveOutcome::Delivered(delivered) =
+            live.poll(&owner, &request_scope())
+        else {
+            panic!("every buffered matching cause must deliver")
+        };
+        assert_eq!(delivered.result().entries().len(), 1);
+        assert_eq!(live.buffered_cause_count(), remaining);
+    }
 }
 
+/// Live controls carry no work field: the installed execution policy's one
+/// work ceiling bounds the subscription, and the same caller controls open
+/// only once that installed ceiling admits them.
 #[test]
 fn caller_cannot_enlarge_the_installed_live_work_ceiling() {
+    use worth_query_host::facade::application_contribution::{
+        WorthQueryAdvancementDenial as Denial,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    use worth_query_host::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test as bound;
+    struct Restore(Option<worth_foundational::ExecutionBudget>);
+    impl Drop for Restore {
+        fn drop(&mut self) {
+            bound(self.0);
+        }
+    }
     let fixture = ordinary_read_world("live-work-ceiling", 0);
     let owner = fixture.authenticate(OWNER);
-    let controls = WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap();
-    let denial = match fixture
-        .world
-        .runtime
-        .account_activity(fixture.personal_account)
-        .as_principal(&owner)
-        .subscribe(controls)
-    {
+    let subscribe = || {
+        fixture
+            .world
+            .runtime
+            .account_activity(fixture.personal_account)
+            .as_principal(&owner)
+            .subscribe(WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap())
+    };
+    let restore = Restore(bound(Some(worth_foundational::ExecutionBudget::new(
+        std::num::NonZeroUsize::MIN,
+        Some(64 * 1_024 * 1_024),
+        Some(0),
+    ))));
+    let denial = match subscribe() {
         Err(denial) => denial,
-        Ok(_) => panic!("caller work wider than installed delivery authority must fail"),
+        Ok(_) => panic!("caller controls cannot widen an exhausted installed work ceiling"),
     };
     assert!(matches!(
         denial,
-        BankApplicationQueryDenial::LiveOpen(error)
-            if error.kind() == BankApplicationLiveOpenDenialKind::WorkLimitExceedsInstalled
+        BankApplicationQueryDenial::ExecutionRequest(Denial::Resource(Resource::WorkExhausted))
     ));
+    drop(restore);
+    let live = subscribe().expect("the installed policy admits the same caller controls");
+    let BankApplicationLiveCloseOutcome::Completed = live.close() else {
+        panic!("the admitted subscription closes cleanly")
+    };
 }
 
 #[test]

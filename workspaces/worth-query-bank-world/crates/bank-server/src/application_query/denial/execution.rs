@@ -133,8 +133,6 @@ pub enum BankApplicationContinuationDenialKind {
 pub enum BankApplicationLiveOpenDenialKind {
     LiveContractMissing,
     BindingMismatch,
-    BufferCapacityExceedsInstalled,
-    WorkLimitExceedsInstalled,
     Admission(BankApplicationQueryAdmissionDenialKind),
     AuthorizationDenied(BankAuthorizationDenialKind),
     ScopeIdentityUnavailable,
@@ -253,8 +251,6 @@ pub(super) const fn live(kind: QueryLive) -> BankApplicationLiveOpenDenialKind {
     match kind {
         QueryLive::LiveContractMissing => Bank::LiveContractMissing,
         QueryLive::BindingMismatch => Bank::BindingMismatch,
-        QueryLive::BufferCapacityExceedsInstalled => Bank::BufferCapacityExceedsInstalled,
-        QueryLive::WorkLimitExceedsInstalled => Bank::WorkLimitExceedsInstalled,
         QueryLive::Admission(kind) => Bank::Admission(admission(kind)),
         QueryLive::AuthorizationDenied(kind) => Bank::AuthorizationDenied(authorization(kind)),
         QueryLive::ScopeIdentityUnavailable => Bank::ScopeIdentityUnavailable,

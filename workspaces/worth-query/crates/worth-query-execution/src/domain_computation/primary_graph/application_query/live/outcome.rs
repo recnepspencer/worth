@@ -15,10 +15,6 @@ pub enum WorthQueryApplicationLiveOpenDenialKind {
     LiveContractMissing,
     /// The live cause binding does not match the installed live contract.
     BindingMismatch,
-    /// The requested buffer capacity exceeds the installed ceiling.
-    BufferCapacityExceedsInstalled,
-    /// The requested per-delivery work limit exceeds the installed ceiling.
-    WorkLimitExceedsInstalled,
     /// The initial query admission was refused.
     Admission(WorthQueryApplicationQueryAdmissionDenialKind),
     /// Authorization refused the read; the full denial is attached.

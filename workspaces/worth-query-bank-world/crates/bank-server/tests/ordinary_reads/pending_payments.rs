@@ -3,11 +3,14 @@ use bank_server::{
     queries, BankApplicationOneShotDenialKind, BankApplicationQueryDenial, BankReadControls,
 };
 
+use super::advancement_custody::{least_admitting_work, with_work_ceiling};
 use super::fixture::{
     ordinary_read_world, ordinary_read_world_with_pending_payments,
     over_budget_discovery_world_with_role, APPROVER, OWNER, VIEWER,
 };
 use crate::support::request_scope;
+use worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial;
+use worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind;
 
 #[test]
 fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
@@ -18,7 +21,7 @@ fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(8, 10_000))
+        .controls(controls(8))
         .execute()
         .expect("an approver should discover approval-required payments");
 
@@ -36,7 +39,7 @@ fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
             .runtime
             .query(queries::pending_payments())
             .as_principal(&actor)
-            .controls(controls(8, 10_000))
+            .controls(controls(8))
             .execute()
             .expect("a lawful non-approver receives an empty result");
         assert!(result.rows().is_empty());
@@ -52,7 +55,7 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(3, 10_000))
+        .controls(controls(3))
         .execute()
         .expect("three pending payments should fit the exact result limit");
     let ids = result
@@ -68,7 +71,7 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(2, 10_000))
+        .controls(controls(2))
         .execute();
     assert!(matches!(
         denial,
@@ -77,26 +80,60 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
     ));
 }
 
+/// Commit `ee07da2b0e` removed the caller's dynamic work control; the
+/// installed policy's one work ceiling now bounds the guarded frontier
+/// (how-it-works: "The policy's work ceiling bounds the whole advancement").
+/// The exact work that admits a one-account frontier stops a 265-account one
+/// inside its frontier with a typed request stop, while the installed policy
+/// admits the same read.
 #[test]
 fn guarded_frontier_stops_when_dynamic_work_is_exhausted() {
+    let small = over_budget_discovery_world_with_role(
+        "pending-guard-work-small",
+        1,
+        CustomerRole::Approver,
+    );
     let fixture =
         over_budget_discovery_world_with_role("pending-guard-work", 265, CustomerRole::Approver);
+    let small_actor = small.authenticate();
     let actor = fixture.authenticate();
-    let denial = fixture
-        .world
-        .runtime
-        .query(queries::pending_payments())
-        .as_principal(&actor)
-        .controls(controls(1, 2_116))
-        .execute();
-    match denial {
+    let small_read = || {
+        small
+            .world
+            .runtime
+            .query(queries::pending_payments())
+            .as_principal(&small_actor)
+            .controls(controls(1))
+            .execute()
+    };
+    let read = || {
+        fixture
+            .world
+            .runtime
+            .query(queries::pending_payments())
+            .as_principal(&actor)
+            .controls(controls(1))
+            .execute()
+    };
+    small_read().expect("the installed policy admits the one-account frontier");
+    read().expect("the installed policy admits the 265-account frontier");
+    let small_work = least_admitting_work(small_read);
+    match with_work_ceiling(small_work, read) {
         Err(BankApplicationQueryDenial::Execution(denial))
-            if denial.kind() == BankApplicationOneShotDenialKind::WorkLimitExceeded => {}
+            if matches!(
+                denial.kind(),
+                BankApplicationOneShotDenialKind::ExecutionRequest(
+                    WorthQueryProviderSessionDenialKind::ExecutionResource {
+                        denial: WorthQueryManagedComputationResourceDenial::WorkExhausted,
+                        ..
+                    }
+                )
+            ) => {}
         Err(other) => panic!("unexpected denial stage: {other:?}"),
         Ok(_) => panic!("guarded frontier exceeded its admitted dynamic work"),
     }
 }
 
-fn controls(maximum_results: usize, maximum_work: usize) -> BankReadControls {
+fn controls(maximum_results: usize) -> BankReadControls {
     BankReadControls::current(request_scope(), maximum_results).unwrap()
 }
