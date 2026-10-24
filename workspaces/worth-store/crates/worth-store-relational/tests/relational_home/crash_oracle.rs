@@ -9,12 +9,12 @@
 
 use std::path::Path;
 
-use sha2::{Digest, Sha256};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::durability::{
     RelationalCanonicalCommitArtifact, RelationalDurabilityUnresolved,
 };
-use worth_store::physical_runtime::CanonicalCommitResolution;
+use worth_relational::facade::publication::PatchStreamPosition;
+use worth_store_relational::RelationalStoreCommitFate;
 use worth_store_relational::RelationalStoreHome;
 
 use super::durable_run::{apply, assert_holds, open, steps_after};
@@ -64,21 +64,29 @@ pub(crate) fn assert_recovered(
         "{case}: {extra} commits beyond the acknowledged"
     );
     let next = held as u64 + 1;
-    let resolution = match recovered.get(held) {
-        Some(bytes) => home.resolve(next, Sha256::digest(bytes).into()),
-        None => home.resolve(next, [0; 32]),
-    }
-    .unwrap_or_else(|refusal| panic!("{case}: resolve {next}: {refusal:?}"));
-    match recovered.get(held) {
-        Some(_) => assert!(
-            matches!(resolution, CanonicalCommitResolution::Committed(ref entry) if entry.position() == next),
-            "{case}: the recovered commit {next} resolves {resolution:?}"
-        ),
-        None => assert_eq!(
-            resolution,
-            CanonicalCommitResolution::NotCommitted { head: held as u64 },
-            "{case}"
-        ),
+    let digest_of = |bytes: &Vec<u8>| {
+        RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone())
+            .expect("an artifact frame")
+            .payload_digest()
+    };
+    // Any commit's digest probes presence; the recovered one's proves identity.
+    let probe = recovered
+        .get(held)
+        .map(digest_of)
+        .or(match &in_flight {
+            InFlight::Unresolved(fate) => Some(fate.digest()),
+            _ => None,
+        })
+        .or_else(|| acknowledged.last().map(digest_of));
+    if let Some(probe) = probe {
+        let resolution = home
+            .resolve(PatchStreamPosition(next), probe)
+            .unwrap_or_else(|refusal| panic!("{case}: resolve {next}: {refusal:?}"));
+        let expected = match recovered.get(held) {
+            Some(_) => RelationalStoreCommitFate::Committed,
+            None => RelationalStoreCommitFate::NotCommitted { head: held as u64 },
+        };
+        assert_eq!(resolution, expected, "{case}: resolve {next}");
     }
     match in_flight {
         InFlight::Nothing | InFlight::Refused | InFlight::NotDurable => {
@@ -87,8 +95,6 @@ pub(crate) fn assert_recovered(
         InFlight::Durable => assert_eq!(extra, 1, "{case}: a durable commit was lost"),
         InFlight::Unresolved(fate) => {
             assert_eq!(fate.position().0, next, "{case}: the fate's position");
-            // `resolve` above takes the journal payload's digest; resolving
-            // with the fate's own digest is `refusals`' concern.
             if let Some(bytes) = recovered.get(held) {
                 let artifact =
                     RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone())

@@ -14,20 +14,24 @@ mod checkpoint;
 mod close;
 mod open_refusal;
 mod request;
+mod resolution;
 
 pub use checkpoint::{RelationalStoreCheckpoint, RelationalStoreCheckpointFailure};
 pub use close::RelationalStoreHomeClosed;
 pub use open_refusal::RelationalStoreHomeOpenRefusal;
 pub use request::RelationalStoreHomeRequest;
+pub use resolution::RelationalStoreCommitFate;
 
 use std::path::Path;
 use std::sync::Arc;
 
+use worth_relational::facade::durability::RelationalCanonicalCommitArtifactDigest;
 use worth_relational::facade::durability::{
     RecoveryVerificationMode, RelationalDurableRecoverySource,
 };
+use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::runtime::RelationalRuntime;
-use worth_store::physical_runtime::{CanonicalCommitResolution, ServingPhysicalRuntime};
+use worth_store::physical_runtime::ServingPhysicalRuntime;
 
 use crate::home_descriptor::HomeDescriptor;
 use crate::journal_medium::StoreJournalMedium;
@@ -94,23 +98,16 @@ impl RelationalStoreHome {
         &self.runtime
     }
 
-    /// The durable fate of the artifact with `digest` at `position`, from the
-    /// journal alone.
+    /// The durable fate of the commit whose artifact digest is `digest` at
+    /// `position`, from the journal alone. Pass the digest a
+    /// `DurabilityUnresolved` outcome carried to learn whether that commit
+    /// became durable.
     pub fn resolve(
         &self,
-        position: u64,
-        digest: [u8; 32],
-    ) -> Result<CanonicalCommitResolution, RelationalStoreJournalRefusal> {
-        let journal = self
-            .serving
-            .canonical_commits()
-            .map_err(RelationalStoreJournalRefusal::Unavailable)?;
-        journal.resolve(position, digest).map_err(|failure| {
-            RelationalStoreJournalRefusal::Unreadable {
-                position: Some(position),
-                failure,
-            }
-        })
+        position: PatchStreamPosition,
+        digest: RelationalCanonicalCommitArtifactDigest,
+    ) -> Result<RelationalStoreCommitFate, RelationalStoreJournalRefusal> {
+        resolution::resolve(&self.serving, position, digest)
     }
 }
 

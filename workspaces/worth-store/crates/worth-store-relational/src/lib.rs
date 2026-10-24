@@ -19,8 +19,9 @@ mod recovered_history;
 
 pub use checkpoint_record::RelationalStoreCheckpointRecordRefusal;
 pub use home::{
-    RelationalStoreCheckpoint, RelationalStoreCheckpointFailure, RelationalStoreHome,
-    RelationalStoreHomeClosed, RelationalStoreHomeOpenRefusal, RelationalStoreHomeRequest,
+    RelationalStoreCheckpoint, RelationalStoreCheckpointFailure, RelationalStoreCommitFate,
+    RelationalStoreHome, RelationalStoreHomeClosed, RelationalStoreHomeOpenRefusal,
+    RelationalStoreHomeRequest,
 };
 pub use home_descriptor::RelationalStoreHomeDescriptorRefusal;
 pub use physical_store::{RelationalStorePhysicalRefusal, RelationalStorePhysicalStage};

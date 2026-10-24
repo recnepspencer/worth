@@ -11,14 +11,16 @@
 use std::path::Path;
 
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_relational::facade::durability::RelationalCanonicalCommitArtifact;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::mvcc::{RelationalPublicationDenial, RelationalTransactionIntent};
+use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::transactions::{
     RecordRef, TransactionCommitError, WorkerIntentBatch,
 };
 use worth_store::physical_runtime::certification::MediaOperationRole;
-use worth_store::physical_runtime::CanonicalCommitResolution;
+use worth_store_relational::RelationalStoreCommitFate;
 use worth_store_relational::{RelationalStoreHome, RelationalStoreJournalRefusal};
 
 use super::batches;
@@ -52,16 +54,20 @@ fn assert_published_nothing(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) {
-    assert_eq!(
-        workload::artifacts_of(home.runtime()).len(),
-        held,
-        "{case}: live"
-    );
-    assert_eq!(
-        home.resolve(held as u64 + 1, [0; 32]).unwrap(),
-        CanonicalCommitResolution::NotCommitted { head: held as u64 },
-        "{case}: journal"
-    );
+    let live = workload::artifacts_of(home.runtime());
+    assert_eq!(live.len(), held, "{case}: live");
+    if let Some(last) = live.last() {
+        // Any commit's digest probes whether the next position is occupied.
+        let probe = RelationalCanonicalCommitArtifact::from_untrusted_bytes(last.clone())
+            .expect("an artifact frame")
+            .payload_digest();
+        assert_eq!(
+            home.resolve(PatchStreamPosition(held as u64 + 1), probe)
+                .unwrap(),
+            RelationalStoreCommitFate::NotCommitted { head: held as u64 },
+            "{case}: journal"
+        );
+    }
     home.close();
     let home = open(location, execution).expect("the home reopens");
     assert_eq!(
@@ -249,11 +255,11 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     // In this incarnation the journal either knows the position is
     // unresolved or, once Store requires inspection, lends no journal at all;
     // it never answers committed.
-    let in_incarnation = home.resolve(3, *fate.digest().as_bytes());
+    let in_incarnation = home.resolve(PatchStreamPosition(3), fate.digest());
     assert!(
         matches!(
             in_incarnation,
-            Ok(CanonicalCommitResolution::Unresolved)
+            Ok(RelationalStoreCommitFate::Unresolved)
                 | Err(RelationalStoreJournalRefusal::Unavailable(_))
         ),
         "{in_incarnation:?}"
@@ -270,9 +276,9 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     create(&home, 5, &execution);
     // The fate names the artifact by Relational's payload digest; resolving
     // it from the journal must find it committed.
-    let resolved = home.resolve(3, *fate.digest().as_bytes()).unwrap();
+    let resolved = home.resolve(PatchStreamPosition(3), fate.digest()).unwrap();
     assert!(
-        matches!(resolved, CanonicalCommitResolution::Committed(_)),
+        matches!(resolved, RelationalStoreCommitFate::Committed),
         "the unresolved fate resolved {resolved:?} after reopen"
     );
     home.close();
