@@ -25,7 +25,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryProviderAttemptRegistrationContext,
 };
 
-type RetainedProgram = WorthQueryApplicationEffectProgram<
+pub(super) type RetainedProgram = WorthQueryApplicationEffectProgram<
     IdentityExecutionSchema,
     ExactStatusRetentionOperation,
     ExactStatusRetentionInput,
@@ -54,6 +54,7 @@ fn occupied_real_registration_cleans_the_conflict_and_preserves_an_interleaved_p
             let (victim, peer) = equivalent_programs(
                 &host_custody.phase_for_application(&world.application),
                 &world,
+                &live_scope(),
                 "occupied-registration",
             );
             let victim = start(phase, &world, victim, idempotency(181, 182));
@@ -283,7 +284,7 @@ fn while_peer_is_registered(
     victim
 }
 
-fn start(
+pub(super) fn start(
     phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
 
     world: &AuthorizationWorld,
@@ -308,26 +309,21 @@ fn start(
         .unwrap_or_else(|outcome| panic!("registration fixture must start: {outcome:?}"))
 }
 
-fn equivalent_programs(
+pub(super) fn equivalent_programs(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &AuthorizationWorld,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     replacement: &str,
 ) -> (RetainedProgram, RetainedProgram) {
-    let request = live_scope();
-    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, &request);
-    let account = resolved_account(
-        &(phase_custody).test_host_request(),
-        world,
-        "open",
-        &request,
-    );
+    let principal = authenticated_principal(&(phase_custody).test_host_request(), world, request);
+    let account = resolved_account(&(phase_custody).test_host_request(), world, "open", request);
     (
         retained_status_program(
             &(phase_custody).test_host_request(),
             world,
             &principal,
             &account,
-            &request,
+            request,
             replacement,
             RetentionMutationBreadth::Narrow,
         ),
@@ -336,7 +332,7 @@ fn equivalent_programs(
             world,
             &principal,
             &account,
-            &request,
+            request,
             replacement,
             RetentionMutationBreadth::Narrow,
         ),

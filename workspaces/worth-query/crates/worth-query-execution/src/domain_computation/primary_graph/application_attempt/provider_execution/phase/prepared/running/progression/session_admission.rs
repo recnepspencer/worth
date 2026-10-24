@@ -186,3 +186,7 @@ mod comparison_scope_tests;
 
 #[cfg(test)]
 mod principal_comparison_tests;
+
+#[cfg(test)]
+#[path = "session_admission/interrupted_registration_tests.rs"]
+mod interrupted_registration_tests;
