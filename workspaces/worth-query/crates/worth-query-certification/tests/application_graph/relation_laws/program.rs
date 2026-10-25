@@ -1,5 +1,5 @@
 //! Schema and native action meaning derive from one relation declaration.
-use super::{creation::*, handler::Handler, operation::*, schema::*};
+use super::{creation::*, feeding::*, handler::Handler, operation::*, schema::*};
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -17,9 +17,11 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
             .entity(Node::reference())
+            .entity(Leaf::reference())
             .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
             .aspect(Principal::reference(), PrincipalFacts::reference())
             .aspect(Node::reference(), NodeFacts::reference())
+            .aspect(Leaf::reference(), LeafFacts::reference())
             .field(
                 ExternalMapping::reference(),
                 ExternalIdentityField::reference(),
@@ -30,6 +32,7 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             )
             .field(Principal::reference(), PrincipalKey::reference())
             .field(Node::reference(), NodeKey::reference())
+            .field(Leaf::reference(), LeafKey::reference())
             .relation(
                 MappingTarget::reference(),
                 ExternalMapping::reference(),
@@ -37,6 +40,7 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             )
             .principal_binding(GraphPrincipal::reference())
             .relation(Precedes::reference(), Node::reference(), Node::reference())
+            .relation(Feeds::reference(), Node::reference(), Leaf::reference())
             .operation(
                 EditEdges::reference()
                     .definition()
@@ -61,6 +65,25 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             .operation_create(CreateNode::reference(), Node::reference())
             .operation_write(CreateNode::reference(), NodeKey::reference())
             .application_mutation_binding::<CreateBinding<L>>()
+            .operation(
+                EditFeeds::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_read_field(EditFeeds::reference(), NodeKey::reference())
+            .operation_read_field(EditFeeds::reference(), LeafKey::reference())
+            .operation_read_relation(EditFeeds::reference(), Feeds::reference())
+            .operation_read_entity(EditFeeds::reference(), Node::reference())
+            .operation_read_entity(EditFeeds::reference(), Leaf::reference())
+            .operation_create(EditFeeds::reference(), Leaf::reference())
+            .operation_write(EditFeeds::reference(), LeafKey::reference())
+            .operation_link(EditFeeds::reference(), Feeds::reference())
+            .operation_unlink(EditFeeds::reference(), Feeds::reference())
+            .operation_delete(EditFeeds::reference(), Node::reference())
+            .operation_delete(EditFeeds::reference(), Leaf::reference())
+            .application_mutation_binding::<FeedsBinding<L>>()
     }
 }
 impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphContribution<L> {
@@ -70,7 +93,8 @@ impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphCo
         setup: &mut WorthQueryApplicationContributionSetup<'_, GraphSchema<L>>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.handler::<EditBinding<L>, _>(Handler)?;
-        setup.handler::<CreateBinding<L>, _>(CreateHandler)
+        setup.handler::<CreateBinding<L>, _>(CreateHandler)?;
+        setup.handler::<FeedsBinding<L>, _>(FeedsHandler)
     }
 }
 pub struct GraphFeature;
@@ -91,6 +115,8 @@ impl<L: LawPolicy> ApplicationProgramDefinition<GraphSchema<L>> for GraphProgram
                 .native_action::<EditBinding<L>>()
                 .finish_action()
                 .native_action::<CreateBinding<L>>()
+                .finish_action()
+                .native_action::<FeedsBinding<L>>()
                 .finish_action()
                 .finish(),
         ]

@@ -25,6 +25,7 @@ fn changing_only_the_relation_law_changes_the_same_named_program_revision() {
     changed_revision::<Unrestricted, NormalizedUnique>();
     changed_revision::<Unrestricted, SymmetricDirectedUnique>();
     changed_revision::<CrossPartition, Isolated>();
+    changed_revision::<Unrestricted, MinimumTwo>();
 }
 fn changed_revision<Old: LawPolicy, L: LawPolicy>() {
     let old = program::<Old>();
@@ -76,13 +77,14 @@ fn omitting_completed_schema_cannot_bypass_law_binding_at_installation() {
     unbound_refused::<NormalizedUnique>();
     unbound_refused::<SymmetricDirectedUnique>();
     unbound_refused::<Isolated>();
+    unbound_refused::<MinimumTwo>();
 }
 fn unbound_refused<L: LawPolicy>() {
     let unbound = ApplicationProgramAuthoring::<GraphSchema<L>, GraphProgram<L>>::begin()
         .validated_program()
         .unwrap();
     assert!(!unbound.matches_relation_laws(GraphSchema::<L>::declaration().unwrap().erased()));
-    let refusal = match install_program(unbound, 2, &[]) {
+    let refusal = match install_program(unbound, 2, &[], 0, &[]) {
         Err(refusal) => refusal,
         Ok(_) => panic!("an unbound program cannot govern a law-bearing schema"),
     };
@@ -124,16 +126,17 @@ fn restore<L: LawPolicy>(
 
 #[test]
 fn an_installed_checkpoint_cannot_silently_acquire_a_new_relation_law() {
-    checkpoint_laws::<Unrestricted, Acyclic>();
-    checkpoint_laws::<Unrestricted, Symmetric>();
-    checkpoint_laws::<Unrestricted, DirectedUnique>();
-    checkpoint_laws::<Unrestricted, NormalizedUnique>();
-    checkpoint_laws::<Unrestricted, SymmetricDirectedUnique>();
-    checkpoint_laws::<CrossPartition, Isolated>();
+    checkpoint_laws::<Unrestricted, Acyclic>(&[]);
+    checkpoint_laws::<Unrestricted, Symmetric>(&[]);
+    checkpoint_laws::<Unrestricted, DirectedUnique>(&[]);
+    checkpoint_laws::<Unrestricted, NormalizedUnique>(&[]);
+    checkpoint_laws::<Unrestricted, SymmetricDirectedUnique>(&[]);
+    checkpoint_laws::<CrossPartition, Isolated>(&[]);
+    checkpoint_laws::<Unrestricted, MinimumTwo>(&[(0, 1), (1, 2), (2, 0)]);
 }
-fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>() {
+fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>(edges: &[(u64, u64)]) {
     // This graph is lawful under either policy: refusal must concern installed meaning.
-    let old = install::<Old>(3, &[]);
+    let old = install::<Old>(3, edges);
     let unchanged_checkpoint = capture(&old);
     let changed_checkpoint = capture(&old);
     old.close();
@@ -149,7 +152,7 @@ fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>() {
     };
     assert_eq!(refusal.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
 
-    let strengthened = install::<L>(3, &[]);
+    let strengthened = install::<L>(3, edges);
     let same_meaning = capture(&strengthened);
     let removed = capture(&strengthened);
     strengthened.close();
@@ -162,5 +165,40 @@ fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>() {
             Err(WorthQueryInMemoryApplicationDenial::Graph(_))
         ),
         "removing a law is also changed installed meaning"
+    );
+}
+
+#[test]
+fn reordered_duplicate_minimum_kinds_preserve_schema_and_program_meaning() {
+    #[derive(Clone, Debug)]
+    struct RepeatedKinds;
+    impl LawPolicy for RepeatedKinds {
+        const INTEGRITY: ApplicationRelationIntegrity =
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+                .reaches_at_least(2, &["Node", "Node"]);
+    }
+    let plain = program::<MinimumTwo>();
+    let repeated = program::<RepeatedKinds>();
+    assert_eq!(plain.revision(), repeated.revision());
+    assert_eq!(
+        GraphSchema::<MinimumTwo>::declaration().unwrap().identity(),
+        GraphSchema::<RepeatedKinds>::declaration()
+            .unwrap()
+            .identity()
+    );
+    assert!(plain.matches_relation_laws(
+        GraphSchema::<RepeatedKinds>::declaration()
+            .unwrap()
+            .erased()
+    ));
+    let limits = WorthQueryPackageArchiveLimits::DEFAULT;
+    let archive = decode_application_program_description(
+        &encode_application_program_description(&plain, limits).unwrap(),
+        limits,
+    )
+    .unwrap();
+    assert_eq!(
+        archive.compatibility_with_validated(&repeated),
+        WorthQueryApplicationProgramArchiveCompatibility::ExactRevision
     );
 }

@@ -66,7 +66,15 @@ fn append_relation_integrity(
     };
     // No enabled law preserves the pre-existing relation meaning.
     for (law, value) in integrity.enabled_laws() {
-        basis.u64(format!("{prefix}.laws.{law}"), value);
+        use crate::application_schema::relation_integrity::ApplicationRelationLawValue;
+        match value {
+            ApplicationRelationLawValue::Number(value) => {
+                basis.u64(format!("{prefix}.laws.{law}"), value)
+            }
+            value @ ApplicationRelationLawValue::KindSet(_) => {
+                basis.text(format!("{prefix}.laws.{law}"), &value.canonical_text())
+            }
+        }
     }
     basis.text(
         format!("{prefix}.endpoints.cross_context"),

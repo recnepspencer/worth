@@ -202,7 +202,7 @@ impl RelationalMaterializationPort {
                 &runtime,
                 basis,
                 custody,
-                &validated.proposed_working_state,
+                validated.proposed_invariant_state.working_state(),
             )
             .map_err(RelationalMaterializationError::Commit)?;
         let invariant_evidence = validated.invariant_evidence().clone();

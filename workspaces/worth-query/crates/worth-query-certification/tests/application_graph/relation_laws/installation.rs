@@ -14,21 +14,32 @@ pub struct World<L: LawPolicy> {
     pub application: WorthQueryProgramApplicationRuntime<GraphSchema<L>, GraphProgram<L>>,
     pub projection: WorthQueryApplicationInvariantProjectionAuthority<GraphSchema<L>>,
     pub nodes: u64,
+    pub leaves: u64,
     creation_attempt: u64,
 }
 pub fn install<L: LawPolicy>(nodes: u64, edges: &[(u64, u64)]) -> World<L> {
+    install_with_feeds(nodes, edges, 0, &[])
+}
+pub fn install_with_feeds<L: LawPolicy>(
+    nodes: u64,
+    edges: &[(u64, u64)],
+    leaves: u64,
+    feeds: &[(u64, u64)],
+) -> World<L> {
     assert!(nodes > 0);
     let schema = GraphSchema::<L>::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<GraphSchema<L>, GraphProgram<L>>::begin()
         .with_schema(&schema)
         .validated_program()
         .unwrap();
-    install_program(program, nodes, edges).unwrap()
+    install_program(program, nodes, edges, leaves, feeds).unwrap()
 }
 pub fn install_program<L: LawPolicy>(
     program: ValidatedApplicationProgram<GraphSchema<L>, GraphProgram<L>>,
     nodes: u64,
     edges: &[(u64, u64)],
+    leaves: u64,
+    feeds: &[(u64, u64)],
 ) -> Result<World<L>, WorthQueryInMemoryApplicationDenial> {
     let schema = GraphSchema::<L>::declaration().unwrap();
     let mut projection = None;
@@ -56,6 +67,20 @@ pub fn install_program<L: LawPolicy>(
                         .field(NodeKey::reference(), node),
                 )?;
             }
+            for leaf in 0..leaves {
+                graph.bind_entity(
+                    WorthQueryApplicationEntitySeed::new(Leaf::reference(), leaf_key::<L>(leaf))
+                        .field(LeafKey::reference(), leaf),
+                )?;
+            }
+            for (index, &(source, target)) in feeds.iter().enumerate() {
+                graph.bind_relation(WorthQueryApplicationRelationSeed::new(
+                    Feeds::reference(),
+                    format!("feed-seed-{index}"),
+                    key::<L>(source),
+                    leaf_key::<L>(target),
+                ))?;
+            }
             for (index, &(source, target)) in edges.iter().enumerate() {
                 graph.bind_relation(WorthQueryApplicationRelationSeed::new(
                     Precedes::reference(),
@@ -72,10 +97,14 @@ pub fn install_program<L: LawPolicy>(
         projection: projection.unwrap(),
         nodes,
         creation_attempt: 0,
+        leaves,
     })
 }
 fn key<L: LawPolicy>(node: u64) -> WorthQueryApplicationEntityKey<GraphSchema<L>, Node> {
     WorthQueryApplicationEntityKey::new(format!("node-{node}")).unwrap()
+}
+fn leaf_key<L: LawPolicy>(leaf: u64) -> WorthQueryApplicationEntityKey<GraphSchema<L>, Leaf> {
+    WorthQueryApplicationEntityKey::new(format!("leaf-{leaf}")).unwrap()
 }
 impl<L: LawPolicy> World<L> {
     pub fn edit(
@@ -126,10 +155,22 @@ impl<L: LawPolicy> World<L> {
         in_context: bool,
         link: bool,
     ) -> WorthQueryApplicationMutationOutcome<GraphDenial, Edited> {
-        use super::creation::{Create, CreateNodeInput};
+        self.create_with(super::creation::CreateNodeInput {
+            key: self.nodes,
+            context,
+            in_context,
+            link,
+            backlink: false,
+        })
+    }
+    pub fn create_with(
+        &mut self,
+        input: super::creation::CreateNodeInput,
+    ) -> WorthQueryApplicationMutationOutcome<GraphDenial, Edited> {
+        use super::creation::Create;
+        assert_eq!(input.key, self.nodes);
         let scope = request_scope();
         let principal = authenticate_operator(self.application.installed_schema(), &scope);
-        let key = self.nodes;
         let command = self.creation_attempt;
         self.creation_attempt += 1;
         let result = self
@@ -139,12 +180,7 @@ impl<L: LawPolicy> World<L> {
             .on_branch(self.application.current_world())
             .advanced()
             .mutate(Create::<L> {
-                input: CreateNodeInput {
-                    key,
-                    context,
-                    in_context,
-                    link,
-                },
+                input,
                 marker: PhantomData,
             })
             .without_source()
@@ -159,6 +195,51 @@ impl<L: LawPolicy> World<L> {
             WorthQueryApplicationMutationOutcome::Committed { .. }
         ) {
             self.nodes += 1;
+        }
+        result
+    }
+    pub fn edit_feeds(
+        &mut self,
+        serial: u64,
+        context: u64,
+        change: super::feeding::FeedsChange,
+    ) -> WorthQueryApplicationMutationOutcome<GraphDenial, Edited> {
+        use super::feeding::{FeedsChange, FeedsEdit, FeedsEditInput};
+        let replacement = match &change {
+            FeedsChange::Replace { first_leaf, count } => {
+                assert_eq!(*first_leaf, self.leaves);
+                Some(u64::from(*count))
+            }
+            _ => None,
+        };
+        let scope = request_scope();
+        let principal = authenticate_operator(self.application.installed_schema(), &scope);
+        let result = self
+            .application
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(self.application.current_world())
+            .advanced()
+            .mutate(FeedsEdit::<L> {
+                input: FeedsEditInput {
+                    serial,
+                    context,
+                    change,
+                },
+                marker: PhantomData,
+            })
+            .without_source()
+            .idempotency(&serial)
+            .execute_in_program(
+                &self.application,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        if matches!(
+            result,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ) {
+            self.leaves += replacement.unwrap_or(0);
         }
         result
     }

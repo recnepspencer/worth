@@ -23,6 +23,7 @@ pub(super) fn register(
         instance,
         instance,
         relations::single_successor_integrity(),
+        None,
     )?;
     register_relation(
         registry,
@@ -33,5 +34,6 @@ pub(super) fn register(
         instance,
         transition,
         relations::prior_effect_integrity(),
+        None,
     )
 }

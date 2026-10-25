@@ -137,6 +137,7 @@ pub(in crate::domain_computation::primary_graph) fn register_relation(
     from_kind: KindId,
     to_kind: KindId,
     integrity: ApplicationRelationIntegrity,
+    entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     register_relation_to_kinds(
         registry,
@@ -147,6 +148,7 @@ pub(in crate::domain_computation::primary_graph) fn register_relation(
         from_kind,
         vec![to_kind],
         integrity,
+        entity_kinds,
     )
 }
 
@@ -159,9 +161,11 @@ pub(in crate::domain_computation::primary_graph) fn register_relation_to_kinds(
     from_kind: KindId,
     to_kinds: Vec<KindId>,
     integrity: ApplicationRelationIntegrity,
+    entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     let cross_context_policy = lower_cross_context(integrity.cross_context_policy());
-    let relation_integrity = lower_relation_integrity(relation, from_kind, to_kinds, integrity);
+    let relation_integrity =
+        lower_relation_integrity(relation, from_kind, to_kinds, integrity, entity_kinds)?;
     registry
         .register_relation_kind(RelationKindRegistration {
             kind_id,

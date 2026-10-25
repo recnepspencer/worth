@@ -97,11 +97,20 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
             error.detail()
         ),
     );
-    if let Error::Conflict { error, .. } = error
-        && let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
-            fields,
-            ..
-        } = error.class
+    let fields = match error {
+        Error::Conflict { error, .. } => match error.class {
+            worth_relational::facade::transactions::ConflictClass::InvariantViolation {
+                fields,
+                ..
+            } => Some(fields),
+            _ => None,
+        },
+        Error::Publication { error, .. } => error
+            .into_invariant_violation()
+            .map(|violation| violation.fields),
+        _ => None,
+    };
+    if let Some(fields) = fields
         && crate::domain_computation::WorthQueryRelationLawDenial::from_fields(&fields).is_some()
     {
         return denial.with_relation_law_fields(fields);

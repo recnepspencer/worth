@@ -139,3 +139,9 @@ name = "relation_partition_declaration.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "tests/application_graph.rs"
 source = "tests/application_graph/relation_laws/schema/partition.rs"
+
+[[compiled_sources]]
+name = "relation_minimum_declaration.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "tests/application_graph.rs"
+source = "tests/application_graph/relation_laws/schema/minimum.rs"

@@ -4,6 +4,23 @@ use crate::branch::SelectedRelationalBranchState;
 use crate::runtime::{RelationalPreparationRuntime, WorkingState};
 use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, TransactionCommitError};
 
+/// Detached authoritative application and the correspondence minted by that apply.
+#[derive(Debug)]
+pub(crate) struct AppliedInvariantState {
+    working_state: WorkingState,
+    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
+}
+impl AppliedInvariantState {
+    pub(crate) fn working_state(&self) -> &WorkingState {
+        &self.working_state
+    }
+    pub(crate) fn created_entities(
+        &self,
+    ) -> &crate::transactions::data::CommitCreatedEntityBindings {
+        &self.created_entities
+    }
+}
+
 /// Build the detached post-plan state used by commit-boundary invariants.
 ///
 /// The mutation engine remains the sole interpreter of mutation intents.  The
@@ -18,7 +35,7 @@ pub(crate) fn prepare_proposed_invariant_state(
     schema_authority: &crate::branch::RelationalBranchRootSchemaAuthority,
     version_id: crate::identity::data::VersionId,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
-) -> Result<WorkingState, TransactionCommitError> {
+) -> Result<AppliedInvariantState, TransactionCommitError> {
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
         version_id,
@@ -53,5 +70,8 @@ pub(crate) fn prepare_proposed_invariant_state(
         &applied.effect.adjacency.deltas,
         version_id,
     );
-    Ok(proposed)
+    Ok(AppliedInvariantState {
+        working_state: proposed,
+        created_entities: applied.created_entities,
+    })
 }

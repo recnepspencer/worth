@@ -46,6 +46,7 @@ pub(super) fn enforce_snapshot_publication_phase(
     phase_timing: &mut CommitPhaseTiming,
     selected_branch_state: &crate::branch::SelectedRelationalBranchState,
     working_state: &crate::storage::overlay::WorkingState,
+    created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
     version_id: VersionId,
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
@@ -62,6 +63,7 @@ pub(super) fn enforce_snapshot_publication_phase(
             .enforce_snapshot_publication_for_working_state(
                 selected_branch_state,
                 working_state,
+                created_entities,
                 version_id,
                 merged_plan,
                 proposal_identity,

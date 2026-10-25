@@ -92,7 +92,8 @@ fn enforce_snapshot_invariant(
         .prepared_mut()
         .proposal_identity()
         .clone();
-    let (admitted, working_state) = mutated.validated_mut().prepared_mut().mutation_parts();
+    let (validated, created_entities) = mutated.publication_validation_parts();
+    let (admitted, working_state) = validated.prepared_mut().mutation_parts();
     let prevalidated_snapshot_publication = admitted.take_prevalidated_snapshot_publication();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
     let invariant = enforce_snapshot_publication_phase(
@@ -101,6 +102,7 @@ fn enforce_snapshot_invariant(
         phase_timing,
         &selected_branch_state,
         working_state,
+        created_entities,
         version_id,
         merged_plan,
         Some(&proposal_identity),

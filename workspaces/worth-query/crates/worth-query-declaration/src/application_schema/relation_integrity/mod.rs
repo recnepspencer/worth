@@ -2,8 +2,10 @@ mod cardinality;
 mod deletion;
 mod endpoints;
 mod law_meaning;
+mod minimum;
 mod uniqueness;
-pub(crate) use law_meaning::ApplicationRelationLawMeaning;
+pub(crate) use law_meaning::{ApplicationRelationLawMeaning, ApplicationRelationLawValue};
+pub use minimum::ApplicationRelationMinimumReachability;
 pub use uniqueness::ApplicationRelationUniquenessScope;
 
 pub use cardinality::ApplicationRelationCardinality;
@@ -25,6 +27,8 @@ pub struct ApplicationRelationIntegrity {
     pub unique: Option<ApplicationRelationUniquenessScope>,
     /// Every surviving edge must connect entities in the same native partition.
     pub same_partition_endpoints: bool,
+    /// Every source must reach this many distinct targets of the selected entity kinds.
+    pub reaches_at_least: Option<ApplicationRelationMinimumReachability>,
 }
 
 impl ApplicationRelationIntegrity {
@@ -41,6 +45,7 @@ impl ApplicationRelationIntegrity {
             symmetric: false,
             unique: None,
             same_partition_endpoints: false,
+            reaches_at_least: None,
         }
     }
 
@@ -76,6 +81,16 @@ impl ApplicationRelationIntegrity {
         self
     }
 
+    /// Require distinct reachable targets at the proposed publication boundary.
+    /// Kind names can be obtained from typed entity references with `.name()`.
+    pub const fn reaches_at_least(mut self, minimum: u32, kinds: &'static [&'static str]) -> Self {
+        self.reaches_at_least = Some(ApplicationRelationMinimumReachability {
+            minimum_reachable_targets: minimum,
+            target_kinds: kinds,
+        });
+        self
+    }
+
     /// Require both endpoints to belong to the same native partition.
     pub const fn same_partition_endpoints(mut self) -> Self {
         self.same_partition_endpoints = true;
@@ -101,6 +116,6 @@ pub(super) fn validate_relation_integrity(
     }) {
         Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity)
     } else {
-        Ok(())
+        minimum::validate_minimum_kinds(members)
     }
 }

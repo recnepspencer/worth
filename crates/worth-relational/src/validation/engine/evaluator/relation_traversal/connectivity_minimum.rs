@@ -29,14 +29,17 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
         return None;
     }
 
-    let planned_successors = planned_successor_map(&scope.planned_edges, context);
+    let planned_successors = context
+        .applied_created_entities()
+        .is_none()
+        .then(|| planned_successor_map(&scope.planned_edges, context));
     if !context.checkpoint(0) {
         return None;
     }
     let traversal = PreparedSuccessorTraversal {
         scope,
         class,
-        planned_successors: &planned_successors,
+        planned_successors: planned_successors.as_ref(),
     };
     for source in source_entities {
         if !context.checkpoint(1) {
@@ -52,6 +55,16 @@ pub(in crate::validation::engine::evaluator) fn evaluate_connectivity_minimum_co
             Err(violation) => return Some(violation),
         };
         if reachable_target_count < contract.minimum_reachable_targets as usize {
+            let source = match (&source, context.applied_created_entities()) {
+                (EntityReference::Existing(entity_id), Some(bindings)) => bindings
+                    .original_reference(*entity_id, || context.checkpoint(1))
+                    .map(EntityReference::Created)
+                    .unwrap_or(source),
+                _ => source,
+            };
+            if !context.checkpoint(0) {
+                return None;
+            }
             return Some(InvariantViolation {
                 class,
                 code: DiagnosticCode::InvariantViolation,

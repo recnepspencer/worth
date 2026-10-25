@@ -58,6 +58,6 @@ impl InvariantFailure {
     }
 
     pub fn into_publication_error(self, stage: PublicationStage) -> PublicationError {
-        PublicationError::new(stage, self.violation.detail)
+        PublicationError::from_invariant_violation(stage, self.violation)
     }
 }

@@ -590,3 +590,186 @@ traversal, budget, accounting model or test authority door was introduced.
 
 Minimum reachability, public fixture cutover and Proprietary adoption remain
 unfinished. Phase 2 remains on its task branch until those gates close.
+
+## Phase 2, slice 4: Minimum reachable targets
+
+Boundary review: native connectivity counts distinct reachable targets of the
+selected kinds, follows this relation in source-to-target direction, excludes
+its starting source even through cycles, and obligates every visible entity of
+the relation's source kind. SnapshotPublication is inside actual application
+commit validation, before publication. The evaluator stays the only graph-law
+owner.
+
+Publication currently discards the original InvariantViolation in native
+InvariantFailure::into_publication_error before Query can inspect it. Preserve
+that original payload at this conversion, then carry/borrow it through Query's
+invariant, provider and bootstrap refusal paths; do not reconstruct it from the
+diagnostic text or rerun the candidate.
+
+Authored minimum kinds are portable entity names obtainable from typed entity
+references. Validate them against the completed schema, normalize their set for
+canonical meaning, and resolve them through the complete entity_kinds binding
+already produced by schema_layout::lower. Carry that binding through the existing
+registration/lowering seam as an explicit Option: ordinary authored schemas pass
+Some, generated workflow relations with no named minimum pass None. Enabled
+minimum laws with missing bindings or unknown names must refuse, never disappear.
+No registry rescans, empty proxy maps or second lowering wrapper are needed.
+
+The existing numeric enabled-law encoding must gain a declaration-owned typed
+numeric/kind-set value. Keep old numeric preimages and no-law absence unchanged;
+use the same normalized representation for canonical schema, program manifest,
+semantic facts and support admission. Do not hash entity names into numeric flags.
+
+There is an unproven identity hazard: publication scope can observe already
+allocated records as Existing while also retaining symbolic Created plan edges.
+Connectivity unions these references, potentially counting one target twice.
+The mutation engine already issues CommitCreatedEntityBindings; detached proposal
+construction currently discards them, and actual publication validation also
+fails to consume them. Prove the public failure before choosing a repair. If
+exposed, carry the mutation owner's applied-state/correspondence truth at those
+handoffs. No inferred slots, key scans, alternate traversal or guessed IDs.
+
+Plan:
+
+1. Add const `.reaches_at_least(minimum, kinds)` with a named portable minimum
+   value. Reject zero, empty sets and undeclared kinds at completed declaration.
+   Extend the single law-meaning encoding as above and preserve existing defaults.
+2. Make native relation-integrity lowering fallible and carry the explicit kind
+   binding through existing registration calls. Resolve/sort/deduplicate target
+   IDs, use the declared from_kind as source domain, and lower the native
+   SnapshotPublication minimum contract. Prove missing-binding refusal and exact
+   no-minimum generated meaning.
+3. Preserve native original publication invariant payloads and extend Query's
+   original borrowed law denial with source identity, actual distinct count and
+   declared minimum. Cover native conversion/serialization and all Query handoffs.
+4. Reuse the existing public graph installation and authentication. Extend its
+   cohesive vocabulary with Leaf and Feeds (Node to Leaf), and a real operation
+   that reads/removes observed Feeds edges, creates contextual Leaves and links
+   them. Keep Precedes Node-to-Node for independent cycle/self/duplicate-path
+   courts. No fixture law evaluator or second host/install system.
+5. First run the alias reproducer: an existing Node starts lawfully reaching two
+   Leaves; replacing both links with one newly created Leaf must refuse minimum2.
+   Its two-distinct-Leaf twin commits. Probe attempted keys directly on refusal.
+   If it exposes the suspected alias, revise this brief with the actual evidence
+   and smallest owner repair before editing that substrate seam.
+6. Prove existing-only removals, created targets/sources, isolated sources,
+   source/target deletion, cycles and source exclusion, duplicate physical/path
+   reachability, target-kind normalization, typed counts and refusal atomicity.
+   Add seeded edits against an independent distinct-reachability graph model.
+   Extend schema/program/archive/support/checkpoint law handoffs with lawful
+   bootstrap states rather than empty graphs that already violate the minimum.
+7. Document exact source obligation and distinct-target semantics with a compiled
+   example. Run focused native/public/owner tests and the full grouped public
+   graph target; compiled docs, normal boundary/context, formatting, caps and
+   function scrutiny. The persistent reviewer gates the living diff and evidence
+   before commit. Public fixture and Proprietary adoption still gate Phase 2.
+
+Only minimum reachability and the necessary original-publication/allocated-truth
+handoffs belong here. Other milestone phases and consumer cutovers remain later
+slices; no new budgets, work counters or traversal engine are introduced.
+
+### Minimum court confirms the applied-identity boundary defect
+
+The compiled ordinary public court was run before any native identity repair.
+Replacing an existing Node's two Feeds links with one newly created contextual
+Leaf returned Committed (commit/version 3) under a declared minimum of two.
+The source already existed and Leaf is not a source kind, so an isolated newly
+created source cannot mask or explain the result. The retained reproducer log is
+`targets/query-9.18.1-minimum-created-target-reproducer.log` outside the checkout.
+This confirms the mixed Existing/Created successor representations can falsely
+satisfy a real application law.
+
+Repair the causal handoff: detached authoritative apply returns one private
+AppliedInvariantState containing its WorkingState and its own owner-issued
+CommitCreatedEntityBindings. Carry that value through proposal validation and
+prepared execution. Actual mutation already has a separate correspondence;
+actual snapshot validation must borrow that actual mutation's pair, never the
+detached one. The native observation retains an explicit borrowed applied basis
+only from these post-apply constructors, and request/packet/context preserve it.
+
+Connectivity consumes completed visible sources/successors alone in that basis,
+without appending symbolic planned sources or successors. Existing committed+
+plan fixture modes keep their current semantics; other native law scopes are
+unchanged. On refusal, recover an unpublished source's Created reference from
+the same mutation owner's stable correspondence, with checkpoints during the
+failure-path correspondence lookup. No graph or name/slot identity lookup is
+introduced, and no success-path reverse-index allocation is needed. The
+persistent reviewer independently endorsed this repair after the public failure.
+
+
+### Slice 4 verification
+
+All five relation laws are now declarable through the ordinary Query schema.
+Minimum reachability resolves the completed schema's portable target-kind names
+through the sole native lowerer, normalizes their set in canonical meaning, and
+uses the existing native SnapshotPublication contract before actual publication.
+Generated workflow registrations explicitly have no named-kind binding; an
+enabled minimum cannot silently lower without one. Existing numeric law meaning
+and the no-law default keep their previous canonical encoding.
+
+The original publication invariant now survives the native conversion and all
+Query denial handoffs. Callers borrow its native source identity and distinct
+reachable-target count, including an original Created source. Diagnostic strings
+are never parsed into evidence. Native serialization still accepts old errors
+without a typed payload.
+
+The public failing-before court exposed the applied-identity defect described
+above. The repair carries each applied graph together with that apply's actual
+created-entity correspondence. Connectivity traverses its completed visible
+records without appending symbolic plan edges or sources. The failure path uses
+the same owner's retained stable correspondence to recover a Created source,
+with cancellation checkpoints. Other law scopes and committed-plus-plan fixture
+semantics retain their previous behavior.
+
+The deletion court also exposed a fixture evidence omission: resolving a key and
+naming a mutation target do not supply the Entity fact required for retirement.
+The ordinary decision reader now reads the declared Node/Leaf entity before
+requesting deletion; its production binding and access scope are unchanged.
+
+Verification of production and public behavior:
+
+- The ordinary public relation-law court passes all 31 tests. The full grouped
+  application_graph target discovers 429 tests: 424 passed and five existing
+  tests remain ignored. This includes the one-created-target false-pass
+  reproducer, its two-target twin, Created-source refusal and return-edge twin,
+  bootstrap, prior target deletion, source deletion, duplicate physical paths,
+  cycles/self exclusion, normalized kind sets and 72 independent graph edits.
+  Refusals probe attempted keys directly and preserve the committed physical bag.
+- Native validation-engine tests: 67 passed; created-entity correspondence:
+  three passed; transaction core: 240 passed; materialization: 62 passed and two
+  existing ignored; proposal: 26 passed; invariant access: 11 passed; request
+  checkpoints: 11 passed. These filters overlap and are not a unique-test sum.
+- Declaration 464, Installation 343 and PackageArchive 116 tests passed (923
+  total). Execution's complete 1,973-test library compiled; its focused seven
+  lowering, five denial, seven bootstrap and 17 ownership tests passed.
+- The compiled-example drift test passes. The guide explains every source-kind
+  entity's obligation, distinct targets, excluded starting source, cycles,
+  creation/deletion and the native publication boundary. It distinguishes
+  unsatisfiable homogeneous acyclic minima from the valid Node-to-Leaf model.
+
+The normal compiled-source ownership guard then found a tooling defect: a direct
+#[path] module and its unselected conventional sibling were both inventoried.
+The registered example/test court fails before repair when that sibling is a
+decoy. Rustc's direct path now overrides conventional candidates, while
+cfg_attr-only selectors retain every selectable branch and conventional
+fallback. Missing or malformed direct paths refuse, including a malformed direct
+path beside a valid conditional selector. This corrects source selection rather
+than weakening the compiled-doc guard or renaming the public fixture.
+
+The persistent reviewer has reviewed the full living slice with qa-loop,
+qa-tests and code-quality-qa, and separately accepted the named final tooling
+correction. All 320 boundary-tool unit tests passed; after the final malformed
+attribute correction its three source-selection tests and the registered
+example/test decoy court passed again. The 14-test production source-resolution
+integration owner also passes. The final normal boundary check passes with
+"Road 1 Cargo topology is valid" (exit zero); the reviewer confirmed the broader
+181-case authority suite is not an additional commit gate. Its remaining optional cases were intentionally stopped after the
+required source-resolution owner passed, because their many concurrent Cargo
+metadata processes contended with the mandatory normal check. No assertion had
+failed, and the broader suite is not claimed as completed.
+Final agent-context, formatting of all 60 dirty Rust files, whitespace and dirty
+line caps pass. Function scrutiny reports 44 advisory candidates and no scan
+errors; the scoped candidates were reviewed and accepted. The persistent
+reviewer granted final commit clearance under all three requested QA skills.
+Public consumer cutovers and Proprietary adoption still gate Phase 2; this slice
+does not close the phase or merge it to master.

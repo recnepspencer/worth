@@ -5,6 +5,8 @@ use worth_query_host::facade::declaration::{application_schema::*, authenticatio
 
 pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const INTEGRITY: ApplicationRelationIntegrity;
+    const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
 }
 #[derive(Clone, Debug)]
 pub struct Acyclic;
@@ -48,11 +50,13 @@ pub use paired_unique::SymmetricDirectedUnique;
 
 pub trait GraphSchemaBinding: ApplicationSchema {
     const INTEGRITY: ApplicationRelationIntegrity;
+    const FEEDS_INTEGRITY: ApplicationRelationIntegrity;
 }
 #[derive(Clone, Debug)]
 pub struct GraphSchema<L: LawPolicy>(PhantomData<fn() -> L>);
 impl<L: LawPolicy> GraphSchemaBinding for GraphSchema<L> {
     const INTEGRITY: ApplicationRelationIntegrity = L::INTEGRITY;
+    const FEEDS_INTEGRITY: ApplicationRelationIntegrity = L::FEEDS_INTEGRITY;
 }
 impl<L: LawPolicy> ApplicationSchema for GraphSchema<L> {
     const OWNER: &'static str = "worth.query.relation-law-court";
@@ -74,8 +78,11 @@ impl<L: LawPolicy> ApplicationSchemaComposition for GraphSchema<L> {
 worth_query_entity!(pub ExternalMapping for S: GraphSchemaBinding);
 worth_query_entity!(pub Principal for S: GraphSchemaBinding);
 worth_query_entity!(pub Node for S: GraphSchemaBinding);
+worth_query_entity!(pub Leaf for S: GraphSchemaBinding);
 worth_query_aspect!(pub ExternalIdentity for S: GraphSchemaBinding, ExternalMapping; identity = AspectIdentity(0x91810101), revision = AspectContractRevision(1));
 worth_query_aspect!(pub PrincipalFacts for S: GraphSchemaBinding, Principal; identity = AspectIdentity(0x91810102), revision = AspectContractRevision(1));
+worth_query_aspect!(pub LeafFacts for S: GraphSchemaBinding, Leaf; identity = AspectIdentity(0x91810104), revision = AspectContractRevision(1));
+worth_query_field!(pub LeafKey for S: GraphSchemaBinding, Leaf, LeafFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_aspect!(pub NodeFacts for S: GraphSchemaBinding, Node; identity = AspectIdentity(0x91810103), revision = AspectContractRevision(1));
 worth_query_field!(pub ExternalIdentityField for S: GraphSchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryExternalPrincipalIdentity => WorthQueryExternalPrincipalIdentityBinding, read_only, equality);
 worth_query_field!(pub MappingStatusField for S: GraphSchemaBinding, ExternalMapping, ExternalIdentity: WorthQueryPrincipalMappingStatus => WorthQueryPrincipalMappingStatusBinding, read_write, equality);
@@ -133,3 +140,13 @@ impl GraphPrincipal {
 #[path = "schema/partition.rs"]
 mod partition;
 pub use partition::{CrossPartition, Isolated};
+
+pub struct Feeds;
+impl Feeds {
+    pub const fn reference<S: GraphSchemaBinding>() -> ApplicationRelationRef<S, Self, Node, Leaf> {
+        ApplicationRelationRef::from_schema_identifiers("Feeds", "Node", "Leaf", S::FEEDS_INTEGRITY)
+    }
+}
+#[path = "schema/minimum.rs"]
+mod minimum;
+pub use minimum::{LeafAndPrincipalMinimumTwo, LeafMinimumTwo, MinimumTwo};

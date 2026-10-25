@@ -164,6 +164,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[4],
         kinds[0],
         connection_endpoint_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -174,6 +175,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[18],
         kinds[28],
         owned_fact_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -184,6 +186,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[14],
         kinds[18],
         relations::workflow_proposal_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -194,6 +197,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[14],
         kinds[20],
         relations::assessment_evidence_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -204,6 +208,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[14],
         kinds[22],
         relations::assessment_evidence_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -214,6 +219,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[22],
         kinds[18],
         relations::approval_proposal_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -224,6 +230,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[22],
         kinds[20],
         relations::approval_evidence_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -234,6 +241,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[20],
         kinds[26],
         owned_fact_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -244,6 +252,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[4],
         kinds[0],
         relations::live_membership_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -254,6 +263,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[4],
         kinds[14],
         owned_fact_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -264,6 +274,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[14],
         kinds[2],
         connection_endpoint_integrity(),
+        None,
     )?;
     registry = register_relation(
         registry,
@@ -274,6 +285,7 @@ pub(in crate::domain_computation::primary_graph) fn lower_workflow(
         kinds[4],
         kinds[1],
         connection_endpoint_integrity(),
+        None,
     )?;
     registry = migration::register(
         registry,

@@ -14,6 +14,15 @@ pub(super) struct MutatedCommitExecution {
 }
 
 impl MutatedCommitExecution {
+    pub(super) fn publication_validation_parts(
+        &mut self,
+    ) -> (
+        &mut BoundaryValidatedCommitExecution,
+        &crate::transactions::data::CommitCreatedEntityBindings,
+    ) {
+        (&mut self.validated, &self.created_entities)
+    }
+
     pub(super) fn validated_mut(&mut self) -> &mut BoundaryValidatedCommitExecution {
         &mut self.validated
     }

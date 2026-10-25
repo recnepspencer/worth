@@ -31,6 +31,7 @@ pub(super) fn register(
         instance_kind,
         subject_kinds,
         super::relations::subject_integrity(),
+        None,
     )?;
     Ok((registry, kind))
 }

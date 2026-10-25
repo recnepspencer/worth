@@ -14,6 +14,14 @@ use worth_relational::facade::transactions::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryRelationLawDenial<'a> {
+    /// A source has too few distinct reachable targets of the declared kinds.
+    ConnectivityMinimum {
+        contract_id: &'a ContractId,
+        relation_kind_id: KindId,
+        source: &'a EntityReference,
+        reachable_target_count: usize,
+        minimum_reachable_targets: u32,
+    },
     /// These endpoints belong to different native partitions.
     PartitionIsolation {
         contract_id: &'a ContractId,
@@ -50,6 +58,19 @@ pub enum WorthQueryRelationLawDenial<'a> {
 impl<'a> WorthQueryRelationLawDenial<'a> {
     pub(crate) fn from_fields(fields: &'a InvariantViolationFields) -> Option<Self> {
         match fields {
+            InvariantViolationFields::ConnectivityMinimum {
+                contract_id,
+                relation_kind_id,
+                source,
+                reachable_target_count,
+                minimum_reachable_targets,
+            } => Some(Self::ConnectivityMinimum {
+                contract_id,
+                relation_kind_id: *relation_kind_id,
+                source,
+                reachable_target_count: *reachable_target_count,
+                minimum_reachable_targets: *minimum_reachable_targets,
+            }),
             InvariantViolationFields::PartitionIsolation {
                 contract_id,
                 relation_kind_id,
@@ -106,12 +127,17 @@ impl<'a> WorthQueryRelationLawDenial<'a> {
     }
 
     pub(crate) fn from_commit_error(error: &'a TransactionCommitError) -> Option<Self> {
-        let TransactionCommitError::Conflict { error, .. } = error else {
-            return None;
-        };
-        let ConflictClass::InvariantViolation { fields, .. } = &error.class else {
-            return None;
-        };
-        Self::from_fields(fields)
+        match error {
+            TransactionCommitError::Conflict { error, .. } => {
+                let ConflictClass::InvariantViolation { fields, .. } = &error.class else {
+                    return None;
+                };
+                Self::from_fields(fields)
+            }
+            TransactionCommitError::Publication { error, .. } => {
+                Self::from_fields(&error.invariant_violation()?.fields)
+            }
+            _ => None,
+        }
     }
 }

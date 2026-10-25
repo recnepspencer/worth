@@ -161,3 +161,46 @@ fn partition_law_changes_meaning_without_changing_endpoint_permission() {
     removed.same_partition_endpoints = false;
     assert_eq!(identity(original), identity(removed));
 }
+
+#[test]
+fn minimum_kind_set_is_canonical_and_count_is_part_of_meaning() {
+    let original = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    let identity = |integrity| {
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(integrity))
+            .build()
+            .unwrap()
+            .identity()
+            .clone()
+    };
+    let two = original.reaches_at_least(2, &["To", "From", "To"]);
+    assert_eq!(
+        identity(two),
+        identity(original.reaches_at_least(2, &["From", "To"]))
+    );
+    assert_ne!(
+        identity(two),
+        identity(original.reaches_at_least(3, &["From", "To"]))
+    );
+    assert_ne!(
+        identity(two),
+        identity(original.reaches_at_least(2, &["To"]))
+    );
+    let mut removed = two;
+    removed.reaches_at_least = None;
+    assert_eq!(identity(original), identity(removed));
+}
+
+#[test]
+fn minimum_requires_a_positive_count_and_declared_nonempty_target_kinds() {
+    let original = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    for invalid in [
+        original.reaches_at_least(0, &["To"]),
+        original.reaches_at_least(1, &[]),
+        original.reaches_at_least(1, &["Unknown"]),
+    ] {
+        assert!(matches!(
+            ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(invalid)).build(),
+            Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity)
+        ));
+    }
+}

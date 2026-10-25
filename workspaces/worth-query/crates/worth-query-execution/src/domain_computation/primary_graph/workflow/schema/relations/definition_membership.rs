@@ -69,6 +69,7 @@ pub(in crate::domain_computation::primary_graph::workflow::schema) fn register(
             from,
             to,
             integrity,
+            None,
         )?;
     }
     Ok(registry)

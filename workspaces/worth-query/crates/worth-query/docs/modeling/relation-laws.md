@@ -11,6 +11,8 @@ Paired symmetry requires the reverse of each surviving directed edge on the
 same relation. Scoped uniqueness limits physical records per ordered pair or
 across both directions of an unordered pair. Partition isolation requires both
 endpoints of every surviving edge to belong to the same native partition.
+A reachability minimum obligates every entity of the relation's source kind to
+reach enough distinct entities of selected target kinds.
 
 ## Why You Use It
 
@@ -29,7 +31,11 @@ that reference through the schema contribution's ordinary `.relation(..)`.
 The same const builder exposes `.symmetric()` and
 `.unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge)` or
 `.unique(ApplicationRelationUniquenessScope::NormalizedSymmetricEdge)`.
-Use `.same_partition_endpoints()` to declare endpoint partition isolation.
+Use `.same_partition_endpoints()` to declare endpoint partition isolation, and
+`.reaches_at_least(minimum, kinds)` for a distinct reachable-target minimum.
+`kinds` is a static slice of authored entity names. Obtain a name from your typed
+entity reference with `.name()`, or use its declared name directly. The completed
+schema rejects zero minima, empty kind sets and unknown entity names.
 
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
@@ -63,6 +69,24 @@ in the mutation's issued partition. To create beside an existing projected
 entity, use `CandidateWriter::create_entity_in_context(&context, entity, key)`.
 The context must come from the operation's genuine decision and candidate
 authority. A key or diagnostic partition number cannot substitute for it.
+
+A reachability minimum follows this same relation from source to target. It
+counts each reachable target once, however many records or paths reach it. The
+starting source never counts itself, even through a cycle or a self-edge.
+Every visible source-kind entity is obligated, including a newly created or
+isolated source. A target of another kind does not acquire that obligation.
+Deleting a source removes its obligation; deleting a target removes it from
+the reachable set, even when an audit edge is retained.
+
+A nonempty finite `Node → Node` graph cannot combine acyclicity with a positive
+minimum: acyclicity leaves a sink, and the sink has no reachable target. Use a
+relation such as `Node → Leaf` when terminal targets should not be obligated
+sources. Bootstrap publication must also provide a lawful graph; isolated
+sources cannot be published with the intention of linking them later.
+
+Minimum kind names form a normalized set for schema and program identity:
+ordering and duplicate names do not change the meaning. Adding a different
+kind or changing the minimum does.
 
 Law meaning participates in canonical schema and program identity. Changing
 the law is a schema/program change; reusing the same names does not authorize
@@ -131,6 +155,27 @@ node created in an issued partition refuses when their partitions differ.
 Creating the new node in that existing node's context allows the same edge.
 The earlier endpoint policy can also forbid cross-context edges independently;
 its refusal keeps that earlier cause.
+
+To require at least two distinct reachable nodes, the compiled minimum example
+uses the authored entity name:
+
+<!-- compiled: relation_minimum_declaration.rs -->
+```rust
+const MINIMUM_TWO: ApplicationRelationIntegrity =
+    ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+        .reaches_at_least(2, &["Node"]);
+```
+
+Register this integrity on `Node → Node`. A three-node directed cycle satisfies
+it: each source reaches the other two nodes. A two-node cycle reaches only one
+other node per source, regardless of duplicate records or repeated walks.
+
+For `Node → Leaf`, declare the same minimum with `["Leaf"]`. Replacing two old
+links with one new Leaf refuses the entire proposal; replacing them with two
+distinct new Leaves can commit. A live Principal elsewhere in the graph cannot
+satisfy the minimum merely because its kind is also listed: it must actually be
+reachable through this relation. The complete proposed record state is judged
+before publication, including target creation and removal in the same mutation.
 
 ## Real Example
 
@@ -208,7 +253,12 @@ or mutation authority. Keep the owning denial alive while borrowing them.
 `Symmetry` identifies the surviving edge without its required reverse and
 carries the native symmetry mode. `Uniqueness` carries the duplicate pair,
 native uniqueness scope and physical count. `PartitionIsolation` borrows the
-original source and target references whose native partitions differ. Diagnostic `ContractId`, `KindId`,
+original source and target references whose native partitions differ.
+`ConnectivityMinimum` borrows the original source and reports
+`reachable_target_count` and `minimum_reachable_targets`. An unpublished source
+retains its creation reference. These counts describe the violated law, not
+read-cost observations. The same typed view is available when bootstrap
+publication refuses. Diagnostic `ContractId`, `KindId`,
 `EntityReference`, `SymmetryMode` and `UniquenessScope` are nameable through
 `host::application_invariants`; none grants runtime authority.
 
@@ -237,8 +287,8 @@ identities or assume a particular edge wins when several close cycles.
 
 The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
-edge uniqueness, and same-partition endpoints. Other native symmetry modes and
-the reachability-minimum family are not exposed by these builders. They do not
+edge uniqueness, same-partition endpoints and distinct reachable-target minima.
+Other native symmetry modes are not exposed by these builders. They do not
 provide general traversal, orbit or component query operations.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains

@@ -28,3 +28,14 @@ mod schema;
 mod creation;
 #[path = "relation_laws/partition_isolation.rs"]
 mod partition_isolation;
+
+#[path = "relation_laws/feeding.rs"]
+mod feeding;
+#[path = "relation_laws/minimum.rs"]
+mod minimum;
+
+#[path = "relation_laws/minimum_nodes.rs"]
+mod minimum_nodes;
+
+#[path = "relation_laws/minimum_oracle.rs"]
+mod minimum_oracle;

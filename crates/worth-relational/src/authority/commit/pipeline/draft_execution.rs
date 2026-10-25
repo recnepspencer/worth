@@ -8,7 +8,8 @@ pub(super) struct PreparedCommitExecution {
     admitted: AdmittedCommitExecution,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
-    proposed_working_state: crate::storage::overlay::WorkingState,
+    proposed_invariant_state:
+        crate::authority::commit::phases::proposed_invariant_state::AppliedInvariantState,
     proposed_version_id: crate::identity::data::VersionId,
     proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
 }
@@ -49,7 +50,7 @@ impl PreparedCommitExecution {
     ) {
         (
             &mut self.admitted,
-            &self.proposed_working_state,
+            self.proposed_invariant_state.working_state(),
             self.proposed_version_id,
             &self.proposal_identity,
         )
@@ -86,7 +87,7 @@ pub(super) fn prepare_commit_execution(
     let PreparedAuthorityScope {
         structural_summary,
         working_state,
-        proposed_working_state,
+        proposed_invariant_state,
         proposal_identity,
         phase_timing: prepared_timing,
         ..
@@ -106,7 +107,7 @@ pub(super) fn prepare_commit_execution(
                 selected_branch_state: selected_branch_state.clone(),
                 structural_summary,
                 working_state,
-                proposed_working_state: None,
+                proposed_invariant_state: None,
                 proposal_identity: None,
                 phase_timing,
             }
@@ -120,7 +121,7 @@ pub(super) fn prepare_commit_execution(
         )?,
     };
     let proposed_version_id = proposal_identity.proposed_version_id();
-    let proposed_working_state = match proposed_working_state {
+    let proposed_invariant_state = match proposed_invariant_state {
         Some(proposed) => proposed,
         None => prepare_proposed_invariant_state(
             runtime,
@@ -156,7 +157,7 @@ pub(super) fn prepare_commit_execution(
         admitted,
         public_structural_summary,
         working_state,
-        proposed_working_state,
+        proposed_invariant_state,
         proposed_version_id,
         proposal_identity,
     })

@@ -10,7 +10,7 @@ use super::planned_successors::PlannedSuccessorMap;
 pub(super) struct PreparedSuccessorTraversal<'scope> {
     pub(super) scope: &'scope PreparedRelationIntegrityScope,
     pub(super) class: InvariantClass,
-    pub(super) planned_successors: &'scope PlannedSuccessorMap,
+    pub(super) planned_successors: Option<&'scope PlannedSuccessorMap>,
 }
 
 impl PreparedSuccessorTraversal<'_> {
@@ -21,7 +21,8 @@ impl PreparedSuccessorTraversal<'_> {
     ) -> Vec<EntityReference> {
         let mut successors = BTreeSet::new();
         self.collect(
-            self.planned_successors.get(entity_id),
+            self.planned_successors
+                .and_then(|planned| planned.get(entity_id)),
             &mut successors,
             context,
         );

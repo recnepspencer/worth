@@ -26,7 +26,12 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
                             identities: BTreeMap::new(),
                         };
                         for source in 0..world.nodes {
-                            let node = reader.resolve_entity(NodeKey::reference(), source).unwrap();
+                            let Some(node) = reader
+                                .resolve_optional_entity(NodeKey::reference(), source)
+                                .unwrap()
+                            else {
+                                continue;
+                            };
                             graph.identities.insert(source, node.entity_id());
                             for edge in reader.relations_from(Precedes::reference(), &node).unwrap()
                             {
@@ -72,3 +77,6 @@ pub fn identity<L: LawPolicy>(world: &World<L>, key: u64) -> Option<EntityId> {
     drop(snapshot);
     identity
 }
+
+#[path = "read/feeds.rs"]
+pub mod feeds;

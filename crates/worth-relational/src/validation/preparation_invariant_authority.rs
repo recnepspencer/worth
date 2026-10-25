@@ -33,6 +33,7 @@ impl PreparationInvariantAuthority<'_> {
             InvariantRequestProfile::CommitBoundary,
             selected,
             proposed,
+            None,
             version,
             plan,
             proposal,
@@ -78,6 +79,7 @@ impl PreparationInvariantAuthority<'_> {
             InvariantRequestProfile::MutationSensitive,
             selected,
             working,
+            None,
             version,
             plan,
             proposal,
@@ -113,6 +115,7 @@ impl PreparationInvariantAuthority<'_> {
         &self,
         selected: &SelectedRelationalBranchState,
         working: &WorkingState,
+        created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
@@ -123,6 +126,7 @@ impl PreparationInvariantAuthority<'_> {
             InvariantRequestProfile::SnapshotPublication,
             selected,
             working,
+            Some(created_entities),
             version,
             plan,
             proposal,
@@ -161,6 +165,7 @@ impl PreparationInvariantAuthority<'_> {
         profile: InvariantRequestProfile,
         selected: &SelectedRelationalBranchState,
         working: &WorkingState,
+        applied_created_entities: Option<&crate::transactions::data::CommitCreatedEntityBindings>,
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
@@ -175,11 +180,21 @@ impl PreparationInvariantAuthority<'_> {
         let observation = match profile {
             InvariantRequestProfile::MutationSensitive
             | InvariantRequestProfile::SnapshotPublication => {
-                InvariantObservation::speculative_with_proposal(
-                    crate::storage::overlay::OverlayStateView::new(selected.state(), working),
-                    selected.version_id(),
-                    proposal.cloned(),
-                )
+                let overlay =
+                    crate::storage::overlay::OverlayStateView::new(selected.state(), working);
+                match applied_created_entities {
+                    Some(created_entities) => InvariantObservation::applied_with_proposal(
+                        overlay,
+                        selected.version_id(),
+                        proposal.cloned(),
+                        created_entities,
+                    ),
+                    None => InvariantObservation::speculative_with_proposal(
+                        overlay,
+                        selected.version_id(),
+                        proposal.cloned(),
+                    ),
+                }
             }
             _ => InvariantObservation::committed_branch_with_proposed(
                 selected.state(),

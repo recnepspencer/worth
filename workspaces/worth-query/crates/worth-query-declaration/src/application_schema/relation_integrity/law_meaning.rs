@@ -2,8 +2,26 @@
 use super::super::ApplicationSchemaMember;
 use super::ApplicationRelationIntegrity;
 
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub(crate) enum ApplicationRelationLawValue {
+    Number(u64),
+    KindSet(Vec<&'static str>),
+}
+impl ApplicationRelationLawValue {
+    pub(crate) fn canonical_text(&self) -> String {
+        match self {
+            Self::Number(value) => value.to_string(),
+            Self::KindSet(kinds) => {
+                serde_json::to_string(kinds).expect("entity kind names serialize")
+            }
+        }
+    }
+}
+
 impl ApplicationRelationIntegrity {
-    pub(crate) fn enabled_laws(self) -> impl Iterator<Item = (&'static str, u64)> {
+    pub(crate) fn enabled_laws(
+        self,
+    ) -> impl Iterator<Item = (&'static str, ApplicationRelationLawValue)> {
         [
             self.acyclic.then_some(("acyclic", 1)),
             self.symmetric.then_some(("symmetric", 1)),
@@ -13,6 +31,21 @@ impl ApplicationRelationIntegrity {
         ]
         .into_iter()
         .flatten()
+        .map(|(name, value)| (name, ApplicationRelationLawValue::Number(value)))
+        .chain(self.reaches_at_least.into_iter().flat_map(|minimum| {
+            [
+                (
+                    "reaches_at_least",
+                    ApplicationRelationLawValue::Number(u64::from(
+                        minimum.minimum_reachable_targets,
+                    )),
+                ),
+                (
+                    "reaches_at_least.kinds",
+                    ApplicationRelationLawValue::KindSet(minimum.normalized_kinds()),
+                ),
+            ]
+        }))
     }
 }
 
@@ -21,7 +54,7 @@ pub(crate) struct ApplicationRelationLawMeaning {
     relation: String,
     from: String,
     to: String,
-    laws: Vec<(&'static str, u64)>,
+    laws: Vec<(&'static str, ApplicationRelationLawValue)>,
 }
 
 impl ApplicationRelationLawMeaning {
@@ -65,7 +98,7 @@ impl ApplicationRelationLawMeaning {
         .chain(
             self.laws
                 .iter()
-                .map(|&(name, value)| (name, value.to_string())),
+                .map(|(name, value)| (*name, value.canonical_text())),
         )
     }
 }

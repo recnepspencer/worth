@@ -71,7 +71,11 @@ pub(super) fn project<'p>(
         (sink.checkpoint)(contract.semantic_byte_width() as u64)?;
         work.owner_state_lookups += 2;
         let before = aspect(&proposal.prepared.working_state, spec.entity_id, contract);
-        let after = aspect(&proposal.proposed_working_state, spec.entity_id, contract);
+        let after = aspect(
+            proposal.proposed_invariant_state.working_state(),
+            spec.entity_id,
+            contract,
+        );
         let (Ok(before), Ok(after)) = (before, after) else {
             sink.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });
             continue;

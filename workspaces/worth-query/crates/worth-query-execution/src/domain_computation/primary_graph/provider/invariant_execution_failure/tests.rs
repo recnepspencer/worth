@@ -175,26 +175,46 @@ fn original_law_payload_survives_all_query_refusal_translations() {
                 target: &target,
             }),
         ),
+        (
+            InvariantViolationFields::ConnectivityMinimum {
+                contract_id: contract_id.clone(),
+                relation_kind_id: KindId(77),
+                source: source.clone(),
+                reachable_target_count: 1,
+                minimum_reachable_targets: 2,
+            },
+            Some(WorthQueryRelationLawDenial::ConnectivityMinimum {
+                contract_id: &contract_id,
+                relation_kind_id: KindId(77),
+                source: &source,
+                reachable_target_count: 1,
+                minimum_reachable_targets: 2,
+            }),
+        ),
     ] {
-        let original = law_transport_error(fields);
-        let invariant = WorthQueryApplicationCommitDenial::invariant_execution_denied(
-            WorthQueryApplicationCommitDenialStage::InvariantExecution,
-            super::map_validation_failure(original.clone()),
-        );
-        assert_eq!(invariant.relation_law(), expected);
-        let provider = provider_session_denied(
-            WorthQueryProviderSessionFailure::new(
-                WorthQueryProviderSessionDenialKind::ProviderRejected,
-                WorthQueryProviderSessionProtocolStage::Commit,
-                "opaque provider diagnostic",
-                Default::default(),
-            )
-            .with_native_preparation_error(original.clone()),
-        );
-        assert_eq!(provider.relation_law(), expected);
-        let bootstrap = map_bootstrap_commit_denial(original);
-        assert_eq!(bootstrap.relation_law(), expected);
-        assert!(invariant.custom_invariant_denial().is_none());
+        for original in [
+            law_transport_error(fields.clone()),
+            publication_transport_error(fields),
+        ] {
+            let invariant = WorthQueryApplicationCommitDenial::invariant_execution_denied(
+                WorthQueryApplicationCommitDenialStage::InvariantExecution,
+                super::map_validation_failure(original.clone()),
+            );
+            assert_eq!(invariant.relation_law(), expected);
+            let provider = provider_session_denied(
+                WorthQueryProviderSessionFailure::new(
+                    WorthQueryProviderSessionDenialKind::ProviderRejected,
+                    WorthQueryProviderSessionProtocolStage::Commit,
+                    "opaque provider diagnostic",
+                    Default::default(),
+                )
+                .with_native_preparation_error(original.clone()),
+            );
+            assert_eq!(provider.relation_law(), expected);
+            let bootstrap = map_bootstrap_commit_denial(original);
+            assert_eq!(bootstrap.relation_law(), expected);
+            assert!(invariant.custom_invariant_denial().is_none());
+        }
     }
 }
 
@@ -216,4 +236,24 @@ fn law_transport_error(
         detail: "opaque native diagnostic".into(),
         context: ErrorContext::new(RelationalSubsystem::Transaction, ErrorOperation::Validate),
     })
+}
+
+fn publication_transport_error(
+    fields: InvariantViolationFields,
+) -> worth_relational::facade::transactions::TransactionCommitError {
+    use worth_relational::facade::{
+        diagnostics::DiagnosticCode,
+        publication::{PublicationError, PublicationStage},
+        runtime::InvariantClass,
+        transactions::{InvariantViolation, TransactionCommitError},
+    };
+    TransactionCommitError::publication(PublicationError::from_invariant_violation(
+        PublicationStage::InvariantCheck,
+        InvariantViolation {
+            class: InvariantClass::SnapshotAudit,
+            code: DiagnosticCode::InvariantViolation,
+            detail: "opaque native publication diagnostic".into(),
+            fields,
+        },
+    ))
 }

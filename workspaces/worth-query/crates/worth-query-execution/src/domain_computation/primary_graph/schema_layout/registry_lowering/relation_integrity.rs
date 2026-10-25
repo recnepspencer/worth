@@ -1,11 +1,13 @@
 use super::lower_cross_context;
+use std::collections::BTreeMap;
 use worth_query_installation::facade::{
     ApplicationRelationDeletionPolicy, ApplicationRelationIntegrity,
     ApplicationRelationUniquenessScope,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
-    AcyclicityContractDeclaration, AllowedCycleClass, CardinalityContractDeclaration, ContractId,
+    AcyclicityContractDeclaration, AllowedCycleClass, CardinalityContractDeclaration,
+    ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
     DirectedTraversalKind, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
     EndpointKindContractDeclaration, MinimumCardinalityEnforcement, PairMinimumSemantics,
     PartitionIsolationContractDeclaration, PartitionIsolationMode, RelationIntegrityDeclarations,
@@ -17,7 +19,8 @@ pub(super) fn lower_relation_integrity(
     from_kind: KindId,
     to_kinds: Vec<KindId>,
     integrity: ApplicationRelationIntegrity,
-) -> RelationIntegrityDeclarations {
+    entity_kinds: Option<&BTreeMap<String, KindId>>,
+) -> Result<RelationIntegrityDeclarations, super::WorthQueryPrimaryGraphInstallationDenial> {
     let endpoints = vec![EndpointKindContractDeclaration {
         contract_id: ContractId::new(format!("{relation}:endpoints")),
         allowed_source_kinds: vec![from_kind],
@@ -45,7 +48,8 @@ pub(super) fn lower_relation_integrity(
         traversal_direction: DirectedTraversalKind::SourceToTarget,
         allowed_cycle_class: AllowedCycleClass::NoCycles,
     });
-    RelationIntegrityDeclarations::new(
+    let minimum = lower_minimum(relation, from_kind, integrity, entity_kinds)?;
+    Ok(RelationIntegrityDeclarations::new(
         endpoints,
         cardinality.into_iter().collect(),
         integrity
@@ -84,6 +88,37 @@ pub(super) fn lower_relation_integrity(
             .into_iter()
             .collect(),
     )
+    .with_connectivity_minimum_contracts(minimum.into_iter().collect()))
+}
+
+fn lower_minimum(
+    relation: &str,
+    from_kind: KindId,
+    integrity: ApplicationRelationIntegrity,
+    entity_kinds: Option<&BTreeMap<String, KindId>>,
+) -> Result<
+    Option<ConnectivityMinimumContractDeclaration>,
+    super::WorthQueryPrimaryGraphInstallationDenial,
+> {
+    use super::super::installation_primitives::{invalid_member, required_kind};
+    let Some(minimum) = integrity.reaches_at_least else {
+        return Ok(None);
+    };
+    let binding = entity_kinds.ok_or_else(|| invalid_member(relation))?;
+    let mut target_kind_ids = minimum
+        .target_kinds
+        .iter()
+        .map(|name| required_kind(binding, name))
+        .collect::<Result<Vec<_>, _>>()?;
+    target_kind_ids.sort_unstable();
+    target_kind_ids.dedup();
+    Ok(Some(ConnectivityMinimumContractDeclaration {
+        contract_id: ContractId::new(format!("{relation}:reaches_at_least")),
+        source_kind_ids: vec![from_kind],
+        target_kind_ids,
+        minimum_reachable_targets: minimum.minimum_reachable_targets,
+        enforcement_boundary: ConnectivityMinimumEnforcement::SnapshotPublication,
+    }))
 }
 
 fn lower_endpoint_deletion(
@@ -110,150 +145,5 @@ fn lower_endpoint_deletion(
 }
 
 #[cfg(test)]
-mod tests {
-    use worth_query_installation::facade::{
-        ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
-        ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints,
-        ApplicationRelationIntegrity,
-    };
-    use worth_relational::facade::identity::KindId;
-    use worth_relational::facade::schema::EndpointDeletionIntegrityMode;
-
-    use super::lower_relation_integrity;
-
-    #[test]
-    fn declared_partition_isolation_is_lowered_independently_of_endpoint_permission() {
-        let baseline = ApplicationRelationIntegrity::new(
-            ApplicationRelationEndpoints::new(
-                true,
-                ApplicationRelationCrossContextPolicy::AllowExplicit,
-            ),
-            ApplicationRelationCardinality::unbounded(),
-            ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-        );
-        let original = lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline);
-        let isolated = lower_relation_integrity(
-            "Peer",
-            KindId(11),
-            vec![KindId(11)],
-            baseline.same_partition_endpoints(),
-        );
-        assert!(original.partition_isolation_contracts.is_empty());
-        assert_eq!(isolated.partition_isolation_contracts.len(), 1);
-        assert_eq!(
-            isolated.partition_isolation_contracts[0].isolation_mode,
-            super::PartitionIsolationMode::SamePartitionEndpoints
-        );
-        assert_eq!(
-            isolated.endpoint_kind_contracts,
-            original.endpoint_kind_contracts
-        );
-        assert_ne!(isolated.plan_revision, original.plan_revision);
-    }
-
-    #[test]
-    fn paired_symmetry_and_exact_uniqueness_scope_lower_into_one_native_plan() {
-        use worth_query_installation::facade::ApplicationRelationUniquenessScope as Declared;
-        use worth_relational::facade::schema::{SymmetryMode, UniquenessScope as Native};
-        let baseline = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
-        let original = lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline);
-        let mut revisions = Vec::new();
-        for (declared, native) in [
-            (Declared::DirectedSemanticEdge, Native::DirectedSemanticEdge),
-            (
-                Declared::NormalizedSymmetricEdge,
-                Native::NormalizedSymmetricEdge,
-            ),
-        ] {
-            let lowered = lower_relation_integrity(
-                "Peer",
-                KindId(11),
-                vec![KindId(11)],
-                baseline.symmetric().unique(declared),
-            );
-            assert_eq!(lowered.symmetry_contracts.len(), 1);
-            assert_eq!(
-                lowered.symmetry_contracts[0].mode,
-                SymmetryMode::PairedTwinRequired
-            );
-            assert_eq!(lowered.uniqueness_contracts.len(), 1);
-            assert_eq!(lowered.uniqueness_contracts[0].scope, native);
-            assert_ne!(lowered.plan_revision, original.plan_revision);
-            revisions.push(lowered.plan_revision);
-        }
-        assert_ne!(revisions[0], revisions[1]);
-    }
-
-    #[test]
-    fn declared_relation_integrity_lowers_exact_endpoint_cardinality_and_deletion_contracts() {
-        let declared = ApplicationRelationIntegrity::new(
-            ApplicationRelationEndpoints::new(
-                true,
-                ApplicationRelationCrossContextPolicy::SchemaControlled,
-            ),
-            ApplicationRelationCardinality::new(
-                Some(1),
-                Some(2),
-                Some(3),
-                Some(4),
-                Some(5),
-                Some(6),
-            ),
-            ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
-        );
-
-        let lowered = lower_relation_integrity("Contains", KindId(11), vec![KindId(12)], declared);
-
-        let endpoints = &lowered.endpoint_kind_contracts[0];
-        assert_eq!(endpoints.allowed_source_kinds, vec![KindId(11)]);
-        assert_eq!(endpoints.allowed_target_kinds, vec![KindId(12)]);
-        assert!(endpoints.self_edges_allowed);
-        let cardinality = &lowered.cardinality_contracts[0];
-        assert_eq!(
-            (cardinality.source_min, cardinality.source_max),
-            (Some(1), Some(2))
-        );
-        assert_eq!(
-            (cardinality.target_min, cardinality.target_max),
-            (Some(3), Some(4))
-        );
-        assert_eq!(
-            (cardinality.pair_min, cardinality.pair_max),
-            (Some(5), Some(6))
-        );
-        assert_eq!(
-            lowered.endpoint_deletion_integrity_contracts[0].mode,
-            EndpointDeletionIntegrityMode::RequireRelationDeletionInSameCommit,
-        );
-    }
-
-    #[test]
-    fn unbounded_relation_omits_a_false_cardinality_contract() {
-        let lowered = lower_relation_integrity(
-            "Contains",
-            KindId(11),
-            vec![KindId(12)],
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
-        );
-
-        assert_eq!(lowered.endpoint_kind_contracts.len(), 1);
-        assert!(lowered.endpoint_kind_contracts[0].self_edges_allowed);
-        assert!(lowered.cardinality_contracts.is_empty());
-        assert!(lowered.endpoint_deletion_integrity_contracts.is_empty());
-    }
-
-    #[test]
-    fn no_self_edges_uses_the_same_relation_integrity_lowering_path() {
-        let lowered = lower_relation_integrity(
-            "Contains",
-            KindId(11),
-            vec![KindId(11)],
-            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
-        );
-
-        assert_eq!(lowered.endpoint_kind_contracts.len(), 1);
-        assert!(!lowered.endpoint_kind_contracts[0].self_edges_allowed);
-        assert!(lowered.cardinality_contracts.is_empty());
-        assert!(lowered.endpoint_deletion_integrity_contracts.is_empty());
-    }
-}
+#[path = "relation_integrity/tests.rs"]
+mod tests;

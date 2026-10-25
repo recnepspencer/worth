@@ -93,6 +93,12 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             };
             return map_invariant_failure(fields, detail);
         }
+        Error::Publication { error, .. } => {
+            return match error.into_invariant_violation() {
+                Some(violation) => map_invariant_failure(violation.fields, violation.detail),
+                None => owner_failure(),
+            };
+        }
         Error::PublicationDeferred { deferred, .. } => match deferred {
             Deferred::CompanionRegistrationPending
             | Deferred::CompanionRebindRequired
@@ -133,7 +139,6 @@ pub(in crate::domain_computation::primary_graph) fn map_validation_failure(
             WorthQueryInvariantExecutionDenialKind::ProposalIdentityExhausted
         }
         Error::Preparation { .. }
-        | Error::Publication { .. }
         | Error::PublicationDenied { .. }
         | Error::PerformedButDurabilityDeferred { .. } => return owner_failure(),
     };

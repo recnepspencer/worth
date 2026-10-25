@@ -28,9 +28,24 @@ fn invariant_failure_converts_to_commit_and_publication_errors() {
     assert_eq!(conflict.code(), DiagnosticCode::InvariantViolation);
     assert_eq!(conflict.detail(), "detail".to_string());
 
+    let original = failure.violation().clone();
     let publication = failure.into_publication_error(PublicationStage::InvariantCheck);
     assert_eq!(publication.stage, PublicationStage::InvariantCheck);
     assert_eq!(publication.detail, "detail".to_string());
+    assert_eq!(publication.invariant_violation(), Some(&original));
+    let restored: crate::publication::data::PublicationError =
+        serde_json::from_slice(&serde_json::to_vec(&publication).unwrap()).unwrap();
+    assert_eq!(restored.into_invariant_violation(), Some(original));
+    let ordinary = crate::publication::data::PublicationError::new(
+        PublicationStage::InvariantCheck,
+        "ordinary error",
+    );
+    assert!(ordinary.invariant_violation().is_none());
+    let old_shape = serde_json::to_value(&ordinary).unwrap();
+    assert!(old_shape.get("invariant_violation").is_none());
+    let recovered: crate::publication::data::PublicationError =
+        serde_json::from_value(old_shape).unwrap();
+    assert!(recovered.invariant_violation().is_none());
 }
 
 #[test]

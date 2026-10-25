@@ -141,13 +141,22 @@ fn split_top_level_comma_groups(tokens: proc_macro2::TokenStream) -> Vec<proc_ma
 /// bases: the conventional module directory and the path-attribute directory.
 ///
 /// Returns every concrete file that may be compiled: all path-attribute targets
-/// plus conventional candidates when present (covers conditional `cfg_attr(path)`).
+/// plus conventional candidates when no unconditional path overrides them.
+/// A conditional `cfg_attr(path)` still needs the conventional fallback.
 pub(super) fn resolve_child_sources(
     conventional_parent_dir: &Path,
     path_attribute_parent_dir: &Path,
     child_name: &str,
     attrs: &[Attribute],
 ) -> Result<Vec<PathBuf>, String> {
+    for attribute in attrs
+        .iter()
+        .filter(|attribute| attribute.path().is_ident("path"))
+    {
+        if path_attr_string(attribute).is_none() {
+            return Err(format!("invalid #[path] for module `{child_name}`"));
+        }
+    }
     let mut sources = Vec::new();
     let selectors = all_path_selectors(attrs);
     for rel in &selectors {
@@ -162,16 +171,20 @@ pub(super) fn resolve_child_sources(
         }
     }
 
-    // Conventional locations always inventoried when present so a cfg_attr(path)
-    // that is inactive still cannot hide behind a decoy-only conventional scan,
-    // and so path-less modules resolve normally.
-    let conventional = [
-        conventional_parent_dir.join(child_name).join("mod.rs"),
-        conventional_parent_dir.join(format!("{child_name}.rs")),
-    ];
-    for candidate in conventional {
-        if candidate.is_file() && !sources.iter().any(|s| s == &candidate) {
-            sources.push(candidate);
+    // A direct #[path] always overrides conventional module locations. Only
+    // conditional selectors can leave the conventional source selectable.
+    if !attrs
+        .iter()
+        .any(|attribute| attribute.path().is_ident("path"))
+    {
+        let conventional = [
+            conventional_parent_dir.join(child_name).join("mod.rs"),
+            conventional_parent_dir.join(format!("{child_name}.rs")),
+        ];
+        for candidate in conventional {
+            if candidate.is_file() && !sources.iter().any(|source| source == &candidate) {
+                sources.push(candidate);
+            }
         }
     }
 
@@ -183,3 +196,6 @@ pub(super) fn resolve_child_sources(
     }
     Ok(sources)
 }
+
+#[cfg(test)]
+mod tests;

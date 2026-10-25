@@ -149,6 +149,12 @@ fn explicit_compiled_targets_require_registered_reachable_active_source() {
             "app/examples/owning/body.rs",
             "// compiled-example: begin\nfn example() {}\n// compiled-example: end\n",
         );
+        // Rustc's direct #[path] selects only the named source, even when a
+        // conventional module of the same name exists beside the target.
+        fixture.write(
+            "app/examples/body.rs",
+            "compile_error!(\"unselected conventional decoy\");\n",
+        );
         assert!(fixture.diagnostics().is_empty());
         fixture.write(
             "app/examples/owning.rs",
