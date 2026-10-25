@@ -209,8 +209,11 @@ fn cancellation_preserves_the_reads_done_before_the_stop() {
     assert_read_observations(&case.reads);
 }
 
+/// Both rules evaluate concurrently into one log, so only rule 1's samples are
+/// in order; it reaches both views before it refuses or cancels.
 fn assert_read_observations(samples: &[rule::ReadSample]) {
     use rule::ReadStage;
+    let samples: Vec<_> = samples.iter().filter(|s| s.rule == 1).collect();
     let prepared = samples
         .iter()
         .find(|s| matches!(s.stage, ReadStage::Prepared))
