@@ -15,3 +15,4 @@ mod scoped_consumer_capacity;
 mod scoped_result_capacity;
 mod serial_request;
 pub(crate) mod support;
+mod typed_result_room;

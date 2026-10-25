@@ -51,13 +51,9 @@ pub(crate) fn run_signal_preparation_request<R>(
 ) -> Result<(R, worth_foundational::ExecutionReport), SignalError> {
     request
         .in_scope(|lease| {
-            // A lease-free child may have no own ceiling while its active serial
-            // lineage is finite. Its preparation shares that ancestor's room.
-            let memory = if lease.is_none() {
-                worth_execution::ExecutionMemoryReservation::available_in_scope(lease)
-            } else {
-                request.memory_limit()
-            };
+            // Preparation shares the process and every active ancestor, even
+            // when this request has a larger (or absent) ceiling of its own.
+            let memory = worth_execution::ExecutionMemoryReservation::available_in_scope(lease);
             run_signal_request_in_scope(memory, lease, &mut prepare)
         })
         .map_err(SignalError::execution_scope_denied)?

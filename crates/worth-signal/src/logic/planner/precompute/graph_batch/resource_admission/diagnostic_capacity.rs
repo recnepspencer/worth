@@ -21,13 +21,7 @@ pub(super) fn measure(
         .and_then(|bytes| bytes.checked_add(scope_heap))
         .ok_or_else(overflow)?;
     graph
-        .epoch_semantic_diagnostic_fixed_bound(
-            node,
-            graph.epoch_node_clone_charge(node, work)?.bytes(),
-            rewiring_heap,
-            links,
-            work,
-        )?
+        .epoch_semantic_diagnostic_fixed_bound(node, rewiring_heap, links, work)?
         .checked_add(
             graph
                 .diagnostics_state()
