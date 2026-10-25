@@ -44,6 +44,8 @@ mod sibling_denial;
 mod source_token;
 #[path = "fork_creation/stale_head.rs"]
 mod stale_head;
+#[path = "fork_creation/unresolved.rs"]
+mod unresolved;
 
 fn fork_budgets(live_branches: u64, custody_records: u64) -> RuntimeWorldBudgets {
     RuntimeWorldBudgets::install(RuntimeWorldBudgetInstallation {

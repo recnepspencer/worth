@@ -203,10 +203,6 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     /// A bounded history carrier did not contain the requested entry or had no
     /// owner-issued continuation for this product occurrence.
     HistoryEntryUnavailable,
-    /// The Relational fork's durable fate is unknown. Nothing was installed
-    /// live, and the Relational owner refuses every later commit and branch
-    /// transition until reopening it decides the fate.
-    RelationalDurabilityUnresolved,
 }
 
 impl ProductBranchObservation {

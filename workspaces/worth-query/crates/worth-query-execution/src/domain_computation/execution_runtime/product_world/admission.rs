@@ -108,12 +108,9 @@ pub(super) fn map_world_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>,
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {
-        // An unresolved Relational fork leaves its owner refusing every
-        // commit and transition until it is reopened.
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
         | RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
-            | RuntimeWorldBranchAdmissionDenial::RelationalDurabilityUnresolved,
+            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
         ) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)
         }

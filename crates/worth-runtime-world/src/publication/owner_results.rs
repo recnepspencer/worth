@@ -306,6 +306,7 @@ impl CompositeOwnerExecutionResults {
             crate::branch::RelationalBranchCreationPlan::ForkExact { .. } => matches!(
                 self.relational.result,
                 CompositeRelationalOwnerResultKind::Forked { .. }
+                    | CompositeRelationalOwnerResultKind::DurabilityUnresolved { .. }
             ),
         };
         relational_matches && self.signal.matches_partial_creation_plan(plan.signal())
