@@ -38,6 +38,15 @@ pub(crate) enum Step {
     Fork {
         target: BranchId,
     },
+    Archive {
+        branch: BranchId,
+    },
+    RequestDeletion {
+        branch: BranchId,
+    },
+    Delete {
+        branch: BranchId,
+    },
     Checkpoint,
 }
 
@@ -57,7 +66,7 @@ impl Step {
             Self::Transition { branch, batch } => {
                 schema_transition::commit(runtime, execution, branch, batch.clone())
             }
-            Self::Fork { .. } | Self::Checkpoint => panic!("not a commit step"),
+            _ => panic!("not a commit step"),
         }
     }
 }
@@ -74,6 +83,8 @@ pub(crate) struct Script {
     pub(crate) records: Vec<RecordRef>,
     /// The reference's canonical artifact bytes; index `k` is position `k + 1`.
     pub(crate) artifacts: Vec<Vec<u8>>,
+    pub(crate) transitions: Vec<Vec<u8>>,
+    pub(crate) prefixes: super::branch_lifecycle::ReferencePrefixes,
 }
 
 pub(crate) const RUNTIME_NAME: &str = "relational-home-oracle";
@@ -98,8 +109,8 @@ pub(crate) fn serial_request() -> SerialRequest {
 }
 
 impl Script {
-    /// Run `commits` seeded commits on a memory-only runtime, forking one
-    /// branch partway and checkpointing every `checkpoint_every` commits.
+    /// Run `commits` seeded commits on a memory-only runtime, exercising all
+    /// lifecycle transitions and checkpointing every `checkpoint_every` commits.
     pub(crate) fn generate(seed: u64, commits: usize, checkpoint_every: usize) -> Self {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
@@ -116,10 +127,13 @@ impl Script {
             let branch = if step == transition_at {
                 main.clone()
             } else if step == fork_at {
-                fork_branch(&runtime, &main, &fork);
-                steps.push(Step::Fork {
+                let transition = Step::Fork {
                     target: fork.clone(),
-                });
+                };
+                transition
+                    .lifecycle(&runtime, &execution)
+                    .expect("reference fork");
+                steps.push(transition);
                 let inherited = live.get(&main.0).cloned().unwrap_or_default();
                 live.insert(fork.0.clone(), inherited);
                 fork.clone()
@@ -128,6 +142,14 @@ impl Script {
             } else {
                 main.clone()
             };
+            if step == commits / 2 {
+                for lifecycle in super::branch_lifecycle::steps() {
+                    lifecycle
+                        .lifecycle(&runtime, &execution)
+                        .expect("reference lifecycle");
+                    steps.push(lifecycle);
+                }
+            }
             let branch_live = live.entry(branch.0.clone()).or_default();
             let (next, creates) = if step == transition_at {
                 let batch = batches::create(step);
@@ -159,6 +181,7 @@ impl Script {
             }
         }
         let artifacts = artifacts_of(&runtime);
+        let transitions = super::branch_lifecycle::artifacts_of(&runtime);
         assert_eq!(
             artifacts.len(),
             commits,
@@ -167,11 +190,14 @@ impl Script {
         records.sort();
         records.dedup();
         let states = replay_states(&steps, &records);
+        let prefixes = super::branch_lifecycle::reference_prefixes(&steps, &records);
         Self {
             steps,
             states,
             records,
             artifacts,
+            transitions,
+            prefixes,
         }
     }
 }
@@ -191,22 +217,14 @@ fn replay_states(steps: &[Step], records: &[RecordRef]) -> Vec<BranchStates> {
                     .expect("the replayed reference commit");
                 states.push(states_of(&runtime, records));
             }
-            Step::Fork { target } => {
-                fork_branch(&runtime, &BranchId("main".to_owned()), target);
-            }
             Step::Checkpoint => {}
+            _ => {
+                step.lifecycle(&runtime, &execution)
+                    .expect("reference lifecycle");
+            }
         }
     }
     states
-}
-
-pub(crate) fn fork_branch(runtime: &RelationalRuntime, source: &BranchId, target: &BranchId) {
-    let (_, basis) = runtime
-        .observe_fork_source(source)
-        .expect("the fork source is observable");
-    runtime
-        .fork_branch(target.clone(), basis)
-        .expect("the fork is admitted");
 }
 
 pub(crate) fn commit(
@@ -246,7 +264,7 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
 
 /// Every registered branch's head, read record by record.
 pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> BranchStates {
-    ["main", "feature"]
+    super::branch_lifecycle::BRANCHES
         .into_iter()
         .filter_map(|name| {
             let identity = runtime.branch_identity(&BranchId(name.to_owned())).ok()?;

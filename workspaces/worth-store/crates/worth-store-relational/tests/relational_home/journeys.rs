@@ -13,6 +13,9 @@ fn the_reference_script_is_deterministic() {
     let first = Script::generate(SEED, COMMITS, 5);
     let second = Script::generate(SEED, COMMITS, 5);
     assert_eq!(first.states, second.states);
+    assert_eq!(first.artifacts, second.artifacts);
+    assert_eq!(first.transitions, second.transitions);
+    assert_eq!(first.prefixes, second.prefixes);
 }
 
 #[test]

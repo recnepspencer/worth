@@ -10,9 +10,9 @@
 //! checkpoint fault leaves the old or the new checkpoint selected; the rest
 //! of the script, a second recovery and fresh identities follow.
 //!
-//! Targets: the first commit, the first commit on a fork (which makes the
-//! branch durable), the schema-transition commit, and a checkpoint that
-//! replaces a selected one; two seeds each.
+//! Targets: the first commit, a fork publication, the first commit on a
+//! durably forked branch, the schema-transition commit, and a checkpoint
+//! that replaces a selected one; two seeds each.
 
 use std::num::NonZeroU64;
 use std::panic::{self, AssertUnwindSafe};
@@ -74,12 +74,7 @@ impl SeedSweep {
     fn new(seed: u64, select: &impl Fn(&Script) -> Target) -> Self {
         let script = Script::generate(seed, COMMITS, CHECKPOINT_EVERY);
         let target = select(&script);
-        // A fork is not durable until its branch's first commit, so forks
-        // just before the target run again on each reopened home.
-        let mut prefix = target.index();
-        while prefix > 0 && matches!(script.steps[prefix - 1], Step::Fork { .. }) {
-            prefix -= 1;
-        }
+        let prefix = target.index();
         Self {
             seed,
             script,
@@ -107,6 +102,9 @@ impl SeedSweep {
         )
         .expect("fail-before is admissible for every role");
         apply(&home, execution, self.lead());
+        if matches!(self.target, Target::BranchTransition(_)) {
+            let _ = super::branch_lifecycle::state_of(home.runtime(), &self.script.records);
+        }
         media_faults::arm(&activations);
         match self.target {
             Target::Commit(index) => {
@@ -117,6 +115,11 @@ impl SeedSweep {
             Target::Checkpoint(_) => {
                 home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
                     .expect("the measured checkpoint");
+            }
+            Target::BranchTransition(index) => {
+                self.script.steps[index]
+                    .lifecycle(home.runtime(), execution)
+                    .expect("the measured transition");
             }
         }
         let counts = media_faults::counts(&activations);
@@ -255,4 +258,17 @@ fn every_media_operation_of_a_schema_transition_commit_recovers() {
 #[test]
 fn every_media_operation_of_a_checkpoint_replacement_recovers() {
     sweep(replacement_checkpoint);
+}
+
+#[test]
+fn every_media_operation_of_a_branch_transition_recovers() {
+    sweep(|script| {
+        Target::BranchTransition(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::Fork { .. }))
+                .unwrap(),
+        )
+    });
 }

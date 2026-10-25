@@ -4,6 +4,8 @@
 
 #[path = "relational_home/batches.rs"]
 mod batches;
+#[path = "relational_home/branch_lifecycle.rs"]
+mod branch_lifecycle;
 #[path = "relational_home/crash_oracle.rs"]
 mod crash_oracle;
 #[path = "relational_home/durable_run.rs"]
@@ -36,5 +38,7 @@ mod schema_recovery;
 mod schema_transition;
 #[path = "relational_home/selected_checkpoint.rs"]
 mod selected_checkpoint;
+#[path = "relational_home/transition_oracle.rs"]
+mod transition_oracle;
 #[path = "relational_home/workload.rs"]
 mod workload;

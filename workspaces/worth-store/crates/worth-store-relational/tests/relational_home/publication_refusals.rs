@@ -239,7 +239,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
             )
         })
         .clone();
-    assert_eq!(fate.position().0, 3);
+    assert_eq!(super::crash_oracle::commit_subject(&fate).0 .0, 3);
     assert_eq!(
         workload::artifacts_of(home.runtime()).len(),
         2,
@@ -257,7 +257,10 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     // In this incarnation the journal either knows the position is
     // unresolved or, once Store requires inspection, lends no journal at all;
     // it never answers committed.
-    let in_incarnation = home.resolve(PatchStreamPosition(3), fate.digest());
+    let in_incarnation = home.resolve(
+        PatchStreamPosition(3),
+        super::crash_oracle::commit_subject(&fate).2,
+    );
     assert!(
         matches!(
             in_incarnation,
@@ -278,7 +281,12 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     create(&home, 5, &execution);
     // The fate names the artifact by Relational's payload digest; resolving
     // it from the journal must find it committed.
-    let resolved = home.resolve(PatchStreamPosition(3), fate.digest()).unwrap();
+    let resolved = home
+        .resolve(
+            PatchStreamPosition(3),
+            super::crash_oracle::commit_subject(&fate).2,
+        )
+        .unwrap();
     assert!(
         matches!(resolved, RelationalStoreCommitFate::Committed),
         "the unresolved fate resolved {resolved:?} after reopen"

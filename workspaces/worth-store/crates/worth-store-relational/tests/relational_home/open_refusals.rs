@@ -245,10 +245,10 @@ fn a_checkpoint_record_store_accepts_but_relational_cannot_readmit_refuses() {
         .unwrap()
         .into_bytes()
         .to_vec();
-    // Keep the home's header (magic, version, covered position); damage the
-    // native checkpoint inside it.
-    let middle = 18 + (payload.len() - 18) / 2;
-    payload[middle] ^= 0x5a;
+    // Keep the v2 home header (magic, version, P and T), and damage the
+    // native checkpoint's format header so readmission must reject it.
+    const HOME_HEADER_BYTES: usize = 8 + 2 + 8 + 8;
+    payload[HOME_HEADER_BYTES] ^= 0x5a;
     let placement = home_placement();
     records
         .publish(AnchoredRecordPublication::new(
