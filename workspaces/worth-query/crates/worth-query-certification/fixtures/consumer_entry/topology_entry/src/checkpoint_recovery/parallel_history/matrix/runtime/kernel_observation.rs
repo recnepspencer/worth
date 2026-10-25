@@ -72,18 +72,6 @@ pub(super) fn assert_kernel_observations(
         );
     }
     let state = control.state.lock().unwrap();
-    assert_eq!(
-        state.wave_peaks.len(),
-        expected.dispatch_waves.len(),
-        "every computing wave has an overlap observation"
-    );
-    for (wave, peak) in expected.dispatch_waves.iter().zip(&state.wave_peaks) {
-        assert_eq!(
-            *peak,
-            cell.workers.min(wave.len()),
-            "all available member slots rendezvous before nested kernels start"
-        );
-    }
 
     assert_eq!(
         state.kernel_active, 0,

@@ -1,6 +1,9 @@
 //! Each installation owns its schedule, counters and failure receiver.
 use super::{Partition, World};
-use std::sync::{Condvar, Mutex};
+use std::sync::{Condvar, Mutex, MutexGuard};
+use std::time::Duration;
+#[cfg(test)]
+mod wait_tests;
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
     Prepare,
@@ -18,6 +21,9 @@ pub struct State {
     pub peak: usize,
     pub kernel_active: usize,
     pub kernel_peak: usize,
+    pub member_waves: Vec<Vec<u64>>,
+    pub wave_active: Vec<usize>,
+    pub wait_failure: Option<String>,
     pub member_rendezvous: Vec<Vec<u64>>,
     pub wave_peaks: Vec<usize>,
     pub witnesses: Vec<u64>,
@@ -37,6 +43,7 @@ pub struct Control {
     pub declarations: Mutex<std::collections::BTreeMap<u64, Vec<u64>>>,
     pub state: Mutex<State>,
     wake: Condvar,
+    backstop: Duration,
 }
 impl Control {
     pub fn new(world: World, reuse: bool, overlap: bool, declaration: u64, nested: bool) -> Self {
@@ -51,6 +58,7 @@ impl Control {
             declarations: Mutex::default(),
             state: Mutex::new(State::default()),
             wake: Condvar::new(),
+            backstop: Duration::from_secs(120),
         }
     }
     pub fn input(&self, key: u64) -> (Vec<u64>, Vec<Partition>) {
@@ -109,30 +117,68 @@ impl Control {
             state.entered.push(key);
             state.active += 1;
             state.peak = state.peak.max(state.active);
-            // Fill the admitted member slots before any one member can enter
-            // a nested map and let the scheduler reuse a physical worker.
             if let Some(wave) = state
-                .member_rendezvous
+                .member_waves
                 .iter()
                 .position(|keys| keys.contains(&key))
             {
-                let keys = state.member_rendezvous[wave].clone();
-                let in_flight = keys
-                    .iter()
-                    .filter(|key| state.entered.contains(key))
-                    .count();
-                state.wave_peaks[wave] = state.wave_peaks[wave].max(in_flight);
+                state.wave_active[wave] += 1;
+                state.wave_peaks[wave] = state.wave_peaks[wave].max(state.wave_active[wave]);
+            }
+            // Fill the admitted slots before any member enters a nested map.
+            if let Some(keys) = state
+                .member_rendezvous
+                .iter()
+                .find(|keys| keys.contains(&key))
+                .cloned()
+            {
                 self.wake.notify_all();
-                drop(
-                    self.wake
-                        .wait_while(state, |state| {
-                            keys.iter().any(|key| !state.entered.contains(key))
-                        })
-                        .unwrap(),
-                );
+                self.rendezvous(state, &keys, false);
             }
         }
     }
+    fn rendezvous(&self, state: MutexGuard<'_, State>, keys: &[u64], kernels: bool) {
+        fn arrived(state: &State, kernels: bool) -> &[u64] {
+            if kernels {
+                &state.kernel_entered
+            } else {
+                &state.entered
+            }
+        }
+        let (mut state, expired) = self
+            .wake
+            .wait_timeout_while(state, self.backstop, |state| {
+                state.wait_failure.is_none()
+                    && keys
+                        .iter()
+                        .any(|key| !arrived(state, kernels).contains(key))
+            })
+            .unwrap();
+        if expired.timed_out() && state.wait_failure.is_none() {
+            let missing = keys
+                .iter()
+                .filter(|key| !arrived(&state, kernels).contains(key))
+                .copied()
+                .collect::<Vec<_>>();
+            if !missing.is_empty() {
+                state.wait_failure = Some(format!(
+                    "{} rendezvous backstop expired: missing members {missing:?}",
+                    if kernels {
+                        "kernel overlap"
+                    } else {
+                        "wave member"
+                    }
+                ));
+            }
+        }
+        let failure = state.wait_failure.clone();
+        self.wake.notify_all();
+        drop(state);
+        if let Some(failure) = failure {
+            panic!("{failure}");
+        }
+    }
+
     pub fn nested_meter(&self, member: u64, cost: Option<(u128, u128)>) {
         self.nested_meters
             .lock()
@@ -159,15 +205,8 @@ impl Control {
         }
         self.wake.notify_all();
         if self.overlap && part == 0 && state.witnesses.contains(&key) {
-            drop(
-                self.wake
-                    .wait_while(state, |s| {
-                        s.witnesses
-                            .iter()
-                            .any(|key| !s.kernel_entered.contains(key))
-                    })
-                    .unwrap(),
-            );
+            let keys = state.witnesses.clone();
+            self.rendezvous(state, &keys, true);
         }
         units
     }
@@ -177,10 +216,17 @@ impl Control {
             state.kernel_active -= 1;
         }
     }
-    pub fn exit_member(&self) {
+    pub fn exit_member(&self, key: u64) {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.active -= 1;
+            if let Some(wave) = state
+                .member_waves
+                .iter()
+                .position(|keys| keys.contains(&key))
+            {
+                state.wave_active[wave] -= 1;
+            }
             self.wake.notify_all();
         }
     }
