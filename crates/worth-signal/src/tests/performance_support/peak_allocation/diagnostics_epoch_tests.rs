@@ -194,7 +194,7 @@ fn diagnostics_epoch_forked_overlay_remains_bounded_after_retirement_and_readmis
 }
 
 #[test]
-fn diagnostics_batch_charge_covers_peak_allocation_across_tree_splits() {
+fn diagnostics_epoch_batch_forecast_covers_full_publication_allocations() {
     for (count, retained) in [1, 32, 300, 1_024]
         .into_iter()
         .flat_map(|count| [false, true].map(|retained| (count, retained)))

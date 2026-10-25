@@ -102,6 +102,25 @@ pub(crate) fn ordered_batch_growth_charge<K, V>(
     Ok(if paths < live { paths } else { live })
 }
 
+/// A forest of nonempty histories has at most one node per entry, unlike a
+/// single B-tree's minimum-fill bound. At most two staged versions and one
+/// current edit path coexist; old immutable roots are excluded. Empty histories
+/// must be removed between edits. Each edit still supplies an independent cap.
+pub(crate) fn ordered_forest_growth_charge<K, V>(
+    entries: usize,
+    edits: usize,
+) -> Result<Charge, Denial> {
+    if edits == 0 {
+        return Ok(Charge::ZERO);
+    }
+    let path = ordered_edit_growth_charge::<K, V>(entries)?;
+    let paths = path.checked_mul(edits)?;
+    let live = ordered_index_charge::<K, V>(entries)?
+        .checked_mul(2)?
+        .checked_add(path)?;
+    Ok(if paths < live { paths } else { live })
+}
+
 /// Conservative Rust 1.94 BTreeMap structural bound. alloc/collections/btree/
 /// node.rs uses 11 key/value slots, 12 child pointers, a parent pointer and two
 /// u16 fields. Every nonroot node retains at least five keys, so charge at

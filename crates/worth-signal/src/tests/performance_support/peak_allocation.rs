@@ -37,11 +37,11 @@ impl AllocationTracker for RequestedObjectTracker {
         group_id: AllocationGroupId,
     ) {
         let mut state = state();
-        if let Some(active) = &mut state.active {
-            if active.id == group_id {
-                active.live = active.live.saturating_add(object_size);
-                active.peak = active.peak.max(active.live);
-            }
+        if let Some(active) = &mut state.active
+            && active.id == group_id
+        {
+            active.live = active.live.saturating_add(object_size);
+            active.peak = active.peak.max(active.live);
         }
     }
 
@@ -213,3 +213,5 @@ mod cause_cache_tests;
 mod cause_vector_tests;
 #[cfg(test)]
 mod diagnostics_epoch_tests;
+#[cfg(test)]
+mod ordered_growth_tests;

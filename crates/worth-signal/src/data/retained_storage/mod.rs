@@ -23,7 +23,8 @@ pub(crate) use fork_preparation::{RetainedStorageForkCharge, RetainedStorageFork
 pub(crate) use measurement::{arc_allocation_charge, RetainedStorageMeasurement};
 pub(crate) use ordered_index::{
     btree_structure_charge, im_btree_lookup_steps, ordered_batch_growth_charge,
-    ordered_edit_growth_charge, ordered_index_charge, ordered_lookup_steps, std_btree_lookup_steps,
+    ordered_edit_growth_charge, ordered_forest_growth_charge, ordered_index_charge,
+    ordered_lookup_steps, std_btree_lookup_steps,
 };
 pub(crate) use preparation::{RetainedStoragePreparation, RetainedStoragePreparationDenial};
 
