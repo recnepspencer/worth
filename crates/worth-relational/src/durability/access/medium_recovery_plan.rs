@@ -128,6 +128,9 @@ fn readmit_covered_checkpoint(
 /// The last position a checkpoint's retained envelopes include, or zero for a
 /// checkpoint of an empty history.
 pub(crate) fn checkpoint_coverage(checkpoint: &DurableCheckpoint) -> PatchStreamPosition {
+    if let Some(directory) = &checkpoint.directory {
+        return directory.manifest.covered_position;
+    }
     checkpoint
         .envelopes
         .iter()

@@ -38,10 +38,10 @@ fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
     let source = source_with_member(&fixture.source, member);
     cold.source = source.clone();
     let cell = RelationalRegionResidency::cold(cold);
-    let failure = cell.demand_head(1 << 24).unwrap_err();
+    let failure = head_demand(&cell, 1 << 24).unwrap_err();
     assert_eq!(failure.cause, Cause::IntegrityMismatch);
     let reads = source.reads.load(Ordering::SeqCst);
-    assert_eq!(cell.demand_full(1 << 24).unwrap_err(), failure);
+    assert_eq!(full_demand(&cell, 1 << 24).unwrap_err(), failure);
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
 }
 
@@ -71,14 +71,13 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     cold.history = member.0;
     cold.source = source_with_member(&fixture.source, member);
     let cell = RelationalRegionResidency::cold(cold);
-    assert!(cell
-        .demand_head(1 << 24)
+    assert!(head_demand(&cell, 1 << 24)
         .unwrap()
         .head_view()
         .relation(fixture.relation)
         .is_some());
     assert_eq!(
-        cell.demand_full(1 << 24).unwrap_err().cause,
+        full_demand(&cell, 1 << 24).unwrap_err().cause,
         Cause::IntegrityMismatch
     );
 }

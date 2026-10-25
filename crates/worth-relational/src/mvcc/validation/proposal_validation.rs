@@ -84,6 +84,7 @@ impl RelationalPreparationRuntime {
                 "transaction basis is no longer current",
             ));
         }
+        transaction.demand_preparation_regions(execution, &self.services.symbols)?;
         let validated_against_version = basis.observation().version_id();
         let validated_against_commit = basis.observation().commit_id();
         let prepared: PreparedWorkingStateScope = match lowered {

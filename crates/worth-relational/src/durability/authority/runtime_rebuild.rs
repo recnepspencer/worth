@@ -93,9 +93,9 @@ pub(super) fn rebuild_runtime_from_plan(
     pending_tail.sort_by_key(|commit| commit.position());
     let available_commit_ids = restored
         .history
-        .recorded_commit_envelope_entries()
+        .commit_artifacts()
         .into_iter()
-        .map(|(commit_id, _)| commit_id)
+        .map(|artifact| artifact.commit_id())
         .chain(
             pending_tail
                 .iter()

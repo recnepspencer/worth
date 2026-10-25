@@ -74,11 +74,29 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
         .unwrap();
     assert_eq!(sibling_shared, main_shared);
     assert_ne!(sibling_root.regions[0].head, main_root.regions[0].head);
+    let region_keys = wire
+        .manifest
+        .roots
+        .iter()
+        .flat_map(|root| &root.regions)
+        .chain(&wire.manifest.mirror)
+        .flat_map(|leaf| [leaf.head, leaf.history])
+        .collect::<std::collections::BTreeSet<_>>();
     assert!(
-        wire.members.len()
+        region_keys.len()
             < (sibling_root.regions.len() + main_root.regions.len() + wire.manifest.mirror.len())
                 * 2
     );
+    for key in region_keys {
+        assert_eq!(
+            wire.members
+                .iter()
+                .filter(|(locator, _)| *locator == key)
+                .count(),
+            1,
+            "equal regions must have exactly one member body across roots and mirror"
+        );
+    }
     let restored = decode_checkpoint(execution, native.bytes()).unwrap();
     assert_eq!(restored.checkpoint.branch_roots, checkpoint.branch_roots);
     assert_eq!(

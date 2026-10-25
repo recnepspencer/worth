@@ -83,7 +83,9 @@ pub(super) fn expand(
     }
     let mut symbols = crate::symbols::data::StringInterner::default();
     symbols.restore_snapshot(symbol_table.clone());
-    let symbols = Arc::new(symbols);
+    let admitted_symbols = crate::runtime::RuntimeSymbolTable::default();
+    admitted_symbols.replace(symbols);
+    let symbols = admitted_symbols;
     let mut schemas = BTreeMap::new();
     for image in &manifest.schemas {
         let (registry, contracts) = image.readmit_registry().map_err(corrupt)?;
@@ -103,6 +105,7 @@ pub(super) fn expand(
     let mut branch_roots = Vec::new();
     for root in &manifest.roots {
         let partition_images = expand_regions(
+            execution,
             &root.regions,
             root.schema_carrier_digest,
             &schemas,
@@ -127,7 +130,14 @@ pub(super) fn expand(
         });
     }
     let partition_images = if let Some(schema) = manifest.mirror_schema {
-        expand_regions(&manifest.mirror, schema, &schemas, &symbols, &source)?
+        expand_regions(
+            execution,
+            &manifest.mirror,
+            schema,
+            &schemas,
+            &symbols,
+            &source,
+        )?
     } else if manifest.mirror.is_empty() {
         Vec::new()
     } else {
@@ -159,6 +169,7 @@ pub(super) fn expand(
     let (derived_index_artifacts, derived_index_checkpoint, derived_index_checkpoint_format) =
         rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
     Ok(DurableCheckpoint {
+        directory: None,
         coverage: manifest.coverage,
         commit_descriptors: manifest
             .commits
@@ -192,10 +203,11 @@ pub(super) fn expand(
 }
 
 fn expand_regions(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     regions: &[RelationalCheckpointRegion],
     schema_digest: [u8; 32],
     schemas: &BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
-    symbols: &Arc<crate::symbols::data::StringInterner>,
+    symbols: &crate::runtime::RuntimeSymbolTable,
     source: &Arc<dyn RelationalDurableColdSource>,
 ) -> Result<Vec<PartitionCheckpointImage>, RelationalRecoveryStop> {
     let schema = schemas
@@ -230,7 +242,7 @@ fn expand_regions(
     cells
         .iter()
         .map(|(_, _, cell)| {
-            let lease = cell.demand_full(MEMBER_LIMIT)?;
+            let lease = cell.demand_full(execution, MEMBER_LIMIT)?;
             partition_to_image_with_contracts(
                 lease.full_view().partition().clone(),
                 schema.aspect_plans(),

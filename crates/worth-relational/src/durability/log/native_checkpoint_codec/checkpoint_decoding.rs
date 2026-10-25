@@ -31,6 +31,7 @@ pub(crate) fn decode_checkpoint_from_source(
     })?;
     let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
         .map_err(|error| corrupt(format!("native manifest: {error}")))?;
+    super::manifest_validation::validate(&wire.manifest)?;
     let mut inline = None;
     let source: Arc<dyn RelationalDurableColdSource> = if wire.members.is_empty()
         && wire.envelopes.is_empty()

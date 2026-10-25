@@ -264,6 +264,8 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
 
 /// Every registered branch's head, read record by record.
 pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> BranchStates {
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
     super::branch_lifecycle::BRANCHES
         .into_iter()
         .filter_map(|name| {
@@ -278,14 +280,14 @@ pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> B
                     RecordRef::Entity(entity) => format!(
                         "{:?}",
                         reader
-                            .read_entity(*entity)
+                            .read_entity(execution, *entity)
                             .expect("entity read")
                             .effective()
                     ),
                     RecordRef::Relation(relation) => format!(
                         "{:?}",
                         reader
-                            .read_relation(*relation)
+                            .read_relation(execution, *relation)
                             .expect("relation read")
                             .effective()
                     ),

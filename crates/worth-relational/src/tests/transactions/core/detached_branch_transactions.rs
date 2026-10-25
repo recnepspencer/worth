@@ -169,7 +169,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let (_, mut transaction) = begin_on(&runtime, "main");
 
     let before = transaction
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("basis read projects");
     assert_eq!(
         before.base().and_then(read_entity_name),
@@ -177,7 +177,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     );
     update_entity(execution, &runtime, entity, "current-value");
     let after_movement = transaction
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("detached basis read projects");
     assert_eq!(
         after_movement.base().and_then(read_entity_name),
@@ -192,7 +192,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
         transaction
-            .read_entity(entity)
+            .read_entity(execution, entity)
             .expect("staged field update projects")
             .effective()
             .and_then(read_entity_name),

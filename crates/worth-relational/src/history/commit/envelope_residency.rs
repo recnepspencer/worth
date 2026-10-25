@@ -1,0 +1,129 @@
+//! Readmission of an indexed canonical envelope under the caller's request.
+use std::sync::{Arc, Mutex, OnceLock};
+
+use super::RelationalCommitIndexEntry;
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
+use crate::durability::data::RelationalRecoveryStop;
+use crate::durability::medium::RelationalDurableColdSource;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::storage::data::{
+    RelationalStorageSubject, RelationalStorageUnavailable,
+    RelationalStorageUnavailableCause as Cause,
+};
+
+#[derive(Debug)]
+pub(crate) struct RelationalCommitEnvelopeResidency {
+    resident: OnceLock<Arc<CanonicalCommitEnvelope>>,
+    cold: Option<(
+        RelationalCommitIndexEntry,
+        Arc<dyn RelationalDurableColdSource>,
+    )>,
+    load: Mutex<Option<RelationalStorageUnavailable>>,
+}
+
+impl RelationalCommitEnvelopeResidency {
+    pub(crate) fn resident(envelope: Arc<CanonicalCommitEnvelope>) -> Self {
+        Self {
+            resident: OnceLock::from(envelope),
+            cold: None,
+            load: Mutex::new(None),
+        }
+    }
+
+    pub(crate) fn cold(
+        entry: RelationalCommitIndexEntry,
+        source: Arc<dyn RelationalDurableColdSource>,
+        admitted: Option<Arc<CanonicalCommitEnvelope>>,
+    ) -> Self {
+        let resident = OnceLock::new();
+        if let Some(envelope) = admitted {
+            resident.set(envelope).expect("new envelope cell");
+        }
+        Self {
+            resident,
+            cold: Some((entry, source)),
+            load: Mutex::new(None),
+        }
+    }
+
+    pub(crate) fn get(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
+        self.resident.get()
+    }
+
+    pub(crate) fn demand(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<&Arc<CanonicalCommitEnvelope>, RelationalRecoveryStop> {
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        if let Some(envelope) = self.get() {
+            return Ok(envelope);
+        }
+        let mut damage = self.load.lock().unwrap_or_else(|error| error.into_inner());
+        if let Some(envelope) = self.get() {
+            return Ok(envelope);
+        }
+        if let Some(failure) = &*damage {
+            return Err(failure.clone().into());
+        }
+        let (entry, source) = self.cold.as_ref().expect("unloaded cell has a source");
+        let result = self.readmit(entry, source.as_ref(), execution, limit);
+        match result {
+            Ok(envelope) => {
+                self.resident
+                    .set(envelope)
+                    .expect("one load owns admission");
+                Ok(self.resident.get().expect("admitted envelope"))
+            }
+            Err(stop) => {
+                if let RelationalRecoveryStop::Durability(error) = &stop {
+                    if let Some(failure) = error.storage_unavailable.as_ref() {
+                        *damage = Some(failure.clone());
+                    }
+                }
+                Err(stop)
+            }
+        }
+    }
+
+    fn readmit(
+        &self,
+        entry: &RelationalCommitIndexEntry,
+        source: &dyn RelationalDurableColdSource,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Arc<CanonicalCommitEnvelope>, RelationalRecoveryStop> {
+        let failure = |cause| RelationalStorageUnavailable {
+            subject: RelationalStorageSubject::Envelope(entry.position),
+            cause,
+        };
+        let bytes = source
+            .read_commit(entry.position, limit)
+            .map_err(&failure)?;
+        let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
+            .map_err(|_| failure(Cause::Damaged))?;
+        if artifact.position() != entry.position
+            || artifact.commit_id() != entry.commit.commit_id
+            || artifact.payload_digest().as_bytes() != &entry.payload_digest
+        {
+            return Err(failure(Cause::IntegrityMismatch).into());
+        }
+        let admitted = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
+            .map_err(|error| match error {
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::Request(cause) => RelationalRecoveryStop::Request(cause),
+                crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal::FieldText(cause) => crate::symbols::data::field_text_recovery_stop(cause),
+                _ => failure(Cause::Damaged).into(),
+            })?.into_positioned();
+        if admitted.commit != entry.commit
+            || admitted.schema_version != entry.schema_version
+            || entry.root.schema_root()
+                != &crate::schema::data::schema_authority_snapshot_digest_bytes(
+                    &admitted.schema_authority,
+                )
+        {
+            return Err(failure(Cause::IntegrityMismatch).into());
+        }
+        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        Ok(Arc::clone(admitted.canonical_arc()))
+    }
+}

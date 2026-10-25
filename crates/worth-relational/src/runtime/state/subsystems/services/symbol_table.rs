@@ -8,6 +8,7 @@ use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTable
 pub(crate) struct RuntimeSymbolTable {
     state: Arc<RwLock<StringInterner>>,
     configuration_snapshot: Arc<RwLock<OrdMap<StoredSymbolText, Symbol>>>,
+    cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
 }
 
 impl Default for RuntimeSymbolTable {
@@ -15,6 +16,7 @@ impl Default for RuntimeSymbolTable {
         Self {
             state: Arc::new(RwLock::new(StringInterner::default())),
             configuration_snapshot: Arc::new(RwLock::new(OrdMap::new())),
+            cold: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -24,13 +26,30 @@ impl Clone for RuntimeSymbolTable {
         Self {
             state: Arc::clone(&self.state),
             configuration_snapshot: Arc::clone(&self.configuration_snapshot),
+            cold: self.cold.clone(),
         }
     }
 }
 
 impl PartialEq for RuntimeSymbolTable {
     fn eq(&self, other: &Self) -> bool {
-        self.interner_snapshot() == other.interner_snapshot()
+        let left = self
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        let right = other
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        let same_directory = match (left, right) {
+            (None, None) => true,
+            (Some(left), Some(right)) => left.same_directory(&right),
+            _ => false,
+        };
+        same_directory
+            && self.interner_snapshot() == other.interner_snapshot()
             && self.configuration_snapshot() == other.configuration_snapshot()
     }
 }
@@ -38,6 +57,12 @@ impl PartialEq for RuntimeSymbolTable {
 impl Eq for RuntimeSymbolTable {}
 
 impl RuntimeSymbolTable {
+    pub(crate) fn has_cold_pages(&self) -> bool {
+        self.cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .is_some()
+    }
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
         let state = self
             .state
@@ -50,8 +75,76 @@ impl RuntimeSymbolTable {
         Self {
             state: Arc::new(RwLock::new(state.clone())),
             configuration_snapshot: Arc::new(RwLock::new(configuration.clone())),
+            cold: Arc::new(RwLock::new(
+                self.cold
+                    .read()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .as_ref()
+                    .map(|pages| Arc::new(pages.detached())),
+            )),
         }
     }
+    pub(crate) fn install_cold_pages(
+        &self,
+        directory: &crate::durability::data::RelationalCheckpointDirectory,
+    ) -> Result<(), &'static str> {
+        let frontier = directory
+            .manifest
+            .symbols
+            .iter()
+            .map(|page| page.last)
+            .max()
+            .unwrap_or(0);
+        let frontier = u32::try_from(frontier)
+            .ok()
+            .and_then(|last| last.checked_add(1))
+            .ok_or("checkpoint symbol frontier is exhausted")?;
+        self.with_write(|symbols| symbols.reserve_frontier(frontier))?;
+        *self
+            .cold
+            .write()
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Arc::new(
+            super::symbol_residency::RuntimeSymbolResidency::new(
+                directory.manifest.symbols.clone(),
+                directory.manifest.symbol_buckets.clone(),
+                directory.source.clone(),
+            ),
+        ));
+        Ok(())
+    }
+
+    pub(crate) fn demand_symbol_ids(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        ids: impl IntoIterator<Item = Symbol>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let pages = self
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        if let Some(pages) = pages {
+            pages.demand_ids(self, execution, ids)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn demand_text(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        value: &str,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let pages = self
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        if let Some(pages) = pages {
+            pages.demand_value(self, execution, value)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn normalize_client_keys(
         &self,
         normalize: impl FnOnce(&mut StringInterner) -> Vec<(Symbol, String)>,
@@ -78,6 +171,15 @@ impl RuntimeSymbolTable {
     {
         use crate::symbols::data::RelationalFieldTextAdmissionDenial as Denial;
         let raw = std::str::from_utf8(input.bytes()).map_err(|_| Denial::InvalidUtf8)?;
+        self.demand_text(execution, raw)
+            .map_err(|failure| match failure {
+                crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
+                    failure,
+                ) => Denial::StorageUnavailable(failure),
+                crate::storage::residency::RelationalResidencyDemandFailure::Request(cause) => {
+                    Denial::Request(cause)
+                }
+            })?;
         let mut state = self
             .state
             .write()

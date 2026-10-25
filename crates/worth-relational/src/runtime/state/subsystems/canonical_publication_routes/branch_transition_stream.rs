@@ -117,6 +117,12 @@ impl RelationalCanonicalPublicationRoutes {
     /// for the routes recovery rebuilds from its recovered inventory.
     pub(crate) fn continuing_branch_transitions(&self) -> Self {
         Self {
+            checkpoint_catalog: std::sync::RwLock::new(
+                self.checkpoint_catalog
+                    .read()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .clone(),
+            ),
             branch_transitions: self.branch_transitions.share(),
             ..Self::default()
         }
@@ -126,6 +132,12 @@ impl RelationalCanonicalPublicationRoutes {
     /// transition stream, for a detached owner snapshot or runtime fork.
     pub(crate) fn detached_branch_transitions(&self) -> Self {
         Self {
+            checkpoint_catalog: std::sync::RwLock::new(
+                self.checkpoint_catalog
+                    .read()
+                    .unwrap_or_else(|error| error.into_inner())
+                    .clone(),
+            ),
             branch_transitions: self.branch_transitions.detached(),
             ..Self::default()
         }

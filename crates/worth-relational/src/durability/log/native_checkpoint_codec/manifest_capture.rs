@@ -24,11 +24,17 @@ impl CapturedManifest {
     pub(crate) fn capture_metadata(
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        prior: Option<&RelationalCheckpointManifest>,
+        placement: RelationalCheckpointArtifactPolicy,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
-        let mut commits = Vec::new();
+        let mut commits = prior.map_or_else(Vec::new, |prior| prior.commits.clone());
         let mut envelopes = Vec::new();
-        for positioned in &checkpoint.envelopes {
+        for positioned in checkpoint
+            .envelopes
+            .iter()
+            .filter(|entry| prior.is_none_or(|prior| entry.position() > prior.covered_position))
+        {
             policy.check_live()?;
             let payload_digest =
                 RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
@@ -38,19 +44,21 @@ impl CapturedManifest {
                 .commit_descriptors
                 .get(&envelope.commit.commit_id)
                 .ok_or_else(|| corrupt("checkpoint commit lacks its catalog descriptor"))?;
-            commits.push(RelationalCheckpointCommit {
+            commits.push(crate::history::RelationalCommitIndexEntry {
                 commit: envelope.commit.clone(),
                 position: positioned.position(),
                 root: root.clone(),
                 payload_digest,
                 schema_version: envelope.schema_version,
             });
-            envelopes.push(
-                rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
-                    positioned,
-                ))
-                .map_err(|error| corrupt(format!("embedded checkpoint envelope: {error}")))?,
-            );
+            if placement == RelationalCheckpointArtifactPolicy::Embedded {
+                envelopes.push(
+                    rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
+                        positioned,
+                    ))
+                    .map_err(|error| corrupt(format!("embedded checkpoint envelope: {error}")))?,
+                );
+            }
         }
         let mut entries = checkpoint.symbol_table.entries.clone();
         entries.sort_by_key(|(symbol, _)| *symbol);
@@ -68,6 +76,29 @@ impl CapturedManifest {
                 first: page[0].0 .0 as u64,
                 last: page.last().unwrap().0 .0 as u64,
                 member,
+            });
+        }
+        let mut buckets = BTreeMap::<u8, Vec<_>>::new();
+        for (symbol, text) in &checkpoint.symbol_table.entries {
+            use sha2::{Digest, Sha256};
+            let bucket = Sha256::digest(text.as_str().as_bytes())[0];
+            buckets
+                .entry(bucket)
+                .or_default()
+                .push((*symbol, text.clone()));
+        }
+        let mut symbol_buckets = Vec::new();
+        for (bucket, mut entries) in buckets {
+            entries.sort_by_key(|(symbol, _)| *symbol);
+            let page = crate::symbols::data::SymbolTableSnapshot { entries };
+            let member = add(
+                &mut members,
+                member_frame::encode(MemberKind::Symbols, &page)
+                    .map_err(|cause| corrupt(format!("symbol bucket member: {cause:?}")))?,
+            );
+            symbol_buckets.push(RelationalCheckpointSymbolBucket {
+                bucket,
+                pages: vec![member],
             });
         }
         let mut lineage_pages = Vec::new();
@@ -115,6 +146,7 @@ impl CapturedManifest {
                 mirror: Vec::new(),
                 commits,
                 symbols: symbol_pages,
+                symbol_buckets,
                 lineage: lineage_pages,
                 lineage_basis: checkpoint.lineage.digest_basis().clone(),
                 derived_indexes,
@@ -130,7 +162,12 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
-        let mut captured = Self::capture_metadata(checkpoint, policy)?;
+        let mut captured = Self::capture_metadata(
+            checkpoint,
+            policy,
+            None,
+            RelationalCheckpointArtifactPolicy::Embedded,
+        )?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();
         symbols.restore_snapshot(checkpoint.symbol_table.clone());

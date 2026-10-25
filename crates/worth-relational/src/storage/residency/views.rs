@@ -11,6 +11,24 @@ pub(crate) struct RelationalRegionFullView<'lease> {
 }
 
 impl<'lease> RelationalRegionHeadView<'lease> {
+    pub(crate) fn entity_record(
+        &self,
+        schema: &crate::schema::data::RelationalSchemaRegistry,
+        id: EntityId,
+    ) -> Option<crate::storage::data::EntityReadRecord> {
+        crate::visibility::materialization::read_records::materialization::materialize_current_authoritative_entity_record(
+            schema, &self.region.partition, id.partition_id, id.slot_index(),
+        ).filter(|record| id.generation.is_zero() || record.entity_id.generation == id.generation)
+    }
+    pub(crate) fn relation_record(
+        &self,
+        schema: &crate::schema::data::RelationalSchemaRegistry,
+        id: RelationId,
+    ) -> Option<crate::storage::data::RelationReadRecord> {
+        crate::visibility::materialization::read_records::materialization::materialize_current_authoritative_relation_record(
+            schema, &self.region.partition, id.partition_id, id.slot_index(),
+        ).filter(|record| id.generation.is_zero() || record.relation_id.generation == id.generation)
+    }
     pub(super) fn new(region: &'lease ResidentRegion) -> Self {
         Self { region }
     }

@@ -10,9 +10,11 @@ use super::super::super::derived_index_artifacts::restore_checkpoint_derived_ind
 use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 
 mod branch_root_images;
+mod cold_directory;
 mod partition_images;
 mod record_identity;
 mod recovered_codec_meaning;
+mod root_readmission;
 mod root_schema_readmission;
 
 #[cfg(test)]
@@ -40,6 +42,13 @@ pub(super) fn restore_checkpoint_state(
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
+    if checkpoint.directory.is_some() {
+        cold_directory::restore(execution, restored, &checkpoint, work)?;
+        super::unshared_state(restored)?
+            .durability
+            .push_checkpoint(checkpoint);
+        return Ok(());
+    }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
@@ -162,15 +171,19 @@ fn prepare_history(
         })
         .collect();
     history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
+    let roots = root_readmission::readmit_selected_images(
+        &history,
+        checkpoint,
+        &mut branch_roots,
+        symbols,
+    )?;
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
             &checkpoint.branch_lifecycle,
             &checkpoint.retired_branch_names,
-            &mut branch_roots.partitions,
-            &branch_roots.schema_authorities,
+            &roots,
             &restored.config.schema.registry,
-            symbols,
         )
         .map_err(|detail| {
             DurabilityError::new(

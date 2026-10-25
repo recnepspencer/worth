@@ -36,7 +36,7 @@ impl HistorySubsystem {
         }
         let target = FoundationalBranchTarget::basis(RelationalBranchTarget::from_commit_receipt(
             self.runtime_instance_id,
-            &artifact.envelope().commit,
+            &artifact.receipt(),
             artifact.roots().clone(),
         ));
         validate_branch_target_lineage(

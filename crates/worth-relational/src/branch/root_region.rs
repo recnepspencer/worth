@@ -140,9 +140,15 @@ impl RelationalRootRegion {
     pub(super) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
         let mut bytes = std::mem::size_of::<Self>() as u64;
         if self.partition.is_uniquely_owned() {
-            bytes = bytes
-                .saturating_add(self.partition.residency_allocation_bytes())
-                .saturating_add(self.partition.reclaimable_unique_authoritative_bytes());
+            bytes = bytes.saturating_add(self.partition.cell().residency_allocation_bytes());
+            if let Ok(Some(lease)) = self.partition.cell().lease_resident_full() {
+                bytes = bytes.saturating_add(
+                    lease
+                        .full_view()
+                        .partition()
+                        .reclaimable_unique_authoritative_bytes(),
+                );
+            }
         }
         bytes
     }

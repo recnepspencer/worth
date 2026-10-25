@@ -52,7 +52,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         self.runtime
             .history
             .commit_artifact(commit_id)
-            .map(|artifact| artifact.envelope().commit.clone())
+            .map(|artifact| artifact.receipt())
             .or_else(|| {
                 self.runtime
                     .history
@@ -100,14 +100,14 @@ impl<'runtime> HistoryAccess<'runtime> {
                             .history
                             .recorded_commit_at_patch_position(position)
                             .and_then(|commit_id| self.runtime.history.commit_artifact(commit_id))
-                            .map(|artifact| artifact.envelope().commit.clone())
+                            .map(|artifact| artifact.receipt())
                     })
             })
             .or_else(|| {
                 self.runtime
                     .history
                     .latest_commit_artifact()
-                    .map(|artifact| artifact.envelope().commit.clone())
+                    .map(|artifact| artifact.receipt())
             })
     }
 
@@ -251,7 +251,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         self.runtime
             .history
             .commit_artifact(commit_id)
-            .map(|artifact| artifact.envelope().commit.clone())
+            .map(|artifact| artifact.receipt())
     }
 
     pub(crate) fn latest_commit(&self) -> Option<RelationalCommitReceipt> {

@@ -11,6 +11,21 @@ use crate::history::data::CanonicalCommitEnvelope;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn readmit_branch_region_directory(
+        &self,
+        regions: Vec<crate::branch::RelationalRootRegionCheckpoint>,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        descriptor: crate::branch::RelationalBranchRootDescriptor,
+        schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<RelationalBranchRoot>, RelationalBranchRootCaptureDenial> {
+        RelationalBranchRoot::readmit_region_directory(
+            &self.root_identity_issuer,
+            regions,
+            envelope,
+            descriptor,
+            schema,
+        )
+    }
     pub(crate) fn prepare_branch_root_capture<P: crate::storage::overlay::PartitionAccess>(
         &self,
         partitions: &P,

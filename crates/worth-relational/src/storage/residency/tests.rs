@@ -98,6 +98,8 @@ fn region_with_history() -> RegionFixture {
         expected_history > 1,
         "fixture must have real committed history"
     );
+    let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
+    symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
         source: source.clone(),
         kind_authority: Arc::new(RelationalRegionKindAuthority::default()),
@@ -106,7 +108,7 @@ fn region_with_history() -> RegionFixture {
         history: members.history.0,
         schema,
         schema_carrier_digest: schema_digest,
-        symbols,
+        symbols: symbol_authority,
         content_digest: expected_digest,
         entity_slots: partition.entity_arena.slot_count(),
         relation_slots: partition.relation_arena.slot_count(),
@@ -132,7 +134,7 @@ fn concurrent_head_demands_share_the_load_and_count_every_lease() {
         let handles = (0..8)
             .map(|_| {
                 let fixture = &fixture;
-                scope.spawn(move || fixture.cell.demand_head(1 << 24).unwrap())
+                scope.spawn(move || head_demand(&fixture.cell, 1 << 24).unwrap())
             })
             .collect::<Vec<_>>();
         handles
@@ -174,7 +176,7 @@ fn concurrent_head_demands_share_the_load_and_count_every_lease() {
     }
     drop(leases);
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
-    let full = fixture.cell.demand_full(1 << 24).unwrap();
+    let full = full_demand(&fixture.cell, 1 << 24).unwrap();
     assert_eq!(
         full.full_view()
             .partition()
@@ -228,10 +230,10 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
         corrupt: AtomicBool::new(false),
     });
     let cell = RelationalRegionResidency::cold(cold);
-    let head = cell.demand_head(1 << 24).unwrap();
+    let head = head_demand(&cell, 1 << 24).unwrap();
     assert!(head.head_view().entity(fixture.entity).is_some());
     assert_eq!(
-        cell.demand_full(1 << 24).unwrap_err().cause,
+        full_demand(&cell, 1 << 24).unwrap_err().cause,
         Cause::IntegrityMismatch
     );
 }
@@ -240,7 +242,7 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
 fn damaged_content_and_leaf_mismatches_are_sticky_typed_refusals() {
     let fixture = region_with_history();
     fixture.source.corrupt.store(true, Ordering::SeqCst);
-    let first = fixture.cell.demand_head(1 << 24).unwrap_err();
+    let first = head_demand(&fixture.cell, 1 << 24).unwrap_err();
     assert_eq!(
         first.subject,
         RelationalStorageSubject::Region(fixture.entity.partition_id)
@@ -248,7 +250,7 @@ fn damaged_content_and_leaf_mismatches_are_sticky_typed_refusals() {
     assert_eq!(first.cause, Cause::IntegrityMismatch);
     fixture.source.corrupt.store(false, Ordering::SeqCst);
     let reads = fixture.source.reads.load(Ordering::SeqCst);
-    assert_eq!(fixture.cell.demand_full(1 << 24).unwrap_err(), first);
+    assert_eq!(full_demand(&fixture.cell, 1 << 24).unwrap_err(), first);
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
 
@@ -256,7 +258,7 @@ fn damaged_content_and_leaf_mismatches_are_sticky_typed_refusals() {
     wrong_leaf.content_digest[0] ^= 1;
     let cell = RelationalRegionResidency::cold(wrong_leaf);
     assert_eq!(
-        cell.demand_head(1 << 24).unwrap_err().cause,
+        head_demand(&cell, 1 << 24).unwrap_err().cause,
         Cause::IntegrityMismatch
     );
 }
@@ -264,7 +266,7 @@ fn damaged_content_and_leaf_mismatches_are_sticky_typed_refusals() {
 #[test]
 fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_cause() {
     let fixture = region_with_history();
-    let failure = fixture.cell.demand_head(1).unwrap_err();
+    let failure = head_demand(&fixture.cell, 1).unwrap_err();
     assert!(matches!(
         failure.cause,
         Cause::LimitExceeded { limit: 1, .. }
@@ -293,7 +295,7 @@ fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
         .capture_checkpoint(
             &fixture.cold.schema,
             fixture.cold.schema_carrier_digest,
-            &fixture.cold.symbols,
+            &fixture.cold.symbols.interner_snapshot(),
         )
         .unwrap();
     assert_eq!(captured.leaf.content_digest, fixture.expected_digest);
@@ -304,3 +306,31 @@ fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 0);
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
 }
+
+fn head_demand(
+    cell: &Arc<RelationalRegionResidency>,
+    limit: u64,
+) -> Result<RelationalResidencyLease<Head>, crate::storage::data::RelationalStorageUnavailable> {
+    let request = crate::test_execution_policy::serial_request();
+    cell.demand_head(&worth_execution::ExecutionRequest::serial(&request), limit)
+        .map_err(storage_failure)
+}
+fn full_demand(
+    cell: &Arc<RelationalRegionResidency>,
+    limit: u64,
+) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable> {
+    let request = crate::test_execution_policy::serial_request();
+    cell.demand_full(&worth_execution::ExecutionRequest::serial(&request), limit)
+        .map_err(storage_failure)
+}
+fn storage_failure(
+    failure: RelationalResidencyDemandFailure,
+) -> crate::storage::data::RelationalStorageUnavailable {
+    match failure {
+        RelationalResidencyDemandFailure::StorageUnavailable(failure) => failure,
+        other => panic!("unbounded live test demand was interrupted: {other:?}"),
+    }
+}
+
+#[path = "request_stop_tests.rs"]
+mod request_stop_tests;

@@ -7,7 +7,11 @@ use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
+mod checkpoint_selection;
 mod state;
+pub(crate) use checkpoint_selection::{
+    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
+};
 
 use state::DurabilityState;
 
@@ -22,9 +26,14 @@ pub(crate) struct DurabilitySubsystem {
     /// Speculative copies retain historical reads, never publication access.
     transition_history: Option<RelationalTransitionHistoryReader>,
     cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+    checkpoint_selection: RelationalCheckpointManifestSelection,
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn checkpoint_selection(&self) -> &RelationalCheckpointManifestSelection {
+        &self.checkpoint_selection
+    }
+
     pub(crate) fn cold_source(
         &self,
     ) -> Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>> {
@@ -127,6 +136,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             medium: None,
             transition_history: None,
             cold_source: None,
+            checkpoint_selection: Default::default(),
         }
     }
 
@@ -136,6 +146,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             medium: None,
             transition_history: self.transition_history(),
             cold_source: self.cold_source.clone(),
+            checkpoint_selection: self.checkpoint_selection.detached(),
         }
     }
 }

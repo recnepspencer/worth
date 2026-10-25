@@ -6,13 +6,13 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::symbols::data::Symbol;
 
 /// A committed value could not be made resident. This is never record absence.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RelationalStorageUnavailable {
     pub subject: RelationalStorageSubject,
     pub cause: RelationalStorageUnavailableCause,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalStorageSubject {
     Region(PartitionId),
     Envelope(PatchStreamPosition),
@@ -21,7 +21,7 @@ pub enum RelationalStorageSubject {
     Index(DerivedIndexId),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalStorageUnavailableCause {
     SourceUnavailable,
     Damaged,

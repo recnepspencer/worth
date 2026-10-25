@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
-use crate::history::data::{CommitId, RelationalCommitReceipt};
+use crate::history::data::CommitId;
 use crate::identity::data::PartitionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
@@ -24,8 +24,9 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) roots: Vec<RelationalCheckpointRoot>,
     pub(crate) mirror_schema: Option<[u8; 32]>,
     pub(crate) mirror: Vec<RelationalCheckpointRegion>,
-    pub(crate) commits: Vec<RelationalCheckpointCommit>,
+    pub(crate) commits: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) symbols: Vec<RelationalCheckpointPage>,
+    pub(crate) symbol_buckets: Vec<RelationalCheckpointSymbolBucket>,
     pub(crate) lineage: Vec<RelationalCheckpointPage>,
     pub(crate) lineage_basis: crate::lineage::data::LineageCheckpointDigestBasis,
     pub(crate) derived_indexes: RelationalDurableMemberLocator,
@@ -53,19 +54,17 @@ pub(crate) struct RelationalCheckpointRegion {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct RelationalCheckpointCommit {
-    // The receipt carries id, version, parents and branch, without the payload.
-    pub(crate) commit: RelationalCommitReceipt,
-    pub(crate) position: PatchStreamPosition,
-    pub(crate) root: crate::branch::RelationalBranchRootDescriptor,
-    pub(crate) payload_digest: [u8; 32],
-    pub(crate) schema_version: crate::schema::data::SchemaVersionId,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub(crate) struct RelationalCheckpointPage {
     pub(crate) first: u64,
     pub(crate) last: u64,
     pub(crate) member: RelationalDurableMemberLocator,
+}
+
+/// Value lookup has its own directory so interning a new value need not load
+/// the id-ordered dictionary. Successive publications append immutable pages.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct RelationalCheckpointSymbolBucket {
+    pub(crate) bucket: u8,
+    pub(crate) pages: Vec<RelationalDurableMemberLocator>,
 }

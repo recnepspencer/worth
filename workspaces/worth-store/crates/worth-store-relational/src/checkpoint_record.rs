@@ -39,6 +39,9 @@ pub enum RelationalStoreCheckpointRecordRefusal {
     /// The record is intact for Store but is not a checkpoint record this
     /// build can read.
     Malformed,
+    /// A capture completed after a later recovery basis was selected. It may
+    /// not remove that basis's member membership or regress either frontier.
+    StaleCapture,
     Publication(AnchoredRecordPublicationFailure),
 }
 
@@ -85,6 +88,12 @@ pub(crate) fn publish(
     let current = previous
         .as_ref()
         .map_or(0, |record| record.version().generation());
+    if let Some(previous) = &previous {
+        let (position, transitions) = decode_header(previous.bytes()).ok_or(Refusal::Malformed)?;
+        if covered.0 < position || covered_transitions.0 < transitions {
+            return Err(Refusal::StaleCapture);
+        }
+    }
     let old_members = previous
         .as_ref()
         .map(|record| record.members())

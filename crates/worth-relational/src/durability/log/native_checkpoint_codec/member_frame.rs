@@ -8,13 +8,13 @@ const MAGIC: &[u8] = b"WORTH-REL-MBR1\n";
 
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
-pub(super) enum MemberKind {
+pub(crate) enum MemberKind {
     Symbols = 0,
     Lineage = 1,
     DerivedIndex = 2,
 }
 
-pub(super) fn encode(
+pub(crate) fn encode(
     kind: MemberKind,
     value: &impl serde::Serialize,
 ) -> Result<(RelationalDurableMemberLocator, Vec<u8>), Cause> {
@@ -30,14 +30,14 @@ pub(super) fn encode(
     Ok((locator(&bytes), bytes))
 }
 
-pub(super) fn locator(bytes: &[u8]) -> RelationalDurableMemberLocator {
+pub(crate) fn locator(bytes: &[u8]) -> RelationalDurableMemberLocator {
     RelationalDurableMemberLocator {
         sha256: Sha256::digest(bytes).into(),
         length: bytes.len() as u64,
     }
 }
 
-pub(super) fn decode(
+pub(crate) fn decode(
     bytes: &[u8],
     expected: RelationalDurableMemberLocator,
     kind: MemberKind,

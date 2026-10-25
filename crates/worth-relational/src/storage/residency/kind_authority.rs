@@ -4,9 +4,14 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, OnceLock, Weak};
 
-use super::{RelationalRegionResidency, ResidentRegion};
+use super::{
+    RelationalRegionResidency, RelationalResidencyDemandFailure as Failure, ResidentRegion,
+};
 use crate::identity::data::{KindId, PartitionId, RelationId};
-use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::data::{
+    RelationalStorageSubject, RelationalStorageUnavailable,
+    RelationalStorageUnavailableCause as Cause,
+};
 use crate::storage::partition::AdjacencyKindBasis;
 
 #[derive(Debug, Default)]
@@ -31,8 +36,14 @@ impl RelationalRegionKindAuthority {
         self.regions.set(directory).map_err(|_| Cause::Damaged)
     }
 
-    pub(super) fn verify_head(&self, region: &ResidentRegion, limit: u64) -> Result<(), Cause> {
+    pub(super) fn verify_head(
+        &self,
+        region: &ResidentRegion,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<(), Failure> {
         let partition = &region.partition;
+        let refusal = |cause| unavailable(partition.partition_id, cause);
         for table in [&partition.adjacency, &partition.reverse_adjacency] {
             for (_, adjacency) in table.iter() {
                 let mut expected = BTreeMap::<KindId, Vec<RelationId>>::new();
@@ -41,14 +52,17 @@ impl RelationalRegionKindAuthority {
                     let authority = if id.partition_id == partition.partition_id {
                         partition
                     } else {
-                        owner = self.cell(id.partition_id)?.raw_head(limit)?;
+                        owner = self
+                            .cell(id.partition_id)
+                            .map_err(refusal)?
+                            .raw_head(execution, limit)?;
                         &owner.partition
                     };
                     let kind = authority
                         .relation_arena
                         .get(&id)
                         .and_then(|slot| slot.kind_id())
-                        .ok_or(Cause::IntegrityMismatch)?;
+                        .ok_or_else(|| refusal(Cause::IntegrityMismatch))?;
                     expected.entry(kind).or_default().push(id);
                 }
                 let supplied = adjacency
@@ -57,7 +71,7 @@ impl RelationalRegionKindAuthority {
                     .filter(|(_, ids)| !ids.is_empty())
                     .collect::<BTreeMap<_, _>>();
                 if expected != supplied {
-                    return Err(Cause::IntegrityMismatch);
+                    return Err(refusal(Cause::IntegrityMismatch).into());
                 }
             }
         }
@@ -67,9 +81,11 @@ impl RelationalRegionKindAuthority {
     pub(super) fn admit_full(
         &self,
         region: &Arc<ResidentRegion>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<Arc<ResidentRegion>, Cause> {
-        self.verify_head(region, limit)?;
+    ) -> Result<Arc<ResidentRegion>, Failure> {
+        self.verify_head(region, execution, limit)?;
+        let refusal = |cause| unavailable(region.partition.partition_id, cause);
         let mut authority =
             BTreeMap::from([(region.partition.partition_id, region.partition.clone())]);
         if let Some(regions) = self.regions.get() {
@@ -77,16 +93,18 @@ impl RelationalRegionKindAuthority {
                 if id == region.partition.partition_id || *relations == 0 {
                     continue;
                 }
-                let cell = cell.upgrade().ok_or(Cause::SourceUnavailable)?;
-                let raw = cell.raw_full(limit)?;
+                let cell = cell
+                    .upgrade()
+                    .ok_or_else(|| refusal(Cause::SourceUnavailable))?;
+                let raw = cell.raw_full(execution, limit)?;
                 authority.insert(id, raw.partition.clone());
             }
         }
         crate::storage::partition::rebuild_adjacency_kind_buckets(&mut authority)
-            .map_err(|_| Cause::IntegrityMismatch)?;
+            .map_err(|_| refusal(Cause::IntegrityMismatch))?;
         let partition = authority
             .remove(&region.partition.partition_id)
-            .ok_or(Cause::Damaged)?;
+            .ok_or_else(|| refusal(Cause::Damaged))?;
         Ok(Arc::new(ResidentRegion {
             partition,
             commitment: region.commitment.clone(),
@@ -99,5 +117,12 @@ impl RelationalRegionKindAuthority {
             .and_then(|regions| regions.get(&id))
             .and_then(|(_, cell)| cell.upgrade())
             .ok_or(Cause::SourceUnavailable)
+    }
+}
+
+fn unavailable(partition_id: PartitionId, cause: Cause) -> RelationalStorageUnavailable {
+    RelationalStorageUnavailable {
+        subject: RelationalStorageSubject::Region(partition_id),
+        cause,
     }
 }

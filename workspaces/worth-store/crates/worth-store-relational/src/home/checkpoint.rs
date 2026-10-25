@@ -5,6 +5,9 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use super::RelationalStoreHome;
 use crate::checkpoint_record::{self, RelationalStoreCheckpointRecordRefusal};
 
+#[cfg(test)]
+mod tests;
+
 /// A checkpoint the home made the selected recovery basis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelationalStoreCheckpoint {

@@ -11,6 +11,7 @@ use super::checkpoint_capture::{CapturedCheckpointBasis, CapturedRecordIdentity}
 impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
         let CapturedCheckpointBasis {
+            selected_directory: _,
             latest_commit,
             branch_cells,
             branch_lifecycle,
@@ -77,6 +78,7 @@ impl CapturedCheckpointBasis {
             })?
             .map(|image| image.carrier_digest());
         Ok(DurableCheckpoint {
+            directory: None,
             commit_descriptors,
             mirror_schema_digest,
             coverage: CheckpointCoverage {

@@ -4,7 +4,6 @@
 use std::sync::{Arc, OnceLock};
 
 use super::{Full, RelationalRegionResidency, RelationalResidencyLease};
-use crate::storage::data::RelationalStorageUnavailable;
 use crate::storage::overlay::PartitionState;
 
 #[derive(Debug)]
@@ -38,9 +37,13 @@ impl RelationalRegionRetention {
         &self.cell
     }
 
-    pub(crate) fn demand_full(&self, limit: u64) -> Result<(), RelationalStorageUnavailable> {
+    pub(crate) fn demand_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<(), super::RelationalResidencyDemandFailure> {
         if self.full.get().is_none() {
-            let lease = self.cell.demand_full(limit)?;
+            let lease = self.cell.demand_full(execution, limit)?;
             let _ = self.full.set(lease);
         }
         Ok(())

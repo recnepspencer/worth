@@ -10,6 +10,8 @@ use crate::runtime::RelationalRuntime;
 
 pub(super) struct CapturedCheckpointBasis {
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
+    pub(super) selected_directory:
+        Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
     pub(super) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
     pub(super) branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
     pub(super) retired_branch_names: Vec<crate::history::data::BranchId>,
@@ -126,6 +128,7 @@ impl CapturedCheckpointBasis {
             })
             .map(|root| root.schema_authority().clone());
         let captured = Self {
+            selected_directory: runtime.durability.checkpoint_selection().snapshot(),
             latest_commit: envelopes
                 .last()
                 .map(|positioned| positioned.envelope().commit.clone()),

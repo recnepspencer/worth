@@ -30,10 +30,11 @@ pub(crate) use subsystems::{
     PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
     PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
-    RelationalCanonicalPublicationRoutes, RelationalDiagnosticArtifactStore,
+    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
+    RelationalCheckpointManifestSelection, RelationalDiagnosticArtifactStore,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
     ReplayRetentionState, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
     ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{

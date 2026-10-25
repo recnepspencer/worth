@@ -17,6 +17,7 @@ mod preparation_port;
 mod prepared_change_summary;
 mod read_projection;
 mod read_view;
+mod region_demand;
 mod request_custody;
 mod savepoint;
 mod staging;
@@ -43,3 +44,6 @@ pub use staging::RelationalTransactionStagingDenial;
 pub(crate) use overlay::DetachedRelationalTransactionOverlay;
 #[cfg(test)]
 pub(crate) mod split_contacts;
+
+mod read_denial;
+pub use read_denial::RelationalTransactionReadDenial;

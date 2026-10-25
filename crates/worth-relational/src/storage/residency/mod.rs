@@ -22,3 +22,9 @@ pub(crate) use retention::RelationalRegionRetention;
 
 mod checkpoint_capture;
 pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;
+
+mod demand_failure;
+pub(crate) use demand_failure::RelationalResidencyDemandFailure;
+
+mod cell_load_cache;
+mod required_symbols;

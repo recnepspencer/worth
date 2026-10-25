@@ -10,16 +10,72 @@ impl CapturedCheckpointBasis {
         mut self,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         source: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+        placement: RelationalCheckpointArtifactPolicy,
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
+        let mut symbols = crate::symbols::data::StringInterner::default();
+        symbols.restore_snapshot(self.symbol_table.clone());
+        let prior = if placement == RelationalCheckpointArtifactPolicy::ExternalMembers {
+            self.selected_directory.take()
+        } else {
+            None
+        };
+        let mut lineage_basis = prior
+            .as_ref()
+            .map(|prior| prior.manifest.lineage_basis.clone());
+        if let Some(prior) = &prior {
+            let symbol_frontier = prior
+                .manifest
+                .symbols
+                .iter()
+                .map(|page| page.last)
+                .max()
+                .unwrap_or(0);
+            self.symbol_table
+                .entries
+                .retain(|(symbol, _)| symbol.0 as u64 > symbol_frontier);
+            let lineage_frontier = prior
+                .manifest
+                .lineage
+                .iter()
+                .map(|page| page.last)
+                .max()
+                .unwrap_or(0);
+            self.lineage_nodes
+                .retain(|node| node.lineage_id.0 > lineage_frontier);
+            let basis = lineage_basis
+                .as_mut()
+                .expect("selected directory supplies its lineage basis");
+            for commit in self
+                .envelopes
+                .iter()
+                .filter(|commit| commit.position() > prior.manifest.covered_position)
+            {
+                basis.published_lineage_commit_count += usize::from(commit.has_lineage_authority());
+                basis.canonical_published_event_ids.extend(
+                    commit
+                        .lineage_digest_basis()
+                        .canonical_event_ids()
+                        .iter()
+                        .copied(),
+                );
+                basis.published_lineage_event_count +=
+                    commit.lineage_digest_basis().lineage_event_count();
+                basis.published_lineage_decision_count +=
+                    commit.lineage_digest_basis().lineage_decision_count();
+            }
+        }
         let roots = std::mem::take(&mut self.branch_roots);
         let mirror = std::mem::take(&mut self.partitions);
         let mirror_schema = self.mirror_schema_authority.clone();
-        let mut symbols = crate::symbols::data::StringInterner::default();
-        symbols.restore_snapshot(self.symbol_table.clone());
         // With storage sources removed, this constructs metadata only. The
         // memory checkpoint door alone materializes its selected substrate.
         let metadata = self.build_checkpoint_image()?;
-        let mut captured = CapturedManifest::capture_metadata(&metadata, policy)?;
+        let mut captured = CapturedManifest::capture_metadata(
+            &metadata,
+            policy,
+            prior.as_ref().map(|prior| &prior.manifest),
+            placement,
+        )?;
         captured.cold_source = source;
         let mut schemas = BTreeMap::new();
         for root in roots {
@@ -76,6 +132,67 @@ impl CapturedCheckpointBasis {
             }
         } else if mirror.len() != 0 {
             return Err(corrupt("nonempty mirror has no selected schema authority").into());
+        }
+        if let Some(prior) = &prior {
+            let mut symbols = prior.manifest.symbols.clone();
+            symbols.append(&mut captured.manifest.symbols);
+            captured.manifest.symbols = symbols;
+            let mut buckets = prior
+                .manifest
+                .symbol_buckets
+                .iter()
+                .map(|bucket| (bucket.bucket, bucket.pages.clone()))
+                .collect::<BTreeMap<_, _>>();
+            for bucket in std::mem::take(&mut captured.manifest.symbol_buckets) {
+                buckets
+                    .entry(bucket.bucket)
+                    .or_default()
+                    .extend(bucket.pages);
+            }
+            captured.manifest.symbol_buckets = buckets
+                .into_iter()
+                .map(|(bucket, pages)| RelationalCheckpointSymbolBucket { bucket, pages })
+                .collect();
+            for bucket in &prior.manifest.symbol_buckets {
+                for locator in &bucket.pages {
+                    insert_member(
+                        &mut captured,
+                        RelationalCheckpointMember::Carried { locator: *locator },
+                    );
+                }
+            }
+            let mut lineage = prior.manifest.lineage.clone();
+            lineage.append(&mut captured.manifest.lineage);
+            captured.manifest.lineage = lineage;
+            captured.manifest.lineage_basis = lineage_basis.expect("selected lineage basis");
+            for page in prior.manifest.symbols.iter().chain(&prior.manifest.lineage) {
+                insert_member(
+                    &mut captured,
+                    RelationalCheckpointMember::Carried {
+                        locator: page.member,
+                    },
+                );
+            }
+            if captured.manifest.derived_indexes == prior.manifest.derived_indexes {
+                insert_member(
+                    &mut captured,
+                    RelationalCheckpointMember::Carried {
+                        locator: prior.manifest.derived_indexes,
+                    },
+                );
+            }
+            // The full commit index, rather than resident head envelopes,
+            // determines coverage even when its authoring branch was retired.
+            captured.manifest.coverage.up_to_commit = captured
+                .manifest
+                .commits
+                .last()
+                .map(|entry| entry.commit.clone());
+            captured.manifest.coverage.up_to_version = captured
+                .manifest
+                .commits
+                .last()
+                .map(|entry| entry.commit.version_id);
         }
         captured.manifest.schemas = schemas.into_values().collect();
         Ok(captured)

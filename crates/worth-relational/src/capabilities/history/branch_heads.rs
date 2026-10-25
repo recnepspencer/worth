@@ -36,7 +36,7 @@ impl HistorySource for RelationalRuntime {
         };
         self.history
             .commit_artifact(commit_id)
-            .map(|artifact| artifact.envelope().commit.clone())
+            .map(|artifact| artifact.receipt())
     }
 
     fn authoritative_commit_envelopes(&self) -> Vec<std::sync::Arc<CanonicalCommitEnvelope>> {

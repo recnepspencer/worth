@@ -226,27 +226,47 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         prepared_first_id
     );
     assert_eq!(
-        observed_entity_name(&recovered, "prepared-first", prepared_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "prepared-first",
+            prepared_first_entity
+        ),
         Some("write-a".to_owned())
     );
     assert_eq!(
-        observed_entity_name(&recovered, "prepared-first", published_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "prepared-first",
+            published_first_entity
+        ),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "published-first", published_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "published-first",
+            published_first_entity
+        ),
         Some("write-b".to_owned())
     );
     assert_eq!(
-        observed_entity_name(&recovered, "published-first", prepared_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "published-first",
+            prepared_first_entity
+        ),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "main", prepared_first_entity),
+        observed_entity_name(execution, &recovered, "main", prepared_first_entity),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "main", published_first_entity),
+        observed_entity_name(execution, &recovered, "main", published_first_entity),
         None
     );
     let continued = create_entity_outcome(execution, &recovered, "recovery-order-continued");
@@ -271,6 +291,7 @@ fn created_entity_from_performed(
 }
 
 fn observed_entity_name(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     branch: &str,
     entity: crate::facade::identity::EntityId,
@@ -287,7 +308,7 @@ fn observed_entity_name(
             crate::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .expect("observation transaction binds to the admitted root")
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("entity read is admitted on the observed root");
     read.base().and_then(read_entity_name)
 }

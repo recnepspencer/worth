@@ -63,7 +63,7 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         let read = reopened
             .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
             .unwrap()
-            .read_entity(entity)
+            .read_entity(execution, entity)
             .unwrap();
         assert_eq!(
             read.base().and_then(read_entity_name),

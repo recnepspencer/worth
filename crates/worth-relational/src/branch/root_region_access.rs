@@ -1,6 +1,33 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn demand_regions_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        for partition in partitions {
+            if let Some(region) = self.regions.get(partition) {
+                region.partition.demand_full(execution, 1 << 30)?;
+            }
+        }
+        Ok(())
+    }
+    pub(crate) fn demand_region_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partition: PartitionId,
+    ) -> Result<
+        Option<
+            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>,
+        >,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        self.regions
+            .get(partition)
+            .map(|region| region.partition.cell().demand_head(execution, 1 << 30))
+            .transpose()
+    }
     pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.regions
             .get(partition_id)
@@ -15,9 +42,8 @@ impl RelationalBranchRoot {
         if let Some(region) = self.regions.get(partition_id) {
             region
                 .partition
-                .full_view()
-                .commitment()
-                .visit_allocations(visitor);
+                .cell()
+                .visit_resident_commitment_allocations(visitor);
         }
     }
 

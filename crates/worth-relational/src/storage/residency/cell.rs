@@ -1,4 +1,10 @@
-use super::{region_load, Full, Head, RelationalResidencyLease};
+#[path = "cell/observation.rs"]
+mod observation;
+
+use super::cell_load_cache::{self, RegionLoadCache};
+use super::{
+    region_load, Full, Head, RelationalResidencyDemandFailure as Failure, RelationalResidencyLease,
+};
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::identity::data::PartitionId;
@@ -7,9 +13,8 @@ use crate::storage::data::{
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
-use crate::symbols::data::StringInterner;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
@@ -20,7 +25,7 @@ pub(crate) struct RelationalColdRegion {
     pub(crate) history: RelationalDurableMemberLocator,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) schema_carrier_digest: [u8; 32],
-    pub(crate) symbols: Arc<StringInterner>,
+    pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
     pub(crate) content_digest: [u8; 32],
     pub(crate) entity_slots: usize,
     pub(crate) relation_slots: usize,
@@ -58,8 +63,8 @@ pub(crate) struct RelationalRegionResidency {
     >,
     state: Mutex<ResidencyState>,
     backing: Option<RelationalColdRegion>,
-    raw_head: OnceLock<Result<Arc<ResidentRegion>, Cause>>,
-    raw_full: OnceLock<Result<Arc<ResidentRegion>, Cause>>,
+    raw_head: RegionLoadCache,
+    raw_full: RegionLoadCache,
     pub(super) leases: AtomicUsize,
 }
 
@@ -80,8 +85,8 @@ impl RelationalRegionResidency {
                 },
             )])),
             backing: Some(cold.clone()),
-            raw_head: OnceLock::new(),
-            raw_full: OnceLock::new(),
+            raw_head: Mutex::new(None),
+            raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Cold(cold)),
             leases: AtomicUsize::new(0),
         })
@@ -112,8 +117,8 @@ impl RelationalRegionResidency {
             partition_id: region.partition.partition_id,
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
-            raw_head: OnceLock::new(),
-            raw_full: OnceLock::new(),
+            raw_head: Mutex::new(None),
+            raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Full(region.clone())),
             leases: AtomicUsize::new(1),
         });
@@ -124,36 +129,40 @@ impl RelationalRegionResidency {
     /// publication, so concurrent demands share one read and one refusal.
     pub(crate) fn demand_head(
         self: &Arc<Self>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalResidencyLease<Head>, RelationalStorageUnavailable> {
-        let region = self.demand(ResidencyDemand::Head, limit)?;
+    ) -> Result<RelationalResidencyLease<Head>, Failure> {
+        let region = self.demand(execution, ResidencyDemand::Head, limit)?;
         Ok(RelationalResidencyLease::accepted(self.clone(), region))
     }
 
     pub(crate) fn demand_full(
         self: &Arc<Self>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<RelationalResidencyLease<Full>, RelationalStorageUnavailable> {
-        let region = self.demand(ResidencyDemand::Full, limit)?;
+    ) -> Result<RelationalResidencyLease<Full>, Failure> {
+        let region = self.demand(execution, ResidencyDemand::Full, limit)?;
         Ok(RelationalResidencyLease::accepted(self.clone(), region))
     }
 
     fn demand(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: ResidencyDemand,
         limit: u64,
-    ) -> Result<Arc<ResidentRegion>, RelationalStorageUnavailable> {
+    ) -> Result<Arc<ResidentRegion>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let loaded = (|| {
             if let ResidencyState::Damaged(failure) = &*state {
-                return Err(failure.cause.clone());
+                return Err(Failure::StorageUnavailable(failure.clone()));
             }
             if let ResidencyState::Cold(cold) = &*state {
-                let region = self.raw_head(limit)?;
-                cold.kind_authority.verify_head(&region, limit)?;
+                let region = self.raw_head(execution, limit)?;
+                cold.kind_authority.verify_head(&region, execution, limit)?;
                 *state = ResidencyState::Head {
                     cold: cold.clone(),
                     region,
@@ -162,8 +171,8 @@ impl RelationalRegionResidency {
             if matches!(demand, ResidencyDemand::Full)
                 && let ResidencyState::Head { cold, .. } = &*state
             {
-                let region = self.raw_full(limit)?;
-                let region = cold.kind_authority.admit_full(&region, limit)?;
+                let region = self.raw_full(execution, limit)?;
+                let region = cold.kind_authority.admit_full(&region, execution, limit)?;
                 *state = ResidencyState::Full(region);
             }
             match &*state {
@@ -182,58 +191,11 @@ impl RelationalRegionResidency {
                     .map_err(|_| self.failure(Cause::MemoryExhausted))?;
                 Ok(region)
             }
-            Err(cause) => {
-                let failure = self.failure(cause);
+            Err(Failure::StorageUnavailable(failure)) => {
                 *state = ResidencyState::Damaged(failure.clone());
-                Err(failure)
+                Err(Failure::StorageUnavailable(failure))
             }
-        }
-    }
-
-    pub(crate) fn resident_inventory(
-        &self,
-    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match &*state {
-            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
-                region.partition.allocation_inventory()
-            }
-            _ => Default::default(),
-        }
-    }
-
-    pub(crate) fn residency_allocation_bytes(&self) -> u64 {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let resident = matches!(
-            &*state,
-            ResidencyState::Head { .. } | ResidencyState::Full(_)
-        );
-        (std::mem::size_of::<Self>()
-            + 2 * std::mem::size_of::<usize>()
-            + if resident {
-                std::mem::size_of::<ResidentRegion>() + 2 * std::mem::size_of::<usize>()
-            } else {
-                0
-            }) as u64
-    }
-
-    pub(crate) fn resident_commitment_bytes(&self) -> u64 {
-        let state = self
-            .state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        match &*state {
-            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => region
-                .commitment
-                .as_ref()
-                .map_or(0, |commitment| commitment.allocation_bytes()),
-            _ => 0,
+            Err(Failure::Request(cause)) => Err(Failure::Request(cause)),
         }
     }
 
@@ -262,8 +224,16 @@ impl RelationalRegionResidency {
     }
 
     pub(crate) fn into_partition(self) -> PartitionState {
-        drop(self.raw_head.into_inner());
-        drop(self.raw_full.into_inner());
+        drop(
+            self.raw_head
+                .into_inner()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        );
+        drop(
+            self.raw_full
+                .into_inner()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        );
         let state = self
             .state
             .into_inner()
@@ -280,8 +250,14 @@ impl RelationalRegionResidency {
     pub(crate) fn partition_mut(&mut self) -> &mut PartitionState {
         // Only an exclusive mirror writer can reach this method. Old roots and
         // editions retain their old cell; no accepted lease sees a mutation.
-        self.raw_head.take();
-        self.raw_full.take();
+        self.raw_head
+            .get_mut()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .take();
+        self.raw_full
+            .get_mut()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .take();
         self.backing = None;
         self.checkpoint_bindings
             .get_mut()
@@ -302,23 +278,33 @@ impl RelationalRegionResidency {
     // Raw readmission authenticates record content independently of derived
     // buckets. Keeping it separate breaks cross-partition adjacency cycles:
     // bucket verification never waits for another region's serving admission.
-    pub(super) fn raw_head(&self, limit: u64) -> Result<Arc<ResidentRegion>, Cause> {
-        self.raw_head
-            .get_or_init(|| {
-                let cold = self.backing.as_ref().ok_or(Cause::SourceUnavailable)?;
-                region_load::load_head(cold, limit)
-            })
-            .clone()
+    pub(super) fn raw_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Arc<ResidentRegion>, Failure> {
+        cell_load_cache::load(&self.raw_head, || {
+            let cold = self
+                .backing
+                .as_ref()
+                .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
+            region_load::load_head(cold, execution, limit)
+        })
     }
 
-    pub(super) fn raw_full(&self, limit: u64) -> Result<Arc<ResidentRegion>, Cause> {
-        self.raw_full
-            .get_or_init(|| {
-                let cold = self.backing.as_ref().ok_or(Cause::SourceUnavailable)?;
-                let head = self.raw_head(limit)?;
-                region_load::load_full(cold, &head, limit)
-            })
-            .clone()
+    pub(super) fn raw_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<Arc<ResidentRegion>, Failure> {
+        cell_load_cache::load(&self.raw_full, || {
+            let cold = self
+                .backing
+                .as_ref()
+                .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
+            let head = self.raw_head(execution, limit)?;
+            region_load::load_full(cold, &head, execution, limit)
+        })
     }
 
     fn failure(&self, cause: Cause) -> RelationalStorageUnavailable {

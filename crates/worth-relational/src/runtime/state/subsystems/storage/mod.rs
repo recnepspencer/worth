@@ -29,6 +29,9 @@ pub(crate) struct StorageSubsystem {
 }
 
 impl StorageSubsystem {
+    pub(crate) fn install_cells(&self, cells: PartitionMap) {
+        *self.partitions.write() = PartitionEdition::new(cells);
+    }
     /// One structurally shared edition of the substrate. O(1): one atomic
     /// increment, no allocation, no retained lock.
     pub(crate) fn acquire(&self) -> PartitionEdition {

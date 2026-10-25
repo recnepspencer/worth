@@ -2,54 +2,62 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use super::region_image::*;
-use super::{RelationalColdRegion, ResidentRegion};
+use super::{RelationalColdRegion, RelationalResidencyDemandFailure as Failure, ResidentRegion};
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 use crate::durability::checkpoints::images::{
     partition_from_image, partition_to_image_with_contracts,
 };
-use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::data::{
+    RelationalStorageSubject, RelationalStorageUnavailable,
+    RelationalStorageUnavailableCause as Cause,
+};
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::{AdjacencyKindBasis, SparseAdjacencyTable};
 
 pub(super) fn load_head(
     cold: &RelationalColdRegion,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
-) -> Result<Arc<ResidentRegion>, Cause> {
-    check_member_limit(cold.head.length, limit)?;
-    let bytes = cold.source.read_member(cold.head, limit)?;
-    let frame = RelationalRegionImage::decode(
-        &bytes,
-        cold.head,
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::Head,
-    )?;
-    let head: RegionHeadImage =
-        rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
-    if head.partition.partition_id != cold.partition_id {
-        return Err(Cause::Damaged);
-    }
-    let contracts = contracts(cold)?;
-    let mut partition =
-        partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
-            .map_err(|_| Cause::Damaged)?;
-    install_kinds(
-        &mut partition.adjacency,
-        head.adjacency_kinds,
-        AdjacencyKindBasis::Current,
-    )?;
-    install_kinds(
-        &mut partition.reverse_adjacency,
-        head.reverse_adjacency_kinds,
-        AdjacencyKindBasis::Current,
-    )?;
-    let commitment = PartitionContentCommitment::capture_head(
-        &partition,
-        &cold.symbols,
-        &head.history_frontiers,
-    )
-    .ok_or(Cause::Damaged)?;
-    verify_leaf(cold, &partition, &commitment)?;
+) -> Result<Arc<ResidentRegion>, Failure> {
+    let (partition, frontiers) = (|| -> Result<_, Cause> {
+        check_member_limit(cold.head.length, limit)?;
+        let bytes = cold.source.read_member(cold.head, limit)?;
+        let frame = RelationalRegionImage::decode(
+            &bytes,
+            cold.head,
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::Head,
+        )?;
+        let head: RegionHeadImage =
+            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+        if head.partition.partition_id != cold.partition_id {
+            return Err(Cause::Damaged);
+        }
+        let contracts = contracts(cold)?;
+        let mut partition =
+            partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
+                .map_err(|_| Cause::Damaged)?;
+        install_kinds(
+            &mut partition.adjacency,
+            head.adjacency_kinds,
+            AdjacencyKindBasis::Current,
+        )?;
+        install_kinds(
+            &mut partition.reverse_adjacency,
+            head.reverse_adjacency_kinds,
+            AdjacencyKindBasis::Current,
+        )?;
+        Ok((partition, head.history_frontiers))
+    })()
+    .map_err(|cause| unavailable(cold, cause))?;
+    cold.symbols
+        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+    let symbols = cold.symbols.interner_snapshot();
+    let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
+        .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
+    verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+    crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
@@ -59,44 +67,60 @@ pub(super) fn load_head(
 pub(super) fn load_full(
     cold: &RelationalColdRegion,
     head: &ResidentRegion,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
-) -> Result<Arc<ResidentRegion>, Cause> {
-    check_member_limit(cold.history.length, limit)?;
-    let bytes = cold.source.read_member(cold.history, limit)?;
-    let frame = RelationalRegionImage::decode(
-        &bytes,
-        cold.history,
-        cold.partition_id,
-        cold.schema_carrier_digest,
-        RelationalRegionImageKind::History,
-    )?;
-    let history: RegionHistoryImage =
-        rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
-    let contracts = contracts(cold)?;
-    let mut image = partition_to_image_with_contracts(
-        head.partition.clone(),
-        cold.schema.aspect_plans(),
-        &contracts,
-    )
-    .map_err(|_| Cause::Damaged)?;
-    if history.entities.len() != image.entity_arena.metadata_history.len()
-        || history.relations.len() != image.relation_arena.metadata_history.len()
-    {
-        return Err(Cause::Damaged);
-    }
-    image.entity_arena.metadata_history = history.entities;
-    image.relation_arena.metadata_history = history.relations;
-    let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+) -> Result<Arc<ResidentRegion>, Failure> {
+    let partition = (|| -> Result<_, Cause> {
+        check_member_limit(cold.history.length, limit)?;
+        let bytes = cold.source.read_member(cold.history, limit)?;
+        let frame = RelationalRegionImage::decode(
+            &bytes,
+            cold.history,
+            cold.partition_id,
+            cold.schema_carrier_digest,
+            RelationalRegionImageKind::History,
+        )?;
+        let history: RegionHistoryImage =
+            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+        let contracts = contracts(cold)?;
+        let mut image = partition_to_image_with_contracts(
+            head.partition.clone(),
+            cold.schema.aspect_plans(),
+            &contracts,
+        )
         .map_err(|_| Cause::Damaged)?;
-    partition.adjacency = head.partition.adjacency.clone();
-    partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-    let (commitment, _) = PartitionContentCommitment::capture(&partition, &cold.symbols, None)
-        .map_err(|_| Cause::Damaged)?;
-    verify_leaf(cold, &partition, &commitment)?;
+        if history.entities.len() != image.entity_arena.metadata_history.len()
+            || history.relations.len() != image.relation_arena.metadata_history.len()
+        {
+            return Err(Cause::Damaged);
+        }
+        image.entity_arena.metadata_history = history.entities;
+        image.relation_arena.metadata_history = history.relations;
+        let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
+            .map_err(|_| Cause::Damaged)?;
+        partition.adjacency = head.partition.adjacency.clone();
+        partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+        Ok(partition)
+    })()
+    .map_err(|cause| unavailable(cold, cause))?;
+    cold.symbols
+        .demand_symbol_ids(execution, super::required_symbols::collect(&partition))?;
+    let symbols = cold.symbols.interner_snapshot();
+    let (commitment, _) = PartitionContentCommitment::capture(&partition, &symbols, None)
+        .map_err(|_| unavailable(cold, Cause::Damaged))?;
+    verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+    crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
         commitment: Some(commitment),
     }))
+}
+
+fn unavailable(cold: &RelationalColdRegion, cause: Cause) -> RelationalStorageUnavailable {
+    RelationalStorageUnavailable {
+        subject: RelationalStorageSubject::Region(cold.partition_id),
+        cause,
+    }
 }
 
 fn contracts(cold: &RelationalColdRegion) -> Result<CheckpointAspectContractCatalog, Cause> {

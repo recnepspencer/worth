@@ -145,6 +145,7 @@ impl crate::runtime::RelationalRuntime {
 
         let footprint = super::RelationalTransactionFootprint::for_basis(basis);
         Ok(super::BranchBoundRelationalTransaction {
+            read_leases: Default::default(),
             basis: basis.clone(),
             mutation_authority: crate::branch::issue_relational_branch_mutation_authority(),
             transaction_id: self.services.next_transaction_id(),
