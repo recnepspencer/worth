@@ -15,10 +15,10 @@ impl WorthQueryApplicationAttemptDenial {
             Stop::RetryCurrentness(_) => WorthQueryApplicationAttemptDenialKind::SourceChanged,
             Stop::Unavailable | Stop::PendingUpstream => WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,
         };
-        Self {
+        Self::from_cause(
             kind,
-            subject: "source output observation".to_owned(),
-            cause: AttemptDenialCause::OutputObservation(Box::new(stop)),
-        }
+            "source output observation".to_owned(),
+            AttemptDenialCause::OutputObservation(Box::new(stop)),
+        )
     }
 }

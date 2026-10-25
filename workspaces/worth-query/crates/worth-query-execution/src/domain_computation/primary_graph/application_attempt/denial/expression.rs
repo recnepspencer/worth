@@ -8,32 +8,32 @@ impl WorthQueryApplicationAttemptDenial {
         subject: impl Into<String>,
         denial: worth_foundational::expression_api::ExpressionDenial,
     ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
+        Self::from_cause(
+            WorthQueryApplicationAttemptDenialKind::WorkflowConditionExpressionDenied,
+            subject.into(),
+            AttemptDenialCause::Expression(Box::new(denial)),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_requirement_expression(
         subject: impl Into<String>,
         denial: worth_foundational::expression_api::ExpressionDenial,
     ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
+        Self::from_cause(
+            WorthQueryApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied,
+            subject.into(),
+            AttemptDenialCause::Expression(Box::new(denial)),
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn body_value_expression(
         subject: impl Into<String>,
         denial: worth_foundational::expression_api::ExpressionDenial,
     ) -> Self {
-        Self {
-            kind: WorthQueryApplicationAttemptDenialKind::OperationBodyValueExpressionDenied,
-            subject: subject.into(),
-            cause: AttemptDenialCause::Expression(Box::new(denial)),
-        }
+        Self::from_cause(
+            WorthQueryApplicationAttemptDenialKind::OperationBodyValueExpressionDenied,
+            subject.into(),
+            AttemptDenialCause::Expression(Box::new(denial)),
+        )
     }
 }
