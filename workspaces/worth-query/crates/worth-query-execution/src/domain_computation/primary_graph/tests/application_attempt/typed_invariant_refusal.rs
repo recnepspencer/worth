@@ -35,23 +35,23 @@ fn checkpoint(world: &world::World) -> Vec<u8> {
 }
 
 fn run(status: String, cancel: bool) -> Case {
+    run_cancelled_by(status, cancel.then_some(1))
+}
+
+/// `canceller` names the rule that cancels the request on finding its
+/// violation; the other rule reports its violation as usual.
+fn run_cancelled_by(status: String, canceller: Option<u64>) -> Case {
     let _isolation = super::super::fixture::isolated_request_owner();
     let _observation =
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let cancellation = WorthQueryCancellationSource::new();
     let visits = Arc::new(Mutex::new(Vec::new()));
-    let world = world::install(
-        Rule {
-            ordinal: 1,
-            cancellation: cancel.then(|| cancellation.clone()),
-            visits: visits.clone(),
-        },
-        Rule {
-            ordinal: 2,
-            cancellation: None,
-            visits: visits.clone(),
-        },
-    );
+    let rule = |ordinal| Rule {
+        ordinal,
+        cancellation: (canceller == Some(ordinal)).then(|| cancellation.clone()),
+        visits: visits.clone(),
+    };
+    let world = world::install(rule(1), rule(2));
     let scope = WorthQueryRequestScope::new(None, cancellation.token());
     let program = program::prepare(&world, &scope, status);
     let before = checkpoint(&world);
@@ -112,22 +112,43 @@ fn refused_candidate_keeps_native_checkpoint_bytes_equal() {
     assert_eq!(case.before, case.after);
 }
 
-#[test]
-fn cancellation_during_evaluation_is_not_a_domain_violation() {
-    let case = run("closed".into(), true);
+/// Rules run on parallel workers, so the other rule may or may not have
+/// found its violation when `canceller` cancels; either way the outcome is
+/// the stop, never the violation.
+fn assert_cancelled_without_domain_evidence(case: &Case, canceller: u64) {
     assert_eq!(
         case.denial.execution_denial_cause(),
         Some(Err(WorthQueryProviderSessionControlStopKind::Cancelled))
     );
     assert!(case.denial.invariant_refusal_bytes().is_none());
     assert!(case.denial.custom_invariant_denial().is_none());
-    assert_eq!(case.visits, [1]);
+    assert_eq!(
+        case.visits
+            .iter()
+            .filter(|&&rule| rule == canceller)
+            .count(),
+        1
+    );
+    assert!(case.visits.iter().all(|&rule| rule == 1 || rule == 2));
     assert_eq!(case.before, case.after);
 }
 
 #[test]
+fn cancellation_during_evaluation_is_not_a_domain_violation() {
+    assert_cancelled_without_domain_evidence(&run("closed".into(), true), 1);
+}
+
+#[test]
+fn a_violation_found_before_another_rule_cancels_does_not_surface() {
+    let case = run_cancelled_by("closed".into(), Some(2));
+    assert_cancelled_without_domain_evidence(&case, 2);
+}
+
+#[test]
 fn first_installed_violation_wins_over_identity_and_group_sort_order() {
-    let case = run("closed".into(), false);
+    let mut case = run("closed".into(), false);
+    // Parallel workers record visits in either order; both rules ran.
+    case.visits.sort_unstable();
     assert_eq!(case.visits, [1, 2]);
     assert_eq!(
         case.denial
