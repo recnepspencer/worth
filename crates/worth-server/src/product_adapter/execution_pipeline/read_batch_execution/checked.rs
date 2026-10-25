@@ -73,7 +73,6 @@ pub(super) fn execute(
     let count = inputs.len();
     if lease
         .policy()
-        .budget()
         .work_ceiling()
         .is_some_and(|limit| count as u64 > limit)
     {

@@ -81,6 +81,7 @@ pub(super) fn mutation(
         ScopeResolution(_) => "scope_resolution",
         Idempotency(_) => "idempotency",
         Identity(_) => "identity",
+        InputCapture(_) => "input_capture",
         Handler(_) => "handler",
         SourceExpectation(cause) => return source(cause),
         ProgramSelection(_) => "program_selection",
