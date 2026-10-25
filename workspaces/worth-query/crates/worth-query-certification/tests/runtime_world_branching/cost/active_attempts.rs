@@ -38,16 +38,26 @@ pub(crate) fn assert_active_attempt_slopes() {
                 .enumerate()
                 .map(|(ordinal, branch)| {
                     let world = &world;
+                    let registered = &registered;
+                    let pause = &pause;
                     scope.spawn(move || {
-                        world.change_input_on_branch_with_ordinal(
-                            branch,
-                            &format!("active-attempt-{ordinal}"),
-                            ordinal as u8 + 1,
-                        )
+                        let outcome =
+                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                world.change_input_on_branch_with_ordinal(
+                                    branch,
+                                    &format!("active-attempt-{ordinal}"),
+                                    ordinal as u8 + 1,
+                                )
+                            }));
+                        // Any early rejection or unwind wakes the coordinator and peers.
+                        // Success returns only after both coordinator-owned releases.
+                        registered.release();
+                        pause.release();
+                        outcome.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
                     })
                 })
                 .collect::<Vec<_>>();
-            assert!(registered.wait_until_reached(std::time::Duration::from_secs(10)));
+            assert!(registered.wait_for_arrivals());
             assert_eq!(
                 world.application.active_application_attempts_for_test(),
                 size
@@ -59,13 +69,7 @@ pub(crate) fn assert_active_attempt_slopes() {
                 0
             );
             registered.release();
-            assert!(pause.wait_until_reached(std::time::Duration::from_secs(10)));
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-            while world.application.active_application_attempts_for_test() != size
-                && std::time::Instant::now() < deadline
-            {
-                std::thread::yield_now();
-            }
+            assert!(pause.wait_for_arrivals());
             let actual = world.application.active_application_attempts_for_test();
             let publishing = world
                 .application

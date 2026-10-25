@@ -120,14 +120,27 @@ impl RuntimeWorldOperationControlForTest {
         }
         drop(pending);
         latch.changed.notify_all();
-        let (state, _) = latch
-            .changed
-            .wait_timeout_while(state, Duration::from_secs(30), |s| !s.1)
-            .unwrap_or_else(|e| e.into_inner());
-        assert!(state.1, "product comparison pause exceeded release budget");
+        // Only the owner releases parked attempts; elapsed time proves nothing.
+        drop(
+            latch
+                .changed
+                .wait_while(state, |state| !state.1)
+                .unwrap_or_else(|e| e.into_inner()),
+        );
     }
 }
 impl RuntimeWorldProductComparePauseForTest {
+    /// Wait for all arrivals, or return false when a worker releases early.
+    pub fn wait_for_arrivals(&self) -> bool {
+        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
+        self.latch
+            .changed
+            .wait_while(state, |state| state.0 != self.latch.target && !state.1)
+            .unwrap_or_else(|e| e.into_inner())
+            .0
+            == self.latch.target
+    }
+
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -191,5 +204,20 @@ mod scope_tests {
             .armed
             .load(Ordering::Acquire));
         let _next = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
+    }
+    #[test]
+    fn compare_arrivals_are_events_and_early_release_aborts_the_wait() {
+        let control = RuntimeWorldOperationControlForTest::default();
+        let pause = control.pause_before_product_compare_for_test(NonZeroUsize::new(2).unwrap());
+        std::thread::scope(|scope| {
+            for _ in 0..2 {
+                scope.spawn(|| control.before_product_compare_for_test());
+            }
+            assert!(pause.wait_for_arrivals());
+            pause.release();
+        });
+        let aborted = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
+        aborted.release();
+        assert!(!aborted.wait_for_arrivals());
     }
 }

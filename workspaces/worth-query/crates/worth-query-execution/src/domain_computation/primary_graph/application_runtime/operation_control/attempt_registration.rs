@@ -120,11 +120,13 @@ fn reach(slot: &PendingAttemptPause) {
     }
     drop(pending);
     latch.changed.notify_all();
-    let (state, _) = latch
-        .changed
-        .wait_timeout_while(state, Duration::from_secs(30), |state| !state.1)
-        .unwrap_or_else(|e| e.into_inner());
-    assert!(state.1, "application attempt pause exceeded release budget");
+    // The owner releases this latch; scheduler contention is not a failed attempt.
+    drop(
+        latch
+            .changed
+            .wait_while(state, |state| !state.1)
+            .unwrap_or_else(|e| e.into_inner()),
+    );
 }
 
 fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
@@ -139,6 +141,17 @@ fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
 }
 
 impl WorthQueryApplicationAttemptRegistrationPauseForTest {
+    /// Wait for every parked attempt, or report an early release by a failed worker.
+    pub fn wait_for_arrivals(&self) -> bool {
+        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
+        self.latch
+            .changed
+            .wait_while(state, |state| state.0 != self.latch.target && !state.1)
+            .unwrap_or_else(|e| e.into_inner())
+            .0
+            == self.latch.target
+    }
+
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
         let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
         self.latch
@@ -185,5 +198,25 @@ impl WorthQueryApplicationCandidatePreparationPauseForTest {
 impl Drop for WorthQueryApplicationCandidatePreparationPauseForTest {
     fn drop(&mut self) {
         self.release();
+    }
+}
+
+#[cfg(test)]
+mod arrival_tests {
+    use super::*;
+    #[test]
+    fn arrivals_are_observed_as_an_event_and_early_release_aborts_the_wait() {
+        let control = WorthQueryApplicationAttemptOperationControl::default();
+        let pause = control.pause_after_registration(NonZeroUsize::new(2).unwrap());
+        std::thread::scope(|scope| {
+            for _ in 0..2 {
+                scope.spawn(|| control.after_registration());
+            }
+            assert!(pause.wait_for_arrivals());
+            pause.release();
+        });
+        let aborted = control.pause_after_registration(NonZeroUsize::MIN);
+        aborted.release();
+        assert!(!aborted.wait_for_arrivals());
     }
 }
