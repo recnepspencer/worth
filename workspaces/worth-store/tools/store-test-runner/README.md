@@ -34,6 +34,11 @@ cargo test -p worth-store-relational --features certification-test-authority --n
 cargo clippy --workspace --all-targets
 ```
 
+Cargo and nextest default to eight concurrent tests in this workspace. Process
+scenarios each run complete Store instances with bounded checkpoint seams;
+using the host's logical CPU count can oversubscribe those fixtures. An explicit
+`RUST_TEST_THREADS` override takes precedence for Cargo runs.
+
 `relational_home` requires the certification feature because its crash oracle
 uses the compiled media and interruption controls. Windows confinement tests
 create real file and directory symlinks. Run with Windows Developer Mode enabled
