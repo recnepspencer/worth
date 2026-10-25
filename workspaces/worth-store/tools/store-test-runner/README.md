@@ -56,6 +56,9 @@ retain their exact semantic checks.
 Nextest runs compiler-boundary fixtures one at a time because trybuild shares
 Cargo's artifact lock. On Windows their aggregate limit is thirty minutes,
 including the cold dependency build and every pass/fail fixture.
+Each diagnostic Cargo invocation allows fifteen minutes for a cold Windows
+metadata build (five minutes elsewhere). A timeout retains Cargo's progress;
+it never supplies the expected semantic compiler denial.
 
 On Windows, the six scale and exhaustive interruption proofs named in
 `.config/nextest.toml` reserve the entire nextest fixture pool and have a

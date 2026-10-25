@@ -12,7 +12,9 @@ use super::{
     UiProofSuiteDeclaration, UiRunFailure, UiRunResult,
 };
 
-const COMPILER_TIMEOUT: Duration = Duration::from_secs(300);
+// A cold Windows metadata graph exceeds five minutes even without optimization.
+// This is compiler bootstrap time, separate from the proof's semantic verdict.
+const COMPILER_TIMEOUT: Duration = Duration::from_secs(if cfg!(windows) { 15 * 60 } else { 300 });
 const OUTPUT_LIMIT: usize = 16 * 1024 * 1024;
 
 pub(super) fn run(
@@ -127,10 +129,15 @@ fn run_fixture(
         .current_dir(environment.workspace_root);
     let output = bounded_process::run(&mut command, COMPILER_TIMEOUT, OUTPUT_LIMIT)
         .map_err(UiRunFailure::CompilerLaunch)?;
+    let root = environment.workspace_root.to_string_lossy();
+    let stderr = String::from_utf8_lossy(&output.stderr)
+        .replace(root.as_ref(), "<workspace>")
+        .replace('\\', "/");
     if output.timed_out {
-        return Err(UiRunFailure::CompilerTimedOut(
-            fixture.case_identity().to_owned(),
-        ));
+        return Err(UiRunFailure::CompilerTimedOut {
+            fixture: fixture.case_identity().to_owned(),
+            stderr,
+        });
     }
     if output.status.success() {
         return Err(UiRunFailure::UnexpectedCompilerSuccess(
@@ -138,11 +145,7 @@ fn run_fixture(
         ));
     }
 
-    let root = environment.workspace_root.to_string_lossy();
     let diagnostics = checked_diagnostics(&output.stdout, &root);
-    let stderr = String::from_utf8_lossy(&output.stderr)
-        .replace(root.as_ref(), "<workspace>")
-        .replace('\\', "/");
     validate_denial(fixture.expected_denial(), &diagnostics, &stderr).map_err(|reason| {
         UiRunFailure::WrongCompilerDenial {
             fixture: fixture.case_identity().to_owned(),
