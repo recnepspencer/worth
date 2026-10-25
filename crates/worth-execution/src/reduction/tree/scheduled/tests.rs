@@ -136,6 +136,12 @@ fn a_cancelled_subtree_keeps_its_completed_combines_and_charge() {
 
 #[test]
 fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "a_cancelled_canonical_prefix_agrees_at_every_frontier_width",
+    ) {
+        return;
+    }
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let physical = cancellation_authority();
     let mut oracle = None;
@@ -229,6 +235,12 @@ fn a_cancelled_canonical_prefix_agrees_at_every_frontier_width() {
 
 #[test]
 fn a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "a_stop_after_the_last_combine_waits_for_the_next_checkpoint_at_every_width",
+    ) {
+        return;
+    }
     let _guard = TEST_LOCK.lock().unwrap_or_else(|error| error.into_inner());
     let physical = cancellation_authority();
     let mut oracle = None;

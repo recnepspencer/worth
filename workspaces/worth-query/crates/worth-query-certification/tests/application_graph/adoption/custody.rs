@@ -50,18 +50,27 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     };
     use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
     let removed_bindings = [
+        <crate::document_retention_model::correctable_retention::CorrectableRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <SetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <OccurrenceSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ExplicitReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
     ];
-    assert_eq!(removed_operations.len(), removed_bindings.len());
+    assert_eq!(removed_operations.len(), removed_bindings.len() * 2);
     for binding in removed_bindings {
         assert!(
             removed_operations
                 .iter()
-                .any(|requirement| requirement.subject().contains(binding)),
+                .any(|requirement| requirement.subject().ends_with(binding)),
             "the removal target retires {binding}"
+        );
+        assert_eq!(
+            removed_operations
+                .iter()
+                .filter(|requirement| requirement.subject().ends_with(binding))
+                .count(),
+            2,
+            "both operation and delivery retire for {binding}"
         );
     }
     assert!(removed_operations
@@ -134,6 +143,7 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
         .iter()
         .find(|requirement| {
             requirement.kind() == WorthQueryProgramCustodyInventoryKind::OperationContinuation
+                && requirement.subject().ends_with(<crate::document_retention_model::retention_entry::SetRetentionBinding as worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<crate::document_retention_model::schema::DocumentRetentionSchema>>::IDENTITY)
         })
         .expect("changed operation requires continuation disposition");
     assert_eq!(requirement.change(), ApplicationSemanticChangeKind::Changed);

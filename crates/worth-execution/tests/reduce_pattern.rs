@@ -167,14 +167,7 @@ fn work_ceiling_stops_inside_reduction_after_checked_map() {
                 failure.reason,
                 ReductionRunStop::Hook(worth_execution::MapKernelStop::WorkCeiling)
             );
-            assert!(
-                failure
-                    .metrics
-                    .accounted_metrics()
-                    .expect("checked reduction carries accounting")
-                    .combine_calls
-                    > 0
-            );
+            assert!(failure.metrics.accounted_metrics().unwrap().combine_calls > 0);
             assert_eq!(report.charged_work(), ceiling);
         }
         _ => panic!("expected reduction-stage exhaustion"),
@@ -197,30 +190,18 @@ fn complete_reduce_combines_map_work_with_tree_dependency_span() {
         )
         .unwrap();
     assert_eq!(*tree.result(), 6);
-    assert_eq!(
-        metrics
-            .accounted_metrics()
-            .expect("checked reduction carries accounting")
-            .combine_calls,
-        6
-    );
+    assert_eq!(metrics.accounted_metrics().unwrap().combine_calls, 6);
     assert_eq!(metrics, serial_metrics);
     assert_eq!(report.charged_work(), serial_report.charged_work());
     assert_eq!(
         report.charged_span(),
-        1 + metrics
-            .accounted_metrics()
-            .expect("checked reduction carries accounting")
-            .charged_span
+        1 + metrics.accounted_metrics().unwrap().charged_span
     );
     assert!(report.charged_span() < report.charged_work());
     assert_eq!(*serial_tree.result(), *tree.result());
     assert_eq!(
         serial_report.charged_span(),
-        1 + serial_metrics
-            .accounted_metrics()
-            .expect("checked reduction carries accounting")
-            .charged_span
+        1 + serial_metrics.accounted_metrics().unwrap().charged_span
     );
 }
 

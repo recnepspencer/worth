@@ -95,6 +95,41 @@ where
             })
     }
 
+    /// Prepare within the application's admitted phase. Allocation may narrow
+    /// that request through a descendant lease; unrelated phases refuse before reads.
+    pub fn prepare_in_program_report_in_advancement<'request, Program>(
+        &'request mut self,
+        phase: &AdvancementPhase<'_>,
+        application: &'application WorthQueryProgramApplicationRuntime<Schema, Program>,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQueryApplicationMutationAttemptReport<
+        Result<
+            WorthQueryApplicationProgramMutationPreparation<
+                'request,
+                'application,
+                Schema,
+                Intent::Binding,
+                Program,
+            >,
+            WorthQueryApplicationRequestMutationDenial,
+        >,
+    >
+    where
+        Program: ApplicationProgramDefinition<Schema>,
+    {
+        let mut work =
+            worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted;
+        let outcome = match phase
+            .checked_execution_request_for(self.request.application.product_runtime())
+        {
+            Ok(_) => {
+                self.prepare_in_program_with_work(phase, application, &mut work, allocation_policy)
+            }
+            Err(cause) => Err(WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause)),
+        };
+        WorthQueryApplicationMutationAttemptReport::new(outcome, work)
+    }
+
     pub(in crate::application_entry::mutation) fn prepare_in_program_with_work<'request, Program>(
         &'request mut self,
         phase: &AdvancementPhase<'_>,

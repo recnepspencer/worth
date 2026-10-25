@@ -84,14 +84,14 @@ fn validate_upload_request_contract(
         ));
     }
     let expect_values = request_contract.canonical_headers().values("expect");
-    if let Some(values) = expect_values {
-        if values.len() != 1 || values[0] != "100-continue" {
-            return Err(WorthServerQueryHandoffDenial::new(
-                WorthServerQueryHandoffDenialCode::CompatibilityUploadRequestInvalid,
-                diagnostics_profile,
-                "compatibility upload admits only `Expect: 100-continue` as an expectation header",
-            ));
-        }
+    if let Some(values) = expect_values
+        && (values.len() != 1 || values[0] != "100-continue")
+    {
+        return Err(WorthServerQueryHandoffDenial::new(
+            WorthServerQueryHandoffDenialCode::CompatibilityUploadRequestInvalid,
+            diagnostics_profile,
+            "compatibility upload admits only `Expect: 100-continue` as an expectation header",
+        ));
     }
     if expectation.requires_early_admission()
         && !matches!(expect_values, Some(values) if values == ["100-continue"])

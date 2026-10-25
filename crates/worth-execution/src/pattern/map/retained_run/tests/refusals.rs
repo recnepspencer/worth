@@ -50,7 +50,8 @@ fn native_issue_and_carry_preserve_the_canonical_work_stop_and_original_prior() 
         // Canonical settlement accepts slot1, then excludes slot2's entire
         // five units because the aggregate would exceed7. Carrying the same
         // completed receipt has the identical accepted-prefix report.
-        assert_eq!(report.charged_work(), 2 + 0 + 3);
+        // The excluded slot2 adds nothing to the accepted-prefix report.
+        assert_eq!(report.charged_work(), 2 + 3);
     }
     let (retry, _) = complete(
         prior

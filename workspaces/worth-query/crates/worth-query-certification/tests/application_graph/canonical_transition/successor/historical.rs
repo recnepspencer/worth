@@ -11,7 +11,7 @@ use worth_query_host::facade::application_installation::ApplicationBuildIdentity
 use worth_query_host::facade::{
     primary_graph::{
         WorthQueryInvariantProjectionDenialKind, WorthQueryProductBranchAdmissionDenial,
-        WorthQueryProductBranchAdmissionRefusalKind, WorthQueryValueDecodeDenial,
+        WorthQueryProductBranchAdmissionRefusalKind,
     },
     runtime::ExecutionAllocationPolicy,
 };
@@ -218,12 +218,8 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 .expect_err("native cancellation must veto even an application Err output");
             assert_eq!(
                 cancelled.kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(
-                        worth_execution::WorkCeilingDenial::Stopped(
-                            worth_execution::MapKernelStop::Cancelled
-                        )
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )
             );
             assert_eq!(

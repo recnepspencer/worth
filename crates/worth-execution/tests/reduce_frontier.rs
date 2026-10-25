@@ -253,24 +253,17 @@ fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ce
                 ceiling,
                 "count {count}, ceiling {ceiling}"
             );
+            let accounting = left
+                .metrics
+                .accounted_metrics()
+                .expect("a ceilinged lease records reduction accounting");
             assert_eq!(
-                left.metrics
-                    .accounted_metrics()
-                    .expect("checked reduction carries accounting")
-                    .charged_work
-                    + count,
+                accounting.charged_work + count,
                 ceiling,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(
-                left.metrics
-                    .accounted_metrics()
-                    .expect("checked reduction carries accounting")
-                    .charged_span,
-                left.metrics
-                    .accounted_metrics()
-                    .expect("checked reduction carries accounting")
-                    .charged_work,
+                accounting.charged_span, accounting.charged_work,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(

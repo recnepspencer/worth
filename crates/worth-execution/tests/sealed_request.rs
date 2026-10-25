@@ -112,6 +112,14 @@ fn one_unit_policy() -> ExecutionRequestPolicy {
     )
 }
 
+fn unbounded_work_policy() -> ExecutionRequestPolicy {
+    ExecutionRequestPolicy::new(
+        ExecutionPosture::Serial,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(NonZeroUsize::MIN, Some(1 << 20), None),
+    )
+}
+
 fn charged_scan(lease: Option<&worth_execution::ExecutionResourceLease<'_>>) -> (bool, u64) {
     use worth_execution::{ExecutionScan, MapKernelFailure, MapKernelStop, MapStop, ScanOutcome};
     use worth_foundational::PartitionIdentity;
@@ -142,16 +150,26 @@ fn charged_scan(lease: Option<&worth_execution::ExecutionResourceLease<'_>>) -> 
 }
 
 #[test]
-fn serial_policy_work_ceiling_does_not_bound_the_request() {
+fn serial_policy_work_ceiling_bounds_the_request_like_a_lease() {
     let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
     let result = ExecutionRequest::serial(&request)
         .in_scope(charged_scan)
         .unwrap();
     assert_eq!(
         result,
-        (true, 32 * 64),
-        "all declared checkpoints are metered beyond one unit"
+        (false, 0),
+        "the policy's one-unit ceiling refuses the first 64-unit checkpoint"
     );
+}
+
+#[test]
+fn serial_policy_without_a_work_ceiling_meters_every_checkpoint() {
+    let request =
+        SerialRequest::from_policy(&unbounded_work_policy(), CancellationToken::new(), None);
+    let result = ExecutionRequest::serial(&request)
+        .in_scope(charged_scan)
+        .unwrap();
+    assert_eq!(result, (true, 32 * 64));
 }
 
 #[test]
@@ -174,7 +192,8 @@ fn leased_policy_work_ceiling_still_bounds_the_same_scan() {
 
 #[test]
 fn serial_computation_declared_work_ceiling_still_bounds_the_same_scan() {
-    let request = SerialRequest::from_policy(&one_unit_policy(), CancellationToken::new(), None);
+    let request =
+        SerialRequest::from_policy(&unbounded_work_policy(), CancellationToken::new(), None);
     let (result, report) = ExecutionRequest::serial(&request)
         .run(ExecutionWorkCeiling::new(Some(100)), charged_scan)
         .unwrap();

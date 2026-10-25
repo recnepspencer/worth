@@ -31,6 +31,7 @@ mod adversarial;
 mod byte_counter_ownership;
 mod controlled_child;
 mod decompose_unknown_identity;
+pub(crate) mod fresh_process;
 mod map_dispatch;
 mod measured_result;
 mod nested_certification_refusal;

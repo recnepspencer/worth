@@ -8,7 +8,7 @@ use bank_server::{mutations, queries, BankMutationControls, BankReadControls};
 use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 use worth_query_host::facade::application_entry::WorthQuerySourceOnlyAdvance;
 
-use super::fixture::held_authentication_application;
+use super::fixture::{expiring_authentication_application, held_authentication_application};
 use super::{
     application, bind_application, continuation, controls_json, page_request, post_page,
     BankHttpAccountActivityPageOutcome, BankHttpDenialKind, BankHttpServerConfiguration,
@@ -145,29 +145,35 @@ async fn revoked_viewer_cannot_replay_cached_activity_pages() {
 #[tokio::test]
 async fn temporary_replay_read_failure_keeps_the_original_response() {
     let account = AccountId::new(100).unwrap();
-    let application = Arc::new(application(account));
-    let (server, _mutation_continuation) =
-        bind_application(application, BankHttpServerConfiguration::local_ephemeral())
-            .await
-            .expect("HTTP server should bind")
-            .into_parts();
+    let (application, expiry) = expiring_authentication_application(account);
+    let (server, _mutation_continuation) = bind_application(
+        Arc::new(application),
+        BankHttpServerConfiguration::local_ephemeral(),
+    )
+    .await
+    .expect("HTTP server should bind")
+    .into_parts();
     let server = server.activate();
     let client = reqwest::Client::new();
     let endpoint = format!(
         "http://{}/v1/queries/account-activity/page",
         server.local_address()
     );
-    let request = page_request(account, "temporary-replay-budget");
+    let request = page_request(account, "temporary-replay-deadline");
     let first = post_page(&client, &endpoint, &request).await;
     let _token = continuation(&first);
 
-    let mut under_budget = request.clone();
-    under_budget["controls"]["maximum_work"] = serde_json::json!(1);
-    let denied = post_page(&client, &endpoint, &under_budget).await;
+    // Authentication admits the replay, then its deadline elapses, so the
+    // cached-access revalidation read is what fails, temporarily.
+    let mut expiring = request.clone();
+    expiring["controls"]["deadline_milliseconds"] = serde_json::json!(50);
+    expiry.arm(true);
+    let denied = post_page(&client, &endpoint, &expiring).await;
+    expiry.arm(false);
     assert!(matches!(
         denied,
         BankHttpAccountActivityPageOutcome::Denied { denial, .. }
-            if denial.kind == BankHttpDenialKind::ResourceExhausted
+            if denial.kind == BankHttpDenialKind::DeadlineExceeded
     ));
     assert_eq!(
         post_page(&client, &endpoint, &request).await,

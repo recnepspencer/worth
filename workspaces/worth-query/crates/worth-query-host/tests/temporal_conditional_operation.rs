@@ -372,3 +372,6 @@ mod read_ceiling_terminal;
 
 #[path = "temporal_conditional_operation/publication_request_stop.rs"]
 mod publication_request_stop;
+
+#[path = "../../worth-query-certification/tests/support/checkpoint_capture.rs"]
+mod checkpoint_capture;

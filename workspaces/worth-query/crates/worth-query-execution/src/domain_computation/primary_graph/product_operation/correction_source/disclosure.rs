@@ -48,7 +48,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     SourceDiverged,
     UnsupportedTargetProgram,
     ProgramComparison(
-        worth_query_installation::facade::WorthQueryProgramAdoptionRequirementsDenial,
+        Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirementsDenial>,
     ),
     ProgramMeaningChanged(
         Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirements>,

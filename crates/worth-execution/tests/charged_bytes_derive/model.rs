@@ -6,6 +6,8 @@ use worth_foundational::facade::ChargedBytes;
 pub struct ResidentValue {
     pub total: u64,
     pub labels: Vec<String>,
+    // The boxed Vec is the subject: its box allocation is resident capacity.
+    #[allow(clippy::box_collection)]
     #[serde(skip)]
     pub resident_notes: Option<Box<Vec<String>>>,
 }

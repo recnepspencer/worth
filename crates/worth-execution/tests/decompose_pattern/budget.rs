@@ -67,12 +67,12 @@ fn one_scope_enforces_total_work_and_preserves_snapshot_after_stop() {
         complete.total_report.fallback(),
         Some(ExecutionFallbackCause::PolicySerial)
     );
-    let reduction = complete
+    let accounting = complete
         .reduction_metrics
         .accounted_metrics()
-        .expect("bounded decomposition carries reduction accounting");
-    assert_eq!(reduction.structural_visits, 11);
-    assert_eq!(reduction.combine_calls, 4);
-    assert_eq!(reduction.charged_work, 15);
+        .expect("an accounted lease records reduction accounting");
+    assert_eq!(accounting.structural_visits, 11);
+    assert_eq!(accounting.combine_calls, 4);
+    assert_eq!(accounting.charged_work, 15);
     assert_eq!(complete.reuse.back_substitutions_reused, 0);
 }

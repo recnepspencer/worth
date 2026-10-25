@@ -118,22 +118,16 @@ fn changed_codec_retained_snapshot_keeps_original_pin_and_latched_completion() {
             assert!(output::ignored_refusals() > 0);
             assert_eq!(
                 denied.err().unwrap().kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Checkpoint(
-                        worth_execution::MapKernelStop::WorkCeiling
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
                 )
             );
             let (cancelled, first, returned, _) = run(8_000_000, true);
             assert!(first && returned);
             assert_eq!(
                 cancelled.err().unwrap().kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(
-                        worth_execution::WorkCeilingDenial::Stopped(
-                            worth_execution::MapKernelStop::Cancelled
-                        )
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )
             );
             let (retry, first, returned, _) = run(8_000_000, false);

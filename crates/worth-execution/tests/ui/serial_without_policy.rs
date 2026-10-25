@@ -12,7 +12,8 @@ fn main() {
     let cancellation = CancellationToken::new();
     let deadline = None;
     let _request = SerialRequest {
-        memory,
+        memory: Some(memory),
+        work_ceiling: None,
         cancellation,
         deadline,
     };

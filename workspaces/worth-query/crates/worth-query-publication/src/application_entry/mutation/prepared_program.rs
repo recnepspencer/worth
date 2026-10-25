@@ -127,13 +127,28 @@ where
             })
     }
 
-    pub(super) fn commit_report_in_advancement(
+    /// Commit within the application's existing phase, with allocation from
+    /// that request or a bounded descendant. Foreign phase custody refuses first.
+    pub fn commit_report_in_advancement(
         self,
         phase: &AdvancementPhase<'_>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
     ) -> super::WorthQueryApplicationMutationAttemptReport<
         WorthQueryApplicationMutationOutcome<Binding::Denial, Binding::Result>,
     > {
+        if let Err(cause) =
+            phase.checked_execution_request_for(self.application.runtime().product_runtime())
+        {
+            return super::WorthQueryApplicationMutationAttemptReport::new(
+                WorthQueryApplicationMutationOutcome::Commit(
+                    cause
+                        .into_commit_outcome()
+                        .landed()
+                        .expect_err("foreign phase cannot commit"),
+                ),
+                self.candidate.decision_work,
+            );
+        }
         let PreparedCandidate {
             program,
             result,

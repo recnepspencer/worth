@@ -74,7 +74,13 @@ fn original_request_funded_native_transition_reads_and_reopens_target() {
     let checkpoint = target
         .with_host_advancement(|phase| {
             target
-                .capture_application_checkpoint(&phase, CapturePolicy::Execution(&lease))
+                .capture_application_checkpoint(
+                    &phase,
+                    phase
+                        .checked_execution_request_for(target.product_runtime())
+                        .unwrap()
+                        .allocation_policy(),
+                )
                 .unwrap()
         })
         .unwrap();
@@ -116,7 +122,13 @@ fn original_request_cancelled_author_domain_rejection_cannot_win_and_fresh_retry
     let checkpoint = repaired
         .with_host_advancement(|phase| {
             repaired
-                .capture_application_checkpoint(&phase, CapturePolicy::Execution(&fresh))
+                .capture_application_checkpoint(
+                    &phase,
+                    phase
+                        .checked_execution_request_for(repaired.product_runtime())
+                        .unwrap()
+                        .allocation_policy(),
+                )
                 .unwrap()
         })
         .unwrap();

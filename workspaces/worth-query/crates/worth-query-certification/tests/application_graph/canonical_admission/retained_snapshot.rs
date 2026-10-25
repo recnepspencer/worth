@@ -121,10 +121,8 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
             );
             assert_eq!(
                 refused.kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Checkpoint(
-                        worth_execution::MapKernelStop::WorkCeiling
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted
                 )
             );
 
@@ -134,12 +132,8 @@ fn retained_snapshot_multi_read_vetoes_swallowed_refusal_and_retries_at_original
                 cancelled
                     .expect_err("late cancellation vetoes the completed callback")
                     .kind(),
-                WorthQueryInvariantProjectionDenialKind::ValueDecode(
-                    WorthQueryValueDecodeDenial::Scope(
-                        worth_execution::WorkCeilingDenial::Stopped(
-                            worth_execution::MapKernelStop::Cancelled
-                        )
-                    )
+                WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
+                    worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )
             );
 
