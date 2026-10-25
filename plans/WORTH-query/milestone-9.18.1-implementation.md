@@ -181,3 +181,31 @@ Plan:
 Proprietary adoption remains the next Phase 1 obligation. No master merge until
 all Phase 1 requirements are proven; no new budget, platform test door, traversal
 engine or observation-based production decision in this slice.
+
+## Phase 1 closeout
+
+Phase 1 is accepted on 2026-10-25. Installed invariant planning/evaluation,
+retained snapshot and operation projections, declared receipts and published
+read work expose the same actual-read value. Acquisition observations remain
+separate from the existing private projection budget; reuse does not replay
+historical reads and fallback does not erase reads already performed.
+
+Public evidence includes focused owner and grouped certification tests,
+the runnable planar invariant/declared-query differential, unrelated-ring
+locality, refusal atomicity, compiled documentation drift, facade snapshots,
+boundary-check, agent-context, formatting and scoped structural checks. The
+feature guide is
+[`invariants-and-read-observations.md`](../../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md).
+
+Proprietary adoption is committed against the published SDK revision
+`97044ae9e9edcfe80c8f19b5389b74a2ada1af0f`. `LiveQueryCost` and its modeled
+assertions are deleted. Genuine installed projections prove history-read
+locality and growth. The full CAD court passes 129 tests, and full workspace
+CI passes all 3,134 tests. Workspace doctests, the oracle gate, determinism
+and scoped static gates pass. Six unchanged Windows script guard-hook failures
+are recorded as pre-existing consumer repository debt. The history-only court
+does not claim cell geometry, storage bytes or cell-bearing publication.
+
+The persistent reviewer cleared every slice through qa-loop, qa-tests and
+code-quality-qa. Phase 2 is next; no relation law, native walk, orbit,
+component or rule-readable derived-relation obligation is claimed complete.
