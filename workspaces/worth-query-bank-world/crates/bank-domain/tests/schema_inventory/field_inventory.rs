@@ -90,6 +90,7 @@ fn assert_field_inventory(members: &[ApplicationSchemaMember]) {
             "ExternalMappingStatus",
             "InstitutionIdentityField",
             "JournalIdentityField",
+            "JournalInstitutionContext",
             "JournalPurpose",
             "Kind",
             "LegalAuthorityIdentityField",

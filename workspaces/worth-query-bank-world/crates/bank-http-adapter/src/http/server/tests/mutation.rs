@@ -22,8 +22,13 @@ pub(super) fn command(id: &str, kind: &str, sequence: u64) -> serde_json::Value 
     } else {
         serde_json::json!({ "deadline_milliseconds": 5000 })
     };
-    serde_json::json!({ "protocol": "v4", "request_id": format!("{id}-{sequence}"), "credential": credential_json(),
-        "command": kind, "custody_id": id, "sequence": sequence, "controls": controls })
+    let mut value = serde_json::json!({ "protocol": "v4", "request_id": format!("{id}-{sequence}"), "credential": credential_json(),
+        "command": kind, "custody_id": id, "sequence": sequence, "controls": controls });
+    if kind == "read" {
+        // A retained read names the account it reads; custody carries no account.
+        value["account"] = serde_json::json!("fixture:100");
+    }
+    value
 }
 pub(super) fn decode(value: serde_json::Value) -> BankHttpMutationRequest {
     serde_json::from_value(value).unwrap()
