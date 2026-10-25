@@ -19,7 +19,7 @@ fn receipt_only_batches_release_each_bounded_published_snapshot() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
-        execution,
+        request_execution,
         &mut runtime,
         BranchId("batch-receipt-capacity".to_string()),
         &BranchId("main".to_string()),

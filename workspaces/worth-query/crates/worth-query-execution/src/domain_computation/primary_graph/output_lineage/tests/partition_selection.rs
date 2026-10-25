@@ -246,6 +246,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         .application
         .product_runtime()
         .create_product_branch(
+            execution,
             &product,
             None,
             intent,

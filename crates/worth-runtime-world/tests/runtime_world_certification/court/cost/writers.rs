@@ -26,7 +26,14 @@ pub(super) fn run(
     let mut jobs = vec![];
     let token = RuntimeWorldCancellationSource::new().token();
     for index in 0..width {
-        let head = population::child(&court, &root, &format!("writer-{index}"), true, true);
+        let head = population::child(
+            request_execution,
+            &court,
+            &root,
+            &format!("writer-{index}"),
+            true,
+            true,
+        );
         let prepared = court
             .world
             .publication_port()

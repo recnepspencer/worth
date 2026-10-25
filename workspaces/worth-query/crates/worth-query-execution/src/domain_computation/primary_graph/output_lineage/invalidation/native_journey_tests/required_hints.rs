@@ -158,7 +158,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 let main = BranchId("main".to_owned());
                 let fork = BranchId("hint-fork".to_owned());
                 let (_, source) = runtime.observe_fork_source(&main).unwrap();
-                runtime.fork_branch(fork.clone(), source).unwrap();
+                runtime.fork_branch(execution, fork.clone(), source).unwrap();
                 let (_main_handle, main_root) = snapshot(runtime);
                 let fork_identity = runtime.branch_identity(&fork).unwrap();
                 let fork_basis = runtime.admit_branch_basis(&fork_identity).unwrap();

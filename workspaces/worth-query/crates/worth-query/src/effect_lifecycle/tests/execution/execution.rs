@@ -31,7 +31,7 @@ fn lowered_mutation_execution_runs_through_relational_strategy_authority() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
-        execution,
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -90,7 +90,7 @@ fn lowered_merge_execution_runs_through_relational_merge_authority() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
-        execution,
+        request_execution,
         &mut runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
@@ -171,7 +171,7 @@ fn lowered_mutation_execution_rejects_bridge_host_override() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
-        execution,
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

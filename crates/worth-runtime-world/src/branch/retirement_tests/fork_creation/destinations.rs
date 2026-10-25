@@ -8,6 +8,8 @@ const DUPLICATE_SIGNAL_TARGET: &str = "signal-branch-duplicate-destination";
 
 #[test]
 fn duplicate_signal_destination_denies_before_effect_and_retries_after_drop() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, source) = setup_with_relational_source(3);
     let held = owner
         .state
@@ -23,6 +25,7 @@ fn duplicate_signal_destination_denies_before_effect_and_retries_after_drop() {
     let denial = RuntimeWorldBranchService::create_product_branch(
         &owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             source.clone(),
             duplicate_intent(),
             &cancellation.token(),

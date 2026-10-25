@@ -23,6 +23,7 @@ fn advanced_fork_selects_inherited_ancestor_but_not_post_fork_source_sibling() {
     let inherited = create_entity_outcome(&execution, &runtime.lock().unwrap(), "fork-ancestor");
     let feature = BranchId("feature".to_owned());
     fork_branch(
+        &execution,
         &runtime.lock().unwrap(),
         feature.clone(),
         &BranchId("main".to_owned()),

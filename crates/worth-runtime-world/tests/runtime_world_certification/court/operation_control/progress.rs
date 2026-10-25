@@ -36,7 +36,7 @@ fn unrelated_signal_branch_progresses_at_each_owner_park() {
         let RuntimeWorldBranchCreationOutcome::Performed(other) = court
             .world
             .branch_port()
-            .create_product_branch(root.clone(), intent, &token)
+            .create_product_branch(request_execution, root.clone(), intent, &token)
             .unwrap()
         else {
             panic!("real independent branch")

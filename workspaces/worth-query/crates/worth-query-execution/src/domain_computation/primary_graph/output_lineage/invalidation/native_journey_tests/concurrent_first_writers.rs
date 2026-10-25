@@ -116,7 +116,9 @@ fn two_first_candidates_cannot_orphan_the_performed_publications_cell() {
         let (_, source) = runtime
             .observe_fork_source(runtime.main_branch_identity().branch_id())
             .unwrap();
-        runtime.fork_branch(branch.clone(), source).unwrap();
+        runtime
+            .fork_branch(request_execution, branch.clone(), source)
+            .unwrap();
         assert!(!owner.branches.lock().unwrap().cells.contains_key(&branch));
         let (first_ready, observe_first) = mpsc::channel();
         let (release_first, wait_release) = mpsc::channel();

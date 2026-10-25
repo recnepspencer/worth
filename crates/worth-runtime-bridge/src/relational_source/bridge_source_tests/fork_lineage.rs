@@ -95,7 +95,12 @@ fn retained_fork_fixture(
         .expect("inherited replacement publication")
         .clone();
     let feature = BranchId("feature".to_owned());
-    fork_branch(&runtime, feature.clone(), &BranchId("main".to_owned()));
+    fork_branch(
+        &execution,
+        &runtime,
+        feature.clone(),
+        &BranchId("main".to_owned()),
+    );
     let feature_identity = runtime
         .branch_identity(&feature)
         .expect("feature branch identity");

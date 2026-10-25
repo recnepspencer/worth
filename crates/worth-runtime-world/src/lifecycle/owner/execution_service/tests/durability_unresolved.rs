@@ -4,7 +4,8 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use worth_relational::facade::durability::{
-    RelationalCanonicalCommitArtifact, RelationalDurableMedium, RelationalDurablePublication,
+    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
+    RelationalDurablePublication,
 };
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
@@ -12,10 +13,21 @@ use super::*;
 
 /// A durable medium that commits until it is told, through the switch the
 /// test keeps, to leave the next publication's fate unknown, as a crash after
-/// the medium's effect would.
+/// the medium's effect would. Branch transitions are answered the same way.
 #[derive(Debug, Default)]
 struct UnresolvingMedium {
     unresolve_next: Arc<AtomicBool>,
+}
+
+impl UnresolvingMedium {
+    fn answer(&self) -> RelationalDurablePublication {
+        if self.unresolve_next.swap(false, Ordering::AcqRel) {
+            return RelationalDurablePublication::Indeterminate {
+                detail: "the medium lost its answer after the effect".to_owned(),
+            };
+        }
+        RelationalDurablePublication::Committed
+    }
 }
 
 impl RelationalDurableMedium for UnresolvingMedium {
@@ -23,12 +35,14 @@ impl RelationalDurableMedium for UnresolvingMedium {
         &self,
         _artifact: &RelationalCanonicalCommitArtifact,
     ) -> RelationalDurablePublication {
-        if self.unresolve_next.swap(false, Ordering::AcqRel) {
-            return RelationalDurablePublication::Indeterminate {
-                detail: "the medium lost its answer after the effect".to_owned(),
-            };
-        }
-        RelationalDurablePublication::Committed
+        self.answer()
+    }
+
+    fn publish_transition(
+        &self,
+        _artifact: &RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.answer()
     }
 }
 

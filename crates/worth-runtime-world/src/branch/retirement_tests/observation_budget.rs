@@ -42,6 +42,8 @@ fn fresh_observations_are_bounded_and_clones_share_one_charge() {
 
 #[test]
 fn creation_reserves_observation_capacity_before_any_component_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     for fork in [false, true] {
         let (_fixture, owner, root) = setup_with_relational_source(3);
         let mut observations = (1..8)
@@ -59,6 +61,7 @@ fn creation_reserves_observation_capacity_before_any_component_effect() {
         let cancellation = RuntimeWorldCancellationSource::new();
         let before = owner.state.retention.cost_snapshot();
         let result = owner.create_product_branch(RuntimeWorldBranchCreationRequest::new(
+            execution,
             root.clone(),
             intent.clone(),
             &cancellation.token(),
@@ -76,6 +79,7 @@ fn creation_reserves_observation_capacity_before_any_component_effect() {
         // The same component destination must still be unused after denial.
         let result = owner
             .create_product_branch(RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root.clone(),
                 intent,
                 &cancellation.token(),
