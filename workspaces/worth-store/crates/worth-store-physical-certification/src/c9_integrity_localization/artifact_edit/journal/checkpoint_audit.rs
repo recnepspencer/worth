@@ -205,7 +205,7 @@ fn baseline_records(bytes: &[u8]) -> Vec<(usize, usize, u8)> {
     let mut offset = 0;
     while offset < bytes.len() {
         assert_eq!(&bytes[offset..offset + 8], b"WCP7REC\0");
-        assert!(matches!(bytes[offset + 8], 1 | 2 | 3));
+        assert!(matches!(bytes[offset + 8], 1..=3));
         let kind = bytes[offset + 9];
         assert!((1..=7).contains(&kind));
         if matches!(kind, 6 | 7) {
