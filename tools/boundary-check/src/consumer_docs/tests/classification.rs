@@ -133,40 +133,42 @@ fn disabled_or_failure_tolerant_ci_steps_do_not_prove_doctests() {
 
 #[test]
 fn explicit_compiled_targets_require_registered_reachable_active_source() {
-    let fixture = Fixture::new(
-        "<!-- compiled: owning.rs -->\n```rust\nfn example() {}\n```\n",
-        0,
-    );
-    let config = std::fs::read_to_string(fixture.root.join(CONFIG)).unwrap();
-    fixture.write(CONFIG, &format!("{config}\n[[compiled_sources]]\nname='owning.rs'\ncrate_root='app'\ntarget='examples/owning.rs'\nsource='examples/owning/body.rs'\n"));
-    fixture.write("app/Cargo.toml", "[package]\nname='app'\nversion='0.1.0'\nautoexamples=false\n[[example]]\nname='owning'\npath='examples/owning.rs'\n");
-    fixture.write(
-        "app/examples/owning.rs",
-        "#[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
-    );
-    fixture.write(
-        "app/examples/owning/body.rs",
-        "// compiled-example: begin\nfn example() {}\n// compiled-example: end\n",
-    );
-    assert!(fixture.diagnostics().is_empty());
-    fixture.write(
-        "app/examples/owning.rs",
-        "#[cfg(any())] #[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
-    );
-    assert!(fixture
-        .diagnostics()
-        .iter()
-        .any(|diagnostic| diagnostic.code() == DiagnosticCode::Bc8008ConsumerDocMarker));
-    fixture.write(
-        "app/examples/owning.rs",
-        "#[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
-    );
-    fixture.write(
-        "app/Cargo.toml",
-        "[package]\nname='app'\nversion='0.1.0'\nautoexamples=false\n",
-    );
-    assert!(fixture
-        .diagnostics()
-        .iter()
-        .any(|diagnostic| diagnostic.code() == DiagnosticCode::Bc8008ConsumerDocMarker));
+    for target_kind in ["example", "test"] {
+        let fixture = Fixture::new(
+            "<!-- compiled: owning.rs -->\n```rust\nfn example() {}\n```\n",
+            0,
+        );
+        let config = std::fs::read_to_string(fixture.root.join(CONFIG)).unwrap();
+        fixture.write(CONFIG, &format!("{config}\n[[compiled_sources]]\nname='owning.rs'\ncrate_root='app'\ntarget='examples/owning.rs'\nsource='examples/owning/body.rs'\n"));
+        fixture.write("app/Cargo.toml", &format!("[package]\nname='app'\nversion='0.1.0'\nautoexamples=false\nautotests=false\n[[{target_kind}]]\nname='owning'\npath='examples/owning.rs'\n"));
+        fixture.write(
+            "app/examples/owning.rs",
+            "#[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
+        );
+        fixture.write(
+            "app/examples/owning/body.rs",
+            "// compiled-example: begin\nfn example() {}\n// compiled-example: end\n",
+        );
+        assert!(fixture.diagnostics().is_empty());
+        fixture.write(
+            "app/examples/owning.rs",
+            "#[cfg(any())] #[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
+        );
+        assert!(fixture
+            .diagnostics()
+            .iter()
+            .any(|diagnostic| diagnostic.code() == DiagnosticCode::Bc8008ConsumerDocMarker));
+        fixture.write(
+            "app/examples/owning.rs",
+            "#[path=\"owning/body.rs\"] mod body;\nfn main() {}\n",
+        );
+        fixture.write(
+            "app/Cargo.toml",
+            "[package]\nname='app'\nversion='0.1.0'\nautoexamples=false\nautotests=false\n",
+        );
+        assert!(fixture
+            .diagnostics()
+            .iter()
+            .any(|diagnostic| diagnostic.code() == DiagnosticCode::Bc8008ConsumerDocMarker));
+    }
 }

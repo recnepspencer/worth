@@ -1,4 +1,4 @@
-//! Bind action meaning to completed schema bodies before revision minting.
+//! Capture completed schema bodies and relation laws before revision minting.
 use super::{
     ApplicationActionDeclaration, ApplicationProgramAuthoring, ApplicationProgramDefinition,
     ApplicationSchema,
@@ -12,10 +12,14 @@ where
     Schema: ApplicationSchema,
     Program: ApplicationProgramDefinition<Schema>,
 {
-    /// Captures executable bodies from the same completed schema the program
-    /// will install against. No callback re-runs schema or body authoring.
-    /// Installation denies a body-backed action left unbound or bound differently.
+    /// Captures executable bodies and relation laws from the same completed
+    /// schema the program will install against. No callback re-runs schema or
+    /// body authoring. Installation denies unbound or differently bound bodies
+    /// and relation laws.
     pub fn with_schema(mut self, schema: &ApplicationSchemaDeclaration<Schema>) -> Self {
+        self.relation_laws = crate::application_schema::ApplicationRelationLawMeaning::from_members(
+            schema.erased().members(),
+        );
         self.operation_bodies = schema
             .erased()
             .members()

@@ -89,3 +89,24 @@ fn no_self_edges_is_an_explicit_stronger_contract() {
     assert_ne!(established, stronger);
     assert_eq!(NoSelfPeer::reference().integrity(), stronger);
 }
+
+#[test]
+fn adding_and_removing_acyclicity_changes_only_the_declared_meaning() {
+    let unrestricted = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    let acyclic = unrestricted.acyclic();
+    let mut removed = acyclic;
+    removed.acyclic = false;
+    let declare = |integrity| {
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(integrity))
+            .build()
+            .unwrap()
+    };
+    let original = declare(unrestricted);
+    let strengthened = declare(acyclic);
+    let restored = declare(removed);
+    assert_ne!(original.identity(), strengthened.identity());
+    assert_eq!(original.identity(), restored.identity());
+    assert_eq!(acyclic.endpoints, unrestricted.endpoints);
+    assert_eq!(acyclic.cardinality, unrestricted.cardinality);
+    assert_eq!(acyclic.deletion, unrestricted.deletion);
+}

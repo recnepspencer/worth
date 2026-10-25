@@ -2,6 +2,7 @@ derive_skills = true
 
 # Exact consumer inventory. Doctest roots also drive query_gate.py doc.
 documents = [
+  "workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md",
   "workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md",
   "docs/build-an-application.md",
   "docs/how-it-works.md",
@@ -114,3 +115,15 @@ name = "invariant_reads.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry"
 target = "examples/invariant_reads.rs"
 source = "examples/invariant_reads.rs"
+
+[[compiled_sources]]
+name = "relation_law_declaration.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "tests/application_graph.rs"
+source = "tests/application_graph/relation_laws/schema.rs"
+
+[[compiled_sources]]
+name = "relation_law_request.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "tests/application_graph.rs"
+source = "tests/application_graph/relation_laws/installation.rs"

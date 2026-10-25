@@ -8,6 +8,7 @@ pub(super) fn validate<Schema, Program>(
         String,
         crate::application_schema::ApplicationOperationBodyProgram,
     )>,
+    relation_laws: Vec<crate::application_schema::ApplicationRelationLawMeaning>,
 ) -> Result<ValidatedApplicationProgram<Schema, Program>, ApplicationProgramValidationDenial>
 where
     Schema: ApplicationSchema,
@@ -181,7 +182,8 @@ where
         &connections,
         &rules,
         adoption_authorization.as_ref(),
-    );
+    )
+    .with_relation_laws(&relation_laws);
     let revision = ApplicationProgramRevision::mint(&manifest, Program::CANONICAL_REVISION_BUDGET)
         .map_err(|budget| deny_canonical_revision_budget(&identity, budget))?;
     let semantic_description = ApplicationSemanticDescription::from_validated_parts(
@@ -191,8 +193,10 @@ where
         &connections,
         &rules,
         adoption_authorization.as_ref(),
-    );
+    )
+    .with_relation_laws(&relation_laws);
     Ok(ValidatedApplicationProgram {
+        relation_laws,
         identity,
         revision,
         features,

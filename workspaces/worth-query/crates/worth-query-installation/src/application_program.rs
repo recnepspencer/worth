@@ -116,6 +116,7 @@ impl From<WorthQueryProgramSupportDenial> for WorthQueryApplicationProgramInstal
 /// installation subject here rather than inherit a catch-all rendering.
 fn support_denial_subject(denial: &WorthQueryProgramSupportDenial) -> String {
     match denial {
+        WorthQueryProgramSupportDenial::RelationLawMeaningMismatch { .. } => denial.to_string(),
         WorthQueryProgramSupportDenial::UnsupportedAdoptionAuthorization { subject, .. } => {
             subject.clone()
         }

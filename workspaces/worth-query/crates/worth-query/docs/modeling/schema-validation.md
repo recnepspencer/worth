@@ -4,6 +4,9 @@
 
 ## What This Feature Is
 
+For laws enforced when an application changes its graph, see
+[Relation laws](./relation-laws.md).
+
 Schema validation is Worth Query's legality gate for canonical query bundles.
 It confirms that a query's projections, predicates, ordering, traversal, and
 result-shape bindings are legal for the schema basis it claims to target, then

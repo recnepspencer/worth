@@ -1,6 +1,8 @@
 use std::sync::Arc;
 mod native_denial;
+mod relation_law;
 use native_denial::NativeDenial;
+pub use relation_law::WorthQueryRelationLawDenial;
 use worth_execution::ExecutionAllocationDenial;
 
 /// Why an installed custom invariant refused a candidate.
@@ -172,6 +174,20 @@ impl WorthQueryInvariantExecutionFailure {
         detail: impl Into<Arc<str>>,
     ) -> Self {
         Self::native_denied(NativeDenial::Staging(denial), detail)
+    }
+    pub(crate) fn relation_law_denied(
+        fields: worth_relational::facade::transactions::InvariantViolationFields,
+        detail: impl Into<Arc<str>>,
+    ) -> Self {
+        Self::native_denied(NativeDenial::RelationLaw(Box::new(fields)), detail)
+    }
+
+    /// Original native law evidence, borrowed from this failure.
+    pub fn relation_law(&self) -> Option<WorthQueryRelationLawDenial<'_>> {
+        match self.native.as_ref()? {
+            NativeDenial::RelationLaw(fields) => WorthQueryRelationLawDenial::from_fields(fields),
+            _ => None,
+        }
     }
     pub(crate) fn physical_allocation(
         denial: ExecutionAllocationDenial,

@@ -16,6 +16,7 @@ pub use crate::domain_computation::primary_graph::{
 pub use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind, WorthQueryInvariantExecutionFailure,
     WorthQueryInvariantExecutionFailurePosture, WorthQueryProviderSessionFailure,
+    WorthQueryRelationLawDenial,
 };
 
 pub use crate::domain_computation::primary_graph::{

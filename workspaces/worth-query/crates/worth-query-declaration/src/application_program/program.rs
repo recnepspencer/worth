@@ -76,6 +76,7 @@ where
 /// Phase 1 authoring progression. Validation is unavailable until its typed
 /// required connection has been supplied.
 pub struct ApplicationProgramAuthoring<Schema, Program> {
+    relation_laws: Vec<crate::application_schema::ApplicationRelationLawMeaning>,
     operation_bodies: Vec<(
         String,
         crate::application_schema::ApplicationOperationBodyProgram,
@@ -90,6 +91,7 @@ where
 {
     pub const fn begin() -> Self {
         Self {
+            relation_laws: Vec::new(),
             operation_bodies: Vec::new(),
             marker: PhantomData,
         }
@@ -120,12 +122,14 @@ where
             Program::Outputs::connections(),
             Program::Rules::rules(),
             self.operation_bodies,
+            self.relation_laws,
         )
     }
 }
 
 /// Validated immutable program meaning consumed by installation.
 pub struct ValidatedApplicationProgram<Schema, Program> {
+    relation_laws: Vec<crate::application_schema::ApplicationRelationLawMeaning>,
     identity: ApplicationProgramIdentity,
     revision: ApplicationProgramRevision,
     features: Box<[ApplicationFeatureDeclaration]>,
@@ -138,6 +142,23 @@ pub struct ValidatedApplicationProgram<Schema, Program> {
 }
 
 impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
+    pub(super) fn relation_laws(
+        &self,
+    ) -> &[crate::application_schema::ApplicationRelationLawMeaning] {
+        &self.relation_laws
+    }
+    /// Compares captured relation-law meaning with a completed schema without
+    /// re-running declaration authoring or granting installation authority.
+    pub fn matches_relation_laws(
+        &self,
+        schema: &crate::application_schema::ErasedApplicationSchemaDeclaration,
+    ) -> bool {
+        self.relation_laws
+            == crate::application_schema::ApplicationRelationLawMeaning::from_members(
+                schema.members(),
+            )
+    }
+
     pub fn adoption_authorization(
         &self,
     ) -> Option<&super::ApplicationProgramAdoptionAuthorizationDeclaration> {

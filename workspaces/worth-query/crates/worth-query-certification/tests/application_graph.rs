@@ -30,6 +30,8 @@ mod mutation_binding_guard;
 mod producer_predicate_checkpoint;
 #[path = "application_graph/recorded_replay_ordering.rs"]
 mod recorded_replay_ordering;
+#[path = "application_graph/relation_laws.rs"]
+mod relation_laws;
 #[path = "application_graph/restored_primary_backend.rs"]
 mod restored_primary_backend;
 #[path = "application_graph/restored_replay.rs"]

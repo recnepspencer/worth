@@ -959,6 +959,7 @@ exports = [
     "WorthQueryRecoverySafeRetryDenial",
     "WorthQueryRegistryCustodyForTest",
     "WorthQueryRegistryCustodyTransitionForTest",
+    "WorthQueryRelationLawDenial",
     "WorthQueryRequestedElevation",
     "WorthQueryRequiredOutputConnectionDenial",
     "WorthQueryRequiredOutputSourcePreparationFailure",

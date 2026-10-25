@@ -191,6 +191,8 @@ separate from the existing private projection budget; reuse does not replay
 historical reads and fallback does not erase reads already performed.
 
 Public evidence includes focused owner and grouped certification tests,
+full execution-owner test compilation and all 15 ownership/optional-aspect
+tests using the explicitly migrated no-observer fixture callers,
 the runnable planar invariant/declared-query differential, unrelated-ring
 locality, refusal atomicity, compiled documentation drift, facade snapshots,
 boundary-check, agent-context, formatting and scoped structural checks. The
@@ -209,3 +211,153 @@ does not claim cell geometry, storage bytes or cell-bearing publication.
 The persistent reviewer cleared every slice through qa-loop, qa-tests and
 code-quality-qa. Phase 2 is next; no relation law, native walk, orbit,
 component or rule-readable derived-relation obligation is claimed complete.
+
+## Phase 2, slice 1: declared acyclicity and original typed refusals
+
+Boundary review: `ApplicationRelationIntegrity` is a public Copy value used by
+const relation references and struct-update expressions. Its canonical owner
+encodes relation meaning in `canonical_identity/member/schema.rs`.
+`schema_layout/registry_lowering.rs::lower_relation_integrity` already owns
+lowering; Relational already has an acyclicity declaration, complete proposed
+edge reachability, native closing-edge identities and commit-boundary
+registration. Query must connect these owners, without another evaluator.
+
+Native law fields currently disappear in three places: invariant candidate
+failure translation, ordinary provider preparation at the application denial,
+and bootstrap commit translation. Provider preparation already retains its
+original native error. Invariant and bootstrap denials must retain the original
+law fields too. A borrowed typed law view can expose those native identity
+values from their owning denial without replay, string parsing or another
+retained verdict. Entity/reference/kind values are diagnostics and grant no
+read or mutation authority; runtime handles remain private.
+
+Relational's evaluator returns no violation when a checkpoint stops it, but
+the execution owner checks the original request around planning, packet
+evaluation and reduction. Prove refusal through the complete lowered path;
+do not infer a silent pass from the local Option return alone. Snapshot
+publication checks also run before candidate publication, so connectivity's
+existing boundary is not evidence of a later-than-commit gap.
+
+Documentation boundary: `modeling/schema-validation.md` describes the internal
+canonical-query engine and explicitly directs applications elsewhere. Keep
+that audience clear: the ordinary application law guide belongs in
+`modeling/relation-laws.md`, linked from schema validation and the capability
+index, rather than mixing application commits into the editor engine guide.
+
+Plan:
+
+1. Add a public acyclicity flag and const `.acyclic()` builder to the existing
+   integrity value; the existing constructor defaults to no acyclicity law.
+   Encode the enabled law in canonical meaning. An absent law preserves the
+   existing meaning; enabling/removing it changes schema/program identity.
+2. Keep one lowering seam. Extract relation-integrity lowering and its tests
+   into a named `registry_lowering/relation_integrity` child, then lower the
+   flag through `with_acyclicity_contracts` with its native plan revision.
+3. Place `WorthQueryRelationLawDenial` under the existing invariant-execution
+   denial owner. It is a borrowed typed view of original native fields, beginning
+   with acyclicity's relation/contract and closing-edge endpoints. Retain fields
+   at invariant and bootstrap translation, and expose the same view from
+   application commit denials, including provider preparation. Keep existing
+   refusal categories, original control causes and untouched diagnostics.
+4. Add a neutral installed graph court under the existing `application_graph`
+   certification target, with separate schema, operation, installation and
+   evidence responsibilities. Use ordinary Decl/Host installation, authenticated
+   program-owned link mutations and retained projections; no raw native graph
+   access or new exported test door. Its one mutation can carry multiple edges,
+   so a proposed two-edge cycle is not tested as two separate intermediate states.
+5. Prove hostile/lawful twins, closing a cycle across commits and within one
+   commit, self-edges, a 1,000-edge cycle, unchanged committed truth on refusal,
+   and original-request interruption with a completing twin. Compare seeded
+   small-graph edits with an independent reachability model. Cover schema/program
+   identity drift and incompatible old meaning through existing admission courts.
+   The self-edge declaration permits self endpoints so acyclicity itself judges
+   it. Interruption evidence must reach native law evaluation; cancellation
+   before admission alone cannot expose an evaluator that silently passes.
+   Strengthen the existing native packet court to observe the checked
+   evaluator callback's own typed stop, retaining its completing twin. The
+   outer execution owner independently preserves stops, so an outer refusal
+   alone cannot expose a worker that swallows the evaluator's failure.
+6. Document the actual acyclic declaration and typed refusal in
+   `modeling/relation-laws.md`, linked from `modeling/schema-validation.md`, using
+   a compiled excerpt from the public court, and update the capability index.
+   The other four laws, public fixture
+   cutovers and Proprietary's cycle-check deletion remain Phase 2 obligations.
+7. Run declaration/lowering/denial owner tests and the affected grouped public
+   certification target, compiled-doc drift, formatting, dirty line caps/function
+   review, boundary-check and agent-context. The persistent reviewer gates the
+   living diff and evidence through qa-loop, qa-tests and code-quality-qa before
+   commit. No Phase 2 master merge until all five laws and consumer adoption pass.
+
+No additional work budget, accounting system, traversal engine or application
+law checker is introduced. Resource exhaustion tests do not replace the semantic
+and cancellation courts above.
+
+### Identity boundary correction discovered by the real compatibility court
+
+The new public court exposed two missing handoffs. `with_schema` currently
+captures only operation bodies, so validated program revisions ignore relation
+laws. Native exact recovery preserves historical schema carriers correctly,
+but its current-cell target comparison checks codecs only. A lawful old graph
+therefore silently restores under changed laws. These are required repairs
+within this slice, not acceptable compatibility evidence.
+
+The declaration owner will supply one normalized enabled-law representation
+per authored relation and endpoints. Schema identity and program meaning use
+that same representation. `with_schema` retains it; manifest and semantic facts
+include it under an explicit relation-law family; support admission compares it
+with the installed schema. Empty law collections preserve existing revisions,
+while unbound `begin().validated_program()` cannot bypass enabled laws.
+
+Extend the native current-cell readmission fence with a named relation-law
+comparison against target declarations in both directions, using its existing
+execution context and typed SchemaMismatch. Historical-only carriers retain
+their own authority; explicit codec-transition custody remains separate. Do
+not broaden this into whole-registry equality or re-author the schema during
+program validation. Add/remove laws, unbound program admission, lawful restore
+twins and archive semantic facts must expose the repaired handoffs. The
+persistent reviewer independently confirmed these owner boundaries before edits.
+
+The compiled-document guard recognized registered binary/example targets only;
+it refused the genuine `application_graph` integration-test owner. Admit
+explicit registered Cargo test targets through the same confinement, active
+module reachability and exact region checks. Extend its existing hostile/lawful
+registration court to cover examples and integration tests, without accepting
+unregistered or disabled targets or moving the graph fixture into a second build.
+
+### Slice 1 verification
+
+Declared acyclicity now lowers into the existing native contract. Commit and
+bootstrap refusals retain the original typed law fields. The completed schema's
+enabled law meaning binds schema identity, program revision, semantic archive
+facts and installed support. Exact recovery refuses changed laws on current
+branch heads while preserving historical schema carriers and codec-transition
+custody.
+
+Evidence on the living slice:
+
+- All 9 public relation-law courts pass, including proposed batch cycles,
+  self-edges, a 1,000-edge history, seeded independent reachability, refusal
+  atomicity, original-request cancellation, archive identity, genuine checkpoint
+  add/remove refusal and unbound-program installation refusal.
+- The full `application_graph` target passes 402 tests with 5 existing ignored
+  tests. Declaration passes 460, installation 343 and archive 116 unit tests.
+- The full execution-owner test library compiles; its 26 focused lowering,
+  denial, bootstrap and ownership courts pass.
+- Native acyclicity resources pass 8 tests, including the checked evaluator's
+  own interruption result and completing twin. Native checkpoint restoration
+  passes 18 tests with 1 existing ignored test; codec transitions pass all 29.
+- Compiled documentation drift passes. The documentation guard passes its 39
+  focused tests and production-scan fence regression. Normal boundary-check,
+  agent-context, all 46 scoped Rust formatting checks, dirty line caps,
+  whitespace and function scrutiny pass. The 14 function advisories were
+  reviewed for coherent responsibility; no threshold-only restructuring was
+  required.
+
+The transient disk-full build failures were retried after Cargo removed this
+task's disposable package artifacts. The interrupted formatter's tooling test
+file was restored from Git plus its intended edit and compiled successfully.
+No failed build is counted as passing evidence.
+
+The remaining four laws, public fixture cutovers and Proprietary's
+`PreviousFeature` adoption are still Phase 2 obligations. This slice does not
+close Phase 2 or authorize its master merge.

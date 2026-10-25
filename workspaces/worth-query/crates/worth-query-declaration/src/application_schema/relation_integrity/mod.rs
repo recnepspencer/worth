@@ -1,6 +1,8 @@
 mod cardinality;
 mod deletion;
 mod endpoints;
+mod law_meaning;
+pub(crate) use law_meaning::ApplicationRelationLawMeaning;
 
 pub use cardinality::ApplicationRelationCardinality;
 pub use deletion::ApplicationRelationDeletionPolicy;
@@ -13,6 +15,8 @@ pub struct ApplicationRelationIntegrity {
     pub endpoints: ApplicationRelationEndpoints,
     pub cardinality: ApplicationRelationCardinality,
     pub deletion: ApplicationRelationDeletionPolicy,
+    /// Every source-to-target path must be free of cycles at the commit boundary.
+    pub acyclic: bool,
 }
 
 impl ApplicationRelationIntegrity {
@@ -25,6 +29,7 @@ impl ApplicationRelationIntegrity {
             endpoints,
             cardinality,
             deletion,
+            acyclic: false,
         }
     }
 
@@ -46,6 +51,12 @@ impl ApplicationRelationIntegrity {
 
     pub const fn cross_context_policy(self) -> ApplicationRelationCrossContextPolicy {
         self.endpoints.cross_context_policy
+    }
+
+    /// Refuse a proposed commit whose edges close a directed cycle.
+    pub const fn acyclic(mut self) -> Self {
+        self.acyclic = true;
+        self
     }
 }
 

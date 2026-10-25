@@ -118,3 +118,80 @@ fn semantic_identity() -> CustomInvariantSemanticIdentity {
         semantic_version: CustomInvariantSemanticVersion::new(3, 7),
     }
 }
+
+#[test]
+fn original_law_payload_survives_all_query_refusal_translations() {
+    use crate::domain_computation::primary_graph::{
+        application_attempt::provider_compare_denial::provider_session_denied,
+        bootstrap_publication::map_bootstrap_commit_denial, WorthQueryApplicationCommitDenial,
+        WorthQueryApplicationCommitDenialStage,
+    };
+    use crate::domain_computation::{
+        WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure,
+        WorthQueryProviderSessionProtocolStage, WorthQueryRelationLawDenial,
+    };
+    use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
+    use worth_relational::facade::schema::ContractId;
+    use worth_relational::facade::transactions::{CreatedEntityRef, EntityReference};
+
+    // Payload transport only: these coordinates make no claim of graph admission.
+    // The installed public graph court proves actual law/identity derivation.
+    let contract_id = ContractId::new("original-law-payload");
+    let source = EntityReference::Existing(EntityId::new(PartitionId(2), 5, 3));
+    let target = EntityReference::Created(CreatedEntityRef {
+        partition_id: PartitionId(2),
+        kind_id: KindId(11),
+        client_key: worth_relational::facade::symbols::ClientKey::raw("unpublished-target"),
+    });
+    let fields = InvariantViolationFields::Acyclicity {
+        contract_id: contract_id.clone(),
+        relation_kind_id: KindId(77),
+        source: source.clone(),
+        target: target.clone(),
+    };
+    let expected = Some(WorthQueryRelationLawDenial::Acyclicity {
+        contract_id: &contract_id,
+        relation_kind_id: KindId(77),
+        source: &source,
+        target: &target,
+    });
+    let original = law_transport_error(fields);
+    let invariant = WorthQueryApplicationCommitDenial::invariant_execution_denied(
+        WorthQueryApplicationCommitDenialStage::InvariantExecution,
+        super::map_validation_failure(original.clone()),
+    );
+    assert_eq!(invariant.relation_law(), expected);
+    let provider = provider_session_denied(
+        WorthQueryProviderSessionFailure::new(
+            WorthQueryProviderSessionDenialKind::ProviderRejected,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            "opaque provider diagnostic",
+            Default::default(),
+        )
+        .with_native_preparation_error(original.clone()),
+    );
+    assert_eq!(provider.relation_law(), expected);
+    let bootstrap = map_bootstrap_commit_denial(original);
+    assert_eq!(bootstrap.relation_law(), expected);
+    assert!(invariant.custom_invariant_denial().is_none());
+}
+
+fn law_transport_error(
+    fields: InvariantViolationFields,
+) -> worth_relational::facade::transactions::TransactionCommitError {
+    use worth_relational::facade::{
+        diagnostics::DiagnosticCode,
+        errors::{ErrorContext, ErrorOperation, RelationalSubsystem},
+        transactions::{CommitConflict, ConflictClass, TransactionCommitError},
+    };
+    TransactionCommitError::conflict(CommitConflict {
+        class: ConflictClass::InvariantViolation {
+            code: DiagnosticCode::InvariantViolation,
+            detail: "opaque native diagnostic".into(),
+            fields,
+        },
+        code: DiagnosticCode::InvariantViolation,
+        detail: "opaque native diagnostic".into(),
+        context: ErrorContext::new(RelationalSubsystem::Transaction, ErrorOperation::Validate),
+    })
+}

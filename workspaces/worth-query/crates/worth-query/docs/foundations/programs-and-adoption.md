@@ -109,6 +109,13 @@ The rules that follow from the separation:
 A program is a type implementing `ApplicationProgramDefinition<Schema>`.
 Validation produces the revision:
 
+When the schema declares [relation laws](../modeling/relation-laws.md), call
+`.with_schema(&schema)` before `.validated_program()`. It captures the completed
+schema's law meaning alongside executable bodies. Law changes affect the
+program revision and its semantic facts; installation refuses a program with
+missing or different law bindings. Programs without enabled relation laws keep
+their existing revisions.
+
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled.

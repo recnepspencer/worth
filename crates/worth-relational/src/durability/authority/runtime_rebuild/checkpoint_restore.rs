@@ -14,6 +14,8 @@ mod branch_root_images;
 mod partition_images;
 mod record_identity;
 mod recovered_codec_meaning;
+mod recovered_relation_laws;
+mod recovered_schema_meaning;
 mod root_schema_readmission;
 
 #[cfg(test)]
@@ -58,7 +60,7 @@ fn prepare_checkpoint_state(
     let symbols = prepare_symbols(restored, checkpoint);
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
-    recovered_codec_meaning::check_current_codec_meaning(
+    recovered_schema_meaning::check_current_schema_meaning(
         execution,
         checkpoint,
         &branch_root_images,

@@ -90,11 +90,21 @@ pub(in crate::domain_computation::primary_graph) fn map_bootstrap_commit_denial(
             WorthQueryPrimaryGraphInstallationDenialKind::RelationalCommitRejected
         }
     };
-    primary_graph_denial(
+    let denial = primary_graph_denial(
         kind,
         format!(
             "Relational rejected the application principal bootstrap transaction: {}",
             error.detail()
         ),
-    )
+    );
+    if let Error::Conflict { error, .. } = error
+        && let worth_relational::facade::transactions::ConflictClass::InvariantViolation {
+            fields,
+            ..
+        } = error.class
+        && crate::domain_computation::WorthQueryRelationLawDenial::from_fields(&fields).is_some()
+    {
+        return denial.with_relation_law_fields(fields);
+    }
+    denial
 }

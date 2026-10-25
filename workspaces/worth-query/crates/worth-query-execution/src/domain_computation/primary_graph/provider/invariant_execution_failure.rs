@@ -167,6 +167,12 @@ fn map_invariant_failure(
     fields: worth_relational::facade::transactions::InvariantViolationFields,
     detail: String,
 ) -> WorthQueryInvariantExecutionFailure {
+    if matches!(
+        fields,
+        worth_relational::facade::transactions::InvariantViolationFields::Acyclicity { .. }
+    ) {
+        return WorthQueryInvariantExecutionFailure::relation_law_denied(fields, detail);
+    }
     map_custom_invariant_failure(fields, detail.clone()).unwrap_or_else(|| {
         WorthQueryInvariantExecutionFailure::new(
             WorthQueryInvariantExecutionDenialKind::ProviderRejected,

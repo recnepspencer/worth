@@ -24,6 +24,10 @@ use crate::facade::WorthQueryInstalledApplicationSchema;
 /// learns what to install or re-author instead of retrying blind.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryProgramSupportDenial {
+    /// Captured relation laws differ from the completed installed schema.
+    RelationLawMeaningMismatch {
+        program: ApplicationProgramIdentity,
+    },
     /// A program that declares no feature governs nothing.
     UnsupportedAdoptionAuthorization {
         program: ApplicationProgramIdentity,
@@ -68,6 +72,11 @@ pub enum WorthQueryProgramSupportDenial {
 impl std::fmt::Display for WorthQueryProgramSupportDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::RelationLawMeaningMismatch { program } => write!(
+                formatter,
+                "relation-law meaning differs from installed schema for {}",
+                program.as_str()
+            ),
             Self::UnsupportedAdoptionAuthorization { program, subject } => write!(
                 formatter,
                 "unsupported adoption authorization for {}: {subject}",
@@ -153,6 +162,11 @@ where
         Program: ApplicationProgramDefinition<Schema>,
     {
         let identity = program.identity();
+        if !program.matches_relation_laws(self.installed_schema.installed_declaration()) {
+            return Err(WorthQueryProgramSupportDenial::RelationLawMeaningMismatch {
+                program: identity.clone(),
+            });
+        }
         if self
             .entries
             .iter()

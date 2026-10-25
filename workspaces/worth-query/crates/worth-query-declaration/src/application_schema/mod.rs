@@ -52,6 +52,7 @@ mod query_member_closure;
 mod read_authoring;
 mod references;
 mod relation_integrity;
+pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;
 mod shape;

@@ -20,10 +20,11 @@ pub enum ApplicationSemanticFamily {
     Outputs,
     Resources,
     Authorization,
+    RelationLaws,
 }
 
 impl ApplicationSemanticFamily {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Features,
         Self::Ports,
         Self::Connections,
@@ -33,6 +34,7 @@ impl ApplicationSemanticFamily {
         Self::Outputs,
         Self::Resources,
         Self::Authorization,
+        Self::RelationLaws,
     ];
 }
 
@@ -110,6 +112,23 @@ pub struct ApplicationSemanticDescription {
 }
 
 impl ApplicationSemanticDescription {
+    pub(in crate::application_program) fn with_relation_laws(
+        mut self,
+        laws: &[crate::application_schema::ApplicationRelationLawMeaning],
+    ) -> Self {
+        let mut facts = self.facts.into_vec();
+        facts.extend(laws.iter().map(|law| {
+            fact(
+                ApplicationSemanticFamily::RelationLaws,
+                law.relation(),
+                framed_fields(law.canonical_fields()),
+            )
+        }));
+        facts.sort_unstable();
+        self.facts = facts.into_boxed_slice();
+        self
+    }
+
     pub fn revision(&self) -> &ApplicationProgramRevision {
         &self.revision
     }

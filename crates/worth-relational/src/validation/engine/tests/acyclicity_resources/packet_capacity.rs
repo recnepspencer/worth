@@ -6,12 +6,19 @@ use crate::validation::engine::InvariantRuntimeView;
 use worth_execution::CancellationToken;
 use worth_foundational::PartitionIdentity;
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum CallbackResult {
+    Completed,
+    WorkCeiling,
+    OtherFailure,
+}
+
 fn run(
     fixture: &DagFixture,
     forward_edges: usize,
     scratch: u64,
     work: u64,
-) -> (Result<(), PacketExecutionStop>, u64) {
+) -> (Result<(), PacketExecutionStop>, u64, Option<CallbackResult>) {
     let lease = request(1024 * 1024, work, CancellationToken::new(), None);
     let plan = fixture.merged_plan(fixture.chain_batch(forward_edges));
     let runtime = &fixture.runtime;
@@ -30,6 +37,11 @@ fn run(
         &request_view,
         None,
     );
+    assert_eq!(
+        prepared.packets.len(),
+        1,
+        "one declared acyclicity contract"
+    );
     let packets = prepared.packets.into_iter().map(|packet| {
         assert!(matches!(&packet.registration,
             crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
@@ -43,18 +55,27 @@ fn run(
             input_bytes: 0, memory: crate::execution::PacketMemory::Declared { scratch, result: 16 * 1024 },
         }
     }).collect();
+    let callback = std::sync::Mutex::new(None);
     let (outcome, charges) = crate::execution::work_observation::capture(|| {
         execute_read_only_packets(
             packets,
             &lease,
             |packet, context| {
-                crate::validation::execution::evaluate_invariant_packet_checked(
+                let result = crate::validation::execution::evaluate_invariant_packet_checked(
                     &view,
                     worth_execution::ExecutionRequest::leased(&lease),
                     packet,
                     context,
                     lease.status(),
-                )
+                );
+                *callback.lock().unwrap() = Some(match &result {
+                    Ok(_) => CallbackResult::Completed,
+                    Err(worth_execution::MapKernelFailure::Stop(
+                        worth_execution::MapKernelStop::WorkCeiling,
+                    )) => CallbackResult::WorkCeiling,
+                    Err(_) => CallbackResult::OtherFailure,
+                });
+                result
             },
             crate::validation::execution::InvariantWorkerEnvelope::owned_allocation_capacity_bytes,
         )
@@ -70,7 +91,11 @@ fn run(
             )));
     });
     assert_eq!(lease.charged_memory_bytes(), 0);
-    (outcome, charges.into_iter().sum())
+    (
+        outcome,
+        charges.into_iter().sum(),
+        callback.into_inner().unwrap(),
+    )
 }
 
 #[test]
@@ -92,7 +117,7 @@ fn scratch_admission_covers_all_simultaneous_native_buffers_and_convergent_targe
     run(&fixture, 3, extent, 4_000_000)
         .0
         .expect("the entire declared live extent fits");
-    let (failure, _) = run(&fixture, 3, extent - 1, 4_000_000);
+    let (failure, _, _) = run(&fixture, 3, extent - 1, 4_000_000);
     assert!(
         matches!(
             failure,
@@ -115,15 +140,23 @@ fn scratch_admission_covers_all_simultaneous_native_buffers_and_convergent_targe
 fn repeated_searches_keep_work_charged_and_stop_one_unit_below_observed_need() {
     let fixture = DagFixture::new(32);
     let before = fixture.head();
-    let (result, single_work) = run(&fixture, 1, 64 * 1024, 4_000_000);
+    let (result, single_work, _) = run(&fixture, 1, 64 * 1024, 4_000_000);
     result.unwrap();
-    let (result, repeated_work) = run(&fixture, 3, 64 * 1024, 4_000_000);
+    let (result, repeated_work, callback) = run(&fixture, 3, 64 * 1024, 4_000_000);
     result.unwrap();
+    assert!(
+        matches!(callback, Some(CallbackResult::Completed)),
+        "the checked evaluator completed: {callback:?}"
+    );
     assert!(
         repeated_work > single_work,
         "convergent paths still cause real traversal work"
     );
-    let (failure, _) = run(&fixture, 3, 64 * 1024, repeated_work - 1);
+    let (failure, _, callback) = run(&fixture, 3, 64 * 1024, repeated_work - 1);
+    assert!(
+        matches!(callback, Some(CallbackResult::WorkCeiling)),
+        "the evaluator itself must retain its checkpoint failure: {callback:?}"
+    );
     assert!(
         matches!(
             failure,

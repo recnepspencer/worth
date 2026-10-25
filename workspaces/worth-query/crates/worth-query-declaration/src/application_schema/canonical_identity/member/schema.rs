@@ -64,6 +64,10 @@ fn append_relation_integrity(
         ApplicationRelationCrossContextPolicy as CrossContext,
         ApplicationRelationDeletionPolicy as Deletion,
     };
+    // No enabled law preserves the pre-existing relation meaning.
+    for (law, value) in integrity.enabled_laws() {
+        basis.u64(format!("{prefix}.laws.{law}"), value);
+    }
     basis.text(
         format!("{prefix}.endpoints.cross_context"),
         match integrity.endpoints.cross_context_policy {

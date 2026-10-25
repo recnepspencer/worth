@@ -10,6 +10,7 @@ mod invariant_refusal;
 mod lane;
 mod program_binding;
 mod recorded_idempotency;
+mod relation_law;
 mod request_authority;
 mod signed_creation;
 mod signing_lifecycle;
