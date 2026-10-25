@@ -10,6 +10,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
 ) -> RecoveryPlan {
     let checkpoint = select_replay_checkpoint(source, chain);
     let tail_log = replay_tail_log(source, chain, checkpoint.as_ref());
+    let branch_transitions = replay_fork_transitions(source, &tail_log, checkpoint.as_ref());
     let restore_authoritative_envelope_commit_ids = authoritative_replay_envelopes(source, chain);
     let checkpoint_envelopes = checkpoint
         .as_ref()
@@ -24,6 +25,7 @@ pub(in crate::replay) fn replay_recovery_plan_for_chain(
         source.runtime_config().clone(),
         checkpoint,
         tail_log,
+        branch_transitions,
         authority_continuity,
         replay_verification_mode_to_recovery_mode(verification_mode),
         target_descriptor_semantics_version(source, chain),
@@ -75,6 +77,41 @@ fn replay_tail_log(
                 })
         })
         .collect()
+}
+
+/// The forks a partial chain needs: every fork the source performed after the
+/// checkpoint's transition coverage whose target a chain commit belongs to.
+/// A fork is the only source of a branch's existence, so a chain commit on a
+/// forked branch replays after its fork.
+fn replay_fork_transitions(
+    source: &crate::runtime::RelationalRuntime,
+    tail_log: &[crate::durability::migration::ReadmittedCanonicalCommit],
+    checkpoint: Option<&crate::durability::data::DurableCheckpoint>,
+) -> crate::durability::data::RecoveryBranchTransitions {
+    let covered = checkpoint.map_or(
+        crate::branch::RelationalBranchTransitionSequence(0),
+        |checkpoint| checkpoint.coverage.up_to_branch_transition,
+    );
+    let chain_branches = tail_log
+        .iter()
+        .map(|commit| &commit.envelope().branch_context)
+        .collect::<std::collections::BTreeSet<_>>();
+    crate::durability::data::RecoveryBranchTransitions::Selected(
+        source
+            .history
+            .positioned_branch_transitions_snapshot()
+            .into_iter()
+            .filter(|transition| transition.sequence() > covered)
+            .filter(|transition| {
+                matches!(
+                    transition.transition(),
+                    crate::branch::RelationalBranchTransition::Fork { target, .. }
+                        if chain_branches.contains(target)
+                )
+            })
+            .map(|transition| transition.as_ref().clone())
+            .collect(),
+    )
 }
 
 fn authoritative_replay_envelopes(

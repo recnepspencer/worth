@@ -88,7 +88,14 @@ fn unresolved_durable_publication_blocks_descendants_and_recovers_last_checkpoin
         .durability_unresolved_fate()
         .expect("the medium could not say whether the commit is durable")
         .clone();
-    assert_eq!(fate.position(), PatchStreamPosition(2));
+    let crate::durability::medium::RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position: unresolved_position,
+        ..
+    } = fate.subject()
+    else {
+        panic!("a commit's unresolved fate names the commit")
+    };
+    assert_eq!(unresolved_position, PatchStreamPosition(2));
     assert_eq!(runtime.lineage.node_count(), published_node_count);
     assert_eq!(runtime.lineage.event_count(), published_event_count);
     assert_eq!(
@@ -122,7 +129,7 @@ fn unresolved_durable_publication_blocks_descendants_and_recovers_last_checkpoin
         frontiers_at_checkpoint
     );
     let resumed = create_entity_outcome(execution, &recovered, "lineage-gap-resumed");
-    assert_eq!(resumed.patch_position(), fate.position());
+    assert_eq!(resumed.patch_position(), unresolved_position);
     assert_eq!(resumed.commit.parents, vec![checkpointed.commit.commit_id]);
     release_test_commit_snapshot(&recovered, &resumed);
 }

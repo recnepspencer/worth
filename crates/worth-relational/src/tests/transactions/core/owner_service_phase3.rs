@@ -269,12 +269,16 @@ fn phase3_foreign_settlement_denial_preserves_source_recovery() {
 /// Deferred repair diagnostics describe the service being asked as expected
 /// and the carrier's source as actual. Rejection must leave the source record
 /// and exact carrier usable for its rightful owner.
-pub(super) fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
+pub(super) fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    target: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(target.to_owned()), source)
+        .fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("test branch fork succeeds");
 }
 

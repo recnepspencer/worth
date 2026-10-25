@@ -121,21 +121,76 @@ impl RelationalBranchReferenceRegistry {
         checkpoints
     }
 
-    pub(crate) fn reserve_name_retirement(
+    /// Every branch's lifecycle posture, in branch order.
+    pub(crate) fn lifecycle_postures(
         &self,
-        branch_id: BranchId,
-        maximum_names: usize,
-    ) -> Result<(), ()> {
-        let mut state = self.write();
-        if !state.retired_names.contains(&branch_id) && state.retired_names.len() >= maximum_names {
-            return Err(());
-        }
-        state.retired_names.insert(branch_id);
-        Ok(())
+    ) -> Vec<crate::durability::data::DurableBranchLifecycleImage> {
+        let mut postures = self
+            .read()
+            .cells
+            .iter()
+            .map(
+                |(branch_id, cell)| crate::durability::data::DurableBranchLifecycleImage {
+                    branch_id: branch_id.clone(),
+                    posture: cell.lifecycle_posture(),
+                },
+            )
+            .collect::<Vec<_>>();
+        postures.sort_by(|left, right| left.branch_id.cmp(&right.branch_id));
+        postures
     }
 
-    pub(crate) fn clear_retired_names(&self) {
-        self.write().retired_names.clear();
+    /// Whether `branch_id` is retired already or fits beside the others.
+    pub(crate) fn admits_name_retirement(
+        &self,
+        branch_id: &BranchId,
+        maximum_names: usize,
+    ) -> bool {
+        let state = self.read();
+        state.retired_names.contains(branch_id) || state.retired_names.len() < maximum_names
+    }
+
+    pub(crate) fn retire_name(&self, branch_id: BranchId) {
+        self.write().retired_names.insert(branch_id);
+    }
+
+    /// Every retired name, sorted.
+    pub(crate) fn retired_names(&self) -> Vec<BranchId> {
+        let mut names = self
+            .read()
+            .retired_names
+            .iter()
+            .cloned()
+            .collect::<Vec<_>>();
+        names.sort();
+        names
+    }
+
+    /// Replace the retired names with `names`. A name a registered branch
+    /// still uses is refused: a branch is retired only by its deletion, which
+    /// removes it or marks it deleting.
+    pub(crate) fn restore_retired_names(&self, names: &[BranchId]) -> Result<(), String> {
+        let mut state = self.write();
+        let mut restored = HashSet::with_capacity(names.len());
+        for name in names {
+            let deleting = state.cells.get(name).is_some_and(|cell| {
+                cell.lifecycle_posture() == super::RelationalBranchLifecyclePosture::Deleting
+            });
+            if state.cells.contains_key(name) && !deleting {
+                return Err(format!(
+                    "retired branch name `{}` names a live branch",
+                    name.0
+                ));
+            }
+            if !restored.insert(name.clone()) {
+                return Err(format!(
+                    "retired branch name `{}` is recorded twice",
+                    name.0
+                ));
+            }
+        }
+        state.retired_names = restored;
+        Ok(())
     }
 
     pub(crate) fn reserve_fork_target(

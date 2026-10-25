@@ -15,7 +15,7 @@ fn committed_child(
         .expect("committed source has a fork basis");
     let child = BranchId("root-selection-child".to_owned());
     runtime
-        .fork_branch(child.clone(), basis)
+        .fork_branch(execution, child.clone(), basis)
         .expect("fork installs a committed child root");
     child
 }

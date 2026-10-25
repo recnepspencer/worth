@@ -165,6 +165,8 @@ fn prepare_history(
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
+            &checkpoint.branch_lifecycle,
+            &checkpoint.retired_branch_names,
             &mut branch_roots.partitions,
             &branch_roots.schema_authorities,
             &restored.config.schema.registry,
@@ -177,6 +179,18 @@ fn prepare_history(
             )
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
+    let transitions = crate::durability::data::readmit_branch_transition_images(
+        &checkpoint.branch_transitions,
+        checkpoint.coverage.up_to_branch_transition,
+        crate::durability::access::checkpoint_coverage(checkpoint),
+    )
+    .map_err(|detail| {
+        DurabilityError::new(
+            crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+            detail,
+        )
+    })?;
+    history.restore_branch_transitions(transitions);
     Ok(history)
 }
 

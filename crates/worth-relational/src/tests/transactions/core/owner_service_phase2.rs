@@ -35,8 +35,8 @@ fn paused_branch_preparation_does_not_block_unrelated_branch_preparation() {
 
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "phase2-preparation-anchor");
-    fork_from_main(&runtime, "paused-preparation");
-    fork_from_main(&runtime, "progressing-preparation");
+    fork_from_main(execution, &runtime, "paused-preparation");
+    fork_from_main(execution, &runtime, "progressing-preparation");
 
     let reached = Arc::new(Barrier::new(2));
     let release = Arc::new(Barrier::new(2));
@@ -119,8 +119,8 @@ fn paused_fork_does_not_block_an_unrelated_fork() {
 
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "phase2-fork-anchor");
-    fork_from_main(&runtime, "paused-fork-source");
-    fork_from_main(&runtime, "progressing-fork-source");
+    fork_from_main(execution, &runtime, "paused-fork-source");
+    fork_from_main(execution, &runtime, "progressing-fork-source");
     let paused_source_branch = BranchId("paused-fork-source".to_owned());
     let progressing_source_branch = BranchId("progressing-fork-source".to_owned());
     let source_cell = runtime
@@ -142,7 +142,10 @@ fn paused_fork_does_not_block_an_unrelated_fork() {
     let paused_reached = Arc::clone(&reached);
     let paused_release = Arc::clone(&release);
     let paused_thread = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         paused_port.fork_branch_with_test_pause(
+            execution,
             BranchId("paused-fork".to_owned()),
             paused_source,
             &paused_reached,
@@ -152,8 +155,12 @@ fn paused_fork_does_not_block_an_unrelated_fork() {
 
     reached.wait();
     assert!(!paused_thread.is_finished(), "branch A fork remains paused");
-    port.fork_branch(BranchId("progressing-fork".to_owned()), progressing_source)
-        .expect("branch B fork completes while branch A is paused");
+    port.fork_branch(
+        execution,
+        BranchId("progressing-fork".to_owned()),
+        progressing_source,
+    )
+    .expect("branch B fork completes while branch A is paused");
     assert!(
         !paused_thread.is_finished(),
         "branch B did not release branch A"
@@ -185,7 +192,10 @@ fn fork_basis_return_holds_owner_admission_across_post_install_close_boundary() 
     let worker_reached = Arc::clone(&reached);
     let worker_release = Arc::clone(&release);
     let worker = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         worker_port.fork_branch_with_post_install_test_pause(
+            execution,
             BranchId("post-install-close-target".to_owned()),
             source,
             &worker_reached,
@@ -215,79 +225,14 @@ fn fork_basis_return_holds_owner_admission_across_post_install_close_boundary() 
 }
 
 #[test]
-fn concurrent_duplicate_fork_has_one_winner_and_no_second_target() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    create_entity(execution, &runtime, "phase2-duplicate-fork-anchor");
-    let source_branch = BranchId("main".to_owned());
-    let port = runtime.fork_port();
-    let (_, first_source) = port
-        .observe_fork_source(&source_branch)
-        .expect("first exact source");
-    let (_, second_source) = port
-        .observe_fork_source(&source_branch)
-        .expect("second exact source");
-    let branch_count_before = runtime.history().branch_cells_snapshot().len();
-    let start = Arc::new(Barrier::new(3));
-
-    let first_port = port.clone();
-    let first_start = Arc::clone(&start);
-    let first = std::thread::spawn(move || {
-        first_start.wait();
-        first_port.fork_branch(BranchId("duplicate-target".to_owned()), first_source)
-    });
-    let second_port = port.clone();
-    let second_start = Arc::clone(&start);
-    let second = std::thread::spawn(move || {
-        second_start.wait();
-        second_port.fork_branch(BranchId("duplicate-target".to_owned()), second_source)
-    });
-    start.wait();
-
-    let outcomes = [
-        first.join().expect("first fork worker joins"),
-        second.join().expect("second fork worker joins"),
-    ];
-    assert_eq!(outcomes.iter().filter(|outcome| outcome.is_ok()).count(), 1);
-    assert_eq!(
-        outcomes
-            .iter()
-            .filter(|outcome| matches!(
-                outcome,
-                Err(crate::branch::RelationalForkDenial::DuplicateTarget)
-            ))
-            .count(),
-        1,
-    );
-    assert_eq!(
-        runtime.history().branch_cells_snapshot().len(),
-        branch_count_before + 1,
-        "the losing reservation leaves no second branch cell",
-    );
-    let source_root = runtime
-        .history
-        .branch_cell(&source_branch)
-        .and_then(|cell| cell.root())
-        .expect("source root");
-    let target_root = runtime
-        .history
-        .branch_cell(&BranchId("duplicate-target".to_owned()))
-        .and_then(|cell| cell.root())
-        .expect("winning target root");
-    assert!(Arc::ptr_eq(&source_root, &target_root));
-}
-
-#[test]
 fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "phase2-symbol-sharing-anchor");
-    fork_from_main(&runtime, "symbol-sharing-a");
-    fork_from_main(&runtime, "symbol-sharing-b");
+    fork_from_main(execution, &runtime, "symbol-sharing-a");
+    fork_from_main(execution, &runtime, "symbol-sharing-b");
     let preparation = runtime.preparation_port();
     let cloned_preparation = preparation.clone();
 
@@ -336,12 +281,16 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
         .expect("second candidate discards through the shared owner");
 }
 
-fn fork_from_main(runtime: &crate::runtime::RelationalRuntime, target: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+    target: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(target.to_owned()), source)
+        .fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("test branch fork succeeds");
 }
 
@@ -382,3 +331,5 @@ fn begin_transaction_with_control(
 
 #[path = "owner_service_phase2/closed_owner.rs"]
 mod closed_owner;
+#[path = "owner_service_phase2/duplicate_fork.rs"]
+mod duplicate_fork;

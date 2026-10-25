@@ -73,7 +73,7 @@ fn custom_invariant_structural_reads_stay_on_child_root_after_main_rewire() {
         .expect("main remains forkable");
     world
         .runtime
-        .fork_branch(BranchId("medical-hold".to_owned()), fork_source)
+        .fork_branch(execution, BranchId("medical-hold".to_owned()), fork_source)
         .expect("medical-hold retains the baseline root");
     let child_basis_version =
         head_for_supply_chain_branch(&world.runtime, &BranchId("medical-hold".to_owned()))

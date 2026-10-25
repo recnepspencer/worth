@@ -58,10 +58,10 @@ mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
 pub(crate) use canonical_publication_routes::{
-    readmit_positioned_canonical_commit, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, PatchPositionReservationAdmission,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    RelationalCanonicalPublicationRoutes,
+    readmit_positioned_canonical_commit, BranchTransitionRecordError,
+    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
@@ -123,6 +123,7 @@ impl HistorySubsystem {
             self.branch_head_versions.clone(),
             self.retention_owner.binding(),
             Arc::clone(&self.basis_registry_metrics),
+            Arc::clone(&self.canonical_publication_routes),
         )
     }
 
@@ -295,7 +296,10 @@ impl HistorySubsystem {
         };
         fork.commit_identity_allocator = Arc::new(AtomicU64::new(next_commit_id));
         fork.version_identity_allocator = Arc::new(AtomicU64::new(next_version_id));
-        let routes = Arc::new(RelationalCanonicalPublicationRoutes::default());
+        let routes = Arc::new(
+            self.canonical_publication_routes
+                .detached_branch_transitions(),
+        );
         for commit in positioned {
             routes.install_recovered(commit).map_err(|_| {
                 crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
@@ -309,7 +313,6 @@ impl HistorySubsystem {
         self.set_runtime_instance_id(runtime_instance_id);
         self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
         self.branch_population_scans = Arc::new(AtomicU64::new(0));
-        self.branch_cells.clear_retired_names();
     }
 
     pub(crate) fn branch_cell(

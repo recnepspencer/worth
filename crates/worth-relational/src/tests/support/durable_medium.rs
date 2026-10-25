@@ -1,9 +1,10 @@
 //! The in-crate durable medium Relational's own durability tests publish to.
 //!
 //! It is a test double of Worth Store's Relational home, not a second durable
-//! path: it keeps artifact bytes by position in memory, accepts only the next
-//! position (or an identical retry), holds the latest native checkpoint with
-//! the position it was filed under, and hands both back as a
+//! path: it keeps commit artifact bytes by position and branch transition
+//! artifact bytes by sequence in memory, accepts only the next position or
+//! sequence (or an identical retry), holds the latest native checkpoint with
+//! the coverage it was filed under, and hands all three back as a
 //! `RelationalDurableRecoverySource` the way a home does on reopen.
 //!
 //! `TestDurableMedium` is the durable contents, standing in for a home's
@@ -16,6 +17,8 @@ mod journal;
 mod runtime_attachment;
 mod scripted_publication;
 mod tamper;
+mod transition_contents;
+mod transition_journal;
 
 use std::sync::{Arc, Mutex, MutexGuard};
 
@@ -25,6 +28,10 @@ pub(crate) use runtime_attachment::{
 pub(crate) use scripted_publication::ScriptedPublication;
 pub(crate) use tamper::ARTIFACT_HEADER_COMMIT_ID_OFFSET;
 
+use crate::branch::RelationalBranchTransitionSequence;
+use crate::durability::branch_transition_artifact::{
+    RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactFrameRefusal,
+};
 use crate::durability::canonical_commit_artifact::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactFrameRefusal,
 };
@@ -35,10 +42,20 @@ use crate::durability::medium::{
 };
 use crate::publication::patch::data::PatchStreamPosition;
 use journal::TestDurableJournal;
+use transition_journal::TestTransitionJournal;
 
 #[derive(Debug, Default)]
 pub struct TestDurableMedium {
     journal: Mutex<TestDurableJournal>,
+    transitions: Mutex<TestTransitionJournal>,
+}
+
+/// Why the test medium could not hand back a recovery source: an artifact
+/// whose frame is damaged refuses at the medium's own read, as a home's does.
+#[derive(Debug)]
+pub(crate) enum TestRecoverySourceRefusal {
+    Commit(RelationalCanonicalCommitArtifactFrameRefusal),
+    Transition(RelationalBranchTransitionArtifactFrameRefusal),
 }
 
 impl TestDurableMedium {
@@ -72,46 +89,67 @@ impl TestDurableMedium {
         self.journal().offered.clone()
     }
 
-    /// File a captured native checkpoint under the position it covers,
-    /// replacing any earlier one, as a home's `checkpoint()` does.
+    /// File a captured native checkpoint under the coverage it records, as a
+    /// home's `checkpoint()` does.
     pub(crate) fn file_checkpoint(&self, checkpoint: RelationalNativeCheckpoint) {
         let covered = checkpoint
             .covered_position()
             .expect("a checkpoint this process captured knows its coverage");
-        self.file_checkpoint_under(covered, checkpoint);
+        let covered_transitions = checkpoint
+            .covered_branch_transitions()
+            .expect("a checkpoint this process captured knows its transition coverage");
+        self.file_checkpoint_under(covered, covered_transitions, checkpoint);
     }
 
-    /// File checkpoint bytes under an explicit position.
+    /// File checkpoint bytes under an explicit coverage.
     pub(crate) fn file_checkpoint_under(
         &self,
         covered: PatchStreamPosition,
+        covered_transitions: RelationalBranchTransitionSequence,
         checkpoint: RelationalNativeCheckpoint,
     ) {
-        self.journal().checkpoint =
-            Some(RelationalDurableCheckpointSource::new(covered, checkpoint));
+        self.journal().checkpoint = Some(RelationalDurableCheckpointSource::new(
+            covered,
+            covered_transitions,
+            checkpoint,
+        ));
     }
 
     /// What a home would hand Relational on reopen: the filed checkpoint and
-    /// every artifact after its coverage. A frame-damaged artifact refuses
-    /// here, as it would at the home's own read.
+    /// every commit and transition after its coverage. A frame-damaged
+    /// artifact refuses here, as it would at the home's own read.
     pub(crate) fn recovery_source(
         &self,
-    ) -> Result<RelationalDurableRecoverySource, RelationalCanonicalCommitArtifactFrameRefusal>
-    {
+    ) -> Result<RelationalDurableRecoverySource, TestRecoverySourceRefusal> {
         let journal = self.journal();
         let checkpoint = journal.checkpoint.clone();
         let covered = checkpoint.as_ref().map_or(
             PatchStreamPosition(0),
             RelationalDurableCheckpointSource::covered,
         );
+        let covered_transitions = checkpoint.as_ref().map_or(
+            RelationalBranchTransitionSequence(0),
+            RelationalDurableCheckpointSource::covered_transitions,
+        );
         let tail = journal
             .artifacts_after(covered)
             .map(|bytes| RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.to_vec()))
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(RelationalDurableRecoverySource::new(checkpoint, tail))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(TestRecoverySourceRefusal::Commit)?;
+        let transitions = self
+            .transition_journal()
+            .artifacts_after(covered_transitions)
+            .map(|bytes| RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.to_vec()))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(TestRecoverySourceRefusal::Transition)?;
+        Ok(RelationalDurableRecoverySource::new(
+            checkpoint,
+            tail,
+            transitions,
+        ))
     }
 
-    /// Answer the next publication as scripted instead of by position.
+    /// Answer the next commit publication as scripted instead of by position.
     pub(crate) fn script_next_publication(&self, answer: ScriptedPublication) {
         self.journal().scripted.push_back(answer);
     }
@@ -122,7 +160,13 @@ impl TestDurableMedium {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    /// Answer one publication: as scripted, otherwise by position.
+    fn transition_journal(&self) -> MutexGuard<'_, TestTransitionJournal> {
+        self.transitions
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    /// Answer one commit publication: as scripted, otherwise by position.
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
@@ -133,5 +177,13 @@ impl TestDurableMedium {
             Some(answer) => answer.answer(&mut journal, artifact),
             None => journal.publish_at_head(artifact),
         }
+    }
+
+    /// Answer one transition publication: as scripted, otherwise by sequence.
+    fn publish_transition(
+        &self,
+        artifact: &RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.transition_journal().publish(artifact)
     }
 }

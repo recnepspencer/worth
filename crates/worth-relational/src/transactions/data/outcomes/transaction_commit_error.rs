@@ -252,8 +252,8 @@ impl TransactionCommitError {
                 )
             }
             Self::DurabilityUnresolved { unresolved, .. } => format!(
-                "durable publication of position {} is unresolved: {}",
-                unresolved.position().0,
+                "durable publication of {} is unresolved: {}",
+                unresolved.subject(),
                 unresolved.detail()
             ),
         }

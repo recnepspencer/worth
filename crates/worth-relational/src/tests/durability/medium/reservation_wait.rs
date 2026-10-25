@@ -80,6 +80,13 @@ impl RelationalDurableMedium for SlowFirstPublication {
         }
         self.contents.publish(artifact)
     }
+
+    fn publish_transition(
+        &self,
+        artifact: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.contents.publish_transition(artifact)
+    }
 }
 
 /// A durable runtime with a committed main, a `feature` fork of it and an

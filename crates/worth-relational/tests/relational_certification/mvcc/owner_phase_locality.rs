@@ -40,7 +40,7 @@ fn paused_supply_chain_preparation_leaves_an_unrelated_branch_commit_unblocked()
     let (world, expected) =
         certified_supply_chain_world(request_execution, SupplyChainScale::court());
     assert_oracle_matches(request_execution, &world, &expected);
-    let court = OwnerPhaseCourtBranches::fork(&world);
+    let court = OwnerPhaseCourtBranches::fork(request_execution, &world);
     let storm_batch = lower_court_delta(
         request_execution,
         &world,
@@ -113,7 +113,7 @@ fn paused_supply_chain_publication_leaves_an_unrelated_branch_commit_unblocked()
     let (world, expected) =
         certified_supply_chain_world(request_execution, SupplyChainScale::court());
     assert_oracle_matches(request_execution, &world, &expected);
-    let court = OwnerPhaseCourtBranches::fork(&world);
+    let court = OwnerPhaseCourtBranches::fork(request_execution, &world);
     let storm_batch = lower_court_delta(
         request_execution,
         &world,
@@ -213,7 +213,7 @@ fn paused_supply_chain_settlement_leaves_an_unrelated_branch_commit_unblocked() 
     let (world, expected) =
         certified_supply_chain_world(request_execution, SupplyChainScale::court());
     assert_oracle_matches(request_execution, &world, &expected);
-    let court = OwnerPhaseCourtBranches::fork(&world);
+    let court = OwnerPhaseCourtBranches::fork(request_execution, &world);
     let storm_batch = lower_court_delta(
         request_execution,
         &world,

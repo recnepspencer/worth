@@ -17,8 +17,8 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
     let target = create_entity(execution, &runtime, "relation-target");
     let alternate_target = create_entity(execution, &runtime, "alternate-relation-target");
     let relation = create_relation(execution, &runtime, source, target, "root-edge");
-    fork_from_main(&mut runtime, "storm");
-    fork_from_main(&mut runtime, "maintenance");
+    fork_from_main(execution, &mut runtime, "storm");
+    fork_from_main(execution, &mut runtime, "maintenance");
 
     let (storm_basis, mut storm) = begin_on(&runtime, "storm");
     let (maintenance_basis, mut maintenance) = begin_on(&runtime, "maintenance");
@@ -280,12 +280,16 @@ fn bulk_created_reads_share_one_staged_intent_allocation() {
     );
 }
 
-fn fork_from_main(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.into()), source)
+        .fork_branch(execution, BranchId(branch.into()), source)
         .expect("branch fork succeeds");
 }
 

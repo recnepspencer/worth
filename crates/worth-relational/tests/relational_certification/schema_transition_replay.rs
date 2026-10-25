@@ -133,7 +133,7 @@ fn retained_v2_query_plans_materialize_from_their_exact_root_authority() {
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch = BranchId("hazard-v2".to_owned());
-    fork_supply_chain_branch_from_main(&world.runtime, branch.clone());
+    fork_supply_chain_branch_from_main(execution, &world.runtime, branch.clone());
     let transitioned = commit_supply_chain_delta(
         execution,
         &world.runtime,

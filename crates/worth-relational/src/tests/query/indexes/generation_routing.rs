@@ -30,7 +30,7 @@ fn generation_routing_respects_declared_branch_scope_without_history_inventory()
         let sibling = BranchId("same-root-sibling".into());
         runtime
             .history_authority()
-            .fork_branch_from(sibling.clone(), &created.commit.branch_id)
+            .fork_branch_from(execution, sibling.clone(), &created.commit.branch_id)
             .unwrap();
         let identity = runtime.branch_identity(&sibling).unwrap();
         let (_, basis) = runtime.observe_branch(&identity).unwrap();

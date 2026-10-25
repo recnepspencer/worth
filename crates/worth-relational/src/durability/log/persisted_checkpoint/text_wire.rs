@@ -20,7 +20,7 @@ impl<'de: 'a, 'a> serde::Deserialize<'de> for CheckpointFileWire<'a> {
                     || map.next_value::<u16>()? != super::CHECKPOINT_PROTOCOL_VERSION
                 {
                     return Err(serde::de::Error::custom(
-                        "unsupported native checkpoint format; v6 required first",
+                        "unsupported native checkpoint format; v7 required first",
                     ));
                 }
                 if map.next_key::<&'de str>()? != Some("checkpoint") {
@@ -42,6 +42,9 @@ struct CheckpointWire<'a> {
     coverage: crate::durability::data::CheckpointCoverage,
     #[serde(default)]
     branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
+    retired_branch_names: Vec<crate::history::data::BranchId>,
+    branch_transitions: Vec<crate::durability::data::DurableBranchTransitionImage>,
     #[serde(default)]
     branch_roots: Vec<crate::durability::data::DurableBranchRootImage>,
     #[serde(default)]
@@ -95,6 +98,9 @@ impl CheckpointFileWire<'_> {
             checkpoint: PersistedDurableCheckpoint {
                 coverage: input.coverage,
                 branch_cells: input.branch_cells,
+                branch_lifecycle: input.branch_lifecycle,
+                retired_branch_names: input.retired_branch_names,
+                branch_transitions: input.branch_transitions,
                 branch_roots: input.branch_roots,
                 branch_root_schema_images: input.branch_root_schema_images,
                 record_identity: input.record_identity,

@@ -16,6 +16,7 @@ fn unique_index_rebuild_uses_main_head_when_a_feature_commit_is_globally_newer()
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

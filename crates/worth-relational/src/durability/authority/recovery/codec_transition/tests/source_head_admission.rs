@@ -10,6 +10,7 @@ fn codec_only_restore_refuses_partial_branch_adoption_while_exact_restore_keeps_
         .runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             crate::history::data::BranchId("retained-source-head".into()),
             world.runtime.main_branch_identity().branch_id(),
         )

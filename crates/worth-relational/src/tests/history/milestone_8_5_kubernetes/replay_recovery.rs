@@ -152,6 +152,29 @@ pub(super) fn recover_stage_from_final_history(
         .last()
         .map(|envelope| envelope.descriptor_semantics_version)
         .unwrap_or_default();
+    // The staged chain replays only some commits, so it carries the forks of
+    // the branches those commits are on, as a partial replay chain does.
+    let covered_transitions = checkpoint.as_ref().map_or(0, |checkpoint| {
+        checkpoint.coverage.up_to_branch_transition.0
+    });
+    let chain_branches = tail_log
+        .iter()
+        .map(|envelope| envelope.branch_context.clone())
+        .collect::<BTreeSet<_>>();
+    let forks = source
+        .history
+        .positioned_branch_transitions_snapshot()
+        .into_iter()
+        .filter(|transition| transition.sequence().0 > covered_transitions)
+        .filter(|transition| {
+            matches!(
+                transition.transition(),
+                crate::branch::RelationalBranchTransition::Fork { target, .. }
+                    if chain_branches.contains(target)
+            )
+        })
+        .map(|transition| transition.as_ref().clone())
+        .collect();
     let plan = crate::durability::data::RecoveryPlan::new(
         source.config().clone(),
         checkpoint,
@@ -159,6 +182,7 @@ pub(super) fn recover_stage_from_final_history(
             .into_iter()
             .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
             .collect(),
+        crate::durability::data::RecoveryBranchTransitions::Selected(forks),
         crate::durability::data::RecoveryAuthorityContinuityCheck::verified_at(
             crate::replay::data::ReplayVerificationLayer::DigestParity,
         ),

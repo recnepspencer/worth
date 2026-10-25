@@ -19,13 +19,11 @@
 //! authoritative envelope projection. The position is inside the digested
 //! payload so a rewritten header position cannot pass readmission.
 
-mod canonical_payload_check;
 mod encode_denial;
 mod encoding;
 mod frame;
 mod frame_refusal;
 mod payload_digest;
-mod payload_emission;
 mod payload_wire;
 mod readmission;
 mod readmission_refusal;

@@ -26,6 +26,8 @@ pub(crate) struct RelationalForkOwnerBinding {
     retention: RelationalBranchRetentionBinding,
     basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
     visibility: Option<RelationalForkVisibilityBinding>,
+    /// The publication routes whose transition stream records each fork.
+    routes: Arc<super::RelationalCanonicalPublicationRoutes>,
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +44,7 @@ impl RelationalForkOwnerBinding {
         head_versions: BranchHeadVersionIndexAuthority,
         retention: RelationalBranchRetentionBinding,
         basis_metrics: Arc<RelationalBranchBasisRegistryMetrics>,
+        routes: Arc<super::RelationalCanonicalPublicationRoutes>,
     ) -> Self {
         Self {
             branches,
@@ -50,7 +53,24 @@ impl RelationalForkOwnerBinding {
             retention,
             basis_metrics,
             visibility: None,
+            routes,
         }
+    }
+
+    /// Record a fork: durable first, then live. See
+    /// `RelationalCanonicalPublicationRoutes::record_transition_with_cutover`.
+    pub(crate) fn record_transition_with_cutover<D, R, S>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        step: &S,
+        prepare: impl FnOnce() -> Result<crate::branch::RelationalBranchTransition, D>,
+        cutover: impl FnOnce(&crate::branch::PositionedBranchTransition) -> R,
+    ) -> Result<R, super::BranchTransitionRecordError<D, S::Stop>>
+    where
+        S: crate::branch::RelationalBranchTransitionDurableStep,
+    {
+        self.routes
+            .record_transition_with_cutover(execution, step, prepare, cutover)
     }
 
     pub(crate) fn with_visibility(

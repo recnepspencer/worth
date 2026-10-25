@@ -14,7 +14,7 @@ fn main() {
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("observe main fork source");
     runtime
-        .fork_branch(BranchId("feature".to_string()), fork_basis)
+        .fork_branch(execution, BranchId("feature".to_string()), fork_basis)
         .expect("create branch");
 
     let feature_commit = support::update_entity_on_branch(

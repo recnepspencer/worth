@@ -210,9 +210,15 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
         let mut successful_forks = Vec::new();
         let mut stale_count = 0;
         fork_race.wait();
-        match runtime.fork_branch(BranchId("cutover-fork-0".to_owned()), fork_source) {
+        match runtime.fork_branch(
+            execution,
+            BranchId("cutover-fork-0".to_owned()),
+            fork_source,
+        ) {
             Ok(forked) => record_complete_fork(execution, &runtime, &forked, &mut successful_forks),
-            Err(crate::branch::RelationalForkDenial::StaleSource) => stale_count += 1,
+            Err(crate::branch::RelationalBranchTransitionStop::Denied(
+                crate::branch::RelationalForkDenial::StaleSource,
+            )) => stale_count += 1,
             Err(denial) => panic!("concurrent fork has a typed cutover result: {denial:?}"),
         }
         let mut ordinal = 1;
@@ -221,11 +227,17 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
             let (_, source) = runtime
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("current source remains forkable during cutover");
-            match runtime.fork_branch(BranchId(format!("cutover-fork-{ordinal}")), source) {
+            match runtime.fork_branch(
+                execution,
+                BranchId(format!("cutover-fork-{ordinal}")),
+                source,
+            ) {
                 Ok(forked) => {
                     record_complete_fork(execution, &runtime, &forked, &mut successful_forks)
                 }
-                Err(crate::branch::RelationalForkDenial::StaleSource) => stale_count += 1,
+                Err(crate::branch::RelationalBranchTransitionStop::Denied(
+                    crate::branch::RelationalForkDenial::StaleSource,
+                )) => stale_count += 1,
                 Err(denial) => panic!("concurrent fork has a typed cutover result: {denial:?}"),
             }
             ordinal += 1;
@@ -244,7 +256,11 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
             .observe_fork_source(&BranchId("main".to_owned()))
             .expect("new source remains forkable after cutover");
         let final_fork = runtime
-            .fork_branch(BranchId(format!("cutover-fork-{ordinal}")), final_source)
+            .fork_branch(
+                execution,
+                BranchId(format!("cutover-fork-{ordinal}")),
+                final_source,
+            )
             .expect("post-cutover fork consumes the complete new root");
         record_complete_fork(execution, &runtime, &final_fork, &mut successful_forks);
         (runtime, successful_forks, stale_count)

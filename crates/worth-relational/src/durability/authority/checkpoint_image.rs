@@ -13,6 +13,10 @@ impl CapturedCheckpointBasis {
         let CapturedCheckpointBasis {
             latest_commit,
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
+            covered_transitions,
+            branch_transitions,
             branch_roots,
             record_identity,
             envelopes,
@@ -68,8 +72,12 @@ impl CapturedCheckpointBasis {
             coverage: CheckpointCoverage {
                 up_to_commit: latest_commit.clone(),
                 up_to_version: latest_commit.map(|commit| commit.version_id),
+                up_to_branch_transition: covered_transitions,
             },
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
+            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,

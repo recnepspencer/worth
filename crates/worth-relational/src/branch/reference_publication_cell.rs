@@ -123,11 +123,20 @@ impl RelationalBranchPublicationStateGuard<'_> {
         self.state.lifecycle_posture()
     }
 
-    pub(crate) fn archive(
-        &mut self,
+    /// The observation archiving this branch would install.
+    pub(crate) fn archived_observation(
+        &self,
     ) -> Result<super::RelationalBranchReferenceObservation, super::RelationalBranchCellDenial>
     {
-        self.state.archive()
+        self.state.archived_observation()
+    }
+
+    /// Install a prepared archive. Cannot fail.
+    pub(crate) fn install_archive(
+        &mut self,
+        observation: super::RelationalBranchReferenceObservation,
+    ) {
+        self.state.install_archive(observation);
     }
 
     pub(crate) fn mark_deleting(&mut self) {

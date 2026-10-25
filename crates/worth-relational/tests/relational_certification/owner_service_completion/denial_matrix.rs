@@ -2,11 +2,15 @@ use super::world::{commit_direct, committed_fork, empty_runtime};
 use worth_relational::facade::branch::{
     RelationalBranchArchiveDenial, RelationalBranchBasisDenial, RelationalBranchDeleteDenial,
     RelationalBranchDeletionOutcome, RelationalBranchRetentionTerminalOutcome,
+    RelationalBranchTransitionStop,
 };
 use worth_relational::facade::mvcc::RelationalTransactionIntent;
 
 #[test]
 fn foreign_owner_values_keep_exact_canonical_denials() {
+    let host_request =
+        crate::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let first = empty_runtime();
     let second = empty_runtime();
     let first_services = first.owner_component_services();
@@ -57,12 +61,20 @@ fn foreign_owner_values_keep_exact_canonical_denials() {
         }
     );
     assert!(matches!(
-        services.lifecycle_port().archive_branch(&first_identity),
-        Err(RelationalBranchArchiveDenial::ForeignRuntime)
+        services
+            .lifecycle_port()
+            .archive_branch(execution, &first_identity),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalBranchArchiveDenial::ForeignRuntime
+        ))
     ));
     assert!(matches!(
-        services.lifecycle_port().delete_branch(&first_identity),
-        Err(RelationalBranchDeleteDenial::ForeignRuntime)
+        services
+            .lifecycle_port()
+            .delete_branch(execution, &first_identity),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalBranchDeleteDenial::ForeignRuntime
+        ))
     ));
 }
 
@@ -130,7 +142,9 @@ fn archived_retained_basis_survives_until_explicit_release() {
         Err(RelationalBranchBasisDenial::WrongImmutableTarget)
     ));
     drop(wrong_basis);
-    runtime.archive_branch(&archived_identity).unwrap();
+    runtime
+        .archive_branch(execution, &archived_identity)
+        .unwrap();
     assert!(matches!(
         services.basis_port().observe_branch(&archived_identity),
         Err(RelationalBranchBasisDenial::ArchivedBranch(_))
@@ -179,7 +193,7 @@ fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases(
 
     let pending = services
         .lifecycle_port()
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .expect("deletion enters its typed pending posture");
     assert!(matches!(
         pending,
@@ -210,7 +224,7 @@ fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases(
     assert!(matches!(
         services
             .lifecycle_port()
-            .delete_branch(&identity)
+            .delete_branch(execution, &identity)
             .expect("released operation permits exact deletion"),
         RelationalBranchDeletionOutcome::Deleted(ref deleted) if deleted.identity() == &identity
     ));
@@ -220,8 +234,10 @@ fn deleting_branch_reports_pending_then_deletes_after_active_operation_releases(
             if branch == identity.branch_id()
     ));
     assert!(matches!(
-        services.lifecycle_port().delete_branch(&identity),
-        Err(RelationalBranchDeleteDenial::UnknownBranch(ref branch))
+        services.lifecycle_port().delete_branch(execution, &identity),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalBranchDeleteDenial::UnknownBranch(ref branch)
+        ))
             if branch == identity.branch_id()
     ));
 }

@@ -231,7 +231,9 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
     let (_, fork_source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .unwrap();
-    let forked = runtime.fork_branch(fork.clone(), fork_source).unwrap();
+    let forked = runtime
+        .fork_branch(execution, fork.clone(), fork_source)
+        .unwrap();
     let (_, fork_basis) = runtime.observe_branch(forked.target_identity()).unwrap();
     let mut fork_request = request;
     fork_request.branch_id = fork;

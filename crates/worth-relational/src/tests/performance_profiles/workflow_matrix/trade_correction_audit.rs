@@ -8,7 +8,7 @@ pub(super) fn certify_fintech_trade_correction_audit_round_trip(
         capture_perf_samples(suite, "fintech_trade_correction_audit_round_trip", || {
             let mut world = setup_trade_correction_perf_world(execution);
             let baseline_observability = perf_capture_baseline_observability(&world);
-            let analysis = perf_open_analysis_branch(&mut world);
+            let analysis = perf_open_analysis_branch(execution, &mut world);
 
             world.runtime.performance_access().reset_counters();
             let correction_started_at = Instant::now();

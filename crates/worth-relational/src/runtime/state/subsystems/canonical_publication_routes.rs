@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
+use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
 use dashmap::DashMap;
 
@@ -7,6 +7,8 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
+#[path = "canonical_publication_routes/branch_transition_stream.rs"]
+mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
@@ -16,6 +18,8 @@ mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
 
+pub(crate) use branch_transition_stream::BranchTransitionRecordError;
+use branch_transition_stream::BranchTransitionStream;
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
@@ -29,6 +33,7 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     by_commit: DashMap<CommitId, Arc<CanonicalPublicationRoute>>,
     by_version: DashMap<VersionId, Arc<CanonicalPublicationRoute>>,
     performed_stream: PerformedPublicationStream,
+    branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
 }
 
@@ -83,6 +88,7 @@ impl Default for RelationalCanonicalPublicationRoutes {
             by_commit: DashMap::new(),
             by_version: DashMap::new(),
             performed_stream: PerformedPublicationStream::default(),
+            branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
         }
     }
@@ -230,18 +236,6 @@ impl RelationalCanonicalPublicationRoutes {
         self.by_commit
             .get(&commit_id)
             .is_some_and(|route| !route.settled.load(Ordering::Acquire))
-    }
-
-    pub(crate) fn enter_fork(
-        &self,
-    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
-        match self.lifecycle.try_write() {
-            Ok(guard) => Ok(guard),
-            Err(TryLockError::WouldBlock) => {
-                Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
-            }
-            Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
-        }
     }
 
     pub(crate) fn performed_snapshot(&self) -> Vec<Arc<PositionedCanonicalCommit>> {

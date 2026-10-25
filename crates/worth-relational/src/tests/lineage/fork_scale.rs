@@ -122,7 +122,11 @@ fn retained_scale_fixture(
     let retained_branch = BranchId("retained-feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(retained_branch.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(
+            execution,
+            retained_branch.clone(),
+            &BranchId("main".to_owned()),
+        )
         .expect("retained feature fork");
     let retained_identity = runtime
         .branch_identity(&retained_branch)
@@ -161,7 +165,7 @@ fn assert_owner_history_scale(
         fixture
             .runtime
             .history_authority()
-            .fork_branch_from(branch.clone(), &BranchId("main".to_owned()))
+            .fork_branch_from(execution, branch.clone(), &BranchId("main".to_owned()))
             .expect("owner-created scale branch");
         create_entity_on_branch(execution, &fixture.runtime, branch, ordinal);
     }

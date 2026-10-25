@@ -52,7 +52,7 @@ fn global_uniqueness_uses_selected_branch_proposal_after_sibling_diverges() {
         .expect("main remains forkable");
     world
         .runtime
-        .fork_branch(storm.clone(), source)
+        .fork_branch(execution, storm.clone(), source)
         .expect("storm fork shares the baseline root");
 
     let oracle_genesis = OracleBranch::genesis(OracleState::from_definition(

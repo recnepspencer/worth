@@ -1,9 +1,10 @@
 //! The recovery plan for a home whose history lives in a durable medium.
 //!
-//! The medium's owner selects the checkpoint and the journal tail; this file
-//! readmits both before either becomes authority. Every disagreement refuses:
-//! a damaged artifact, a gap, or a checkpoint filed under the wrong position
-//! never shortens the recovered history.
+//! The medium's owner selects the checkpoint, the journal tail and the branch
+//! transition tail; this file readmits all three before any becomes
+//! authority. Every disagreement refuses: a damaged artifact, a gap, or a
+//! checkpoint filed under the wrong coverage never shortens the recovered
+//! history.
 
 use crate::capabilities::RuntimeConfigSource;
 use crate::durability::access::{
@@ -29,15 +30,29 @@ pub(super) fn medium_recovery_plan(
     source: RelationalDurableRecoverySource,
     verification_mode: RecoveryVerificationMode,
 ) -> Result<RecoveryPlan, RelationalRecoveryStop> {
-    let (checkpoint_source, tail_artifacts) = source.into_parts();
-    let checkpoint = checkpoint_source
+    let parts = source.into_parts();
+    let checkpoint = parts
+        .checkpoint
         .map(|source| readmit_covered_checkpoint(execution, source))
         .transpose()?;
     let covered = checkpoint
         .as_ref()
         .map_or(PatchStreamPosition(0), |(_, covered)| *covered);
     let checkpoint = checkpoint.map(|(checkpoint, _)| checkpoint);
-    let tail = readmit_contiguous_tail(execution, covered, &tail_artifacts)?;
+    let tail = readmit_contiguous_tail(execution, covered, &parts.tail)?;
+    let bounds = super::medium_transition_tail::TransitionTailBounds {
+        covered_transitions: checkpoint.as_ref().map_or(
+            crate::branch::RelationalBranchTransitionSequence(0),
+            |checkpoint| checkpoint.coverage.up_to_branch_transition,
+        ),
+        covered_position: covered,
+        commit_head: tail.last().map_or(covered, |commit| commit.position()),
+    };
+    let transitions = super::medium_transition_tail::readmit_transition_tail(
+        execution,
+        &bounds,
+        &parts.transitions,
+    )?;
     let checkpoint_envelopes = checkpoint
         .as_ref()
         .map(|checkpoint| checkpoint.envelopes.as_slice())
@@ -60,6 +75,7 @@ pub(super) fn medium_recovery_plan(
         runtime.runtime_config().clone(),
         checkpoint,
         tail,
+        crate::durability::data::RecoveryBranchTransitions::Contiguous(transitions),
         continuity,
         verification_mode,
         descriptor_semantics_version,
@@ -68,13 +84,14 @@ pub(super) fn medium_recovery_plan(
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
 }
 
-/// Decode the checkpoint and require its own coverage to be the position its
-/// owner filed it under.
+/// Decode the checkpoint and require its own coverage to be the position and
+/// transition sequence its owner filed it under.
 fn readmit_covered_checkpoint(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: RelationalDurableCheckpointSource,
 ) -> Result<(DurableCheckpoint, PatchStreamPosition), RelationalRecoveryStop> {
     let filed_under = source.covered();
+    let filed_transitions = source.covered_transitions();
     let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
         execution,
         source.into_checkpoint().bytes(),
@@ -87,6 +104,16 @@ fn readmit_covered_checkpoint(
             format!(
                 "checkpoint covers position {} but was filed under position {}",
                 covered.0, filed_under.0
+            ),
+        )
+        .into());
+    }
+    if checkpoint.coverage.up_to_branch_transition != filed_transitions {
+        return Err(DurabilityError::new(
+            RecoveryFailureClass::CorruptCheckpoint,
+            format!(
+                "checkpoint covers branch transition {} but was filed under transition {}",
+                checkpoint.coverage.up_to_branch_transition.0, filed_transitions.0
             ),
         )
         .into());

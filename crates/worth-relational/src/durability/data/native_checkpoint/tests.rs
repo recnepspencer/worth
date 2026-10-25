@@ -95,6 +95,7 @@ fn captured_native_clones_preserve_sections_and_share_payload_custody() {
         bytes,
         sections,
         crate::publication::patch::data::PatchStreamPosition(0),
+        crate::branch::RelationalBranchTransitionSequence(0),
     );
     let cloned = checkpoint.clone();
     assert_eq!(checkpoint.bytes().as_ptr(), cloned.bytes().as_ptr());

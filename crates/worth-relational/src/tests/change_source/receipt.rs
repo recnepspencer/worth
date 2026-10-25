@@ -99,7 +99,7 @@ fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, feature.clone(), &BranchId("main".to_owned()))
         .unwrap();
     create_entity_outcome_on_branch(execution, &runtime, "feature-head", feature.clone());
 

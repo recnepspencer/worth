@@ -34,7 +34,11 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
     create_entity_outcome(execution, &runtime, "merge-main");
     runtime
         .history_authority()
-        .fork_branch_from(BranchId("feature".to_owned()), &BranchId("main".to_owned()))
+        .fork_branch_from(
+            execution,
+            BranchId("feature".to_owned()),
+            &BranchId("main".to_owned()),
+        )
         .expect("feature branch forks");
     create_entity_outcome_on_branch(
         execution,

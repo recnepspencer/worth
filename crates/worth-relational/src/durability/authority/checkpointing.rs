@@ -17,13 +17,17 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
         let coverage = crate::durability::access::checkpoint_coverage(&checkpoint);
+        let transitions = checkpoint.coverage.up_to_branch_transition;
         let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &checkpoint,
             policy,
         )?;
         Ok(
             crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
-                bytes, sections, coverage,
+                bytes,
+                sections,
+                coverage,
+                transitions,
             ),
         )
     }

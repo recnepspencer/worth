@@ -11,6 +11,8 @@
 //!   for its own commit; deferring would turn ordinary concurrency into
 //!   caller-visible refusals. Waiters are served first come, first served,
 //!   within the caller's execution deadline, and observe cancellation.
+//! - Branch transitions wait in either runtime (D8): a fork, archive or
+//!   delete is not deferred because a commit is linking its node.
 //!
 //! Lock order: a publisher takes its own branch's critical section and
 //! publication state, then this reservation. The holder never takes another
@@ -81,31 +83,37 @@ impl PatchPositionReservation {
         &self,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
     ) -> Result<PatchPositionReservationGuard<'_>, CanonicalPublicationRecordError> {
+        match admission {
+            PatchPositionReservationAdmission::DeferWhenHeld => {
+                self.contacts.fetch_add(1, Ordering::Relaxed);
+                let mut queue = self.queue();
+                if !queue.held && queue.waiting.is_empty() {
+                    queue.held = true;
+                    return Ok(PatchPositionReservationGuard { reservation: self });
+                }
+                self.deferrals.fetch_add(1, Ordering::Relaxed);
+                Err(CanonicalPublicationRecordError::ReservationContended)
+            }
+            PatchPositionReservationAdmission::WaitWithin(execution) => self
+                .wait_within(execution)
+                .map_err(CanonicalPublicationRecordError::ReservationWaitStopped),
+        }
+    }
+
+    /// Take the reservation in arrival order, waiting behind the holder and
+    /// every earlier waiter within `execution`'s cancellation and deadline. A
+    /// stopped request leaves the queue before any effect: it was assigned
+    /// nothing. Branch transitions always take the reservation this way.
+    pub(super) fn wait_within(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PatchPositionReservationGuard<'_>, worth_execution::WorkCeilingDenial> {
         self.contacts.fetch_add(1, Ordering::Relaxed);
         let mut queue = self.queue();
         if !queue.held && queue.waiting.is_empty() {
             queue.held = true;
             return Ok(PatchPositionReservationGuard { reservation: self });
         }
-        match admission {
-            PatchPositionReservationAdmission::DeferWhenHeld => {
-                self.deferrals.fetch_add(1, Ordering::Relaxed);
-                Err(CanonicalPublicationRecordError::ReservationContended)
-            }
-            PatchPositionReservationAdmission::WaitWithin(execution) => {
-                self.wait_in_turn(queue, execution)
-            }
-        }
-    }
-
-    /// Queue behind the holder and every earlier waiter, and take the
-    /// reservation in turn. A stopped request leaves the queue before any
-    /// effect: it was assigned nothing.
-    fn wait_in_turn<'reservation>(
-        &'reservation self,
-        mut queue: MutexGuard<'_, ReservationQueue>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PatchPositionReservationGuard<'reservation>, CanonicalPublicationRecordError> {
         let ticket = queue.next_ticket;
         queue.next_ticket = queue.next_ticket.wrapping_add(1);
         queue.waiting.push_back(ticket);
@@ -119,9 +127,7 @@ impl PatchPositionReservation {
                 queue.waiting.retain(|waiting| *waiting != ticket);
                 drop(queue);
                 self.released.notify_all();
-                return Err(CanonicalPublicationRecordError::ReservationWaitStopped(
-                    stop,
-                ));
+                return Err(stop);
             }
             queue = self
                 .released

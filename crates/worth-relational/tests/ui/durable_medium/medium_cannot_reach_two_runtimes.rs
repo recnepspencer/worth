@@ -1,5 +1,6 @@
 use worth_relational::facade::durability::{
-    RelationalCanonicalCommitArtifact, RelationalDurableMedium, RelationalDurablePublication,
+    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
+    RelationalDurablePublication,
 };
 use worth_relational::facade::runtime::RelationalRuntimeApi;
 
@@ -8,6 +9,13 @@ struct Journal;
 
 impl RelationalDurableMedium for Journal {
     fn publish(&self, _: &RelationalCanonicalCommitArtifact) -> RelationalDurablePublication {
+        RelationalDurablePublication::Committed
+    }
+
+    fn publish_transition(
+        &self,
+        _: &RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
         RelationalDurablePublication::Committed
     }
 }

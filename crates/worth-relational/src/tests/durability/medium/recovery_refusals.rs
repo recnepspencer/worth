@@ -134,7 +134,14 @@ fn a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt() {
         .unwrap();
     assert_eq!(native.covered_position(), Some(PatchStreamPosition(2)));
 
-    attached_test_medium(&runtime).file_checkpoint_under(PatchStreamPosition(1), native);
+    let covered_transitions = native
+        .covered_branch_transitions()
+        .expect("a captured checkpoint knows its transition coverage");
+    attached_test_medium(&runtime).file_checkpoint_under(
+        PatchStreamPosition(1),
+        covered_transitions,
+        native,
+    );
 
     assert_eq!(
         refusal_class(execution, &runtime),

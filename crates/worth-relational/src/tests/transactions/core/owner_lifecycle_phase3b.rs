@@ -98,8 +98,8 @@ fn phase3b_settlement_admitted_after_owner_drop_is_denied() {
 
     let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "phase3b-close-window-anchor");
-    fork_from_main(&runtime, "phase3b-paused");
-    fork_from_main(&runtime, "phase3b-late");
+    fork_from_main(execution, &runtime, "phase3b-paused");
+    fork_from_main(execution, &runtime, "phase3b-late");
     let (reached, release, control) = settlement_pause();
     let paused = perform_write_with_control(
         execution,
@@ -268,12 +268,16 @@ fn wait_until_admission_closes(observer: &crate::runtime::RelationalRuntimeOwner
     );
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, target: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    target: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(target.to_owned()), source)
+        .fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("test branch fork succeeds");
 }
 

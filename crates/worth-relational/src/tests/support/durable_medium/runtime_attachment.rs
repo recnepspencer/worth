@@ -30,6 +30,13 @@ impl RelationalDurableMedium for TestDurableMediumAttachment {
         self.contents.publish(artifact)
     }
 
+    fn publish_transition(
+        &self,
+        artifact: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.contents.publish_transition(artifact)
+    }
+
     fn in_crate_test_medium(&self) -> Option<Arc<TestDurableMedium>> {
         Some(Arc::clone(&self.contents))
     }

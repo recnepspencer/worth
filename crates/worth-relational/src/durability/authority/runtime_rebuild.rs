@@ -9,6 +9,7 @@ mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
 mod recovered_schema_basis;
 mod root_inventory;
+mod transition_replay;
 
 use std::collections::BTreeSet;
 use std::sync::Arc;
@@ -98,8 +99,30 @@ pub(super) fn rebuild_runtime_from_plan(
         .collect::<BTreeSet<_>>();
     let mut recovered_roots = RecoveredRootInventory::capture(&restored)?;
 
+    // Branch transitions merge into the commit tail by the position each
+    // follows: a transition performed after commit p and before commit p + 1
+    // is applied before commit p + 1 replays (D8).
+    let positioned_exactly = plan.branch_transitions.replays_positions_exactly();
+    let mut pending_transitions = plan
+        .branch_transitions
+        .transitions()
+        .iter()
+        .cloned()
+        .collect::<std::collections::VecDeque<_>>();
     let mut finalized_tail = Vec::with_capacity(pending_tail.len());
     for pending in pending_tail {
+        for transition in crate::durability::data::RecoveryBranchTransitions::take_before(
+            &mut pending_transitions,
+            pending.position(),
+        ) {
+            transition_replay::replay_branch_transition(
+                execution,
+                &mut restored,
+                &transition,
+                positioned_exactly,
+                &mut recovered_roots,
+            )?;
+        }
         let commit_id = pending.envelope().commit.commit_id;
         let restore_authoritative_envelope = plan.should_restore_authoritative_envelope(commit_id);
         let positioned = replay_readmitted_envelope(
@@ -111,6 +134,15 @@ pub(super) fn rebuild_runtime_from_plan(
             &mut recovered_roots,
         )?;
         finalized_tail.push(positioned);
+    }
+    for transition in pending_transitions {
+        transition_replay::replay_branch_transition(
+            execution,
+            &mut restored,
+            &transition,
+            positioned_exactly,
+            &mut recovered_roots,
+        )?;
     }
     restored
         .record_identity

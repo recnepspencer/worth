@@ -105,6 +105,7 @@ fn execution_authoring_and_explicit_normalization_lower_identically() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

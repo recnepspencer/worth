@@ -60,7 +60,7 @@ impl serde::Serialize for LayoutFile<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let mut file = serializer.serialize_struct("PersistedDurableCheckpointFile", 2)?;
-        file.serialize_field("checkpoint_protocol_version", &6u16)?;
+        file.serialize_field("checkpoint_protocol_version", &7u16)?;
         file.serialize_field("checkpoint", &LayoutCheckpoint(self))?;
         file.end()
     }
@@ -74,6 +74,9 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
         let PersistedDurableCheckpoint {
             coverage,
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
+            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -95,7 +98,7 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
         } = self.0.checkpoint;
         let mut fields = serializer.serialize_struct(
             "PersistedDurableCheckpoint",
-            19 + usize::from(self.0.version.is_some()),
+            22 + usize::from(self.0.version.is_some()),
         )?;
         macro_rules! payload_fields {
             ($($name:ident),* $(,)?) => {
@@ -105,6 +108,9 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
         payload_fields!(
             coverage,
             branch_cells,
+            branch_lifecycle,
+            retired_branch_names,
+            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -154,7 +160,7 @@ fn borrowed_native_checkpoint_refuses_v4_before_reading_its_body() {
     };
     assert_eq!(denied.class, RecoveryFailureClass::CorruptCheckpoint);
     assert!(
-        denied.detail.contains("v6 required first"),
+        denied.detail.contains("v7 required first"),
         "{}",
         denied.detail
     );

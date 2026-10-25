@@ -22,7 +22,10 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
-    world.runtime.fork_branch(branch.clone(), source).unwrap();
+    world
+        .runtime
+        .fork_branch(request_execution, branch.clone(), source)
+        .unwrap();
     let identity = world.runtime.branch_identity(&branch).unwrap();
     let basis = world.runtime.admit_branch_basis(&identity).unwrap();
     let before = world.runtime.branch_reference_state(&branch).unwrap();

@@ -9,7 +9,11 @@ fn cross_branch_immutable_target_substitution_denies_distinctly() {
     crate::tests::support::create_entity_outcome(execution, &runtime, "phase6-main-basis");
     runtime
         .history_authority()
-        .fork_branch_from(BranchId("feature".to_owned()), &BranchId("main".to_owned()))
+        .fork_branch_from(
+            execution,
+            BranchId("feature".to_owned()),
+            &BranchId("main".to_owned()),
+        )
         .unwrap();
     crate::tests::support::create_entity_outcome_on_branch(
         execution,

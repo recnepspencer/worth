@@ -31,7 +31,7 @@ fn fork_resolves_a_port_performed_head_without_catalog_authority() {
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("performed head issues a fork source");
     let forked = runtime
-        .fork_branch(BranchId("after-port".to_owned()), fork_source)
+        .fork_branch(execution, BranchId("after-port".to_owned()), fork_source)
         .expect("fork uses the exact root-owned canonical artifact");
     assert_eq!(forked.shared_commit_id(), Some(commit_id));
     let fork_basis = runtime

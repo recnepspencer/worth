@@ -64,6 +64,12 @@ pub mod diagnostics {
 }
 
 pub mod durability {
+    pub use crate::durability::branch_transition_artifact::{
+        RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,
+        RelationalBranchTransitionArtifactEncodeDenial,
+        RelationalBranchTransitionArtifactFrameRefusal, RelationalBranchTransitionArtifactRefusal,
+        RelationalBranchTransitionArtifacts,
+    };
     pub use crate::durability::canonical_commit_artifact::{
         RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
         RelationalCanonicalCommitArtifactEncodeDenial,
@@ -79,9 +85,9 @@ pub mod durability {
         RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
     };
     pub use crate::durability::medium::{
-        RelationalDurabilityUnresolved, RelationalDurableCheckpointSource, RelationalDurableMedium,
-        RelationalDurablePublication, RelationalDurablePublicationRefusal,
-        RelationalDurableRecoverySource,
+        RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+        RelationalDurableCheckpointSource, RelationalDurableMedium, RelationalDurablePublication,
+        RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
     };
     pub use crate::durability::migration::ReadmittedCanonicalCommit;
     pub use crate::durability::{

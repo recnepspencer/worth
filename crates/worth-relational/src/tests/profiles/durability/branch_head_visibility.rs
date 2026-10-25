@@ -22,6 +22,7 @@ fn branch_head_visibility_updates_incrementally_under_branch_churn() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("analysis".to_string()),
             &BranchId("main".to_string()),
         )
@@ -62,6 +63,7 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("analysis".to_string()),
             &BranchId("main".to_string()),
         )

@@ -5,7 +5,7 @@ use crate::runtime::RuntimeSubsystem;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
-use super::{RelationalBranchBasisRegistryMetrics, RelationalCanonicalPublicationRoutes};
+use super::RelationalBranchBasisRegistryMetrics;
 
 impl RuntimeSubsystem for HistorySubsystem {
     type Config = BranchId;
@@ -28,8 +28,10 @@ impl HistorySubsystem {
             cell.bind_basis_registry_metrics(Arc::clone(&basis_registry_metrics));
         }
         branch_cells.restore_all(cells);
-        let canonical_publication_routes =
-            Arc::new(RelationalCanonicalPublicationRoutes::default());
+        let canonical_publication_routes = Arc::new(
+            self.canonical_publication_routes
+                .detached_branch_transitions(),
+        );
         for positioned in self.canonical_publication_routes.performed_snapshot() {
             canonical_publication_routes
                 .install_recovered(positioned)

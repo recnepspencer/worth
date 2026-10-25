@@ -67,6 +67,7 @@ fn merge_commit_inspection_stays_envelope_projected() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

@@ -1,11 +1,11 @@
 use worth_execution::ExecutionRequest;
 
-use super::canonical_payload_check::is_canonical_payload;
 use super::frame::CanonicalCommitArtifactHeader;
 use super::payload_wire::{ArtifactPayloadRef, ArtifactPayloadWire};
 use super::{
     RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal as Refusal,
 };
+use crate::durability::artifact_canonical_payload::is_canonical_payload;
 use crate::durability::migration::ReadmittedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {

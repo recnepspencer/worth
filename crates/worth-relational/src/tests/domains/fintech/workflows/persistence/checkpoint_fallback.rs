@@ -8,7 +8,7 @@ fn fintech_recovery_refuses_a_damaged_checkpoint_instead_of_losing_truth() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world = setup_world_for(execution, FintechScenario::PersistedSmokeBook);
-    let analysis = open_analysis_branch(&mut world);
+    let analysis = open_analysis_branch(execution, &mut world);
     let _shock = shock_market_on_branch(execution, &mut world, analysis.clone());
     checkpoint_world(execution, &mut world).unwrap();
     let _correction = correct_seeded_trade_candidate(execution, &mut world, analysis);

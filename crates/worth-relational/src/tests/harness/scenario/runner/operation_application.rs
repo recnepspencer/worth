@@ -122,6 +122,7 @@ pub(super) fn apply_operation(
             from_branch_slot,
         } => {
             create_branch(
+                execution,
                 runtime,
                 branches,
                 branch_name,
@@ -316,6 +317,7 @@ fn delete_entity(
 }
 
 fn create_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branches: &mut Vec<BranchId>,
     branch_name: &str,
@@ -334,7 +336,7 @@ fn create_branch(
     let branch = BranchId(branch_name);
     if runtime
         .history_authority()
-        .fork_branch_from(branch.clone(), &from_branch)
+        .fork_branch_from(execution, branch.clone(), &from_branch)
         .is_ok()
     {
         branches.push(branch);
