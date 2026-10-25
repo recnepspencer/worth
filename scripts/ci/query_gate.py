@@ -234,6 +234,15 @@ COMMAND_SUITES = {
     ],
 }
 
+# Environment one command adds over the gate's own.
+COMMAND_ENV = {
+    # sccache 0.18.0 inserts `/WX-` after cc 1.9.0's `-Tp <file>`, so cl reads
+    # it as the source and libmimalloc-sys (via apps/platform-pulse) fails to
+    # build. The empty wrapper also overrides `rustc-wrapper = sccache` in
+    # ~/.cargo/config.toml; every other command keeps sccache.
+    "check-ui-workspace": {"RUSTC_WRAPPER": ""},
+}
+
 ORDER = ["fmt", "lint-lower", "lint-query", "lint-fixture", "lint-bank",
          "relational", "signal", "execution", "query-execution", "query-rest",
          "fixture", "ui", "bank", "doc-lower", "doc", "wasm", "boundary", "extra"]
@@ -250,7 +259,8 @@ class Gate:
         started = time.time()
         with open(log, "w", encoding="utf-8", errors="replace") as sink:
             code = subprocess.run(
-                argv, cwd=ROOT, env=self.env, stdout=sink, stderr=subprocess.STDOUT
+                argv, cwd=ROOT, env=dict(self.env, **COMMAND_ENV.get(label, {})),
+                stdout=sink, stderr=subprocess.STDOUT,
             ).returncode
         text = log.read_text(encoding="utf-8", errors="replace").splitlines()
         if code != 0:
