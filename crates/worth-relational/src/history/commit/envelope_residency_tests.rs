@@ -95,19 +95,18 @@ fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
     let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None);
     for _ in 0..2 {
         let stop = cell.demand(&execution, 1 << 30).unwrap_err();
-        let crate::durability::data::RelationalRecoveryStop::Durability(error) = stop else {
+        let crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
+            failure,
+        ) = stop
+        else {
             panic!("typed storage refusal")
         };
         assert_eq!(
-            error.class,
-            crate::durability::data::RecoveryFailureClass::ColdStorageUnavailable
-        );
-        assert_eq!(
-            error.storage_unavailable,
-            Some(crate::storage::data::RelationalStorageUnavailable {
+            failure,
+            crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Envelope(position),
                 cause: Cause::Damaged,
-            })
+            }
         );
     }
     assert_eq!(source.reads.load(Ordering::Relaxed), 1);

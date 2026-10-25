@@ -71,3 +71,9 @@ retention and inspection, envelope catalog retirement and the remaining history
 readers, lineage page serving, and the complete symbol/unique-field audit still
 require implementation and their specified fault evidence. The visibility
 slice's checks do not certify those unfinished boundaries.
+
+The next history cutover makes bounded canonical patch reads take the caller's
+request and demand the selected indexed envelope. Journal refusal travels as
+the native execution storage failure through inbound completion reconstruction
+and the public index-repair outcome. This does not yet retire admitted envelopes
+or replace the remaining infallible history surfaces.

@@ -206,8 +206,10 @@ impl RelationalCommitArtifact {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<&Arc<CanonicalCommitEnvelope>, crate::durability::data::RelationalRecoveryStop>
-    {
+    ) -> Result<
+        &Arc<CanonicalCommitEnvelope>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
         self.envelope.demand(execution, limit)
     }
 

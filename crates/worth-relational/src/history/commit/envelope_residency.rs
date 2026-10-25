@@ -10,6 +10,7 @@ use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
 };
+use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 
 #[derive(Debug)]
 pub(crate) struct RelationalCommitEnvelopeResidency {
@@ -54,8 +55,8 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<&Arc<CanonicalCommitEnvelope>, RelationalRecoveryStop> {
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+    ) -> Result<&Arc<CanonicalCommitEnvelope>, Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
         if let Some(envelope) = self.get() {
             return Ok(envelope);
         }
@@ -67,7 +68,23 @@ impl RelationalCommitEnvelopeResidency {
             return Err((*failure).into());
         }
         let (entry, source) = self.cold.as_ref().expect("unloaded cell has a source");
-        let result = self.readmit(entry, source.as_ref(), execution, limit);
+        let result = self
+            .readmit(entry, source.as_ref(), execution, limit)
+            .map_err(|stop| match stop {
+                RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
+                RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Envelope(entry.position),
+                    cause: Cause::MemoryExhausted,
+                }
+                .into(),
+                RelationalRecoveryStop::Durability(error) => error
+                    .storage_unavailable
+                    .unwrap_or(RelationalStorageUnavailable {
+                        subject: RelationalStorageSubject::Envelope(entry.position),
+                        cause: Cause::Damaged,
+                    })
+                    .into(),
+            });
         match result {
             Ok(envelope) => {
                 self.resident
@@ -76,9 +93,7 @@ impl RelationalCommitEnvelopeResidency {
                 Ok(self.resident.get().expect("admitted envelope"))
             }
             Err(stop) => {
-                if let RelationalRecoveryStop::Durability(error) = &stop
-                    && let Some(failure) = error.storage_unavailable.as_ref()
-                {
+                if let Failure::StorageUnavailable(failure) = &stop {
                     *damage = Some(*failure);
                 }
                 Err(stop)

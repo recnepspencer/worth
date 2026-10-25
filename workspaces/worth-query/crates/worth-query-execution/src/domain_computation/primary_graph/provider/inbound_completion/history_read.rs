@@ -36,13 +36,20 @@ impl WorthQueryPrimaryGraphProvider {
             }
             let patches = runtime
                 .history()
-                .bounded_canonical_commit_patches(identity.commit_id(), maximum_changed_records)
+                .bounded_canonical_commit_patches(
+                    execution,
+                    identity.commit_id(),
+                    maximum_changed_records,
+                )
                 .map_err(|denial| match denial {
                     BoundedCanonicalCommitPatchDenial::CommitUnavailable => {
                         Denial::CommitUnavailable
                     }
                     BoundedCanonicalCommitPatchDenial::WorkExhausted { .. } => {
                         Denial::ReconstructionWorkExhausted
+                    }
+                    BoundedCanonicalCommitPatchDenial::ReadRequest(cause) => {
+                        Denial::ReadRequest(cause)
                     }
                 })?;
             let mut found = None;

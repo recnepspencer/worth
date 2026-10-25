@@ -13,6 +13,7 @@ use crate::domain_computation::application_aftermath::ExternalEffectCorrelationI
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryInboundCompletionReadDenial {
+    ReadRequest(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     AmbiguousCorrelation,
     Malformed,
     CommitUnavailable,

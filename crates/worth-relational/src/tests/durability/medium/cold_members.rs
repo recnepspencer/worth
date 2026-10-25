@@ -1,4 +1,6 @@
 //! Faults cross the production manifest recovery and transaction read doors.
+#[path = "cold_envelopes.rs"]
+mod cold_envelopes;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
 use crate::durability::data::{
@@ -24,6 +26,8 @@ struct MemberSource {
     commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     damaged: AtomicBool,
     reads: AtomicUsize,
+    commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
+    commits_damaged: AtomicBool,
 }
 
 impl RelationalDurableColdSource for MemberSource {
@@ -47,6 +51,10 @@ impl RelationalDurableColdSource for MemberSource {
         Ok(bytes)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.commit_reads.lock().unwrap().push(position);
+        if self.commits_damaged.load(Ordering::Relaxed) {
+            return Err(Cause::Damaged);
+        }
         let bytes = self
             .commits
             .get(&position)
@@ -69,8 +77,28 @@ fn fixture(
     Arc<MemberSource>,
     crate::identity::data::EntityId,
 ) {
+    fixture_with_history(execution, with_tail, 0)
+}
+
+fn fixture_with_history(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    with_tail: bool,
+    updates: usize,
+) -> (
+    RelationalDurableRecoverySource,
+    Arc<MemberSource>,
+    crate::identity::data::EntityId,
+) {
     let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "member-before");
+    for update in 0..updates {
+        update_entity_and_release_snapshot(
+            execution,
+            &runtime,
+            entity,
+            &format!("member-update-{update}"),
+        );
+    }
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -106,6 +134,8 @@ fn fixture(
             .collect(),
         damaged: AtomicBool::new(true),
         reads: AtomicUsize::new(0),
+        commit_reads: std::sync::Mutex::new(Vec::new()),
+        commits_damaged: AtomicBool::new(false),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
@@ -271,6 +301,8 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
             .collect(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
+        commit_reads: std::sync::Mutex::new(Vec::new()),
+        commits_damaged: AtomicBool::new(false),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
