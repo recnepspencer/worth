@@ -15,19 +15,24 @@ mod close;
 mod open_refusal;
 mod request;
 mod resolution;
+mod transition_resolution;
 
 pub use checkpoint::{RelationalStoreCheckpoint, RelationalStoreCheckpointFailure};
 pub use close::RelationalStoreHomeClosed;
 pub use open_refusal::RelationalStoreHomeOpenRefusal;
 pub use request::RelationalStoreHomeRequest;
 pub use resolution::RelationalStoreCommitFate;
+pub use transition_resolution::RelationalStoreTransitionFate;
 
 use std::path::Path;
 use std::sync::Arc;
 
-use worth_relational::facade::durability::RelationalCanonicalCommitArtifactDigest;
+use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::durability::{
     RecoveryVerificationMode, RelationalDurableRecoverySource,
+};
+use worth_relational::facade::durability::{
+    RelationalBranchTransitionArtifactDigest, RelationalCanonicalCommitArtifactDigest,
 };
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::runtime::RelationalRuntime;
@@ -37,7 +42,10 @@ use crate::home_descriptor::HomeDescriptor;
 use crate::journal_medium::StoreJournalMedium;
 use crate::physical_store::PhysicalOpening;
 use crate::recovered_history::RelationalStoreJournalRefusal;
-use crate::{checkpoint_record, home_descriptor, physical_store, recovered_history};
+use crate::recovered_transitions::RelationalStoreTransitionJournalRefusal;
+use crate::{
+    checkpoint_record, home_descriptor, physical_store, recovered_history, recovered_transitions,
+};
 
 type Refusal = RelationalStoreHomeOpenRefusal;
 
@@ -106,6 +114,17 @@ impl RelationalStoreHome {
     ) -> Result<RelationalStoreCommitFate, RelationalStoreJournalRefusal> {
         resolution::resolve(&self.serving, position, digest)
     }
+
+    /// The durable fate of the branch transition whose artifact digest is
+    /// `digest` at `sequence`, from the transition journal alone. Pass the
+    /// digest a `DurabilityUnresolved` branch transition carried.
+    pub fn resolve_branch_transition(
+        &self,
+        sequence: RelationalBranchTransitionSequence,
+        digest: RelationalBranchTransitionArtifactDigest,
+    ) -> Result<RelationalStoreTransitionFate, RelationalStoreTransitionJournalRefusal> {
+        transition_resolution::resolve(&self.serving, sequence, digest)
+    }
 }
 
 fn open_physical_store(
@@ -139,6 +158,9 @@ fn admit_descriptor(
                 .is_some()
                 || !recovered_history::journal_tail(serving, 0)
                     .map_err(Refusal::Journal)?
+                    .is_empty()
+                || !recovered_transitions::transition_tail(serving, 0)
+                    .map_err(Refusal::TransitionJournal)?
                     .is_empty();
             if has_history {
                 return Err(Refusal::DescriptorMissing);
@@ -148,7 +170,8 @@ fn admit_descriptor(
     }
 }
 
-/// Hand the selected checkpoint and the journal after it to Relational.
+/// Hand the selected checkpoint, and the commits and branch transitions after
+/// it, to Relational.
 fn readmit_history(
     serving: &ServingPhysicalRuntime,
     runtime: &mut RelationalRuntime,
@@ -158,11 +181,16 @@ fn readmit_history(
     let covered = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.covered().0);
+    let covered_transitions = checkpoint
+        .as_ref()
+        .map_or(0, |checkpoint| checkpoint.covered_transitions().0);
     let tail = recovered_history::journal_tail(serving, covered).map_err(Refusal::Journal)?;
-    if checkpoint.is_none() && tail.is_empty() {
+    let transitions = recovered_transitions::transition_tail(serving, covered_transitions)
+        .map_err(Refusal::TransitionJournal)?;
+    if checkpoint.is_none() && tail.is_empty() && transitions.is_empty() {
         return Ok(());
     }
-    let source = RelationalDurableRecoverySource::new(checkpoint, tail);
+    let source = RelationalDurableRecoverySource::new(checkpoint, tail, transitions);
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

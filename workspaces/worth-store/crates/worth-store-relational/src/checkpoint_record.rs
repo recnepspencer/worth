@@ -1,13 +1,16 @@
 //! The home's selected checkpoint: Relational's native checkpoint bytes,
-//! filed under the canonical position they cover, as the anchored record
-//! `relational.checkpoint`. Replacing it is one durable root decision, so a
-//! crash leaves either the previous checkpoint or the new one, never a torn
-//! mixture.
+//! filed under the canonical position and the branch transition sequence
+//! they cover, as the anchored record `relational.checkpoint`. Replacing it
+//! is one durable root decision, so a crash leaves either the previous
+//! checkpoint or the new one, never a torn mixture.
 //!
-//! Payload (little-endian): magic `WSRCKPT1`, format version `u16`, covered
-//! position `u64`, then the native checkpoint bytes. Store's anchored-record
-//! frame already binds the payload's digest and generation.
+//! Payload (little-endian): magic `WSRCKPT1`, format version `u16` (2),
+//! covered position `u64`, covered transition sequence `u64`, then the native
+//! checkpoint bytes. Store's anchored-record frame already binds the
+//! payload's digest and generation. A record of another version is refused,
+//! never reinterpreted.
 
+use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::durability::{
     RelationalDurableCheckpointSource, RelationalNativeCheckpoint,
 };
@@ -20,8 +23,8 @@ use worth_store::physical_runtime::{
 
 const ANCHOR: &str = "relational.checkpoint";
 const MAGIC: &[u8; 8] = b"WSRCKPT1";
-const FORMAT_VERSION: u16 = 1;
-const HEADER_BYTES: usize = 18;
+const FORMAT_VERSION: u16 = 2;
+const HEADER_BYTES: usize = 26;
 /// The largest checkpoint a home reads back. A larger record is refused, not
 /// allocated.
 const MAXIMUM_CHECKPOINT_BYTES: u64 = 1 << 30;
@@ -57,19 +60,22 @@ pub(crate) fn read(
         return Ok(None);
     };
     let bytes = record.into_bytes();
-    let covered = decode_header(&bytes).ok_or(Refusal::Malformed)?;
+    let (covered, covered_transitions) = decode_header(&bytes).ok_or(Refusal::Malformed)?;
     let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(&bytes[HEADER_BYTES..]);
     Ok(Some(RelationalDurableCheckpointSource::new(
         PatchStreamPosition(covered),
+        RelationalBranchTransitionSequence(covered_transitions),
         checkpoint,
     )))
 }
 
-/// Replace the selected checkpoint with `checkpoint`, filed under `covered`.
-/// Returns the anchored generation the new checkpoint holds.
+/// Replace the selected checkpoint with `checkpoint`, filed under `covered`
+/// and `covered_transitions`. Returns the anchored generation the new
+/// checkpoint holds.
 pub(crate) fn publish(
     serving: &ServingPhysicalRuntime,
     covered: PatchStreamPosition,
+    covered_transitions: RelationalBranchTransitionSequence,
     checkpoint: &RelationalNativeCheckpoint,
 ) -> Result<u64, Refusal> {
     let records = serving.anchored_records().map_err(Refusal::Unavailable)?;
@@ -81,6 +87,7 @@ pub(crate) fn publish(
     payload.extend_from_slice(MAGIC);
     payload.extend_from_slice(&FORMAT_VERSION.to_le_bytes());
     payload.extend_from_slice(&covered.0.to_le_bytes());
+    payload.extend_from_slice(&covered_transitions.0.to_le_bytes());
     payload.extend_from_slice(checkpoint.bytes());
     let deadline = PhysicalMutationDeadline::after_milliseconds(PUBLICATION_DEADLINE_MILLIS)
         .expect("the checkpoint deadline is representable");
@@ -101,12 +108,18 @@ pub(crate) fn publish(
     }
 }
 
-fn decode_header(bytes: &[u8]) -> Option<u64> {
+/// The covered position and transition sequence, or `None` for a record
+/// that is not a current checkpoint record.
+fn decode_header(bytes: &[u8]) -> Option<(u64, u64)> {
     let rest = bytes.strip_prefix(MAGIC)?;
     let (version, rest) = rest.split_first_chunk::<2>()?;
     if u16::from_le_bytes(*version) != FORMAT_VERSION {
         return None;
     }
-    let (covered, _) = rest.split_first_chunk::<8>()?;
-    Some(u64::from_le_bytes(*covered))
+    let (covered, rest) = rest.split_first_chunk::<8>()?;
+    let (covered_transitions, _) = rest.split_first_chunk::<8>()?;
+    Some((
+        u64::from_le_bytes(*covered),
+        u64::from_le_bytes(*covered_transitions),
+    ))
 }
