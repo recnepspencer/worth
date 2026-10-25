@@ -36,6 +36,8 @@ impl std::borrow::Borrow<EntityReference> for PreparedRelationEndpointKey {
 
 #[derive(Debug, Clone, Default)]
 pub(crate) struct PreparedRelationIntegrityScope {
+    pub(crate) affected_pairs: BTreeSet<PreparedRelationPairKey>,
+    pub(crate) requires_affected_pairs: bool,
     pub(crate) created_endpoint_count: usize,
     pub(crate) created_source_keys: usize,
     pub(crate) created_target_keys: usize,
@@ -82,8 +84,27 @@ impl PreparedRelationIntegrityScopes {
 }
 
 impl PreparedRelationIntegrityScope {
+    /// Selection comes from changed/revalidated endpoints, never incidental adjacency keys.
+    pub(crate) fn record_affected_pair(
+        &mut self,
+        source: &EntityReference,
+        target: &EntityReference,
+    ) {
+        if self.requires_affected_pairs {
+            self.affected_pairs.insert(PreparedRelationPairKey {
+                source: source.clone(),
+                target: target.clone(),
+            });
+            self.affected_pairs.insert(PreparedRelationPairKey {
+                source: target.clone(),
+                target: source.clone(),
+            });
+        }
+    }
+
     pub(crate) fn is_empty(&self) -> bool {
-        self.created_candidate_entities.is_empty()
+        self.affected_pairs.is_empty()
+            && self.created_candidate_entities.is_empty()
             && self.minimum_touched_entities.is_empty()
             && self.planned_edges.is_empty()
             && self.visible_edges.is_empty()

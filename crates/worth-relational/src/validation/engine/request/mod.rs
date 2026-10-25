@@ -30,6 +30,7 @@ pub(crate) use scope_types::{
 
 #[derive(Debug, Clone, Default)]
 struct RelationScopeRequirement {
+    requires_affected_pairs: bool,
     requires_global_evaluation: bool,
     requires_visible_successors: bool,
     minimum_candidate_kinds: std::collections::BTreeSet<KindId>,
@@ -172,6 +173,7 @@ fn relation_scope_requirement(rule: &InvariantRule) -> Option<(KindId, RelationS
     let relation_kind_id = relation_kind_scope(rule)?;
     let requirement = match rule {
         InvariantRule::CardinalityMinimumContract(contract) => RelationScopeRequirement {
+            requires_affected_pairs: false,
             minimum_candidate_kinds: contract
                 .candidate_source_kinds
                 .iter()
@@ -191,13 +193,21 @@ fn relation_scope_requirement(rule: &InvariantRule) -> Option<(KindId, RelationS
             scan_existing_pair_on_create: contract.pair_max.is_some(),
             ..RelationScopeRequirement::default()
         },
-        InvariantRule::UniquenessContract(_) | InvariantRule::SymmetryContract(_) => {
-            RelationScopeRequirement {
-                scan_existing_pair_on_create: true,
-                scan_full_on_create: true,
-                ..RelationScopeRequirement::default()
-            }
-        }
+        InvariantRule::SymmetryContract(contract) => RelationScopeRequirement {
+            requires_affected_pairs: matches!(
+                contract.mode,
+                crate::schema::data::SymmetryMode::PairedInverseRequired
+                    | crate::schema::data::SymmetryMode::PairedTwinRequired
+            ),
+            scan_existing_pair_on_create: true,
+            scan_full_on_create: true,
+            ..RelationScopeRequirement::default()
+        },
+        InvariantRule::UniquenessContract(_) => RelationScopeRequirement {
+            scan_existing_pair_on_create: true,
+            scan_full_on_create: true,
+            ..RelationScopeRequirement::default()
+        },
         InvariantRule::AcyclicityContract(_) => RelationScopeRequirement {
             requires_global_evaluation: false,
             requires_visible_successors: true,

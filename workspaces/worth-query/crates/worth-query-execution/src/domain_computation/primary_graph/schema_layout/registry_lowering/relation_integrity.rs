@@ -1,13 +1,15 @@
 use super::lower_cross_context;
 use worth_query_installation::facade::{
     ApplicationRelationDeletionPolicy, ApplicationRelationIntegrity,
+    ApplicationRelationUniquenessScope,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     AcyclicityContractDeclaration, AllowedCycleClass, CardinalityContractDeclaration, ContractId,
     DirectedTraversalKind, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
     EndpointKindContractDeclaration, MinimumCardinalityEnforcement, PairMinimumSemantics,
-    RelationIntegrityDeclarations,
+    RelationIntegrityDeclarations, SymmetryContractDeclaration, SymmetryMode,
+    UniquenessContractDeclaration, UniquenessScope,
 };
 
 pub(super) fn lower_relation_integrity(
@@ -46,8 +48,29 @@ pub(super) fn lower_relation_integrity(
     RelationIntegrityDeclarations::new(
         endpoints,
         cardinality.into_iter().collect(),
-        Vec::new(),
-        Vec::new(),
+        integrity
+            .unique
+            .map(|scope| UniquenessContractDeclaration {
+                contract_id: ContractId::new(format!("{relation}:unique")),
+                scope: match scope {
+                    ApplicationRelationUniquenessScope::DirectedSemanticEdge => {
+                        UniquenessScope::DirectedSemanticEdge
+                    }
+                    ApplicationRelationUniquenessScope::NormalizedSymmetricEdge => {
+                        UniquenessScope::NormalizedSymmetricEdge
+                    }
+                },
+            })
+            .into_iter()
+            .collect(),
+        integrity
+            .symmetric
+            .then(|| SymmetryContractDeclaration {
+                contract_id: ContractId::new(format!("{relation}:symmetry")),
+                mode: SymmetryMode::PairedTwinRequired,
+            })
+            .into_iter()
+            .collect(),
         deletion.into_iter().collect(),
     )
     .with_acyclicity_contracts(acyclicity.into_iter().collect())
@@ -87,6 +110,39 @@ mod tests {
     use worth_relational::facade::schema::EndpointDeletionIntegrityMode;
 
     use super::lower_relation_integrity;
+
+    #[test]
+    fn paired_symmetry_and_exact_uniqueness_scope_lower_into_one_native_plan() {
+        use worth_query_installation::facade::ApplicationRelationUniquenessScope as Declared;
+        use worth_relational::facade::schema::{SymmetryMode, UniquenessScope as Native};
+        let baseline = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+        let original = lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline);
+        let mut revisions = Vec::new();
+        for (declared, native) in [
+            (Declared::DirectedSemanticEdge, Native::DirectedSemanticEdge),
+            (
+                Declared::NormalizedSymmetricEdge,
+                Native::NormalizedSymmetricEdge,
+            ),
+        ] {
+            let lowered = lower_relation_integrity(
+                "Peer",
+                KindId(11),
+                vec![KindId(11)],
+                baseline.symmetric().unique(declared),
+            );
+            assert_eq!(lowered.symmetry_contracts.len(), 1);
+            assert_eq!(
+                lowered.symmetry_contracts[0].mode,
+                SymmetryMode::PairedTwinRequired
+            );
+            assert_eq!(lowered.uniqueness_contracts.len(), 1);
+            assert_eq!(lowered.uniqueness_contracts[0].scope, native);
+            assert_ne!(lowered.plan_revision, original.plan_revision);
+            revisions.push(lowered.plan_revision);
+        }
+        assert_ne!(revisions[0], revisions[1]);
+    }
 
     #[test]
     fn declared_relation_integrity_lowers_exact_endpoint_cardinality_and_deletion_contracts() {

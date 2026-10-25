@@ -45,7 +45,9 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
                     .finish(),
             )
             .operation_read_field(EditEdges::reference(), NodeKey::reference())
+            .operation_read_relation(EditEdges::reference(), Precedes::reference())
             .operation_link(EditEdges::reference(), Precedes::reference())
+            .operation_unlink(EditEdges::reference(), Precedes::reference())
             .application_mutation_binding::<EditBinding<L>>()
     }
 }

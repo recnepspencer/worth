@@ -16,7 +16,11 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };
 pub use worth_foundational::facade::AspectValue;
+/// Native kind identity carried as law-refusal diagnostics, without graph authority.
+pub use worth_relational::facade::identity::KindId;
 pub use worth_relational::facade::identity::{EntityId, RelationId};
+/// Original native contract identity and law parameters carried by typed refusals.
+pub use worth_relational::facade::schema::{ContractId, SymmetryMode, UniquenessScope};
 /// Original proposed or committed endpoints carried by relation-law denials.
 pub use worth_relational::facade::transactions::EntityReference;
 

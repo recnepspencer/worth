@@ -77,6 +77,17 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             self.performance.count_relation_uniqueness_candidates(1);
             let source_deleted = self.deleted_entities.contains(&source);
             let target_deleted = self.deleted_entities.contains(&target);
+            if source_deleted
+                || target_deleted
+                || self.revalidated_entities.as_ref().is_some_and(|entities| {
+                    entities.contains(&source) || entities.contains(&target)
+                })
+            {
+                scope.record_affected_pair(
+                    &EntityReference::Existing(source),
+                    &EntityReference::Existing(target),
+                );
+            }
             if source_deleted {
                 scope.deleted_entities.insert(source);
             }

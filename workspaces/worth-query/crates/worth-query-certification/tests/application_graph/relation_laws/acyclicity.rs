@@ -1,30 +1,8 @@
 //! Hostile/lawful twins and an independent small-graph reachability oracle.
-use super::{installation::*, operation::*, read, schema::*};
+use super::{installation::*, outcome::*, read, schema::*};
 use std::collections::BTreeSet;
-use worth_query_host::facade::{
-    application_entry::WorthQueryApplicationMutationOutcome,
-    application_invariants::EntityReference, primary_graph::*,
-};
+use worth_query_host::facade::{application_invariants::EntityReference, primary_graph::*};
 
-fn committed(outcome: WorthQueryApplicationMutationOutcome<GraphDenial, Edited>) {
-    assert!(
-        matches!(
-            outcome,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{outcome:?}"
-    );
-}
-fn denied(
-    outcome: WorthQueryApplicationMutationOutcome<GraphDenial, Edited>,
-) -> WorthQueryApplicationCommitDenial {
-    match outcome {
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            denial,
-        )) => denial,
-        other => panic!("expected the native commit law refusal: {other:?}"),
-    }
-}
 fn closing_edge(
     denial: &WorthQueryApplicationCommitDenial,
     graph: &read::Graph,

@@ -7,6 +7,7 @@ use crate::storage::overlay::PartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
 mod incidence_collection;
+mod relation_changes;
 mod scope_completion;
 use super::preparation_control::InvariantPreparationControl;
 use crate::transactions::data::TransactionCommitError;
@@ -60,6 +61,7 @@ struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> 
     touched_relation_sources: BTreeSet<EntityId>,
     touched_relation_targets: BTreeSet<EntityId>,
     deleted_entities: BTreeSet<EntityId>,
+    revalidated_entities: Option<BTreeSet<EntityId>>,
     deleted_relations: BTreeSet<RelationId>,
     scanned_relations: BTreeSet<RelationId>,
 }
@@ -92,6 +94,10 @@ impl<'access, 'runtime, 'scope, 'authority>
                 )
             })
             .collect();
+        let revalidated_entities = requirements
+            .values()
+            .any(|requirement| requirement.requires_affected_pairs)
+            .then(BTreeSet::new);
         Self {
             partitions,
             state_view: crate::validation::engine::state_view::InvariantStateView::new(
@@ -106,6 +112,7 @@ impl<'access, 'runtime, 'scope, 'authority>
                     (
                         kind_id,
                         PreparedRelationIntegrityScope {
+                            requires_affected_pairs: requirement.requires_affected_pairs,
                             requires_global_evaluation: requirement.requires_global_evaluation,
                             requires_visible_successors: requirement.requires_visible_successors,
                             ..PreparedRelationIntegrityScope::default()
@@ -118,6 +125,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             touched_relation_sources: BTreeSet::new(),
             touched_relation_targets: BTreeSet::new(),
             deleted_entities: BTreeSet::new(),
+            revalidated_entities,
             deleted_relations: BTreeSet::new(),
             scanned_relations: BTreeSet::new(),
         }
@@ -245,6 +253,9 @@ impl<'access, 'runtime, 'scope, 'authority>
         let Some(metadata) = self.state_view.entity_metadata(entity_id) else {
             return Ok(());
         };
+        if let Some(entities) = &mut self.revalidated_entities {
+            entities.insert(entity_id);
+        }
         for (relation_kind, kinds) in &self.minimum_candidate_kinds {
             self.check_live()?;
             if kinds.contains(&metadata.kind_id) {
@@ -257,84 +268,6 @@ impl<'access, 'runtime, 'scope, 'authority>
         }
         self.touched_relation_sources.insert(entity_id);
         self.touched_relation_targets.insert(entity_id);
-        self.check_live()
-    }
-
-    fn collect_planned_edge(
-        &mut self,
-        kind_id: KindId,
-        source: &EntityReference,
-        target: &EntityReference,
-    ) -> Result<(), TransactionCommitError> {
-        self.check_live()?;
-        self.scopes
-            .entry(kind_id)
-            .or_default()
-            .planned_edges
-            .push(PlannedRelationEdge {
-                source: source.clone(),
-                target: target.clone(),
-            });
-        let (scan_source, scan_target, scan_pair, scan_full) = self
-            .create_scan_directions
-            .get(&kind_id)
-            .copied()
-            .unwrap_or((true, true, true, true));
-        let both_existing = matches!(source, EntityReference::Existing(_))
-            && matches!(target, EntityReference::Existing(_));
-        if scan_source || (scan_pair && both_existing) {
-            include_existing_entity_reference(&mut self.touched_relation_sources, source);
-        }
-        if scan_target {
-            include_existing_entity_reference(&mut self.touched_relation_targets, target);
-        }
-        if scan_full && both_existing {
-            include_existing_entity_reference(&mut self.touched_relation_targets, source);
-            include_existing_entity_reference(&mut self.touched_relation_sources, target);
-        }
-        self.check_live()
-    }
-
-    fn collect_revalidated_relation(
-        &mut self,
-        relation_id: RelationId,
-    ) -> Result<(), TransactionCommitError> {
-        self.check_live()?;
-        if let Some((kind, source, target)) =
-            relation_scope_details_for_id(&self.state_view, relation_id)
-        {
-            self.scopes
-                .entry(kind)
-                .or_default()
-                .minimum_touched_entities
-                .extend([source, target]);
-            self.touched_relation_sources.extend([source, target]);
-            self.touched_relation_targets.extend([source, target]);
-        }
-        self.check_live()
-    }
-
-    fn collect_relation_delete(
-        &mut self,
-        relation_id: RelationId,
-    ) -> Result<(), TransactionCommitError> {
-        self.check_live()?;
-        self.deleted_relations.insert(relation_id);
-        if let Some((kind_id, source, target)) =
-            relation_scope_details_for_id(&self.state_view, relation_id)
-        {
-            self.scopes
-                .entry(kind_id)
-                .or_default()
-                .deleted_relation_count += 1;
-            self.scopes
-                .get_mut(&kind_id)
-                .expect("deleted scope prepared")
-                .minimum_touched_entities
-                .extend([source, target]);
-            self.touched_relation_sources.extend([source, target]);
-            self.touched_relation_targets.extend([source, target]);
-        }
         self.check_live()
     }
 

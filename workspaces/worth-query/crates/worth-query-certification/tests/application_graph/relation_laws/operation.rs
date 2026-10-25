@@ -1,7 +1,9 @@
 //! One authenticated program action authors a whole proposed edge batch.
 use super::schema::*;
 use std::marker::PhantomData;
-use worth_query_decl::facade::{worth_query_operation_links, worth_query_operation_reads};
+use worth_query_decl::facade::{
+    worth_query_operation_links, worth_query_operation_reads, worth_query_operation_unlinks,
+};
 use worth_query_host::facade::{
     declaration::{application_operation::*, application_schema::*},
     primary_graph::*,
@@ -12,8 +14,9 @@ use worth_query_host::facade::{
 pub struct EdgeEdit {
     pub serial: u64,
     pub edges: Vec<(u64, u64)>,
+    pub removals: Vec<(u64, u64)>,
 }
-worth_query_structured_value_binding!(pub EdgeEditBinding for EdgeEdit { identity: "worth.query.relation-laws.edge-edit.v1" });
+worth_query_structured_value_binding!(pub EdgeEditBinding for EdgeEdit { identity: "worth.query.relation-laws.edge-edit.v2" });
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Edited;
 worth_query_structured_value_binding!(pub EditedBinding for Edited { identity: "worth.query.relation-laws.edited.v1" });
@@ -31,14 +34,19 @@ impl EditEdges {
         ApplicationOperationRef::from_declaration()
     }
 }
-worth_query_operation_reads!(EditEdges => [NodeKey]);
+worth_query_operation_reads!(EditEdges => [NodeKey, Precedes]);
 worth_query_operation_links!(EditEdges => [Precedes]);
+worth_query_operation_unlinks!(EditEdges => [Precedes]);
 
 pub struct EditBinding<L: LawPolicy>(PhantomData<fn() -> L>);
-pub type Targets<L> = Vec<(
+pub type PairTargets<L> = (
     WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>,
     WorthQueryInvariantMutationTarget<GraphSchema<L>, Node>,
-)>;
+);
+pub struct Targets<L: LawPolicy> {
+    pub added: Vec<PairTargets<L>>,
+    pub removed: Vec<PairTargets<L>>,
+}
 type NodeScope<L> = ApplicationMutationFieldScope<
     GraphSchema<L>,
     Node,
@@ -67,7 +75,7 @@ impl<L: LawPolicy> ApplicationMutationBinding<GraphSchema<L>> for EditBinding<L>
     type PrincipalIdentityBinding = U64ApplicationValueBinding;
     type SourceExpectation = NoApplicationMutationSource;
     const IDENTITY: &'static str = "worth.query.relation-laws.edit-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "worth.query.relation-laws.handler.v1";
+    const HANDLER_IDENTITY: &'static str = "worth.query.relation-laws.handler.v2";
     const IDEMPOTENCY_IDENTITY: &'static str = "worth.query.relation-laws.command.v1";
     fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
         ApplicationWorkflowExecutionRequirements::not_applicable()
@@ -108,7 +116,11 @@ impl<L: LawPolicy> ApplicationMutationIntent<GraphSchema<L>> for Edit<L> {
     fn scope_binding(&self) -> NodeScope<L> {
         NodeScope::new(
             NodeKey::reference(),
-            self.input.edges.first().map_or(0, |edge| edge.0),
+            self.input
+                .edges
+                .first()
+                .or_else(|| self.input.removals.first())
+                .map_or(0, |edge| edge.0),
         )
     }
 }

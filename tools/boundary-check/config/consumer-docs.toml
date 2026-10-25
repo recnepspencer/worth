@@ -127,3 +127,9 @@ name = "relation_law_request.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "tests/application_graph.rs"
 source = "tests/application_graph/relation_laws/installation.rs"
+
+[[compiled_sources]]
+name = "relation_pair_declaration.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "tests/application_graph.rs"
+source = "tests/application_graph/relation_laws/schema/paired_unique.rs"

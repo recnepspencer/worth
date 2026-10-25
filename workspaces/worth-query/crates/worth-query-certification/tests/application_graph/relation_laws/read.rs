@@ -7,6 +7,7 @@ use worth_query_host::facade::{
 
 pub struct Graph {
     pub edges: BTreeSet<(u64, u64)>,
+    pub multiplicity: BTreeMap<(u64, u64), usize>,
     pub identities: BTreeMap<u64, EntityId>,
 }
 pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
@@ -21,6 +22,7 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
                     |reader| {
                         let mut graph = Graph {
                             edges: BTreeSet::new(),
+                            multiplicity: BTreeMap::new(),
                             identities: BTreeMap::new(),
                         };
                         for source in 0..world.nodes {
@@ -30,6 +32,7 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
                             {
                                 let target = reader.field(edge.to(), NodeKey::reference()).unwrap();
                                 graph.edges.insert((source, target));
+                                *graph.multiplicity.entry((source, target)).or_default() += 1;
                             }
                         }
                         graph

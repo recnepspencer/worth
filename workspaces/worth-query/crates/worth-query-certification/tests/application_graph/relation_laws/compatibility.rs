@@ -19,8 +19,15 @@ fn program<L: LawPolicy>() -> ValidatedApplicationProgram<GraphSchema<L>, GraphP
 
 #[test]
 fn changing_only_the_relation_law_changes_the_same_named_program_revision() {
+    changed_revision::<Acyclic>();
+    changed_revision::<Symmetric>();
+    changed_revision::<DirectedUnique>();
+    changed_revision::<NormalizedUnique>();
+    changed_revision::<SymmetricDirectedUnique>();
+}
+fn changed_revision<L: LawPolicy>() {
     let old = program::<Unrestricted>();
-    let new = program::<Acyclic>();
+    let new = program::<L>();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
     let bytes = encode_application_program_description(&old, limits).unwrap();
     let description = decode_application_program_description(&bytes, limits).unwrap();
@@ -65,11 +72,17 @@ fn changing_only_the_relation_law_changes_the_same_named_program_revision() {
 
 #[test]
 fn omitting_completed_schema_cannot_bypass_law_binding_at_installation() {
-    let unbound =
-        ApplicationProgramAuthoring::<GraphSchema<Acyclic>, GraphProgram<Acyclic>>::begin()
-            .validated_program()
-            .unwrap();
-    assert!(!unbound.matches_relation_laws(GraphSchema::<Acyclic>::declaration().unwrap().erased()));
+    unbound_refused::<Acyclic>();
+    unbound_refused::<Symmetric>();
+    unbound_refused::<DirectedUnique>();
+    unbound_refused::<NormalizedUnique>();
+    unbound_refused::<SymmetricDirectedUnique>();
+}
+fn unbound_refused<L: LawPolicy>() {
+    let unbound = ApplicationProgramAuthoring::<GraphSchema<L>, GraphProgram<L>>::begin()
+        .validated_program()
+        .unwrap();
+    assert!(!unbound.matches_relation_laws(GraphSchema::<L>::declaration().unwrap().erased()));
     let refusal = match install_program(unbound, 2, &[]) {
         Err(refusal) => refusal,
         Ok(_) => panic!("an unbound program cannot govern a law-bearing schema"),
@@ -112,15 +125,22 @@ fn restore<L: LawPolicy>(
 
 #[test]
 fn an_installed_checkpoint_cannot_silently_acquire_a_new_relation_law() {
+    checkpoint_laws::<Acyclic>();
+    checkpoint_laws::<Symmetric>();
+    checkpoint_laws::<DirectedUnique>();
+    checkpoint_laws::<NormalizedUnique>();
+    checkpoint_laws::<SymmetricDirectedUnique>();
+}
+fn checkpoint_laws<L: LawPolicy>() {
     // This graph is lawful under either policy: refusal must concern installed meaning.
-    let old = install::<Unrestricted>(3, &[(0, 1)]);
+    let old = install::<Unrestricted>(3, &[]);
     let unchanged_checkpoint = capture(&old);
     let changed_checkpoint = capture(&old);
     old.close();
     let mut unchanged = restore::<Unrestricted>(unchanged_checkpoint).unwrap();
     assert!(unchanged.close_live_delivery().owner_terminal());
     unchanged.close_conditional_runtime().unwrap();
-    let refusal = match restore::<Acyclic>(changed_checkpoint) {
+    let refusal = match restore::<L>(changed_checkpoint) {
         Err(refusal) => refusal,
         Ok(_) => panic!("old installed meaning cannot become a different schema/program"),
     };
@@ -129,9 +149,13 @@ fn an_installed_checkpoint_cannot_silently_acquire_a_new_relation_law() {
     };
     assert_eq!(refusal.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
 
-    let strengthened = install::<Acyclic>(3, &[(0, 1)]);
+    let strengthened = install::<L>(3, &[]);
+    let same_meaning = capture(&strengthened);
     let removed = capture(&strengthened);
     strengthened.close();
+    let mut unchanged_law = restore::<L>(same_meaning).unwrap();
+    assert!(unchanged_law.close_live_delivery().owner_terminal());
+    unchanged_law.close_conditional_runtime().unwrap();
     assert!(
         matches!(
             restore::<Unrestricted>(removed),

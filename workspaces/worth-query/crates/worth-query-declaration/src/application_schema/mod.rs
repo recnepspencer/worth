@@ -226,6 +226,7 @@ pub use references::{
 pub use relation_integrity::{
     ApplicationRelationCardinality, ApplicationRelationCrossContextPolicy,
     ApplicationRelationDeletionPolicy, ApplicationRelationEndpoints, ApplicationRelationIntegrity,
+    ApplicationRelationUniquenessScope,
 };
 pub use schema_identity::ApplicationSchemaIdentity;
 pub use schema_member::{

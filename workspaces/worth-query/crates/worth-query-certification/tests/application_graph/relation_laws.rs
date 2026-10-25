@@ -11,6 +11,12 @@ mod handler;
 mod installation;
 #[path = "relation_laws/operation.rs"]
 mod operation;
+#[path = "relation_laws/outcome.rs"]
+mod outcome;
+#[path = "relation_laws/pair_laws.rs"]
+mod pair_laws;
+#[path = "relation_laws/pair_oracle.rs"]
+mod pair_oracle;
 #[path = "relation_laws/program.rs"]
 mod program;
 #[path = "relation_laws/read.rs"]

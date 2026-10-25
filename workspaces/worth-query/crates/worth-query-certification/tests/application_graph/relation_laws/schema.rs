@@ -22,6 +22,30 @@ impl LawPolicy for Unrestricted {
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
 }
 
+#[derive(Clone, Debug)]
+pub struct Symmetric;
+impl LawPolicy for Symmetric {
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().symmetric();
+}
+#[derive(Clone, Debug)]
+pub struct DirectedUnique;
+impl LawPolicy for DirectedUnique {
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+            .unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge);
+}
+#[derive(Clone, Debug)]
+pub struct NormalizedUnique;
+impl LawPolicy for NormalizedUnique {
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+            .unique(ApplicationRelationUniquenessScope::NormalizedSymmetricEdge);
+}
+#[path = "schema/paired_unique.rs"]
+mod paired_unique;
+pub use paired_unique::SymmetricDirectedUnique;
+
 pub trait GraphSchemaBinding: ApplicationSchema {
     const INTEGRITY: ApplicationRelationIntegrity;
 }

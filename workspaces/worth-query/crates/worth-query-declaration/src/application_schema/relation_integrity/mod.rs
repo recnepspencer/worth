@@ -2,7 +2,9 @@ mod cardinality;
 mod deletion;
 mod endpoints;
 mod law_meaning;
+mod uniqueness;
 pub(crate) use law_meaning::ApplicationRelationLawMeaning;
+pub use uniqueness::ApplicationRelationUniquenessScope;
 
 pub use cardinality::ApplicationRelationCardinality;
 pub use deletion::ApplicationRelationDeletionPolicy;
@@ -17,6 +19,10 @@ pub struct ApplicationRelationIntegrity {
     pub deletion: ApplicationRelationDeletionPolicy,
     /// Every source-to-target path must be free of cycles at the commit boundary.
     pub acyclic: bool,
+    /// Each surviving directed edge must have its reverse on this same relation.
+    pub symmetric: bool,
+    /// Physical edge multiplicity is bounded by the declared semantic scope.
+    pub unique: Option<ApplicationRelationUniquenessScope>,
 }
 
 impl ApplicationRelationIntegrity {
@@ -30,6 +36,8 @@ impl ApplicationRelationIntegrity {
             cardinality,
             deletion,
             acyclic: false,
+            symmetric: false,
+            unique: None,
         }
     }
 
@@ -56,6 +64,18 @@ impl ApplicationRelationIntegrity {
     /// Refuse a proposed commit whose edges close a directed cycle.
     pub const fn acyclic(mut self) -> Self {
         self.acyclic = true;
+        self
+    }
+
+    /// Require the reverse of every surviving source-to-target edge.
+    pub const fn symmetric(mut self) -> Self {
+        self.symmetric = true;
+        self
+    }
+
+    /// Refuse physical duplicate edges within this declared scope.
+    pub const fn unique(mut self, scope: ApplicationRelationUniquenessScope) -> Self {
+        self.unique = Some(scope);
         self
     }
 }

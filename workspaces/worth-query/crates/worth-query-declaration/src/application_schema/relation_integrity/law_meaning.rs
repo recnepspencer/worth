@@ -4,7 +4,13 @@ use super::ApplicationRelationIntegrity;
 
 impl ApplicationRelationIntegrity {
     pub(crate) fn enabled_laws(self) -> impl Iterator<Item = (&'static str, u64)> {
-        self.acyclic.then_some(("acyclic", 1)).into_iter()
+        [
+            self.acyclic.then_some(("acyclic", 1)),
+            self.symmetric.then_some(("symmetric", 1)),
+            self.unique.map(|scope| ("unique", scope.canonical_value())),
+        ]
+        .into_iter()
+        .flatten()
     }
 }
 

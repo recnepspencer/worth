@@ -361,3 +361,149 @@ No failed build is counted as passing evidence.
 The remaining four laws, public fixture cutovers and Proprietary's
 `PreviousFeature` adoption are still Phase 2 obligations. This slice does not
 close Phase 2 or authorize its master merge.
+
+## Phase 2, slice 2: paired symmetry and scoped edge uniqueness
+
+Boundary review: the declaration/identity/lowering/original-denial handoffs now
+exist. Extend them rather than creating another rule lane. Native symmetry and
+uniqueness already consume prepared relation-integrity scopes. Deletion and
+`UpdateEndpoints` correctly schedule scopes and remove old records from their
+proposed pair counts. However, symmetry currently returns on empty
+`planned_edges` and judges only creates. A deletion-only candidate can leave an
+unmatched inverse without being judged. The persistent reviewer independently
+confirmed the final ownership boundary: `directed_pair_counts` supply proposed
+multiplicities, while explicit changed/revalidated pairs supply selection.
+No new scope scan or traversal is needed. Preserve the other native symmetry
+modes' existing posture.
+
+Scoped uniqueness already judges physical proposed multiplicity: directed scope
+counts one direction, normalized scope counts both directions together. An
+inverse pair therefore satisfies directed uniqueness but violates normalized
+uniqueness. Paired symmetry stays on the same relation, whose endpoint contract
+must also permit its reverse; homogeneous endpoints are the ordinary example.
+A permitted self-edge is its own inverse. No inverse-relation registry or
+automatic deduplication belongs here.
+
+The current public court only adds edges, and its readout is a reachability set.
+Extend its one operation to carry removals and additions together. An unlink
+first reads genuine complete adjacency through `DecisionReader`, then consumes
+those completed facts through `CandidateWriter::unlink`; declare the required
+relation read/unlink capabilities. The readout must retain physical edge
+multiplicity for uniqueness evidence, alongside its existing reachability set.
+
+Plan:
+
+1. Add const `.symmetric()` and `.unique(scope)` declarations, with a Query-owned
+   portable uniqueness-scope enum. Defaults preserve existing policy and
+   identity. Extend the declaration-owned enabled-law encoding so schema,
+   manifest, semantic facts and support admission continue to agree.
+2. Lower to native `PairedTwinRequired` and the exact declared uniqueness scope.
+   Extend the borrowed denial view for original symmetry and uniqueness fields;
+   route the original native fields through existing invariant/bootstrap paths.
+3. Repair only native paired symmetry evaluation to inspect affected surviving
+   directed pair keys. A direct native `UpdateEndpoints` court must expose a
+   repair that overlooks the abandoned pair, with a balanced replacement twin.
+4. Extend the existing public mutation and real projection court as above.
+   Prove paired insertion, single/both deletion, unbalanced/balanced replacement,
+   self-edge semantics, typed original refusals and unchanged committed truth.
+   Prove both uniqueness scopes using existing-plus-new and same-candidate
+   duplicates, inverse and distinct-pair twins, and removal/replacement.
+5. Add seeded edit sequences checked against an independent physical multigraph
+   model. Check identity/archive/support/restore handoffs for both new laws with
+   the same genuine programs and checkpoints, without duplicating the host.
+6. Extend the relation-law guide and compiled examples, including endpoint
+   compatibility and the actual paired/normalized-uniqueness composition.
+   Update the capability index and facade inventory only as required.
+7. Run focused declaration/lowering/denial/native pair courts, the public grouped
+   graph target and compiled drift, formatting, scoped caps/function scrutiny,
+   normal boundary-check and agent-context. The persistent reviewer gates the
+   living slice and results before commit. No master merge until Phase 2 closes.
+
+Minimum reachability, partition isolation and consumer cutovers remain later
+Phase 2 work. No application law evaluator, new traversal, resource allowance or
+accounting subsystem is introduced.
+
+### Pair-court boundary corrections from actual refusals
+
+Native merged-intent identity independently forbids two create/update commands
+with the same partition/kind/ordered endpoints before invariant evaluation.
+Do not change that identity rule to force a later uniqueness verdict. The
+directed uniqueness batch court instead proposes an existing duplicate plus a
+distinct new edge; its lawful twin changes the duplicate. Seeded candidates use
+distinct ordered create pairs per proposal while retaining physical duplicate
+counts across commits. Normalized uniqueness still judges an inverse pair
+inside one proposal. Document earlier-refusal preemption honestly.
+
+For endpoint replacement, moving onto an already-existing ordered pair also
+preempts symmetry at native identity admission. Instead, update one old edge
+and create its new reverse in the same candidate: the new pair is balanced,
+but the abandoned old reverse must refuse. Rewiring both old edges is its
+balanced twin, without any duplicate proposed identity.
+
+An outgoing adjacency read carries existing matched relation IDs for unlink,
+not a manufactured pair token for a nonexistent edge. The fixture handler
+retains the genuine read, skips absent removal effects, and coalesces repeated
+removal commands. It must never deduplicate physical records in the readout or
+oracle. The persistent reviewer independently confirmed these boundaries;
+the failures do not justify broader production identity or authority changes.
+
+### Paired evaluation requires its explicit affected-pair domain
+
+The seeded multigraph court exposed a second native boundary error in the
+initial repair: pair counts contain incidental edges from partial incidence
+scans. For an existing A→B create, `scan_full_on_create` schedules outgoing A,
+incoming A and outgoing B, but not incoming B. Judging every discovered pair
+can falsely reject incidental B→C because C→B was not requested. Global
+incidence sets also serve other relation kinds with different read needs, so
+adding one scan direction would not make every incidental key authoritative.
+
+The persistent reviewer independently confirmed that selection responsibility
+belongs in preparation. Retain an explicit affected-pair set only for native
+paired symmetry requirements. Record both orientations of creates, deleted old
+pairs, endpoint updates and explicit relation revalidation. Existing entity
+removal and revalidation paths identify their incident affected pairs from
+already retained visible edges; keep explicit revalidated entity identities
+separate from connectivity's candidate sets. Paired evaluation judges only
+surviving orientations of those pairs using the existing proposed counts.
+Other modes and cardinality/uniqueness consumers keep their existing scopes.
+
+Keep the exact seed and add its small counterexample as a public regression.
+This introduces bounded preparation metadata in its existing owner, not another
+graph walk, read engine, allowance or accounting model. No incidental adjacency
+key becomes a substitute for a changed/revalidated pair's actual provenance.
+
+### Slice 2 verification
+
+Paired symmetry and directed/normalized edge uniqueness are declared through
+the same integrity value, canonical law representation and native lowering
+owner as acyclicity. Original native mode, scope, multiplicity and endpoint
+identities remain typed through refusals. Native paired selection now follows
+explicit affected pairs across creation, deletion, endpoint updates and
+revalidation, without treating incidental adjacency keys as complete evidence.
+
+The frozen source passes:
+
+- All 19 public relation-law courts, including four independent 72-edit
+  physical multigraph sequences, paired deletion and replacement, self-edges,
+  both uniqueness scopes, typed diagnostics, identity/support/archive/restore,
+  and the focused incidental-neighbor false-refusal regression.
+- The full `application_graph` target: 412 passed, 5 existing ignored.
+- Native relation integrity: 65 passed; invariant access: 11 passed;
+  acyclicity resources: 8 passed. Native endpoint updates cover both paired
+  modes; explicit relation/entity revalidation proves actual native check reach.
+- Full execution-owner test compilation and all 27 focused lowering, original
+  denial, bootstrap refusal and ownership tests.
+- Declaration: 461 passed; installation: 343 passed; archive: 116 passed.
+- Compiled documentation drift, including all three relation-law excerpts;
+  normal boundary-check; agent-context; formatting and whitespace for all 33
+  scoped Rust files; dirty line caps; and function scrutiny with 13 reviewed
+  advisories and no scan errors.
+
+The persistent reviewer found no material code or test issue through qa-loop,
+qa-tests and code-quality-qa. The corrected plan distinguishes proposed counts
+from explicit selection. Native duplicate-proposal identity admission remains
+unchanged, and every failed intermediate court was resolved without suppressing
+the seeded multigraph evidence or replacing physical counts with sets.
+
+Minimum reachability, partition isolation, the public fixture cutover and
+Proprietary adoption remain unfinished. Phase 2 is not yet ready for master.

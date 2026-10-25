@@ -6,5 +6,6 @@ mod endpoint_deletion;
 mod endpoint_kind;
 mod fixtures;
 mod minimum_local_scope;
+mod paired_mutations;
 mod symmetry;
 mod uniqueness;

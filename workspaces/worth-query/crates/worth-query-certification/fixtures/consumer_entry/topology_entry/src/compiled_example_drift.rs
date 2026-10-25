@@ -53,6 +53,7 @@ fn compiled_examples_match_consumer_documents() {
         BTreeSet::from([
             "relation_law_declaration.rs".to_owned(),
             "relation_law_request.rs".to_owned(),
+            "relation_pair_declaration.rs".to_owned(),
             "planar_invariant/evaluation.rs".to_owned(),
             "invariant_reads.rs".to_owned(),
             "checkpoint_recovery/computation_partition/oracle/collection/lifecycle/binding.rs"

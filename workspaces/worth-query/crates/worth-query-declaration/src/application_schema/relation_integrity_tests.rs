@@ -110,3 +110,29 @@ fn adding_and_removing_acyclicity_changes_only_the_declared_meaning() {
     assert_eq!(acyclic.cardinality, unrestricted.cardinality);
     assert_eq!(acyclic.deletion, unrestricted.deletion);
 }
+
+#[test]
+fn symmetry_and_each_uniqueness_scope_have_distinct_removable_meaning() {
+    use super::ApplicationRelationUniquenessScope as Scope;
+    let original = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    let symmetric = original.symmetric();
+    let directed = symmetric.unique(Scope::DirectedSemanticEdge);
+    let normalized = symmetric.unique(Scope::NormalizedSymmetricEdge);
+    let identity = |integrity| {
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(integrity))
+            .build()
+            .unwrap()
+            .identity()
+            .clone()
+    };
+    assert_ne!(identity(original), identity(symmetric));
+    assert_ne!(identity(symmetric), identity(directed));
+    assert_ne!(identity(directed), identity(normalized));
+    let mut removed = directed;
+    removed.symmetric = false;
+    removed.unique = None;
+    assert_eq!(identity(original), identity(removed));
+    assert_eq!(directed.endpoints, original.endpoints);
+    assert_eq!(directed.cardinality, original.cardinality);
+    assert_eq!(directed.deletion, original.deletion);
+}

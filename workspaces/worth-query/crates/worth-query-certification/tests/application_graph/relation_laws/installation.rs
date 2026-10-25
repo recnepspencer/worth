@@ -84,7 +84,6 @@ impl<L: LawPolicy> World<L> {
         let scope = request_scope();
         self.edit_in_scope(serial, edges, &scope).unwrap()
     }
-    // compiled-example: begin
     pub fn edit_in_scope(
         &self,
         serial: u64,
@@ -94,6 +93,41 @@ impl<L: LawPolicy> World<L> {
         WorthQueryApplicationMutationOutcome<GraphDenial, Edited>,
         WorthQueryApplicationRequestMutationDenial,
     > {
+        self.apply_edit_in_scope(
+            EdgeEdit {
+                serial,
+                edges: edges.to_vec(),
+                removals: Vec::new(),
+            },
+            scope,
+        )
+    }
+    pub fn replace_edges(
+        &self,
+        serial: u64,
+        edges: &[(u64, u64)],
+        removals: &[(u64, u64)],
+    ) -> WorthQueryApplicationMutationOutcome<GraphDenial, Edited> {
+        self.apply_edit_in_scope(
+            EdgeEdit {
+                serial,
+                edges: edges.to_vec(),
+                removals: removals.to_vec(),
+            },
+            &request_scope(),
+        )
+        .unwrap()
+    }
+    // compiled-example: begin
+    pub fn apply_edit_in_scope(
+        &self,
+        input: EdgeEdit,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryApplicationMutationOutcome<GraphDenial, Edited>,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        let serial = input.serial;
         let principal =
             authenticate_operator(self.application.installed_schema(), &request_scope());
         self.application
@@ -102,10 +136,7 @@ impl<L: LawPolicy> World<L> {
             .on_branch(self.application.current_world())
             .advanced()
             .mutate(Edit::<L> {
-                input: EdgeEdit {
-                    serial,
-                    edges: edges.to_vec(),
-                },
+                input,
                 marker: PhantomData,
             })
             .without_source()
