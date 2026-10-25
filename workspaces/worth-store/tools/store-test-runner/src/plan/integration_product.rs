@@ -86,6 +86,11 @@ const CERTIFICATION_FEATURE: Option<&str> = Some("worth-store/certification-test
 
 const SCENARIO_TARGETS: &[IntegrationTarget] = &[
     target(
+        "worth-store-relational",
+        "relational_home",
+        Some("worth-store-relational/certification-test-authority"),
+    ),
+    target(
         "worth-store",
         "physical_media_journeys",
         CERTIFICATION_FEATURE,

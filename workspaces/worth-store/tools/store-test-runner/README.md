@@ -68,8 +68,10 @@ producer reports completed operations to its parent; four minutes without
 progress fails fixture setup.
 
 `relational_home` requires the certification feature because its crash oracle
-uses the compiled media and interruption controls. Windows confinement tests
-create real file and directory symlinks. Run with Windows Developer Mode enabled
+uses the compiled media and interruption controls. The scenario CI partition
+selects it and enables `worth-store-relational/certification-test-authority`.
+Windows confinement tests create real file and directory symlinks. Run with
+Windows Developer Mode enabled
 or an account holding the symbolic-link creation privilege; fixture creation
 must succeed before those tests can exercise confinement.
 
