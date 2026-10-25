@@ -119,10 +119,9 @@ impl ExecutionResourceLease<'_> {
         if let Some(bytes) = memory_bytes {
             ledger.charged_memory_bytes += bytes;
         }
-        for node in lineage
-            .iter()
-            .filter(|node| memory_bytes.is_some() || worker_nodes.contains(&node.id))
-        {
+        for node in lineage.iter().filter(|node| {
+            memory_bytes.is_some_and(|bytes| bytes != 0) || worker_nodes.contains(&node.id)
+        }) {
             let usage = ledger.nodes.entry(node.id).or_default();
             if worker_nodes.contains(&node.id) {
                 usage.active_workers += worker_count_per_node;
@@ -134,12 +133,34 @@ impl ExecutionResourceLease<'_> {
         Ok(ResourceReservation {
             authority: Arc::clone(&self.authority),
             memory: memory_bytes.map(|bytes| ReservedMemory {
-                lineage: lineage.iter().map(|node| node.id).collect(),
+                // Zero-byte memory has no ledger entry to retain. A sibling
+                // reservation may remove an otherwise idle lineage node.
+                lineage: if bytes == 0 {
+                    Vec::new()
+                } else {
+                    lineage.iter().map(|node| node.id).collect()
+                },
                 bytes,
             }),
             worker_lineage: worker_nodes,
             worker_count_per_node,
             process_workers,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn zero_byte_inline_entry_outlives_the_worker_that_made_it_inline() {
+        let lease = ExecutionResourceLease::serial(crate::tests::request(1, 1024, 100)).unwrap();
+        let worker = lease.reserve_worker_entry().unwrap();
+        let inline = lease.reserve_entry(0).unwrap();
+        drop(worker);
+        drop(inline);
+        assert_eq!(lease.charged_memory_bytes(), 0);
+        assert!(lease.reserve_memory(1024).is_ok());
     }
 }
