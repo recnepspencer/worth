@@ -14,8 +14,13 @@ error[E0599]: no method named `fork_branch_from` found for struct `RelationalRun
 6 |     let _ = runtime.fork_branch_from(BranchId("target".to_owned()), &BranchId("main".to_owned()));
   |                     ^^^^^^^^^^^^^^^^
   |
-help: there is a method `fork_branch` with a similar name
+help: there is a method `fork_branch` with a similar name, but with different arguments
+ --> src/branch/fork_runtime_adapters.rs
   |
-6 -     let _ = runtime.fork_branch_from(BranchId("target".to_owned()), &BranchId("main".to_owned()));
-6 +     let _ = runtime.fork_branch(BranchId("target".to_owned()), &BranchId("main".to_owned()));
-  |
+  | /     pub fn fork_branch(
+  | |         &self,
+  | |         execution: &worth_execution::ExecutionRequest<'_, '_>,
+  | |         target_branch: BranchId,
+  | |         source: AdmittedRelationalForkSourceBasis,
+  | |     ) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {
+  | |____________________________________________________________________________________________^
