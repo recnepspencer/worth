@@ -96,6 +96,7 @@ impl ReadmittedRegionDirectory {
             result.push(RelationalRootRegionCheckpoint {
                 partition_id: leaf.partition_id,
                 content_digest: leaf.content_digest,
+                kind_commitment: leaf.kind_authority,
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,

@@ -40,7 +40,10 @@ fn cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint() {
                 })
                 .collect::<Vec<_>>();
             assert!(records[0].is_some());
-            assert_eq!(read_entity_name(records[0].as_ref().unwrap()).as_deref(), Some(label.as_str()));
+            assert_eq!(
+                read_entity_name(records[0].as_ref().unwrap()).as_deref(),
+                Some(label.as_str())
+            );
             assert!(records[2].is_none());
             let native = runtime
                 .durability_authority()

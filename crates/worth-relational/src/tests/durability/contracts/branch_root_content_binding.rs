@@ -48,7 +48,11 @@ fn checkpoint_rejects_omitted_root_partition_with_recomputed_image_digest() {
         .expect("production checkpoint carries a branch-root partition");
     recompute_partition_image_digest(root);
 
-    assert_corrupt_recovery_leaves_no_recovered_state(execution, plan, "StorageContentMismatch");
+    assert_corrupt_recovery_leaves_no_recovered_state(
+        execution,
+        plan,
+        "root kind reconstruction: Damaged",
+    );
 }
 
 #[test]

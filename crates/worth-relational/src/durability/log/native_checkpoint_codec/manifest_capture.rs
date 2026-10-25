@@ -192,7 +192,14 @@ impl CapturedManifest {
             let schema = schemas
                 .get(&root.schema_carrier_digest)
                 .ok_or_else(|| corrupt("missing root schema carrier"))?;
-            let partitions = restore_images(&root.partition_images, schema)?;
+            let partitions = restore_images(
+                &root.partition_images,
+                schema,
+                checkpoint
+                    .root_kind_images
+                    .get(&root.commit_id)
+                    .ok_or_else(|| corrupt("missing root kind images"))?,
+            )?;
             let regions = capture_partitions(
                 &partitions,
                 schema,
@@ -216,7 +223,11 @@ impl CapturedManifest {
                 .get(&digest)
                 .ok_or_else(|| corrupt("missing mirror schema carrier"))?;
             capture_partitions(
-                &restore_images(&checkpoint.partition_images, schema)?,
+                &restore_images(
+                    &checkpoint.partition_images,
+                    schema,
+                    &checkpoint.mirror_kind_images,
+                )?,
                 schema,
                 digest,
                 &symbols,
@@ -234,6 +245,7 @@ impl CapturedManifest {
 fn restore_images(
     images: &[PartitionCheckpointImage],
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    kinds: &crate::storage::residency::CheckpointRegionKindImages,
 ) -> Result<BTreeMap<crate::identity::data::PartitionId, PartitionState>, DurabilityError> {
     let contracts =
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
@@ -247,7 +259,9 @@ fn restore_images(
             return Err(corrupt("duplicate partition image"));
         }
     }
-    crate::storage::partition::rebuild_adjacency_kind_buckets(&mut partitions).map_err(corrupt)?;
+    kinds
+        .restore(&mut partitions)
+        .map_err(|cause| corrupt(format!("kind reconstruction: {cause:?}")))?;
     Ok(partitions)
 }
 

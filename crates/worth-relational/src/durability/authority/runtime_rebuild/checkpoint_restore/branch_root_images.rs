@@ -69,13 +69,12 @@ pub(super) fn restore_branch_root_images(
             &owner,
         )?;
         work.root_partition_images_restored += image.partition_images.len();
-        crate::storage::partition::rebuild_adjacency_kind_buckets(&mut restored_partitions)
-            .map_err(|detail| {
-                corrupt_checkpoint(format!(
-                    "branch-root image `{}` adjacency recovery failed: {detail}",
-                    image.commit_id.0
-                ))
-            })?;
+        checkpoint
+            .root_kind_images
+            .get(&image.commit_id)
+            .ok_or_else(|| corrupt_checkpoint("root kind images missing".into()))?
+            .restore(&mut restored_partitions)
+            .map_err(|cause| corrupt_checkpoint(format!("root kind reconstruction: {cause:?}")))?;
         if partitions
             .insert(image.commit_id, restored_partitions)
             .is_some()

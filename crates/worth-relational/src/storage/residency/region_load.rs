@@ -1,4 +1,3 @@
-use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use super::region_image::*;
@@ -12,7 +11,7 @@ use crate::storage::data::{
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
-use crate::storage::partition::{AdjacencyKindBasis, SparseAdjacencyTable};
+use crate::storage::partition::AdjacencyKindBasis;
 
 pub(super) fn load_head(
     cold: &RelationalColdRegion,
@@ -31,11 +30,7 @@ pub(super) fn load_head(
         )?;
         let head: RegionHeadImage =
             rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
-        super::kind_commitment::verify(
-            &head.adjacency_kinds,
-            &head.reverse_adjacency_kinds,
-            cold.kind_authority.head,
-        )?;
+        super::kind_commitment::verify(&head.kind_projection, cold.kind_authority.head)?;
         if head.partition.partition_id != cold.partition_id {
             return Err(Cause::Damaged);
         }
@@ -43,14 +38,15 @@ pub(super) fn load_head(
         let mut partition =
             partition_from_image(head.partition, cold.schema.aspect_plans(), &contracts)
                 .map_err(|_| Cause::Damaged)?;
-        install_kinds(
-            &mut partition.adjacency,
-            head.adjacency_kinds,
+        super::kind_projection::rebuild(
+            &mut partition,
+            &head.kind_projection,
             AdjacencyKindBasis::Current,
         )?;
-        install_kinds(
-            &mut partition.reverse_adjacency,
-            head.reverse_adjacency_kinds,
+        verify_buckets(
+            &partition,
+            &head.adjacency_kinds,
+            &head.reverse_adjacency_kinds,
             AdjacencyKindBasis::Current,
         )?;
         Ok((partition, head.history_frontiers))
@@ -87,11 +83,7 @@ pub(super) fn load_full(
         )?;
         let history: RegionHistoryImage =
             rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
-        super::kind_commitment::verify(
-            &history.adjacency_kinds,
-            &history.reverse_adjacency_kinds,
-            cold.kind_authority.history,
-        )?;
+        super::kind_commitment::verify(&history.kind_projection, cold.kind_authority.history)?;
         let contracts = contracts(cold)?;
         let mut image = partition_to_image_with_contracts(
             head.partition.clone(),
@@ -110,14 +102,15 @@ pub(super) fn load_full(
             .map_err(|_| Cause::Damaged)?;
         partition.adjacency = head.partition.adjacency.clone();
         partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-        install_kinds(
-            &mut partition.adjacency,
-            history.adjacency_kinds,
+        super::kind_projection::rebuild(
+            &mut partition,
+            &history.kind_projection,
             AdjacencyKindBasis::Historical,
         )?;
-        install_kinds(
-            &mut partition.reverse_adjacency,
-            history.reverse_adjacency_kinds,
+        verify_buckets(
+            &partition,
+            &history.adjacency_kinds,
+            &history.reverse_adjacency_kinds,
             AdjacencyKindBasis::Historical,
         )?;
         Ok(partition)
@@ -172,40 +165,16 @@ fn verify_leaf(
     Ok(())
 }
 
-fn install_kinds(
-    table: &mut SparseAdjacencyTable,
-    entries: Vec<RegionAdjacencyKinds>,
+fn verify_buckets(
+    partition: &PartitionState,
+    outgoing: &[RegionAdjacencyKinds],
+    incoming: &[RegionAdjacencyKinds],
     basis: AdjacencyKindBasis,
 ) -> Result<(), Cause> {
-    let mut slots = BTreeSet::new();
-    for entry in entries {
-        if !slots.insert(entry.slot) {
-            return Err(Cause::Damaged);
-        }
-        let adjacency = table
-            .get_mut(usize::try_from(entry.slot).map_err(|_| Cause::Damaged)?)
-            .ok_or(Cause::Damaged)?;
-        let mut relations = BTreeSet::new();
-        for (kind, ids) in entry.kinds {
-            for id in ids {
-                if !relations.insert(id) {
-                    return Err(Cause::Damaged);
-                }
-                if matches!(basis, AdjacencyKindBasis::Historical) {
-                    adjacency.index_historical_kind(kind, id);
-                } else {
-                    adjacency.index_current_kind(kind, id);
-                }
-            }
-        }
-        if matches!(basis, AdjacencyKindBasis::Current)
-            && relations != adjacency.current_ids().iter().copied().collect()
-        {
-            return Err(Cause::Damaged);
-        }
-    }
-    if slots.len() != table.iter().count() {
-        return Err(Cause::Damaged);
+    if super::region_capture::capture_kinds(&partition.adjacency, basis) != outgoing
+        || super::region_capture::capture_kinds(&partition.reverse_adjacency, basis) != incoming
+    {
+        return Err(Cause::IntegrityMismatch);
     }
     Ok(())
 }

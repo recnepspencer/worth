@@ -267,9 +267,14 @@ not rewritten, while their content is unchanged.
   commitment from its leaves and compares it with the root descriptor. Each
   member is verified against its leaf when it loads.
   Leaves also carry separate head and history adjacency-kind commitments,
-  captured from the admitted region projection. Admission verifies these
-  against the supplied buckets without loading another region. Historical
-  buckets are reconstructed from the authenticated history projection. Leaves
+  captured from the admitted region projection and folded into the region
+  Merkle commitment checked against the canonical root descriptor. Admission
+  reconstructs current buckets from authenticated current adjacency and relation
+  metadata, and historical buckets from the authenticated history projection.
+  Locally owned relation claims are checked against the region's record history;
+  peer relation claims are bound by that canonical root commitment. Neither
+  verification requires loading a peer region. Supplied cache buckets must agree
+  with the reconstruction. Leaves
   naming the same member pair must agree on every fact, including counts and
   content and kind commitments; an inconsistent manifest is corrupt.
 - **Embedded checkpoints** used by the Query host carry the same members
@@ -294,6 +299,9 @@ source carries it, because recovery needs it before the medium is bound.
   cancellation, limits and transient or unknown source errors remain retryable.
   Another subject's failure never damages this cell. Runtime fork shares cold
   cells, and a full residency witness is required before copy-on-write editing.
+  The cell's dictionary is an isolated readmission dictionary. Each demanding
+  runtime admits the region's required text into its own symbol authority,
+  including when a fork shares an already loaded cell.
 
 **Guards.** Loads happen only in operation orchestrators, never behind a
 pure-looking accessor:

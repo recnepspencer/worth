@@ -2,7 +2,9 @@
 mod cell;
 mod kind_authority;
 mod kind_commitment;
+mod kind_projection;
 pub(crate) use kind_commitment::RelationalRegionKindCommitment;
+pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
 mod lease;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
 mod region_capture;
@@ -23,7 +25,9 @@ mod retention;
 pub(crate) use retention::RelationalRegionRetention;
 
 mod checkpoint_capture;
+mod checkpoint_kind_images;
 pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;
+pub(crate) use checkpoint_kind_images::CheckpointRegionKindImages;
 
 mod demand_failure;
 pub(crate) use demand_failure::RelationalResidencyDemandFailure;

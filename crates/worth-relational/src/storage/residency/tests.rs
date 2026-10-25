@@ -9,6 +9,11 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+#[path = "cross_region_forgery_tests.rs"]
+mod cross_region_forgery;
+#[path = "projection_corruption_tests.rs"]
+mod projection_corruption;
+
 #[derive(Debug)]
 struct CountedSource {
     members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,

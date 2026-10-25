@@ -30,6 +30,7 @@ pub(crate) fn readmit(
         envelopes.push(commit);
     }
     let checkpoint = DurableCheckpoint {
+        root_kind_images: Default::default(), mirror_kind_images: Default::default(),
         directory: Some(Arc::new(RelationalCheckpointDirectory { manifest: manifest.clone(), source })),
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),

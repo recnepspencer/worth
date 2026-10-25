@@ -80,6 +80,7 @@ impl RelationalBranchRoot {
                 |region| super::super::root_checkpoint::RelationalRootRegionCheckpoint {
                     partition_id: region.partition_id,
                     content_digest: region.content_digest,
+                    kind_commitment: region.kind_commitment,
                     entity_slots: region.entity_slots,
                     relation_slots: region.relation_slots,
                     unavailable_records: region.materialization_unavailable_records(),

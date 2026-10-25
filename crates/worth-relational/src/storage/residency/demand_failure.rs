@@ -1,7 +1,7 @@
 use crate::storage::data::RelationalStorageUnavailable;
 
 /// A demand can stop under the original request without damaging its cell.
-/// Storage refusals are sticky; request cancellation and budgets are retryable.
+/// Proven member damage is sticky; request and transient refusals are retryable.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum RelationalResidencyDemandFailure {
     StorageUnavailable(RelationalStorageUnavailable),

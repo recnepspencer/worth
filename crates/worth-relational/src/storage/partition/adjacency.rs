@@ -107,6 +107,10 @@ impl AdjacencySet {
         entries.historical_by_kind = None;
     }
 
+    pub(crate) fn reset_historical_kind_buckets(&mut self) {
+        self.entries_mut().historical_by_kind = None;
+    }
+
     pub(crate) fn index_current_kind(&mut self, kind_id: KindId, relation_id: RelationId) {
         insert_kind_relation(
             &mut self.entries_mut().current_by_kind,

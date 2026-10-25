@@ -26,7 +26,7 @@ pub(crate) fn decode_checkpoint_from_source(
     let payload = bytes.strip_prefix(super::CHECKPOINT_MAGIC).ok_or_else(|| {
         DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
-            "unsupported native checkpoint frame; CHK8 required",
+            "unsupported native checkpoint frame; CHK9 required",
         )
     })?;
     let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
