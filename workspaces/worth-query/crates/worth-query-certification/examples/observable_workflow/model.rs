@@ -8,6 +8,8 @@
 pub mod assessment_output;
 #[path = "../../tests/application_graph/document_retention_model/assessment_readiness.rs"]
 pub mod assessment_readiness;
+#[path = "../../tests/application_graph/document_retention_model/correctable_retention.rs"]
+pub mod correctable_retention;
 #[path = "../../tests/application_graph/document_retention_model/host.rs"]
 pub mod host;
 #[path = "installation.rs"]
