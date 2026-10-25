@@ -26,6 +26,7 @@ pub(super) fn install<const MODE: u8>() -> Result<
             invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
+            producer_contacts: None,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         support::limits(32, support::invalidation()),

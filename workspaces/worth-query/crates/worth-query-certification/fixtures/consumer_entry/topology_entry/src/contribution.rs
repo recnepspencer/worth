@@ -25,6 +25,8 @@ pub struct TopologyConfiguration {
     pub invariant_read_observer: Option<super::PlanarInvariantReadObserver>,
     pub producer_authorization_denials: Arc<AtomicUsize>,
     pub producer_domain_denial: Arc<AtomicBool>,
+    #[cfg(test)]
+    pub(crate) producer_contacts: Option<super::producer::ProviderContacts>,
 }
 
 impl<Schema: TopologySchemaBinding> WorthQueryApplicationContribution<Schema>
@@ -119,6 +121,8 @@ impl TopologyContribution {
         >,
     {
         configuration.setup_calls.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        let provider = provider.with_contacts(configuration.producer_contacts.clone());
         #[cfg(test)]
         super::checkpoint_recovery::required_chain::configure(
             setup,

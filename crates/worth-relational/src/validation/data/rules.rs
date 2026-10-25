@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+mod owned_backing;
 
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,

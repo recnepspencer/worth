@@ -3,11 +3,10 @@ use super::*;
 
 #[test]
 fn unrelated_publications_keep_shared_upstream_and_consumer_without_hypothetical_copy() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let world = installed_authorization_world(true);
     world.application.with_host_advancement(|phase| {
         let custody = phase.test_host_request();
+        let execution = &custody.borrowed_request_for_test();
         let selected = world.selected_product(&custody);
         let entity = selected.resolve_entity(&phase, AccountStatus::reference(),
             "open".into(), &live_scope(), WorthQueryPrincipalResolutionMode::Ordinary)

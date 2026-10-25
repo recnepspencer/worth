@@ -158,6 +158,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),
+            super::super::InvariantStage::All,
         );
         assert_eq!(
             budget.stop(),
@@ -183,6 +184,7 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
             &candidate,
             &lease,
             &evaluation_budget,
+            super::super::InvariantStage::All,
         );
         for packet in planned.packets {
             let InvariantPacketRegistration::CustomNotApplicable { work, .. } =
@@ -240,6 +242,7 @@ fn a_touched_rule_keeps_its_typed_local_ceiling() {
             ExecutionRequest::leased(&lease),
             &candidate,
             Some(&budget),
+            super::super::InvariantStage::All,
         );
         assert_eq!(budget.stop(), Some(CustomPreparationStop::WorkExhausted));
         assert!(

@@ -1,4 +1,9 @@
 mod identity;
-mod reducer;
+mod prefix;
 
-pub(crate) use reducer::{reduce_invariant_execution, reduce_invariant_execution_checked};
+pub(crate) use prefix::ReducedInvariantPrefix;
+pub(crate) type ReducedInvariants = (
+    crate::validation::engine::InvariantExecutionResult,
+    crate::authority::commit::preparation::diagnostics::counters::ValidationPreparationCounters,
+    Vec<crate::validation::execution::ValidationReducerConflict>,
+);

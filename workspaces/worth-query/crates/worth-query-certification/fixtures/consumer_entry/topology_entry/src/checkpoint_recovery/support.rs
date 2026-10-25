@@ -24,6 +24,7 @@ use worth_query_host::facade::{
 
 use super::*;
 mod installation;
+pub(super) mod observed;
 mod principal_bootstrap;
 pub(super) use principal_bootstrap::bind_model_owner;
 
@@ -31,6 +32,8 @@ pub(super) type Application = application_installation::WorthQueryProgramApplica
     CheckpointSchema,
     CheckpointProgram,
 >;
+
+pub(super) const DEFAULT_RETAINED_COMMITS: u64 = 32;
 
 pub(super) fn install(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
@@ -42,9 +45,10 @@ pub(super) fn install_with_domain_denial(domain_denial: Arc<AtomicBool>) -> Appl
     installation::try_install_program_with_limits_and_domain_denial::<CheckpointProgram>(
         None,
         Default::default(),
-        limits(32, invalidation()),
+        limits(DEFAULT_RETAINED_COMMITS, invalidation()),
         seed_cycle,
         domain_denial,
+        None,
     )
     .expect("the checkpoint source installs")
 }
@@ -68,7 +72,7 @@ where
     >,
     Program::Outputs: application_installation::WorthQueryApplicationProgramRoots<CheckpointSchema>,
 {
-    install_program_with_history::<Program>(checkpoint, profile, 32)
+    install_program_with_history::<Program>(checkpoint, profile, DEFAULT_RETAINED_COMMITS)
 }
 
 pub(super) fn install_program_with_history<Program>(
@@ -157,6 +161,7 @@ where
         limits,
         seed,
         Arc::new(AtomicBool::new(false)),
+        None,
     )
 }
 

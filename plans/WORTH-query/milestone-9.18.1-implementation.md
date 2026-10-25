@@ -1010,3 +1010,349 @@ Slice 5 commit-and-push clearance was granted after the completed 299-case
 Topology result and closeout evidence. Phase 2 private acyclic adoption and
 native-before-custom preparation remain open; this slice does not authorize a
 Phase 2 master merge.
+
+## Phase 2, slice 6: Native law prerequisites before custom preparation
+
+### Boundary review
+
+The public tree is clean at dd6cea4393 and the private adoption tree is clean at
+cf9f3841d6. The latter still pins the accepted Phase 1 SDK97044 and retains the
+manual cycle guard. Current source confirms that CAD Rule::prepare_scope enters
+Access::candidate and basis::thread::live while preparing an installed custom
+invariant. Removing that guard before a platform guarantee would permit an
+unbounded walk on a proposed cycle. Its body/branch/retirement/name/definition
+and geometry checks have separate meanings and must remain.
+
+Relational owns the missing prerequisite. InvariantEngine creates one candidate
+input plan, but packet_selection eagerly prepares all applicable custom scopes
+while collecting native.chain(custom), before any native packet runs. Merely
+sorting packets, adding another CAD/Query search, or relying on a later native
+denial cannot protect custom preparation. The current proposal authority already
+provides the correct proposed WorkingState, request, observation, version,
+merged plan and typed failure conversion; preserve that path.
+
+The engine must complete native planning, execution and reduction before custom
+scope preparation at the same execution point. A relevant native blocking
+failure returns its original result through the existing authority. Native
+AuditOnly/advisory evidence does not block a custom hook. Request cancellation,
+native interruption and reduction failure refuse before custom preparation.
+The existing Automatic/unchecked-custom metadata admission stays up front:
+administrative rejection invokes no hook and retains its current precedence.
+This does not promise that a later SnapshotPublication check establishes an
+earlier execution point's precondition.
+
+Two handoffs constrain the implementation. First, successful native evidence
+must survive in the final result, including checks, canonical decisions, packet
+identities, preparation failures/conflicts and proof scope. The current reducer
+has no stage-composition owner. Second, native evidence remains live while
+custom preparation and execution allocate. Existing lease/serial reservations
+and the existing shared RequestWorkBudget must cover that lifetime; no fresh
+work account, policy, ceiling, cost contract or generic execution framework is
+introduced.
+
+Current planning supplies an important simplification: all packets for one
+request share execution point, observation and canonical partition_scope.
+ValidationReductionKey orders packet_index before group mask, and registration
+order is native then custom. Stable custom ordinals offset by completed native
+packet count therefore form a canonical suffix. Preserve actual packet keys,
+worker identities and the last identity across that seam, and verify the prefix
+condition instead of assuming arbitrary stages may be concatenated.
+
+### Intended result and topology
+
+There is no new authoring syntax. An application's existing declared native law
+can establish its candidate-graph prerequisite before the same execution
+point's custom scope reads that graph. CAD acyclic adoption follows only after
+this prerequisite is implemented and independently certified; this public slice
+does not delete the private guard or claim Phase 2 closure.
+
+- validation/engine/engine.rs owns native-then-custom orchestration and liveness.
+  A sibling stage_execution.rs extracts the existing plan/packet/evaluate flow,
+  used once per selected stage, without another evaluator.
+- execution/planning owns explicit native/custom selection and packet offsets.
+  Native selection never invokes a custom executable. Existing checked planning
+  and packet preparation remain the shared kernels.
+- reduction/prefix owns an incremental private native prefix and checked
+  adapter. Retain each completed stage's actual sorted worker envelopes and
+  memory ticket, moving their backing rather than cloning check payloads.
+  Absorb processes only newly completed results and updates the same summary
+  policy/conflict semantics. It does not sort or reduce the native prefix again.
+- result/execution_summary keeps one failure-effect classification; its existing
+  whole-result construction and the incremental reducer use that owner. Final
+  result construction consumes the accumulated summary, projects decisions once
+  and moves checks into the existing public result; no public staging DTO.
+- planning/proof_boundary retains actual partition IDs, widening causes and
+  touched-only evidence until composition. Counts add, partitions union. The
+  private strategy fold reports actual staged parallel execution if any
+  completed nonempty stage selected it, otherwise the actual common serial
+  reason. Serial-stage diagnostics remain visible; stages do not overlap.
+
+### Implementation and proof
+
+1. Add a same-owner native prerequisite court using issued DAG identities,
+   ordinary validate/publish and a custom rule with separate preparation and
+   evaluation observations. Seed one lawful edge; hostile closes its cycle,
+   while the lawful twin additionally removes the old edge. Record the current
+   failing-before evidence that custom preparation ran. Require original native
+   contract/closing endpoints, both hooks absent and unchanged head on refusal;
+   the twin must invoke both hooks and retain native plus custom evidence.
+2. Split registration selection and thread its stage/ordinal through existing
+   checked/unleased planning. Extract the current stage runner and preserve one
+   runtime candidate-input instance, request, lease and cumulative account.
+   Empty stages add no fictional worker/reducer result or strategy event.
+3. Refactor the existing reducer into absorb/finish at its own owner. Native
+   absorb really completes ordering, checkpoints, admission, summary and conflict
+   reduction before the gate. Retain original envelope groups/keys, avoiding
+   per-check key copies and native re-reduction. Compose result metadata only
+   from stages actually run; output projection and its clones are admitted and
+   charged as work actually performed.
+4. Keep the native evidence reservation live throughout custom planning, workers
+   and reduction. Existing run_measured_result and original-request scoped
+   reservation APIs admit growth before allocation and retain backing on the
+   original lineage. Existing envelope/check/identity size helpers measure the
+   backing actually retained. Summary failure clones, conflict identities,
+   retained keys and raw proof/strategy backing created by absorb are admitted
+   there before growth; later finish admission cannot cover them retroactively.
+   A stage's already-held input is not billed again
+   as a new native copy. Final vector/decision/metadata growth has its own live
+   peak admission while moved payloads remain covered until engine return.
+   No release-then-reserve transfer or fabricated serial budget is allowed.
+5. Extend the court for real native interruption with a completing twin,
+   pre-cancel/no hooks, native-pass/custom preparation failure/cancel, advisory
+   continuation, custom-only behavior and unchecked metadata precedence. Prove
+   retained ticket lifetime, constrained/funded memory twins and release on
+   refusal/drop. Exercise the real proposal's shared cumulative account; never
+   give custom work a fresh copy of the original allowance. Preserve existing
+   deterministic custom installation order and exact proof/decision provenance.
+6. Update the existing relation-laws and installed-invariants guides' prerequisite/failure prose,
+   stating the execution-point and administrative-admission limits. Rebuild the
+   complete native owner library and affected Query/consumer targets; run native
+   engine, request-work, checked planning/reduction and custom-order courts,
+   application_graph, actual ConsumerRoot and all three production examples.
+   Run the complete affected topology court after this scheduling change;
+   previous DTO-only evidence does not certify this new ordering. Interpret any
+   changed planar refusal by its actual original typed cause, not a catch-all.
+7. Run normal boundary-check, agent-context, scoped formatting, line caps,
+   function scrutiny and whitespace. The persistent reviewer applies qa-loop,
+   qa-tests and code-quality-qa to the coherent final patch and evidence. Commit
+   and push only after clearance. Then begin the separate private SDK adoption
+   and guard deletion, with its own installed hostile/twin court and all private
+   repository gates. No Phase 2 master merge is authorized by this slice alone.
+
+The persistent reviewer independently confirmed the native staging owner,
+canonical-prefix property, existing memory/request APIs and required barrier
+proofs. The private general-modeling, reset, CAD laws, roadmap, README and
+adoption instructions were read before implementation; they require this
+platform repair at its public owner rather than a private workaround.
+
+### Native prerequisite failing-before evidence
+
+The new same-owner court compiles in the complete 1,826-test native library.
+Its original run fails on the first unleased closing-edge proposal after the
+original typed no_cycles/Kind2/exact endpoints have passed: both hook counters
+advance from the lawful seed's (1,1) to (2,2), although native acyclicity refuses.
+This directly disproves native denial as a preparation prerequisite today. The
+log is targets/query-9.18.1-slice6-native-before-test.log outside the checkout.
+The reviewer's sole fixture correction makes release assertions inspect the
+actual SerialRequest memory budget on the unleased path, rather than the unused
+lease; leased paths still inspect their original lease. No verdict assertion or
+production code changes before this reproducer.
+
+### Retained native backing clarification
+
+The current envelope helper treats Native rule data as zero bytes, although
+InvariantRule owns lowered contracts with ContractId(String) and kind vectors.
+Planning's related helper counts some vectors but omits those strings. The new
+cross-stage carry cannot truthfully reuse that omission. Add one crate-private
+owned-capacity helper at InvariantRule's data owner and a capacity projection at
+ContractId's owner, then reuse it from registration, envelope, identity and
+decision retention. This measures existing backing; it introduces no resource
+policy or runtime cost contract.
+
+The measured result adapter separately accounts known input and returned heap.
+Moved envelope backing is therefore held on its own original-lineage ticket,
+while the measured absorb ticket covers only new summary/conflict allocations.
+Older native tickets remain live during the custom stage. Final projection
+admits its new vectors/decision/metadata backing while the stage tickets still
+cover moved payloads. An originally unaccounted serial request remains native;
+an already active accounted ancestor is honored. No fresh serial budget is
+created to make an otherwise unavailable reservation succeed.
+
+This carry begins at the existing reducer input seam. The packet runner still
+returns materialized envelopes after releasing its worker-result tickets; the
+new reducer admits that input's actual backing before retaining it across the
+next stage. This slice does not claim continuous worker-to-caller ticket
+transfer. Once a prefix ticket is held, no stage releases and re-reserves it.
+
+### Initial implementation evidence
+
+Normal Native check passes. The first expanded native library builds without
+warnings; all seven barrier courts pass. They cover the three-posture hostile
+cycle/lawful twin, real checked native worker exhaustion and funded twin,
+original pre-cancellation, custom preparation refusal/cancellation after a
+native pass, native advisory/HarnessAudit continuation, and actual retained
+native backing across a refused/funded custom-stage admission. The existing
+one/two/eight-worker overlap court now also retains a lawful native prefix and
+three original checks, decisions and proof packets.
+
+The complete native run reports 1,801 passes, 31 existing ignores and one
+failure in the fixed five-entry work invoice. The source-derived change is
+113 minus two empty scope walks of three units plus two new result-move
+checkpoints, yielding 109. The test now expresses those independent terms and
+retains its one-unit-below original-cause/head refusal. Its corrected rebuild,
+additional publication/admin/accounting courts and consumer gates are pending;
+these initial results do not constitute slice clearance.
+
+### Consumer request handoff review
+
+The final native run is green: 1,805 passes and 31 existing ignores. All ten
+expanded barrier courts pass. Running the complete 1,974-case Query Execution
+library, rather than only compiling it, exposes mixed-request native fixture
+writes in aggregate, output-lineage/checkpoint and one provider-readmission
+court. They enter an installed host phase but pass a separately constructed
+accounted serial request to native mutation. The engine's new original-request
+scope correctly refuses that unrelated request under the active leased parent.
+Graph runtime access borrows a custody marker; it does not replace execution
+authority or make the independently captured serial description a descendant.
+
+The persistent reviewer confirmed the causal handoff. Correct only the failing
+installed callbacks to borrow their phase's existing exact request and carry it
+through native preparation, commit and publication. Where a test helper already
+receives phase custody, remove its misleading second request argument instead
+of silently ignoring it. Keep standalone serial native paths and independent
+bounded/cancellation probes. Preserve all existing invalidation, equality,
+checkpoint and retirement assertions. No production lineage relaxation, ambient
+request lookup, new scope API or invented authority is part of this correction.
+Rebuild and run those complete affected fixture families, then repeat the Query
+owner suite as warranted by the corrected handoff and full consumer gates.
+
+The production-identical full Query Execution run terminates after 1,005.51
+seconds with 1,960 passes, 13 failures and one existing subprocess-probe ignore.
+Every failure carries the diagnosed UnrelatedNestedLease cause; the long
+authority-resource oracle passes. The reviewer accepts reuse of those untouched
+passing tests, conditional on rebuilding and passing the complete aggregate,
+native-journey, native-output-witness checkpoint and managed-readmission
+families from the corrected artifact. Reused and rebuilt evidence will be
+reported separately. A production change or different failure reopens it.
+
+The installed application_graph court passes all 424 tests with five existing
+ignores. The consumer-root test entry passes all 80 cases, and shared_execution
+passes its one test. The positive consumer all-targets build succeeds for the
+three named supported packages. An earlier overbroad workspace command also
+selected hostile_foreign_schema and was refused with the intended E0277 foreign
+schema membership fence; that command is not reported as a positive build.
+The optional shared_execution example test harness retains its five existing
+dead-code warnings. Ordinary executable builds and the complete 301-case
+Topology scheduling court remain separate pending evidence.
+
+The final Query fixture artifact compiles without warnings in 2m39s. Its exact
+inventory remains 1,974 tests. Complete affected-family filters pass: aggregate
+9, native_journey 31 (including concurrent required hints), checkpoint 2 and
+managed readmission 28. These 70 current-artifact passes replace 57 earlier
+passes and all 13 diagnosed failures. Together with 1,903 production-identical
+unaffected passes and the existing ignored probe, this supplies partitioned
+evidence for 1,973 passes and one ignore. It is not a single final-source full
+run. The inventory/failure replacement check is recorded outside the checkout
+in targets/query-9.18.1-slice6-query-partition.json. The reviewer accepts this
+scope and the unchanged authority oracle's actual terminal pass.
+
+The normal dev build of ConsumerRoot and all three ordinary examples succeeds
+without warnings. The actual Root public candidate journey and required_feature,
+shared_execution and invariant_reads executables all complete. Native, Graph,
+consumer-root and shared test results above remain current for production.
+
+Final normal boundary-check reports Road 1 Cargo topology valid, and the fresh
+agent-context check passes. All 54 scoped Rust files pass formatting and the
+400-line cap; function scrutiny reports 42 advisories and zero scan errors,
+all accepted by the persistent reviewer. Whitespace passes. The complete
+unfiltered Topology court is still running; no slice commit or Phase 2 merge
+clearance is claimed before its terminal result.
+
+### Topology observer boundary correction
+
+The fresh unfiltered 301-case Topology run terminates in 1,049.02 seconds with
+300 passes and one failure. The dropped-dependency journey passes its local
+decision and demand-contact assertions, then reads process-global
+producer::PROVIDER_CONTACTS as four instead of zero. Its later unresolved-root
+assertion was not reached in that run. A complete isolated rerun passes,
+including that later assertion; this alone does not clear the failed court.
+
+Both real provider entry sites increment a shared process counter, so it cannot
+attribute work to the application whose absence of work the court claims.
+Checkpoint observation guards exclude participating courts but do not scope
+the receiver's count. The reviewer verified the insertion boundary:
+TopologyContribution::configure_features receives default and all three custom
+provider constructions before setup.producer. That convergence must attach an
+optional caller-owned Arc counter to the real provider; constructor-only
+injection would miss custom key-mask/handler configurations.
+
+Keep this correction in the fixture owner. Add a cfg(test) optional observer to
+TopologyConfiguration, retain it on InitialPlanarProvider, and increment at the
+same operation_input/idempotency_key entry sites. Extend private installation
+support to accept the caller's observer; existing unobserved wrappers keep
+their current meaning. Migrate initial-provider global reset/read courts to
+their actual installed application's retained counter, then remove the global
+initial-provider counter. Do not add a TLS registry, identity lookup, SDK API,
+new budget, verdict selector or serialization workaround. Keep the observation
+guard for its other existing receiver-bound recording duties.
+
+Prove custody with two genuinely installed applications and distinct counters:
+foreign real demand work must leave the subject counter unchanged, then subject
+work must advance only its own counter. Preserve the dropped-dependency local
+and unresolved-root assertions. Run its complete sibling court and the fresh
+concurrent unfiltered Topology suite, then the affected ordinary consumer build
+and scoped static gates. Existing Native/Query production evidence is reusable
+because this follow-up changes only fixture observation ownership; any different
+typed/local outcome reopens the corresponding production boundary.
+
+The observer correction now retains the caller's optional counter on the real
+provider through the central contribution path, including custom key-mask and
+handler constructors. All initial-provider counter courts use explicit retained
+observers; the independent final-output recorder is unchanged. The two-installed-
+application custody court passes, and the complete diamond court passes all 20
+cases, including the earlier failure's later unresolved-root assertion.
+
+The rebuilt consumer-root library passes all 80 tests and shared_execution its
+one test. The three named supported consumer packages pass their all-targets
+build; the optional shared_execution example test harness retains its five
+existing warnings. The ordinary dev build is warning-free, and the actual Root
+candidate journey plus required_feature, shared_execution and invariant_reads
+executables all pass again. Agent-context, formatting, whitespace and the dirty
+line-cap guard pass. Function scrutiny covers 86 scoped Rust files with 69
+advisories and zero scan errors; the persistent reviewer accepts all advisories
+and the observer source under the three QA skills. The final normal boundary
+check passes with Road 1 Cargo topology valid. Only the final concurrent
+Topology terminal result remains pending.
+
+The fresh concurrent 302-case run terminates after 1,449.71 seconds with 301
+passes and one failure. The repaired dropped-dependency journey and all other
+ordinary cases pass. The sole named matrix finding is family 7, five workers,
+declaration 0, certified dispatch 0, compute failure 6, no reuse: the child
+observes three distinct computing-member worker threads where its wave expects
+four. All 921 runnable rows were executed; the matrix records one red row and
+the declared 111 inapplicable empty-family rows. No typed verdict, value or
+price comparison failure is reported for the remaining rows.
+
+The existing query gate gives this exact full matrix a CPU-exclusive lane after
+all shared jobs, and runs ordinary Topology cases in separate processes. The
+additional concurrent run did not preserve that matrix resource posture. Run
+the unchanged complete matrix in its prescribed lane, retaining the concurrent
+failure as evidence. Do not lower its worker assertion, change a timeout,
+exclude a row or claim a clean concurrent 302-case result. Its terminal result
+and the reviewer's assessment remain open.
+
+The unchanged full matrix passes in the pre-existing exclusive lane in 518.83
+seconds: all 1,032 declared rows are accounted for, with 921 executed price-twin
+rows, 111 named empty-family inapplicabilities and zero red rows. Combined with
+the 301 actual concurrent passes, this closes the Topology evidence for this
+slice under the repository's supported test posture. The reviewer accepts that
+partition and requires no source change or blanket concurrent repetition. The
+earlier 301/1 concurrent outcome remains recorded above; this is not a single
+green unfiltered 302-case invocation.
+
+All slice gates are now closed, including the final normal boundary/context
+checks, ordinary consumer executables and scoped static checks. The next slice
+is private CAD SDK adoption and replacement of its manual cycle guard after
+this public revision is published. Phase 2 remains open until that installed
+consumer proof and the private repository gates pass; no master merge is
+claimed by this slice.

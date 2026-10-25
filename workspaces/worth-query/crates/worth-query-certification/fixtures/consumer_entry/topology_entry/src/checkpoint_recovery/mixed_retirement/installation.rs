@@ -18,6 +18,7 @@ pub(super) fn install(
         invariant_read_observer: None,
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
+        producer_contacts: None,
     },);
     let declaration = MixedSchema::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<MixedSchema, MixedProgram>::begin()

@@ -1,26 +1,10 @@
 use std::mem::size_of;
 
 use crate::identity::data::KindId;
-use crate::validation::data::{
-    CustomInvariantAccessContract, InvariantRegistration, InvariantRule,
-};
+use crate::validation::data::{CustomInvariantAccessContract, InvariantRegistration};
 
 pub(super) fn native_registration_retained_bytes(registration: &InvariantRegistration) -> u64 {
-    let nested = match &registration.rule {
-        InvariantRule::UniqueEntityAspectField { field_locator } => {
-            field_locator.owned_allocation_capacity_bytes() as u64
-        }
-        InvariantRule::EndpointKindContract(contract) => kind_vec(&contract.allowed_source_kinds)
-            .saturating_add(kind_vec(&contract.allowed_target_kinds)),
-        InvariantRule::CardinalityMinimumContract(contract) => {
-            kind_vec(&contract.candidate_source_kinds)
-                .saturating_add(kind_vec(&contract.candidate_target_kinds))
-        }
-        InvariantRule::ConnectivityMinimumContract(contract) => {
-            kind_vec(&contract.source_kind_ids).saturating_add(kind_vec(&contract.target_kind_ids))
-        }
-        _ => 0,
-    };
+    let nested = registration.rule.owned_allocation_capacity_bytes();
     nested.saturating_add(size_of::<InvariantRegistration>() as u64)
 }
 

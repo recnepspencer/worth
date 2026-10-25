@@ -75,3 +75,60 @@ fn proof_scope_class(
         InvariantPlanScopeClass::PartitionScope
     }
 }
+
+/// Completed stage keys retain the same actual partition slices as their plans.
+/// Compose their evidence without summing overlapping partition counts.
+pub(crate) fn composed_proof_boundary_summary<'a, E>(
+    stages: impl IntoIterator<Item = &'a crate::validation::execution::InvariantStageOutput>,
+    mut check: impl FnMut(u64, u64) -> Result<(), E>,
+) -> Result<InvariantProofBoundarySummary, E> {
+    let mut touched = BTreeSet::new();
+    let mut saw_touched_only = false;
+    let mut seen = [false; 2];
+    let mut ordered = [None; 2];
+    let mut cause_count = 0;
+    let mut packet_count = 0;
+    for stage in stages {
+        packet_count += stage.proof_boundary.packet_count();
+        saw_touched_only |=
+            stage.proof_boundary.scope_class() == InvariantPlanScopeClass::TouchedScope;
+        for &cause in stage.proof_boundary.widened_causes() {
+            check(1, 0)?;
+            let index = match cause {
+                InvariantScopeWideningCause::AllObservedPartitionScope => 0,
+                InvariantScopeWideningCause::FullObservedReadSet => 1,
+            };
+            if !seen[index] {
+                seen[index] = true;
+                ordered[cause_count] = Some(cause);
+                cause_count += 1;
+            }
+        }
+        for envelope in &stage.envelopes {
+            for &partition in envelope.reduction_key.partition_scope.iter() {
+                check(1, 0)?;
+                if !touched.contains(&partition) {
+                    // Same owned BTreeSet node payload/link convention as checked planning.
+                    check(
+                        0,
+                        (std::mem::size_of::<crate::identity::data::PartitionId>()
+                            + 4 * std::mem::size_of::<usize>()) as u64,
+                    )?;
+                    touched.insert(partition);
+                }
+            }
+        }
+    }
+    check(
+        0,
+        (cause_count * std::mem::size_of::<InvariantScopeWideningCause>()) as u64,
+    )?;
+    let mut widened = Vec::with_capacity(cause_count);
+    widened.extend(ordered.into_iter().flatten());
+    Ok(InvariantProofBoundarySummary::new(
+        proof_scope_class(&widened, saw_touched_only),
+        widened,
+        packet_count,
+        touched.len(),
+    ))
+}

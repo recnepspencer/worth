@@ -108,7 +108,14 @@ fn a_required_refresh_its_request_stops_is_left_to_a_later_advance() {
 #[test]
 fn a_cancelled_caller_retries_its_own_successor_on_its_next_advance() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = chain_application();
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+        None,
+        worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard(),
+        4_096,
+        source_world::seed,
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let (mut a, mut b, mut c, mut d) = chain_with_unrelated!(application, request);
@@ -139,10 +146,10 @@ fn a_cancelled_caller_retries_its_own_successor_on_its_next_advance() {
     // The same caller's next advance resumes its own interrupted row and
     // finishes it, without contacting the root producer that already
     // refreshed.
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let resumed = settled_in_one_advance!(b, request, "the cancelled caller");
     assert_eq!(
-        crate::producer::provider_contacts(),
+        provider_observation.count(),
         0,
         "the already refreshed root producer is not contacted again"
     );

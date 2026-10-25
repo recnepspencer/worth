@@ -157,6 +157,11 @@ fn run(workers: usize, wait: Duration) -> Run {
     let overlapped = Arc::new(Mutex::new(false));
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
+        .invariant_catalog(InvariantCatalog {
+            registrations: vec![InvariantRegistration::commit_boundary_blocking(
+                InvariantRule::MaxMergedIntents(usize::MAX),
+            )],
+        })
         .custom_invariant(
             CustomInvariantRegistration::new(First {
                 finished: Arc::clone(&finished),
@@ -198,6 +203,24 @@ fn run(workers: usize, wait: Duration) -> Run {
     let result = InvariantEngine::new(&runtime)
         .execute(&worth_execution::ExecutionRequest::leased(&lease), request)
         .expect("both rules evaluate");
+    assert_eq!(
+        result.results().len(),
+        3,
+        "lawful native prefix plus both original custom checks"
+    );
+    assert!(matches!(
+        &result.results()[0].rule,
+        InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(usize::MAX))
+    ));
+    assert!(matches!(
+        result.results()[0].verdict,
+        crate::validation::data::InvariantVerdict::Pass
+    ));
+    assert_eq!(result.decision_log().len(), 3);
+    assert_eq!(
+        result.metadata().proof_boundary().unwrap().packet_count(),
+        3
+    );
     let failure = result
         .summary()
         .blocking_failure()

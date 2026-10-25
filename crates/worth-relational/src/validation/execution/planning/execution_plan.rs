@@ -26,8 +26,9 @@ pub(crate) fn plan_invariant_execution<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: Option<&ExecutionResourceLease>,
+    stage: super::InvariantStage,
 ) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(runtime, execution, request, lease, None)
+    plan_invariant_execution_inner(runtime, execution, request, lease, None, stage)
 }
 
 pub(crate) fn plan_invariant_execution_checked<'state>(
@@ -36,8 +37,16 @@ pub(crate) fn plan_invariant_execution_checked<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease,
     budget: &crate::validation::custom_rule::CustomPreparationBudget,
+    stage: super::InvariantStage,
 ) -> PreparedInvariantExecution<'state> {
-    plan_invariant_execution_inner(runtime, execution, request, Some(lease), Some(budget))
+    plan_invariant_execution_inner(
+        runtime,
+        execution,
+        request,
+        Some(lease),
+        Some(budget),
+        stage,
+    )
 }
 
 fn plan_invariant_execution_inner<'state>(
@@ -46,10 +55,11 @@ fn plan_invariant_execution_inner<'state>(
     request: &'state InvariantExecutionRequest<'state>,
     lease: Option<&ExecutionResourceLease>,
     budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+    stage: super::InvariantStage,
 ) -> PreparedInvariantExecution<'state> {
-    let registrations = eligible_registrations(runtime, execution, request, budget);
+    let registrations = eligible_registrations(runtime, execution, request, budget, stage);
     let context = Arc::new(planning_context(runtime, request));
-    if budget.is_some_and(|budget| budget.stop().is_some()) {
+    if registrations.is_empty() || budget.is_some_and(|budget| budget.stop().is_some()) {
         return PreparedInvariantExecution {
             context,
             strategy: PreparationStrategy::serial(SerialPreparationReason::NoLease),
@@ -70,6 +80,7 @@ fn plan_invariant_execution_inner<'state>(
         partition_scope,
         proof_kind,
         budget,
+        stage.packet_offset(),
     );
 
     PreparedInvariantExecution {
@@ -154,6 +165,7 @@ fn invariant_work_packets<'state>(
     partition_scope: Arc<[crate::identity::data::PartitionId]>,
     proof_kind: PreparationProofKind,
     budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+    packet_offset: usize,
 ) -> Vec<crate::authority::commit::preparation::InvariantWorkPacket<'state>> {
     let observation = request.observation();
     let relation_integrity_scopes = request.relation_integrity_scopes().cloned();
@@ -164,6 +176,9 @@ fn invariant_work_packets<'state>(
         .enumerate()
         .take_while(|_| budget.is_none_or(|budget| budget.stop().is_none()))
         .filter_map(|(packet_index, registration)| {
+            let packet_index = packet_offset
+                .checked_add(packet_index)
+                .expect("the two retained packet arrays fit addressable storage");
             if budget.is_some_and(|budget| {
                 !budget.try_plan_item(
                     2 * std::mem::size_of::<

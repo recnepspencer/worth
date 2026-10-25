@@ -47,11 +47,17 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
     let held_child = child_delivery != ChildDelivery::Direct;
     let superseded_child = child_delivery == ChildDelivery::SupersededWhileHeld;
     let _guard = checkpoint_recovery_test_guard();
+    let provider_observation = crate::producer::ProviderContacts::default();
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application =
-        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4096, seed);
+    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+        None,
+        profile,
+        4096,
+        seed,
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -133,7 +139,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
     );
     let latest_child = if superseded_child { 8 } else { 6 };
     let prior_join = output_lengths!(request, ["diamond-join"]);
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     if cancel_decision {
         let cancellation = authentication::WorthQueryCancellationSource::new();
         let cancelled_scope =
@@ -160,7 +166,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         );
         if superseded_child {
             assert!(
-                crate::producer::provider_contacts() > 0,
+                provider_observation.count() > 0,
                 "the newer child source requires production before the consumer can decide"
             );
         }
@@ -171,7 +177,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
                 "one changed child completes before the canceled consumer"
             );
         }
-        crate::producer::reset_provider_contacts();
+        provider_observation.reset();
     }
     let refreshed = if superseded_child {
         match join.advance(&request) {
@@ -209,7 +215,7 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
             1
         );
         assert_eq!(
-            crate::producer::provider_contacts(),
+            provider_observation.count(),
             0,
             "the fresh consumer dropped both old edges; neither root should execute for it"
         );
@@ -230,23 +236,23 @@ fn journey(drop_edges: bool, child_delivery: ChildDelivery, cancel_decision: boo
         );
         if cancel_decision {
             assert_eq!(
-                crate::producer::provider_contacts(),
+                provider_observation.count(),
                 0,
                 "the completed or held child resumes without another producer decision"
             );
         } else if superseded_child {
             assert!(
-                crate::producer::provider_contacts() > 0,
+                provider_observation.count() > 0,
                 "the current source requires new child production"
             );
         } else if held_child {
             assert_eq!(
-                crate::producer::provider_contacts(),
+                provider_observation.count(),
                 0,
                 "readiness recovery must reuse the actual published child"
             );
         } else {
-            assert!(crate::producer::provider_contacts() > 0);
+            assert!(provider_observation.count() > 0);
         }
         assert_eq!(
             output_lengths!(request, ["diamond-left"]),

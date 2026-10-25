@@ -9,6 +9,7 @@ pub(super) fn try_install_program_with_limits_and_domain_denial<Program>(
     limits: WorthQueryInMemoryApplicationLimits,
     seed: impl FnOnce(&mut WorthQueryPrimaryGraphBootstrap<CheckpointSchema>),
     domain_denial: Arc<AtomicBool>,
+    producer_contacts: Option<crate::producer::ProviderContacts>,
 ) -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<CheckpointSchema, Program>,
     Box<application_installation::WorthQueryInMemoryApplicationDenial>,
@@ -29,6 +30,7 @@ where
         invariant_read_observer: None,
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: domain_denial,
+        producer_contacts,
     },);
     let declaration = CheckpointSchema::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<CheckpointSchema, Program>::begin()

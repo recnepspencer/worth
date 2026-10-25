@@ -7,9 +7,6 @@ use world::AggregateWorld;
 
 #[test]
 fn cold_warm_and_stale_snapshots_follow_real_coordinator_phases() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = AggregateWorld::values([7]);
     world
         .with_host_advancement(|phase| {
@@ -27,12 +24,7 @@ fn cold_warm_and_stale_snapshots_follow_real_coordinator_phases() {
             assert_eq!(warm.work.aggregate_cache_hits(), 1);
             assert_eq!(warm.work.aggregate_rebuild_input_rows(), 0);
 
-            world.replace_amount(
-                execution,
-                &world.fixture_phase(&host_custody),
-                "source-0",
-                11,
-            );
+            world.replace_amount(&world.fixture_phase(&host_custody), "source-0", 11);
             let stale = world.observe(&(world.fixture_phase(&host_custody)).test_host_request());
             assert_eq!(stale.result, Ok((11, 1)));
             assert_eq!(stale.work.aggregate_lookups(), 1);
@@ -247,9 +239,6 @@ fn assert_repeatable_denial(
 
 #[test]
 fn a_fork_summarizes_only_its_own_contributions_after_its_parent_moves_on() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let world = AggregateWorld::values([3, 4]);
     let main = world.main_branch();
     world
@@ -264,19 +253,8 @@ fn a_fork_summarizes_only_its_own_contributions_after_its_parent_moves_on() {
             let fork = world.fork(&world.fixture_phase(&host_custody), main);
             // The parent drops a contribution after the fork, then the fork commits
             // last, so the fork reads at a version newer than the parent's removal.
-            world.remove_relation_on(
-                execution,
-                &world.fixture_phase(&host_custody),
-                main,
-                removed,
-            );
-            world.replace_amount_on(
-                execution,
-                &world.fixture_phase(&host_custody),
-                fork,
-                first,
-                5,
-            );
+            world.remove_relation_on(&world.fixture_phase(&host_custody), main, removed);
+            world.replace_amount_on(&world.fixture_phase(&host_custody), fork, first, 5);
 
             assert_eq!(
                 world.observe_on(&world.fixture_phase(&host_custody), fork),

@@ -8,8 +8,9 @@ use worth_query_host::facade::primary_graph::{
 #[test]
 fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
     let _guard = checkpoint_recovery_test_guard();
-    let mut application = support::install(None);
-    crate::producer::reset_provider_contacts();
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let mut application = support::observed::install(None, &provider_observation);
+    provider_observation.reset();
     let decisions_before = crate::handler::handler_contacts();
     {
         let (scope, principal) = authenticate(&application);
@@ -44,7 +45,7 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
             terminal.producer_outcome(),
             Some(WorthQueryApplicationUncommitted::ProductUnpublished(_))
         ));
-        let contacts = crate::producer::provider_contacts();
+        let contacts = provider_observation.count();
         let producer_decisions = crate::handler::handler_contacts();
         assert_eq!(producer_decisions, decisions_before + 1);
         assert!(contacts > 0);
@@ -117,7 +118,7 @@ fn ordinary_unpublished_producer_close_retries_original_native_recovery() {
             "the exact original recovery record must be released after native settlement"
         );
         assert_eq!(
-            crate::producer::provider_contacts(),
+            provider_observation.count(),
             contacts,
             "close never reenters provider callbacks"
         );

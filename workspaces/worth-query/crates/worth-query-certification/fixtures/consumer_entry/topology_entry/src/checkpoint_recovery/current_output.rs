@@ -7,7 +7,8 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[test]
 fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_source_change() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
@@ -22,8 +23,8 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         .expect("installed host call opens");
     drop(application);
 
-    super::super::producer::reset_provider_contacts();
-    let restored = install(Some(checkpoint));
+    provider_observation.reset();
+    let restored = support::observed::install(Some(checkpoint), &provider_observation);
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let verify = |command| {
@@ -65,7 +66,7 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         "current output verification must commit"
     );
     assert_eq!(
-        super::super::producer::provider_contacts(),
+        provider_observation.count(),
         0,
         "current_output must not warm a producer"
     );
@@ -109,10 +110,10 @@ fn restored_current_output_is_tracked_before_any_producer_demand_and_rejects_sou
         .and_then(|cause| cause.downcast_ref::<WorthQueryCurrentOutputDenial>())
         .expect("typed currentness cause");
     assert_eq!(cause.kind(), WorthQueryCurrentOutputDenialKind::StaleSource);
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 
     drop(settle(&request, &restored));
-    assert!(super::super::producer::provider_contacts() > 0);
+    assert!(provider_observation.count() > 0);
     let refreshed = request
         .query(PlanarOutputRead {
             body_key: "anchor-a".into(),

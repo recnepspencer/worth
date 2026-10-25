@@ -102,6 +102,19 @@ an installed application to acquire different meaning on restore.
 4. Native commit validation checks the relation's proposed edges. A law
    violation refuses publication and leaves committed graph truth unchanged.
 
+At each execution point, native checks run and reduce before an installed
+application invariant prepares its custom scope. A native failure that blocks
+that point prevents custom preparation, so a declared acyclicity law can protect
+a commit-boundary custom rule that follows the same relation. Successful native
+checks remain in the combined result alongside custom checks. Native advisory
+evidence permits custom preparation; a harness audit collects both stages.
+
+The guarantee applies at the same execution point. A publication-only law does
+not establish a precondition for an earlier callback. Administrative admission,
+including refusal of an unchecked custom kernel under a request admitted for
+parallel execution,
+still precedes native work.
+
 Cancellation and resource stops keep their execution causes. An interrupted
 check does not become a successful law verdict or a domain law violation.
 

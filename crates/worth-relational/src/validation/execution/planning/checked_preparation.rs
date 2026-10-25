@@ -17,8 +17,9 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
+    stage: super::InvariantStage,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
-    tracked::prepare(runtime, execution, request, lease)
+    tracked::prepare(runtime, execution, request, lease, stage)
 }
 
 fn preparation_failure(stop: CustomPreparationStop) -> MapKernelFailure<PacketBudgetDenial> {

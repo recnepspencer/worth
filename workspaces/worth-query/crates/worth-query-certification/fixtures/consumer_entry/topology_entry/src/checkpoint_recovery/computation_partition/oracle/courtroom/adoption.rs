@@ -74,6 +74,7 @@ pub(super) fn install_rostered(model: &Model) -> Application {
         invariant_read_observer: None,
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        producer_contacts: None,
     };
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());

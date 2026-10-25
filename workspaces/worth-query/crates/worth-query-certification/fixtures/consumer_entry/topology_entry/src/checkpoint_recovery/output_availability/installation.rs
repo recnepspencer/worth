@@ -91,17 +91,28 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
 pub(super) fn install() -> App {
     install_selected("measure-a")
 }
+pub(super) fn install_observed(contacts: &crate::producer::ProviderContacts) -> App {
+    install_selected_with_window(
+        "measure-a",
+        Arc::new(EnrollmentWindow::default()),
+        Some(contacts.clone()),
+    )
+}
 pub(super) fn install_with_enrollment_window() -> (App, Arc<EnrollmentWindow>) {
     let window = Arc::new(EnrollmentWindow::default());
     (
-        install_selected_with_window("measure-a", Arc::clone(&window)),
+        install_selected_with_window("measure-a", Arc::clone(&window), None),
         window,
     )
 }
 pub(super) fn install_selected(demand_key: &str) -> App {
-    install_selected_with_window(demand_key, Arc::new(EnrollmentWindow::default()))
+    install_selected_with_window(demand_key, Arc::new(EnrollmentWindow::default()), None)
 }
-fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>) -> App {
+fn install_selected_with_window(
+    demand_key: &str,
+    window: Arc<EnrollmentWindow>,
+    producer_contacts: Option<crate::producer::ProviderContacts>,
+) -> App {
     let configuration = ((
         TopologyConfiguration {
             final_feature: crate::planar_final_feature_runtime(),
@@ -111,6 +122,7 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
             invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
+            producer_contacts,
         },
         window,
     ),);

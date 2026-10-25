@@ -16,62 +16,82 @@ pub struct InvariantExecutionSummary {
 }
 
 impl InvariantExecutionSummary {
-    pub(crate) fn from_results(results: &[InvariantCheckResult]) -> Self {
-        let mut advisory_count = 0;
-        let mut violation_count = 0;
-        let mut custom_failure_count = 0;
-        let mut custom_panic_count = 0;
-        let mut blocking_failure = None;
-        let mut publication_failure = None;
+    pub(crate) fn empty() -> Self {
+        Self {
+            result_count: 0,
+            advisory_count: 0,
+            violation_count: 0,
+            custom_failure_count: 0,
+            custom_panic_count: 0,
+            blocking_failure: None,
+            publication_failure: None,
+        }
+    }
 
+    pub(crate) fn from_results(results: &[InvariantCheckResult]) -> Self {
+        let mut summary = Self::empty();
         for result in results {
-            match &result.verdict {
-                InvariantVerdict::Pass | InvariantVerdict::NotApplicable => {}
-                InvariantVerdict::Advisory { .. } => {
-                    advisory_count += 1;
-                }
-                InvariantVerdict::Violation(violation) => {
-                    violation_count += 1;
-                    if let InvariantViolationFields::CustomInvariantFailure { failure, .. } =
-                        &violation.fields
+            summary.observe(result);
+        }
+        summary
+    }
+
+    /// The same classification for whole-result and incremental reduction.
+    pub(crate) fn observe(&mut self, result: &InvariantCheckResult) {
+        self.result_count += 1;
+        match &result.verdict {
+            InvariantVerdict::Pass | InvariantVerdict::NotApplicable => {}
+            InvariantVerdict::Advisory { .. } => self.advisory_count += 1,
+            InvariantVerdict::Violation(violation) => {
+                self.violation_count += 1;
+                if let InvariantViolationFields::CustomInvariantFailure { failure, .. } =
+                    &violation.fields
+                {
+                    self.custom_failure_count += 1;
+                    if *failure == crate::validation::data::ResultCustomInvariantFailureKind::Panic
                     {
-                        custom_failure_count += 1;
-                        if *failure
-                            == crate::validation::data::ResultCustomInvariantFailureKind::Panic
-                        {
-                            custom_panic_count += 1;
-                        }
+                        self.custom_panic_count += 1;
                     }
-                    let failure = InvariantFailure::new(
+                }
+                let first = match result.failure_effect {
+                    InvariantFailureEffect::BlockCommit => Some(&mut self.blocking_failure),
+                    InvariantFailureEffect::BlockPublication => Some(&mut self.publication_failure),
+                    InvariantFailureEffect::AuditOnly => None,
+                };
+                if let Some(first) = first
+                    && first.is_none()
+                {
+                    *first = Some(InvariantFailure::new(
                         result.execution_point,
                         result.failure_effect,
                         violation.clone(),
-                    );
-                    match result.failure_effect {
-                        InvariantFailureEffect::BlockCommit => {
-                            if blocking_failure.is_none() {
-                                blocking_failure = Some(failure);
-                            }
-                        }
-                        InvariantFailureEffect::BlockPublication => {
-                            if publication_failure.is_none() {
-                                publication_failure = Some(failure);
-                            }
-                        }
-                        InvariantFailureEffect::AuditOnly => {}
-                    }
+                    ));
                 }
             }
         }
+    }
 
-        Self {
-            result_count: results.len(),
-            advisory_count,
-            violation_count,
-            custom_failure_count,
-            custom_panic_count,
-            blocking_failure,
-            publication_failure,
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.blocking_failure
+            .iter()
+            .chain(&self.publication_failure)
+            .fold(0, |total, failure| {
+                total.saturating_add(failure.owned_allocation_capacity_bytes())
+            })
+    }
+
+    /// Backing the next observation would retain; admission precedes its clone.
+    pub(crate) fn pending_failure_allocation_bytes(&self, result: &InvariantCheckResult) -> u64 {
+        let retains = match result.failure_effect {
+            InvariantFailureEffect::BlockCommit => self.blocking_failure.is_none(),
+            InvariantFailureEffect::BlockPublication => self.publication_failure.is_none(),
+            InvariantFailureEffect::AuditOnly => false,
+        };
+        match &result.verdict {
+            InvariantVerdict::Violation(violation) if retains => (violation.detail.capacity()
+                as u64)
+                .saturating_add(violation.fields.owned_allocation_capacity_bytes()),
+            _ => 0,
         }
     }
 

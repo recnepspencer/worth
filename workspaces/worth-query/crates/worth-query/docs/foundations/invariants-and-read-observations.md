@@ -56,6 +56,15 @@ evaluation will read. Evaluation cannot expand its prepared entity/relation
 scope. Declare every field and relation the rule needs; resolving a binding
 does not make undeclared access legal.
 
+Native validation completes before custom scope preparation at the same
+execution point. A native failure that blocks that point prevents both custom
+callbacks; native passes and advisory evidence remain visible when custom work
+continues. Declare a prerequisite such as acyclicity on the relation when a
+commit-boundary rule needs to walk that relation safely. A law enforced only at
+publication does not protect an earlier callback, and harness audits continue
+collecting evidence from both stages. Admission for parallel execution can
+still reject an unchecked custom kernel before either stage runs.
+
 `proposed()` sees the candidate being validated. `committed()` sees the committed
 side of that validation. Handles carry schema binding, proposal and view
 posture: a handle obtained from one view cannot be reinterpreted as a handle for

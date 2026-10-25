@@ -138,11 +138,17 @@ mod initial_dependency;
 #[test]
 fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     let _guard = checkpoint_recovery_test_guard();
+    let provider_observation = crate::producer::ProviderContacts::default();
     take_decisions("diamond-join");
     let profile =
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::standard();
-    let application =
-        support::install_program_with_seed::<program::ChainProgram>(None, profile, 4_096, seed);
+    let application = support::observed::install_program_with_seed::<program::ChainProgram>(
+        None,
+        profile,
+        4_096,
+        seed,
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut left = request
@@ -170,14 +176,14 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
     // both consumed edges.
     change_root!(request, application, "diamond-left", 5, 0x9176_3500_u64);
     change_root!(request, application, "diamond-right", 54, 0x9176_3501_u64);
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let settled = settled_in_one_advance!(join, request, "the shared dependent");
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
         2,
         "initial execution plus 1 join refreshes"
     );
-    let both_roots = crate::producer::provider_contacts();
+    let both_roots = provider_observation.count();
     assert_eq!(
         output_lengths!(request, ["diamond-left", "diamond-right"]),
         [6, 55],
@@ -207,7 +213,7 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
 
     // Only the left root changes: the right branch is reused clean.
     change_root!(request, application, "diamond-left", 7, 0x9176_3502_u64);
-    crate::producer::reset_provider_contacts();
+    provider_observation.reset();
     let settled = settled_in_one_advance!(join, request, "the shared dependent");
     assert_eq!(
         settled.producer_contacts_in_this_demand(),
@@ -215,7 +221,7 @@ fn a_diamond_output_settles_in_one_advance_after_both_roots_change() {
         "initial execution plus 2 join refreshes"
     );
     // The shared planar provider counts each refresh contact the same way.
-    let left_root = crate::producer::provider_contacts();
+    let left_root = provider_observation.count();
     assert!(left_root > 0);
     assert_eq!(
         both_roots,

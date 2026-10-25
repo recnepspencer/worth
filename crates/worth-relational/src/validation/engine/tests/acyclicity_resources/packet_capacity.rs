@@ -36,6 +36,7 @@ fn run(
         worth_execution::ExecutionRequest::leased(&lease),
         &request_view,
         None,
+        crate::validation::execution::InvariantStage::Native,
     );
     assert_eq!(
         prepared.packets.len(),

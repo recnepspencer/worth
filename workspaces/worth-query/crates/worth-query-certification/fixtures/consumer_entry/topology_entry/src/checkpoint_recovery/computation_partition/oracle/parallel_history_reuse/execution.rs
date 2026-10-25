@@ -19,6 +19,7 @@ impl Default for HistoryConfiguration {
                 invariant_read_observer: None,
                 producer_authorization_denials: Default::default(),
                 producer_domain_denial: Default::default(),
+                producer_contacts: None,
             },
             code: Default::default(),
             reuse: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(REUSE_ON.get())),

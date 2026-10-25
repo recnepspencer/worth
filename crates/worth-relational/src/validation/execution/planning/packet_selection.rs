@@ -11,6 +11,7 @@ pub(super) fn eligible_registrations<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     preparation_budget: Option<&crate::validation::custom_rule::CustomPreparationBudget>,
+    stage: super::InvariantStage,
 ) -> Vec<InvariantPacketRegistration> {
     let touched_kinds = std::cell::OnceCell::new();
     let native = runtime
@@ -25,6 +26,7 @@ pub(super) fn eligible_registrations<'state>(
                 .relation_integrity_registrations
                 .iter(),
         )
+        .take(if stage.native() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
                 && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))
@@ -49,6 +51,7 @@ pub(super) fn eligible_registrations<'state>(
         .schema_contract_runtime
         .custom_invariant_registries
         .iter()
+        .take(if stage.custom() { usize::MAX } else { 0 })
         .take_while(|_| {
             execution.check_live().is_ok()
                 && preparation_budget.is_none_or(|budget| budget.try_plan_item(0))

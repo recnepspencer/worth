@@ -16,6 +16,10 @@ impl ContractId {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        self.0.capacity() as u64
+    }
 }
 
 impl From<&str> for ContractId {

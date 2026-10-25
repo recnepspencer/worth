@@ -168,8 +168,12 @@ fn ordinary_complete_tree_escapes_scope_resumes_reads_current_and_closes() {
 fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersession() {
     use std::sync::{atomic::AtomicBool, Arc};
     let _guard = checkpoint_recovery_test_guard();
-    let mut application = support::install_with_domain_denial(Arc::new(AtomicBool::new(true)));
-    crate::producer::reset_provider_contacts();
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let mut application = support::observed::install_with_domain_denial(
+        Arc::new(AtomicBool::new(true)),
+        &provider_observation,
+    );
+    provider_observation.reset();
     let decisions_before = crate::handler::handler_contacts();
     {
         let terminal = {
@@ -206,7 +210,7 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
         );
         // Provider contacts include input/key/resource callbacks. The actual
         // handler decision, not that callback census, counts execution.
-        let contacts = crate::producer::provider_contacts();
+        let contacts = provider_observation.count();
         let producer_decisions = crate::handler::handler_contacts();
         assert_eq!(producer_decisions, decisions_before + 1);
         assert!(contacts > 0);
@@ -238,7 +242,7 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
         ));
         assert!(refused.terminal_denial().is_some());
         assert_eq!(crate::handler::handler_contacts(), producer_decisions);
-        assert_eq!(crate::producer::provider_contacts(), contacts);
+        assert_eq!(provider_observation.count(), contacts);
         let request = application.request(&principal, &scope);
         // Deliberate native court edit supersedes the original source. It is an
         // actual PlanarEdit action, not a fabricated no-op source/tree entrance.
@@ -290,7 +294,7 @@ fn ordinary_terminal_tree_close_preserves_custody_then_releases_after_supersessi
             if cause.kind() == WorthQueryOutputDemandDenialKind::ProducerDomainDenied)
         );
         assert_eq!(
-            crate::producer::provider_contacts(),
+            provider_observation.count(),
             contacts,
             "close does not rerun a producer or create a settlement"
         );

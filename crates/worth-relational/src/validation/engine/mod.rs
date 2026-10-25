@@ -9,13 +9,14 @@ mod policy;
 mod profile;
 mod request;
 mod runtime_view;
+mod stage_execution;
 pub(crate) use runtime_view::InvariantRuntimeView;
 mod result;
 pub(crate) mod state_view;
 #[cfg(test)]
 mod tests;
 
-pub(crate) use engine::InvariantEngine;
+pub(crate) use engine::{check_live as check_invariant_request, InvariantEngine};
 pub(crate) use observation::InvariantObservation;
 pub use observation::InvariantObservationKind;
 #[cfg(test)]
@@ -24,6 +25,7 @@ pub(crate) use profile::InvariantRequestProfile;
 pub(crate) use request::{
     InvariantExecutionRequest, InvariantPreparationControl, PreparedRelationIntegrityScopes,
 };
+pub(crate) use result::InvariantExecutionSummary;
 pub use result::{
     CustomInvariantTraceArtifact, InvariantExecutionDisposition, InvariantExecutionMetadata,
     InvariantExecutionResult, InvariantFailure, InvariantFailureArtifact, InvariantPlanScopeClass,

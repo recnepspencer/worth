@@ -7,6 +7,7 @@ pub(super) fn prepare<'state>(
     execution: worth_execution::ExecutionRequest<'state, 'state>,
     request: &'state InvariantExecutionRequest<'state>,
     lease: &ExecutionResourceLease<'_>,
+    stage: super::super::InvariantStage,
 ) -> Result<(PreparedInvariantExecution<'state>, u64, ExecutionReport), PacketExecutionStop> {
     let empty = ExecutionReport::new(
         lease.resolved_posture(),
@@ -32,7 +33,7 @@ pub(super) fn prepare<'state>(
                         ))
                     })?;
                     let plan = plan_invariant_execution_checked(
-                        runtime, execution, request, child, &meter,
+                        runtime, execution, request, child, &meter, stage,
                     );
                     context
                         .account_completed_work(meter.charged_work())

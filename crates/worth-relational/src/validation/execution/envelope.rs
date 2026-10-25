@@ -3,7 +3,27 @@ use crate::authority::commit::preparation::diagnostics::failures::PreparationFai
 use crate::authority::commit::preparation::diagnostics::observations::ValidationDiagnosticObservation;
 use crate::authority::commit::preparation::reduction::identity::ValidationResultIdentity;
 use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
-use crate::validation::data::{InvariantCheckResult, InvariantReportedRule, InvariantVerdict};
+use crate::validation::data::{
+    InvariantCheckResult, InvariantDecisionRecord, InvariantReportedRule, InvariantVerdict,
+};
+
+pub(crate) struct InvariantStageOutput {
+    pub(crate) strategy:
+        crate::authority::commit::preparation::planning::strategy::PreparationStrategy,
+    pub(crate) proof_boundary: crate::validation::engine::InvariantProofBoundarySummary,
+    pub(crate) envelopes: Vec<InvariantWorkerEnvelope>,
+}
+
+impl InvariantStageOutput {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.envelopes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<InvariantWorkerEnvelope>() as u64)
+            .saturating_add(self.envelopes.iter().fold(0_u64, |total, envelope| {
+                total.saturating_add(envelope.owned_allocation_capacity_bytes())
+            }))
+            .saturating_add(self.proof_boundary.owned_allocation_capacity_bytes())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct InvariantWorkerResult {
@@ -63,9 +83,17 @@ pub(crate) fn identity_bytes(identity: &ValidationResultIdentity) -> u64 {
 
 fn rule_bytes(rule: &InvariantReportedRule) -> u64 {
     match rule {
-        InvariantReportedRule::Native(_) => 0,
+        InvariantReportedRule::Native(rule) => rule.owned_allocation_capacity_bytes(),
         InvariantReportedRule::Custom(identity) => identity.rule_id.as_str().len() as u64,
     }
+}
+
+pub(crate) fn decision_record_bytes(record: &InvariantDecisionRecord) -> u64 {
+    rule_bytes(&record.rule).saturating_add(record.witness.owned_allocation_capacity_bytes())
+}
+
+pub(crate) fn decision_clone_bytes(result: &InvariantCheckResult) -> u64 {
+    rule_bytes(&result.rule).saturating_add(result.witness.owned_allocation_capacity_bytes())
 }
 
 pub(crate) fn check_result_bytes(result: &InvariantCheckResult) -> u64 {

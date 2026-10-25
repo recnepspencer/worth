@@ -43,12 +43,14 @@ fn install_no_reuse(
     install_no_reuse_with_build(
         checkpoint,
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+        None,
     )
 }
 
 fn install_no_reuse_with_build(
     checkpoint: Option<application_installation::WorthQueryApplicationCheckpoint>,
     build_identity: ApplicationBuildIdentity,
+    producer_contacts: Option<crate::producer::ProviderContacts>,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
     let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
         .with_schema(&NoReuseSchema::declaration().expect("the completed schema is valid"))
@@ -62,6 +64,7 @@ fn install_no_reuse_with_build(
         invariant_read_observer: None,
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
+        producer_contacts,
     },);
     // Window <= history is enforced by primary_graph/bootstrap/preparation.rs:91.
     let limits = support::limits(32, support::invalidation());

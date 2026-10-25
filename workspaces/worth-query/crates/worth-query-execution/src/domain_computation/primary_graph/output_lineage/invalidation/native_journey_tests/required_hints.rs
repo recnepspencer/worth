@@ -101,9 +101,6 @@ use prepare_update::prepare_update;
 
 #[test]
 fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
-    let host_request = crate::test_request_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     {
         let allowed_hints = 2_u64;
         {
@@ -138,6 +135,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 .application
                 .with_host_advancement(|phase| {
                     let host_custody = phase.test_host_request();
+                    let execution = &host_custody.borrowed_request_for_test();
                     let graph = world.application.runtime.primary_graph().unwrap();
                     let handle = graph.integration_handle();
                     let owner = &handle.source_owner.invalidation_owner;

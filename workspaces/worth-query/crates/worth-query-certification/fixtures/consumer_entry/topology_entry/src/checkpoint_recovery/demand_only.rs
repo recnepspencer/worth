@@ -21,8 +21,13 @@ use program::{DemandProgram, DemandRoot, RequiredProgram, UngovernedProgram};
 )]
 fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let _guard = checkpoint_recovery_test_guard();
-    super::super::producer::reset_provider_contacts();
-    let application = support::install_program::<DemandProgram>(None, Default::default());
+    let provider_observation = crate::producer::ProviderContacts::default();
+    provider_observation.reset();
+    let application = support::observed::install_program::<DemandProgram>(
+        None,
+        Default::default(),
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let observed = request
@@ -44,7 +49,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     let WorthQueryApplicationMutationOutcome::Committed { receipt, .. } = saved else {
         panic!("the actual source edit must commit freshly")
     };
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert_eq!(
         request
             .query(PlanarRead {
@@ -84,7 +89,11 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
     drop(scope);
     drop(application);
 
-    let restored = support::install_program::<DemandProgram>(Some(checkpoint), Default::default());
+    let restored = support::observed::install_program::<DemandProgram>(
+        Some(checkpoint),
+        Default::default(),
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     assert_eq!(
@@ -109,7 +118,7 @@ fn demand_only_source_saves_and_reopens_before_explicit_assessment() {
             .value,
         length(2)
     );
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 
     let mut outputs = request
         .advanced()
@@ -266,11 +275,16 @@ fn required_graph_still_refuses_source_only_save() {
 #[test]
 fn demand_only_root_keeps_governed_source_locality_fence() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = support::install_program::<UngovernedProgram>(None, Default::default());
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install_program::<UngovernedProgram>(
+        None,
+        Default::default(),
+        &provider_observation,
+    );
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let before = request.retain_current_read().unwrap();
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let refusal = match request
         .advanced()
         .start_program_outputs::<UngovernedProgram, DemandRoot>(
@@ -287,7 +301,7 @@ fn demand_only_root_keeps_governed_source_locality_fence() {
         if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand
             && denial.subject() == "the performed source action has no locality for its governed artifact")
     );
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         before.selected_commit()
@@ -303,7 +317,7 @@ fn demand_only_root_keeps_governed_source_locality_fence() {
         matches!(direct, WorthQueryApplicationOutputDemandDenial::Demand(ref denial)
         if denial.kind() == WorthQueryOutputDemandDenialKind::ForeignDemand)
     );
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert_eq!(
         request.retain_current_read().unwrap().selected_commit(),
         before.selected_commit()
