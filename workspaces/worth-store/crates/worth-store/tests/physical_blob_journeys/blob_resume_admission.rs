@@ -58,7 +58,6 @@ fn completed_checkpoint_crossing_original_horizon_denies_unchanged_token_without
     ));
     assert_eq!(selected_root(&serving), root_before);
     assert_eq!(selected_blob_records(&serving), records_before);
-    drop(blobs);
     serving.close();
 }
 
@@ -107,7 +106,6 @@ fn exact_scan_bound_denies_without_write_and_releases_session_claim() {
     assert_eq!(resumed.frontier().next_chunk_ordinal(), 1);
     assert_eq!(selected_root(&serving), root_before);
     drop(resumed);
-    drop(blobs);
     serving.close();
 }
 

@@ -20,12 +20,12 @@ use crate::physical_runtime::record_serving::{RecordAppendDenial, RecordAppendEr
 pub(super) enum RewriteSourceLiveness {
     /// Every frame in the span is live and the root reads other frames of the
     /// generation too; the file must stay after the rewrite.
-    SpanLiveWithRetainedFrames,
+    LiveWithRetainedFrames,
     /// The span covers every live frame, so the rewrite leaves the generation
     /// unreachable from the resulting root.
-    SpanLiveAndDisplacesSource,
+    LiveAndDisplacesSource,
     /// Some frame in the span is not a live frame of this generation.
-    SpanNotLive,
+    NotLive,
 }
 
 impl RewriteSourceLiveness {
@@ -40,21 +40,21 @@ impl RewriteSourceLiveness {
             .map(|entry| entry.frame_index())
             .collect::<BTreeSet<_>>();
         if span.is_empty() || !span.clone().all(|frame| live.contains(&frame)) {
-            return Self::SpanNotLive;
+            return Self::NotLive;
         }
         if live.iter().all(|frame| span.contains(frame)) {
-            Self::SpanLiveAndDisplacesSource
+            Self::LiveAndDisplacesSource
         } else {
-            Self::SpanLiveWithRetainedFrames
+            Self::LiveWithRetainedFrames
         }
     }
 
     /// Admits the span or reports the typed denial before any effect.
     pub(super) fn displaces_source(self) -> Result<bool, RecordAppendError> {
         match self {
-            Self::SpanLiveWithRetainedFrames => Ok(false),
-            Self::SpanLiveAndDisplacesSource => Ok(true),
-            Self::SpanNotLive => Err(RecordAppendError::Denied(
+            Self::LiveWithRetainedFrames => Ok(false),
+            Self::LiveAndDisplacesSource => Ok(true),
+            Self::NotLive => Err(RecordAppendError::Denied(
                 RecordAppendDenial::RewriteSpanNotLive,
             )),
         }

@@ -263,13 +263,12 @@ pub(super) fn observe(
     {
         return Err(Denial::CheckpointBinding);
     }
-    if let Some(base) = claim.addressed_release_base() {
-        if checkpoint_source_root != *base.checkpoint_root()
+    if let Some(base) = claim.addressed_release_base()
+        && (checkpoint_source_root != *base.checkpoint_root()
             || <[u8; 32]>::from(Sha256::digest(&checkpoint_source_free_bytes))
-                != base.checkpoint_free_space_frame_sha256()
-        {
-            return Err(Denial::CheckpointBinding);
-        }
+                != base.checkpoint_free_space_frame_sha256())
+    {
+        return Err(Denial::CheckpointBinding);
     }
     let source = claim.source_root();
     let source_bytes = root_page(discovery, format, source.generation())?;

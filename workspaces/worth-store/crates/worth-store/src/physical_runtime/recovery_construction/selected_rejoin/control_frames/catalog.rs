@@ -69,11 +69,8 @@ pub(super) fn latest_for_source(
         if frame.kind() != worth_store_physical_format::BlobRecordKind::ReclaimDescriptorV3 {
             continue;
         }
-        let Some((descriptor, manifest)) =
-            predecessor_controls(controls, frame.record(), frame.frame_sha256())
-        else {
-            return None;
-        };
+        let (descriptor, manifest) =
+            predecessor_controls(controls, frame.record(), frame.frame_sha256())?;
         if manifest.source_basis() != source {
             continue;
         }

@@ -40,6 +40,10 @@ pub(super) fn substitute(
     }
     frame_checksum::refresh_checksum(frame);
 }
+#[expect(
+    clippy::single_range_in_vec_init,
+    reason = "each family substitutes a list of field ranges; one range is a one-field list"
+)]
 pub(super) fn substitution_fields(target: &ArtifactGranule) -> Vec<Range<usize>> {
     match target.family {
         "bootstrap_catalog" | "current_root_selector" | "previous_root_selector" => vec![48..64],

@@ -1,6 +1,5 @@
 #[allow(dead_code)]
 #[path = "phase_three_support/mod.rs"]
-#[allow(dead_code)]
 mod phase_three_support;
 
 use self::phase_three_support::*;

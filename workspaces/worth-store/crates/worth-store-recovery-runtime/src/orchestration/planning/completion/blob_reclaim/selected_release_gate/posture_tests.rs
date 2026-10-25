@@ -35,7 +35,10 @@ fn positive_no_release_is_exclusive_and_malformed_frames_are_rejected() {
         ReleaseCheckpointNoReleaseV1::new(checkpoint(), 12, [3; 32], 0, [0; 32], [0; 32]).unwrap(),
     ));
     assert_eq!(classify(&[]), Ok(Posture::Absent));
-    assert_eq!(classify(&[marker.clone()]), Ok(Posture::NoRelease));
+    assert_eq!(
+        classify(std::slice::from_ref(&marker)),
+        Ok(Posture::NoRelease)
+    );
     assert_eq!(classify(&[marker.clone(), marker.clone()]), Err(()));
     let (batch, accumulator) = released_shape();
     assert_eq!(
@@ -61,9 +64,9 @@ fn current_heads_are_required_and_duplicate_or_reordered_accumulators_deny() {
     let (batch, accumulator) = released_shape();
     let batch = frame(Certificate::Batch(batch));
     let headless = frame(Certificate::Accumulator(accumulator));
-    assert_eq!(classify(&[headless.clone()]), Err(()));
+    assert_eq!(classify(std::slice::from_ref(&headless)), Err(()));
     assert_eq!(classify(&[batch.clone(), headless]), Err(()));
-    assert_eq!(classify(&[batch.clone()]), Err(()));
+    assert_eq!(classify(std::slice::from_ref(&batch)), Err(()));
     let head = frame(Certificate::AccumulatorV2(
         ReleaseCheckpointAccumulatorV2::new(accumulator, 1, [13; 32], 0, [0; 32]).unwrap(),
     ));

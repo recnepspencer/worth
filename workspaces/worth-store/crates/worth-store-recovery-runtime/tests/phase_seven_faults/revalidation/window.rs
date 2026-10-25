@@ -4,6 +4,7 @@
 //! - a checkpoint change made after the residue gate and left in place, the
 //!   check-then-act race (`finish_changed_before_revalidation`);
 //! - a WAL change made before `finish`, which the residue gate never reads.
+//!
 //! Both settle cleanup first, then Store's rejoin denies the changed media,
 //! and the indeterminate outcome names the cleanup debt it left behind.
 

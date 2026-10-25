@@ -50,7 +50,6 @@ fn selected_declaration_is_a_durable_single_object_claim() {
         Err(BlobIngestFailure::ObjectAlreadyDeclared)
     ));
     drop(first);
-    drop(blobs);
     serving.close();
 
     let reopened = serving_from_open(parent.path());
@@ -64,7 +63,6 @@ fn selected_declaration_is_a_durable_single_object_claim() {
         ),
         Err(BlobIngestFailure::ObjectAlreadyDeclared)
     ));
-    drop(blobs);
     reopened.close();
 }
 

@@ -43,9 +43,9 @@ pub(super) fn run_cold_extent(
     ordinal_base: u64,
 ) {
     let policy = placement();
-    let inline_id = append(&serving, policy, ordinal_base + 1, b"held-inline");
+    let inline_id = append(serving, policy, ordinal_base + 1, b"held-inline");
     let extent_bytes = vec![0x5A; 20_000];
-    let extent_id = append(&serving, policy, ordinal_base + 2, &extent_bytes);
+    let extent_id = append(serving, policy, ordinal_base + 2, &extent_bytes);
     let old = serving.records().unwrap();
     let selected = old.protected_root();
     let second = serving.records().unwrap();
@@ -67,16 +67,13 @@ pub(super) fn run_cold_extent(
         let expected = extent_bytes.clone();
         let reader = scope.spawn(move || {
             let mut payload = Vec::new();
-            loop {
-                match cold.next_chunk().unwrap() {
-                    Some(chunk) => payload.extend_from_slice(chunk.bytes()),
-                    None => break,
-                }
+            while let Some(chunk) = cold.next_chunk().unwrap() {
+                payload.extend_from_slice(chunk.bytes());
             }
             payload
         });
         assert!(pause.await_arrival());
-        match rewrite(&serving, policy, ordinal_base + 20).execute() {
+        match rewrite(serving, policy, ordinal_base + 20).execute() {
             PhysicalMutationOutcome::Completed(_) => {}
             PhysicalMutationOutcome::ProvenNoEffect(fate) => {
                 panic!("rewrite had no effect: {:?}", fate.cause())
@@ -89,7 +86,7 @@ pub(super) fn run_cold_extent(
         for step in 0..4 {
             let mut record = vec![0x44; 20_000];
             record[0] = step as u8;
-            newest = append(&serving, policy, ordinal_base + 10 + step, &record);
+            newest = append(serving, policy, ordinal_base + 10 + step, &record);
         }
         let current = serving.records().unwrap();
         assert_ne!(current.protected_root(), selected);
@@ -100,11 +97,8 @@ pub(super) fn run_cold_extent(
                 RecordReadLimits::new(RecordByteLimit::new(20_000).unwrap()),
             )
             .unwrap();
-        loop {
-            match session.next_chunk().unwrap() {
-                Some(chunk) => seen.extend_from_slice(chunk.bytes()),
-                None => break,
-            }
+        while let Some(chunk) = session.next_chunk().unwrap() {
+            seen.extend_from_slice(chunk.bytes());
         }
         assert_eq!(seen[0], 3);
         assert_eq!(seen.len(), 20_000);
@@ -120,7 +114,7 @@ pub(super) fn run_cold_extent(
             .attempts_for(MediaOperationRole::SynchronizeFileState);
         activation.arm().unwrap();
         let checkpoint_thread = scope.spawn(|| {
-            checkpoint(&serving, ordinal_base + 30);
+            checkpoint(serving, ordinal_base + 30);
             checkpoint_finished.store(true, Ordering::Release);
         });
         let deadline = Instant::now() + Duration::from_secs(5);
@@ -148,7 +142,7 @@ pub(super) fn run_cold_extent(
         // Fill every ready slot and both background dispatch permits while
         // the checkpoint sync is still held, then prove the protected floor.
         // The held sync occupies one command slot and one background permit.
-        let paused_slots = super::scheduler::hold_ready_slots(&serving, request.clone(), 1);
+        let paused_slots = super::scheduler::hold_ready_slots(serving, request.clone(), 1);
         let mut background = Vec::new();
         while let Ok(permit) =
             serving.reserve_physical_scheduler_background(super::scheduler::dispatch_lane())
@@ -196,7 +190,7 @@ pub(super) fn run_cold_extent(
                 session.next_chunk().unwrap().unwrap().bytes(),
                 b"held-inline"
             );
-            append(&serving, policy, ordinal_base + 40, b"during-sync");
+            append(serving, policy, ordinal_base + 40, b"during-sync");
             foreground_finished.store(true, Ordering::Release);
         });
         // The gate stays closed until this wait ends, so completion here
@@ -219,7 +213,7 @@ pub(super) fn run_cold_extent(
         checkpoint_thread.join().unwrap();
         drop(background);
         // The finished checkpoint returned its command slot: all eight admit.
-        let mut held_slots = super::scheduler::hold_ready_slots(&serving, request, 0);
+        let mut held_slots = super::scheduler::hold_ready_slots(serving, request, 0);
         assert!(
             foreground_during_pause,
             "foreground read and append did not finish while the checkpoint sync was paused"
@@ -234,7 +228,7 @@ pub(super) fn run_cold_extent(
             "the paused file-state sync is still in flight"
         );
         held_slots.release_one();
-        inspect_selector(&serving, &root);
+        inspect_selector(serving, root);
         let deletions = serving.media_counters().deletions();
         assert_eq!(
             serving.retire_displaced_segment(),
@@ -263,7 +257,6 @@ pub(super) fn run_cold_extent(
         Err(PhysicalRetirementDenial::Protected)
     );
     assert_eq!(serving.media_counters().deletions(), deletions);
-    drop(borrowed);
     drop(inline);
     drop(second);
     assert_eq!(
@@ -271,11 +264,11 @@ pub(super) fn run_cold_extent(
         Err(PhysicalRetirementDenial::Protected)
     );
     drop(old);
-    let occupied = segment_files(&root);
+    let occupied = segment_files(root);
     serving
         .retire_displaced_segment()
         .expect("the last protector admits retirement");
-    assert!(occupied.difference(&segment_files(&root)).next().is_some());
+    assert!(occupied.difference(&segment_files(root)).next().is_some());
 }
 
 pub(super) fn rewrite(

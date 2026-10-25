@@ -315,10 +315,10 @@ fn frame_load_stream_failure(
     completed: u64,
 ) -> RecordStreamFailure {
     let denial = super::locate::failure_classification::read_failure(failure);
-    if let super::super::RecordReadDenial::ResidencyUnavailable(residency) = denial {
-        if let Some(pressure) = identity.pressure_evidence(residency, coordinate) {
-            return RecordStreamFailure::during_read_pressure(pressure, completed);
-        }
+    if let super::super::RecordReadDenial::ResidencyUnavailable(residency) = denial
+        && let Some(pressure) = identity.pressure_evidence(residency, coordinate)
+    {
+        return RecordStreamFailure::during_read_pressure(pressure, completed);
     }
     let kind = match denial {
         super::super::RecordReadDenial::FormatMismatch => RecordStreamFailureKind::FormatMismatch,

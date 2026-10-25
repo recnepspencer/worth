@@ -38,7 +38,6 @@ fn published_blob_catalog_point_uses_one_protected_leaf_after_fresh_reopen() {
     ingest.push(&vec![0x31; CHUNK_BYTES]).unwrap();
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
-    drop(blobs);
 
     let key = PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence())
         .expect("Store-issued blob identity is an admitted catalog key");
@@ -144,7 +143,6 @@ fn released_indexed_publication_invalidates_selected_catalog_directory() {
     ingest.push(&vec![0x31; CHUNK_BYTES]).unwrap();
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
-    drop(blobs);
 
     let key = PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence())
         .expect("Store-issued catalog key");

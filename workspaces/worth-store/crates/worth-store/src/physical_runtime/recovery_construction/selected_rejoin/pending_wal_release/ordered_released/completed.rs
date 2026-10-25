@@ -99,7 +99,6 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
         {
             return Err(Denial::RoutingFrame);
         }
-        drop(storage);
         let effect = replay.replay().effect();
         let scratch = effect
             .verification_additional_peak_bytes(format)

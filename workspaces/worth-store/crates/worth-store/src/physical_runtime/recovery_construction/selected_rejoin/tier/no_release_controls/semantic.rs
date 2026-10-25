@@ -104,12 +104,10 @@ pub(super) fn source_matches(
     if let BlobAbandonmentReasonV1::CheckpointExpired {
         checkpoint_sequence: expired,
     } = abandoned.reason()
+        && (declaration.max_checkpoint_sequence() >= expired.get()
+            || checkpoint_sequence < expired.get())
     {
-        if declaration.max_checkpoint_sequence() >= expired.get()
-            || checkpoint_sequence < expired.get()
-        {
-            return false;
-        }
+        return false;
     }
     true
 }

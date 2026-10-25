@@ -45,8 +45,7 @@ pub(super) fn assemble(
             retirement: Some(retirement),
             ..
         } = recovery.operation()
-        {
-            if retirement.dropped_records().iter().any(|record| {
+            && (retirement.dropped_records().iter().any(|record| {
                 !selection
                     .page_facts()
                     .placements()
@@ -58,9 +57,9 @@ pub(super) fn assemble(
                     .binary_search(&placement.record())
                     .is_ok()
                     && !matches!(placement, CurrentPhysicalRecordPlacement::Inline(_))
-            }) {
-                return Err(ExecutionBasisDenial::Invalid);
-            }
+            }))
+        {
+            return Err(ExecutionBasisDenial::Invalid);
         }
     }
     let source_artifacts = source_artifacts::collect(selection, selected_source, allowance)?;
@@ -173,10 +172,10 @@ pub(super) fn assemble(
         source_generation: pending.source_generation,
         staging_generation: pending.staging_generation,
         base,
-        actions: allowance.into_box(actions.actions)?,
+        actions: allowance.charge_boxed_slice(actions.actions)?,
         commands,
-        source_copies: allowance.into_box(source_copies)?,
-        allocated_targets: allowance.into_box(actions.allocated_targets)?,
+        source_copies: allowance.charge_boxed_slice(source_copies)?,
+        allocated_targets: allowance.charge_boxed_slice(actions.allocated_targets)?,
         allocated_bytes: pending.allocated_bytes,
         write_bytes,
     })

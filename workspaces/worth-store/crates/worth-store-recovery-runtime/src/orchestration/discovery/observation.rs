@@ -223,23 +223,6 @@ fn current_requires_fallback_anchor(current: &PhysicalRootSlotObservation) -> bo
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn selector_conflict_never_requests_fallback_anchor_io() {
-        assert!(!current_requires_fallback_anchor(
-            &PhysicalRootSlotObservation::SelectorRejected(PhysicalRootSelectorDenial::Conflict)
-        ));
-        assert!(current_requires_fallback_anchor(
-            &PhysicalRootSlotObservation::SelectorRejected(
-                PhysicalRootSelectorDenial::AuthorityMismatch
-            )
-        ));
-    }
-}
-
 fn observe_root_manifest_facts(
     discovery: &mut BoundedRecoveryFilesystemDiscovery,
     limits: PhysicalRecoveryLimits,
@@ -284,4 +267,21 @@ fn observe_root_manifest_facts(
         }
     };
     Ok((current_manifest_facts, previous_manifest_facts))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn selector_conflict_never_requests_fallback_anchor_io() {
+        assert!(!current_requires_fallback_anchor(
+            &PhysicalRootSlotObservation::SelectorRejected(PhysicalRootSelectorDenial::Conflict)
+        ));
+        assert!(current_requires_fallback_anchor(
+            &PhysicalRootSlotObservation::SelectorRejected(
+                PhysicalRootSelectorDenial::AuthorityMismatch
+            )
+        ));
+    }
 }

@@ -1,14 +1,6 @@
-#![allow(dead_code)]
-#[path = "../../../tests/phase_4_literal_vectors/checkpoint_records.rs"]
-mod checkpoint_records;
-#[path = "../../../tests/phase_4_literal_vectors/durable_frames.rs"]
-mod durable_frames;
-#[path = "../../../tests/phase_4_literal_vectors/oracle.rs"]
-mod oracle;
-#[path = "../../../tests/phase_4_literal_vectors/physical_work_obligation.rs"]
-mod physical_work_obligation;
-#[path = "../../../tests/phase_4_literal_vectors/wal_frame.rs"]
-mod wal_frame;
+use crate::literal_vectors::{
+    checkpoint_records, durable_frames, physical_work_obligation, wal_frame,
+};
 
 use super::{
     bootstrap_catalog::read_bootstrap_catalog,

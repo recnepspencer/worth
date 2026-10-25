@@ -122,7 +122,7 @@ pub(super) fn observed(
     allowance: &mut PlanningResidentAllowance,
 ) -> Result<RecoveryObservedCandidateArtifact, PhysicalRecoverySuccessorCandidateDenial> {
     let bytes = allowance
-        .into_box(bytes)
+        .charge_boxed_slice(bytes)
         .map_err(|failure| memory_failure(artifact, failure))?;
     Ok(RecoveryObservedCandidateArtifact { artifact, bytes })
 }

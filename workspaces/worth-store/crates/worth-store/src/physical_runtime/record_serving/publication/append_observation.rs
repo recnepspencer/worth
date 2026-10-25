@@ -146,21 +146,6 @@ impl RecordAppendObservation {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::RecordAppendObservation;
-
-    #[test]
-    fn recovered_completion_does_not_invent_append_performance() {
-        let observed = RecordAppendObservation::unobserved_recovery();
-        assert_eq!(observed.persisted_fields(), [0; 13]);
-        assert_eq!(observed.records(), 0);
-        assert_eq!(observed.bytes_requested(), 0);
-        assert_eq!(observed.bytes_completed(), 0);
-        assert_eq!(observed.transfer_count(), 0);
-    }
-}
-
 impl RecordRootPlanningObservation {
     pub(in crate::physical_runtime::record_serving) const fn from_publication(
         value: PublicationObservation,
@@ -182,5 +167,20 @@ impl RecordRootPlanningObservation {
 
     pub const fn manifest_bytes_read(self) -> u64 {
         self.manifest_bytes_read
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RecordAppendObservation;
+
+    #[test]
+    fn recovered_completion_does_not_invent_append_performance() {
+        let observed = RecordAppendObservation::unobserved_recovery();
+        assert_eq!(observed.persisted_fields(), [0; 13]);
+        assert_eq!(observed.records(), 0);
+        assert_eq!(observed.bytes_requested(), 0);
+        assert_eq!(observed.bytes_completed(), 0);
+        assert_eq!(observed.transfer_count(), 0);
     }
 }

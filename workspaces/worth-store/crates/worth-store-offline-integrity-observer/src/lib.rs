@@ -3,6 +3,8 @@
 
 mod comparison;
 mod integrity_observation;
+#[cfg(test)]
+mod literal_vectors;
 
 pub use comparison::{
     compare_integrity_observations, compare_selected_integrity_observations,

@@ -4,26 +4,26 @@ use worth_store_physical_format::integrity_declarations::{
 };
 
 #[derive(Clone, Copy)]
-pub(super) enum LiteralChecksum {
+pub(crate) enum LiteralChecksum {
     Crc32c(u32),
     Sha256([u8; 32]),
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct LiteralChecksumExpectation<'ranges> {
+pub(crate) struct LiteralChecksumExpectation<'ranges> {
     pub(super) checksum: LiteralChecksum,
     pub(super) ranges: &'ranges [(usize, usize)],
     pub(super) field: (usize, usize),
 }
 
-pub(super) struct LiteralVector<'checksums, 'ranges> {
+pub(crate) struct LiteralVector<'checksums, 'ranges> {
     pub(super) name: &'static str,
     pub(super) bytes: Vec<u8>,
     pub(super) checksums: &'checksums [LiteralChecksumExpectation<'ranges>],
 }
 
 #[derive(Clone, Copy)]
-pub(super) struct DeclarationChecksumExpectation {
+pub(crate) struct DeclarationChecksumExpectation {
     pub(super) algorithm: PhysicalIntegrityAlgorithm,
     pub(super) ranges: &'static [(
         PhysicalIntegrityCoverageBoundary,
@@ -35,7 +35,7 @@ pub(super) struct DeclarationChecksumExpectation {
     ),
 }
 
-pub(super) fn assert_declaration(
+pub(crate) fn assert_declaration(
     declaration: PhysicalIntegrityFormatDeclaration,
     family: PhysicalIntegrityArtifactFamily,
     format_version: u16,
@@ -59,7 +59,7 @@ pub(super) fn assert_declaration(
     }
 }
 
-pub(super) fn assert_literal_vector(vector: LiteralVector<'_, '_>) {
+pub(crate) fn assert_literal_vector(vector: LiteralVector<'_, '_>) {
     for expectation in vector.checksums {
         assert!(
             matches_stored_checksum(&vector.bytes, expectation, expectation.ranges),
@@ -134,7 +134,7 @@ fn matches_stored_checksum(
     }
 }
 
-pub(super) fn decode_hex(value: &str) -> Vec<u8> {
+pub(crate) fn decode_hex(value: &str) -> Vec<u8> {
     assert_eq!(value.len() % 2, 0);
     value
         .as_bytes()
@@ -158,7 +158,7 @@ fn crc32c(parts: &[&[u8]]) -> u32 {
     !crc
 }
 
-pub(super) fn sha256(parts: &[&[u8]]) -> [u8; 32] {
+pub(crate) fn sha256(parts: &[&[u8]]) -> [u8; 32] {
     let bytes: Vec<u8> = parts.iter().flat_map(|part| part.iter().copied()).collect();
     sha256_bytes(&bytes)
 }

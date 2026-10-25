@@ -91,7 +91,6 @@ impl SelectedReleaseCustodyLedger {
             .reserve_for_key_live(key, &mut window)?;
         let bytes =
             window.reserve_vec(DurablePhysicalRootManifest::maximum_encoding_scratch_bytes())?;
-        drop(window);
         Ok(FundedRootFrame::new(
             bytes,
             Arc::clone(

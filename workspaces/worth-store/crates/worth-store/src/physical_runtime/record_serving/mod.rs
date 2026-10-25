@@ -63,7 +63,7 @@ pub use admission::residency_policy::{
     AdmittedPhysicalRecordResidencyPolicy, PhysicalOperationAllocationScope,
     PhysicalRecordResidencyPolicy, PhysicalRecordResidencyPolicyBuilder,
     PhysicalRecordResidencyPolicyDenial, PhysicalRecordResidencyPolicyOutcome,
-    PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
+    PhysicalResidencyDenial, PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
@@ -212,6 +212,8 @@ pub use worth_store_physical_format::{
 pub(in crate::physical_runtime) use admission::bootstrap::RecordServingState;
 pub(in crate::physical_runtime) use admission::{initialize, open};
 pub(super) use planning::allocation_frontier::RecordAllocationFrontier;
+pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
+pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;
 
 #[cfg(test)]
 mod tests {
@@ -278,5 +280,3 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
-pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
-pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;

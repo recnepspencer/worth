@@ -63,7 +63,6 @@ fn protected_layout_probe_height_two_has_exact_path_and_range_budget() {
     assert_eq!(full.counters().page_touches(), 3);
     drop(short);
     drop(full);
-    drop(index);
     drop(layouts);
     serving.close();
 }
@@ -100,7 +99,6 @@ fn protected_layout_probe_height_three_counts_actual_node_path() {
     );
     assert_eq!(across.counters().page_touches(), 5);
     drop(across);
-    drop(index);
     drop(layouts);
     serving.close();
 }
@@ -137,7 +135,6 @@ fn protected_layout_probe_height_five_remains_readable_with_bounded_paths() {
     );
     assert_eq!(scan.counters().page_touches(), 5);
     drop(scan);
-    drop(index);
     drop(layouts);
     serving.close();
 }

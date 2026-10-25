@@ -38,22 +38,6 @@ impl PhysicalRedoRecord {
     }
 }
 
-#[cfg(test)]
-mod retained_storage_tests {
-    use super::*;
-
-    #[test]
-    fn record_counts_owned_redo_bytes() {
-        let record = PhysicalRedoRecord {
-            ordinal: 0,
-            lsn: LogSequenceNumber::new(1),
-            targets: Box::new([]),
-            bytes: vec![1, 2, 3, 4, 5].into_boxed_slice(),
-        };
-        assert_eq!(record.owned_heap_bytes(), Some(5));
-    }
-}
-
 pub fn decode_physical_redo_records(
     bytes: &[u8],
     expected_range: WalLsnRange,
@@ -210,5 +194,21 @@ impl PhysicalRedoRecord {
     }
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
+    }
+}
+
+#[cfg(test)]
+mod retained_storage_tests {
+    use super::*;
+
+    #[test]
+    fn record_counts_owned_redo_bytes() {
+        let record = PhysicalRedoRecord {
+            ordinal: 0,
+            lsn: LogSequenceNumber::new(1),
+            targets: Box::new([]),
+            bytes: vec![1, 2, 3, 4, 5].into_boxed_slice(),
+        };
+        assert_eq!(record.owned_heap_bytes(), Some(5));
     }
 }

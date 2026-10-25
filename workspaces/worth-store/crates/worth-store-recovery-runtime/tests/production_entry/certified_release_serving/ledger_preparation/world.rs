@@ -55,7 +55,6 @@ pub(super) fn checkpointed_partial_release_world() -> PhysicalResidencyStoreWorl
         }
         Err(failure) => panic!("multi-chunk publication failed: {failure:?}"),
     };
-    drop(blobs);
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()

@@ -240,8 +240,14 @@ fn select_case<Request: AdmittedPlanningRequest>(
             assert_eq!(estimate.estimated_byte_reads(), 8 * 64);
             assert_budget_binding(estimate, plan.budget_receipt());
         }
-        AccessPlanSelectionView::Denied(_) => {}
+        AccessPlanSelectionView::Denied(denial) => {
+            eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION denied {denial:?}")
+        }
     }
+    eprintln!(
+        "WORTH-UI-TEMPORARY-INSTRUMENTATION case {:?}",
+        outcome.case_id()
+    );
     outcome.case_id()
 }
 

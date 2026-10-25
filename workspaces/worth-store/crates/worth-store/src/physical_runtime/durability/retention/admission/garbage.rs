@@ -139,10 +139,10 @@ impl PhysicalPublicationAdmission {
 
     pub(in crate::physical_runtime) fn revert_displaced_claim(&self, artifact: RetiredArtifact) {
         let mut state = self.lock();
-        if let Some(garbage) = state.garbage.get_mut(&artifact) {
-            if !garbage.completed {
-                garbage.claimed = false;
-            }
+        if let Some(garbage) = state.garbage.get_mut(&artifact)
+            && !garbage.completed
+        {
+            garbage.claimed = false;
         }
     }
 

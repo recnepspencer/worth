@@ -1,10 +1,6 @@
 #![allow(dead_code)]
-#[path = "../../../../tests/phase_4_literal_vectors/checkpoint_records.rs"]
-mod checkpoint_records;
 #[path = "../../../../tests/support/fixtures.rs"]
 mod fixtures;
-#[path = "../../../../tests/phase_4_literal_vectors/oracle.rs"]
-mod oracle;
 #[path = "../../../../tests/support/temporary_root.rs"]
 mod temporary_root;
 
@@ -13,6 +9,7 @@ use crate::integrity_observation::{
     journal_walk::observe_journals, retirement_evidence::RetirementEvidence,
     root_protocol_walk::observe_root_protocol, OfflineIntegrityObservationLimits,
 };
+use crate::literal_vectors::{checkpoint_records, oracle};
 use std::time::Instant;
 use temporary_root::TemporaryRoot;
 

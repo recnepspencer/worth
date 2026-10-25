@@ -97,10 +97,10 @@ impl<'a> DropSetManifestV3View<'a> {
         }
         let store = nonzero_16(payload[..16].try_into().unwrap())?;
         let reclaim_attempt = nonzero_16(payload[16..32].try_into().unwrap())?;
-        if let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = source_basis {
-            if source.publication().store() != store {
-                return Err(BlobRecordDenial::InvalidDropSet);
-            }
+        if let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = source_basis
+            && source.publication().store() != store
+        {
+            return Err(BlobRecordDenial::InvalidDropSet);
         }
         let bytes = &payload[dropped_start..dropped_end];
         let mut hash = Sha256::new();
@@ -112,10 +112,10 @@ impl<'a> DropSetManifestV3View<'a> {
             if prior.is_some_and(|previous| previous >= record) {
                 return Err(BlobRecordDenial::InvalidDropSet);
             }
-            if let BlobReclaimSourceBasisV1::FailedIngest(basis) = source_basis {
-                if record == basis.declaration_record() || record == basis.abandoned_record() {
-                    return Err(BlobRecordDenial::InvalidDropSet);
-                }
+            if let BlobReclaimSourceBasisV1::FailedIngest(basis) = source_basis
+                && (record == basis.declaration_record() || record == basis.abandoned_record())
+            {
+                return Err(BlobRecordDenial::InvalidDropSet);
             }
             prior = Some(record);
             hash.update(chunk);

@@ -199,35 +199,6 @@ fn allocation_key(allocation: PersistedInlineSegmentAllocation) -> (u64, u64) {
     )
 }
 
-#[cfg(test)]
-mod decode_admission_tests {
-    use super::*;
-    #[test]
-    fn truncated_inline_roster_denies_before_allocation() {
-        struct Admission(usize);
-        impl PhysicalRecoveryDecodeStorage for Admission {
-            type Denial = ();
-            fn admit_allocation(&mut self, _: u64) -> Result<(), ()> {
-                self.0 += 1;
-                Ok(())
-            }
-        }
-        let root = PersistedPhysicalRecoveryRootState::new(1, 1, 2, vec![], None, None).unwrap();
-        let mut bytes = root.encode();
-        bytes[11..19].copy_from_slice(&1_u64.to_le_bytes());
-        let mut storage = Admission(0);
-        let result =
-            PersistedPhysicalRecoveryRootState::decode_with_storage(&bytes, 1, &mut storage);
-        assert!(matches!(
-            result,
-            Err(PhysicalRecoveryDecodeFailure::Projection(
-                PhysicalRecoveryProjectionDenial::Malformed
-            ))
-        ));
-        assert_eq!(storage.0, 0);
-    }
-}
-
 fn segment_cell(segment: u64, generation: u64) -> Option<SegmentGenerationCell> {
     Some(
         PhysicalGenerationAuthority::for_canonical_physical_format()
@@ -284,5 +255,34 @@ impl<'a> Cursor<'a> {
     }
     fn end(self) -> Option<()> {
         self.remaining.is_empty().then_some(())
+    }
+}
+
+#[cfg(test)]
+mod decode_admission_tests {
+    use super::*;
+    #[test]
+    fn truncated_inline_roster_denies_before_allocation() {
+        struct Admission(usize);
+        impl PhysicalRecoveryDecodeStorage for Admission {
+            type Denial = ();
+            fn admit_allocation(&mut self, _: u64) -> Result<(), ()> {
+                self.0 += 1;
+                Ok(())
+            }
+        }
+        let root = PersistedPhysicalRecoveryRootState::new(1, 1, 2, vec![], None, None).unwrap();
+        let mut bytes = root.encode();
+        bytes[11..19].copy_from_slice(&1_u64.to_le_bytes());
+        let mut storage = Admission(0);
+        let result =
+            PersistedPhysicalRecoveryRootState::decode_with_storage(&bytes, 1, &mut storage);
+        assert!(matches!(
+            result,
+            Err(PhysicalRecoveryDecodeFailure::Projection(
+                PhysicalRecoveryProjectionDenial::Malformed
+            ))
+        ));
+        assert_eq!(storage.0, 0);
     }
 }

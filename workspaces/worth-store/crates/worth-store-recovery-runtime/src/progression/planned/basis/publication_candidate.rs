@@ -154,7 +154,7 @@ pub(super) fn build(
         None
     };
     final_inventory.release(build.allowance)?;
-    let artifacts = build.allowance.into_box(build.artifacts)?;
+    let artifacts = build.allowance.charge_boxed_slice(build.artifacts)?;
     Ok(RecoveryCandidateBasis {
         root,
         referenced_artifacts,
@@ -249,7 +249,7 @@ fn topology_artifacts(
             }),
     );
     topology.sort_unstable();
-    Ok(allowance.into_box(topology)?)
+    Ok(allowance.charge_boxed_slice(topology)?)
 }
 
 fn build_new<'a>(

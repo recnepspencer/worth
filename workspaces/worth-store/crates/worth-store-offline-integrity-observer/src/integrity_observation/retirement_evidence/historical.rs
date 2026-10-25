@@ -105,18 +105,18 @@ impl RetirementEvidence {
         }
         for intent in self.unresolved() {
             let result = admit_intent(root, current, &intent, walk, &mut observations);
-            if result.is_ok() {
-                if let Some((arena, offset, length)) = intent.range {
-                    arenas.held_coverage(
-                        arena_path(arena),
-                        offset,
-                        length,
-                        intent.id,
-                        intent.generation,
-                        intent.source_root,
-                        intent.candidate.min(current.generation.saturating_add(1)),
-                    );
-                }
+            if result.is_ok()
+                && let Some((arena, offset, length)) = intent.range
+            {
+                arenas.held_coverage(
+                    arena_path(arena),
+                    offset,
+                    length,
+                    intent.id,
+                    intent.generation,
+                    intent.source_root,
+                    intent.candidate.min(current.generation.saturating_add(1)),
+                );
             }
             match result {
                 Ok(Some(held)) => {
@@ -210,17 +210,16 @@ impl RetirementEvidence {
             if matches!(marker, Some(CopyResolutionFact::Cancelled { .. })) {
                 continue;
             }
-            if let Some(final_copy) = final_copy {
-                if current.generation >= final_copy.result_root
-                    && roots
-                        .iter()
-                        .any(|root| root.generation == final_copy.result_root)
-                    && prove_copy_destination(root, current, &final_copy, walk, &mut observations)
-                        .is_err()
-                {
-                    observations.push(copy_observation(intent, mismatch()));
-                    continue;
-                }
+            if let Some(final_copy) = final_copy
+                && current.generation >= final_copy.result_root
+                && roots
+                    .iter()
+                    .any(|root| root.generation == final_copy.result_root)
+                && prove_copy_destination(root, current, &final_copy, walk, &mut observations)
+                    .is_err()
+            {
+                observations.push(copy_observation(intent, mismatch()));
+                continue;
             }
             if marker.is_some() {
                 // A published copy may remain the physical owner of a hole in

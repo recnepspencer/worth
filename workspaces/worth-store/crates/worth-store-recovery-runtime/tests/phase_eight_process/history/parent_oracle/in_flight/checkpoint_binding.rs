@@ -13,10 +13,10 @@ pub(crate) fn scan_checkpoint_binding(
     let bindings = super::super::wire::validated_checkpoint_binding_payloads(bytes)
         .ok_or_else(|| "semantic checkpoint oracle rejected checkpoint".to_owned())?;
     for payload in bindings {
-        if let Some(digest) = completed_binding_redo_digest(payload, identity, expected_record) {
-            if expected_redo_digest.is_none_or(|expected| digest == *expected) {
-                matches += 1;
-            }
+        if let Some(digest) = completed_binding_redo_digest(payload, identity, expected_record)
+            && expected_redo_digest.is_none_or(|expected| digest == *expected)
+        {
+            matches += 1;
         }
     }
     Ok(matches)

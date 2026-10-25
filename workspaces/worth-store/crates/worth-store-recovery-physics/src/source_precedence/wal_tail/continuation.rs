@@ -10,7 +10,7 @@ use crate::source_precedence::CheckpointCoveredWalArtifact;
 pub(super) fn protected_covered_start(
     frontier: u64,
     cutoff: Option<u64>,
-    covered: &mut Vec<CheckpointCoveredWalArtifact>,
+    covered: &mut [CheckpointCoveredWalArtifact],
     replay: &[PhysicalWalSegmentCandidate],
 ) -> Result<usize, SelectedPhysicalWalTailDenial> {
     let Some(cutoff) = cutoff else {

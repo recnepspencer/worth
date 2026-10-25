@@ -146,15 +146,13 @@ impl Drop for ReleaseCertificateCapacityLease {
         if let Some(fence) = fence
             .as_mut()
             .filter(|fence| fence.matches_attempt(self.attempt))
+            && fence.is_pre_effect_payload_drop()
+            && fence
+                .release_certificate_pending
+                .as_ref()
+                .is_some_and(|pending| !pending.effect_may_exist)
         {
-            if fence.is_pre_effect_payload_drop()
-                && fence
-                    .release_certificate_pending
-                    .as_ref()
-                    .is_some_and(|pending| !pending.effect_may_exist)
-            {
-                fence.release_certificate_pending = None;
-            }
+            fence.release_certificate_pending = None;
         }
     }
 }

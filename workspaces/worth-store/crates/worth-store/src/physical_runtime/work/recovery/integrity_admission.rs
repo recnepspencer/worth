@@ -62,9 +62,8 @@ fn project_validated_obligation<'media>(
     validated: IntegrityValidatedPhysicalWorkObligation<'media>,
     counters: &mut PhysicalWorkRecoveryAdmissionCounters,
 ) -> Result<PhysicalWorkRecoveryLocator, PhysicalWorkRecoveryIngressRejection> {
-    let projection = bind_validated_projection(input, validated).map_err(|rejection| {
+    let projection = bind_validated_projection(input, validated).inspect_err(|_rejection| {
         counters.rejected_before_owner_interpretation();
-        rejection
     })?;
     counters.owner_interpretation();
     let locator = PhysicalWorkRecoveryLocator::from_integrity_admitted(projection)

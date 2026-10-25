@@ -374,10 +374,10 @@ impl ReclaimPublication<'_, '_> {
             }
             other => Err(BlobAppendFailure::Preparation(other.into())),
         };
-        if stage == BlobReclaimPublicationStage::Manifest {
-            if let Err(BlobAppendFailure::ProvenNoEffect(proof)) = &result {
-                self.admitted.attempt().prove_manifest_no_effect(proof);
-            }
+        if stage == BlobReclaimPublicationStage::Manifest
+            && let Err(BlobAppendFailure::ProvenNoEffect(proof)) = &result
+        {
+            self.admitted.attempt().prove_manifest_no_effect(proof);
         }
         result.map_err(|cause| match manifest {
             Some(record) if stage == BlobReclaimPublicationStage::Reservation => {

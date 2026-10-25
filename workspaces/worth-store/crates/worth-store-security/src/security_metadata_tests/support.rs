@@ -25,11 +25,10 @@ pub(super) fn admitted_scope(
         StoreKeyVersionPosture::Current,
         StoreCustodyPosture::InternalStoreCustody,
     );
-    let admitted = match admit_store_security_scope(request) {
+    match admit_store_security_scope(request) {
         TransitionOutcome::Success(admitted) => admitted,
         outcome => panic!("platform scope should admit: {outcome:?}"),
-    };
-    admitted
+    }
 }
 
 pub(super) fn physical_witness() -> StorePhysicalBoundaryWitness {

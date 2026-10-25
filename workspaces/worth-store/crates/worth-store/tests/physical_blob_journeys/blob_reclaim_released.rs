@@ -48,7 +48,6 @@ fn released_generation_one_record_batches_keep_post_order_custody_and_end_in_no_
     ingest.push(&vec![0x52; CHUNK]).unwrap();
     let abandoned_token = ingest.resume_token();
     let published = ingest.finish().unwrap();
-    drop(blobs);
 
     let marker = serving
         .certification_selected_latest_blob_publication()
@@ -275,7 +274,6 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
     ingest.push(&vec![0x31; CHUNK]).unwrap();
     ingest.push(&vec![0x52; CHUNK]).unwrap();
     let published = ingest.finish().unwrap();
-    drop(blobs);
     let marker = serving
         .certification_selected_latest_blob_publication()
         .unwrap()

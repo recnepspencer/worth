@@ -49,10 +49,10 @@ pub(super) fn spawn_contender(root: &std::path::Path, index: usize) -> ProcessCo
                 .find("OWNED ")
                 .map(|offset| line[offset..].to_owned())
                 .or_else(|| line.contains("CONTENDED").then(|| "CONTENDED".to_owned()));
-            if let Some(result) = result {
-                if let Some(channel) = sender.take() {
-                    channel.send(result).expect("send child result");
-                }
+            if let Some(result) = result
+                && let Some(channel) = sender.take()
+            {
+                channel.send(result).expect("send child result");
             }
             transcript.push(line);
         }

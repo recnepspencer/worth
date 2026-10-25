@@ -93,8 +93,7 @@ impl SelectedInventory {
         }
         let scratch_len = usize::try_from(self.limits.maximum_inspected_bytes.get())
             .unwrap_or(usize::MAX)
-            .min(FRAME_WINDOW)
-            .max(8);
+            .clamp(8, FRAME_WINDOW);
         let mut scratch = Vec::new();
         scratch
             .try_reserve_exact(scratch_len)

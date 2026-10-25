@@ -112,12 +112,11 @@ impl Drop for ProcessChildGuard {
         if self.terminated {
             return;
         }
-        if let Some(child) = self.child.as_mut() {
-            if child.try_wait().ok().flatten().is_none() {
-                if let Err(error) = self.terminate_and_reap("emergency child termination") {
-                    eprintln!("Phase 8 emergency child cleanup failed: {error}");
-                }
-            }
+        if let Some(child) = self.child.as_mut()
+            && child.try_wait().ok().flatten().is_none()
+            && let Err(error) = self.terminate_and_reap("emergency child termination")
+        {
+            eprintln!("Phase 8 emergency child cleanup failed: {error}");
         }
     }
 }

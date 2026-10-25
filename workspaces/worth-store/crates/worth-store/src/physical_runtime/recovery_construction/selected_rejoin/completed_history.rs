@@ -164,7 +164,6 @@ pub(in crate::physical_runtime::recovery_construction) fn observe_claim(
     )?;
     let mut storage = native_storage::HistoricalWalkStorage::new(&window, &mut resident, &mut raw);
     controls_fingerprint.extend_with_storage(history_fingerprint, &mut storage)?;
-    drop(storage);
     let mut final_head_discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
         .map_err(Denial::Qualification)?;

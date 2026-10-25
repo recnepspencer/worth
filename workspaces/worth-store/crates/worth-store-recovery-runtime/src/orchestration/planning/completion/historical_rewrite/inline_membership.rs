@@ -227,7 +227,7 @@ fn collect(
             *scratch = (*scratch).max(traversal_scratch(
                 &pending,
                 &found,
-                entries.len() * std::mem::size_of::<RecordSegmentPageManifestEntry>(),
+                std::mem::size_of_val(entries),
             ));
         } else {
             let children = block.children().ok_or(HistoricalFailure::Invalid)?;
@@ -243,7 +243,7 @@ fn collect(
             *scratch = (*scratch).max(traversal_scratch(
                 &pending,
                 &found,
-                children.len() * std::mem::size_of::<SegmentManifestBlockReference>(),
+                std::mem::size_of_val(children),
             ));
         }
     }

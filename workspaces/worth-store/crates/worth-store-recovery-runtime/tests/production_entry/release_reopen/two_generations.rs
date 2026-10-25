@@ -85,7 +85,6 @@ pub(super) fn release_second_object(
         }
         Err(failure) => panic!("second publication failed: {failure:?}"),
     };
-    drop(blobs);
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()
@@ -124,7 +123,7 @@ pub(super) fn release_second_object(
         .expect("second generation release completed");
     assert_eq!(second.disposition(), BlobReclaimDisposition::Dropped);
     assert!(second.dropped_records().contains(&record));
-    let (batches, accumulator) = selected_release_certificates(&world);
+    let (batches, accumulator) = selected_release_certificates(world);
     assert_eq!(batches.len(), 1);
     assert_ne!(accumulator.base().tip(), first_accumulator.base().tip());
     assert_eq!(

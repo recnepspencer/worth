@@ -261,7 +261,6 @@ fn publish(
         .finish()
         .expect("publication must finish indexing; PublishedIndexPending is not fixture success");
     let generation = published.generation().sequence();
-    drop(blobs);
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()

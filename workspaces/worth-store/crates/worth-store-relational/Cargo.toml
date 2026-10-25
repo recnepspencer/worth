@@ -26,5 +26,11 @@ certification-test-authority = [
     "worth-store-recovery-runtime/certification-test-authority",
 ]
 
+[[test]]
+name = "relational_home"
+# The crash oracle uses the compiled certification media and interruption doors.
+# Keep that requirement explicit; the certification feature lane runs the suite.
+required-features = ["certification-test-authority"]
+
 [lints]
 workspace = true

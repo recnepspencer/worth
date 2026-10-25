@@ -43,7 +43,6 @@ fn catalog_range_and_object_prefix_follow_selected_leaf_without_scan() {
         keys.push((key, object));
     }
     keys.sort_by_key(|(key, _)| key.canonical_bytes());
-    drop(blobs);
     let layouts = serving.layouts().unwrap();
     let index = layouts.btree(DurableArtifactFamilyId::BlobCatalog).unwrap();
     let budget = PhysicalIndexScanBudget::pages(1).unwrap();
@@ -84,7 +83,6 @@ fn catalog_range_and_object_prefix_follow_selected_leaf_without_scan() {
         Err(PhysicalIndexScanRequestDenial::PageBudgetTooWide)
     );
     drop(range);
-    drop(index);
     drop(layouts);
     serving.close();
 }

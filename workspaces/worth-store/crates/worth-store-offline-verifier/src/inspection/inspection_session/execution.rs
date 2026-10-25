@@ -190,10 +190,10 @@ impl OfflineInspectionSession {
         if self.cancellation.is_cancelled() {
             return Err(OfflineInspectionDenial::Cancelled);
         }
-        if let Some(deadline) = self.budget.deadline() {
-            if self.clock.now() >= deadline {
-                return Err(OfflineInspectionDenial::AbsoluteDeadlineReached { deadline });
-            }
+        if let Some(deadline) = self.budget.deadline()
+            && self.clock.now() >= deadline
+        {
+            return Err(OfflineInspectionDenial::AbsoluteDeadlineReached { deadline });
         }
         if let Some(limit) = self.budget.max_elapsed() {
             let elapsed = self

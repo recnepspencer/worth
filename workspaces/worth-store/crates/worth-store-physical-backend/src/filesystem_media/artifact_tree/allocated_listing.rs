@@ -105,7 +105,7 @@ fn enumerate<A: ArtifactTreeListingAllocator>(
         super::listing_provider::open_with_allocator(directory, allocator)?;
     let mut observed = Vec::new();
     let mut names = 0_u64;
-    while let Some(entry) = entries.next() {
+    for entry in entries.by_ref() {
         if observed.len() == maximum_entries {
             return Err(ArtifactTreeFailure::limit(
                 observed.len() as u64 + 1,

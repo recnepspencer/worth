@@ -80,7 +80,6 @@ fn exercise(tier: bool, mutate_after_seal: bool) {
         .expect("failed-ingest drop");
     assert_eq!(receipt.disposition(), BlobReclaimDisposition::Dropped);
     assert_eq!(receipt.dropped_records().len(), 1);
-    drop(blobs);
     if tier {
         world
             .serving()
