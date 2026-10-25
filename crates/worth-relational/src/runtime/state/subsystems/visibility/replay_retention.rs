@@ -39,4 +39,9 @@ impl ReplayRetentionIndex {
 #[derive(Debug, Clone)]
 pub(crate) struct ReplayRetentionState {
     pub(crate) ref_count: usize,
+    pub(crate) pinned_state: crate::visibility::snapshot_states::SnapshotState,
+    pub(crate) pin_leases: BTreeMap<
+        crate::identity::data::PartitionId,
+        crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>,
+    >,
 }

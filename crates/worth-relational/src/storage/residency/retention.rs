@@ -69,6 +69,23 @@ impl RelationalRegionRetention {
         })
     }
 
+    pub(crate) fn pin_lease(
+        &self,
+    ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        if let Some(lease) = self.full.get() {
+            return Ok(lease.clone());
+        }
+        self.cell
+            .lease_resident_full()?
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(
+                    self.cell.partition_id,
+                ),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })
+    }
+
     pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
         self.authority.clone()
     }

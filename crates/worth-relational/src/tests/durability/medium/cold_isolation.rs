@@ -208,3 +208,88 @@ fn fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write() {
 #[path = "cold_fork_edits.rs"]
 mod fork_edits;
 
+#[test]
+fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
+    use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
+    use crate::storage::partition::DenseSlotBitSet;
+    use crate::visibility::snapshot_states::{
+        SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let cold = recover_shape(execution, None, 4, true);
+    let branch = crate::history::data::BranchId("main".into());
+    let root = cold
+        .runtime
+        .history
+        .branch_cell(&branch)
+        .unwrap()
+        .root()
+        .unwrap();
+    let mut slots = DenseSlotBitSet::with_capacity(1);
+    slots.set(cold.entities[0].slot_index(), true);
+    // The pin set names an owner-issued committed record. Snapshot registration
+    // is irrelevant to the pin authority's residency precondition.
+    let state = SnapshotState {
+        handle: SnapshotHandle {
+            runtime_instance_id: cold.runtime.runtime_instance_id(),
+            branch_id: branch.clone(),
+            snapshot_id: SnapshotId(1),
+            version_id: cold.runtime.current_version_id(),
+            read_policy: SnapshotReadPolicy::ImmutablePinned,
+        },
+        basis: SnapshotStateBasis::Exact(VisibilitySnapshotBasis::from_prepared_root(branch, root)),
+        pinned_partitions: BTreeMap::from([(
+            PartitionId(1),
+            crate::storage::overlay::SnapshotPartitionPins {
+                entity_slots: slots,
+                relation_slots: DenseSlotBitSet::with_capacity(0),
+                retained_relation_slots: DenseSlotBitSet::with_capacity(0),
+            },
+        )]),
+        pinned_entity_count: 1,
+        pinned_relation_count: 0,
+    };
+    let failure = cold
+        .runtime
+        .visibility_pins()
+        .pin_replay_state(&state)
+        .unwrap_err();
+    assert_eq!(
+        failure.subject,
+        crate::storage::data::RelationalStorageSubject::Region(PartitionId(1))
+    );
+    assert_eq!(failure.cause, Cause::SourceUnavailable);
+    assert_eq!(cold.source.reads.load(Ordering::Relaxed), 0);
+    create_entity_in_partition(execution, &cold.runtime, "warm-pin", PartitionId(1));
+    let leases = cold
+        .runtime
+        .visibility_pins()
+        .pin_replay_state(&state)
+        .unwrap();
+    let other_holder = cold
+        .runtime
+        .visibility_pins()
+        .pin_replay_state(&state)
+        .unwrap();
+    let pin_count = || {
+        cold.runtime
+            .partitions
+            .acquire()
+            .partition(PartitionId(1))
+            .unwrap()
+            .entity_arena
+            .replay_pin_count(cold.entities[0].slot_index())
+    };
+    assert_eq!(pin_count(), Some(2));
+    cold.runtime
+        .visibility_pins()
+        .unpin_replay_state(&state, &leases)
+        .unwrap();
+    assert_eq!(pin_count(), Some(1));
+    cold.runtime
+        .visibility_pins()
+        .unpin_replay_state(&state, &other_holder)
+        .unwrap();
+    assert_eq!(pin_count(), Some(0));
+}
