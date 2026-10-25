@@ -18,6 +18,7 @@ pub fn configuration() -> program::ExampleConfiguration {
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
@@ -31,19 +32,31 @@ pub fn install<const ERASE: bool>(
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
     installation::WorthQueryInMemoryApplicationDenial,
 > {
-    install_configured::<ERASE>(
-        configuration,
-        installation::ApplicationBuildIdentity::parse("27120000-0000-4000-8000-000000000001")
-            .unwrap(),
-        limits(),
-        seeded,
-    )
+    install_configured(configuration, build_identity(), limits(), seeded)
 }
 
 pub fn install_configured<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     build_identity: installation::ApplicationBuildIdentity,
     limits: installation::WorthQueryInMemoryApplicationLimits,
+    seeded: impl FnOnce(),
+) -> Result<
+    installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
+    installation::WorthQueryInMemoryApplicationDenial,
+> {
+    install_rings_configured(configuration, build_identity, limits, 0, seeded)
+}
+
+pub fn build_identity() -> installation::ApplicationBuildIdentity {
+    installation::ApplicationBuildIdentity::parse("27120000-0000-4000-8000-000000000001").unwrap()
+}
+
+/// Seed the same reference application with additional isolated rings.
+pub fn install_rings_configured<const ERASE: bool>(
+    configuration: program::ExampleConfiguration,
+    build_identity: installation::ApplicationBuildIdentity,
+    limits: installation::WorthQueryInMemoryApplicationLimits,
+    extra_rings: usize,
     seeded: impl FnOnce(),
 ) -> Result<
     installation::WorthQueryProgramApplicationRuntime<ExampleSchema, ExampleProgram<ERASE>>,
@@ -70,26 +83,37 @@ pub fn install_configured<const ERASE: bool>(
                 external_identity(),
                 WorthQueryPrincipalMappingStatus::Enabled,
             )?;
-            for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
-                let key = format!("anchor-{name}");
-                graph.bind_entity(
-                    primary_graph::WorthQueryApplicationEntitySeed::new(
-                        Body::reference::<ExampleSchema>(),
-                        entity_key(&key),
-                    )
-                    .field(BodyKey::reference(), key)
-                    .field(Length::reference(), length(y + 1))
-                    .field(PositionX::reference(), length(x))
-                    .field(PositionY::reference(), length(y)),
-                )?;
-            }
-            for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
-                graph.bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
-                    PlanarSuccessor::reference::<ExampleSchema>(),
-                    format!("successor-{from}-{to}"),
-                    entity_key(&format!("anchor-{from}")),
-                    entity_key(&format!("anchor-{to}")),
-                ))?;
+            for ring in 0..=extra_rings {
+                let prefix = if ring == 0 {
+                    "anchor".to_owned()
+                } else {
+                    format!("ring-{}", ring - 1)
+                };
+                for (name, x, y) in [("a", 1, 1), ("b", 10, 1), ("c", 1, 10)] {
+                    let key = format!("{prefix}-{name}");
+                    graph.bind_entity(
+                        primary_graph::WorthQueryApplicationEntitySeed::new(
+                            Body::reference::<ExampleSchema>(),
+                            entity_key(&key),
+                        )
+                        .field(BodyKey::reference(), key)
+                        .field(Length::reference(), length(y + 1))
+                        .field(PositionX::reference(), length(x))
+                        .field(PositionY::reference(), length(y)),
+                    )?;
+                }
+                for (from, to) in [("a", "b"), ("b", "c"), ("c", "a")] {
+                    graph.bind_relation(primary_graph::WorthQueryApplicationRelationSeed::new(
+                        PlanarSuccessor::reference::<ExampleSchema>(),
+                        if ring == 0 {
+                            format!("successor-{from}-{to}")
+                        } else {
+                            format!("{prefix}-successor-{from}-{to}")
+                        },
+                        entity_key(&format!("{prefix}-{from}")),
+                        entity_key(&format!("{prefix}-{to}")),
+                    ))?;
+                }
             }
             Ok(())
         },
@@ -101,7 +125,7 @@ fn entity_key(key: &str) -> primary_graph::WorthQueryApplicationEntityKey<Exampl
 pub fn length(value: u64) -> worth_query_consumer_values::PositiveLength {
     worth_query_consumer_values::PositiveLength::new(value).unwrap()
 }
-fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
+pub fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,
         worth_foundational::DeterminismContract::CanonicalBitwise,

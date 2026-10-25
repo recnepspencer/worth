@@ -135,3 +135,49 @@ Plan:
 No additional budget, public counter type, observation-based admission or view
 engine. Public compiled planar examples, the feature guide and Proprietary
 adoption still gate Phase 1 closure and its merge to master.
+
+## Phase 1, slice 4: public planar evidence and read guide
+
+Boundary review: the installed PositiveTurnRule prepares predecessor discovery
+and then two outgoing successor hops per distinct affected root. Evaluation
+reads coordinates from those prepared triples. PlanarQuery reads two outgoing
+successor hops from its named root. Their whole counts describe different work;
+only the same-root forward interval is an equivalent adjacency read. Installed
+context observations include preparation, and survive ordinary domain refusal.
+Retained snapshot projection readers are a separate public host read surface.
+
+The existing TopologyConfiguration -> setup.invariant -> resolve_rule path can
+carry an optional application-owned observer. Event envelopes hold the shared
+Work snapshots and genuine EntityId, not a second counter or access authority.
+Bootstrap also invokes rules, so the example clears its seed observations and
+correlates one explicit edit's directly touched body before comparing reads.
+
+Plan:
+
+1. Add the optional ordinary observer to the topology configuration; existing
+   callers supply None. Split the touched planar invariant into binding/trait,
+   preparation and evaluation responsibilities. Record raw preparation,
+   forward-hop and evaluation snapshots at their actual boundaries, including
+   preparation/evaluation errors and ordinary violations. Never select a verdict
+   from observations or derive counts from PLANAR_CHECKED_WORK.
+2. Add a runnable `invariant_reads` example using the existing required-feature
+   program and installation. Parameterize that seed's unrelated ring population
+   while preserving its default. Compare a single touched root's actual forward
+   interval with the ordinary PlanarRead receipt, then compare full observations
+   across increasing unrelated rings. Exercise domain refusal and unchanged
+   committed reads. Retain the original request and invariant budgets.
+3. Write `foundations/invariants-and-read-observations.md` using the real public
+   facades: installed proposed/committed rules, retained projections, decision
+   reads, and ordinary declared receipts. Include methods, access/denial and
+   lifecycle limits, small and realistic examples, and the shared counter units.
+   Bind the realistic snippet to compiled source through the existing consumer
+   documentation inventory/drift court; update capability/guide navigation.
+4. Build/run the new example and existing required-feature tests, the compiled
+   snippet drift court and affected public invariant acceptance consumers. Run
+   formatting, dirty size/function/composition review, boundary-check and
+   agent-context. The persistent reviewer gates the living patch and evidence
+   before this slice's commit.
+
+Proprietary adoption remains the next Phase 1 obligation. No master merge until
+all Phase 1 requirements are proven; no new budget, platform test door, traversal
+engine or observation-based production decision in this slice.

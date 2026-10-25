@@ -32,3 +32,8 @@ test = true
 name = "shared_execution"
 path = "examples/shared_execution.rs"
 test = false
+
+[[example]]
+name = "invariant_reads"
+path = "examples/invariant_reads.rs"
+test = true

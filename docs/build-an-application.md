@@ -3524,6 +3524,9 @@ Known finite Scan/Map result declarations retain their existing checks.
 
 ### Typed refusal from installed invariants
 
+For proposed/committed access, prepared scope, retained snapshot readers and the
+shared diagnostic counts, see [Invariants and read observations](../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md).
+
 An installed `WorthQueryApplicationInvariantRule` declares `type Refusal` and
 `type RefusalBinding`. The binding is the application's existing readable scalar
 value declaration for that type, with the canonical JSON contract and a finite

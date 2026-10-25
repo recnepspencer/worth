@@ -22,6 +22,7 @@ pub struct TopologyConfiguration {
     pub setup_calls: Arc<AtomicUsize>,
     pub invariant_calls: Arc<AtomicUsize>,
     pub invariant_probe: Arc<AtomicUsize>,
+    pub invariant_read_observer: Option<super::PlanarInvariantReadObserver>,
     pub producer_authorization_denials: Arc<AtomicUsize>,
     pub producer_domain_denial: Arc<AtomicBool>,
 }
@@ -131,6 +132,7 @@ impl TopologyContribution {
                     resolver,
                     configuration.invariant_calls,
                     configuration.invariant_probe,
+                    configuration.invariant_read_observer,
                 )
             },
         )?;

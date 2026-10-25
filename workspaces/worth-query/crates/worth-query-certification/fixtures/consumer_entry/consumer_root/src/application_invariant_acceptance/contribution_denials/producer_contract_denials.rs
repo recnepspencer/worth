@@ -292,6 +292,7 @@ fn foreign_source_selector_is_denied_before_initial_state() {
         setup_calls: counter(),
         invariant_calls: counter(),
         invariant_probe: counter(),
+        invariant_read_observer: None,
         producer_authorization_denials: counter(),
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
     };
