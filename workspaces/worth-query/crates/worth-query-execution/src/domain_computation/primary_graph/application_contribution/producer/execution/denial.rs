@@ -292,6 +292,24 @@ pub(super) fn identity_unavailable(
     )
 }
 
+/// A commit stopped by its carried request cause preserves that typed stop.
+pub(super) fn commit_execution_stopped(
+    subject: &str,
+    error: impl std::fmt::Debug,
+    cause: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+    let kind = match cause {
+        Ok(cause) => source_readmission::request_execution_kind(cause),
+        Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+        Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+    };
+    denial(kind, format!("{subject}: {error:?}"))
+}
+
 pub(super) fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
     denial(
         WorthQueryOutputDemandDenialKind::ProducerUnavailable,

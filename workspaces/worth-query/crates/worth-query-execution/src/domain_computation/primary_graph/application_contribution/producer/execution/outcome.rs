@@ -1,5 +1,7 @@
 use super::super::demand::ProducerPublicationStale;
-use super::denial::{denial, failed, handler_execution_failed, request_authority_stop};
+use super::denial::{
+    commit_execution_stopped, denial, failed, handler_execution_failed, request_authority_stop,
+};
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
 use graph::{
@@ -198,8 +200,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
             let capacity = commit_denial.output_verification_capacity_stop();
-            let failure = match kind {
-                Kind::ProductBasisStale => denial(
+            let failure = match (execution, kind) {
+                (Some((_, cause)), _) => commit_execution_stopped(identity, &commit_denial, cause),
+                (None, Kind::ProductBasisStale) => denial(
                     WorthQueryOutputDemandDenialKind::PublicationStale,
                     identity.to_owned(),
                 )
@@ -208,54 +211,57 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                         stage: commit_denial.stage(),
                     },
                 )),
-                Kind::IdempotencyIntentDrift => denial(
+                (None, Kind::IdempotencyIntentDrift) => denial(
                     WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                     format!("{identity}: {commit_denial:?}"),
                 ),
-                Kind::ExecutionResource { .. }
-                | Kind::ExecutionNestedPatternStopped { .. }
-                | Kind::ExecutionWorkerPanicked { .. }
-                | Kind::ExecutionUncheckedCustomKernel { .. }
-                | Kind::ExecutionIdentitiesNotCanonical { .. }
-                | Kind::ProviderRejected
-                | Kind::CustomInvariantDenied
-                | Kind::WorkflowSettlementDenied { .. }
-                | Kind::UniqueValueTaken
-                | Kind::UniqueIndexUnavailable
-                | Kind::ActiveSnapshotCapacityExhausted { .. }
-                | Kind::RetentionCapacityExhausted
-                | Kind::RetentionIdentityExhausted
-                | Kind::SnapshotIdentityExhausted
-                | Kind::CandidateIdentityExhausted
-                | Kind::IndexMaintenanceBudgetExceeded
-                | Kind::IndexGenerationIdentityExhausted
-                | Kind::IdempotencyReceiptNotRetained { .. }
-                | Kind::IdempotencyIntentUnverifiable
-                | Kind::OperationBodyExecutionRequired
-                | Kind::SignedCreationAuthentication { .. }
-                | Kind::SignedEntityImmutable
-                | Kind::SigningLifecycleForgery
-                | Kind::SigningLifecycleUnavailable
-                | Kind::SigningLifecycleEvidenceCapacity { .. }
-                | Kind::SigningLifecycleSubjectCapacity { .. }
-                | Kind::SigningLifecycleRepresentationCapacity
-                | Kind::SigningLifecycleObservation { .. }
-                | Kind::MutationBindingMismatch
-                | Kind::MutationInputMismatch
-                | Kind::ElevationTransitionRequired
-                | Kind::ElevationRequestProgramMismatch
-                | Kind::ElevationApprovalProgramMismatch
-                | Kind::ElevationCloseProgramMismatch
-                | Kind::MandatoryReviewProgramMismatch
-                | Kind::DelegationActivationRequired
-                | Kind::CapabilityRevocationRequired
-                | Kind::ApplicationProgramRequired
-                | Kind::WorkflowAuthorityRequired
-                | Kind::ProgramNotActiveOnOccurrence { .. }
-                | Kind::ProgramSupportRetired
-                | Kind::ProgramActivationUnresolved
-                | Kind::CorrectionContextMismatch
-                | Kind::CorrectionIdentityMismatch => failed(identity, commit_denial),
+                (
+                    None,
+                    Kind::ExecutionResource { .. }
+                    | Kind::ExecutionNestedPatternStopped { .. }
+                    | Kind::ExecutionWorkerPanicked { .. }
+                    | Kind::ExecutionUncheckedCustomKernel { .. }
+                    | Kind::ExecutionIdentitiesNotCanonical { .. }
+                    | Kind::ProviderRejected
+                    | Kind::CustomInvariantDenied
+                    | Kind::WorkflowSettlementDenied { .. }
+                    | Kind::UniqueValueTaken
+                    | Kind::UniqueIndexUnavailable
+                    | Kind::ActiveSnapshotCapacityExhausted { .. }
+                    | Kind::RetentionCapacityExhausted
+                    | Kind::RetentionIdentityExhausted
+                    | Kind::SnapshotIdentityExhausted
+                    | Kind::CandidateIdentityExhausted
+                    | Kind::IndexMaintenanceBudgetExceeded
+                    | Kind::IndexGenerationIdentityExhausted
+                    | Kind::IdempotencyReceiptNotRetained { .. }
+                    | Kind::IdempotencyIntentUnverifiable
+                    | Kind::OperationBodyExecutionRequired
+                    | Kind::SignedCreationAuthentication { .. }
+                    | Kind::SignedEntityImmutable
+                    | Kind::SigningLifecycleForgery
+                    | Kind::SigningLifecycleUnavailable
+                    | Kind::SigningLifecycleEvidenceCapacity { .. }
+                    | Kind::SigningLifecycleSubjectCapacity { .. }
+                    | Kind::SigningLifecycleRepresentationCapacity
+                    | Kind::SigningLifecycleObservation { .. }
+                    | Kind::MutationBindingMismatch
+                    | Kind::MutationInputMismatch
+                    | Kind::ElevationTransitionRequired
+                    | Kind::ElevationRequestProgramMismatch
+                    | Kind::ElevationApprovalProgramMismatch
+                    | Kind::ElevationCloseProgramMismatch
+                    | Kind::MandatoryReviewProgramMismatch
+                    | Kind::DelegationActivationRequired
+                    | Kind::CapabilityRevocationRequired
+                    | Kind::ApplicationProgramRequired
+                    | Kind::WorkflowAuthorityRequired
+                    | Kind::ProgramNotActiveOnOccurrence { .. }
+                    | Kind::ProgramSupportRetired
+                    | Kind::ProgramActivationUnresolved
+                    | Kind::CorrectionContextMismatch
+                    | Kind::CorrectionIdentityMismatch,
+                ) => failed(identity, commit_denial),
             };
             Err(failure
                 .with_commit_denial_kind(kind)
