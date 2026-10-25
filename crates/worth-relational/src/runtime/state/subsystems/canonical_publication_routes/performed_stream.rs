@@ -218,6 +218,17 @@ impl PerformedPublicationStream {
             .collect()
     }
 
+    pub(super) fn latest_references(&self, limit: usize) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.refresh_index()
+            .by_patch
+            .iter()
+            .rev()
+            .filter(|(_, node)| node.route.is_visible())
+            .take(limit)
+            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .collect()
+    }
+
     pub(super) fn positioned(&self, commit_id: CommitId) -> Option<Arc<PositionedCanonicalCommit>> {
         let index = self.refresh_index();
         index

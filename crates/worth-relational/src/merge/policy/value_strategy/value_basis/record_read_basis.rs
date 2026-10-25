@@ -1,5 +1,5 @@
 use crate::merge::data::{MergeConflictClassification, VisibleMergeRecord};
-use crate::merge::policy::contexts::PolicyReadViewContext;
+use crate::merge::policy::contexts::{PolicyBaseReadViewContext, PolicyReadViewContext};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use worth_foundational::facade::{
     AspectKey, AuthoritativeRecordAspectState, ContractValidatedAspectValueView,
@@ -18,7 +18,6 @@ use super::{
 };
 
 pub(crate) fn resolve_policy_aspect_value_basis(
-    runtime: &crate::runtime::RelationalRuntime,
     record: &VisibleMergeRecord,
     classification: &MergeConflictClassification,
     binding: ScalarPolicyAspectBinding,
@@ -27,7 +26,7 @@ pub(crate) fn resolve_policy_aspect_value_basis(
     base_commit_id: crate::history::data::CommitId,
     source_view: &PolicyReadViewContext<'_>,
     target_view: &PolicyReadViewContext<'_>,
-    base_view: &PolicyReadViewContext<'_>,
+    base_view: &PolicyBaseReadViewContext<'_>,
 ) -> PolicyAspectValueBasis {
     let mut counters = PolicyValueLookupCounters::default();
     let source = source_scalar_value(record, &binding, source_view);
@@ -35,7 +34,6 @@ pub(crate) fn resolve_policy_aspect_value_basis(
     let target = target_scalar_value(record, classification, &binding, target_view);
     counters.record_target(target.as_ref().map(|_| ()).map_err(|failure| *failure));
     let base = base_scalar_value(
-        runtime,
         record,
         classification,
         &binding,
@@ -142,12 +140,11 @@ fn target_scalar_value(
 }
 
 fn base_scalar_value(
-    runtime: &crate::runtime::RelationalRuntime,
     record: &VisibleMergeRecord,
     classification: &MergeConflictClassification,
     binding: &ScalarPolicyAspectBinding,
     base_commit_id: crate::history::data::CommitId,
-    base_view: &PolicyReadViewContext<'_>,
+    base_view: &PolicyBaseReadViewContext<'_>,
     counters: &mut PolicyValueLookupCounters,
 ) -> Result<PolicyScalarValue, PolicyValueLookupFailure> {
     let aspect_key = binding.aspect_key();
@@ -160,7 +157,7 @@ fn base_scalar_value(
         }
     };
     let patch_value =
-        scalar_from_base_commit_patch(runtime, base_commit_id, &candidate_targets, aspect_key).map(
+        scalar_from_base_commit_patch(base_view.envelope(), &candidate_targets, aspect_key).map(
             |value| {
                 PolicyScalarValue::new(
                     value,
@@ -177,14 +174,14 @@ fn base_scalar_value(
 
     let base_state = match binding {
         ScalarPolicyAspectBinding::Entity { aspect_key } => {
-            entity_basis_for_visible_record(record, classification, base_view)
+            entity_basis_for_visible_record(record, classification, base_view.records())
                 .ok_or(PolicyValueLookupFailure::MissingRecordBasis)
                 .and_then(|entity| {
                     scalar_from_entity(entity, aspect_key, PolicyValueProvenance::BaseReadViewState)
                 })
         }
         ScalarPolicyAspectBinding::Relation { aspect_key } => {
-            relation_basis_for_visible_record(record, classification, base_view)
+            relation_basis_for_visible_record(record, classification, base_view.records())
                 .ok_or(PolicyValueLookupFailure::MissingRecordBasis)
                 .and_then(|relation| {
                     scalar_from_relation(

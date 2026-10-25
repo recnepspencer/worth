@@ -88,6 +88,13 @@ impl RelationalCanonicalPublicationRoutes {
         self.performed_stream.after(after_position, max_commits)
     }
 
+    pub(crate) fn latest_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.performed_stream.latest_references(limit)
+    }
+
     pub(crate) fn stream_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
         let route = self
             .by_commit

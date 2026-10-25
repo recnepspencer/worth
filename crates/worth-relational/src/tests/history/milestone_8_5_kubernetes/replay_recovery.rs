@@ -211,7 +211,8 @@ pub(super) fn recover_stage_from_final_history(
     {
         let base_version_id = recovered
             .history()
-            .commit_envelope(base_commit_id)
+            .demand_commit_envelope(execution, base_commit_id)
+            .unwrap()
             .map(|envelope| envelope.commit.version_id);
         if let Some(base_version_id) = base_version_id {
             recovered

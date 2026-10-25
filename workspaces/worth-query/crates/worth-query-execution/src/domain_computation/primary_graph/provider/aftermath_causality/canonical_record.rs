@@ -67,10 +67,8 @@ fn decode(
     };
     let child = runtime
         .history()
-        .historical_committed_version(version)
-        .ok_or(Unavailable)?
-        .commit()
-        .clone();
+        .immutable_commit_receipt_for_version(version)
+        .ok_or(Unavailable)?;
     let parent = runtime
         .history()
         .immutable_commit_receipt(CommitId(number(&values, 3)?))

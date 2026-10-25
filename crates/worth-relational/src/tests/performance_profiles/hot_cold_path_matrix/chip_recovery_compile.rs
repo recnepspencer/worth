@@ -60,6 +60,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
             let hot_artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     latest_commit.commit_id,
                     vec![
                         PartitionId(7),
@@ -116,6 +117,7 @@ pub(super) fn certify_chip_hot_compile_vs_recovery_compile(
             let cold_artifact = recovered
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     recovered_commit.commit_id,
                     vec![
                         PartitionId(7),

@@ -119,9 +119,8 @@ fn touched_record_latest_commit_index(
         .iter()
         .filter_map(|record| {
             record
-                .commit_ids
-                .last()
-                .copied()
+                .commit_ids()
+                .next_back()
                 .map(|commit_id| (touched_record_key(&record.target), commit_id))
         })
         .collect()

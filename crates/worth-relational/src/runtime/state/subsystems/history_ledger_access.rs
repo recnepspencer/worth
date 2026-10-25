@@ -156,6 +156,20 @@ impl HistorySubsystem {
             .collect()
     }
 
+    pub(crate) fn latest_recorded_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.ledger
+            .read()
+            .patch_stream_index
+            .iter()
+            .rev()
+            .take(limit)
+            .map(|(position, commit_id)| (*position, *commit_id))
+            .collect()
+    }
+
     #[cfg(test)]
     pub(crate) fn recorded_patch_position_count(&self) -> usize {
         self.ledger.read().patch_stream_index.len()

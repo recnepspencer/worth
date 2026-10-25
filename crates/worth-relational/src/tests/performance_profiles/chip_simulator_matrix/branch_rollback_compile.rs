@@ -141,6 +141,7 @@ pub(super) fn certify_branch_rollback_compile_step_window(
             let artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     feature_commit.commit_id,
                     vec![
                         PartitionId(7),

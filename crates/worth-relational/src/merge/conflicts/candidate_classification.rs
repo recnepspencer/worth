@@ -54,7 +54,6 @@ pub(super) fn classify_candidate(
         has_validated_schema_correspondence,
     );
     let strategy_evidence = strategy_conflict_evidence(
-        runtime,
         source_touched_by_record.get(&record.record_ref).copied(),
         candidate_target_record
             .as_ref()

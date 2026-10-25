@@ -127,8 +127,11 @@ fn select_strategy_basis_commits(
     ) {
         (Some(commit_id), _) => Some(commit_id),
         (None, Some(version_id)) if version_id.0 > 0 => {
-            match runtime.history().commit_envelope_for_version(version_id) {
-                Some(envelope) => Some(envelope.commit.commit_id),
+            match runtime
+                .history()
+                .immutable_commit_receipt_for_version(version_id)
+            {
+                Some(receipt) => Some(receipt.commit_id),
                 None => {
                     mismatches.push(strategy_mismatch(
                         ReplayMismatchClass::StrategyExecutorUnavailable,

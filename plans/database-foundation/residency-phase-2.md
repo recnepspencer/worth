@@ -141,3 +141,24 @@ entry directly and does not require the envelope. A genuine 17-commit
 checkpoint fixture proves selected-batch journal reads, repeated equality,
 sticky failure and unchanged publication/journal state. Subscriber continuity,
 other envelope surfaces and envelope retirement remain required cutovers.
+
+## Indexed receipts and demanded body surfaces
+
+Immutable version receipts and ancestry traverse catalog index entries. They
+neither require nor reconstruct envelopes. Version cardinality summaries,
+individual/recent commit inspection and compiled artifacts now take the caller
+request and demand only selected bodies. Recent inspection selects from the
+complete position index, including cold entries; branch filtering uses indexed
+parentage before body admission. Compiled artifact identity issuance follows
+successful source admission. Merge planning owns its selected delta envelopes,
+and policy base contexts carry the admitted body beside their record view;
+source and target identity-only contexts need no envelope.
+
+Query's mutation/index refresh reads a finite complete patch batch and preserves
+native storage refusal together with any already observed committed receipt.
+An incomplete batch is an explicit capacity refusal, never successful partial
+index maintenance. Cold-source proofs cover version summaries, commit and
+recent inspection, branch-filtered recent inspection and artifact compilation,
+with readable index facts, sticky refusal and no journal/publication advance.
+These cuts do not yet close aspect history, subscriber continuity, retained
+export, envelope retirement or candidate-wide retry and symbol staging.

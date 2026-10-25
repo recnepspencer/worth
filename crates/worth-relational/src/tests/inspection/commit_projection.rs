@@ -15,10 +15,14 @@ fn commit_inspection_is_canonical_and_not_story_shaped() {
 
     let inspection = runtime
         .inspect_what_happened()
-        .inspect_commit(commit_id)
+        .inspect_commit(execution, commit_id)
+        .unwrap()
         .expect("commit inspection");
     let history = runtime.history();
-    let envelope = history.commit_envelope(commit_id).expect("commit envelope");
+    let envelope = history
+        .demand_commit_envelope(execution, commit_id)
+        .unwrap()
+        .expect("commit envelope");
 
     assert_eq!(inspection.origin, InspectionOrigin::CanonicalCommitStorage);
     assert_eq!(
@@ -105,7 +109,8 @@ fn merge_commit_inspection_stays_envelope_projected() {
     let merge_commit_id = merge.commit.commit_id;
     let history = runtime.history();
     let envelope = history
-        .commit_envelope(merge_commit_id)
+        .demand_commit_envelope(execution, merge_commit_id)
+        .unwrap()
         .expect("merge commit envelope");
     assert_eq!(
         envelope.merge_parent_branches,
@@ -114,7 +119,8 @@ fn merge_commit_inspection_stays_envelope_projected() {
 
     let inspection = runtime
         .inspect_what_happened()
-        .inspect_commit(merge_commit_id)
+        .inspect_commit(execution, merge_commit_id)
+        .unwrap()
         .expect("merge commit inspection");
 
     assert_eq!(inspection.commit, envelope.commit);

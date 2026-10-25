@@ -199,10 +199,12 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
 
     let feature_head = runtime
         .inspect_what_happened()
-        .inspect_branch_head(&BranchId("feature".to_string()))
+        .inspect_branch_head(execution, &BranchId("feature".to_string()))
+        .unwrap()
         .expect("feature branch head");
-    let feature_window = recent_commit_window(&runtime, &BranchId("feature".to_string()), 8);
-    let main_window = recent_commit_window(&runtime, &BranchId("main".to_string()), 8);
+    let feature_window =
+        recent_commit_window(execution, &runtime, &BranchId("feature".to_string()), 8);
+    let main_window = recent_commit_window(execution, &runtime, &BranchId("main".to_string()), 8);
 
     assert_eq!(
         feature_head.commit.branch_id,

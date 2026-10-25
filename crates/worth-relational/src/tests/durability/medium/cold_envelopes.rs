@@ -162,3 +162,177 @@ fn patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_dama
         assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
     }
 }
+
+#[derive(Clone, Copy, Debug)]
+enum EnvelopeSurface {
+    VersionSummary,
+    CommitInspection,
+    RecentInspection,
+    RecentBranchInspection,
+    CompiledArtifact,
+}
+
+impl EnvelopeSurface {
+    fn read(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::runtime::RelationalRuntime,
+        receipt: &crate::history::data::RelationalCommitReceipt,
+    ) -> Result<usize, RelationalExecutionDenialCause> {
+        Ok(match self {
+            Self::CompiledArtifact => {
+                runtime
+                    .compiled_artifacts_authority()
+                    .compile_execution_artifact(
+                        execution,
+                        receipt.commit_id,
+                        vec![crate::identity::data::PartitionId::main()],
+                    )
+                    .map_err(|failure| match failure.authority_status {
+                        crate::simulation::data::CompiledArtifactAuthorityStatus::ReadRequest(
+                            cause,
+                        ) => cause,
+                        other => {
+                            panic!("enabled fixture compile source must be readable: {other:?}")
+                        }
+                    })?
+                    .compiled_record_count
+            }
+            Self::VersionSummary => runtime
+                .history()
+                .historical_committed_version(execution, receipt.version_id)?
+                .expect("fixture's indexed version exists")
+                .changed_record_count(),
+            Self::CommitInspection => runtime
+                .inspect_what_happened()
+                .inspect_commit(execution, receipt.commit_id)?
+                .expect("fixture's indexed commit exists")
+                .changed_records
+                .len(),
+            Self::RecentBranchInspection => runtime
+                .inspect_what_happened()
+                .inspect_recent_commits(
+                    execution,
+                    &crate::inspection::data::RecentCommitInspectionRequest {
+                        branch_id: Some(receipt.branch_id.clone()),
+                        limit: 2,
+                    },
+                )?
+                .commits
+                .len(),
+            Self::RecentInspection => runtime
+                .inspect_what_happened()
+                .inspect_recent_commits(
+                    execution,
+                    &crate::inspection::data::RecentCommitInspectionRequest {
+                        branch_id: None,
+                        limit: 2,
+                    },
+                )?
+                .commits
+                .len(),
+        })
+    }
+}
+
+#[test]
+fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    for door in [
+        EnvelopeSurface::VersionSummary,
+        EnvelopeSurface::CommitInspection,
+        EnvelopeSurface::RecentInspection,
+        EnvelopeSurface::RecentBranchInspection,
+        EnvelopeSurface::CompiledArtifact,
+    ] {
+        for damaged in [false, true] {
+            let producer = match door {
+                EnvelopeSurface::CompiledArtifact => RelationalRuntimeApi::builder()
+                    .profile(RelationalRuntimeProfile::ChipSimulation)
+                    .schema_registry(test_schema_registry())
+                    .build_durable(TestDurableMedium::new().attachment()),
+                _ => durable_runtime_with_test_schema(),
+            };
+            let (source, counter, _) = fixture_from_runtime(execution, producer, false, 16);
+            let position = match door {
+                EnvelopeSurface::RecentInspection | EnvelopeSurface::RecentBranchInspection => {
+                    *counter.commits.keys().rev().nth(1).unwrap()
+                }
+                _ => *counter.commits.keys().nth(3).unwrap(),
+            };
+            let mut runtime = match door {
+                EnvelopeSurface::CompiledArtifact => RelationalRuntimeApi::builder()
+                    .profile(RelationalRuntimeProfile::ChipSimulation)
+                    .schema_registry(test_schema_registry())
+                    .build_durable(TestDurableMedium::new().attachment()),
+                _ => durable_runtime_with_test_schema(),
+            };
+            let plan = runtime
+                .durability()
+                .recovery_plan_from_source(
+                    execution,
+                    source,
+                    RecoveryVerificationMode::NormalRecoveryVerification,
+                )
+                .unwrap();
+            runtime
+                .durability_recovery()
+                .recover(execution, plan)
+                .unwrap();
+            let reads_before = counter.commit_reads.lock().unwrap().len();
+            assert!(
+                reads_before < 4,
+                "reopen must not read the history population"
+            );
+            let member_reads = counter.reads.load(Ordering::Relaxed);
+            let frontier = runtime.history().latest_patch_stream_position();
+            let offered = attached_test_medium(&runtime).offered().len();
+            counter.commits_damaged.store(damaged, Ordering::Relaxed);
+            let receipt = runtime
+                .history()
+                .immutable_commit_receipt_at_patch_stream_position(position)
+                .unwrap();
+            assert_eq!(
+                runtime
+                    .history()
+                    .immutable_commit_receipt_for_version(receipt.version_id),
+                Some(receipt.clone())
+            );
+            assert_eq!(counter.commit_reads.lock().unwrap().len(), reads_before);
+            let read = || door.read(execution, &runtime, &receipt);
+            if damaged {
+                let failure = read().unwrap_err();
+                assert_eq!(
+                    failure,
+                    RelationalExecutionDenialCause::StorageUnavailable(
+                        RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Envelope(position),
+                            cause: Cause::Damaged,
+                        }
+                    ),
+                    "{door:?}"
+                );
+                counter.commits_damaged.store(false, Ordering::Relaxed);
+                assert_eq!(read().unwrap_err(), failure, "{door:?}");
+            } else {
+                let count = read().unwrap();
+                assert!(count > 0, "{door:?}");
+                assert_eq!(read().unwrap(), count, "{door:?}");
+            }
+            let reads = counter.commit_reads.lock().unwrap();
+            assert!(!reads[reads_before..].is_empty(), "{door:?}");
+            assert!(
+                reads[reads_before..].iter().all(|read| *read == position),
+                "{door:?}"
+            );
+            assert!(
+                reads.len() - reads_before < 3,
+                "warm reads and sticky damage do not reload: {door:?}"
+            );
+            assert_eq!(counter.reads.load(Ordering::Relaxed), member_reads);
+            assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
+            assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
+        }
+    }
+}

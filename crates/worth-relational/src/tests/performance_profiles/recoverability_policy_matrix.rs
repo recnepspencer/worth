@@ -187,6 +187,7 @@ fn perf_recoverability_policy_matrix() {
             let hot_artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     latest_commit.commit_id,
                     vec![
                         PartitionId(7),
@@ -237,6 +238,7 @@ fn perf_recoverability_policy_matrix() {
             let cold_artifact = recovered
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     recovered_commit.commit_id,
                     vec![
                         PartitionId(7),

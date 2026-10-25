@@ -27,7 +27,8 @@ fn historical_record_inspection_and_transaction_staging_are_read_only() {
 
     let commit = runtime
         .inspect_what_happened()
-        .inspect_commit(commit_id)
+        .inspect_commit(execution, commit_id)
+        .unwrap()
         .expect("commit inspection");
     assert!(commit
         .changed_records

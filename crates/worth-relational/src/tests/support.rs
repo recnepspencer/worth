@@ -302,16 +302,22 @@ pub(super) fn capture_inspection_truth_bundle(
             .inspect_record_retention(execution, RecordRef::Entity(entity_id))
             .unwrap()
             .expect("record retention"),
-        branch_head: inspection.inspect_branch_head(branch_id),
+        branch_head: inspection
+            .inspect_branch_head(execution, branch_id)
+            .unwrap(),
         latest_commit: inspection
-            .inspect_commit(latest_commit_id)
+            .inspect_commit(execution, latest_commit_id)
+            .unwrap()
             .expect("latest commit inspection"),
-        recent_commits: inspection.inspect_recent_commits(
-            &crate::facade::inspection::RecentCommitInspectionRequest {
-                branch_id: Some(branch_id.clone()),
-                limit: 8,
-            },
-        ),
+        recent_commits: inspection
+            .inspect_recent_commits(
+                execution,
+                &crate::facade::inspection::RecentCommitInspectionRequest {
+                    branch_id: Some(branch_id.clone()),
+                    limit: 8,
+                },
+            )
+            .unwrap(),
     }
 }
 

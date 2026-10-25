@@ -96,3 +96,29 @@ impl<'a> PolicyReadViewContext<'a> {
         })
     }
 }
+
+/// A policy base lends its admitted canonical patch as well as visible records.
+/// Source and target record views need no envelope demand for this purpose.
+pub(super) struct PolicyBaseReadViewContext<'a> {
+    records: PolicyReadViewContext<'a>,
+    envelope: &'a crate::history::data::CanonicalCommitEnvelope,
+}
+
+impl<'a> PolicyBaseReadViewContext<'a> {
+    pub(super) fn new(
+        view: &'a RelationalReadView,
+        index: &'a PolicyReadViewIndex,
+        envelope: &'a crate::history::data::CanonicalCommitEnvelope,
+    ) -> Self {
+        Self {
+            records: PolicyReadViewContext::new(view, index),
+            envelope,
+        }
+    }
+    pub(super) fn records(&self) -> &PolicyReadViewContext<'a> {
+        &self.records
+    }
+    pub(super) fn envelope(&self) -> &crate::history::data::CanonicalCommitEnvelope {
+        self.envelope
+    }
+}

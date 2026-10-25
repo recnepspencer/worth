@@ -125,14 +125,19 @@ pub(crate) fn reconstructed_record_inspection(
 }
 
 pub(crate) fn recent_commit_window(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     limit: usize,
 ) -> crate::facade::inspection::RecentCommitInspectionWindow {
-    runtime.inspect_what_happened().inspect_recent_commits(
-        &crate::facade::inspection::RecentCommitInspectionRequest {
-            branch_id: Some(branch_id.clone()),
-            limit: limit as u64,
-        },
-    )
+    runtime
+        .inspect_what_happened()
+        .inspect_recent_commits(
+            execution,
+            &crate::facade::inspection::RecentCommitInspectionRequest {
+                branch_id: Some(branch_id.clone()),
+                limit: limit as u64,
+            },
+        )
+        .unwrap()
 }

@@ -2,6 +2,7 @@ mod ancestry;
 mod aspect_history_queries;
 mod bounded_commit_patches;
 mod commit_surfaces;
+mod envelope_reads;
 mod merge_branch_basis;
 #[cfg(test)]
 mod merge_branch_basis_foundational;

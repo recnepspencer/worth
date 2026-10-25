@@ -14,6 +14,8 @@ pub enum CompiledArtifactAuthorityStatus {
     StaleVersion,
     MissingSourceCommit,
     CompiledLaneDisabled,
+    /// The caller's request or the source envelope demand was refused.
+    ReadRequest(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

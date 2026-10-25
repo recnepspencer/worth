@@ -91,7 +91,24 @@ fn fixture_with_history(
     Arc<MemberSource>,
     crate::identity::data::EntityId,
 ) {
-    let runtime = durable_runtime_with_test_schema();
+    fixture_from_runtime(
+        execution,
+        durable_runtime_with_test_schema(),
+        with_tail,
+        updates,
+    )
+}
+
+fn fixture_from_runtime(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: crate::runtime::RelationalRuntime,
+    with_tail: bool,
+    updates: usize,
+) -> (
+    RelationalDurableRecoverySource,
+    Arc<MemberSource>,
+    crate::identity::data::EntityId,
+) {
     let entity = create_entity(execution, &runtime, "member-before");
     for update in 0..updates {
         update_entity_and_release_snapshot(

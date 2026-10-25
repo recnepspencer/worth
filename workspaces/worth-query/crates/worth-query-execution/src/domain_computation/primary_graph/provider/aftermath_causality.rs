@@ -234,11 +234,11 @@ impl WorthQueryAftermathCausalityRead<'_> {
         let committed = self
             .runtime
             .history()
-            .historical_committed_version(created_at)
+            .immutable_commit_receipt_for_version(created_at)
             .ok_or("aftermath causality creation commit is unavailable")?;
         WorthQueryCommittedAftermathCausality::seal(
             self.pending.clone(),
-            committed.commit().clone(),
+            committed,
             RecordRef::Entity(entity_id),
         )
         .map(Some)

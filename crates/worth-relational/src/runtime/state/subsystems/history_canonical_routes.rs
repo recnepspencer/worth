@@ -57,6 +57,14 @@ impl HistorySubsystem {
             .visible_patches_after(after_position, max_commits)
     }
 
+    pub(crate) fn latest_canonical_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.canonical_publication_routes
+            .latest_patch_references(limit)
+    }
+
     pub(crate) fn canonical_stream_position(
         &self,
         commit_id: CommitId,

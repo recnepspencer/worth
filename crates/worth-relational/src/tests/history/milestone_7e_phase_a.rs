@@ -38,7 +38,7 @@ fn merge_branch_basis_matches_planning_artifact_and_history_scope_authority() {
         .expect("direct branch basis");
     let history_plan = runtime
         .merge()
-        .plan_history_scope_for_test(request.clone())
+        .plan_history_scope_for_test(execution, request.clone())
         .expect("history-scoped merge plan");
     let artifact = runtime
         .merge()

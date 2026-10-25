@@ -112,22 +112,21 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
                         std::panic::resume_unwind(payload);
                     }
                 };
-            let published = runtime.publication().read_patch_stream(PatchStreamRequest {
-                after_position: started_after,
-                max_commits: usize::MAX,
-            });
+            let published = read_complete_mutation_batch(runtime, execution, started_after);
             let published = match published {
                 Ok(published) => published,
-                Err(_) => {
+                Err(failure) => {
                     if let Some(before) = before {
                         runtime
                             .snapshots()
                             .release_snapshot(&before)
                             .expect("captured snapshot closes");
                     }
-                    return Err(missing_committed_mutation(
+                    return Err(patch_read_denial(
                         previous.as_ref(),
+                        runtime.history().historical_latest_commit().as_ref(),
                         self.primary_index_ids.len(),
+                        failure,
                     ));
                 }
             };
@@ -235,6 +234,56 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
     }
 }
 
+fn read_complete_mutation_batch(
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    after_position: Option<worth_relational::facade::publication::PatchStreamPosition>,
+) -> Result<
+    worth_relational::facade::publication::PatchStreamBatch,
+    worth_relational::facade::publication::PatchStreamReadErrorClass,
+> {
+    use worth_relational::facade::publication::PatchStreamReadErrorClass;
+    let batch = runtime
+        .publication()
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position,
+                ..PatchStreamRequest::default()
+            },
+        )
+        .map_err(|failure| failure.class)?;
+    if !batch.patches.is_empty() && batch.next_position != batch.latest_position {
+        return Err(PatchStreamReadErrorClass::ReadRequest(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::ResultCapacityExceeded,
+        ));
+    }
+    Ok(batch)
+}
+
+fn patch_read_denial(
+    previous: Option<&RelationalCommitReceipt>,
+    latest: Option<&RelationalCommitReceipt>,
+    requested: usize,
+    class: worth_relational::facade::publication::PatchStreamReadErrorClass,
+) -> WorthQueryPrimaryGraphIndexRefreshDenial {
+    let mut refusal = missing_committed_mutation(previous, requested);
+    if let Some(commit) =
+        latest.filter(|commit| previous.is_none_or(|prior| prior.commit_id != commit.commit_id))
+    {
+        refusal.committed_mutation_id = Some(commit.commit_id);
+        refusal.committed_branch_id = Some(commit.branch_id.clone());
+    }
+    if let worth_relational::facade::publication::PatchStreamReadErrorClass::ReadRequest(cause) =
+        class
+    {
+        refusal.kind = Box::new(WorthQueryPrimaryGraphIndexRefreshDenialKind::Execution(
+            super::provider::relational_execution_denial::relational_execution_kind(cause, None),
+        ));
+    }
+    refusal
+}
+
 fn missing_committed_mutation(
     previous: Option<&RelationalCommitReceipt>,
     requested_index_count: usize,
@@ -298,3 +347,7 @@ fn maintenance_denial(
     }
     refusal
 }
+
+#[cfg(test)]
+#[path = "index_refresh/read_denial_tests.rs"]
+mod read_denial_tests;

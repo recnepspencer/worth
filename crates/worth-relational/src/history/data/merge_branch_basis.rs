@@ -40,7 +40,8 @@ pub enum RelationalMergeBranchBasisDenial {
         source_branch: BranchId,
         target_branch: BranchId,
     },
-    MissingMergeBaseEnvelope {
+    /// The selected common ancestor has no indexed canonical commit receipt.
+    MissingMergeBaseCommit {
         commit_id: CommitId,
     },
 }

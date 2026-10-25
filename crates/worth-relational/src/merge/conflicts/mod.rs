@@ -42,12 +42,12 @@ impl<'runtime> MergeAccess<'runtime> {
             .read_version(execution, identity_plan.basis.target_head.version_id)
             .map_err(crate::merge::data::MergePlanningError::Execution)?;
         let history = self.runtime.history();
-        let base_envelope = history
-            .commit_envelope(identity_plan.basis.merge_base.commit.commit_id)
-            .ok_or(MergePlanningError::MissingMergeBaseEnvelope {
+        let base_commit = history
+            .immutable_commit_receipt(identity_plan.basis.merge_base.commit.commit_id)
+            .ok_or(MergePlanningError::MissingMergeBaseCommit {
                 commit_id: identity_plan.basis.merge_base.commit.commit_id,
             })?;
-        let base_version_id = base_envelope.commit.version_id;
+        let base_version_id = base_commit.version_id;
         let base_view = self
             .runtime
             .read_truth()

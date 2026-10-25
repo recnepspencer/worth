@@ -89,12 +89,12 @@ impl<'runtime> HistoryAccess<'runtime> {
                 continue;
             }
             catalog_probes += 1;
-            if let Some(envelope) = self.runtime.history.canonical_envelope(commit_id) {
+            if let Some(receipt) = self.immutable_commit_receipt(commit_id) {
                 reachable_commits.insert(commit_id);
                 selected_commit_available |= commit_id == start;
-                authoring_branches.insert(envelope.commit.branch_id.clone());
-                parent_edge_visits += envelope.commit.parents.len();
-                stack.extend(envelope.commit.parents.iter().copied());
+                authoring_branches.insert(receipt.branch_id.clone());
+                parent_edge_visits += receipt.parents.len();
+                stack.extend(receipt.parents.iter().copied());
             }
         }
         CommitAncestryInspection {
@@ -116,12 +116,7 @@ impl<'runtime> HistoryAccess<'runtime> {
             CommitAncestryPosture::SelectedCommitUnavailable
         } else if inspection.reachable_commits.contains(&requested_commit) {
             CommitAncestryPosture::Reachable
-        } else if self
-            .runtime
-            .history
-            .canonical_envelope(requested_commit)
-            .is_some()
-        {
+        } else if self.immutable_commit_receipt(requested_commit).is_some() {
             CommitAncestryPosture::Unreachable
         } else {
             CommitAncestryPosture::RequestedCommitUnavailable
