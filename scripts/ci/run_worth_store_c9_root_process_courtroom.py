@@ -82,8 +82,6 @@ def run_courtroom(observer: pathlib.Path, certification: pathlib.Path) -> int:
         "c9_integrity_localization",
     ]
     owner_result = subprocess.run(owner_tests, cwd=ROOT, env=environment)
-    if owner_result.returncode != 0:
-        return owner_result.returncode
     family_graph = owner_tests[:-1] + [
         "c9_integrity_localization::offline_process::independent_observer_traverses_current_family_graph",
         "--exact",
@@ -91,8 +89,6 @@ def run_courtroom(observer: pathlib.Path, certification: pathlib.Path) -> int:
         "--nocapture",
     ]
     family_result = subprocess.run(family_graph, cwd=ROOT, env=environment)
-    if family_result.returncode != 0:
-        return family_result.returncode
     courtroom = [
         str(certification),
         "c9_integrity_localization::c9_root_protocol_process_courtroom",
@@ -105,18 +101,24 @@ def run_courtroom(observer: pathlib.Path, certification: pathlib.Path) -> int:
     )
     sys.stdout.write(courtroom_result.stdout)
     sys.stderr.write(courtroom_result.stderr)
-    if courtroom_result.returncode != 0:
-        return courtroom_result.returncode
+    courtroom_status = courtroom_result.returncode
     # Child process output can appear between libtest's name and its final `ok`.
     # Require the selected outer harness summary rather than adjacent fragments.
     summaries = [line for line in courtroom_result.stdout.splitlines()
                  if line.startswith("test result:")]
-    if not summaries or not summaries[-1].startswith("test result: ok. 1 passed; 0 failed;"):
+    if courtroom_status == 0 and (
+        not summaries or not summaries[-1].startswith("test result: ok. 1 passed; 0 failed;")
+    ):
         sys.stderr.write(
             "C.9 courtroom command exited successfully without executing the exact test\n"
         )
-        return 1
-    return 0
+        courtroom_status = 1
+    print(
+        f"C9 phases owners={owner_result.returncode} "
+        f"graph={family_result.returncode} root={courtroom_status}",
+        flush=True,
+    )
+    return owner_result.returncode or family_result.returncode or courtroom_status
 
 
 def main() -> int:

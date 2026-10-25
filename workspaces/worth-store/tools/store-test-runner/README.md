@@ -60,6 +60,9 @@ create real file and directory symlinks. Run with Windows Developer Mode enabled
 or an account holding the symbolic-link creation privilege; fixture creation
 must succeed before those tests can exercise confinement.
 
+The C9 courtroom script runs its owner, independent graph, and root process
+phases even when an earlier phase fails, and returns failure if any phase fails.
+
 The separate `scripts/ci/verify_worth_store_formal_toolchain.ps1` (or `.sh`)
 check requires Java on `PATH` and the checksum-pinned TLC jar described in
 `worth-store-formal-models/formal-toolchain.toml`. It downloads the jar into
