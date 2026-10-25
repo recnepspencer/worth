@@ -1,6 +1,6 @@
 # Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
 
-> **Status:** Not started. Written on 2026-10-24 against master `b56db81af6`.
+> **Status:** Phase 1 in progress. Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
 > phases with no dependency on each other may run in parallel.
@@ -104,7 +104,9 @@ derived relations and the identity of aggregates.
      count, evaluation order or cache state.
    - Cert-only replay reproduces them exactly.
 8. **Performance is tested, not contracted.**
-   - Count goldens, growth tests and timing are welcome.
+   - Equivalent-read comparisons, growth tests and timing are welcome.
+   - Exact read counts are observations, not fixed performance expectations
+     (MENTALITY section 7).
    - No signature carries cost.
    - No phase adds a work budget, a ceiling or an exhaustion matrix.
    - A walk ends when its frontier is exhausted, or on cancellation.
@@ -148,9 +150,9 @@ example.
 
 - A compiled example: an invariant reads relations and fields, and the test reads
   the counts the platform recorded for that evaluation.
-- A count golden on `topology_entry`'s planar invariant. It pins the reads the
-  current one-hop ring walk performs, so later phases can show their reads
-  shrink.
+- An equivalent-read comparison on `topology_entry`'s planar invariant. It
+  observes the current one-hop ring walk, so later phases can compare their
+  reads without fixing an incidental exact count.
 - A facade snapshot check fails if the reader or the count type drops out of the
   host facade.
 - A differential: a declared query and an invariant that read the same edges
@@ -167,7 +169,7 @@ example.
 ### Gaps To Watch
 
 - **Counts turning into contracts.** A doc or API that says "this read costs
-  exactly N" and a runtime check that enforces it. Tests may pin goldens;
+  exactly N" and a runtime check that enforces it. Tests compare equivalent reads;
   production may not.
 - **Counting a model instead of the reads.** A counter must be incremented where
   the read happens, not computed from what the code expects to read.

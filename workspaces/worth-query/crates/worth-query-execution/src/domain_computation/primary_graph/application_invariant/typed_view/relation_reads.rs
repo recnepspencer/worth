@@ -66,12 +66,14 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
                 format!("{error:?}"),
             )
         })?;
+        self.reads.adjacency();
         let mut typed = Vec::new();
         for id in ids {
             let record = self
                 .relations
                 .relation(id)
                 .map_err(|error| map_structural_error(error, "relation record"))?;
+            self.reads.edge();
             if record.kind_id != binding.relation_kind {
                 continue;
             }
@@ -79,10 +81,12 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
                 .relations
                 .entity_kind(record.source)
                 .map_err(|error| map_structural_error(error, "relation source"))?;
+            self.reads.endpoint();
             let to_kind = self
                 .relations
                 .entity_kind(record.target)
                 .map_err(|error| map_structural_error(error, "relation target"))?;
+            self.reads.endpoint();
             if from_kind != binding.from_kind || to_kind != binding.to_kind {
                 return Err(denial(
                     WorthQueryInvariantAccessDenialKind::WrongEntityKind,

@@ -1,8 +1,20 @@
-/// Work one invariant projection spent: equality lookups, index candidates,
+/// Projection work and installed invariant read observations: equality lookups, index candidates,
 /// adjacency and endpoint reads, field reads, aggregate lookups and cache hits,
 /// and output-lineage lookups.
 ///
-/// Descriptive evidence for budgeting; it grants nothing.
+/// Observations for diagnostics and tests, not authority or a promised cost.
+/// Installed invariant contexts include preparation and the current evaluation;
+/// snapshot projections describe that projection alone. Unused read kinds are zero.
+/// An installed rule counts acquired adjacency lists, inspected declared relation
+/// records (including kinds filtered from its result), acquired entity metadata,
+/// and field reads after acquiring the aspect state, even if decoding then fails.
+/// Reads refused before acquisition add no observation. These are Query boundary
+/// observations, not storage-engine I/O or authorization work.
+///
+/// Snapshot projections still include reserved endpoint capacity in
+/// `endpoint_records_read`, before acquiring those endpoints. Installed rules
+/// record acquired metadata instead. Phase 1 unification must separate that
+/// existing projection reservation accounting from actual read observations.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionWork {
     equality_lookups: usize,
@@ -133,16 +145,24 @@ impl WorthQueryInvariantProjectionWork {
         self.index_candidates_examined += examined;
     }
 
-    pub(super) fn record_adjacency(&mut self, examined: usize, endpoints: usize) {
+    pub(in crate::domain_computation::primary_graph) fn record_adjacency(
+        &mut self,
+        examined: usize,
+        endpoints: usize,
+    ) {
         self.adjacency_lists_read += 1;
         self.adjacency_edges_inspected += examined;
         self.endpoint_records_read += endpoints;
     }
 
-    pub(super) fn record_field(&mut self) {
+    pub(in crate::domain_computation::primary_graph) fn record_edge(&mut self) {
+        self.adjacency_edges_inspected += 1;
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn record_field(&mut self) {
         self.field_reads += 1;
     }
-    pub(super) fn record_endpoint(&mut self) {
+    pub(in crate::domain_computation::primary_graph) fn record_endpoint(&mut self) {
         self.endpoint_records_read += 1;
     }
 

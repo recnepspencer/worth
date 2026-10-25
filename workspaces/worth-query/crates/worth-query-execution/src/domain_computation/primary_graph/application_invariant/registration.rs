@@ -56,6 +56,7 @@ struct InstalledApplicationInvariantRule<Schema, Rule> {
 
 struct InstalledApplicationInvariantScope<Scope> {
     rule_scope: Scope,
+    preparation_reads: super::super::invariant_projection::WorthQueryInvariantProjectionWork,
     admission: std::sync::Arc<super::prepared_scope::ApplicationInvariantAdmission>,
 }
 
@@ -82,6 +83,7 @@ where
         Ok(InstalledApplicationInvariantScope {
             rule_scope,
             admission: planner.freeze_admission(),
+            preparation_reads: planner.reads(),
         })
     }
 
@@ -104,6 +106,7 @@ where
                 result.map(|rule_scope| InstalledApplicationInvariantScope {
                     rule_scope,
                     admission: planner.freeze_admission(),
+                    preparation_reads: planner.reads(),
                 })
             })
     }
@@ -127,6 +130,7 @@ where
             context,
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
+            scope.preparation_reads,
         );
         self.rule
             .evaluate_checked(&context, &scope.rule_scope, budget)
@@ -152,6 +156,7 @@ where
             context,
             self.binding_identity.clone(),
             std::sync::Arc::clone(&scope.admission),
+            scope.preparation_reads,
         );
         self.rule
             .evaluate(&context, &scope.rule_scope)
