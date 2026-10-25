@@ -80,7 +80,7 @@ fn resume_killed_prefix(role: &'static str) {
     assert_eq!(after[1].0, 1);
     assert_ne!(after[1].1, before[0].1);
     assert_eq!(after[1].2, expected_chunk(role, 1));
-    drop(blobs);
+
     serving.close();
 
     let reopened = serving_from_open(&world.root);
@@ -109,7 +109,7 @@ fn resume_killed_prefix(role: &'static str) {
         assert_eq!(*byte, expected, "byte {index} must match original source");
     }
     drop(reader);
-    drop(blobs);
+
     reopened.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-resume", role);

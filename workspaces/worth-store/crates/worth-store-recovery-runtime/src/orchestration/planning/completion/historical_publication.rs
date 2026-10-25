@@ -318,9 +318,7 @@ pub(super) fn find_route(
         )
         .map_err(|_| HistoricalFailure::Invalid)?;
         if let Some(entries) = projected.block.entries() {
-            *scratch = (*scratch).max(
-                (entries.len() * std::mem::size_of::<CurrentPhysicalRecordPlacement>()) as u64,
-            );
+            *scratch = (*scratch).max(std::mem::size_of_val(entries) as u64);
             return Ok(entries
                 .iter()
                 .copied()
@@ -330,8 +328,7 @@ pub(super) fn find_route(
             .block
             .children()
             .ok_or(HistoricalFailure::Invalid)?;
-        *scratch =
-            (*scratch).max((children.len() * std::mem::size_of::<ManifestBlockReference>()) as u64);
+        *scratch = (*scratch).max(std::mem::size_of_val(children) as u64);
         reference = unique_child(children, record)?;
     }
     Ok(None)

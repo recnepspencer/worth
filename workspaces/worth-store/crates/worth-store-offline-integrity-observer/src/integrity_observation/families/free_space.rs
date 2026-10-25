@@ -47,7 +47,7 @@ pub(crate) fn read_free_space_header(
     scope(
         arena_alignment.is_power_of_two()
             && arena_capacity != 0
-            && arena_capacity % arena_alignment == 0,
+            && arena_capacity.is_multiple_of(arena_alignment),
         200,
         16,
         Field::ManifestPointer,

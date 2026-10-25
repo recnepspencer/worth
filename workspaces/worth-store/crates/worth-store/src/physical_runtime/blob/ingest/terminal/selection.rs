@@ -164,14 +164,12 @@ fn inspect_control(
             }
         }
         BlobRecordV1::SessionAbandoned(abandoned) => {
-            if abandoned.session() == token.session
-                || abandoned.declaration_record() == token.declaration_record
+            if (abandoned.session() == token.session
+                || abandoned.declaration_record() == token.declaration_record)
+                && (!selected_abandonment_matches(abandoned, &token, declaration, completed)
+                    || existing.replace(record).is_some())
             {
-                if !selected_abandonment_matches(abandoned, &token, declaration, completed)
-                    || existing.replace(record).is_some()
-                {
-                    return Err(BlobTerminalFailure::ConflictingSelectedFate);
-                }
+                return Err(BlobTerminalFailure::ConflictingSelectedFate);
             }
         }
         BlobRecordV1::SessionFrontier(frontier) => {

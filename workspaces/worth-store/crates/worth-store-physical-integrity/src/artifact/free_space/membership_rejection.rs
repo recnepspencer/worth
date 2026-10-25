@@ -94,16 +94,16 @@ fn malformed_membership(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalI
     if bytes.len() != 88 + count * width {
         return count_damage(scope);
     }
-    if kind == 1 {
-        if let Some(offending) = first_invalid_entry(bytes) {
-            return damaged(
-                scope,
-                PhysicalDamageCause::MalformedStructure,
-                body_item_range(scope, bytes, width, offending),
-                Some(PhysicalFormatField::Payload),
-                PhysicalBlastRadius::CompleteArtifact,
-            );
-        }
+    if kind == 1
+        && let Some(offending) = first_invalid_entry(bytes)
+    {
+        return damaged(
+            scope,
+            PhysicalDamageCause::MalformedStructure,
+            body_item_range(scope, bytes, width, offending),
+            Some(PhysicalFormatField::Payload),
+            PhysicalBlastRadius::CompleteArtifact,
+        );
     }
     damaged(
         scope,
@@ -164,16 +164,16 @@ fn invalid_reference(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalInte
 fn canonical_order(scope: PhysicalArtifactScope, bytes: &[u8]) -> PhysicalIntegrityRejection {
     let kind = bytes.get(68).copied().unwrap_or(0);
     let width = if kind == 1 { 40 } else { 72 };
-    if kind == 2 {
-        if let Some(offending) = first_nonmember_child(bytes) {
-            return damaged(
-                scope,
-                PhysicalDamageCause::ChildReferenceMismatch,
-                body_item_range(scope, bytes, width, offending),
-                Some(PhysicalFormatField::ChildReference),
-                PhysicalBlastRadius::ReachableSubtree,
-            );
-        }
+    if kind == 2
+        && let Some(offending) = first_nonmember_child(bytes)
+    {
+        return damaged(
+            scope,
+            PhysicalDamageCause::ChildReferenceMismatch,
+            body_item_range(scope, bytes, width, offending),
+            Some(PhysicalFormatField::ChildReference),
+            PhysicalBlastRadius::ReachableSubtree,
+        );
     }
     let offending = first_noncanonical_item(bytes, kind, width).unwrap_or(1);
     damaged(

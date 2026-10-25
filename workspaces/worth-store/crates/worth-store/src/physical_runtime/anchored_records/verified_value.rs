@@ -55,12 +55,12 @@ pub(super) fn read_verified(
     record_digest.update(header_bytes);
     let header = AnchoredRecordHeader::decode(&header_bytes, name.anchor(), anchor.generation())
         .map_err(Failure::Damaged)?;
-    if let PayloadRetention::Retain { maximum_bytes } = retention {
-        if header.payload_bytes > maximum_bytes || usize::try_from(header.payload_bytes).is_err() {
-            return Err(Failure::LimitExceeded {
-                payload_bytes: header.payload_bytes,
-            });
-        }
+    if let PayloadRetention::Retain { maximum_bytes } = retention
+        && (header.payload_bytes > maximum_bytes || usize::try_from(header.payload_bytes).is_err())
+    {
+        return Err(Failure::LimitExceeded {
+            payload_bytes: header.payload_bytes,
+        });
     }
     let members = read_member_table(&mut session, &header, &mut record_digest)?;
     let (payload, payload_sha256) =

@@ -81,7 +81,7 @@ fn blob_append_releases_only_its_own_clean_frames() {
         "blob candidates accumulated in shared residency: {warmed_bytes} -> {after}"
     );
     ingest.finish().unwrap();
-    drop(blobs);
+
     serving.close();
 }
 

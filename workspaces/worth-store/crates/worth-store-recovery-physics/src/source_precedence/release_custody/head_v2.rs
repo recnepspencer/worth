@@ -134,9 +134,7 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
             .ok_or(denial)?;
         let preallocation = batch_bytes.checked_add(requested_heads).ok_or(denial)?;
         require_resident(
-            preallocation
-                .checked_add(root_hash_scratch)
-                .unwrap_or(u64::MAX),
+            preallocation.saturating_add(root_hash_scratch),
             maximum_resident_bytes,
         )?;
         let mut heads = Vec::new();
@@ -154,19 +152,14 @@ impl VerifiedCheckpointReleaseHeadRosterV2 {
             )
             .ok_or(denial)?;
         require_resident(
-            owned_heap
-                .checked_add(root_hash_scratch)
-                .unwrap_or(u64::MAX),
+            owned_heap.saturating_add(root_hash_scratch),
             maximum_resident_bytes,
         )?;
         let remaining = maximum_resident_bytes - owned_heap;
         if checkpoint_source_root.release_custody_head_root().is_some() {
             let minimum = ReleaseCustodyHeadWalkLimitsV1::minimum_root_resident_bytes(format)
                 .ok_or(denial)?;
-            require_resident(
-                owned_heap.checked_add(minimum).unwrap_or(u64::MAX),
-                maximum_resident_bytes,
-            )?;
+            require_resident(owned_heap.saturating_add(minimum), maximum_resident_bytes)?;
         }
         // The roster's count and the root's level bound the tree's shape: one
         // root, no more blocks on a level below it than there are heads, and

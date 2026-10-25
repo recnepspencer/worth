@@ -53,7 +53,7 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
     let published = ingest
         .finish()
         .unwrap_or_else(|_| panic!("all declared bytes must publish"));
-    drop(blobs);
+
     serving.close();
     let serving = serving_from_open(parent.path());
     let blobs = serving.blobs().unwrap();
@@ -218,6 +218,6 @@ fn protected_blob_range_crosses_chunk_boundary_and_rejects_foreign_scope() {
         ),
         Err(BlobReadOpenFailure::ScopeMismatch)
     ));
-    drop(blobs);
+
     serving.close();
 }

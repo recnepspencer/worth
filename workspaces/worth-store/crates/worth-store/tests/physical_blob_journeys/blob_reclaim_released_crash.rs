@@ -155,7 +155,7 @@ pub(super) fn child(root: &Path, role: &str) {
     ingest.push(&vec![0x94; CHUNK]).unwrap();
     let session = ingest.session_id().bytes();
     let published = ingest.finish().unwrap();
-    drop(blobs);
+
     let marker = serving
         .certification_selected_latest_blob_publication()
         .unwrap()

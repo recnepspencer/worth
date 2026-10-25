@@ -7,6 +7,10 @@ use worth_store_recovery_physics::{PhysicalRedoTargetIdentity, RecoveryPlanningC
 use crate::progression::PhysicalRecoveryDiscoveryCounters;
 
 #[derive(Debug)]
+#[expect(
+    clippy::large_enum_variant,
+    reason = "The terminal recovery handoff moves the owned runtime without adding a fallible allocation after physical cutover"
+)]
 pub enum PhysicalRecoveryOutcome {
     Recovered(crate::handoff::RecoveredPhysicalRuntimeHandoff),
     Refused(PhysicalRecoveryRefusal),

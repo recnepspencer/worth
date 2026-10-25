@@ -182,10 +182,9 @@ pub(super) fn released_controls(
         };
         if reservation.manifest_record() == descriptor.base().manifest_record()
             && reservation.request() == descriptor.custody().request()
+            && reservation_frame.replace(frame).is_some()
         {
-            if reservation_frame.replace(frame).is_some() {
-                return Err(Unverified);
-            }
+            return Err(Unverified);
         }
     }
     Ok(ReleasedControls {

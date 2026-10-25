@@ -180,7 +180,6 @@ fn failed_growth_funds_old_plus_prospective_capacity_before_changing_vector() {
         LiveBackingWindow::new(&fixture.owner, &mut custody, fixture.ceiling, 1000).unwrap();
     window.grow_vec(&mut values, 4).unwrap();
     values.extend_from_slice(&[1, 2, 3, 4]);
-    drop(window);
     assert_eq!(values.capacity(), 4);
     assert_eq!(fixture.ports.counters().active_operation_bytes(), 1004);
     let collision = fixture
@@ -197,7 +196,6 @@ fn failed_growth_funds_old_plus_prospective_capacity_before_changing_vector() {
     assert_eq!(cause.pressure().unwrap().requested(), 8);
     assert_eq!(values.as_slice(), &[1, 2, 3, 4]);
     assert_eq!(values.capacity(), 4);
-    drop(window);
     drop(collision);
     drop(values);
     drop(custody);

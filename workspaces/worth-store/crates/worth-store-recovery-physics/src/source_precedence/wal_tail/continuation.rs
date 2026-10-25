@@ -10,7 +10,7 @@ use crate::source_precedence::CheckpointCoveredWalArtifact;
 pub(super) fn protected_covered_start(
     frontier: u64,
     cutoff: Option<u64>,
-    covered: &mut Vec<CheckpointCoveredWalArtifact>,
+    covered: &mut [CheckpointCoveredWalArtifact],
     replay: &[PhysicalWalSegmentCandidate],
 ) -> Result<usize, SelectedPhysicalWalTailDenial> {
     let Some(cutoff) = cutoff else {
@@ -27,7 +27,7 @@ pub(super) fn protected_covered_start(
         return Ok(covered.len());
     }
 
-    // This Vec is already bounded by C9 WAL inventory admission. Sorting it
+    // This slice is already bounded by C9 WAL inventory admission. Sorting it
     // in place avoids a second, uncharged recovery-memory allocation.
     covered.sort_unstable_by_key(|artifact| {
         (

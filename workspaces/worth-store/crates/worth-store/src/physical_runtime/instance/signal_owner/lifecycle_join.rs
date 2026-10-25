@@ -17,10 +17,10 @@ impl PhysicalWorkSignalOwner {
         settled: &SettledPhysicalWork,
     ) -> PhysicalSignalSettlementOutcome {
         if !completion_fate(settled.evidence().fate()) {
-            if !settled.retry_is_physically_safe() {
-                if let Some(route) = self.route(settled.signal_binding()) {
-                    route.release(settled.intent().identity());
-                }
+            if !settled.retry_is_physically_safe()
+                && let Some(route) = self.route(settled.signal_binding())
+            {
+                route.release(settled.intent().identity());
             }
             return PhysicalSignalSettlementOutcome::ReconciledFromPhysicalTruth;
         }
@@ -99,10 +99,10 @@ impl PhysicalWorkSignalOwner {
         let mut route_groups = HashMap::<_, Vec<_>>::new();
         for (index, work) in settled.iter().enumerate() {
             if !completion_fate(work.evidence().fate()) {
-                if !work.retry_is_physically_safe() {
-                    if let Some(route) = self.route(work.signal_binding()) {
-                        route.release(work.intent().identity());
-                    }
+                if !work.retry_is_physically_safe()
+                    && let Some(route) = self.route(work.signal_binding())
+                {
+                    route.release(work.intent().identity());
                 }
                 continue;
             }

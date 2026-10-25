@@ -175,7 +175,7 @@ fn admit_manifest_block(
     crate::integrity_ingress::projection::AdmittedRootRoutingProjection,
     ManifestBlockObservationFailure,
 > {
-    let tree = PhysicalTreeIdentity::new(root.manifest().tree_identity()).ok_or_else(|| {
+    let tree = PhysicalTreeIdentity::new(root.manifest().tree_identity()).ok_or({
         ManifestBlockObservationFailure::Format(PhysicalManifestObservationDenial::Integrity {
             reference,
             denial: crate::entry::PhysicalRecoveryRootProtocolDenial::ScopeMismatch,

@@ -14,14 +14,14 @@ use crate::strategy::LayoutStrategyFamily;
 use super::super::denial::SelectionCandidateRejection;
 use super::super::selection_basis::{PlanningCapabilityGrant, SelectionCandidateEligibility};
 use super::{
-    classify_candidate_operation, CandidateStrategyFamily, EligibleStrategyOperation,
+    classify_candidate_operation, CandidateStrategyFamily, EligibleLsmOperation,
     SelectionCandidateAudit, SelectionCandidateOutcome,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(in crate::planning) struct PlanningAlternative {
     snapshot: LayoutStrategyRegistrySnapshot,
-    operation: EligibleStrategyOperation,
+    operation: EligibleLsmOperation,
     audit: SelectionCandidateAudit,
 }
 
@@ -30,7 +30,7 @@ impl PlanningAlternative {
         &self.snapshot
     }
 
-    pub(in crate::planning) const fn operation(&self) -> EligibleStrategyOperation {
+    pub(in crate::planning) const fn operation(&self) -> EligibleLsmOperation {
         self.operation
     }
 }
@@ -145,7 +145,7 @@ fn derive_candidate(
 
 fn admit_candidate(
     snapshot: LayoutStrategyRegistrySnapshot,
-    operation: EligibleStrategyOperation,
+    operation: EligibleLsmOperation,
     intent: AdmittedAccessIntent,
     strategy_family: LayoutStrategyFamily,
     authority_role: AuthorityRole,

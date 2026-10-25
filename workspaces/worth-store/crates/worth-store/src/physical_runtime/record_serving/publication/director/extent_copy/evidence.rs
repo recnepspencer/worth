@@ -74,12 +74,11 @@ impl CopyWriteAccumulator {
         {
             return Err(());
         }
-        if let Some(prior) = self.last_work {
-            if prior.runtime() != settlement.identity().runtime()
-                || prior.generation() != settlement.identity().generation()
-            {
-                return Err(());
-            }
+        if let Some(prior) = self.last_work
+            && (prior.runtime() != settlement.identity().runtime()
+                || prior.generation() != settlement.identity().generation())
+        {
+            return Err(());
         }
         self.digest.update(self.frames.to_le_bytes());
         self.digest.update(coordinate.offset().to_le_bytes());

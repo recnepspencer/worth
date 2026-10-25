@@ -137,7 +137,7 @@ impl Script {
                 let inherited = live.get(&main.0).cloned().unwrap_or_default();
                 live.insert(fork.0.clone(), inherited);
                 fork.clone()
-            } else if step > fork_at && generator.next() % 3 == 0 {
+            } else if step > fork_at && generator.next().is_multiple_of(3) {
                 fork.clone()
             } else {
                 main.clone()

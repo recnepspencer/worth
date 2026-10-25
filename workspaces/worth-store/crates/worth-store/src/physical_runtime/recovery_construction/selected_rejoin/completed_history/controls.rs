@@ -111,7 +111,6 @@ pub(super) fn observe(
             &mut storage,
         )?;
     }
-    drop(storage);
     Ok((discovery.finish(), fingerprint))
 }
 

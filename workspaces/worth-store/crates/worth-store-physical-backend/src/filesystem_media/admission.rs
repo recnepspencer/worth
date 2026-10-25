@@ -264,12 +264,12 @@ impl FilesystemMediaOwner {
             return fail_after_ownership_denial(owner, denial);
         }
         let binding = super::profile_observation::profile_binding(&profile, access_contract);
-        if let Some(expected) = request.expected_basis.as_ref() {
-            if let Some(drift) = super::qualification_basis_drift::basis_drift(expected, &binding) {
-                let cause = MediaQualificationPostOwnershipCause::ProfileChanged { drift };
-                return worth_proof::TransitionOutcome::failed(close_after_ownership(owner, cause))
-                    .into();
-            }
+        if let Some(expected) = request.expected_basis.as_ref()
+            && let Some(drift) = super::qualification_basis_drift::basis_drift(expected, &binding)
+        {
+            let cause = MediaQualificationPostOwnershipCause::ProfileChanged { drift };
+            return worth_proof::TransitionOutcome::failed(close_after_ownership(owner, cause))
+                .into();
         }
         let admitted_identity =
             match super::namespace_identity_admission::admit_store_identity(&owner) {

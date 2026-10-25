@@ -1,9 +1,6 @@
 //! Allocation-once online lookup for checkpoint and WAL binding evidence.
 
-use std::{
-    collections::hash_map::RandomState,
-    hash::{BuildHasher, Hash, Hasher},
-};
+use std::{collections::hash_map::RandomState, hash::BuildHasher};
 
 use worth_store_buffer_pool::{OperationAllocationGrant, PhysicalOperationAllocationScope};
 
@@ -165,9 +162,8 @@ impl RecoveryBindingOperations {
         if let Some(start) = self.forced_start {
             return start;
         }
-        let mut hash = self.hashing.build_hasher();
-        identity.hash(&mut hash);
-        hash.finish() as usize
+
+        self.hashing.hash_one(identity) as usize
     }
 }
 

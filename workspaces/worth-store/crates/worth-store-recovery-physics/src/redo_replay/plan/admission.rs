@@ -140,9 +140,7 @@ impl AdmittedPhysicalRedoMembers {
                 worth_store_physical_format::PersistedPhysicalRecoveryOperation::RecordsDropped { .. }
             )
             .then(|| {
-                let Some(record) = member.records.first() else {
-                    return None;
-                };
+                let record = member.records.first()?;
                 if member.records.len() != member.projection.record_identities().len() {
                     return None;
                 }

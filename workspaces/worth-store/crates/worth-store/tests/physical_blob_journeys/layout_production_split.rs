@@ -122,7 +122,7 @@ fn production_catalog_split_answers_point_range_prefix_from_selected_pages() {
     assert_eq!(prefix.len(), 1);
     assert_eq!(prefix[0].selected_record(), model[15].2);
     drop(short);
-    drop(catalog);
+
     drop(layouts);
     reopened.close();
 

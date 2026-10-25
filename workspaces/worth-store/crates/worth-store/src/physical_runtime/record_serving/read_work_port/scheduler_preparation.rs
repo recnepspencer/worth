@@ -101,7 +101,7 @@ impl CanonicalRecordReadPort {
             demand,
             identity,
             backend,
-            |work| PhysicalExecutorCommand::read(work),
+            PhysicalExecutorCommand::read,
         )
     }
 
@@ -143,7 +143,7 @@ impl CanonicalRecordReadPort {
             demand,
             identity,
             backend,
-            |work| PhysicalExecutorCommand::metadata(work),
+            PhysicalExecutorCommand::metadata,
         )
     }
 }

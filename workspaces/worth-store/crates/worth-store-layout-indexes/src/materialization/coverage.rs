@@ -141,10 +141,10 @@ impl LayoutCoverageWitness {
     }
 
     pub fn require_exact(&self) -> Result<Self, MaterializationDenial> {
-        if let Some(gap) = self.gap {
-            if self.state.class() != MaterializationStateClass::Quarantined {
-                return Err(MaterializationDenial::LayoutCoverageIsPartial { gap });
-            }
+        if let Some(gap) = self.gap
+            && self.state.class() != MaterializationStateClass::Quarantined
+        {
+            return Err(MaterializationDenial::LayoutCoverageIsPartial { gap });
         }
 
         match self.state.class() {

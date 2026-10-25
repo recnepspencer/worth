@@ -105,7 +105,7 @@ pub(super) fn validates_drop_result(
         && facts.iter().any(|fact| fact.same_session && !kept(fact));
     !unconnected
         && !frontier_stranded
-        && terminal == !remaining
+        && terminal != remaining
         && facts.iter().all(|fact| {
             dropped.binary_search(&fact.record).is_err()
                 || fact.edges.iter().all(|&(role, child)| {

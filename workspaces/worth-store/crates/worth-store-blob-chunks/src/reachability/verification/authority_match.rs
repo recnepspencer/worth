@@ -7,14 +7,13 @@ pub(crate) fn verify_edge_authority(
     registry: &mut BlobChunkReachabilityRegistry,
     edge: &BlobReachabilityEdge,
 ) -> Result<(), BlobReachabilityDenial> {
-    if let Some(authority) = registry.authority() {
-        if !authority.matches(edge) {
-            registry
-                .set_stored_counters(registry.stored_counters().record_wrong_authority_denial());
-            return Err(BlobReachabilityDenial::WrongBlobAuthority {
-                counters: registry.stored_counters(),
-            });
-        }
+    if let Some(authority) = registry.authority()
+        && !authority.matches(edge)
+    {
+        registry.set_stored_counters(registry.stored_counters().record_wrong_authority_denial());
+        return Err(BlobReachabilityDenial::WrongBlobAuthority {
+            counters: registry.stored_counters(),
+        });
     }
     Ok(())
 }

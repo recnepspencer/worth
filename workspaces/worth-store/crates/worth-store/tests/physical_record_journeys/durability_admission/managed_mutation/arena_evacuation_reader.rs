@@ -18,20 +18,15 @@ pub(super) fn evacuation_reader_child() {
         .unwrap();
     let mut scratch = vec![0; 64 * 1024];
     let mut selected = None;
-    loop {
-        match scan.read_next_into(&mut scratch).unwrap() {
-            RecordScanOutcome::Batch(batch) => {
-                for record in batch.records() {
-                    let id = record.record_id();
-                    if id.allocation_epoch().as_slice() == &identity[..16]
-                        && id.ordinal().to_le_bytes().as_slice() == &identity[16..24]
-                    {
-                        assert!(selected.replace(id).is_none(), "stable id is unique");
-                        assert_eq!(record.declared_payload_bytes(), LIVE_PAYLOAD_BYTES as u64);
-                    }
-                }
+    while let RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+        for record in batch.records() {
+            let id = record.record_id();
+            if id.allocation_epoch().as_slice() == &identity[..16]
+                && id.ordinal().to_le_bytes().as_slice() == &identity[16..24]
+            {
+                assert!(selected.replace(id).is_none(), "stable id is unique");
+                assert_eq!(record.declared_payload_bytes(), LIVE_PAYLOAD_BYTES as u64);
             }
-            RecordScanOutcome::Completed(_) => break,
         }
     }
     drop(scan);

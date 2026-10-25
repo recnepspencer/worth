@@ -101,15 +101,14 @@ fn readmit_checkpoint(
     if expected.is_some_and(|expected| expected != checkpoint.security_metadata()) {
         return Err(BlobResumeDenial::WrongSecurityScope);
     }
-    if let Some(frontier) = checkpoint.frontier() {
-        if frontier.proof_frontier().total_bytes() < checkpoint.declared_total_bytes()
-            && checkpoint.state() != BlobResumeCheckpointStateKind::RootPublicationReady
-        {
-            return Ok(unfinished(
-                BlobResumeUnfinishedState::MissingChunkTail,
-                checkpoint,
-            ));
-        }
+    if let Some(frontier) = checkpoint.frontier()
+        && frontier.proof_frontier().total_bytes() < checkpoint.declared_total_bytes()
+        && checkpoint.state() != BlobResumeCheckpointStateKind::RootPublicationReady
+    {
+        return Ok(unfinished(
+            BlobResumeUnfinishedState::MissingChunkTail,
+            checkpoint,
+        ));
     }
     match checkpoint.state() {
         BlobResumeCheckpointStateKind::SessionDeclared => Ok(unfinished(

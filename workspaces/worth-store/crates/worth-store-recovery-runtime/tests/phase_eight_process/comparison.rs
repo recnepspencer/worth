@@ -76,10 +76,10 @@ pub(super) fn compare_runtime_and_observer_with_budget(
             if observer.selector_store_identity() != runtime.store_identity() {
                 return Err(RecoveryObserverDisagreement::StoreIdentityMismatch);
             }
-            if let Some(root_generation) = runtime.root_generation() {
-                if observer.current_root_generation() != Some(root_generation) {
-                    return Err(RecoveryObserverDisagreement::RootGenerationMismatch);
-                }
+            if let Some(root_generation) = runtime.root_generation()
+                && observer.current_root_generation() != Some(root_generation)
+            {
+                return Err(RecoveryObserverDisagreement::RootGenerationMismatch);
             }
             if runtime.counters().cleanup_performed() != 0
                 || runtime.counters().cleanup_deferred() != 0

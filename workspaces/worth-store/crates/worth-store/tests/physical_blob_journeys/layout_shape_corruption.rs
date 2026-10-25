@@ -47,7 +47,7 @@ fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_sc
         ingest.push(&[0x41]).unwrap();
         ingest.push(&[0x42]).unwrap();
         let published = ingest.finish().unwrap();
-        drop(blobs);
+
         serving.close();
         (object, published)
     };
@@ -78,7 +78,7 @@ fn resealed_c9_valid_wrong_catalog_cell_width_is_damaged_to_store_and_offline_sc
         .expect("registered-family shape denial issues selected diagnostic target");
     let target_record = target.scope().btree_node_identity().unwrap().0;
     assert_eq!(index_identity(target_record), identity);
-    drop(btree);
+
     drop(layouts);
     let request = ManagedPhysicalIntegrityScrubRequest::new(
         serving.store_identity(),

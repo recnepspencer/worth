@@ -116,20 +116,19 @@ impl<'coordination> PhysicalRecoveryReadAllocation<'coordination> {
         denial: PhysicalResidencyDenial,
     ) -> PhysicalRecoveryRejoinResidentDenial {
         let scope = PhysicalOperationAllocationScope::Recovery;
-        if let PhysicalResidencyDenial::Pressure(pressure) = denial {
-            if pressure.dimension() == PhysicalResidencyDimension::OperationScope(scope)
-                && pressure.limit() == self.original.byte_limit()
-            {
-                return match pressure.current().checked_add(pressure.requested()) {
-                    Some(required) => PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
-                        required,
-                        admitted: self.original.byte_limit(),
-                    },
-                    None => PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
-                        admitted: self.original.byte_limit(),
-                    },
-                };
-            }
+        if let PhysicalResidencyDenial::Pressure(pressure) = denial
+            && pressure.dimension() == PhysicalResidencyDimension::OperationScope(scope)
+            && pressure.limit() == self.original.byte_limit()
+        {
+            return match pressure.current().checked_add(pressure.requested()) {
+                Some(required) => PhysicalRecoveryRejoinResidentDenial::BudgetExceeded {
+                    required,
+                    admitted: self.original.byte_limit(),
+                },
+                None => PhysicalRecoveryRejoinResidentDenial::SizeOverflow {
+                    admitted: self.original.byte_limit(),
+                },
+            };
         }
         PhysicalRecoveryRejoinResidentDenial::OperationAllocation(
             PhysicalScopedAllocationFailure::from_denial(denial, self.generation),

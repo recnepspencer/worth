@@ -113,6 +113,5 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .unwrap();
     assert_eq!(record.version().generation(), selected.generation());
     drop(record);
-    drop(records);
     home.close();
 }

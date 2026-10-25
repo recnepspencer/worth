@@ -140,9 +140,8 @@ pub(super) fn classify(
             BlobRecordReachability::HeldOnly
         } else if matches!(fact.role, Role::Abandonment(_))
             || matches!(fact.role, Role::Declaration(session) | Role::Tree(session) if abandoned.contains(&session))
-            || matches!(fact.role, Role::Chunk { session, .. } | Role::Frontier { session, .. } | Role::ReuseClaim { session, .. } if abandoned.contains(&session)) {
-            BlobRecordReachability::FailedOperationResidue
-        } else if matches!(fact.role,
+            || matches!(fact.role, Role::Chunk { session, .. } | Role::Frontier { session, .. } | Role::ReuseClaim { session, .. } if abandoned.contains(&session))
+            || matches!(fact.role,
             Role::Chunk { session, ordinal } | Role::ReuseClaim { session, ordinal }
                 if active.contains(&session) && ordinal >= frontier.get(&session).copied().unwrap_or(0)) {
             BlobRecordReachability::FailedOperationResidue

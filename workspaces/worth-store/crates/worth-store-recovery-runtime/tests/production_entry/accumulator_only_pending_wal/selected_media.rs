@@ -70,10 +70,10 @@ pub(super) fn selected_released_source(
             let Some(bytes) = batch.payload(index) else {
                 continue;
             };
-            if let Ok(BlobRecordV1::DropSetManifestV3(value)) = decode_blob_record(bytes) {
-                if let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = value.source_basis() {
-                    sources.push(source);
-                }
+            if let Ok(BlobRecordV1::DropSetManifestV3(value)) = decode_blob_record(bytes)
+                && let BlobReclaimSourceBasisV1::ReleasedGeneration(source) = value.source_basis()
+            {
+                sources.push(source);
             }
         }
         if batch.is_complete() {

@@ -55,20 +55,20 @@ pub(super) fn validate(
                 continue;
             }
         }
-        if let Some(prior) = terminals.insert(*session, index) {
-            if rows[prior].record != rows[index].record {
-                conflicts.extend([prior, index]);
-            }
+        if let Some(prior) = terminals.insert(*session, index)
+            && rows[prior].record != rows[index].record
+        {
+            conflicts.extend([prior, index]);
         }
         let Some(BlobFact::Declaration { object, .. }) =
             rows[declared.expect("validated declaration")].fact.as_ref()
         else {
             unreachable!("validated declaration");
         };
-        if let Some(prior) = terminal_objects.insert(*object, index) {
-            if rows[prior].record != rows[index].record {
-                conflicts.extend([prior, index]);
-            }
+        if let Some(prior) = terminal_objects.insert(*object, index)
+            && rows[prior].record != rows[index].record
+        {
+            conflicts.extend([prior, index]);
         }
     }
     for (index, row) in rows.iter().enumerate() {

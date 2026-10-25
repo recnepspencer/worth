@@ -35,24 +35,24 @@ pub(super) fn retained_displaced_segments(
     let mut displaced = Vec::new();
     let mut before = prior.first();
     for root in prior.iter().skip(1).chain(std::iter::once(current)) {
-        if let Some(older) = before {
-            if let Some(charge) = rewrite_displacement(older, root) {
-                let artifact = RetiredArtifact::Segment {
-                    segment: charge.segment_id,
-                    generation: charge.generation,
-                };
-                let retained = artifacts
-                    .retained_bytes(artifact)
-                    .map_err(backend_before_effect)?;
-                if let Some(bytes) = retained {
-                    if unread_by_current_root(membership, allocation, &charge)? {
-                        displaced.push(DisplacedArtifact {
-                            source_root: charge.source_root,
-                            artifact,
-                            bytes,
-                        });
-                    }
-                }
+        if let Some(older) = before
+            && let Some(charge) = rewrite_displacement(older, root)
+        {
+            let artifact = RetiredArtifact::Segment {
+                segment: charge.segment_id,
+                generation: charge.generation,
+            };
+            let retained = artifacts
+                .retained_bytes(artifact)
+                .map_err(backend_before_effect)?;
+            if let Some(bytes) = retained
+                && unread_by_current_root(membership, allocation, &charge)?
+            {
+                displaced.push(DisplacedArtifact {
+                    source_root: charge.source_root,
+                    artifact,
+                    bytes,
+                });
             }
         }
         before = Some(root);

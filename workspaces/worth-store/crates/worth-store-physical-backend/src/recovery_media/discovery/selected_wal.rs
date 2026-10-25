@@ -55,15 +55,15 @@ impl<S: ArtifactTreePathAllocator> ArtifactTreePathAllocator for SelectedReadSto
 
 impl<S: ArtifactTreeReadAllocator> ArtifactTreeReadAllocator for SelectedReadStorage<'_, S> {
     fn allocate_read_buffer(&mut self, length: usize) -> Result<Vec<u8>, Self::Denial> {
-        if let Some(expected) = self.expected {
-            if length as u64 != expected {
-                return Err(SelectedReadDenial::Length(
-                    RecoveryWalSelectionMismatch::FileLength {
-                        expected,
-                        observed: length as u64,
-                    },
-                ));
-            }
+        if let Some(expected) = self.expected
+            && length as u64 != expected
+        {
+            return Err(SelectedReadDenial::Length(
+                RecoveryWalSelectionMismatch::FileLength {
+                    expected,
+                    observed: length as u64,
+                },
+            ));
         }
         self.storage
             .allocate_read_buffer(length)

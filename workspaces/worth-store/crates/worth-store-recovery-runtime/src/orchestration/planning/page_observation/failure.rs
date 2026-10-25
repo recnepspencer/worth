@@ -141,6 +141,15 @@ impl PageObservationFailure {
     }
 }
 
+impl From<EntriesStopped> for PageObservationFailure {
+    fn from(stopped: EntriesStopped) -> Self {
+        match stopped {
+            EntriesStopped::Limit(limit) => Self::Limit(PageLimit::Entries(limit)),
+            EntriesStopped::CountOverflow => Self::CountOverflow,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,15 +207,6 @@ mod tests {
                 PageObservationFailure::media(target, failure.clone()),
                 PageObservationFailure::Media { target, failure },
             );
-        }
-    }
-}
-
-impl From<EntriesStopped> for PageObservationFailure {
-    fn from(stopped: EntriesStopped) -> Self {
-        match stopped {
-            EntriesStopped::Limit(limit) => Self::Limit(PageLimit::Entries(limit)),
-            EntriesStopped::CountOverflow => Self::CountOverflow,
         }
     }
 }

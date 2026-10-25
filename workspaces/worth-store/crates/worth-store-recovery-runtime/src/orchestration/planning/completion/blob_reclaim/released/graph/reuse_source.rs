@@ -37,7 +37,7 @@ pub(super) fn destination_matches(
         && claim.destination_session() == destination.session()
         && claim.scope() == destination.key_scope()
         && claim.chunk_size() == destination.chunk_size()
-        && start % chunk_size == 0
+        && start.is_multiple_of(chunk_size)
         && claim.destination_ordinal() == start / chunk_size
         && claim.stored_digest() == digest
         && u64::from(claim.chunk_length()) == covered

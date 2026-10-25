@@ -39,7 +39,7 @@ impl RecoveredCheckpointCustodyEvidence {
     /// This is a measurement, not a new recovery admission or Serving grant.
     pub(in crate::physical_runtime) fn owned_heap_bytes(&self) -> Option<u64> {
         let mut bytes = 0_u64;
-        for claim in [
+        for claim_bytes in [
             self.head_v2.as_ref().map(|claim| claim.owned_heap_bytes()),
             self.pending_wal_release
                 .as_ref()
@@ -50,10 +50,11 @@ impl RecoveredCheckpointCustodyEvidence {
             self.historical_release
                 .as_ref()
                 .map(|claim| claim.owned_heap_bytes()),
-        ] {
-            if let Some(claim_bytes) = claim {
-                bytes = bytes.checked_add(claim_bytes?)?;
-            }
+        ]
+        .into_iter()
+        .flatten()
+        {
+            bytes = bytes.checked_add(claim_bytes?)?;
         }
         #[cfg(feature = "recovery-runtime-owner")]
         {

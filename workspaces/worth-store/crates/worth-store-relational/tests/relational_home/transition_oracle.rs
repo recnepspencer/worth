@@ -81,7 +81,7 @@ pub(crate) fn assert_recovered(
     flight: &InFlight,
     case: &str,
 ) -> bool {
-    let recovered = branch_lifecycle::artifacts_of_home(&home);
+    let recovered = branch_lifecycle::artifacts_of_home(home);
     assert!(
         recovered.starts_with(acknowledged),
         "{case}: lost acknowledged transitions"

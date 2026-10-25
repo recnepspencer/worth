@@ -156,7 +156,7 @@ fn only_completed_checkpoint_crossing_declared_max_can_publish_expiry() {
         BlobTerminalDisposition::AlreadyAbandoned
     );
     assert_eq!(selected_blob_frames(&serving), after);
-    drop(blobs);
+
     serving.close();
 
     let before_c8 = assert_checkpoint_wal_range(directory.path(), cutoff, "before C8");
