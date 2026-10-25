@@ -55,15 +55,18 @@ def build_executable(package: str, target_name: str, target_args: list[str]) -> 
 
 
 def cargo_configured_environment() -> dict[str, str]:
-    """The environment `cargo test` gives a test binary, from `.cargo/config.toml` `[env]`.
+    """Apply the repository and Store Cargo `[env]` tables to copied test binaries.
 
-    The courtroom runs copied binaries directly, so it must apply that table
-    itself; without it, test threads get the platform default stack instead of
-    the configured `RUST_MIN_STACK`, and process subjects inherit the same.
+    The courtroom runs copied binaries directly, so it must apply those tables
+    itself; without them, test threads get the platform default stack and
+    concurrency instead of the configured Store fixture limits. Process
+    subjects inherit the same environment.
     """
     environment = os.environ.copy()
-    with open(ROOT / ".cargo" / "config.toml", "rb") as config:
-        table = tomllib.load(config).get("env", {})
+    table: dict[str, str | dict[str, object]] = {}
+    for directory in (ROOT, MANIFEST.parent):
+        with open(directory / ".cargo" / "config.toml", "rb") as config:
+            table.update(tomllib.load(config).get("env", {}))
     for name, entry in table.items():
         value, force = (entry["value"], entry.get("force", False)) if isinstance(entry, dict) else (entry, False)
         if force or name not in environment:
