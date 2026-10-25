@@ -34,15 +34,15 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub(crate) fn entity_slot_count(&self) -> usize {
         self.current_edition()
-            .partitions()
-            .map(|partition| partition.entity_arena.slot_count())
+            .cells()
+            .map(|(_, region)| region.cell().slot_counts().0)
             .sum()
     }
 
     pub(crate) fn relation_slot_count(&self) -> usize {
         self.current_edition()
-            .partitions()
-            .map(|partition| partition.relation_arena.slot_count())
+            .cells()
+            .map(|(_, region)| region.cell().slot_counts().1)
             .sum()
     }
 

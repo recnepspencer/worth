@@ -26,6 +26,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<RelationalReadView>, crate::execution::RelationalExecutionDenialCause> {
+        if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
+            basis
+                .root()
+                .demand_all_full(execution)
+                .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        }
         super::super::read_work::metered_with_memory(
             execution,
             |context, memory| {
@@ -129,6 +135,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         if let Err(denial) = self.require_local_observation(observation) {
             return Ok(Err(denial));
         }
+
         if observation
             .selected_root()
             .has_materialization_unavailable()
@@ -137,6 +144,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 crate::branch::RelationalBranchBasisDenial::MaterializationUnavailable,
             ));
         }
+        observation
+            .selected_root()
+            .demand_all_full(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let state = build_visibility_state(
             self.runtime,
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(

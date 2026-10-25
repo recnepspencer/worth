@@ -1,6 +1,25 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.demand_regions_full(execution, self.partition_ids_iter())
+    }
+    pub(crate) fn probe_full_region(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        use crate::storage::residency::PartitionProbe;
+        match self.regions.get(id) {
+            None => PartitionProbe::Absent,
+            Some(region) => match region.partition.admitted_partition() {
+                Some(partition) => PartitionProbe::Resident(partition),
+                None => PartitionProbe::Cold,
+            },
+        }
+    }
     pub(crate) fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -36,7 +36,7 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 /// the guard.
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
-    pub(super) cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
+    cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
     pub(crate) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
     field_definitions: BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
     generations: GenerationCatalog,

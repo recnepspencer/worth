@@ -6,6 +6,42 @@ use crate::domain_computation::WorthQueryProviderSessionDenialKind as Kind;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[test]
+fn committed_storage_failure_keeps_its_subject_and_pre_effect_posture() {
+    use worth_relational::facade::storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+    };
+    let failure = RelationalStorageUnavailable {
+        subject: RelationalStorageSubject::Region(worth_relational::facade::identity::PartitionId(
+            7,
+        )),
+        cause: RelationalStorageUnavailableCause::IntegrityMismatch,
+    };
+    let cause = Cause::StorageUnavailable(failure);
+    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
+    for attempt in [
+        Attempt::native_storage_unavailable(failure, "transaction read"),
+        Attempt::from(cause),
+    ] {
+        assert_eq!(attempt.storage_unavailable(), Some(&failure));
+    }
+    assert_eq!(
+        relational_execution_kind(cause, None),
+        Ok(Kind::StorageUnavailable(failure))
+    );
+    let crate::domain_computation::WorthQueryProviderSessionCommitStop::PreEffectDenied(denial) =
+        super::relational_execution_stop(cause, None)
+    else {
+        panic!("storage is a pre-effect refusal")
+    };
+    assert_eq!(denial.kind(), Kind::StorageUnavailable(failure));
+    let read = worth_relational::facade::runtime::QueryReadExecutionStop::ReadRequest(cause);
+    assert_eq!(
+        super::query_read_execution_kind(&read),
+        Ok(Some(Kind::StorageUnavailable(failure)))
+    );
+}
+
+#[test]
 fn memory_causes_keep_their_capacity_and_owner_instead_of_becoming_work() {
     for (cause, expected_level, expected_ancestor) in [
         (

@@ -47,6 +47,9 @@ pub use worth_relational::facade::mvcc::{
     CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
 };
 pub use worth_relational::facade::publication::RecordStructuralChange;
+pub use worth_relational::facade::storage::{
+    RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+};
 pub use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
 pub use crate::domain_computation::application_aftermath::{

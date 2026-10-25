@@ -1,4 +1,6 @@
 //! Faults cross the production manifest recovery and transaction read doors.
+#[path = "cold_visibility.rs"]
+mod cold_visibility;
 use crate::durability::data::{
     RecoveryFailureClass, RecoveryVerificationMode, RelationalCheckpointArtifactPolicy,
     RelationalCheckpointMember, RelationalRecoveryStop,

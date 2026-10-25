@@ -35,10 +35,7 @@ pub(super) fn expand(
             let subject = RelationalStorageSubject::Envelope(entry.position);
             let bytes = source
                 .read_commit(entry.position, MEMBER_LIMIT)
-                .map_err(|cause| RelationalStorageUnavailable {
-                    subject: subject.clone(),
-                    cause,
-                })?;
+                .map_err(|cause| RelationalStorageUnavailable { subject, cause })?;
             RelationalCanonicalCommitArtifact::readmit(&bytes, execution).map_err(|error| {
                 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;
                 match error {

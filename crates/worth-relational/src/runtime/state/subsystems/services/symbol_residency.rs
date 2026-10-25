@@ -148,22 +148,19 @@ impl RuntimeSymbolResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some(result) = pages.get(&locator) {
-            return result.clone().map_err(Into::into);
+            return (*result).map_err(Into::into);
         }
         let result = (|| {
             let bytes = self
                 .source
                 .read_member(locator, 1 << 30)
-                .map_err(|cause| unavailable(subject.clone(), cause))?;
+                .map_err(|cause| unavailable(subject, cause))?;
             let snapshot = crate::durability::checkpoints::symbol_pages::readmit(
-                execution,
-                &bytes,
-                locator,
-                subject.clone(),
+                execution, &bytes, locator, subject,
             )?;
             owner
                 .import_canonical_snapshot(&snapshot)
-                .map_err(|_| unavailable(subject.clone(), Cause::Damaged))?;
+                .map_err(|_| unavailable(subject, Cause::Damaged))?;
             Ok(())
         })();
         match &result {
@@ -171,7 +168,7 @@ impl RuntimeSymbolResidency {
                 pages.insert(locator, Ok(()));
             }
             Err(Failure::StorageUnavailable(failure)) => {
-                pages.insert(locator, Err(failure.clone()));
+                pages.insert(locator, Err(*failure));
             }
             Err(Failure::Request(_)) => {}
         }

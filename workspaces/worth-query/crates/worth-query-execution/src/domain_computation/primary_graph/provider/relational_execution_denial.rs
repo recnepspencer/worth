@@ -23,6 +23,7 @@ pub fn relational_execution_kind(
         policy_ancestor,
     };
     let kind = match cause {
+        Cause::StorageUnavailable(failure) => Kind::StorageUnavailable(failure),
         Cause::WorkerLimitExceedsParent => resource(Resource::WorkerLimit, None),
         Cause::MemoryLimitExceedsParent => resource(Resource::PolicyMemoryLimit, None),
         Cause::WorkLimitExceedsParent => resource(Resource::WorkLimit, None),

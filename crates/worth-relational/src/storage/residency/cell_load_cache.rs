@@ -20,7 +20,7 @@ pub(super) fn load(
     let result = readmit();
     match &result {
         Ok(region) => *cached = Some(Ok(region.clone())),
-        Err(Failure::StorageUnavailable(failure)) => *cached = Some(Err(failure.clone())),
+        Err(Failure::StorageUnavailable(failure)) => *cached = Some(Err(*failure)),
         Err(Failure::Request(_)) => {}
     }
     result

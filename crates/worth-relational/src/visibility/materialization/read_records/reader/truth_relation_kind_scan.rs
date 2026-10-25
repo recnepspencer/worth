@@ -38,10 +38,14 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        let edition = self.runtime.storage_access().current_edition();
+        edition
+            .demand_all(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| {
-                let state = self.runtime.storage_access().current_edition();
+                let state = edition.clone();
                 ProjectionRecordReader::new(
                     self.runtime.current_version_id(),
                     &self.runtime.services.instrumentation,

@@ -74,6 +74,17 @@ impl PartitionEdition {
         Ok(())
     }
 
+    /// A scan declares the whole immutable edition before visiting any row.
+    pub(crate) fn demand_all(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        for region in self.partitions.values() {
+            region.demand_full(execution, 1 << 30)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.partitions.len()
     }
@@ -119,6 +130,27 @@ impl PartitionEdition {
 }
 
 impl PartitionAccess for PartitionEdition {
+    fn probe_full_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        use crate::storage::residency::PartitionProbe;
+        match self.partitions.get(&id) {
+            None => PartitionProbe::Absent,
+            Some(region) => match region.admitted_partition() {
+                Some(partition) => PartitionProbe::Resident(partition),
+                None => PartitionProbe::Cold,
+            },
+        }
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.demand_partition(execution, id)
+    }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.partition(partition_id)
     }

@@ -66,6 +66,16 @@ impl RelationalRegionRetention {
         })
     }
 
+    /// Lend only a previously admitted full view. A probe records `None` as a
+    /// miss and discards its provisional result before any demand can run.
+    pub(crate) fn admitted_partition(&self) -> Option<&PartitionState> {
+        if self.full.get().is_none() && !self.cell.has_cold_backing() {
+            let lease = self.cell.lease_resident_full().ok().flatten()?;
+            let _ = self.full.set(lease);
+        }
+        self.full.get().map(|lease| lease.full_view().partition())
+    }
+
     pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
         self.authority.clone()
     }

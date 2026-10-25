@@ -160,7 +160,7 @@ impl RelationalRegionResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let loaded = (|| {
             if let ResidencyState::Damaged(failure) = &*state {
-                return Err(Failure::StorageUnavailable(failure.clone()));
+                return Err(Failure::StorageUnavailable(*failure));
             }
             if let ResidencyState::Cold(cold) = &*state {
                 let region = self.raw_head(execution, limit)?;
@@ -206,7 +206,7 @@ impl RelationalRegionResidency {
                 Ok(region)
             }
             Err(Failure::StorageUnavailable(failure)) => {
-                *state = ResidencyState::Damaged(failure.clone());
+                *state = ResidencyState::Damaged(failure);
                 Err(Failure::StorageUnavailable(failure))
             }
             Err(Failure::Request(cause)) => Err(Failure::Request(cause)),
@@ -263,7 +263,7 @@ impl RelationalRegionResidency {
                     region.clone(),
                 )))
             }
-            ResidencyState::Damaged(failure) => Err(failure.clone()),
+            ResidencyState::Damaged(failure) => Err(*failure),
             _ => Ok(None),
         }
     }

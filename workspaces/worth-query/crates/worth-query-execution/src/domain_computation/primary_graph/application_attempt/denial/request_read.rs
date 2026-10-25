@@ -15,17 +15,22 @@ impl WorthQueryApplicationAttemptDenial {
         subject: &str,
     ) -> Self {
         Self {
-            kind: WorthQueryApplicationAttemptDenialKind::StorageUnavailable,
+            kind: WorthQueryApplicationAttemptDenialKind::StorageUnavailable(cause),
             subject: subject.to_owned(),
-            cause: AttemptDenialCause::NativeStorage(cause),
+            cause: AttemptDenialCause::None,
         }
     }
 
     pub fn storage_unavailable(
         &self,
     ) -> Option<&worth_relational::facade::storage::RelationalStorageUnavailable> {
-        match &self.cause {
-            AttemptDenialCause::NativeStorage(cause) => Some(cause),
+        match &self.kind {
+            WorthQueryApplicationAttemptDenialKind::StorageUnavailable(cause)
+            | WorthQueryApplicationAttemptDenialKind::ExecutionRequest(
+                crate::domain_computation::WorthQueryProviderSessionDenialKind::StorageUnavailable(
+                    cause,
+                ),
+            ) => Some(cause),
             _ => None,
         }
     }

@@ -30,7 +30,7 @@ pub(super) fn load_head(
             RelationalRegionImageKind::Head,
         )?;
         let head: RegionHeadImage =
-            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+            rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
         if head.partition.partition_id != cold.partition_id {
             return Err(Cause::Damaged);
         }
@@ -81,7 +81,7 @@ pub(super) fn load_full(
             RelationalRegionImageKind::History,
         )?;
         let history: RegionHistoryImage =
-            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+            rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
         let contracts = contracts(cold)?;
         let mut image = partition_to_image_with_contracts(
             head.partition.clone(),

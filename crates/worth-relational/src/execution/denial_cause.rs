@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 /// Memory refusals retain the refusing limit and its remaining room.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalExecutionDenialCause {
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     WorkerLimitExceedsParent,
     MemoryLimitExceedsParent,
     WorkLimitExceedsParent,

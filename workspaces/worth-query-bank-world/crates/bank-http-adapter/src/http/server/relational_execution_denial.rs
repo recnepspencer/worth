@@ -5,6 +5,7 @@ use super::super::protocol::{
 use worth_query_host::facade::primary_graph::RelationalExecutionDenialCause as Cause;
 pub(super) fn denial(cause: Cause) -> BankHttpDenial {
     let (kind, next) = match cause {
+        Cause::StorageUnavailable(_) => (Kind::Unavailable, Next::ContactOperator),
         Cause::Cancelled => (Kind::Cancelled, Next::Retry),
         Cause::DeadlineElapsed => (Kind::DeadlineExceeded, Next::Retry),
         Cause::WorkerLimitExceedsParent

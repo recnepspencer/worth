@@ -31,13 +31,20 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
-            self.bounded_relations_for_frontier_at_version(
-                entity_ids,
-                kind_id,
-                version_id,
-                AdjacencyDirection::Outgoing,
-                maximum_work_units,
+        let edition = self.runtime.acquire_partition_edition();
+        super::super::read_work::with_full_residency(execution, &edition, |state| {
+            crate::visibility::materialization::read_records::read_request::checked(
+                execution,
+                || {
+                    self.bounded_relations_for_frontier_at_version(
+                        state,
+                        entity_ids,
+                        kind_id,
+                        version_id,
+                        AdjacencyDirection::Outgoing,
+                        maximum_work_units,
+                    )
+                },
             )
         })
     }
@@ -53,32 +60,39 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        crate::visibility::materialization::read_records::read_request::checked(execution, || {
-            self.bounded_relations_for_frontier_at_version(
-                entity_ids,
-                kind_id,
-                version_id,
-                AdjacencyDirection::Incoming,
-                maximum_work_units,
+        let edition = self.runtime.acquire_partition_edition();
+        super::super::read_work::with_full_residency(execution, &edition, |state| {
+            crate::visibility::materialization::read_records::read_request::checked(
+                execution,
+                || {
+                    self.bounded_relations_for_frontier_at_version(
+                        state,
+                        entity_ids,
+                        kind_id,
+                        version_id,
+                        AdjacencyDirection::Incoming,
+                        maximum_work_units,
+                    )
+                },
             )
         })
     }
 
     fn bounded_relations_for_frontier_at_version(
         &self,
+        edition: &dyn PartitionAccess,
         entity_ids: &BTreeSet<crate::identity::data::EntityId>,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
         direction: AdjacencyDirection,
         maximum_work_units: usize,
     ) -> Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded> {
-        let edition = self.runtime.acquire_partition_edition();
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
         )
         .bounded_relations_for_frontier_in_state(
-            &edition,
+            edition,
             &self.runtime.config.schema.registry,
             || Ok::<_, std::convert::Infallible>(()),
             entity_ids,
@@ -204,11 +218,11 @@ impl ProjectionRecordReader<'_> {
                 relation_records_examined,
                 records.len(),
             ) {
-                ledger.settle_instrumentation(self.instrumentation);
+                ledger.settle_read_round(edition, self.instrumentation);
                 return Err(BoundedFrontierReadStop::Limit(exceeded));
             }
             if let Err(stop) = check_live() {
-                ledger.settle_instrumentation(self.instrumentation);
+                ledger.settle_read_round(edition, self.instrumentation);
                 return Err(BoundedFrontierReadStop::Admission(stop));
             }
             adjacency_lists_read += 1;
@@ -229,11 +243,11 @@ impl ProjectionRecordReader<'_> {
                     relation_records_examined,
                     records.len(),
                 ) {
-                    ledger.settle_instrumentation(self.instrumentation);
+                    ledger.settle_read_round(edition, self.instrumentation);
                     return Err(BoundedFrontierReadStop::Limit(exceeded));
                 }
                 if let Err(stop) = check_live() {
-                    ledger.settle_instrumentation(self.instrumentation);
+                    ledger.settle_read_round(edition, self.instrumentation);
                     return Err(BoundedFrontierReadStop::Admission(stop));
                 }
                 relation_records_examined += 1;
@@ -260,17 +274,17 @@ impl ProjectionRecordReader<'_> {
                     relation_records_examined,
                     records.len(),
                 ) {
-                    ledger.settle_instrumentation(self.instrumentation);
+                    ledger.settle_read_round(edition, self.instrumentation);
                     return Err(BoundedFrontierReadStop::Limit(exceeded));
                 }
                 if let Err(stop) = check_live() {
-                    ledger.settle_instrumentation(self.instrumentation);
+                    ledger.settle_read_round(edition, self.instrumentation);
                     return Err(BoundedFrontierReadStop::Admission(stop));
                 }
                 records.push(record);
             }
         }
-        ledger.settle_instrumentation(self.instrumentation);
+        ledger.settle_read_round(edition, self.instrumentation);
         sort_authoritative_relation_records(&mut records);
         Ok(BoundedFrontierAdjacencyTruthRead {
             records,

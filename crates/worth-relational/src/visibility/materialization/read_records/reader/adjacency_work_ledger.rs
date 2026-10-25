@@ -1,4 +1,3 @@
-use crate::runtime::RelationalRuntime;
 use crate::storage::partition::{AdjacencyKindBasis, AdjacencySet};
 
 /// What a bounded adjacency traversal actually touched.
@@ -17,6 +16,15 @@ pub(crate) struct AdjacencyLeaseLedger {
 }
 
 impl AdjacencyLeaseLedger {
+    pub(crate) fn settle_read_round(
+        self,
+        source: &(impl crate::storage::overlay::PartitionAccess + ?Sized),
+        instrumentation: &crate::runtime::RuntimeInstrumentation,
+    ) {
+        if !source.has_read_misses() {
+            self.settle_instrumentation(instrumentation);
+        }
+    }
     /// Borrow one kind's adjacency ids out of the pinned edition.
     ///
     /// The returned view is the substrate's own storage. Nothing is copied,
@@ -35,10 +43,6 @@ impl AdjacencyLeaseLedger {
         adjacency.kind_ids(basis, kind_id)
     }
 
-    /// Settle the traversal's leases in one instrumentation visit.
-    pub(crate) fn settle(self, runtime: &RelationalRuntime) {
-        self.settle_instrumentation(&runtime.services.instrumentation);
-    }
     pub(crate) fn settle_instrumentation(
         self,
         instrumentation: &crate::runtime::RuntimeInstrumentation,

@@ -109,6 +109,12 @@ its values and native targets through `CandidateWriter`. Propagate preparation
 or publication denials; a successful commit publishes the validated candidate
 atomically. See [prepared decisions and typed effects](build-an-application.md#prepared-decisions-and-typed-effects).
 
+Committed-storage read failures retain `StorageUnavailable` with their subject
+and cause through Query's execution denials. The Host `primary_graph` facade
+exports `RelationalStorageUnavailable`, `RelationalStorageSubject`, and
+`RelationalStorageUnavailableCause`. Preserve that refusal when handling a
+provider-session failure; an unavailable record is not an absent record.
+
 Platform owners can borrow the existing targets of a validated native mutation
 with `ValidatedMutationFootprint::records()`. Iterate its borrowed records to
 inspect each target, preserving multiplicity and the footprint's field and scope

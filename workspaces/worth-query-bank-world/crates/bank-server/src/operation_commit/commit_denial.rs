@@ -8,6 +8,7 @@ use worth_query_host::facade::primary_graph::{
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankCommitDenialKind {
+    StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
     ExecutionResource {
         denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial,
         partition_identity: Option<u64>,
@@ -99,6 +100,7 @@ pub(crate) const fn denial_kind(
 ) -> BankCommitDenialKind {
     use WorthQueryApplicationCommitDenialKind as Query;
     match kind {
+        Query::StorageUnavailable(failure) => BankCommitDenialKind::StorageUnavailable(failure),
         Query::ExecutionResource {
             denial,
             partition_identity,

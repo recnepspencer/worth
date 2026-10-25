@@ -105,15 +105,14 @@ impl super::BranchBoundRelationalTransaction {
         }
         for id in relations {
             partitions.insert(id.partition_id);
-            if let Some(lease) = root.demand_region_head(execution, id.partition_id)? {
-                if let Some(endpoints) = lease
+            if let Some(lease) = root.demand_region_head(execution, id.partition_id)?
+                && let Some(endpoints) = lease
                     .head_view()
                     .relation(id)
                     .and_then(|slot| slot.extra().endpoints.clone())
-                {
-                    partitions.insert(endpoints.source.partition_id);
-                    partitions.insert(endpoints.target.partition_id);
-                }
+            {
+                partitions.insert(endpoints.source.partition_id);
+                partitions.insert(endpoints.target.partition_id);
             }
         }
         mirror.demand(

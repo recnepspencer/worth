@@ -2,6 +2,21 @@
 use super::{RelationalRegionResidency, ResidencyState, ResidentRegion};
 
 impl RelationalRegionResidency {
+    /// Slot directory cardinalities are eager manifest facts, including while
+    /// member payloads are cold or damaged. Counting slots never reads storage.
+    pub(crate) fn slot_counts(&self) -> (usize, usize) {
+        if let Some(cold) = &self.backing {
+            return (cold.entity_slots, cold.relation_slots);
+        }
+        let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        match &*state {
+            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => (
+                region.partition.entity_arena.slot_count(),
+                region.partition.relation_arena.slot_count(),
+            ),
+            _ => unreachable!("a cell without cold backing is born resident"),
+        }
+    }
     pub(crate) fn resident_inventory(
         &self,
     ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
@@ -57,10 +72,10 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &*state {
-            if let Some(commitment) = &region.commitment {
-                commitment.visit_allocations(visitor);
-            }
+        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &*state
+            && let Some(commitment) = &region.commitment
+        {
+            commitment.visit_allocations(visitor);
         }
     }
 }

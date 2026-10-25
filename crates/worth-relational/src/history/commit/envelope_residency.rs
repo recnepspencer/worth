@@ -64,7 +64,7 @@ impl RelationalCommitEnvelopeResidency {
             return Ok(envelope);
         }
         if let Some(failure) = &*damage {
-            return Err(failure.clone().into());
+            return Err((*failure).into());
         }
         let (entry, source) = self.cold.as_ref().expect("unloaded cell has a source");
         let result = self.readmit(entry, source.as_ref(), execution, limit);
@@ -76,10 +76,10 @@ impl RelationalCommitEnvelopeResidency {
                 Ok(self.resident.get().expect("admitted envelope"))
             }
             Err(stop) => {
-                if let RelationalRecoveryStop::Durability(error) = &stop {
-                    if let Some(failure) = error.storage_unavailable.as_ref() {
-                        *damage = Some(failure.clone());
-                    }
+                if let RelationalRecoveryStop::Durability(error) = &stop
+                    && let Some(failure) = error.storage_unavailable.as_ref()
+                {
+                    *damage = Some(*failure);
                 }
                 Err(stop)
             }

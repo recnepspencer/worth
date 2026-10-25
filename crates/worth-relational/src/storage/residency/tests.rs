@@ -9,6 +9,9 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+#[path = "level_tests.rs"]
+mod level_tests;
+
 #[derive(Debug)]
 struct CountedSource {
     members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
@@ -343,3 +346,6 @@ fn storage_failure(
 
 #[path = "request_stop_tests.rs"]
 mod request_stop_tests;
+
+#[path = "probe_tests.rs"]
+mod probe_tests;

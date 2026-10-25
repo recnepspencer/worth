@@ -21,6 +21,9 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
             ),
         ),
         Progression::Denied(denial) => match denial.kind() {
+            Kind::StorageUnavailable(failure) => {
+                cleanup_execution_indeterminate(Ok(Session::StorageUnavailable(failure)))
+            }
             Kind::ExecutionResource {
                 denial,
                 partition_identity,

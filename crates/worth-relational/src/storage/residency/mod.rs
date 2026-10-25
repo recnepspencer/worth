@@ -27,4 +27,6 @@ mod demand_failure;
 pub(crate) use demand_failure::RelationalResidencyDemandFailure;
 
 mod cell_load_cache;
+mod probe;
 mod required_symbols;
+pub(crate) use probe::{probe_full, PartitionProbe};

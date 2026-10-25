@@ -212,7 +212,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                     WorthQueryOutputDemandDenialKind::ProducerUnavailable,
                     format!("{identity}: {commit_denial:?}"),
                 ),
-                Kind::ExecutionResource { .. }
+                Kind::StorageUnavailable(_)
+                | Kind::ExecutionResource { .. }
                 | Kind::ExecutionNestedPatternStopped { .. }
                 | Kind::ExecutionWorkerPanicked { .. }
                 | Kind::ExecutionUncheckedCustomKernel { .. }

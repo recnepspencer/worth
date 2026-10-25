@@ -9,12 +9,35 @@ use memory::partition_id_bytes;
 pub(crate) use memory::{collect_partition_ids, PartitionIdMemory, PartitionIdsDenial};
 
 pub(crate) trait PartitionAccess: Sync {
+    fn has_read_misses(&self) -> bool {
+        false
+    }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState>;
     fn partition_ids(&self) -> Vec<PartitionId>;
     fn partition_ids_with_memory(
         &self,
         memory: &mut dyn PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, PartitionIdsDenial>;
+
+    fn probe_full_partition(
+        &self,
+        partition_id: PartitionId,
+    ) -> super::super::residency::PartitionProbe<'_> {
+        match self.get_partition(partition_id) {
+            Some(partition) => super::super::residency::PartitionProbe::Resident(partition),
+            None => super::super::residency::PartitionProbe::Absent,
+        }
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _partition_id: PartitionId,
+    ) -> Result<(), super::super::residency::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::super::residency::RelationalResidencyDemandFailure::Request)?;
+        Ok(())
+    }
 
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.partition_ids().into_iter())
