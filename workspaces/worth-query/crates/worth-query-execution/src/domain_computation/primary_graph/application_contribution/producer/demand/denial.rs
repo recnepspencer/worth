@@ -20,8 +20,7 @@ pub struct WorthQueryOutputDemandDenial {
     evidence: Option<Box<DemandDenialEvidence>>,
     cleanup: Option<cleanup_custody::DemandCleanupCustody>,
     pub(super) subject: std::borrow::Cow<'static, str>,
-    pub(super) domain_reason: Option<&'static str>,
-    domain_value: Option<Box<super::super::WorthQueryProducerDenialValue>>,
+    domain: Option<Box<producer_value::ProducerDomainDenial>>,
     pub(in crate::domain_computation::primary_graph) readmission_failure: Option<&'static str>,
     pub(in crate::domain_computation::primary_graph) recovery_posture:
         WorthQueryOutputDemandRecoveryPosture,
@@ -279,8 +278,8 @@ impl WorthQueryOutputDemandDenial {
 
     /// Domain-owned diagnostic words, when the rejected producer supplies them.
     /// These words do not replace the typed denial kind or confer authority.
-    pub const fn domain_reason(&self) -> Option<&'static str> {
-        self.domain_reason
+    pub fn domain_reason(&self) -> Option<&'static str> {
+        self.domain.as_ref().and_then(|domain| domain.reason)
     }
 
     /// Why an exact failed native read could not join retained required work.
@@ -302,8 +301,7 @@ impl WorthQueryOutputDemandDenial {
             kind: Box::new(kind),
             evidence: None,
             cleanup: None,
-            domain_reason: None,
-            domain_value: None,
+            domain: None,
             readmission_failure: None,
             subject: subject.into(),
             recovery_posture,
@@ -319,8 +317,10 @@ impl WorthQueryOutputDemandDenial {
             WorthQueryOutputDemandDenialKind::ProducerDomainDenied,
             subject,
         );
-        denial.domain_reason = reason;
-        denial.domain_value = Some(Box::new(value));
+        denial.domain = Some(Box::new(producer_value::ProducerDomainDenial {
+            reason,
+            value,
+        }));
         denial
     }
 
