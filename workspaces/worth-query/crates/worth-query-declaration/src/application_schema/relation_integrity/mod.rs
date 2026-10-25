@@ -23,6 +23,8 @@ pub struct ApplicationRelationIntegrity {
     pub symmetric: bool,
     /// Physical edge multiplicity is bounded by the declared semantic scope.
     pub unique: Option<ApplicationRelationUniquenessScope>,
+    /// Every surviving edge must connect entities in the same native partition.
+    pub same_partition_endpoints: bool,
 }
 
 impl ApplicationRelationIntegrity {
@@ -38,6 +40,7 @@ impl ApplicationRelationIntegrity {
             acyclic: false,
             symmetric: false,
             unique: None,
+            same_partition_endpoints: false,
         }
     }
 
@@ -70,6 +73,12 @@ impl ApplicationRelationIntegrity {
     /// Require the reverse of every surviving source-to-target edge.
     pub const fn symmetric(mut self) -> Self {
         self.symmetric = true;
+        self
+    }
+
+    /// Require both endpoints to belong to the same native partition.
+    pub const fn same_partition_endpoints(mut self) -> Self {
+        self.same_partition_endpoints = true;
         self
     }
 

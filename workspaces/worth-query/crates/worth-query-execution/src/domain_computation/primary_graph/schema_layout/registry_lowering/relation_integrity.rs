@@ -8,8 +8,8 @@ use worth_relational::facade::schema::{
     AcyclicityContractDeclaration, AllowedCycleClass, CardinalityContractDeclaration, ContractId,
     DirectedTraversalKind, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
     EndpointKindContractDeclaration, MinimumCardinalityEnforcement, PairMinimumSemantics,
-    RelationIntegrityDeclarations, SymmetryContractDeclaration, SymmetryMode,
-    UniquenessContractDeclaration, UniquenessScope,
+    PartitionIsolationContractDeclaration, PartitionIsolationMode, RelationIntegrityDeclarations,
+    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
 };
 
 pub(super) fn lower_relation_integrity(
@@ -74,6 +74,16 @@ pub(super) fn lower_relation_integrity(
         deletion.into_iter().collect(),
     )
     .with_acyclicity_contracts(acyclicity.into_iter().collect())
+    .with_partition_isolation_contracts(
+        integrity
+            .same_partition_endpoints
+            .then(|| PartitionIsolationContractDeclaration {
+                contract_id: ContractId::new(format!("{relation}:same_partition_endpoints")),
+                isolation_mode: PartitionIsolationMode::SamePartitionEndpoints,
+            })
+            .into_iter()
+            .collect(),
+    )
 }
 
 fn lower_endpoint_deletion(
@@ -110,6 +120,36 @@ mod tests {
     use worth_relational::facade::schema::EndpointDeletionIntegrityMode;
 
     use super::lower_relation_integrity;
+
+    #[test]
+    fn declared_partition_isolation_is_lowered_independently_of_endpoint_permission() {
+        let baseline = ApplicationRelationIntegrity::new(
+            ApplicationRelationEndpoints::new(
+                true,
+                ApplicationRelationCrossContextPolicy::AllowExplicit,
+            ),
+            ApplicationRelationCardinality::unbounded(),
+            ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
+        );
+        let original = lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline);
+        let isolated = lower_relation_integrity(
+            "Peer",
+            KindId(11),
+            vec![KindId(11)],
+            baseline.same_partition_endpoints(),
+        );
+        assert!(original.partition_isolation_contracts.is_empty());
+        assert_eq!(isolated.partition_isolation_contracts.len(), 1);
+        assert_eq!(
+            isolated.partition_isolation_contracts[0].isolation_mode,
+            super::PartitionIsolationMode::SamePartitionEndpoints
+        );
+        assert_eq!(
+            isolated.endpoint_kind_contracts,
+            original.endpoint_kind_contracts
+        );
+        assert_ne!(isolated.plan_revision, original.plan_revision);
+    }
 
     #[test]
     fn paired_symmetry_and_exact_uniqueness_scope_lower_into_one_native_plan() {

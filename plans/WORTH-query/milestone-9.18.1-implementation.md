@@ -507,3 +507,86 @@ the seeded multigraph evidence or replacing physical counts with sets.
 
 Minimum reachability, partition isolation, the public fixture cutover and
 Proprietary adoption remain unfinished. Phase 2 is not yet ready for master.
+
+## Phase 2, slice 3: Same-partition endpoints
+
+Boundary review: declaration-owned law meaning already feeds schema identity,
+program manifest/facts and support admission. Native partition isolation evaluates
+planned and affected visible edges at commit, but drops their endpoint identities
+when constructing its original violation. Preserve those original references at
+that seam, through native diagnostics/witness keys and Query's borrowed denial.
+The evaluator remains the only law owner. No graph reread or partition-derived
+entity identity is permitted.
+
+Ordinary CandidateWriter creation already obtains an issued mutation partition;
+create_entity_in_context uses a genuine projected existing entity's partition.
+Use these existing authoring paths in the public graph court. Both endpoint
+policies allow explicit cross-context edges, so the new native law must make the
+verdict. Relation record placement is independent of endpoint isolation.
+
+Plan:
+
+1. Add const `.same_partition_endpoints()` and its default-false field to
+   ApplicationRelationIntegrity; append its enabled-law canonical field without
+   altering earlier preimages. Lower only through lower_relation_integrity to
+   native SamePartitionEndpoints.
+2. Preserve source/target EntityReferences in the original native partition
+   violation, its diagnostic projection and witness identity. Query borrows them
+   through its existing shared law-denial routing. Add focused transport evidence.
+3. Extend the existing public graph program with a genuine create-node action,
+   using ordinary issued/context creation, initialization and optional linking.
+   Add no runtime or fixture authority door. Retained projection reads establish
+   committed node and physical edge truth.
+4. Prove Existing/Created and Existing/Existing hostile candidates, context twins,
+   explicit cross-partition permission without isolation, multiple affected edges
+   and seeded edits over real partitions against an independent endpoint model.
+   Verify original endpoint identities and refusal atomicity. Exercise identity,
+   archive, unbound installation and checkpoint law add/remove handoffs.
+5. Document native partition meaning and the existing contextual creation path
+   with a compiled excerpt; update the capability row. Run affected owner and
+   grouped public/native tests, compiled docs, formatting, scoped caps/function
+   scrutiny, boundary-check and agent-context. The persistent reviewer gates the
+   living diff and evidence before commit.
+
+Minimum reachability and its publication/created-identity boundaries remain the
+next slice. Public fixture cutover and Proprietary adoption still gate the Phase 2
+merge. No new traversal, budget or accounting model belongs in this slice.
+
+### Slice 3 verification
+
+The const same-partition endpoint declaration lowers through the existing
+relation-integrity owner to native SamePartitionEndpoints. The original native
+violation now preserves both endpoint references through serialization, typed
+diagnostics, distinct witness keys and Query's borrowed denial. Endpoint policy
+and relation-record placement remain independent.
+
+All frozen-source gates pass:
+
+- The 23 discovered public relation-law tests, including four new real-partition
+  courts: original Existing/Created and Existing/Existing refusals, direct absent
+  node lookup after refusal, contextual creation and no-law cross-partition
+  twins, whole-candidate atomicity and a 72-edit independent partition-group
+  oracle. Compatibility tests hold endpoint permission fixed while changing only
+  isolation and cover program/archive/support/checkpoint handoffs.
+- The full application_graph target: 421 discovered, 416 passed, 5 existing
+  ignored. The new creation action declares its actual field initialization
+  write capability and uses distinct per-attempt idempotency commands.
+- Native partition-related tests: 70 passed; relation integrity: 65 passed;
+  invariant access: 11 passed. The first group includes original diagnostic,
+  serialized endpoint and witness-distinction evidence; these filters overlap.
+- Declaration: 462 passed; installation: 343 passed; archive: 116 passed.
+  The full execution-owner test library compiled (1,971 tests), and all 34
+  focused lowering, refusal-translation, bootstrap and ownership tests passed.
+- Compiled documentation drift: 1 passed, including the partition excerpt and
+  its exact inventory. Normal boundary-check and agent-context passed.
+- Scoped formatting and whitespace, dirty Rust line caps, and function scrutiny
+  passed across all 25 scoped Rust files (19 advisories, zero scan errors).
+
+The persistent reviewer completed one living-diff pass with qa-loop, qa-tests
+and code-quality-qa. Its two named corrections replaced an outcome-selected
+absence observation with a direct optional projection lookup and completed the
+compiled-doc excerpt inventory; both were accepted. No new native evaluator,
+traversal, budget, accounting model or test authority door was introduced.
+
+Minimum reachability, public fixture cutover and Proprietary adoption remain
+unfinished. Phase 2 remains on its task branch until those gates close.

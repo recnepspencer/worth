@@ -160,9 +160,11 @@ pub(super) fn invariant_violation_witness_key(
             relation_id,
             source_partition_id,
             target_partition_id,
+            source,
+            target,
             ..
         } => format!(
-            "partition_isolation:{}:{relation_id:?}:{}:{}",
+            "partition_isolation:{}:{relation_id:?}:{}:{}:{source:?}:{target:?}",
             relation_kind_id.as_u32(),
             source_partition_id.as_u32(),
             target_partition_id.as_u32()

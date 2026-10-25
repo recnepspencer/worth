@@ -1,5 +1,5 @@
 //! Schema and native action meaning derive from one relation declaration.
-use super::{handler::Handler, operation::*, schema::*};
+use super::{creation::*, handler::Handler, operation::*, schema::*};
 use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
@@ -49,6 +49,18 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             .operation_link(EditEdges::reference(), Precedes::reference())
             .operation_unlink(EditEdges::reference(), Precedes::reference())
             .application_mutation_binding::<EditBinding<L>>()
+            .operation(
+                CreateNode::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_read_field(CreateNode::reference(), NodeKey::reference())
+            .operation_link(CreateNode::reference(), Precedes::reference())
+            .operation_create(CreateNode::reference(), Node::reference())
+            .operation_write(CreateNode::reference(), NodeKey::reference())
+            .application_mutation_binding::<CreateBinding<L>>()
     }
 }
 impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphContribution<L> {
@@ -57,7 +69,8 @@ impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphCo
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, GraphSchema<L>>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<EditBinding<L>, _>(Handler)
+        setup.handler::<EditBinding<L>, _>(Handler)?;
+        setup.handler::<CreateBinding<L>, _>(CreateHandler)
     }
 }
 pub struct GraphFeature;
@@ -76,6 +89,8 @@ impl<L: LawPolicy> ApplicationProgramDefinition<GraphSchema<L>> for GraphProgram
         vec![
             ApplicationFeatureSpec::root::<GraphSchema<L>, GraphFeature>()
                 .native_action::<EditBinding<L>>()
+                .finish_action()
+                .native_action::<CreateBinding<L>>()
                 .finish_action()
                 .finish(),
         ]

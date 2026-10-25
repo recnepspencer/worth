@@ -9,7 +9,8 @@ declaration into Relational's native commit validation.
 
 Paired symmetry requires the reverse of each surviving directed edge on the
 same relation. Scoped uniqueness limits physical records per ordered pair or
-across both directions of an unordered pair.
+across both directions of an unordered pair. Partition isolation requires both
+endpoints of every surviving edge to belong to the same native partition.
 
 ## Why You Use It
 
@@ -28,6 +29,7 @@ that reference through the schema contribution's ordinary `.relation(..)`.
 The same const builder exposes `.symmetric()` and
 `.unique(ApplicationRelationUniquenessScope::DirectedSemanticEdge)` or
 `.unique(ApplicationRelationUniquenessScope::NormalizedSymmetricEdge)`.
+Use `.same_partition_endpoints()` to declare endpoint partition isolation.
 
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
@@ -54,6 +56,13 @@ another inverse relation or create a reverse edge for you.
 Directed uniqueness permits one `A → B` record and one `B → A` record. Normalized
 uniqueness counts them together and refuses that pair. Consequently, pair
 `.symmetric()` with directed uniqueness when both inverse records should exist.
+
+Partition isolation compares the endpoints, not the partition storing the
+relation record. Ordinary `CandidateWriter::create_entity` places new entities
+in the mutation's issued partition. To create beside an existing projected
+entity, use `CandidateWriter::create_entity_in_context(&context, entity, key)`.
+The context must come from the operation's genuine decision and candidate
+authority. A key or diagnostic partition number cannot substitute for it.
 
 Law meaning participates in canonical schema and program identity. Changing
 the law is a schema/program change; reusing the same names does not authorize
@@ -103,6 +112,25 @@ Register that integrity value on the same relation reference. Deleting only
 `A → B` then refuses because `B → A` has lost its reverse; deleting both in one
 candidate succeeds. With normalized uniqueness instead, proposing both
 directions refuses even when each direction has only one record.
+
+To isolate endpoint partitions while allowing the endpoint contract to reach
+that law, the compiled partition example declares:
+
+<!-- compiled: relation_partition_declaration.rs -->
+```rust
+const EXPLICIT_CONTEXTS: ApplicationRelationIntegrity = ApplicationRelationIntegrity::new(
+    ApplicationRelationEndpoints::new(true, ApplicationRelationCrossContextPolicy::AllowExplicit),
+    ApplicationRelationCardinality::unbounded(),
+    ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
+);
+const PARTITION_LOCAL: ApplicationRelationIntegrity = EXPLICIT_CONTEXTS.same_partition_endpoints();
+```
+
+Register `PARTITION_LOCAL` on the relation. Linking an existing node to a new
+node created in an issued partition refuses when their partitions differ.
+Creating the new node in that existing node's context allows the same edge.
+The earlier endpoint policy can also forbid cross-context edges independently;
+its refusal keeps that earlier cause.
 
 ## Real Example
 
@@ -179,7 +207,8 @@ or mutation authority. Keep the owning denial alive while borrowing them.
 
 `Symmetry` identifies the surviving edge without its required reverse and
 carries the native symmetry mode. `Uniqueness` carries the duplicate pair,
-native uniqueness scope and physical count. Diagnostic `ContractId`, `KindId`,
+native uniqueness scope and physical count. `PartitionIsolation` borrows the
+original source and target references whose native partitions differ. Diagnostic `ContractId`, `KindId`,
 `EntityReference`, `SymmetryMode` and `UniquenessScope` are nameable through
 `host::application_invariants`; none grants runtime authority.
 
@@ -208,8 +237,8 @@ identities or assume a particular edge wins when several close cycles.
 
 The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
-edge uniqueness. Other native symmetry modes and the reachability-minimum and
-partition-isolation families are not exposed by these builders. They do not
+edge uniqueness, and same-partition endpoints. Other native symmetry modes and
+the reachability-minimum family are not exposed by these builders. They do not
 provide general traversal, orbit or component query operations.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains

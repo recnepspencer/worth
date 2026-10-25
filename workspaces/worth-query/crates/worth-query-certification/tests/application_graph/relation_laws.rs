@@ -23,3 +23,8 @@ mod program;
 mod read;
 #[path = "relation_laws/schema.rs"]
 mod schema;
+
+#[path = "relation_laws/creation.rs"]
+mod creation;
+#[path = "relation_laws/partition_isolation.rs"]
+mod partition_isolation;

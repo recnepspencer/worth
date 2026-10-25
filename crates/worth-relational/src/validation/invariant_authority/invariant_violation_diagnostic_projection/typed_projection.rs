@@ -298,12 +298,16 @@ impl InvariantViolationDiagnosticProjection<'_> {
                 relation_id,
                 source_partition_id,
                 target_partition_id,
+                source,
+                target,
             } => relation_projection::partition_isolation(
                 contract_id,
                 *relation_kind_id,
                 *relation_id,
                 *source_partition_id,
                 *target_partition_id,
+                source,
+                target,
             ),
             Self::Acyclicity {
                 contract_id,

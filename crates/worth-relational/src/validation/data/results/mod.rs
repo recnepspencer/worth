@@ -132,6 +132,8 @@ pub enum InvariantViolationFields {
         relation_id: Option<crate::identity::data::RelationId>,
         source_partition_id: PartitionId,
         target_partition_id: PartitionId,
+        source: EntityReference,
+        target: EntityReference,
     },
     Acyclicity {
         contract_id: ContractId,

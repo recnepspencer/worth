@@ -1,5 +1,6 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredPartitionIsolationContract;
+use crate::transactions::data::EntityReference;
 use crate::validation::data::{InvariantClass, InvariantViolation, InvariantViolationFields};
 
 use super::super::context::InvariantExecutionContext;
@@ -29,8 +30,8 @@ pub(super) fn evaluate_partition_isolation_contract(
                 class,
                 contract,
                 None,
-                edge.source.partition_id(),
-                edge.target.partition_id(),
+                edge.source.clone(),
+                edge.target.clone(),
             ));
         }
     }
@@ -47,8 +48,8 @@ pub(super) fn evaluate_partition_isolation_contract(
                 class,
                 contract,
                 Some(edge.relation_id),
-                edge.source.partition_id,
-                edge.target.partition_id,
+                EntityReference::Existing(edge.source),
+                EntityReference::Existing(edge.target),
             ));
         }
     }
@@ -59,8 +60,8 @@ fn partition_isolation_violation(
     class: crate::validation::data::InvariantClass,
     contract: &LoweredPartitionIsolationContract,
     relation_id: Option<crate::identity::data::RelationId>,
-    source_partition_id: crate::identity::data::PartitionId,
-    target_partition_id: crate::identity::data::PartitionId,
+    source: EntityReference,
+    target: EntityReference,
 ) -> InvariantViolation {
     InvariantViolation {
         class,
@@ -73,8 +74,10 @@ fn partition_isolation_violation(
             contract_id: contract.contract_id.clone(),
             relation_kind_id: contract.relation_kind_id,
             relation_id,
-            source_partition_id,
-            target_partition_id,
+            source_partition_id: source.partition_id(),
+            target_partition_id: target.partition_id(),
+            source,
+            target,
         },
     }
 }

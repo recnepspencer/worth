@@ -136,3 +136,28 @@ fn symmetry_and_each_uniqueness_scope_have_distinct_removable_meaning() {
     assert_eq!(directed.cardinality, original.cardinality);
     assert_eq!(directed.deletion, original.deletion);
 }
+
+#[test]
+fn partition_law_changes_meaning_without_changing_endpoint_permission() {
+    let original = ApplicationRelationIntegrity::new(
+        ApplicationRelationEndpoints::new(
+            true,
+            super::ApplicationRelationCrossContextPolicy::AllowExplicit,
+        ),
+        ApplicationRelationCardinality::unbounded(),
+        ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
+    );
+    let isolated = original.same_partition_endpoints();
+    assert_eq!(isolated.endpoints, original.endpoints);
+    let identity = |integrity| {
+        ApplicationSchemaDeclarationBuilder::<()>::from_test_members(members(integrity))
+            .build()
+            .unwrap()
+            .identity()
+            .clone()
+    };
+    assert_ne!(identity(original), identity(isolated));
+    let mut removed = isolated;
+    removed.same_partition_endpoints = false;
+    assert_eq!(identity(original), identity(removed));
+}

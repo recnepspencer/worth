@@ -129,3 +129,7 @@ impl GraphPrincipal {
         )
     }
 }
+
+#[path = "schema/partition.rs"]
+mod partition;
+pub use partition::{CrossPartition, Isolated};

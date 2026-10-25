@@ -214,10 +214,14 @@ pub(super) fn partition_isolation(
     relation_id: Option<RelationId>,
     source_partition_id: PartitionId,
     target_partition_id: PartitionId,
+    source: &EntityReference,
+    target: &EntityReference,
 ) -> RelationalDiagnosticValue {
     violation_diagnostic_object(
         "partition_isolation",
         [
+            ("source", entity_reference_diagnostic_value(source)),
+            ("target", entity_reference_diagnostic_value(target)),
             contract_field(contract_id),
             kind_field(relation_kind_id),
             (

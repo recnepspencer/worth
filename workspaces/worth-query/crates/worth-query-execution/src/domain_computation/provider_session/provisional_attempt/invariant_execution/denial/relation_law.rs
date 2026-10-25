@@ -14,6 +14,13 @@ use worth_relational::facade::transactions::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryRelationLawDenial<'a> {
+    /// These endpoints belong to different native partitions.
+    PartitionIsolation {
+        contract_id: &'a ContractId,
+        relation_kind_id: KindId,
+        source: &'a EntityReference,
+        target: &'a EntityReference,
+    },
     /// A surviving edge has no required reverse edge on the same relation.
     Symmetry {
         contract_id: &'a ContractId,
@@ -43,6 +50,18 @@ pub enum WorthQueryRelationLawDenial<'a> {
 impl<'a> WorthQueryRelationLawDenial<'a> {
     pub(crate) fn from_fields(fields: &'a InvariantViolationFields) -> Option<Self> {
         match fields {
+            InvariantViolationFields::PartitionIsolation {
+                contract_id,
+                relation_kind_id,
+                source,
+                target,
+                ..
+            } => Some(Self::PartitionIsolation {
+                contract_id,
+                relation_kind_id: *relation_kind_id,
+                source,
+                target,
+            }),
             InvariantViolationFields::RelationSymmetry {
                 contract_id,
                 relation_kind_id,

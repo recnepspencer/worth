@@ -46,3 +46,29 @@ pub fn committed<L: LawPolicy>(world: &World<L>) -> Graph {
     drop(snapshot);
     graph
 }
+
+/// Resolve the requested key directly, including keys outside the expected node set.
+pub fn identity<L: LawPolicy>(world: &World<L>, key: u64) -> Option<EntityId> {
+    let completed = world
+        .application
+        .runtime()
+        .with_host_advancement(|phase| {
+            world
+                .projection
+                .project(
+                    &phase,
+                    |reader| {
+                        reader
+                            .resolve_optional_entity(NodeKey::reference(), key)
+                            .unwrap()
+                            .map(|entity| entity.entity_id())
+                    },
+                    ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    let (identity, snapshot, _) = completed.into_parts();
+    drop(snapshot);
+    identity
+}

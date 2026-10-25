@@ -196,12 +196,16 @@ impl<'a> InvariantViolationDiagnosticProjection<'a> {
                 relation_id,
                 source_partition_id,
                 target_partition_id,
+                source,
+                target,
             } => Self::PartitionIsolation {
                 contract_id,
                 relation_kind_id: *relation_kind_id,
                 relation_id: *relation_id,
                 source_partition_id: *source_partition_id,
                 target_partition_id: *target_partition_id,
+                source,
+                target,
             },
             InvariantViolationFields::Acyclicity {
                 contract_id,

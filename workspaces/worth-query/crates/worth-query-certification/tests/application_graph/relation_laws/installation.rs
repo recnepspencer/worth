@@ -14,6 +14,7 @@ pub struct World<L: LawPolicy> {
     pub application: WorthQueryProgramApplicationRuntime<GraphSchema<L>, GraphProgram<L>>,
     pub projection: WorthQueryApplicationInvariantProjectionAuthority<GraphSchema<L>>,
     pub nodes: u64,
+    creation_attempt: u64,
 }
 pub fn install<L: LawPolicy>(nodes: u64, edges: &[(u64, u64)]) -> World<L> {
     assert!(nodes > 0);
@@ -70,6 +71,7 @@ pub fn install_program<L: LawPolicy>(
         application,
         projection: projection.unwrap(),
         nodes,
+        creation_attempt: 0,
     })
 }
 fn key<L: LawPolicy>(node: u64) -> WorthQueryApplicationEntityKey<GraphSchema<L>, Node> {
@@ -117,6 +119,48 @@ impl<L: LawPolicy> World<L> {
             &request_scope(),
         )
         .unwrap()
+    }
+    pub fn create_node(
+        &mut self,
+        context: u64,
+        in_context: bool,
+        link: bool,
+    ) -> WorthQueryApplicationMutationOutcome<GraphDenial, Edited> {
+        use super::creation::{Create, CreateNodeInput};
+        let scope = request_scope();
+        let principal = authenticate_operator(self.application.installed_schema(), &scope);
+        let key = self.nodes;
+        let command = self.creation_attempt;
+        self.creation_attempt += 1;
+        let result = self
+            .application
+            .runtime()
+            .request(&principal, &scope)
+            .on_branch(self.application.current_world())
+            .advanced()
+            .mutate(Create::<L> {
+                input: CreateNodeInput {
+                    key,
+                    context,
+                    in_context,
+                    link,
+                },
+                marker: PhantomData,
+            })
+            .without_source()
+            .idempotency(&command)
+            .execute_in_program(
+                &self.application,
+                ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        if matches!(
+            result,
+            WorthQueryApplicationMutationOutcome::Committed { .. }
+        ) {
+            self.nodes += 1;
+        }
+        result
     }
     // compiled-example: begin
     pub fn apply_edit_in_scope(

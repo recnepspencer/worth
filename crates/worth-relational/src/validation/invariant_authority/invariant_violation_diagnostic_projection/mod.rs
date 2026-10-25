@@ -130,6 +130,8 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         relation_id: Option<RelationId>,
         source_partition_id: PartitionId,
         target_partition_id: PartitionId,
+        source: &'a EntityReference,
+        target: &'a EntityReference,
     },
     Acyclicity {
         contract_id: &'a ContractId,

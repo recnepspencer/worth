@@ -143,37 +143,59 @@ fn original_law_payload_survives_all_query_refusal_translations() {
         kind_id: KindId(11),
         client_key: worth_relational::facade::symbols::ClientKey::raw("unpublished-target"),
     });
-    let fields = InvariantViolationFields::Acyclicity {
-        contract_id: contract_id.clone(),
-        relation_kind_id: KindId(77),
-        source: source.clone(),
-        target: target.clone(),
-    };
-    let expected = Some(WorthQueryRelationLawDenial::Acyclicity {
-        contract_id: &contract_id,
-        relation_kind_id: KindId(77),
-        source: &source,
-        target: &target,
-    });
-    let original = law_transport_error(fields);
-    let invariant = WorthQueryApplicationCommitDenial::invariant_execution_denied(
-        WorthQueryApplicationCommitDenialStage::InvariantExecution,
-        super::map_validation_failure(original.clone()),
-    );
-    assert_eq!(invariant.relation_law(), expected);
-    let provider = provider_session_denied(
-        WorthQueryProviderSessionFailure::new(
-            WorthQueryProviderSessionDenialKind::ProviderRejected,
-            WorthQueryProviderSessionProtocolStage::Commit,
-            "opaque provider diagnostic",
-            Default::default(),
-        )
-        .with_native_preparation_error(original.clone()),
-    );
-    assert_eq!(provider.relation_law(), expected);
-    let bootstrap = map_bootstrap_commit_denial(original);
-    assert_eq!(bootstrap.relation_law(), expected);
-    assert!(invariant.custom_invariant_denial().is_none());
+    for (fields, expected) in [
+        (
+            InvariantViolationFields::Acyclicity {
+                contract_id: contract_id.clone(),
+                relation_kind_id: KindId(77),
+                source: source.clone(),
+                target: target.clone(),
+            },
+            Some(WorthQueryRelationLawDenial::Acyclicity {
+                contract_id: &contract_id,
+                relation_kind_id: KindId(77),
+                source: &source,
+                target: &target,
+            }),
+        ),
+        (
+            InvariantViolationFields::PartitionIsolation {
+                contract_id: contract_id.clone(),
+                relation_kind_id: KindId(77),
+                relation_id: None,
+                source_partition_id: source.partition_id(),
+                target_partition_id: target.partition_id(),
+                source: source.clone(),
+                target: target.clone(),
+            },
+            Some(WorthQueryRelationLawDenial::PartitionIsolation {
+                contract_id: &contract_id,
+                relation_kind_id: KindId(77),
+                source: &source,
+                target: &target,
+            }),
+        ),
+    ] {
+        let original = law_transport_error(fields);
+        let invariant = WorthQueryApplicationCommitDenial::invariant_execution_denied(
+            WorthQueryApplicationCommitDenialStage::InvariantExecution,
+            super::map_validation_failure(original.clone()),
+        );
+        assert_eq!(invariant.relation_law(), expected);
+        let provider = provider_session_denied(
+            WorthQueryProviderSessionFailure::new(
+                WorthQueryProviderSessionDenialKind::ProviderRejected,
+                WorthQueryProviderSessionProtocolStage::Commit,
+                "opaque provider diagnostic",
+                Default::default(),
+            )
+            .with_native_preparation_error(original.clone()),
+        );
+        assert_eq!(provider.relation_law(), expected);
+        let bootstrap = map_bootstrap_commit_denial(original);
+        assert_eq!(bootstrap.relation_law(), expected);
+        assert!(invariant.custom_invariant_denial().is_none());
+    }
 }
 
 fn law_transport_error(
