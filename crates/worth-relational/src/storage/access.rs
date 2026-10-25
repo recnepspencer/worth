@@ -59,13 +59,6 @@ impl<'runtime> StorageAccess<'runtime> {
             .max(1)
     }
 
-    pub(crate) fn record_slots<K: RecordKind>(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Vec<usize> {
-        record_slots_in::<K>(&self.current_edition(), partition_id)
-    }
-
     pub(crate) fn record_slot_surface<K: RecordKind>(
         &self,
         partition_id: crate::identity::data::PartitionId,
@@ -223,7 +216,6 @@ pub(crate) fn record_slot_surface_in<K: RecordKind>(
     let arena = K::arena(partition);
     let slot_view = arena.get_slot(slot)?;
     Some(RecordSlotSurface {
-        retired_at: arena.retired_at_for_slot(slot),
         snapshot_pins: arena.snapshot_pin_count(slot).unwrap_or(0),
         branch_pins: arena.branch_pin_count(slot).unwrap_or(0),
         replay_pins: arena.replay_pin_count(slot).unwrap_or(0),
@@ -233,7 +225,6 @@ pub(crate) fn record_slot_surface_in<K: RecordKind>(
 
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RecordSlotSurface {
-    pub(crate) retired_at: Option<crate::identity::data::VersionId>,
     pub(crate) snapshot_pins: u32,
     pub(crate) branch_pins: u32,
     pub(crate) replay_pins: u32,

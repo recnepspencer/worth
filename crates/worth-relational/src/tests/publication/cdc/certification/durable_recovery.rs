@@ -140,7 +140,7 @@ fn cdc_certification_retention_truncation_recovers_exact_suffix_from_old_checkpo
         .unwrap_or_else(|| world.baseline_checkpoint.clone());
 
     for _ in 0..16 {
-        let _ = world.runtime.retention().run_pass();
+        let _ = world.runtime.retention().run_pass(execution).unwrap();
     }
 
     let resumed = collect_subscriber_patches(&world.runtime, old_checkpoint.clone(), 3);

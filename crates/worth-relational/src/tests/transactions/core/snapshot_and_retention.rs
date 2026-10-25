@@ -20,7 +20,7 @@ fn entity_slot_reuse_increments_generation() {
         .visibility_authority()
         .release_snapshot(&delete_outcome.snapshot)
         .is_ok());
-    let retention = runtime.retention().run_pass();
+    let retention = runtime.retention().run_pass(execution).unwrap();
     let entity_b = create_entity(execution, &runtime, "second");
 
     assert!(retention.entity_reclaimed <= 1);
@@ -149,7 +149,7 @@ fn historical_reads_preserve_generation_and_aspects_after_slot_reuse() {
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
         .is_ok());
-    let _ = runtime.retention().run_pass();
+    let _ = runtime.retention().run_pass(execution).unwrap();
     let replacement = create_entity(execution, &runtime, "after");
 
     let historical = runtime
@@ -220,7 +220,7 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
     let entity = changed_entities(&create_outcome)[0];
     let _delete_outcome = delete_entity(execution, &runtime, entity);
     let delete_snapshot = runtime.visibility_authority().snapshot();
-    let first_retention = runtime.retention().run_pass();
+    let first_retention = runtime.retention().run_pass(execution).unwrap();
 
     assert!(first_retention.entity_reclaimed <= 1);
     assert_eq!(
@@ -248,7 +248,7 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
         .visibility_authority()
         .release_snapshot(&delete_snapshot)
         .is_ok());
-    let second_retention = runtime.retention().run_pass();
+    let second_retention = runtime.retention().run_pass(execution).unwrap();
 
     assert_eq!(second_retention.entity_reclaimed, 0);
     assert_eq!(
@@ -283,7 +283,7 @@ fn epoch_retention_backend_preserves_snapshot_visibility_until_release() {
     let _delete_outcome = delete_entity(execution, &runtime, entity);
     let delete_snapshot = runtime.visibility_authority().snapshot();
 
-    let first_retention = runtime.retention().run_pass();
+    let first_retention = runtime.retention().run_pass(execution).unwrap();
     assert_eq!(
         runtime.config().storage.retention.backend,
         RetentionBackend::EpochChunkRetention
@@ -305,7 +305,7 @@ fn epoch_retention_backend_preserves_snapshot_visibility_until_release() {
         .visibility_authority()
         .release_snapshot(&delete_snapshot)
         .is_ok());
-    let second_retention = runtime.retention().run_pass();
+    let second_retention = runtime.retention().run_pass(execution).unwrap();
 
     assert!(second_retention.entity_reclaimed <= 1);
     assert_eq!(
@@ -352,7 +352,7 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
         .is_ok());
-    let retained = runtime.retention().run_pass();
+    let retained = runtime.retention().run_pass(execution).unwrap();
 
     assert!(retained.entity_reclaimed <= 1);
     let readmitted = runtime
@@ -376,7 +376,7 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
     drop(readmitted);
     let receipt = runtime.release_component_basis(external).unwrap();
     assert_eq!(receipt.descriptor(), &descriptor);
-    let released = runtime.retention().run_pass();
+    let released = runtime.retention().run_pass(execution).unwrap();
     assert!(released.entity_reclaimed <= 1);
     assert_eq!(
         runtime

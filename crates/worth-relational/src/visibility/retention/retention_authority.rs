@@ -23,7 +23,21 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         Self { runtime }
     }
 
-    pub fn inspect_plan(&self) -> RetentionPlan {
+    /// Count owned snapshot handles without inspecting record storage.
+    pub fn active_snapshot_count(&self) -> usize {
+        self.runtime.visibility.active_snapshot_count()
+    }
+
+    /// Demand Full custody for the entire mirror before inspecting its retention state.
+    pub fn inspect_plan(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RetentionPlan, crate::execution::RelationalExecutionDenialCause> {
+        let mut writer = self
+            .runtime
+            .partitions
+            .demand_resident_edit(execution, &self.runtime.services.instrumentation)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let retention_fence = self
             .runtime
             .visibility
@@ -39,13 +53,11 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         let mut branch_replay_overlap_entities = 0;
         let mut branch_replay_overlap_relations = 0;
 
-        let partition_ids = self.runtime.storage_access().partition_ids();
-        for partition_id in partition_ids {
+        writer.visit_partitions(|mut partition| {
             let entity_counts = inspect_partition_retention::<EntityRecordKind>(
                 self.runtime,
-                partition_id,
+                &mut partition,
                 retention_fence,
-                refresh_entity_retention_state,
             );
             branch_pinned_entities += entity_counts.branch_pinned;
             replay_pinned_entities += entity_counts.replay_pinned;
@@ -55,16 +67,15 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
 
             let relation_counts = inspect_partition_retention::<RelationRecordKind>(
                 self.runtime,
-                partition_id,
+                &mut partition,
                 retention_fence,
-                refresh_relation_retention_state,
             );
             branch_pinned_relations += relation_counts.branch_pinned;
             replay_pinned_relations += relation_counts.replay_pinned;
             snapshot_pinned_relations += relation_counts.snapshot_pinned;
             reclaimable_relations += relation_counts.reclaimable;
             branch_replay_overlap_relations += relation_counts.branch_replay_overlap;
-        }
+        });
 
         let plan = RetentionPlan {
             retention_fence_version: retention_fence,
@@ -93,10 +104,20 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                     ),
                 )],
             );
-        plan
+        Ok(plan)
     }
 
-    pub fn run_pass(&self) -> RetentionPassOutcome {
+    /// Demand Full custody for the entire mirror before reclaiming any record.
+    pub fn run_pass(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<RetentionPassOutcome, crate::execution::RelationalExecutionDenialCause> {
+        let mut writer = self
+            .runtime
+            .partitions
+            .demand_resident_edit(execution, &self.runtime.services.instrumentation)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let mut reclaimed = Vec::new();
         let mut outcome = RetentionPassOutcome {
             entity_reclaimable: 0,
             entity_reclaimed: 0,
@@ -113,13 +134,12 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             .visibility
             .retention_fence_version(self.runtime.current_version_id());
 
-        let partition_ids = self.runtime.storage_access().partition_ids();
-        for partition_id in partition_ids {
+        writer.visit_partitions(|mut partition| {
             let entity_counts = run_partition_retention_pass::<EntityRecordKind>(
                 self.runtime,
+                &mut partition,
                 PartitionRetentionPass {
                     class: crate::history::data::RecordAllocationClass::Entity,
-                    partition_id,
                     chunk_size: entity_chunk_size,
                     retention_fence,
                 },
@@ -132,7 +152,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                         .expect("complexity counter lock poisoned");
                     counters.retention_entity_slots_scanned += 1;
                 },
-                refresh_entity_retention_state,
+                &mut reclaimed,
             );
             outcome.entity_chunks_scanned += entity_counts.chunks_scanned;
             outcome.entity_reclaimable += entity_counts.reclaimable;
@@ -140,9 +160,9 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
 
             let relation_counts = run_partition_retention_pass::<RelationRecordKind>(
                 self.runtime,
+                &mut partition,
                 PartitionRetentionPass {
                     class: crate::history::data::RecordAllocationClass::Relation,
-                    partition_id,
                     chunk_size: relation_chunk_size,
                     retention_fence,
                 },
@@ -155,14 +175,18 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                         .expect("complexity counter lock poisoned");
                     counters.retention_relation_slots_scanned += 1;
                 },
-                refresh_relation_retention_state,
+                &mut reclaimed,
             );
             outcome.relation_chunks_scanned += relation_counts.chunks_scanned;
             outcome.relation_reclaimable += relation_counts.reclaimable;
             outcome.relation_reclaimed += relation_counts.reclaimed;
-        }
+        });
 
-        outcome
+        drop(writer);
+        for slot in reclaimed {
+            self.runtime.record_identity.admit_reclaimed(slot);
+        }
+        Ok(outcome)
     }
 
     pub(crate) fn trim_live_history_for_records(

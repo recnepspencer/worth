@@ -9,7 +9,7 @@ use super::StorageAuthority;
 impl StorageAuthority<'_> {
     pub(crate) fn refresh_retention_state<K: RecordKind>(
         &self,
-        partition_id: PartitionId,
+        partition: &mut crate::storage::overlay::PartitionState,
         slot: usize,
         retired_at: Option<VersionId>,
         retention_fence: VersionId,
@@ -17,10 +17,6 @@ impl StorageAuthority<'_> {
         let Some(_retired_at) = retired_at else {
             return;
         };
-        let mut writer = self.runtime.edit_partitions();
-        let partition = writer
-            .partition_mut(partition_id)
-            .expect("retention partition present");
         let arena = K::arena_mut(partition);
         let lifecycle = match self.runtime.config.storage.retention.backend {
             crate::config::data::RetentionBackend::PinTrackedRetention => {
@@ -54,27 +50,21 @@ impl StorageAuthority<'_> {
     pub(crate) fn reclaim_record_if_reclaimable<K: RecordKind>(
         &self,
         class: crate::history::data::RecordAllocationClass,
-        partition_id: PartitionId,
+        partition: &mut crate::storage::overlay::PartitionState,
         slot: usize,
-    ) -> bool {
-        {
-            let mut writer = self.runtime.edit_partitions();
-            let Some(partition) = writer.partition_mut(partition_id) else {
-                return false;
-            };
-            let arena = K::arena_mut(partition);
-            let Some(slot_view) = arena.get_slot(slot) else {
-                return false;
-            };
-            if slot_view.lifecycle() != RecordLifecycleState::Reclaimable {
-                return false;
-            }
-            arena.set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
-            arena.reset_slot(slot);
+    ) -> Option<crate::runtime::ReclaimedRecordSlot> {
+        let partition_id = partition.partition_id;
+        let arena = K::arena_mut(partition);
+        if arena.get_slot(slot)?.lifecycle() != RecordLifecycleState::Reclaimable {
+            return None;
         }
-        let reclaimed = crate::runtime::ReclaimedRecordSlot::new(class, partition_id, slot);
-        self.runtime.record_identity.admit_reclaimed(reclaimed);
-        true
+        arena.set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
+        arena.reset_slot(slot);
+        Some(crate::runtime::ReclaimedRecordSlot::new(
+            class,
+            partition_id,
+            slot,
+        ))
     }
 
     pub(crate) fn trim_live_history<K: RecordKind>(

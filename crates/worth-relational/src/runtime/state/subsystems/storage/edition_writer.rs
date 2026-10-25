@@ -29,7 +29,57 @@ pub(crate) struct PartitionEditionWriter<'subsystem> {
     copies: PartitionCopyTally,
 }
 
+/// Exclusive, load-free access to a mirror whose entire edition is Full.
+pub(crate) struct ResidentPartitionEditionWriter<'subsystem> {
+    writer: PartitionEditionWriter<'subsystem>,
+}
+
+impl ResidentPartitionEditionWriter<'_> {
+    pub(crate) fn visit_partitions(&mut self, mut visit: impl FnMut(ResidentPartitionEntry<'_>)) {
+        let PartitionEditionWriter {
+            edition, copies, ..
+        } = &mut self.writer;
+        let (map, copied) = edition.map_mut();
+        if copied {
+            copies.record_spine_copy();
+        }
+        for partition in map.values_mut() {
+            visit(ResidentPartitionEntry { partition, copies });
+        }
+    }
+}
+
+/// Present Full state under one exclusive edition guard. Reading never copies;
+/// an edit explicitly pays the ordinary copy lane when another observer exists.
+pub(crate) struct ResidentPartitionEntry<'entry> {
+    partition: &'entry mut RelationalRegionRetention,
+    copies: &'entry mut PartitionCopyTally,
+}
+
+impl ResidentPartitionEntry<'_> {
+    pub(crate) fn read(&self) -> &PartitionState {
+        self.partition.as_ref()
+    }
+    pub(crate) fn edit(&mut self) -> &mut PartitionState {
+        own_partition(self.copies, self.partition)
+    }
+}
+
 impl<'subsystem> PartitionEditionWriter<'subsystem> {
+    pub(super) fn accept_resident(
+        self,
+    ) -> Result<ResidentPartitionEditionWriter<'subsystem>, Self> {
+        if self
+            .edition
+            .cells()
+            .all(|(_, region)| region.admitted_partition().is_some())
+        {
+            Ok(ResidentPartitionEditionWriter { writer: self })
+        } else {
+            Err(self)
+        }
+    }
+
     pub(super) fn new(
         edition: RwLockWriteGuard<'subsystem, PartitionEdition>,
         instrumentation: &'subsystem RuntimeInstrumentation,

@@ -4,6 +4,8 @@ use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
 enum ReadDoor {
+    RetentionInspection,
+    RetentionPass,
     StorageStatistics,
     PartitionStatistics,
     ChunkSummary,
@@ -35,6 +37,8 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::RetentionInspection => runtime.retention().inspect_plan(execution).map(|_| ()),
+            Self::RetentionPass => runtime.retention().run_pass(execution).map(|_| ()),
             Self::StorageStatistics => runtime
                 .storage_access()
                 .storage_stats(execution)
@@ -155,6 +159,8 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in [
+        ReadDoor::RetentionInspection,
+        ReadDoor::RetentionPass,
         ReadDoor::StorageStatistics,
         ReadDoor::PartitionStatistics,
         ReadDoor::ChunkSummary,

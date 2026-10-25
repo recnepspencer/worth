@@ -1,12 +1,11 @@
 use crate::history::data::RecordAllocationClass;
 use crate::identity::data::{PartitionId, VersionId};
 use crate::runtime::RelationalRuntime;
+use crate::runtime::ResidentPartitionEntry;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::substrate::{
     EntityRecordKind, HistoricalMetadata, RecordKind, RelationRecordKind,
 };
-
-type RefreshRetention = fn(&RelationalRuntime, PartitionId, usize, Option<VersionId>, VersionId);
 
 #[derive(Default)]
 pub(super) struct RetentionCounts {
@@ -19,7 +18,6 @@ pub(super) struct RetentionCounts {
 
 pub(super) struct PartitionRetentionPass {
     pub(super) class: RecordAllocationClass,
-    pub(super) partition_id: PartitionId,
     pub(super) chunk_size: usize,
     pub(super) retention_fence: VersionId,
 }
@@ -38,14 +36,17 @@ pub(super) fn refresh_entity_retention_state(
     retired_at: Option<VersionId>,
     retention_fence: VersionId,
 ) {
-    runtime
-        .storage_authority()
-        .refresh_retention_state::<EntityRecordKind>(
-            partition_id,
-            slot,
-            retired_at,
-            retention_fence,
-        );
+    let mut writer = runtime.edit_partitions();
+    if let Some(partition) = writer.partition_mut(partition_id) {
+        runtime
+            .storage_authority()
+            .refresh_retention_state::<EntityRecordKind>(
+                partition,
+                slot,
+                retired_at,
+                retention_fence,
+            );
+    }
 }
 
 pub(super) fn refresh_relation_retention_state(
@@ -55,94 +56,90 @@ pub(super) fn refresh_relation_retention_state(
     retired_at: Option<VersionId>,
     retention_fence: VersionId,
 ) {
-    runtime
-        .storage_authority()
-        .refresh_retention_state::<RelationRecordKind>(
-            partition_id,
-            slot,
-            retired_at,
-            retention_fence,
-        );
+    let mut writer = runtime.edit_partitions();
+    if let Some(partition) = writer.partition_mut(partition_id) {
+        runtime
+            .storage_authority()
+            .refresh_retention_state::<RelationRecordKind>(
+                partition,
+                slot,
+                retired_at,
+                retention_fence,
+            );
+    }
 }
 
 pub(super) fn inspect_partition_retention<K: RecordKind>(
     runtime: &RelationalRuntime,
-    partition_id: PartitionId,
+    partition: &mut ResidentPartitionEntry<'_>,
     retention_fence: VersionId,
-    refresh_retention: RefreshRetention,
 ) -> RetentionCounts {
     let mut counts = RetentionCounts::default();
-    for slot in runtime.storage_access().record_slots::<K>(partition_id) {
-        let retired_at = runtime
-            .storage_access()
-            .record_slot_surface::<K>(partition_id, slot)
-            .and_then(|surface| surface.retired_at);
+    for slot in K::arena(partition.read()).occupied_slots() {
+        let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
         if retired_at.is_some() {
-            refresh_retention(runtime, partition_id, slot, retired_at, retention_fence);
+            runtime.storage_authority().refresh_retention_state::<K>(
+                partition.edit(),
+                slot,
+                retired_at,
+                retention_fence,
+            );
         }
-        let Some(surface) = runtime
-            .storage_access()
-            .record_slot_surface::<K>(partition_id, slot)
-        else {
-            continue;
-        };
-        counts.branch_pinned += usize::from(surface.branch_pins > 0);
-        counts.replay_pinned += usize::from(surface.replay_pins > 0);
-        counts.snapshot_pinned += usize::from(surface.snapshot_pins > 0);
-        counts.branch_replay_overlap +=
-            usize::from(surface.branch_pins > 0 && surface.replay_pins > 0);
-        counts.reclaimable += usize::from(surface.lifecycle == RecordLifecycleState::Reclaimable);
+        let arena = K::arena(partition.read());
+        counts.branch_pinned += usize::from(arena.branch_pin_count(slot).unwrap_or(0) > 0);
+        counts.replay_pinned += usize::from(arena.replay_pin_count(slot).unwrap_or(0) > 0);
+        counts.snapshot_pinned += usize::from(arena.snapshot_pin_count(slot).unwrap_or(0) > 0);
+        counts.branch_replay_overlap += usize::from(
+            arena.branch_pin_count(slot).unwrap_or(0) > 0
+                && arena.replay_pin_count(slot).unwrap_or(0) > 0,
+        );
+        counts.reclaimable += usize::from(
+            arena
+                .get_slot(slot)
+                .is_some_and(|view| view.lifecycle() == RecordLifecycleState::Reclaimable),
+        );
     }
     counts
 }
 
 pub(super) fn run_partition_retention_pass<K: RecordKind>(
     runtime: &RelationalRuntime,
+    partition: &mut ResidentPartitionEntry<'_>,
     pass: PartitionRetentionPass,
     count_scan: impl Fn(&RelationalRuntime),
-    refresh_retention: RefreshRetention,
+    reclaimed: &mut Vec<crate::runtime::ReclaimedRecordSlot>,
 ) -> RetentionPassCounts {
     let mut counts = RetentionPassCounts::default();
-    let chunk_size = pass.chunk_size.max(1);
     let mut current_chunk = None;
-    for slot in runtime
-        .storage_access()
-        .record_slots::<K>(pass.partition_id)
-    {
-        let chunk = slot / chunk_size;
+    for slot in K::arena(partition.read()).occupied_slots() {
+        let chunk = slot / pass.chunk_size.max(1);
         if current_chunk != Some(chunk) {
             current_chunk = Some(chunk);
             counts.chunks_scanned += 1;
         }
         count_scan(runtime);
-        let retired_at = runtime
-            .storage_access()
-            .record_slot_surface::<K>(pass.partition_id, slot)
-            .and_then(|surface| surface.retired_at);
-        let Some(version) = retired_at else {
-            continue;
-        };
-        refresh_retention(
-            runtime,
-            pass.partition_id,
+        let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
+        let Some(version) = retired_at else { continue };
+        runtime.storage_authority().refresh_retention_state::<K>(
+            partition.edit(),
             slot,
             Some(version),
             pass.retention_fence,
         );
-        let reclaimable = runtime
-            .storage_access()
-            .record_slot_surface::<K>(pass.partition_id, slot)
-            .is_some_and(|surface| surface.lifecycle == RecordLifecycleState::Reclaimable);
-        if !reclaimable {
+        if !K::arena(partition.read())
+            .get_slot(slot)
+            .is_some_and(|view| view.lifecycle() == RecordLifecycleState::Reclaimable)
+        {
             continue;
         }
         counts.reclaimable += 1;
         if runtime.config.storage.mvcc.auto_reclaim_deleted_records
             && counts.reclaimed < runtime.config.storage.mvcc.reclaim_batch_size
-            && runtime
+            && let Some(slot) = runtime
                 .storage_authority()
-                .reclaim_record_if_reclaimable::<K>(pass.class, pass.partition_id, slot)
+                .reclaim_record_if_reclaimable::<K>(pass.class, partition.edit(), slot)
         {
+            reclaimed.push(slot);
             counts.reclaimed += 1;
         }
     }
@@ -176,8 +173,7 @@ mod tests {
     };
 
     use super::{
-        inspect_partition_retention, refresh_entity_retention_state, run_partition_retention_pass,
-        PartitionRetentionPass,
+        inspect_partition_retention, run_partition_retention_pass, PartitionRetentionPass,
     };
 
     #[test]
@@ -215,27 +211,40 @@ mod tests {
             },
         );
 
-        let inspected = inspect_partition_retention::<EntityRecordKind>(
-            &runtime,
-            partition_id,
-            VersionId(1),
-            refresh_entity_retention_state,
-        );
-        assert_eq!(inspected.branch_pinned, 1);
-
+        let retained = runtime.acquire_partition_edition();
+        runtime.performance_access().reset_counters();
+        let request = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&request);
+        let mut writer = runtime
+            .partitions
+            .demand_resident_edit(&execution, &runtime.services.instrumentation)
+            .unwrap();
         let scans = Cell::new(0);
-        let outcome = run_partition_retention_pass::<EntityRecordKind>(
-            &runtime,
-            PartitionRetentionPass {
-                class: RecordAllocationClass::Entity,
-                partition_id,
-                chunk_size: 128,
-                retention_fence: VersionId(1),
-            },
-            |_| scans.set(scans.get() + 1),
-            refresh_entity_retention_state,
-        );
+        writer.visit_partitions(|mut partition| {
+            let inspected = inspect_partition_retention::<EntityRecordKind>(
+                &runtime,
+                &mut partition,
+                VersionId(1),
+            );
+            assert_eq!(inspected.branch_pinned, 1);
+            let outcome = run_partition_retention_pass::<EntityRecordKind>(
+                &runtime,
+                &mut partition,
+                PartitionRetentionPass {
+                    class: RecordAllocationClass::Entity,
+                    chunk_size: 128,
+                    retention_fence: VersionId(1),
+                },
+                |_| scans.set(scans.get() + 1),
+                &mut Vec::new(),
+            );
+            assert_eq!(outcome.chunks_scanned, 1);
+        });
         assert_eq!(scans.get(), 1);
-        assert_eq!(outcome.chunks_scanned, 1);
+        drop(writer);
+        let counts = runtime.performance_access().counters();
+        assert_eq!(counts.ordinary_partitions_copied_on_write, 0);
+        assert_eq!(counts.ordinary_partition_slots_copied_on_write, 0);
+        assert!(retained.partition(partition_id).is_some());
     }
 }

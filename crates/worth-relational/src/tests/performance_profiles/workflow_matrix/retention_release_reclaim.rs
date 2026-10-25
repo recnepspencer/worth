@@ -30,10 +30,10 @@ pub(super) fn certify_retention_release_reclaim_round_trip(
 
             runtime.performance_access().reset_counters();
             let inspect_started_at = Instant::now();
-            let inspect_plan = runtime.retention().inspect_plan();
+            let inspect_plan = runtime.retention().inspect_plan(execution).unwrap();
             let inspect_plan_micros = inspect_started_at.elapsed().as_micros();
             let reclaim_started_at = Instant::now();
-            let reclaim_pass = runtime.retention().run_pass();
+            let reclaim_pass = runtime.retention().run_pass(execution).unwrap();
             let run_pass_micros = reclaim_started_at.elapsed().as_micros();
 
             let snapshot = runtime.visibility_authority().snapshot();

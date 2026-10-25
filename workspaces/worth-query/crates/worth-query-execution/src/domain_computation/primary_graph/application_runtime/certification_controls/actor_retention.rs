@@ -8,17 +8,23 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<
         (usize, usize),
-        crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
     > {
-        let execution = phase.execution_request_for(&self.product_runtime)?;
+        let execution = phase.execution_request_for(&self.product_runtime).map_err(|_| {
+            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::new(
+                crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                "actor retention",
+            )
+        })?;
         let handle = self
             .runtime
             .primary_graph()
             .expect("installed primary graph")
             .integration_handle();
-        Ok(handle.with_query_runtime_mut(&execution, |runtime, _| {
-            let actual = runtime.retention().run_pass();
-            (actual.entity_reclaimed, actual.relation_reclaimed)
-        }))
+        handle.with_query_runtime_mut(&execution, |runtime, _| {
+            runtime.retention().run_pass(&execution)
+                .map(|actual| (actual.entity_reclaimed, actual.relation_reclaimed))
+                .map_err(|cause| crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, "actor retention"))
+        })
     }
 }

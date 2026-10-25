@@ -159,7 +159,7 @@ where
         self.primary_provider
             .graph
             .with_runtime_mut(request_execution, |runtime| {
-                let active = runtime.retention().inspect_plan().active_snapshot_count;
+                let active = runtime.retention().active_snapshot_count();
                 let identity = runtime
                     .branch_identity(self.relational_branch_identity.branch_id())
                     .expect("the application branch remains owner registered");

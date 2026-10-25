@@ -95,3 +95,22 @@ remains spent. This read boundary
 does not issue candidate identities; candidate-wide abandonment and symbol
 staging remain separate required cuts. The current Full-view substrate still
 requires the specified Head-only preparation cutover before phase completion.
+
+
+## Retention mirror custody
+
+Retention plan inspection and reclamation now accept the caller request and
+return the native typed execution/storage failure. They demand the whole mirror
+before taking its writer, then seal the current edition as resident without
+performing I/O under the mutation lock. Publication only inserts resident entries;
+exclusive recovery is the sole cold-directory installer. A displaced edition is
+redemanded before retrying acceptance. Traversal receives mutable resident
+partition borrows, rather than looking the same partition up again for every slot.
+Reclaimed identities are admitted after releasing the storage writer. Inspection
+retains its existing lifecycle refresh behavior. Query's snapshot-count controls
+read the owned handle count directly; its retention control preserves native
+failure through the existing application-attempt denial.
+
+This closes the explicit retention authority's cold entry path. General
+inspection, replay pin admission and publication's carried resident witness are
+still required; this paragraph does not certify those surfaces.

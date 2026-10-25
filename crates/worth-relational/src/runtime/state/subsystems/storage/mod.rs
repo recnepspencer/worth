@@ -5,7 +5,9 @@ mod residency_demand;
 pub(crate) use residency_demand::MirrorResidencyDemandBinding;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
-pub(crate) use edition_writer::PartitionEditionWriter;
+pub(crate) use edition_writer::{
+    PartitionEditionWriter, ResidentPartitionEditionWriter, ResidentPartitionEntry,
+};
 pub(crate) use partition_edition::{PartitionEdition, PartitionMap, ResidentPartitionEdition};
 
 use crate::identity::data::PartitionId;
@@ -47,6 +49,28 @@ impl StorageSubsystem {
         lane: PartitionEditionCopyLane,
     ) -> PartitionEditionWriter<'subsystem> {
         PartitionEditionWriter::new(self.partitions.write(), instrumentation, lane)
+    }
+
+    /// Demand outside the write lock, then seal the current edition. Publication
+    /// installs resident entries; only an exclusive recovery can install cold ones.
+    pub(crate) fn demand_resident_edit<'subsystem>(
+        &'subsystem self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        instrumentation: &'subsystem RuntimeInstrumentation,
+    ) -> Result<
+        ResidentPartitionEditionWriter<'subsystem>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        loop {
+            self.acquire().demand_all(execution)?;
+            match self
+                .edit(instrumentation, PartitionEditionCopyLane::Ordinary)
+                .accept_resident()
+            {
+                Ok(writer) => return Ok(writer),
+                Err(writer) => drop(writer),
+            }
+        }
     }
 
     pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {

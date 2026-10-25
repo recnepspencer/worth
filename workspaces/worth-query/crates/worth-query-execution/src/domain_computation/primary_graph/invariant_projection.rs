@@ -205,7 +205,7 @@ where
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> usize {
         self.graph.with_runtime_mut(request_execution, |runtime| {
-            runtime.retention().inspect_plan().active_snapshot_count
+            runtime.retention().active_snapshot_count()
         })
     }
 

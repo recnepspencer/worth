@@ -31,7 +31,7 @@ fn geometry_profile_does_not_force_retention_pass_on_each_commit() {
         .release_snapshot(&deleted.snapshot)
         .is_ok());
 
-    let plan = runtime.retention().inspect_plan();
+    let plan = runtime.retention().inspect_plan(execution).unwrap();
     assert!(plan.reclaimable_entities >= 1);
 }
 
@@ -53,7 +53,7 @@ fn ai_profile_commit_and_release_only_make_reclamation_eligible() {
     assert_eq!(ordinary.retention_entity_slots_scanned, 0);
     assert_eq!(ordinary.retention_relation_slots_scanned, 0);
 
-    let maintenance = runtime.retention().run_pass();
+    let maintenance = runtime.retention().run_pass(execution).unwrap();
     assert!(maintenance.entity_chunks_scanned > 0);
     let after_maintenance = runtime.performance_access().counters();
     assert!(after_maintenance.retention_entity_slots_scanned > 0);

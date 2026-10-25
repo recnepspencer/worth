@@ -22,18 +22,16 @@ impl StorageAuthority<'_> {
     ) {
         let slot = slot_of::<K>(&record_id);
         let partition_id = partition_of::<K>(&record_id);
-        let retired_at = {
-            let mut writer = self.runtime.edit_partitions();
-            let Some(partition) = writer.partition_mut(partition_id) else {
-                return;
-            };
-            let arena = K::arena_mut(partition);
-            if arena.snapshot_pin_count(slot).is_none() {
-                return;
-            }
-            arena.adjust_named_pin(slot, class, delta);
-            arena.retired_at_for_slot(slot)
+        let mut writer = self.runtime.edit_partitions();
+        let Some(partition) = writer.partition_mut(partition_id) else {
+            return;
         };
-        self.refresh_retention_state::<K>(partition_id, slot, retired_at, retention_fence);
+        let arena = K::arena_mut(partition);
+        if arena.snapshot_pin_count(slot).is_none() {
+            return;
+        }
+        arena.adjust_named_pin(slot, class, delta);
+        let retired_at = arena.retired_at_for_slot(slot);
+        self.refresh_retention_state::<K>(partition, slot, retired_at, retention_fence);
     }
 }

@@ -8,7 +8,7 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
     let runtime = runtime_with_test_schema();
     let outcome = create_entity_outcome(execution, &runtime, "first");
 
-    let retention = runtime.retention().inspect_plan();
+    let retention = runtime.retention().inspect_plan(execution).unwrap();
     let read = runtime
         .read_truth()
         .read_snapshot(&outcome.snapshot, execution)

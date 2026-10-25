@@ -26,7 +26,7 @@ impl WorthQueryPrimaryGraphProvider {
         funding::assert_full_capture_funding(self, execution, authority, request, &table);
         let count = || {
             self.graph.with_runtime(execution, |runtime| {
-                runtime.retention().inspect_plan().active_snapshot_count
+                runtime.retention().active_snapshot_count()
             })
         };
         let baseline = count();
@@ -91,7 +91,7 @@ impl WorthQueryPrimaryGraphProvider {
         );
         let foreign_count = || {
             foreign.graph.with_runtime(execution, |runtime| {
-                runtime.retention().inspect_plan().active_snapshot_count
+                runtime.retention().active_snapshot_count()
             })
         };
         let foreign_baseline = foreign_count();

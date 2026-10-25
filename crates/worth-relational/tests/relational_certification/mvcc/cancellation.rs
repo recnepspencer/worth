@@ -157,7 +157,7 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
         .publication()
         .read_patch_stream(PatchStreamRequest::default())
         .unwrap();
-    let retention_before = world.runtime.retention().inspect_plan();
+    let retention_before = world.runtime.retention().inspect_plan(execution).unwrap();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
     source.cancel();
 
@@ -187,7 +187,10 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
             .unwrap(),
         stream_before
     );
-    assert_eq!(world.runtime.retention().inspect_plan(), retention_before);
+    assert_eq!(
+        world.runtime.retention().inspect_plan(execution).unwrap(),
+        retention_before
+    );
     let cost = world.runtime.observe_mvcc_counters(&cost_scope).unwrap();
     assert_eq!(cost.retention_cost_delta().candidate_releases, 1);
     assert_eq!(

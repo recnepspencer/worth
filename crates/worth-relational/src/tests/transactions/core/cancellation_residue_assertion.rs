@@ -14,6 +14,8 @@ impl CancellationResidueSnapshot {
         runtime: &crate::runtime::RelationalRuntime,
         branch_id: &BranchId,
     ) -> Self {
+        let request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&request);
         Self {
             branch_reference: runtime
                 .branch_reference_state(branch_id)
@@ -24,7 +26,7 @@ impl CancellationResidueSnapshot {
                 .publication()
                 .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
                 .expect("cancellation evidence reads the canonical patch stream"),
-            retention: runtime.retention().inspect_plan(),
+            retention: runtime.retention().inspect_plan(execution).unwrap(),
         }
     }
 }

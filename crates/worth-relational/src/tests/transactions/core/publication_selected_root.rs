@@ -22,7 +22,7 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         .expect("selected-root evidence reads the canonical patch stream");
     let publication_bundle_before = runtime.publication().latest_bundle();
     let durable_count_before = runtime.durability().durable_log().len();
-    let retention_before = runtime.retention().inspect_plan();
+    let retention_before = runtime.retention().inspect_plan(execution).unwrap();
     let position_reservations_before = runtime.patch_position_reservation_counters();
     let retention_before_candidate = runtime
         .branch_retention_cost_counters(&identity)
@@ -100,7 +100,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         runtime.durability().durable_log().len(),
         durable_count_before
     );
-    assert_eq!(runtime.retention().inspect_plan(), retention_before);
+    assert_eq!(
+        runtime.retention().inspect_plan(execution).unwrap(),
+        retention_before
+    );
     assert_eq!(
         runtime.patch_position_reservation_counters(),
         position_reservations_before

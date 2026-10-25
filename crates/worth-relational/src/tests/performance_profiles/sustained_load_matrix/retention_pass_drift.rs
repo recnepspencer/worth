@@ -31,18 +31,18 @@ pub(super) fn certify_retention_pass_drift_stability(
                     .is_ok());
 
                 let inspect_started_at = Instant::now();
-                let plan = runtime.retention().inspect_plan();
+                let plan = runtime.retention().inspect_plan(execution).unwrap();
                 total_inspect_micros += inspect_started_at.elapsed().as_micros();
                 max_reclaimable_entities = max_reclaimable_entities.max(plan.reclaimable_entities);
 
                 let run_pass_started_at = Instant::now();
-                let pass = runtime.retention().run_pass();
+                let pass = runtime.retention().run_pass(execution).unwrap();
                 total_run_pass_micros += run_pass_started_at.elapsed().as_micros();
                 total_entity_reclaimable += pass.entity_reclaimable;
                 total_entity_reclaimed += pass.entity_reclaimed;
             }
 
-            let trailing_plan = runtime.retention().inspect_plan();
+            let trailing_plan = runtime.retention().inspect_plan(execution).unwrap();
             let elapsed_micros = total_inspect_micros + total_run_pass_micros;
             measurement_with_elapsed(elapsed_micros, || {
                 perf_metrics!({

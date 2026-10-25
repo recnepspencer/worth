@@ -41,10 +41,10 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
         .visibility_authority()
         .release_snapshot(&deleted.deleted_snapshot)
         .unwrap();
-    let plan = runtime.retention().inspect_plan();
+    let plan = runtime.retention().inspect_plan(execution).unwrap();
     assert_eq!(plan.snapshot_pinned_relations, 0);
     assert_eq!(plan.branch_pinned_relations, 0);
-    let maintenance = runtime.retention().run_pass();
+    let maintenance = runtime.retention().run_pass(execution).unwrap();
     assert!(maintenance.relation_reclaimed <= 1);
 
     assert_eq!(runtime.relation_history_len_for_test(relation), 1);
