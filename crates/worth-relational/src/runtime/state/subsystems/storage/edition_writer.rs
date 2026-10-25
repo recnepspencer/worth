@@ -73,14 +73,16 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             copies.record_spine_copy();
         }
         map.get_mut(&partition_id)
-            .map(|partition| own_partition(copies, partition))
+            .and_then(|partition| own_partition(copies, partition))
     }
 
     /// Exclusive access to every partition, copying each one that an observer
     /// still holds. This is Theta(all slots in the substrate) in the worst
     /// case, which is why the copies it performs are counted individually
     /// rather than summarized as one event.
-    pub(crate) fn partitions_mut(&mut self) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
+    pub(crate) fn resident_partitions_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
         let Self {
             edition, copies, ..
         } = self;
@@ -89,7 +91,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             copies.record_spine_copy();
         }
         map.values_mut()
-            .map(move |partition| own_partition(copies, partition))
+            .filter_map(move |partition| own_partition(copies, partition))
     }
 
     pub(crate) fn insert(&mut self, partition_id: PartitionId, partition: PartitionState) {
@@ -127,12 +129,14 @@ impl Drop for PartitionEditionWriter<'_> {
 fn own_partition<'partition>(
     copies: &mut PartitionCopyTally,
     partition: &'partition mut RelationalRegionRetention,
-) -> &'partition mut PartitionState {
-    if !partition.is_uniquely_owned() {
+) -> Option<&'partition mut PartitionState> {
+    let copied = !partition.is_uniquely_owned();
+    let partition = partition.make_mut()?;
+    if copied {
         copies.record_partition_copy(
             partition.entity_arena.slot_count(),
             partition.relation_arena.slot_count(),
         );
     }
-    partition.make_mut()
+    Some(partition)
 }

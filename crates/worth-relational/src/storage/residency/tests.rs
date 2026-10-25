@@ -28,7 +28,7 @@ impl RelationalDurableColdSource for CountedSource {
         if locator == self.history {
             self.history_reads.fetch_add(1, Ordering::SeqCst);
         }
-        let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,
@@ -101,6 +101,7 @@ fn region_with_history() -> RegionFixture {
     let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
+        kind_authority: members.kind_authority,
         source: source.clone(),
         partition_id: partition.partition_id,
         head: members.head.0,
@@ -297,6 +298,7 @@ fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
             &fixture.cold.schema,
             fixture.cold.schema_carrier_digest,
             &fixture.cold.symbols.interner_snapshot(),
+            None,
         )
         .unwrap();
     assert_eq!(captured.leaf.content_digest, fixture.expected_digest);

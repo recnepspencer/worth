@@ -1,6 +1,8 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
 mod cell;
 mod kind_authority;
+mod kind_commitment;
+pub(crate) use kind_commitment::RelationalRegionKindCommitment;
 mod lease;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
 mod region_capture;

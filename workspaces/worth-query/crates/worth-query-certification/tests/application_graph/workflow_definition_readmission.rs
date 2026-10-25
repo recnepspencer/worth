@@ -104,7 +104,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
         usize::try_from(u64::from_be_bytes(original[50..58].try_into().unwrap())).unwrap();
     // Reframe only Query's envelope. The authentic old native authority layout
     // is left intact and must not acquire the new workflow interpretation.
-    assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK7\n"));
+    assert!(!original[66..66 + native_len].starts_with(b"WORTH-REL-CHK8\n"));
     let mut body = Vec::from(13u16.to_be_bytes());
     body.extend_from_slice(&2u16.to_be_bytes());
     body.extend_from_slice(&4u16.to_be_bytes());
@@ -129,7 +129,7 @@ fn workflow_actor_contract_reheadered_predecessor_refuses_native_frame_before_au
             // (which can report UnsupportedRecoveredNativeAuthorityLayout) is unreachable.
             assert_eq!(cause.kind(), worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::CheckpointRecoveryRejected);
             assert!(cause.subject().contains("UnsupportedLegacySemantics"), "{cause:?}");
-            assert!(cause.subject().contains("unsupported native checkpoint frame; CHK7 required"), "{cause:?}");
+            assert!(cause.subject().contains("unsupported native checkpoint frame; CHK8 required"), "{cause:?}");
         }
         other => panic!("expected native frame refusal: {other:?}"),
     }

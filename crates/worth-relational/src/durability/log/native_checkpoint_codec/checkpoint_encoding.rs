@@ -22,7 +22,7 @@ pub(crate) fn encode_checkpoint(
     let (bytes, sections, _) = encode_checkpoint_members(
         checkpoint,
         policy,
-        RelationalCheckpointArtifactPolicy::Embedded,
+        &RelationalCheckpointArtifactPolicy::Embedded,
     )?;
     Ok((bytes, sections))
 }
@@ -31,7 +31,7 @@ pub(crate) fn encode_checkpoint(
 pub(crate) fn encode_checkpoint_members(
     checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
-    placement: RelationalCheckpointArtifactPolicy,
+    placement: &RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<
     (
         ExecutionImmutableBytes,
@@ -49,7 +49,7 @@ pub(crate) fn encode_checkpoint_members(
 pub(crate) fn encode_captured(
     mut captured: CapturedManifest,
     policy: ExecutionAllocationPolicy<'_, '_>,
-    placement: RelationalCheckpointArtifactPolicy,
+    placement: &RelationalCheckpointArtifactPolicy<'_>,
 ) -> Result<
     (
         ExecutionImmutableBytes,
@@ -59,7 +59,7 @@ pub(crate) fn encode_captured(
     ),
     RelationalNativeCheckpointCaptureDenial,
 > {
-    let embedded = placement == RelationalCheckpointArtifactPolicy::Embedded;
+    let embedded = placement.is_embedded();
     if embedded {
         for entry in &captured.carried_envelopes {
             policy.check_live()?;

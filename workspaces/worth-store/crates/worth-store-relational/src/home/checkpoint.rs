@@ -6,6 +6,8 @@ use super::RelationalStoreHome;
 use crate::checkpoint_record::{self, RelationalStoreCheckpointRecordRefusal};
 
 #[cfg(test)]
+mod scope_tests;
+#[cfg(test)]
 mod tests;
 
 /// A checkpoint the home made the selected recovery basis.
@@ -66,10 +68,11 @@ impl RelationalStoreHome {
         &self,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<RelationalStoreCheckpoint, RelationalStoreCheckpointFailure> {
+        let members = self.cold_source.member_locators();
         let checkpoint = self
             .runtime
             .durability_authority()
-            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers)
+            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &members, source: Some(self.cold_source.clone()) })
             .map_err(RelationalStoreCheckpointFailure::Capture)?;
         let covered = checkpoint
             .covered_position()

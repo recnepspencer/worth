@@ -1,9 +1,13 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use super::manifest_capture::corrupt;
 use crate::durability::data::{DurabilityError, RelationalCheckpointManifest};
 use crate::history::data::CommitId;
 use worth_foundational::FoundationalBranchTarget;
+
+#[cfg(test)]
+#[path = "manifest_integrity_tests.rs"]
+mod tests;
 
 pub(super) fn validate(
     manifest: &RelationalCheckpointManifest,
@@ -72,6 +76,7 @@ pub(super) fn validate(
         return Err(corrupt("checkpoint mirror has no schema carrier"));
     }
     validate_leaves(&manifest.mirror)?;
+    validate_shared_leaves(manifest)?;
     let mut prior_bucket = None;
     for bucket in &manifest.symbol_buckets {
         if prior_bucket.is_some_and(|prior| prior >= bucket.bucket)
@@ -85,6 +90,30 @@ pub(super) fn validate(
     validate_pages(&manifest.symbols)?;
     validate_pages(&manifest.lineage)?;
     Ok(heads)
+}
+
+fn validate_shared_leaves(manifest: &RelationalCheckpointManifest) -> Result<(), DurabilityError> {
+    let mut members = BTreeMap::new();
+    for (schema, leaves) in manifest
+        .roots
+        .iter()
+        .map(|root| (root.schema_carrier_digest, &root.regions))
+        .chain(
+            manifest
+                .mirror_schema
+                .map(|schema| (schema, &manifest.mirror)),
+        )
+    {
+        for leaf in leaves {
+            let key = (leaf.partition_id, schema, leaf.head, leaf.history);
+            if members.insert(key, leaf).is_some_and(|prior| prior != leaf) {
+                return Err(corrupt(
+                    "shared region members disagree on their leaf facts",
+                ));
+            }
+        }
+    }
+    Ok(())
 }
 
 fn validate_leaves(

@@ -11,6 +11,7 @@ pub(crate) struct RelationalRegionRetention {
     cell: Arc<RelationalRegionResidency>,
     authority: Option<Arc<super::RelationalRegionKindAuthority>>,
     full: OnceLock<RelationalResidencyLease<Full>>,
+    clear_pins_on_write: bool,
 }
 
 impl RelationalRegionRetention {
@@ -22,6 +23,7 @@ impl RelationalRegionRetention {
             cell,
             authority,
             full: OnceLock::new(),
+            clear_pins_on_write: false,
         }
     }
 
@@ -36,6 +38,7 @@ impl RelationalRegionRetention {
             cell,
             authority: None,
             full: OnceLock::from(lease),
+            clear_pins_on_write: false,
         }
     }
 
@@ -112,30 +115,34 @@ impl RelationalRegionRetention {
         }
     }
 
-    pub(crate) fn make_mut(&mut self) -> &mut PartitionState {
-        // Drop our read lease before asking for exclusive cell ownership.
-        let retained = self.full.take().map(|lease| lease.retained_region());
+    /// A cold retention cannot produce mutable access. Its operation must first
+    /// acquire a Full lease through the explicit, fallible demand boundary.
+    pub(crate) fn make_mut(&mut self) -> Option<&mut PartitionState> {
+        let lease = self
+            .full
+            .take()
+            .or_else(|| self.cell.lease_resident_full().ok().flatten())?;
+        let retained = lease.retained_region();
+        drop(lease);
         if self.cell.has_cold_backing() || Arc::get_mut(&mut self.cell).is_none() {
-            let copied = if let Some(region) = &retained {
-                region.partition.clone()
-            } else {
-                self.cell
-                    .lease_resident_full()
-                    .expect("resident lease admission fits the process")
-                    .expect("writer must demand its partition before editing it")
-                    .full_view()
-                    .partition()
-                    .clone()
-            };
-            let lease = RelationalRegionResidency::resident_uncommitted(copied);
+            let lease = RelationalRegionResidency::resident_uncommitted(retained.partition.clone());
             self.cell = lease.cell().clone();
             drop(lease);
             self.authority = None;
         }
         drop(retained);
-        Arc::get_mut(&mut self.cell)
-            .expect("writer owns its cell")
-            .partition_mut()
+        let partition = Arc::get_mut(&mut self.cell)?.partition_mut()?;
+        if self.clear_pins_on_write {
+            partition.clear_runtime_pin_counters();
+            self.clear_pins_on_write = false;
+        }
+        Some(partition)
+    }
+
+    pub(crate) fn fork(&self) -> Self {
+        let mut fork = self.clone();
+        fork.clear_pins_on_write = true;
+        fork
     }
 }
 
@@ -149,6 +156,7 @@ impl Clone for RelationalRegionRetention {
             cell: self.cell.clone(),
             authority: self.authority.clone(),
             full,
+            clear_pins_on_write: self.clear_pins_on_write,
         }
     }
 }

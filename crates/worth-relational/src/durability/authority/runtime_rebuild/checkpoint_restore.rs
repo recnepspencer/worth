@@ -278,7 +278,7 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
         return;
     }
     let mut writer = restored.rebuild_partitions();
-    for partition in writer.partitions_mut() {
+    for partition in writer.resident_partitions_mut() {
         partition.entity_arena.clear_all_pins();
         partition.relation_arena.clear_all_pins();
     }

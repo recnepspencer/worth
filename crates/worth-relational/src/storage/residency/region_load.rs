@@ -30,7 +30,12 @@ pub(super) fn load_head(
             RelationalRegionImageKind::Head,
         )?;
         let head: RegionHeadImage =
-            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+            rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
+        super::kind_commitment::verify(
+            &head.adjacency_kinds,
+            &head.reverse_adjacency_kinds,
+            cold.kind_authority.head,
+        )?;
         if head.partition.partition_id != cold.partition_id {
             return Err(Cause::Damaged);
         }
@@ -81,7 +86,12 @@ pub(super) fn load_full(
             RelationalRegionImageKind::History,
         )?;
         let history: RegionHistoryImage =
-            rmp_serde::from_slice(&frame.payload).map_err(|_| Cause::Damaged)?;
+            rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
+        super::kind_commitment::verify(
+            &history.adjacency_kinds,
+            &history.reverse_adjacency_kinds,
+            cold.kind_authority.history,
+        )?;
         let contracts = contracts(cold)?;
         let mut image = partition_to_image_with_contracts(
             head.partition.clone(),
@@ -100,6 +110,16 @@ pub(super) fn load_full(
             .map_err(|_| Cause::Damaged)?;
         partition.adjacency = head.partition.adjacency.clone();
         partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
+        install_kinds(
+            &mut partition.adjacency,
+            history.adjacency_kinds,
+            AdjacencyKindBasis::Historical,
+        )?;
+        install_kinds(
+            &mut partition.reverse_adjacency,
+            history.reverse_adjacency_kinds,
+            AdjacencyKindBasis::Historical,
+        )?;
         Ok(partition)
     })()
     .map_err(|cause| unavailable(cold, cause))?;

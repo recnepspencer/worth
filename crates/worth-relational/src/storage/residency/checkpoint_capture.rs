@@ -42,12 +42,20 @@ impl RelationalRegionResidency {
         schema: &RelationalBranchRootSchemaAuthority,
         schema_digest: [u8; 32],
         symbols: &StringInterner,
+        current_members: Option<
+            &std::collections::BTreeSet<crate::durability::medium::RelationalDurableMemberLocator>,
+        >,
     ) -> Result<RelationalCapturedRegionCheckpoint, RelationalStorageUnavailable> {
         let binding = self
             .checkpoint_bindings
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .get(&schema_digest)
+            .filter(|leaf| {
+                current_members.is_none_or(|members| {
+                    members.contains(&leaf.head) && members.contains(&leaf.history)
+                })
+            })
             .cloned();
         let (leaf, members) = if let Some(leaf) = binding {
             let members = vec![
@@ -68,6 +76,7 @@ impl RelationalRegionResidency {
                 super::capture_region_members(partition, &commitment, schema, schema_digest)
                     .map_err(|cause| self.capture_failure(cause))?;
             let leaf = RelationalCheckpointRegion {
+                kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
                 entity_slots: partition.entity_arena.slot_count(),

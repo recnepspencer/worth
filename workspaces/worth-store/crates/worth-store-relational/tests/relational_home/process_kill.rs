@@ -342,6 +342,9 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
             // This small fixture's new members form one batch. Its durable
             // root does not select the checkpoint; the following anchored
             // append is the decision the existing checkpoint court judges.
+            // The paused worker owns a clone of the arrived gate. Replacing
+            // the registry entry arms its next visit; releasing the old gate
+            // cannot release this new one (neither gate unregisters on Drop).
             let anchor = home
                 .certification_serving()
                 .certification_pause_physical_mutation_at(seam);

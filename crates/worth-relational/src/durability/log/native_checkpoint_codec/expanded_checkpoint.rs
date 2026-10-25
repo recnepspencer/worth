@@ -35,10 +35,7 @@ pub(super) fn expand(
             let subject = RelationalStorageSubject::Envelope(entry.position);
             let bytes = source
                 .read_commit(entry.position, MEMBER_LIMIT)
-                .map_err(|cause| RelationalStorageUnavailable {
-                    subject: subject.clone(),
-                    cause,
-                })?;
+                .map_err(|cause| RelationalStorageUnavailable { subject, cause })?;
             RelationalCanonicalCommitArtifact::readmit(&bytes, execution).map_err(|error| {
                 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal as Refusal;
                 match error {
@@ -220,6 +217,7 @@ fn expand_regions(
         .iter()
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
+                kind_authority: leaf.kind_authority,
                 source: source.clone(),
                 partition_id: leaf.partition_id,
                 head: leaf.head,
@@ -232,7 +230,7 @@ fn expand_regions(
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
             });
-            (leaf.partition_id, leaf.relation_slots, cell)
+            (leaf.partition_id, cell)
         })
         .collect::<Vec<_>>();
     authority
@@ -240,7 +238,7 @@ fn expand_regions(
         .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
     cells
         .iter()
-        .map(|(_, _, cell)| {
+        .map(|(_, cell)| {
             let lease = cell.demand_full(execution, MEMBER_LIMIT, Some(&authority))?;
             partition_to_image_with_contracts(
                 lease.full_view().partition().clone(),

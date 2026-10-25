@@ -12,6 +12,7 @@ impl CapturedCheckpointBasis {
     pub(super) fn build_checkpoint_image(self) -> Result<DurableCheckpoint, DurabilityError> {
         let CapturedCheckpointBasis {
             selected_directory: _,
+            symbol_pages_resident: _,
             latest_commit,
             branch_cells,
             branch_lifecycle,

@@ -79,6 +79,15 @@ impl StoreColdSource {
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
     }
+    pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
+        self.members
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .1
+            .keys()
+            .copied()
+            .collect()
+    }
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
@@ -106,10 +115,11 @@ impl RelationalDurableColdSource for StoreColdSource {
             .1
             .get(&locator)
             .copied()
-            .ok_or(Cause::SourceUnavailable)?;
+            .ok_or(Cause::MissingMember)?;
         records
             .read_member(anchor, placed, limit)
             .map_err(|failure| match failure {
+                AnchoredRecordMemberReadFailure::NotCurrentMember => Cause::MissingMember,
                 AnchoredRecordMemberReadFailure::LimitExceeded { length } => {
                     Cause::LimitExceeded { length, limit }
                 }
@@ -130,6 +140,7 @@ impl RelationalDurableColdSource for StoreColdSource {
             .read(position.0, limit)
             .map(|record| record.into_bytes())
             .map_err(|failure| match failure {
+                OrderedJournalReadFailure::NotFound { .. } => Cause::MissingMember,
                 OrderedJournalReadFailure::Damaged => Cause::Damaged,
                 OrderedJournalReadFailure::LimitExceeded { payload_bytes } => {
                     Cause::LimitExceeded {

@@ -7,7 +7,7 @@ impl StorageAuthority<'_> {
     #[cfg(test)]
     pub(crate) fn clear_named_pins(&self, class: PinClass) {
         let mut writer = self.runtime.edit_partitions();
-        for partition in writer.partitions_mut() {
+        for partition in writer.resident_partitions_mut() {
             partition.entity_arena.clear_named_pins(class);
             partition.relation_arena.clear_named_pins(class);
         }

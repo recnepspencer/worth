@@ -15,12 +15,8 @@ pub(crate) fn readmit(
     locator: RelationalDurableMemberLocator,
     subject: RelationalStorageSubject,
 ) -> Result<SymbolTableSnapshot, Failure> {
-    let failure = |cause| {
-        Failure::StorageUnavailable(RelationalStorageUnavailable {
-            subject: subject.clone(),
-            cause,
-        })
-    };
+    let failure =
+        |cause| Failure::StorageUnavailable(RelationalStorageUnavailable { subject, cause });
     let payload = member_frame::decode(bytes, locator, MemberKind::Symbols).map_err(failure)?;
     SymbolTableSnapshot::readmit_current(execution, payload).map_err(|stop| match stop {
         RelationalRecoveryStop::Request(cause) => Failure::Request(cause),

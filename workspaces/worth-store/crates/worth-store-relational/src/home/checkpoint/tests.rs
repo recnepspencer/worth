@@ -73,7 +73,10 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .durability_authority()
         .native_checkpoint_with_policy(
             ExecutionAllocationPolicy::SystemAllocation,
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let (_, source) = home

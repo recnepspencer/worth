@@ -8,6 +8,7 @@ use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
 
 pub(crate) struct CapturedRegionMembers {
+    pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) head: (RelationalDurableMemberLocator, Vec<u8>),
     pub(crate) history: (RelationalDurableMemberLocator, Vec<u8>),
 }
@@ -27,6 +28,11 @@ pub(crate) fn capture_region_members(
         partition_to_image_with_contracts(checkpoint_partition, schema.aspect_plans(), &contracts)
             .map_err(|_| Cause::Damaged)?;
     let history = RegionHistoryImage {
+        adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Historical),
+        reverse_adjacency_kinds: capture_kinds(
+            &partition.reverse_adjacency,
+            AdjacencyKindBasis::Historical,
+        ),
         entities: image
             .entity_arena
             .metadata_history
@@ -52,6 +58,16 @@ pub(crate) fn capture_region_members(
         ),
     };
     Ok(CapturedRegionMembers {
+        kind_authority: super::RelationalRegionKindCommitment {
+            head: super::kind_commitment::digest(
+                &head.adjacency_kinds,
+                &head.reverse_adjacency_kinds,
+            )?,
+            history: super::kind_commitment::digest(
+                &history.adjacency_kinds,
+                &history.reverse_adjacency_kinds,
+            )?,
+        },
         head: RelationalRegionImage::encode(
             partition.partition_id,
             schema_carrier_digest,

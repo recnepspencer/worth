@@ -102,15 +102,14 @@ impl RuntimeSubsystem for StorageSubsystem {
         Self::default()
     }
 
-    /// A detached deep copy that shares no authority with its origin.
-    ///
-    /// Every partition is materialized so the fork's pin counters start clean,
-    /// which is whole-state reconstructive work; the fork site charges it.
+    /// Share immutable cells; runtime pin counters detach at the first write.
+    /// Cold cells remain cold and copy-on-write requires an admitted Full lease.
     fn fork(&self) -> Self {
-        let mut partitions = self.acquire().cloned_map();
-        for partition in partitions.values_mut() {
-            partition.make_mut().clear_runtime_pin_counters();
-        }
+        let partitions = self
+            .acquire()
+            .cells()
+            .map(|(id, region)| (id, region.fork()))
+            .collect();
         Self {
             partitions: RuntimeOwnedState::new(PartitionEdition::new(partitions)),
         }

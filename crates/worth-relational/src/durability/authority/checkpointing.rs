@@ -32,12 +32,10 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         let captured = self.capture_checkpoint_basis()?.build_native_capture(
             policy,
             self.runtime.durability.cold_source(),
-            artifact_policy,
+            &artifact_policy,
         )?;
-        let manifest_publication = if artifact_policy
-            == crate::durability::data::RelationalCheckpointArtifactPolicy::ExternalMembers
-        {
-            self.runtime.durability.cold_source().map(|source| {
+        let manifest_publication = if !artifact_policy.is_embedded() {
+            artifact_policy.publication_source().map(|source| {
                 self.runtime
                     .durability
                     .checkpoint_selection()
@@ -52,7 +50,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
             crate::durability::log::native_checkpoint_codec::encode_captured(
                 captured,
                 policy,
-                artifact_policy,
+                &artifact_policy,
             )?;
         if self.runtime.durability.medium().is_some() {
             self.runtime

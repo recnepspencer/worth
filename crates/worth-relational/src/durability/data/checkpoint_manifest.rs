@@ -43,6 +43,7 @@ pub(crate) struct RelationalCheckpointRoot {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RelationalCheckpointRegion {
+    pub(crate) kind_authority: crate::storage::residency::RelationalRegionKindCommitment,
     pub(crate) partition_id: PartitionId,
     pub(crate) content_digest: [u8; 32],
     pub(crate) entity_slots: usize,

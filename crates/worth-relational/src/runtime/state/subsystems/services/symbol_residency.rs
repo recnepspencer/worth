@@ -26,6 +26,12 @@ pub(super) struct RuntimeSymbolResidency {
 }
 
 impl RuntimeSymbolResidency {
+    pub(super) fn all_id_pages_resident(&self) -> bool {
+        let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
+        self.by_id
+            .iter()
+            .all(|page| matches!(pages.get(&page.member), Some(Ok(()))))
+    }
     pub(super) fn new(
         by_id: Vec<RelationalCheckpointPage>,
         by_value: Vec<RelationalCheckpointSymbolBucket>,
@@ -148,31 +154,29 @@ impl RuntimeSymbolResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         if let Some(result) = pages.get(&locator) {
-            return result.clone().map_err(Into::into);
+            return (*result).map_err(Into::into);
         }
         let result = (|| {
             let bytes = self
                 .source
                 .read_member(locator, 1 << 30)
-                .map_err(|cause| unavailable(subject.clone(), cause))?;
+                .map_err(|cause| unavailable(subject, cause))?;
             let snapshot = crate::durability::checkpoints::symbol_pages::readmit(
-                execution,
-                &bytes,
-                locator,
-                subject.clone(),
+                execution, &bytes, locator, subject,
             )?;
             owner
                 .import_canonical_snapshot(&snapshot)
-                .map_err(|_| unavailable(subject.clone(), Cause::Damaged))?;
+                .map_err(|_| unavailable(subject, Cause::Damaged))?;
             Ok(())
         })();
         match &result {
             Ok(()) => {
                 pages.insert(locator, Ok(()));
             }
-            Err(Failure::StorageUnavailable(failure)) => {
-                pages.insert(locator, Err(failure.clone()));
+            Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
+                pages.insert(locator, Err(*failure));
             }
+            Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
         }
         result

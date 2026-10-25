@@ -18,6 +18,7 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
+    pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
     pub(crate) partition_id: PartitionId,
     pub(crate) head: RelationalDurableMemberLocator,
@@ -74,6 +75,7 @@ impl RelationalRegionResidency {
             checkpoint_bindings: Mutex::new(std::collections::BTreeMap::from([(
                 cold.schema_carrier_digest,
                 crate::durability::data::RelationalCheckpointRegion {
+                    kind_authority: cold.kind_authority,
                     partition_id: cold.partition_id,
                     content_digest: cold.content_digest,
                     entity_slots: cold.entity_slots,
@@ -154,13 +156,20 @@ impl RelationalRegionResidency {
         authority: Option<&super::RelationalRegionKindAuthority>,
     ) -> Result<Arc<ResidentRegion>, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
+        if let Some(authority) = authority {
+            // A foreign root's proof is a refused demand, not damage to this
+            // cell's independently authenticated members.
+            authority
+                .require_cell(self)
+                .map_err(|cause| self.failure(cause))?;
+        }
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let loaded = (|| {
             if let ResidencyState::Damaged(failure) = &*state {
-                return Err(Failure::StorageUnavailable(failure.clone()));
+                return Err(Failure::StorageUnavailable(*failure));
             }
             if let ResidencyState::Cold(cold) = &*state {
                 let region = self.raw_head(execution, limit)?;
@@ -177,21 +186,7 @@ impl RelationalRegionResidency {
             }
             match &*state {
                 ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
-                    if self.backing.is_none() {
-                        return Ok(region.clone());
-                    }
-                    let local = super::RelationalRegionKindAuthority::default();
-                    let authority = authority.unwrap_or(&local);
-                    authority
-                        .require_cell(self)
-                        .map_err(|cause| self.failure(cause))?;
-                    match demand {
-                        ResidencyDemand::Head => {
-                            authority.verify_head(region, execution, limit)?;
-                            Ok(region.clone())
-                        }
-                        ResidencyDemand::Full => authority.admit_full(region, execution, limit),
-                    }
+                    Ok(region.clone())
                 }
                 _ => unreachable!("load either publishes a region or refuses"),
             }
@@ -206,7 +201,11 @@ impl RelationalRegionResidency {
                 Ok(region)
             }
             Err(Failure::StorageUnavailable(failure)) => {
-                *state = ResidencyState::Damaged(failure.clone());
+                if failure.cause.is_proven_damage()
+                    && failure.subject == RelationalStorageSubject::Region(self.partition_id)
+                {
+                    *state = ResidencyState::Damaged(failure);
+                }
                 Err(Failure::StorageUnavailable(failure))
             }
             Err(Failure::Request(cause)) => Err(Failure::Request(cause)),
@@ -263,7 +262,7 @@ impl RelationalRegionResidency {
                     region.clone(),
                 )))
             }
-            ResidencyState::Damaged(failure) => Err(failure.clone()),
+            ResidencyState::Damaged(failure) => Err(*failure),
             _ => Ok(None),
         }
     }
@@ -292,7 +291,7 @@ impl RelationalRegionResidency {
         }
     }
 
-    pub(crate) fn partition_mut(&mut self) -> &mut PartitionState {
+    pub(super) fn partition_mut(&mut self) -> Option<&mut PartitionState> {
         // Only an exclusive mirror writer can reach this method. Old roots and
         // editions retain their old cell; no accepted lease sees a mutation.
         self.raw_head
@@ -313,11 +312,11 @@ impl RelationalRegionResidency {
             .get_mut()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let ResidencyState::Full(region) = state else {
-            panic!("writer requires full residency")
+            return None;
         };
-        let region = Arc::get_mut(region).expect("exclusive cell has no readers");
+        let region = Arc::get_mut(region)?;
         region.commitment = None;
-        &mut region.partition
+        Some(&mut region.partition)
     }
 
     // Raw readmission authenticates record content independently of derived
@@ -328,7 +327,7 @@ impl RelationalRegionResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<ResidentRegion>, Failure> {
-        cell_load_cache::load(&self.raw_head, || {
+        cell_load_cache::load(&self.raw_head, self.partition_id, || {
             let cold = self
                 .backing
                 .as_ref()
@@ -342,7 +341,7 @@ impl RelationalRegionResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<ResidentRegion>, Failure> {
-        cell_load_cache::load(&self.raw_full, || {
+        cell_load_cache::load(&self.raw_full, self.partition_id, || {
             let cold = self
                 .backing
                 .as_ref()

@@ -79,9 +79,10 @@ impl DeferredIndexImage {
             Ok(state) => {
                 *admitted = Some(Ok(state.clone()));
             }
-            Err(Failure::StorageUnavailable(failure)) => {
+            Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
                 *admitted = Some(Err(*failure));
             }
+            Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
         }
         result

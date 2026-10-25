@@ -9,6 +9,7 @@ pub(super) type RegionLoadCache =
 
 pub(super) fn load(
     cache: &RegionLoadCache,
+    partition_id: crate::identity::data::PartitionId,
     readmit: impl FnOnce() -> Result<Arc<ResidentRegion>, Failure>,
 ) -> Result<Arc<ResidentRegion>, Failure> {
     let mut cached = cache
@@ -20,7 +21,14 @@ pub(super) fn load(
     let result = readmit();
     match &result {
         Ok(region) => *cached = Some(Ok(region.clone())),
-        Err(Failure::StorageUnavailable(failure)) => *cached = Some(Err(failure.clone())),
+        Err(Failure::StorageUnavailable(failure))
+            if failure.cause.is_proven_damage()
+                && failure.subject
+                    == crate::storage::data::RelationalStorageSubject::Region(partition_id) =>
+        {
+            *cached = Some(Err(*failure))
+        }
+        Err(Failure::StorageUnavailable(_)) => {}
         Err(Failure::Request(_)) => {}
     }
     result

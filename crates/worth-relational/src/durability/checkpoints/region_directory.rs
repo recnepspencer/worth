@@ -75,6 +75,7 @@ impl ReadmittedRegionDirectory {
                 .entry(key)
                 .or_insert_with(|| {
                     RelationalRegionResidency::cold(RelationalColdRegion {
+                        kind_authority: leaf.kind_authority,
                         source: self.directory.source.clone(),
                         partition_id: leaf.partition_id,
                         head: leaf.head,
@@ -100,13 +101,11 @@ impl ReadmittedRegionDirectory {
             });
         }
         authority
-            .bind(result.iter().map(|region| {
-                (
-                    region.partition_id,
-                    region.relation_slots,
-                    region.cell.clone(),
-                )
-            }))
+            .bind(
+                result
+                    .iter()
+                    .map(|region| (region.partition_id, region.cell.clone())),
+            )
             .map_err(|cause| corrupt(format!("region kind authority: {cause:?}")))?;
         Ok(result)
     }

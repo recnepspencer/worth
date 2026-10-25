@@ -16,6 +16,9 @@ use std::sync::{
     Arc,
 };
 
+#[path = "cold_isolation.rs"]
+mod isolation;
+
 #[derive(Debug)]
 struct MemberSource {
     members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
@@ -31,7 +34,7 @@ impl RelationalDurableColdSource for MemberSource {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         self.reads.fetch_add(1, Ordering::Relaxed);
-        let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,
@@ -39,16 +42,13 @@ impl RelationalDurableColdSource for MemberSource {
             });
         }
         let mut bytes = bytes.to_vec();
-        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG2\n") {
+        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG3\n") {
             bytes[0] ^= 1;
         }
         Ok(bytes)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        let bytes = self
-            .commits
-            .get(&position)
-            .ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.commits.get(&position).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,
@@ -73,7 +73,10 @@ fn fixture(
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let covered = native.covered_position().unwrap();
@@ -248,7 +251,10 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     let covered = native.covered_position().unwrap();
@@ -278,7 +284,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         )),
         Vec::new(),
         Vec::new(),
-        source,
+        source.clone(),
     );
     let mut receiving = durable_runtime_with_test_schema();
     bind_durable_medium(&mut receiving, runtime.durability.detach_medium().unwrap());
@@ -294,6 +300,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         .durability_recovery()
         .recover(execution, plan)
         .unwrap();
+    let current_members = source.members.keys().copied().collect::<Vec<_>>();
     // Only the relation's owning partition changes. Its endpoints stay cold.
     create_entity_in_partition(
         execution,
@@ -305,7 +312,10 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &current_members,
+                source: None,
+            },
         )
         .unwrap();
     let mut reader = test_owner_begin_transaction_for_main(&receiving);
