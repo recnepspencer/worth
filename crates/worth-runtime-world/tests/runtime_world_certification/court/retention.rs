@@ -60,20 +60,14 @@ fn history_and_observation_dependencies_hold_exact_pins_without_clone_amplificat
         .unwrap();
     assert_eq!(traversal.visited_count(), 1);
     assert_eq!(traversal.next_parent(), Some(root.selected_commit()));
-    let reclaimed = court
+    // The live branch owns its head and everything behind it.
+    let released = court
         .world
         .lifecycle_port()
-        .reclaim_history(CompositeHistoryReclamationRequest::new(
-            court.world.owner_identity(),
-            vec![
-                root.selected_commit().clone(),
-                head.selected_commit().clone(),
-            ],
-            1,
-        ))
+        .release_retired_branch_history(head.selected_commit())
         .unwrap();
-    assert!(reclaimed.reclaimed_commits().is_empty());
-    assert!(reclaimed.examined() <= 1);
+    assert!(released.reclaimed_commits().is_empty());
+    assert_eq!(released.held_commit(), None);
     assert_eq!(
         inspection
             .inspect_retention(&key)
@@ -137,7 +131,7 @@ fn full_history_denies_before_owner_publication() {
 }
 
 #[test]
-fn unreachable_root_reclamation_is_bounded_and_releases_named_exact_pins() {
+fn a_retired_root_walk_releases_its_history_and_the_pins_only_it_held() {
     let court = CompositeSupplyChainCourt::compile();
     let root = court.bootstrap();
     let identity = root.selected_commit().clone();
@@ -155,27 +149,18 @@ fn unreachable_root_reclamation_is_bounded_and_releases_named_exact_pins() {
     let result = court
         .world
         .lifecycle_port()
-        .reclaim_history(CompositeHistoryReclamationRequest::new(
-            court.world.owner_identity(),
-            vec![identity.clone()],
-            1,
-        ))
+        .release_retired_branch_history(&identity)
         .unwrap();
     assert_eq!(result.reclaimed_commits(), &[identity]);
-    assert_eq!(result.examined(), 1);
-    let first = court
+    assert_eq!(result.held_commit(), None);
+    // The walk reclaims the exact pins only that history held; nothing is
+    // left for a later retention pass.
+    let after = court
         .world
         .lifecycle_port()
-        .reclaim_retention(&keys, 1)
+        .reclaim_retention(&keys, 2)
         .unwrap();
-    assert_eq!(first.examined(), 1);
-    assert_eq!(first.reclaimed(), 1);
-    let second = court
-        .world
-        .lifecycle_port()
-        .reclaim_retention(&keys[1..], 1)
-        .unwrap();
-    assert_eq!(second.reclaimed(), 1);
-    assert_eq!(second.remaining_unique_pins(), 0);
+    assert_eq!(after.reclaimed(), 0);
+    assert_eq!(after.remaining_unique_pins(), 0);
     court.finish();
 }

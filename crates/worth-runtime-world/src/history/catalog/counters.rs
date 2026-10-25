@@ -8,6 +8,7 @@ pub struct HistoryCatalogCounters {
     reserved_entry_writes: u64,
     owner_validations: u64,
     parent_validations: u64,
+    #[cfg(test)]
     candidate_validations: u64,
     entry_lookups: u64,
     reachability_lookups: u64,
@@ -58,6 +59,7 @@ impl HistoryCatalogCounters {
         Self::increment(&mut self.parent_validations);
     }
 
+    #[cfg(test)]
     pub(super) fn record_candidate_validation(&mut self) {
         Self::increment(&mut self.candidate_validations);
     }
@@ -119,6 +121,7 @@ impl HistoryCatalogCounters {
         self.parent_validations
     }
 
+    #[cfg(test)]
     pub const fn candidate_validations(self) -> u64 {
         self.candidate_validations
     }

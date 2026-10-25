@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
 
+#[cfg(test)]
 use super::super::reclamation::HistoryReclamationDenial;
 use super::counters::lock_counters;
 use super::denial::CompositeHistoryCatalogDenial;
@@ -90,6 +91,7 @@ fn ordinary_parent_identity(parent: &CompositeCommitParent) -> Option<CompositeC
     }
 }
 
+#[cfg(test)]
 pub(super) fn prevalidate_candidate_prefix(
     state: &mut CompositeHistoryCatalogState,
     candidates: &[CompositeCommitIdentity],

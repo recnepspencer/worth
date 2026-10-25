@@ -20,6 +20,7 @@ use std::sync::{Arc, Mutex, OnceLock};
 use crate::budget::RuntimeWorldBudgetLimit;
 use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
 
+#[cfg(test)]
 use super::reclamation::{
     CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
 };
@@ -45,7 +46,9 @@ pub(in crate::history) use reachability::{
     lock_index, HistoryReachabilityHandle, HistoryReachabilityIndex,
 };
 pub(crate) use reservation::ReservedCompositeCommitCapacity;
-use support::{lock_state, prevalidate_candidate_prefix, remove_installed, validate_owner};
+use support::{lock_state, validate_owner};
+#[cfg(test)]
+use support::{prevalidate_candidate_prefix, remove_installed};
 pub use traversal::CompositeHistoryTraversal;
 pub(crate) use traversal::HistoryTraversalControl;
 
@@ -260,6 +263,7 @@ impl CompositeHistoryCatalog {
         .map(ExplicitCommitHistoryProtectionObligation::issued)
     }
 
+    #[cfg(test)]
     pub(crate) fn reclaim_batch(
         &self,
         request: CompositeHistoryReclamationRequest,
@@ -299,14 +303,7 @@ impl CompositeHistoryCatalog {
                 continue;
             }
             let entry = remove_installed(&mut state, candidate);
-            outcome.reclaimed_one(
-                candidate.clone(),
-                entry
-                    .get()
-                    .expect("removed installed slot")
-                    .metadata_charge()
-                    .total(),
-            );
+            outcome.reclaimed_one(candidate.clone());
             released_entries.push(entry);
         }
         drop(state);

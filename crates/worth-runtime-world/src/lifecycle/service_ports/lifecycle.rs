@@ -1,8 +1,6 @@
 use super::super::ports::RuntimeWorldLifecycleService;
 use super::super::RuntimeWorldOwnerUnavailable;
-use crate::history::{
-    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
-};
+use crate::history::HistoryReclamationDenial;
 use crate::lifecycle::RuntimeWorldServiceDenial;
 use std::sync::{Arc, Weak};
 
@@ -45,15 +43,6 @@ impl RuntimeWorldLifecyclePort {
         self.service()?
             .close()
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
-    }
-    pub fn reclaim_history(
-        &self,
-        request: CompositeHistoryReclamationRequest,
-    ) -> Result<HistoryReclamationOutcome, RuntimeWorldServiceDenial<HistoryReclamationDenial>>
-    {
-        self.service()?
-            .reclaim_history(request)
-            .map_err(RuntimeWorldServiceDenial::Denied)
     }
     /// Retires every commit behind `keep` that nothing protects: no product
     /// head, second child, observation, traversal, receipt or unconsumed

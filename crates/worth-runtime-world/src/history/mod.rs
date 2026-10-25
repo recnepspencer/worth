@@ -31,10 +31,9 @@ pub(crate) use publication::{
     CanonicalPublicationEnvelope, PerformedPublicationFacts, PreparedPublicationRecord,
     PublicationDeliveryClaim, PublicationRevision,
 };
-pub use reclamation::{
-    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
-    RetiredBranchHistoryRelease,
-};
+#[cfg(test)]
+pub(crate) use reclamation::CompositeHistoryReclamationRequest;
+pub use reclamation::{HistoryReclamationDenial, RetiredBranchHistoryRelease};
 pub(crate) use retention::{
     ExplicitCommitHistoryProtectionObligation, ProductHeadHistoryProtectionObligation,
 };

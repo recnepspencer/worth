@@ -1,6 +1,4 @@
-use crate::history::{
-    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
-};
+use crate::history::HistoryReclamationDenial;
 use worth_signal::facade::{SignalError, SignalTransaction};
 
 #[cfg(test)]
@@ -311,10 +309,6 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
     fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
-    fn reclaim_history(
-        &self,
-        request: CompositeHistoryReclamationRequest,
-    ) -> Result<HistoryReclamationOutcome, HistoryReclamationDenial>;
     /// Retire the unprotected history behind `keep` and reclaim the pins only
     /// that history held. Returns the retired commits, oldest first.
     fn retire_unprotected_history(

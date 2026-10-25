@@ -1,17 +1,21 @@
-use crate::identity::{CompositeCommitIdentity, RuntimeWorldOwnerIdentity};
+use crate::identity::CompositeCommitIdentity;
+#[cfg(test)]
+use crate::identity::RuntimeWorldOwnerIdentity;
 
 use super::catalog::CompositeHistoryCatalogDenial;
 
-/// Explicit maintenance input. Product heads and retained obligations are
-/// represented by live catalog-owned protection obligations, not copied
-/// ancestry supplied with this request.
+/// A bounded batch the catalog's own tests reclaim directly. Every owner path
+/// releases history through the walk, `release_retired_branch_history`, so
+/// no door outside these tests removes a commit without walking to it.
+#[cfg(test)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompositeHistoryReclamationRequest {
+pub(crate) struct CompositeHistoryReclamationRequest {
     owner: RuntimeWorldOwnerIdentity,
     candidate_commits: Vec<CompositeCommitIdentity>,
     maximum_reclaims: usize,
 }
 
+#[cfg(test)]
 impl CompositeHistoryReclamationRequest {
     pub fn new(
         owner: RuntimeWorldOwnerIdentity,
@@ -40,16 +44,17 @@ impl CompositeHistoryReclamationRequest {
 
 /// Reclamation is an observation of a bounded maintenance batch, not a
 /// promise that every requested candidate can be removed.
+#[cfg(test)]
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HistoryReclamationOutcome {
+pub(crate) struct HistoryReclamationOutcome {
     maximum_reclaims: usize,
     examined: usize,
     skipped_protected: usize,
     skipped_with_descendant_dependencies: usize,
     reclaimed: Vec<CompositeCommitIdentity>,
-    metadata_bytes_reclaimed: usize,
 }
 
+#[cfg(test)]
 impl HistoryReclamationOutcome {
     pub(crate) fn new(maximum_reclaims: usize) -> Self {
         Self {
@@ -58,7 +63,6 @@ impl HistoryReclamationOutcome {
             skipped_protected: 0,
             skipped_with_descendant_dependencies: 0,
             reclaimed: Vec::new(),
-            metadata_bytes_reclaimed: 0,
         }
     }
 
@@ -74,21 +78,9 @@ impl HistoryReclamationOutcome {
         self.skipped_with_descendant_dependencies += 1;
     }
 
-    pub(crate) fn reclaimed_one(
-        &mut self,
-        identity: CompositeCommitIdentity,
-        metadata_bytes: usize,
-    ) {
+    pub(crate) fn reclaimed_one(&mut self, identity: CompositeCommitIdentity) {
         debug_assert!(self.reclaimed.len() < self.maximum_reclaims);
-        self.metadata_bytes_reclaimed = self
-            .metadata_bytes_reclaimed
-            .checked_add(metadata_bytes)
-            .expect("a bounded reclamation outcome fits addressable memory");
         self.reclaimed.push(identity);
-    }
-
-    pub const fn maximum_reclaims(&self) -> usize {
-        self.maximum_reclaims
     }
 
     pub const fn examined(&self) -> usize {
@@ -106,21 +98,21 @@ impl HistoryReclamationOutcome {
     pub fn reclaimed_commits(&self) -> &[CompositeCommitIdentity] {
         &self.reclaimed
     }
-
-    pub const fn metadata_bytes_reclaimed(&self) -> usize {
-        self.metadata_bytes_reclaimed
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HistoryReclamationDenial {
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     Catalog(CompositeHistoryCatalogDenial),
+    // A batch's candidates are refused whole; only the tests' batches name them.
+    #[cfg(test)]
     ForeignCandidate {
         expected: RuntimeWorldOwnerIdentity,
         actual: RuntimeWorldOwnerIdentity,
     },
+    #[cfg(test)]
     DuplicateCandidate(CompositeCommitIdentity),
+    #[cfg(test)]
     UnknownCandidate(CompositeCommitIdentity),
 }
 
