@@ -4,12 +4,12 @@ use crate::{
     IntegrityValidatedCheckpointDirtyBasis, IntegrityValidatedCheckpointStreamHeader,
     PhysicalArtifactScope, PhysicalIntegrityRejection,
 };
-use worth_store_physical_format::{CheckpointSelectiveRecordAggregate, PhysicalCheckpointIdentity};
+use worth_store_physical_format::{CheckpointSelectiveRecordAggregate, PhysicalCheckpointSource};
 
 /// Constant-space selective interpretation of validated records. This value
 /// carries neither source admission nor lifecycle/repair/recovery authority.
 pub(crate) struct CheckpointInspectionAggregate {
-    identity: PhysicalCheckpointIdentity,
+    source: PhysicalCheckpointSource,
     header_offset: u64,
     next_offset: u64,
     dirty: CheckpointSelectiveRecordAggregate,
@@ -19,12 +19,21 @@ pub(crate) struct CheckpointInspectionAggregate {
 
 impl CheckpointInspectionAggregate {
     pub(super) fn accepts_scope(&self, scope: PhysicalArtifactScope) -> bool {
-        scope.checkpoint_identity() == Some(self.identity)
+        scope.checkpoint_identity() == Some(self.source.identity())
             && scope.byte_range().offset() == self.next_offset
+    }
+    pub(super) fn accepts_footer(
+        &self,
+        scope: PhysicalArtifactScope,
+        certificate_bytes: usize,
+    ) -> bool {
+        scope.checkpoint_identity() == Some(self.source.identity())
+            && self.next_offset.checked_add(certificate_bytes as u64)
+                == Some(scope.byte_range().offset())
     }
     pub(super) fn new(header: &IntegrityValidatedCheckpointStreamHeader<'_>) -> Self {
         Self {
-            identity: header.checkpoint_identity(),
+            source: header.source(),
             header_offset: header.scope().byte_range().offset(),
             next_offset: header.scope().byte_range().end_exclusive(),
             dirty: CheckpointSelectiveRecordAggregate::new(),
@@ -77,7 +86,7 @@ impl CheckpointInspectionAggregate {
         &mut self,
         scope: PhysicalArtifactScope,
     ) -> Result<(), PhysicalIntegrityRejection> {
-        if scope.checkpoint_identity() != Some(self.identity)
+        if scope.checkpoint_identity() != Some(self.source.identity())
             || scope.byte_range().offset() != self.next_offset
         {
             return Err(missing_context(scope));
@@ -88,18 +97,20 @@ impl CheckpointInspectionAggregate {
     pub(super) fn expected(
         self,
         scope: PhysicalArtifactScope,
+        certificates: &[u8],
     ) -> Result<CheckpointFooterExpectedBindings, PhysicalIntegrityRejection> {
-        if scope.checkpoint_identity() != Some(self.identity)
-            || scope.byte_range().offset() != self.next_offset
-        {
-            return Err(missing_context(scope));
-        }
+        let certificates = super::certificate_summary::from_prefix(
+            self.source,
+            scope,
+            self.next_offset,
+            certificates,
+        )?;
         let (compaction_offset, compaction_generation, wal_cutoff_lsn_exclusive) =
             self.compaction.ok_or_else(|| sequence_mismatch(scope))?;
         Ok(CheckpointFooterExpectedBindings {
             dirty: self.dirty.summary(),
             bindings: self.bindings.summary(),
-            certificates: CheckpointSelectiveRecordAggregate::new().summary(),
+            certificates,
             compaction_offset,
             compaction_generation,
             wal_cutoff_lsn_exclusive,

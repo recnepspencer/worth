@@ -41,7 +41,7 @@ pub(super) fn inspect(
             if late
                 || !physical.stable()
                 || !same_source
-                || physical.completed_bytes() != scope.byte_range().length()
+                || physical.completed_bytes() != u64::from(physical.range().length())
                 || !matches!(
                     scheduler,
                     worth_store_io_scheduler::QueueExecutionOutcome::Executed(_)
@@ -54,15 +54,14 @@ pub(super) fn inspect(
                     late,
                     physical.stable() && same_source,
                 )
-            } else {
-                let window = PhysicalIntegrityScrubWindow::new(
-                    ordinal,
-                    scope,
-                    UntrustedPhysicalArtifact::from_bounded_bytes(&bytes),
-                );
+            } else if let Some(window) = inspection_window(ordinal, scope, physical.range(), &bytes)
+            {
                 let (inspection, validation) = validator.inspect(window);
                 selector_identity = inspection.selector_identity();
                 (inspection.outcome(), validation)
+            } else {
+                validator.invalidate(scope);
+                indeterminate(scope, physical.completed_bytes(), false, true)
             }
         }
         PhysicalWorkSettlementEvidence::InspectionDenied(failure)
@@ -92,6 +91,39 @@ pub(super) fn inspect(
         validation_counters,
         counters,
     )
+}
+
+fn inspection_window(
+    ordinal: u64,
+    scope: PhysicalArtifactScope,
+    acquisition: worth_store_physical_format::PhysicalArtifactReadRange,
+    bytes: &[u8],
+) -> Option<PhysicalIntegrityScrubWindow<'_>> {
+    if acquisition
+        .offset()
+        .checked_add(u64::from(acquisition.length()))?
+        != scope.byte_range().end_exclusive()
+    {
+        return None;
+    }
+    let prefix = usize::try_from(
+        scope
+            .byte_range()
+            .offset()
+            .checked_sub(acquisition.offset())?,
+    )
+    .ok()?;
+    let artifact = UntrustedPhysicalArtifact::from_bounded_bytes(bytes.get(prefix..)?);
+    if prefix == 0 {
+        Some(PhysicalIntegrityScrubWindow::new(ordinal, scope, artifact))
+    } else {
+        PhysicalIntegrityScrubWindow::checkpoint_footer_with_certificates(
+            ordinal,
+            scope,
+            artifact,
+            UntrustedPhysicalArtifact::from_bounded_bytes(bytes.get(..prefix)?),
+        )
+    }
 }
 
 pub(super) fn finish(
