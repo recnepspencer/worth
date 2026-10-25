@@ -93,31 +93,39 @@ fn refused_index_build(
     )
 }
 #[test]
-fn result_refusal_is_typed_with_partition_identity() {
+fn index_memory_refusal_keeps_native_cause() {
     let host_request = crate::test_request_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     {
         isolated(
-            concat!(
-                module_path!(),
-                "::result_refusal_is_typed_with_partition_identity"
-            ),
+            concat!(module_path!(), "::index_memory_refusal_keeps_native_cause"),
             || {
-                let build = refused_index_build(execution, request());
-                let refusal = build.execution_denial.expect("real execution refusal");
-                assert!(refusal.partition_identity.is_some());
-                assert_eq!(
-                    refusal.kind,
-                    DerivedIndexExecutionDenialKind::Cause(Cause::ResultCapacityExceeded)
+                let mut limited = request();
+                limited.policy = ExecutionRequestPolicy::new(
+                    ExecutionPosture::Automatic,
+                    DeterminismContract::CanonicalBitwise,
+                    ExecutionBudget::new(NonZeroUsize::MIN, Some(0), Some(1_000_000)),
                 );
+                let build = refused_index_build(execution, limited);
+                let refusal = build.execution_denial.expect("real execution refusal");
+                let DerivedIndexExecutionDenialKind::Cause(Cause::PolicyMemoryExhausted {
+                    requested,
+                    admitted,
+                    ancestor,
+                }) = refusal.kind
+                else {
+                    panic!("index backing must refuse its policy memory: {refusal:?}");
+                };
+                assert!(requested > 0);
+                assert_eq!(admitted, 0);
                 let denied = identity_indexes_built(build, 1).unwrap_err();
                 assert_eq!(
                     denied.kind(),
                     WorthQueryPrimaryGraphInstallationDenialKind::ExecutionDenied {
                         kind: QueryKind::ExecutionResource {
-                            denial: Resource::ResultCapacityExceeded,
+                            denial: Resource::MemoryLimit { requested, admitted: 0, level: crate::domain_computation::primary_graph::WorthQueryMemoryLimitLevel::Policy },
                             partition_identity: refusal.partition_identity,
-                            policy_ancestor: None,
+                            policy_ancestor: Some(ancestor),
                         },
                     }
                 );

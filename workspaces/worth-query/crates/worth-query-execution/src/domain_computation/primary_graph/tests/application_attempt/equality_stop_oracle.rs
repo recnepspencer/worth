@@ -111,9 +111,6 @@ fn run(
         ));
         None
     } else {
-        let WorthQueryApplicationCommitOutcome::Denied(denial) = result else {
-            panic!("a stopped comparison cannot publish: {result:?}");
-        };
         assert_eq!(
             world
                 .application
@@ -121,7 +118,11 @@ fn run(
                 .published_application_commit_count(),
             0
         );
-        denial.execution_denial_cause()
+        match result {
+            WorthQueryApplicationCommitOutcome::Denied(denial) => denial.execution_denial_cause(),
+            WorthQueryApplicationCommitOutcome::Cancelled => Some(Err(Control::Cancelled)),
+            other => panic!("a stopped comparison cannot publish: {other:?}"),
+        }
     };
     (probe.consults(), stop)
 }

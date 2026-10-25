@@ -197,6 +197,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
+            let capacity = commit_denial.output_verification_capacity_stop();
             let failure = match kind {
                 Kind::ProductBasisStale => denial(
                     WorthQueryOutputDemandDenialKind::PublicationStale,
@@ -258,7 +259,8 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             };
             Err(failure
                 .with_commit_denial_kind(kind)
-                .with_commit_execution_denial(execution))
+                .with_commit_execution_denial(execution)
+                .with_capacity_stop(capacity))
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
@@ -324,6 +326,7 @@ fn refused_preflight(
         | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }

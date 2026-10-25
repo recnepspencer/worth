@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
 use crate::equality_type_id::EqualityTypeId;
 
 #[test]
-fn registry_binding_reader_resolves_completed_custody_note() {
+fn registry_binding_reader_ignores_logically_absent_completed_custody() {
     let world = fixture::installed_authorization_world(true);
     let mut active = recoverable_commit_support::commit_on_world_with_output_demand_observation(
         &world,
@@ -118,7 +118,15 @@ fn registry_binding_reader_resolves_completed_custody_note() {
             a.source_custody[&current_commit].retired_sources,
             "seed {seed}"
         );
-        assert_eq!(b.source_custody.len(), a.source_custody.len());
+        assert!(b.source_custody.contains_key(&completed_commit));
+        assert!(!super::super::post_commit::custody_reader::visible(
+            &b,
+            &completed_commit
+        ));
+        assert!(
+            b.pending_custody_prune(),
+            "binding leaves unrelated cleanup queued"
+        );
 
         assert!(b.records.is_empty());
     }

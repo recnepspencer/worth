@@ -22,7 +22,7 @@ fn pin_panic_does_not_poison_the_owner_mutex() {
     check(Case::Panic);
 }
 #[test]
-fn continuation_pin_distinguishes_a_missing_predicate_from_its_own_index() {
+fn continuation_pin_needs_its_ordering_index_but_not_a_root_predicate_index() {
     missing_door_index(false, true);
 }
 #[test]
@@ -234,19 +234,26 @@ fn missing_door_index(live: bool, predicate_missing: bool) {
                 } else {
                     read_continuation_page(runtime, &request, &layout, &plan, None).map(|_| ())
                 };
+                if predicate_missing {
+                    assert!(
+                        outcome.is_ok(),
+                        "a scoped root predicate reads the root field without an index"
+                    );
+                    return None;
+                }
                 match outcome {
-                    Err(denial) => denial.kind(),
+                    Err(denial) => Some(denial.kind()),
                     Ok(_) => panic!("uninstalled index was read"),
                 }
             });
             assert_eq!(
                 actual,
                 if predicate_missing {
-                    ReadKind::PredicateIndexUnavailable
+                    None
                 } else if live {
-                    ReadKind::TargetIdentityIndexUnavailable
+                    Some(ReadKind::TargetIdentityIndexUnavailable)
                 } else {
-                    ReadKind::ContinuationIndexUnavailable
+                    Some(ReadKind::ContinuationIndexUnavailable)
                 }
             );
         })

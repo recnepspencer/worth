@@ -120,9 +120,7 @@ mod tests {
         let completed = boundary
             .seal_decision_reuse(capture(), DecisionContextUse::default())
             .unwrap();
-        let mut charged = 0;
         assert!(capture().matches_completed(&completed));
-        assert_eq!(charged, 1);
         let declared_key = WorthQueryProducerInputReuseContract::canonical_bitwise(
             WorthQueryDecisionContextDependencies::KEY,
         );

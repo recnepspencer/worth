@@ -139,6 +139,18 @@ pub(in crate::domain_computation::primary_graph) fn provider_session_denied(
     denial.with_provider_session_failure(failure)
 }
 
+pub(in crate::domain_computation::primary_graph::application_attempt) fn read_set_failure(
+    failure: crate::domain_computation::WorthQueryDecisionReadSetFailure,
+) -> Progression {
+    use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
+    use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+    match failure.kind() {
+        Kind::RequestInterrupted(Stop::Cancelled) => Progression::Cancelled,
+        Kind::RequestInterrupted(Stop::DeadlineExceeded) => Progression::TimedOut,
+        _ => Progression::Denied(Denial::decision_read_set_denied(failure)),
+    }
+}
+
 #[cfg(test)]
 mod tests;
 
