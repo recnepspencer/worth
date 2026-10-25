@@ -4,6 +4,8 @@ mod affected_record_filter;
 mod execution_context;
 mod interruption;
 pub use interruption::CustomInvariantInterruption;
+#[cfg(test)]
+mod provenance_decode_tests;
 mod registration;
 mod scope_planner;
 mod structural_views;
@@ -15,7 +17,9 @@ mod traversal;
 mod work_budget_tests;
 mod work_meter;
 
-pub use execution_context::{CustomInvariantExecutionContext, CustomInvariantProvenance};
+pub use execution_context::{
+    CustomInvariantExecutionContext, CustomInvariantNonApplicability, CustomInvariantProvenance,
+};
 pub use registration::{
     CustomInvariantLeaseBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,
     CustomInvariantRule,

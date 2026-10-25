@@ -1,3 +1,4 @@
+use super::super::WorthQueryProducerDenialDeclaration;
 use super::pending_factory::{PendingProducerExecutor, TypedPendingProducer};
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
@@ -87,6 +88,16 @@ where
         if !declared.meaning_matches::<Schema, Binding>() {
             return Err(denial(
                 DenialKind::ProducerBindingMeaningMismatch,
+                Binding::IDENTITY,
+            ));
+        }
+        if !<Binding::Provider as super::super::WorthQueryApplicationProducerProvider<
+            Schema,
+            Binding,
+        >>::DenialValue::admits_installation()
+        {
+            return Err(denial(
+                DenialKind::ProducerDenialValueUnbounded,
                 Binding::IDENTITY,
             ));
         }

@@ -35,3 +35,33 @@ fn producer_denial_and_retained_clone_keep_the_original_invariant_payload() {
         Some(b"{\"reason\":17}".as_slice())
     );
 }
+
+#[test]
+fn a_producer_requirement_refusal_keeps_its_receipt_basis_on_the_demand_denial() {
+    use crate::domain_computation::WorthQueryInvariantExecutionDenialKind as Kind;
+    use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
+    use worth_relational::facade::runtime::InvariantDecisionKind;
+    let admission =
+        graph::WorthQueryGeneratedOutputInvariantAdmissionDenial::RequiredInvariantDidNotPass {
+            verdict: InvariantDecisionKind::NotApplicable,
+            non_applicability: Some(CustomInvariantNonApplicability::NoApplicableTouch),
+        };
+    let commit = graph::WorthQueryApplicationCommitDenial::invariant_execution_denied(
+        graph::WorthQueryApplicationCommitDenialStage::InvariantExecution,
+        WorthQueryInvariantExecutionFailure::new(
+            Kind::ProducerRequirementNotAdmitted(admission),
+            "producer-required invariant did not admit the publication",
+        ),
+    );
+    let denial = commit_receipt(
+        "producer",
+        WorthQueryApplicationCommitOutcome::Denied(commit),
+    )
+    .unwrap_err();
+    assert_eq!(denial.producer_requirement_denial(), Some(admission));
+    assert_eq!(
+        denial.clone().producer_requirement_denial(),
+        Some(admission)
+    );
+    assert_eq!(denial.custom_invariant_denial(), None);
+}

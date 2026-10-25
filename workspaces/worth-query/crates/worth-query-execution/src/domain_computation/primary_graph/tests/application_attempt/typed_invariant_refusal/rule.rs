@@ -61,6 +61,7 @@ pub(super) fn definition<I: ApplicationInvariantMarkerIdentity<RefusalSchema>>(
 
 pub(super) struct Rule {
     pub(super) ordinal: u64,
+    /// Cancels the request on finding a violation, instead of refusing.
     pub(super) cancellation: Option<WorthQueryCancellationSource>,
     pub(super) visits: Arc<Mutex<Vec<u64>>>,
     pub(super) reads: Arc<Mutex<Vec<ReadSample>>>,
@@ -74,6 +75,7 @@ pub(super) enum ReadStage {
 }
 #[derive(Clone, Copy, Debug)]
 pub(super) struct ReadSample {
+    pub(super) rule: u64,
     pub(super) stage: ReadStage,
     pub(super) reads: WorthQueryInvariantProjectionWork,
 }
@@ -222,10 +224,10 @@ impl InstalledRule {
     }
 
     fn record_reads(&self, stage: ReadStage, reads: WorthQueryInvariantProjectionWork) {
-        self.rule
-            .reads
-            .lock()
-            .unwrap()
-            .push(ReadSample { stage, reads });
+        self.rule.reads.lock().unwrap().push(ReadSample {
+            rule: self.rule.ordinal,
+            stage,
+            reads,
+        });
     }
 }

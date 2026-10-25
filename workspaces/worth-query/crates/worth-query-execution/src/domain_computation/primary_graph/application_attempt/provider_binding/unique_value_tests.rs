@@ -205,6 +205,27 @@ fn unique_lowering_denials_keep_their_kind_at_the_commit_boundary() {
     }
 }
 
+#[test]
+fn other_lowering_denials_name_their_kind_and_subject_at_the_commit_boundary() {
+    let attempt = WorthQueryApplicationAttemptDenial::new(
+        Kind::IncompleteEffectBasis,
+        "provider progression",
+    );
+    let denial = WorthQueryApplicationCommitDenial::effect_lowering_denied(&attempt);
+    assert_eq!(
+        denial.kind(),
+        WorthQueryApplicationCommitDenialKind::ProviderRejected
+    );
+    assert_eq!(
+        denial.stage(),
+        WorthQueryApplicationCommitDenialStage::ProposalBinding
+    );
+    assert_eq!(
+        denial.detail(),
+        Some("IncompleteEffectBasis: provider progression")
+    );
+}
+
 fn lower(
     index: Option<DerivedIndexId>,
     facts: Vec<Fact>,

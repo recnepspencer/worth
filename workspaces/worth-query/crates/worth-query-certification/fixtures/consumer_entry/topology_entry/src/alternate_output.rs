@@ -12,7 +12,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
         WorthQueryDecisionContextDependencies, WorthQueryProducerApplicability,
         WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
-        WorthQueryProducerLifecyclePosture,
+        WorthQueryProducerLifecyclePosture, WorthQueryUndeclaredProducerDenial,
     },
     domain,
     primary_graph::{
@@ -214,6 +214,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, AlternatePlanarOutputProducer<Schema>>
     for AlternatePlanarOutputProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.alternate-planar-output-provider.v1";
 

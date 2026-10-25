@@ -1,4 +1,5 @@
 //! Install the proof's declared application rule and seed its authorized account.
+use super::ledger_rule::{LedgerOnly, LedgerRule};
 use super::rule::{First, Rule, Second};
 use super::schema::*;
 use crate::domain_computation::execution_runtime::*;
@@ -63,6 +64,15 @@ pub(super) fn install(first: Rule, second: Rule) -> World {
             .unwrap();
         factories
             .bind(&second_handle, move |resolver| second.resolve(resolver))
+            .unwrap();
+        let ledger = schema
+            .installed_invariant(
+                LedgerOnly::reference(),
+                ApplicationInvariantExecutionPoint::CommitBoundary,
+            )
+            .unwrap();
+        factories
+            .bind(&ledger, |_| Ok::<_, String>(LedgerRule))
             .unwrap();
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants(
             &phase.bootstrap_for_test(), &runtime, &schema,

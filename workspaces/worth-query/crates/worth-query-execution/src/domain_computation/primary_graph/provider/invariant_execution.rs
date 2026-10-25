@@ -175,8 +175,11 @@ impl WorthQueryPrimaryGraphProvider {
                 .custom_invariant_execution_receipts(),
             material.producer_required_invariants,
         )
-        .map_err(|_| {
-            closure_failure("producer-required invariant did not pass before publication")
+        .map_err(|denial| {
+            WorthQueryInvariantExecutionFailure::new(
+                WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial),
+                "producer-required invariant did not admit the publication",
+            )
         })?;
         let touch_admission =
             super::application_touch_admission::admit_validated_application_touches(

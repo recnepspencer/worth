@@ -1356,3 +1356,122 @@ is private CAD SDK adoption and replacement of its manual cycle guard after
 this public revision is published. Phase 2 remains open until that installed
 consumer proof and the private repository gates pass; no master merge is
 claimed by this slice.
+
+## Phase 2 integration prerequisite: concurrent upstream changes
+
+Public slice 6 is committed and published at
+`a2d26cee1665f850fce199211e01c812ffddda63`. The private adoption prepared a
+coherent seven-pin/17-package SDK update, schema-bound program authors and
+PreviousFeature acyclicity with only the manual cycle owner removed. Its real
+installed hostile/twin passes before and after deletion; CAD library 130/one
+existing ignore, static gates, oracle corpus/eight OCCT courts and ten
+determinism sections pass. Its three broad workspace lanes are still open.
+
+Fresh origin/master is now
+`d6f5fed45c7d8ca2a3380c00c8d408270c1f560f`, thirteen upstream commits since
+the public common base. They add typed producer-domain refusals and vacuous
+producer-required invariant applicability/provenance, including packet
+selection and receipt ownership touched by this phase. Fresh private main is
+`98e3f261791bfde278dd15d94af8f6297c8d66b9`, 45 commits beyond the adoption
+base, adding certified cell publication and joint moves across its thread,
+schema, invariant and installed-test owners. Neither default branch is an
+ancestor of its current task head; no fast-forward integration is claimed.
+
+The reviewer accepts superseding only the three positively identified task-owned
+old-base broad jobs and preserving the full private patch in a verified stash.
+Those jobs must be recorded as superseded, not passed. Before source changes,
+wait for their termination and keep both original dirty checkouts untouched.
+
+Merge fresh public origin/master into the task with no automatic commit. At
+packet selection, preserve the new upstream applicability/provenance contract
+while keeping stage exclusion before custom preparation and the same original
+request/account/native prefix. Preserve typed producer values, refusal identity
+and current publication/restoration contracts through the Query facade. Review
+actual conflict resolutions and new causal interactions under qa-loop,
+qa-tests and code-quality-qa. Run Native/Query affected owner and installed
+consumer courts, ordinary examples and the normal boundary/context/static gates
+before committing/publishing the public integration candidate.
+
+That published qualified candidate becomes the sole private SDK revision.
+Fast-forward the private task to origin/main, restore its exact preserved patch
+and resolve overlapping 2d/joint-move semantics deliberately. Re-run its actual
+installed hostile/twin and all mandatory private gates on that integrated tree;
+old-base evidence is historical rather than integration clearance. Reassess
+baseline script debt against current upstream. Only after both integrated
+reviews and private gates pass may final Phase 2 closeout advance the default
+branches, with a fresh ancestry check and no force push.
+
+The public merge has no Rust text conflicts. Its sole capability-index conflict
+retains the relation-law row and both upstream producer-denial/required-invariant
+rows. Cross-owner review confirms stage exclusion still precedes metering and
+custom preparation; all three non-applicability bases travel unchanged through
+the worker, reduced result and receipt collector. Producer admission remains
+fail-closed for missing/unexplained/scoped-out/preparation-refused receipts.
+
+One combined real-candidate court extends the upstream basis fixture with a
+benign actual native MaxMergedIntents check. It requires that native pass in the
+final commit-boundary report and exactly one matching custom receipt carrying
+NotApplicable/CandidateOutsideClosure. This proves the nonempty native prefix
+and custom provenance handoff together without a synthetic receipt, new work
+model or duplicated law suite. Compile and execute it alongside the existing
+native prerequisite/accounting and producer-requirement courts.
+
+The three old-base private broad jobs were intentionally stopped and contribute
+no passing evidence. Their task-owned process trees and remaining private-target
+compiler jobs terminated before source changes; the shared compiler cache server
+remained running. The complete 17-file private patch is preserved in stash
+`a0a39a34f5767a985e7975230f7c2035606a6d9c` and an external binary patch.
+The private task is clean at the new main revision, awaiting the published
+qualified public candidate before patch restoration.
+
+The merged Native build has zero diagnostics. Its full 1,843-case inventory
+terminates with 1,812 passes and 31 existing ignores in 141.74 seconds. Discovery
+confirms five basis courts including the new combined case, three narrowing
+courts, two provenance decoders, ten native prerequisites, custom ordering and
+the fixed five-entry cumulative-account invoice. The merged Graph build also
+has zero diagnostics; all 424 active courts pass with five existing ignores in
+62.98 seconds, including all 31 relation-law courts.
+
+Normal boundary and context checks pass. All 79 scoped Rust files pass formatting,
+line caps and whitespace; the reviewer accepts all 21 function advisories with
+zero scan errors. One upstream fixture import was normalized before its build.
+The application-correction example compiles successfully. The current Query
+inventory has 1,990 tests and is executing through the existing chunk/probe
+isolation, including actual typed producer-denial, invariant-refusal,
+producer-requirement and restoration-admission courts. BankDomain compilation,
+consumer targets/ordinary journeys and the canonical fixture gate remain open.
+The complete fixture matrix retains its existing CPU-exclusive lane after
+other heavy verification work; no unsupported single-process full run is used.
+
+The complete current Query artifact passes in its existing chunk/probe lanes:
+1,989 passes, one existing subprocess-only ignore, zero failed tests or bad
+exits, in 800 seconds. All 1,990 names are accounted for; discovery includes
+seven producer-value tests, twelve typed invariant-refusal tests (two producer
+requirements), three restoration-admission tests and two domain-denial outcome
+tests. The authority/resource oracle actually passes in its 790-second chunk.
+No pre-merge Query partition replaces this current integration execution.
+
+BankDomain passes its all-targets check and the changed application-correction
+example compiles, both without warnings. The three supported consumer packages
+pass their complete all-targets build with the five retained optional
+shared_execution harness warnings. Their actual inventory has 390 tests:
+Parameter 3, ConsumerRoot 80, Topology 302, SharedExecution 1, RequiredFeature 3
+and InvariantReads 1. A separate zero-test optional profile contributes no test
+evidence. The ordinary dev build is warning-free; actual non-harness Root and
+required_feature, shared_execution and invariant_reads executables all pass.
+
+The existing fixture scheduler consumes those exact all-targets artifacts,
+including example harnesses, without another compile. It retains per-case
+Topology processes and runs the complete matrix in its CPU-exclusive lane
+after all shared jobs. Other task-heavy lanes are finished. Its full terminal
+result remains the last execution gate before public integration commit/push
+review; the private patch remains preserved and Phase 2/master closure is open.
+
+The canonical fixture gate now terminates successfully: all 390 tests pass,
+zero failures and zero bad exits, in 719 seconds. Its CPU-exclusive complete
+matrix passes in 247.48 seconds after the shared jobs; its existing assertions
+account for all 1,032 declared rows (921 executed, 111 explicitly inapplicable)
+with zero red rows. No test limits, matrix width or scheduling policy changed.
+All public integration execution and static gates are closed. This clears the
+public merge candidate for final reviewer commit/push review on the task branch;
+private restoration, qualification and Phase 2/default-branch closure remain open.

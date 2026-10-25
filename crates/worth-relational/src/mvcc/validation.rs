@@ -20,6 +20,7 @@ mod proposal_validation;
 #[path = "validation/validated_proposal.rs"]
 mod validated_proposal;
 
+pub use crate::validation::data::CustomInvariantNonApplicability;
 pub use custom_invariant_execution_receipt::CustomInvariantExecutionReceipt;
 pub use proposal_footprint::{
     ValidatedMutationFootprint, ValidatedMutationFootprintNotRequested,

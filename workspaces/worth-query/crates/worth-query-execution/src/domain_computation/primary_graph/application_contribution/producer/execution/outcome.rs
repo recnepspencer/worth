@@ -93,17 +93,24 @@ impl PreparedProducerExecutionOutcome {
     }
 }
 
-pub(super) fn completed_handler<Value, DomainDenial>(
+/// Settles a handler's result. A domain denial carries the rejecting
+/// provider's diagnostic words beside the value its `Declared` binding
+/// encodes; the binding, not the words, is the caller's authority.
+pub(super) fn completed_handler<Value, DomainDenial, Declared>(
     identity: &'static str,
     result: HandlerResult<Value, DomainDenial>,
     domain_reason: impl FnOnce(&DomainDenial) -> Option<&'static str>,
-) -> Result<Value, WorthQueryOutputDemandDenial> {
+) -> Result<Value, WorthQueryOutputDemandDenial>
+where
+    Declared: graph::WorthQueryProducerDenialDeclaration<DomainDenial>,
+{
     match result {
         HandlerResult::Completed(value) => Ok(value),
         HandlerResult::DomainDenied(domain_denial) => {
             Err(WorthQueryOutputDemandDenial::producer_domain_denied(
                 identity,
                 domain_reason(&domain_denial),
+                Declared::declared_value(&domain_denial),
             ))
         }
         HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),
@@ -196,6 +203,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             let kind = commit_denial.kind();
             let capacity = commit_denial.output_verification_capacity_stop();
             let invariant = commit_denial.custom_invariant_denial().cloned();
+            let requirement = commit_denial
+                .invariant_execution_failure()
+                .and_then(|failure| match failure.kind() {
+                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
+                    _ => None,
+                });
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
@@ -261,6 +274,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Err(failure
                 .with_capacity_stop(capacity)
                 .with_custom_invariant_denial(invariant)
+                .with_producer_requirement_denial(requirement)
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }
@@ -355,3 +369,6 @@ mod tests;
 
 #[cfg(test)]
 mod invariant_refusal_tests;
+
+#[cfg(test)]
+mod domain_denial_tests;

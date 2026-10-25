@@ -155,6 +155,9 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     ForeignProducerBinding,
     /// A producer binding does not match its declared meaning.
     ProducerBindingMeaningMismatch,
+    /// A producer declares a domain denial binding without a finite canonical
+    /// wire bound, so a rejected decision could not carry its value.
+    ProducerDenialValueUnbounded,
     /// A declared producer's immutable operation resource plan is unsupported
     /// by this runtime's final graph provider support.
     ProducerGraphWorkRejected,

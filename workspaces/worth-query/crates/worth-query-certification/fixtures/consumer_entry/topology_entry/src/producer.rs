@@ -12,7 +12,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
     WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerOutputFamily, WorthQueryUndeclaredProducerDenial,
 };
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
@@ -88,6 +88,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, InitialPlanarProducer<Schema>>
     for InitialPlanarProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.planar-initial-provider.v1";
 
     fn operation_input(&self, source: &super::PlanarReadResult) -> super::PlanarMutation {

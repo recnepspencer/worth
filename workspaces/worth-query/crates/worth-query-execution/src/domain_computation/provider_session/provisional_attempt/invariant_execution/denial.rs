@@ -108,6 +108,11 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// The verdicts presented do not satisfy the contract, for example a receipt
     /// from another session or too few passed slots.
     VerdictPostureMismatch,
+    /// A producer-required invariant's receipt did not admit the publication;
+    /// the admission denial keeps the receipt's verdict and basis.
+    ProducerRequirementNotAdmitted(
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    ),
 }
 
 /// How to read an invariant execution failure.
