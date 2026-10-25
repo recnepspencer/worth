@@ -1596,3 +1596,55 @@ are now closed for final reviewer task-branch commit/push clearance. The failed
 expanded build and its deliberate unrelated-portfolio cancellation remain
 explicit above. Private final SDK restoration/qualification and Phase 2/default
 branch closure are still open.
+
+## Phase 2 closeout
+
+All five relation laws are declarable and lower to the existing native contracts:
+acyclicity, paired symmetry, scoped uniqueness, same-partition endpoints and
+minimum distinct reachability. Enabled laws participate in canonical schema and
+schema-bound program meaning, including owned portable records and cold
+readmission. Ordinary application commits preserve the original typed law cause
+and actual subjects. Checked native prerequisites finish on the original request,
+candidate and account before custom preparation, without a second validator,
+replacement work model or discarded native prefix.
+
+Topology's applicable minimum-two declaration replaces its duplicate small-ring
+check; geometry, endpoint extraction, empty-domain and final closure semantics
+retain their owners. The [relation laws guide](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md)
+contains the compiled law examples and compositions. [Schema validation](../../workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md)
+links to it while retaining its internal query-bundle legality responsibility.
+
+The qualified published implementation is
+`78fde5c68b05a893518caecb180d2709796972e6`. Current affected proof includes
+World 279 unit and 42 active certification courts (three existing ignores),
+Query 1,990 passes/one existing ignore, Graph 425 passes/five existing ignores,
+the repaired native-input target's 41 passes, all 390 canonical consumer tests,
+the complete 1,032-row zero-red matrix in its CPU-exclusive lane, actual changed
+correction and ordinary consumer programs, and constitutional/scoped static
+checks. Native's 1,812 passes/31 existing ignores remain applicable through its
+unchanged dependency closure. The broader Query build's two real archive-fixture
+errors are fixed; its unrelated portfolio compilation was deliberately stopped
+and is not claimed passing. Successfully emitted current Query/Graph artifacts
+have verified dependency separation from those fixture-only corrections.
+
+Proprietary adoption is published at
+`0397e1d31789a3ae8e330c078a85ac588d384ebe`, coherently pinned to that exact
+public implementation. PreviousFeature declares acyclicity and the shared
+traversal no longer owns a visited-feature cycle detector. Its real installed
+hostile/twin preserves the native refusal and refused checkpoint/current graph,
+then commits the exact observed-edge reversal. Five-kind version membership,
+body/branch/anchor checks, numerical budgets and the new complete-close contract
+remain intact. The final SDK-dependent all-targets check is warning-free;
+complete CI passes all 3,202 tests across 96 binaries with 16 existing skips,
+and all 214 doctests pass, including nine CAD facade examples. Unchanged oracle,
+determinism and sketch-policy proof is retained. Script evidence remains an
+honest partition: 126 passes plus six independently confirmed baseline HookMode
+failures, preserving the original freshness timeout and one unchanged isolated
+passing court. It is not a wholly green script run.
+
+The persistent reviewer gates the actual source, tests, composition and terminal
+evidence under qa-loop, qa-tests and code-quality-qa. This closeout records the
+qualified Phase 2 result for final integration review. Default branches advance
+only after fresh ancestry checks and without force, preserving both original
+dirty checkouts and the private local main. Phase 3 walks/reachability is next
+after this reviewed Phase 2 is integrated; Phases 3-6 are not claimed complete.
