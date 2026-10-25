@@ -50,7 +50,16 @@ pub(crate) fn run_signal_preparation_request<R>(
     ) -> Result<R, SignalError>,
 ) -> Result<(R, worth_foundational::ExecutionReport), SignalError> {
     request
-        .in_scope(|lease| run_signal_request_in_scope(request.memory_limit(), lease, &mut prepare))
+        .in_scope(|lease| {
+            // A lease-free child may have no own ceiling while its active serial
+            // lineage is finite. Its preparation shares that ancestor's room.
+            let memory = if lease.is_none() {
+                worth_execution::ExecutionMemoryReservation::available_in_scope(lease)
+            } else {
+                request.memory_limit()
+            };
+            run_signal_request_in_scope(memory, lease, &mut prepare)
+        })
         .map_err(SignalError::execution_scope_denied)?
 }
 

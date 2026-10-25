@@ -44,6 +44,8 @@ pub(crate) fn active_stop() -> Option<KernelStop> {
 }
 
 mod activity;
+mod memory_observation;
+pub(crate) use memory_observation::available_serial_memory_bytes;
 mod detached;
 pub(crate) use detached::detach_meter_for_test;
 mod checkpoint;

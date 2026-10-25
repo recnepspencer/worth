@@ -44,11 +44,13 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             })
             .map_err(SignalError::execution_scope_denied)??;
         let physical = lease
-            .in_scope(|active| active.and_then(|lease| lease.available_memory_bytes()))
+            .in_scope(worth_execution::ExecutionMemoryReservation::available_in_scope)
             .map_err(SignalError::execution_scope_denied)?;
         let available = budget
             .remaining()
-            .or_else(|| result_heap_bound.is_none().then_some(physical).flatten());
+            .into_iter()
+            .chain(result_heap_bound.is_none().then_some(physical).flatten())
+            .min();
         Ok(Self {
             result_bounds: super::result_bounds::ResultBounds::new(result_heap_bound),
             available,

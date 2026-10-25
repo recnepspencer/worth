@@ -169,6 +169,9 @@ pub(super) fn choose_grant(
         candidate_lease,
     )
     .ok_or_else(overflow)?;
+    // This is the per-operation policy cap, not an observation of ancestor
+    // room. `available` constrains the grant against the enclosing lineage;
+    // the actual map tickets still check every ledger before dispatch.
     let lease_bytes = lease.memory_limit().unwrap_or(available);
     if minimum > lease_bytes {
         return Ok(Err(CapacityDenial {
