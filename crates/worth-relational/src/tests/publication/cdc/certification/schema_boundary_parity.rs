@@ -163,10 +163,13 @@ fn diff_cdc_truth_parity_test() {
         .unwrap();
     let live_patch_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(baseline.patch_position()),
-            max_commits: 64,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(baseline.patch_position()),
+                max_commits: 64,
+            },
+        )
         .unwrap();
     let live_counters = runtime.performance_access().counters();
 
@@ -206,10 +209,13 @@ fn diff_cdc_truth_parity_test() {
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(baseline.patch_position()),
-            max_commits: 64,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(baseline.patch_position()),
+                max_commits: 64,
+            },
+        )
         .unwrap();
     let recovered_counters = recovered.performance_access().counters();
 

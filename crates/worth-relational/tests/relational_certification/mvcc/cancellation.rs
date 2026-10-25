@@ -155,7 +155,7 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
     let stream_before = world
         .runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .unwrap();
     let retention_before = world.runtime.retention().inspect_plan(execution).unwrap();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
@@ -183,7 +183,7 @@ fn cancellation_after_candidate_creation_wins_before_branch_movement() {
         world
             .runtime
             .publication()
-            .read_patch_stream(PatchStreamRequest::default())
+            .read_patch_stream(execution, PatchStreamRequest::default())
             .unwrap(),
         stream_before
     );

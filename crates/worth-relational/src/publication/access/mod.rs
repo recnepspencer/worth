@@ -111,11 +111,13 @@ impl<'runtime> PublicationSurface<'runtime> {
         self.diagnostic_access().snapshot()
     }
 
+    /// Read one bounded canonical batch, demanding only its indexed envelopes.
     pub fn read_patch_stream(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: PatchStreamRequest,
     ) -> Result<PatchStreamBatch, PatchStreamReadError> {
-        self.patch_stream().read(request)
+        self.patch_stream().read(execution, request)
     }
 
     pub fn read_subscriber_stream(

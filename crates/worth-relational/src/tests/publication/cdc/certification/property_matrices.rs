@@ -100,7 +100,7 @@ proptest! {
             RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
         );
         let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
-        let patch_head = collect_patch_stream_from_head(&world.runtime, 4096);
+        let patch_head = collect_patch_stream_from_head(execution, &world.runtime, 4096);
         prop_assert_eq!(&head, &patch_head);
         prop_assert_eq!(&head, &collect_subscriber_patches_from_head(&replay_world.runtime, 4096));
 
@@ -147,7 +147,7 @@ proptest! {
         let recovery_plan = crate::tests::support::recovery_plan_for(execution, &world.runtime, RecoveryMode::NormalRecoveryVerification).unwrap();
         let mut recovered = build_property_runtime(RuntimeHarnessMode::Persisted);
         recovered.durability_recovery().recover(execution, recovery_plan).unwrap();
-        let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);
+        let recovered_patch_stream = collect_patch_stream_from_head(execution, &recovered, 4096);
         prop_assert_eq!(recovered_patch_stream, head);
         let truth = VisibleTruthSummary::capture(execution, &world.runtime);
         let recovered_truth = VisibleTruthSummary::capture(execution, &recovered);

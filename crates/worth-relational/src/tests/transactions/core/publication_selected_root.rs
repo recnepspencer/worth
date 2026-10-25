@@ -18,7 +18,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     let pending_routes_before = runtime.history.pending_canonical_publication_route_count();
     let patch_stream_before = runtime
         .publication()
-        .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
+        .read_patch_stream(
+            execution,
+            crate::publication::patch::data::PatchStreamRequest::default(),
+        )
         .expect("selected-root evidence reads the canonical patch stream");
     let publication_bundle_before = runtime.publication().latest_bundle();
     let durable_count_before = runtime.durability().durable_log().len();
@@ -88,7 +91,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     assert_eq!(
         runtime
             .publication()
-            .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
+            .read_patch_stream(
+                execution,
+                crate::publication::patch::data::PatchStreamRequest::default()
+            )
             .expect("selected-root evidence rereads the canonical patch stream"),
         patch_stream_before
     );

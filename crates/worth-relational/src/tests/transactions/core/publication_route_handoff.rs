@@ -63,7 +63,12 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         let reader_request = crate::test_execution_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&reader_request);
         let mut observed_commits = Vec::new();
-        observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+        observe_canonical_consumers(
+            execution,
+            &runtime,
+            &observed_identity,
+            &mut observed_commits,
+        );
         observation_count.fetch_add(1, Ordering::Release);
         assert_eq!(
             runtime
@@ -83,11 +88,21 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
         reader_ready_signal.store(true, Ordering::Release);
 
         while !publisher_done.load(Ordering::Acquire) {
-            observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+            observe_canonical_consumers(
+                execution,
+                &runtime,
+                &observed_identity,
+                &mut observed_commits,
+            );
             observation_count.fetch_add(1, Ordering::Release);
             std::thread::yield_now();
         }
-        observe_canonical_consumers(&runtime, &observed_identity, &mut observed_commits);
+        observe_canonical_consumers(
+            execution,
+            &runtime,
+            &observed_identity,
+            &mut observed_commits,
+        );
         (runtime, observed_commits)
     });
 
@@ -116,7 +131,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
 
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("performed stream is visible before settlement");
     assert!(stream
         .patches
@@ -140,6 +155,7 @@ fn canonical_consumers_resolve_around_the_real_root_to_route_cutover() {
 }
 
 fn observe_canonical_consumers(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     identity: &crate::branch::RelationalBranchIdentity,
     observed_commits: &mut Vec<crate::facade::history::CommitId>,
@@ -162,7 +178,7 @@ fn observe_canonical_consumers(
     );
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("canonical patch stream remains readable");
     assert!(stream
         .patches

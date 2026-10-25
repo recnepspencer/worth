@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PatchStreamRequest {
     pub after_position: Option<PatchStreamPosition>,
+    /// Maximum envelopes returned in this operation; the default batch is 256.
     pub max_commits: usize,
 }
 
@@ -12,7 +13,7 @@ impl Default for PatchStreamRequest {
     fn default() -> Self {
         Self {
             after_position: None,
-            max_commits: usize::MAX,
+            max_commits: 256,
         }
     }
 }

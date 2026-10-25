@@ -112,7 +112,7 @@ pub(super) fn delete_and_prove_absence(
     let stream = world
         .runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "delete patch stream", error));
     let survivors = survivor_references(world, branches, &state.branch);
     let deleted = world
@@ -125,7 +125,7 @@ pub(super) fn delete_and_prove_absence(
     let stream_after = world
         .runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .unwrap_or_else(|error| {
             trace_panic(trace, scenario_index, "delete patch stream after", error)
         });

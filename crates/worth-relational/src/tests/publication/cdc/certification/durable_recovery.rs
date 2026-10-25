@@ -72,10 +72,13 @@ fn cdc_certification_durable_recovery_matches_head_and_midstream_consumers() {
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(3)),
-            max_commits: 32,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(3)),
+                max_commits: 32,
+            },
+        )
         .unwrap();
     assert_eq!(durable_mid_stitched, recovered_patch_batch.patches);
 }
@@ -113,7 +116,7 @@ fn cdc_certification_persisted_seeded_matrix_survives_checkpoint_compaction_and_
             .durability_recovery()
             .recover(execution, recovery_plan)
             .unwrap();
-        let recovered_patch_stream = collect_patch_stream_from_head(&recovered, 4096);
+        let recovered_patch_stream = collect_patch_stream_from_head(execution, &recovered, 4096);
         assert_eq!(
             recovered_patch_stream, full_from_head,
             "persisted seed {seed} drifted after recovery"

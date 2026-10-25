@@ -214,7 +214,7 @@ fn publication_port_performs_one_exact_candidate_and_reports_the_loser_stale() {
         .contains(&performed.canonical_commit().commit.commit_id));
     let stream = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(execution, PatchStreamRequest::default())
         .expect("the performed root's patch is immediately stream-visible");
     let expected_patch =
         crate::publication::patch::data::PublishedAuthoritativePatchEnvelope::from_canonical(

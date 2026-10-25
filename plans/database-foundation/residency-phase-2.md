@@ -128,3 +128,16 @@ and existing budget-degradation summaries retain their meaning. The cold fault
 matrix exercises all six of these inspection doors, sticky failure, unchanged
 journal position and no offered publication. Existing inspection budget and
 substrate-acquisition courts remain green.
+
+
+## Canonical patch batches
+
+Patch stream reads require the caller request, select a finite batch from
+index references and demand only those envelope cells. The default batch is
+256 commits. An envelope refusal is `PatchStreamReadErrorClass::ReadRequest`
+with the exact native execution/storage cause; it is never a retained-history
+gap or an empty batch. Receipt lookup at an indexed position uses its index
+entry directly and does not require the envelope. A genuine 17-commit
+checkpoint fixture proves selected-batch journal reads, repeated equality,
+sticky failure and unchanged publication/journal state. Subscriber continuity,
+other envelope surfaces and envelope retirement remain required cutovers.

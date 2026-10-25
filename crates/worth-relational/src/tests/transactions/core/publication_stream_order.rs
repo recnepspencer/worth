@@ -101,10 +101,13 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
     let position_b = published_first.patch_position();
     let before_a = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(position_b),
-            max_commits: usize::MAX,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(position_b),
+                max_commits: usize::MAX,
+            },
+        )
         .expect("B is immediately a valid resume position");
     assert!(before_a.patches.is_empty());
 
@@ -123,10 +126,13 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
 
     let after_a = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(position_b),
-            max_commits: usize::MAX,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(position_b),
+                max_commits: usize::MAX,
+            },
+        )
         .expect("subscriber resumes through the later A publication");
     assert_eq!(after_a.patches.len(), 1);
     assert_eq!(after_a.patches[0].position, prepared_first.patch_position());

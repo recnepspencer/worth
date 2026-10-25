@@ -24,7 +24,10 @@ impl CancellationResidueSnapshot {
             pending_publication_routes: runtime.history.pending_canonical_publication_route_count(),
             patch_stream: runtime
                 .publication()
-                .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
+                .read_patch_stream(
+                    execution,
+                    crate::publication::patch::data::PatchStreamRequest::default(),
+                )
                 .expect("cancellation evidence reads the canonical patch stream"),
             retention: runtime.retention().inspect_plan(execution).unwrap(),
         }

@@ -12,10 +12,13 @@ fn subscriber_stream_matches_patch_stream_for_committed_history() {
 
     let patch_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 8,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 8,
+            },
+        )
         .unwrap();
     let subscriber_batch = runtime
         .publication()
@@ -61,10 +64,13 @@ fn durable_source_subscriber_stream_matches_recovered_runtime_patch_stream() {
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(1)),
-            max_commits: 8,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(1)),
+                max_commits: 8,
+            },
+        )
         .unwrap();
 
     assert_eq!(subscriber_batch.patches, recovered_patch_batch.patches);
@@ -89,10 +95,13 @@ fn subscriber_stream_keeps_patch_parity_when_later_retained_envelope_is_missing(
 
     let patch_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 8,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 8,
+            },
+        )
         .unwrap();
     let subscriber_batch = runtime
         .publication()
