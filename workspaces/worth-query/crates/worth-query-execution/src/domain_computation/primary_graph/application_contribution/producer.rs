@@ -249,6 +249,10 @@ where
 
     const IDENTITY: &'static str;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability];
+    /// Invariants each publication must satisfy before it is admitted. A
+    /// requirement is met when its rule passes, or when Relational proves the
+    /// publication touches no kind in the rule's declared closure. A rule
+    /// scoped out for any other reason, or missing, refuses the publication.
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const REUSE_POLICY: &'static str;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;

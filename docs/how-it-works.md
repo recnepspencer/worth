@@ -937,6 +937,12 @@ descriptive history.
   Within that call, Query prepares ready independent producers on the owner,
   computes their managed tasks together, then completes and publishes them in
   canonical order. The caller pumps progress; a worker does not publish.
+- **Producer-required invariants.** A producer's `REQUIRED_INVARIANTS` must
+  each be satisfied by every publication: the rule passes, or Relational
+  proves the publication touches no kind in the rule's declared closure (an
+  empty write set, for one). The receipt types that vacuous case apart. Any
+  other not-applicable receipt, such as a scoped-out rule or refused
+  preparation, still refuses the publication.
 - **Fixed required outputs.** The ordinary operation delegates performed publication,
   original-carrier retention, native output advancement and complete settlement.
   Registered replay resumes without another source effect. Delivery checks the

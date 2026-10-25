@@ -15,7 +15,9 @@ mod traversal;
 mod work_budget_tests;
 mod work_meter;
 
-pub use execution_context::{CustomInvariantExecutionContext, CustomInvariantProvenance};
+pub use execution_context::{
+    CustomInvariantExecutionContext, CustomInvariantNonApplicability, CustomInvariantProvenance,
+};
 pub use registration::{
     CustomInvariantLeaseBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,
     CustomInvariantRule,
