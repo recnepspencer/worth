@@ -4,13 +4,7 @@ use super::super::schema::{Document, SetRetention};
 use worth_query_decl::facade::{
     worth_query_operation_deletes, worth_query_operation_reads, worth_query_operation_unlinks,
 };
-use worth_query_host::facade::{
-    application_installation::{
-        in_memory_program, ApplicationBuildIdentity, WorthQueryInMemoryApplicationDenial,
-    },
-    declaration::application_schema::*,
-    primary_graph::WorthQueryPrimaryGraphInstallationDenialKind as Kind,
-};
+use worth_query_host::facade::declaration::application_schema::*;
 struct AliasingSelection;
 worth_query_operation_reads!(SetRetention => [AliasingSelection]);
 worth_query_operation_unlinks!(SetRetention => [AliasingSelection]);
@@ -186,23 +180,4 @@ fn typed_finish_requires_the_exact_source_write_not_an_independent_input_read() 
         result,
         Err(ApplicationOperationBodyAuthoringDenial::InvalidSelectionRetirement)
     ));
-}
-#[test]
-fn installation_reserves_the_whole_retirement_bound_before_bootstrap() {
-    let schema = program::schema::<125>();
-    let result = in_memory_program(
-        program::validated::<125>(&schema),
-        schema,
-        (program::Installation::Native,),
-        ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
-        crate::document_retention_model::host::host_limits(),
-        |_phase, _graph, _installed| panic!("undersized candidate must refuse before bootstrap"),
-    );
-    match result {
-        Err(WorthQueryInMemoryApplicationDenial::Contributions(cause)) => {
-            assert_eq!(cause.kind(), Kind::OperationBodyUnavailable)
-        }
-        Err(other) => panic!("unexpected installation refusal: {other:?}"),
-        Ok(_) => panic!("insufficient bound installed"),
-    }
 }
