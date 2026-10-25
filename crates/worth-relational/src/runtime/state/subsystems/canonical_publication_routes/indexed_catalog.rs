@@ -23,10 +23,10 @@ impl RelationalCanonicalPublicationRoutes {
         );
     }
     pub(crate) fn indexed_receipt(&self, id: CommitId) -> Option<RelationalCommitReceipt> {
-        if let Some(route) = self.by_commit.get(&id) {
-            if route.is_visible() {
-                return Some(route.envelope.commit.clone());
-            }
+        if let Some(route) = self.by_commit.get(&id)
+            && route.is_visible()
+        {
+            return Some(route.envelope.commit.clone());
         }
         self.checkpoint_catalog
             .read()

@@ -57,10 +57,10 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &*state {
-            if let Some(commitment) = &region.commitment {
-                commitment.visit_allocations(visitor);
-            }
+        if let ResidencyState::Head { region, .. } | ResidencyState::Full(region) = &*state
+            && let Some(commitment) = &region.commitment
+        {
+            commitment.visit_allocations(visitor);
         }
     }
 }

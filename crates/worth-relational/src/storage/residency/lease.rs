@@ -45,18 +45,8 @@ impl RelationalResidencyLease<Full> {
     pub(super) fn retained_region(&self) -> Arc<ResidentRegion> {
         self.region.clone()
     }
-    pub(crate) fn residency_allocation_bytes(&self) -> u64 {
-        (std::mem::size_of::<RelationalRegionResidency>()
-            + std::mem::size_of::<ResidentRegion>()
-            + 4 * std::mem::size_of::<usize>()) as u64
-    }
-
     pub(crate) fn full_view(&self) -> RelationalRegionFullView<'_> {
         RelationalRegionFullView::new(&self.region)
-    }
-
-    pub(crate) fn is_uniquely_owned(&self) -> bool {
-        Arc::strong_count(&self.cell) == 1 && Arc::strong_count(&self.region) == 2
     }
 }
 

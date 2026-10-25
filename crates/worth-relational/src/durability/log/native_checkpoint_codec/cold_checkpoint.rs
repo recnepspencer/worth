@@ -2,12 +2,9 @@
 use std::sync::Arc;
 
 use super::{manifest_capture::corrupt, manifest_validation};
-use crate::durability::canonical_commit_artifact::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal,
-};
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableColdSource;
-use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailable};
 
 pub(crate) fn readmit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,27 +19,11 @@ pub(crate) fn readmit(
         .iter()
         .filter(|entry| heads.contains(&entry.commit.commit_id))
     {
-        crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let bytes = source
-            .read_commit(entry.position, 1 << 30)
-            .map_err(|cause| RelationalStorageUnavailable {
-                subject: RelationalStorageSubject::Envelope(entry.position),
-                cause,
-            })?;
-        let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-            .map_err(|error| corrupt(format!("head envelope frame: {error:?}")))?;
-        if artifact.position() != entry.position
-            || artifact.commit_id() != entry.commit.commit_id
-            || artifact.payload_digest().as_bytes() != &entry.payload_digest
-        {
-            return Err(corrupt("head envelope disagrees with its commit index").into());
-        }
-        let commit = RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution)
-            .map_err(artifact_stop)?
-            .into_positioned();
-        if commit.commit != entry.commit || commit.schema_version != entry.schema_version {
-            return Err(corrupt("head envelope identity disagrees with its commit index").into());
-        }
+        let commit = crate::history::RelationalCommitArtifact::readmit_head(
+            entry.clone(),
+            source.clone(),
+            execution,
+        )?;
         symbols
             .import_canonical_snapshot(&commit.symbol_texts)
             .map_err(corrupt)?;

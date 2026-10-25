@@ -85,10 +85,6 @@ impl RelationalRegionRetention {
     pub(crate) fn full_view(&self) -> super::RelationalRegionFullView<'_> {
         self.lease().full_view()
     }
-    pub(crate) fn residency_allocation_bytes(&self) -> u64 {
-        self.lease().residency_allocation_bytes()
-    }
-
     pub(crate) fn is_uniquely_owned(&self) -> bool {
         Arc::strong_count(&self.cell) == 1 + usize::from(self.full.get().is_some())
     }

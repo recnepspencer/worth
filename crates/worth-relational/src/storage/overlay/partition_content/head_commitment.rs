@@ -33,12 +33,12 @@ impl PartitionContentCommitment {
             .entity_arena
             .metadata_history
             .iter()
-            .all(|history| history.len() == 0)
+            .all(|history| history.is_empty())
             || !partition
                 .relation_arena
                 .metadata_history
                 .iter()
-                .all(|history| history.len() == 0)
+                .all(|history| history.is_empty())
         {
             return None;
         }

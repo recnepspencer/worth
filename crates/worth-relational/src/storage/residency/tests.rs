@@ -272,7 +272,7 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
         Cause::LimitExceeded { limit: 1, .. }
     ));
     let crate::durability::data::RelationalRecoveryStop::Durability(error) =
-        crate::durability::data::RelationalRecoveryStop::from(failure.clone())
+        crate::durability::data::RelationalRecoveryStop::from(failure)
     else {
         panic!("durability stop")
     };

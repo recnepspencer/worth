@@ -47,24 +47,10 @@ impl RelationalRuntimeState {
         )
     }
 
-    /// Owned copies of every partition, charged to the reconstructive lane.
-    pub(crate) fn materialize_partitions(&self) -> Vec<PartitionState> {
-        self.partitions
-            .materialize_owned_partitions(&self.services.instrumentation)
-    }
-
-    /// A detached substrate for a fork, charged where the work happens.
-    ///
-    /// Forking materializes every partition so the child's pin counters start
-    /// clean. That is whole-state reconstructive work and is charged to the
-    /// forking runtime, which is the one that performs it.
+    /// Share a fork's immutable substrate; each demanded writer pays for its
+    /// own copy and pin-counter detachment at the editing boundary.
     pub(crate) fn fork_partitions(&self) -> StorageSubsystem {
-        let forked = RuntimeSubsystem::fork(&self.partitions);
-        PartitionEditionCopyLane::Reconstructive.charge_partition_materialization(
-            &self.services.instrumentation,
-            forked.partition_count(),
-        );
-        forked
+        RuntimeSubsystem::fork(&self.partitions)
     }
 
     pub(crate) fn install_rebuilt_partitions(

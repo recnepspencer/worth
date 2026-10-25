@@ -21,10 +21,7 @@ pub(crate) trait RuntimeSubsystem: Sized {
 }
 
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
-pub(crate) use durability::{
-    DurabilitySubsystem, RelationalCheckpointManifestPublication,
-    RelationalCheckpointManifestSelection,
-};
+pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestPublication};
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,

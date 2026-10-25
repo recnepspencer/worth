@@ -311,8 +311,8 @@ impl HistorySubsystem {
             roots.insert(commit_id, Arc::clone(&root));
         }
         Ok(roots
-            .into_iter()
-            .map(|(_, root)| crate::branch::RelationalBranchRootCheckpoint::new(root))
+            .into_values()
+            .map(crate::branch::RelationalBranchRootCheckpoint::new)
             .collect())
     }
 

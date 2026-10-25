@@ -115,12 +115,6 @@ impl IndexingSubsystem {
             .as_ref()
             .map(|image| image.directory.manifest.derived_indexes)
     }
-    pub(crate) fn demand_checkpoint_image(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), Failure> {
-        demand(&self.state, execution)
-    }
 }
 
 impl IndexDefinitionReadBinding {

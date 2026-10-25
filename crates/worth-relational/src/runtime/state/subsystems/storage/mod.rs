@@ -61,24 +61,6 @@ impl StorageSubsystem {
         self.partitions.read().shared_partition(partition_id)
     }
 
-    pub(crate) fn partition_count(&self) -> usize {
-        self.partitions.read().len()
-    }
-
-    /// Owned copies of every partition, for checkpoint capture and recovery.
-    ///
-    /// Reconstructive-lane work; the caller supplies the accounting sink.
-    pub(crate) fn materialize_owned_partitions(
-        &self,
-        instrumentation: &RuntimeInstrumentation,
-    ) -> Vec<PartitionState> {
-        let edition = self.acquire();
-        let partitions = edition.materialize_owned_partitions();
-        PartitionEditionCopyLane::Reconstructive
-            .charge_partition_materialization(instrumentation, partitions.len());
-        partitions
-    }
-
     pub(crate) fn install_owned(
         &self,
         instrumentation: &RuntimeInstrumentation,

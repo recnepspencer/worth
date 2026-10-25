@@ -42,7 +42,6 @@ impl<T: Clone> SharedColumn<T> {
         self.len
     }
 
-    #[cfg(test)]
     pub(crate) fn is_empty(&self) -> bool {
         self.len == 0
     }

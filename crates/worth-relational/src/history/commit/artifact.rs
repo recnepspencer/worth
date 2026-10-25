@@ -1,3 +1,5 @@
+mod readmission;
+
 use std::sync::Arc;
 
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};

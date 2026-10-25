@@ -88,14 +88,6 @@ impl PartitionEdition {
         self.partitions.values().map(AsRef::as_ref)
     }
 
-    /// An owned copy of the map spine, sharing every partition behind it.
-    ///
-    /// Theta(partitions) pointer copies and no record copies. Callers that then
-    /// mutate individual partitions pay their deep copies one at a time.
-    pub(crate) fn cloned_map(&self) -> PartitionMap {
-        (*self.partitions).clone()
-    }
-
     /// Owned copies of every partition, for checkpoint capture and recovery.
     ///
     /// This is reconstructive-lane work by construction: it materializes the

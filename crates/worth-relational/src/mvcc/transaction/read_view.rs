@@ -82,10 +82,10 @@ impl super::BranchBoundRelationalTransaction {
             crate::authority::commit::pipeline::CommitStage::TransactionRead,
         )
         .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
-        if !self.read_leases.contains_key(&entity_id.partition_id) {
-            if let Some(lease) = root.demand_region_head(execution, entity_id.partition_id)? {
-                self.read_leases.insert(entity_id.partition_id, lease);
-            }
+        if !self.read_leases.contains_key(&entity_id.partition_id)
+            && let Some(lease) = root.demand_region_head(execution, entity_id.partition_id)?
+        {
+            self.read_leases.insert(entity_id.partition_id, lease);
         }
         let base = self
             .read_leases
@@ -126,10 +126,10 @@ impl super::BranchBoundRelationalTransaction {
             crate::authority::commit::pipeline::CommitStage::TransactionRead,
         )
         .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
-        if !self.read_leases.contains_key(&relation_id.partition_id) {
-            if let Some(lease) = root.demand_region_head(execution, relation_id.partition_id)? {
-                self.read_leases.insert(relation_id.partition_id, lease);
-            }
+        if !self.read_leases.contains_key(&relation_id.partition_id)
+            && let Some(lease) = root.demand_region_head(execution, relation_id.partition_id)?
+        {
+            self.read_leases.insert(relation_id.partition_id, lease);
         }
         let base = self
             .read_leases

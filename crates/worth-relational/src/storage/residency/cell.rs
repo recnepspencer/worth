@@ -46,11 +46,8 @@ enum ResidencyDemand {
 
 #[derive(Debug)]
 enum ResidencyState {
-    Cold(RelationalColdRegion),
-    Head {
-        cold: RelationalColdRegion,
-        region: Arc<ResidentRegion>,
-    },
+    Cold,
+    Head { region: Arc<ResidentRegion> },
     Full(Arc<ResidentRegion>),
     Damaged(RelationalStorageUnavailable),
 }
@@ -85,10 +82,10 @@ impl RelationalRegionResidency {
                     history: cold.history,
                 },
             )])),
-            backing: Some(cold.clone()),
+            backing: Some(cold),
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
-            state: Mutex::new(ResidencyState::Cold(cold)),
+            state: Mutex::new(ResidencyState::Cold),
             leases: AtomicUsize::new(0),
         })
     }
@@ -171,12 +168,9 @@ impl RelationalRegionResidency {
             if let ResidencyState::Damaged(failure) = &*state {
                 return Err(Failure::StorageUnavailable(*failure));
             }
-            if let ResidencyState::Cold(cold) = &*state {
+            if let ResidencyState::Cold = &*state {
                 let region = self.raw_head(execution, limit)?;
-                *state = ResidencyState::Head {
-                    cold: cold.clone(),
-                    region,
-                };
+                *state = ResidencyState::Head { region };
             }
             if matches!(demand, ResidencyDemand::Full)
                 && let ResidencyState::Head { .. } = &*state
