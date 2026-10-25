@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use crate::storage::residency::{Full, RelationalRegionResidency, RelationalResidencyLease};
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -10,11 +10,10 @@ pub(crate) struct RelationalRootRegion {
     pub(super) creation_root_id: u64,
     pub(super) id: u64,
     pub(super) partition_id: PartitionId,
-    pub(super) partition: Arc<PartitionState>,
+    pub(super) partition: RelationalResidencyLease<Full>,
     pub(super) allocation_inventory:
         crate::storage::overlay::RelationalPartitionAllocationInventory,
     pub(super) content_digest: [u8; 32],
-    pub(super) content_commitment: crate::storage::overlay::PartitionContentCommitment,
     pub(super) content_values_hashed: u64,
     materialization_unavailable_records: usize,
 }
@@ -34,7 +33,7 @@ impl RelationalRootRegion {
                 symbols,
                 previous.map(|(region, journal)| {
                     (
-                        &region.content_commitment,
+                        region.partition.full_view().commitment(),
                         region.partition.as_ref(),
                         journal,
                     )
@@ -77,10 +76,9 @@ impl RelationalRootRegion {
             partition_id: partition.partition_id,
             allocation_inventory,
             content_digest,
-            content_commitment,
+            partition: RelationalRegionResidency::resident(partition, content_commitment),
             content_values_hashed,
             materialization_unavailable_records,
-            partition: Arc::new(partition),
         })
     }
 
@@ -95,21 +93,21 @@ impl RelationalRootRegion {
             region_id: self.id,
             partition_id: self.partition_id,
             root_region_bytes: std::mem::size_of::<Self>() as u64,
-            partition_state_bytes: std::mem::size_of::<PartitionState>() as u64,
+            partition_state_bytes: self.partition.residency_allocation_bytes(),
             authoritative_bytes: self.allocation_inventory.authoritative_bytes,
             diagnostic_bytes: self.allocation_inventory.diagnostic_bytes,
             retention_metadata_bytes: self.allocation_inventory.retention_metadata_bytes,
             allocator_bookkeeping_bytes: self.allocation_inventory.allocator_bookkeeping_bytes,
             optional_cache_bytes: self.allocation_inventory.optional_cache_bytes
-                + self.content_commitment.allocation_bytes(),
+                + self.partition.full_view().commitment().allocation_bytes(),
         }
     }
 
     pub(super) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
         let mut bytes = std::mem::size_of::<Self>() as u64;
-        if Arc::strong_count(&self.partition) == 1 {
+        if self.partition.is_uniquely_owned() {
             bytes = bytes
-                .saturating_add(std::mem::size_of::<PartitionState>() as u64)
+                .saturating_add(self.partition.residency_allocation_bytes())
                 .saturating_add(self.partition.reclaimable_unique_authoritative_bytes());
         }
         bytes

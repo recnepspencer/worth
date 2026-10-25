@@ -316,7 +316,11 @@ impl RelationalBranchRoot {
         visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
     ) {
         if let Some(region) = self.regions.get(partition_id) {
-            region.content_commitment.visit_allocations(visitor);
+            region
+                .partition
+                .full_view()
+                .commitment()
+                .visit_allocations(visitor);
         }
     }
 
