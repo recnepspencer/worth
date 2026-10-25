@@ -194,5 +194,9 @@ fn retained_observation(
     if !merged.merge_equal_observation(source.as_ref()) {
         return Err(DISAGREEMENT);
     }
-    Ok(if &merged == source.as_ref() { source } else { fact })
+    Ok(if &merged == source.as_ref() {
+        source
+    } else {
+        fact
+    })
 }

@@ -110,13 +110,21 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         let projected = decoded.map_err(|cause| {
             WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, decode_work.get())
         })?;
-        let (output, work, realized_scope, consumed_outputs, source_facts, (exceeded, overflowed), exhausted, stopped) =
-            match projected {
-                Ok(projected) => projected,
-                // Unwind only after the native runtime loan ends. The owning
-                // entrance releases its snapshot; the borrowed entrance never does.
-                Err(payload) => resume_unwind(payload),
-            };
+        let (
+            output,
+            work,
+            realized_scope,
+            consumed_outputs,
+            source_facts,
+            (exceeded, overflowed),
+            exhausted,
+            stopped,
+        ) = match projected {
+            Ok(projected) => projected,
+            // Unwind only after the native runtime loan ends. The owning
+            // entrance releases its snapshot; the borrowed entrance never does.
+            Err(payload) => resume_unwind(payload),
+        };
         let denial = if let Some(cause) = stopped {
             Some(WorthQueryInvariantProjectionDenial::execution_request_stopped(cause, Some(work)))
         } else if overflowed {
