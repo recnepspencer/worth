@@ -10,15 +10,18 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
 
-use super::crash_oracle::{assert_continues, assert_recovered, InFlight};
 use super::durable_run::{apply, open, steps_before};
 use super::killed_child::{self, ChildEnd};
-use super::selected_checkpoint;
 use super::workload::{self, Script, Step};
+
+#[path = "process_kill/recovery_court.rs"]
+mod recovery_court;
+use recovery_court::assert_killed_home_recovers;
 
 pub(crate) const SEED: u64 = 0x5eed_0402;
 const COMMITS: usize = 9;
@@ -165,67 +168,6 @@ pub(crate) fn launch(stop: Stop) -> Killed {
     }
 }
 
-fn assert_killed_home_recovers(stop: Stop) {
-    let script = script();
-    let killed = launch(stop);
-    let case = format!("seed {SEED:#x} {stop:?}");
-    let request = workload::serial_request();
-    let execution = ExecutionRequest::serial(&request);
-    let home = open(&killed.location, &execution)
-        .unwrap_or_else(|refusal| panic!("{case}: recovery refused: {refusal:?}"));
-    let held = killed.acknowledged.len();
-    let (in_flight, checkpoint) = match stop {
-        Stop::BeforeFirstCheckpoint => (InFlight::Nothing, 0),
-        Stop::AboveCheckpoint => (InFlight::Nothing, 1),
-        Stop::Commit(Seam::BeforeWalAppend) => (InFlight::NotDurable, 2),
-        Stop::Commit(_) => (InFlight::Durable, 2),
-        Stop::CheckpointMembers(_) => (InFlight::Nothing, 1),
-        Stop::Checkpoint(Seam::BeforeWalAppend) => (InFlight::Nothing, 1),
-        Stop::Checkpoint(_) => (InFlight::Nothing, 2),
-        Stop::BranchTransition(_)
-        | Stop::Archive(_)
-        | Stop::RequestDeletion(_)
-        | Stop::Delete(_) => {
-            let (prefix, _) = stop.plan(&script);
-            let checkpoints = script.steps[..prefix]
-                .iter()
-                .filter(|step| matches!(step, Step::Checkpoint))
-                .count() as u64;
-            (InFlight::Nothing, checkpoints)
-        }
-    };
-    assert_eq!(killed.live, held, "{case}: the parked commit was live");
-    assert_eq!(
-        selected_checkpoint::generation(&home),
-        checkpoint,
-        "{case}: selected checkpoint"
-    );
-    let commits = assert_recovered(&home, &script, &killed.acknowledged, &in_flight, &case);
-    let transition_flight = match stop {
-        Stop::BranchTransition(Seam::BeforeWalAppend)
-        | Stop::Archive(Seam::BeforeWalAppend)
-        | Stop::RequestDeletion(Seam::BeforeWalAppend)
-        | Stop::Delete(Seam::BeforeWalAppend) => InFlight::NotDurable,
-        Stop::BranchTransition(_)
-        | Stop::Archive(_)
-        | Stop::RequestDeletion(_)
-        | Stop::Delete(_) => InFlight::Durable,
-        _ => InFlight::Nothing,
-    };
-    assert_eq!(
-        killed.transition_live,
-        killed.transitions.len(),
-        "{case}: transition live before durable handoff"
-    );
-    super::transition_oracle::assert_recovered(
-        &home,
-        &killed.transitions,
-        &transition_flight,
-        &case,
-    );
-    assert_continues(&killed.location, home, &script, commits, &execution, &case);
-}
-
 #[test]
 fn a_home_killed_on_either_side_of_its_first_checkpoint_recovers() {
     assert_killed_home_recovers(Stop::BeforeFirstCheckpoint);
@@ -280,8 +222,62 @@ fn decode(mut bytes: &[u8]) -> Vec<Vec<u8>> {
     artifacts
 }
 
+/// A Store gate's five-second wait is one poll, not the process's deadline.
+/// Completion without arrival still fails; a running operation keeps its gate
+/// armed within the original, finite crash-driver budget.
+fn await_mutation_seam(
+    gate: &worth_store::physical_runtime::certification::CertificationPhysicalMutationPauseGate,
+    worker: &std::thread::ScopedJoinHandle<'_, Result<(), String>>,
+    deadline: Instant,
+) -> bool {
+    loop {
+        if Instant::now() >= deadline {
+            return false;
+        }
+        if gate.await_arrival() {
+            return Instant::now() < deadline;
+        }
+        if worker.is_finished() {
+            return false;
+        }
+    }
+}
+
+#[test]
+fn a_late_mutation_seam_is_not_mistaken_for_a_finished_child() {
+    let deadline = Instant::now() + killed_child::PARK_DEADLINE;
+    let directory = tempfile::tempdir().unwrap();
+    let request = workload::serial_request();
+    let execution = ExecutionRequest::serial(&request);
+    let home = open(&directory.path().join("home"), &execution).unwrap();
+    let script = script();
+    let (completed, parked) = Stop::Commit(Seam::AfterRootReplacement).plan(&script);
+    apply(&home, &execution, &script.steps[..completed]);
+    std::thread::scope(|scope| {
+        let gate = home
+            .certification_serving()
+            .certification_pause_physical_mutation_at(Seam::AfterRootReplacement);
+        let worker = scope.spawn(|| {
+            // Force an actual arrival beyond the gate's first polling window.
+            std::thread::sleep(std::time::Duration::from_secs(6));
+            let request = workload::serial_request();
+            let execution = ExecutionRequest::serial(&request);
+            script.steps[parked.unwrap()]
+                .commit(home.runtime(), &execution)
+                .map(|_| ())
+                .map_err(|stop| format!("{stop:?}"))
+        });
+        let arrived = await_mutation_seam(&gate, &worker, deadline);
+        gate.release();
+        let result = worker.join().unwrap();
+        assert!(arrived, "late Store seam was missed: {result:?}");
+        result.unwrap();
+    });
+}
+
 /// The child: run the plan for its stop, park, announce, and wait to die.
 fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
+    let deadline = Instant::now() + killed_child::PARK_DEADLINE;
     let script = script();
     let request = workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
@@ -332,7 +328,7 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
                     .map_err(|stop| format!("{stop:?}")),
             }
         });
-        if !gate.await_arrival() {
+        if !await_mutation_seam(&gate, &worker, deadline) {
             // A late arrival must not deadlock scope teardown after a failed
             // assertion. Preserve the actual attempt's result in the failure.
             gate.release();
@@ -347,7 +343,7 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
                 .certification_pause_physical_mutation_at(seam);
             gate.release();
             gate = anchor;
-            if !gate.await_arrival() {
+            if !await_mutation_seam(&gate, &worker, deadline) {
                 gate.release();
                 panic!("{stop:?}: anchor did not park: {:?}", worker.join());
             }
