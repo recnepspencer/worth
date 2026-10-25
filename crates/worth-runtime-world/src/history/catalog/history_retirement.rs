@@ -82,11 +82,13 @@ impl CompositeHistoryCatalog {
     /// descendant is removed, which ends its parent's dependency on it, so
     /// the walk continues past the branch's fork point into inherited
     /// history no live branch reaches any more. It stops at the first
-    /// commit something still needs: a live product head or a descendant
-    /// owns that commit and everything behind it, so the release is
-    /// complete; a held read, receipt, forming child or unconsumed delivery
-    /// owns nothing behind it, so the walk reports it as the commit to
-    /// resume from. A `from` already removed has nothing left to release.
+    /// commit something still needs: a head a live product reference carries
+    /// or an installed descendant owns that commit and everything behind it,
+    /// so the release is complete; a held read, receipt, forming child,
+    /// unconsumed delivery or a head still in publication or creation custody
+    /// owns nothing behind it, so the walk reports it as the commit to resume
+    /// from. A `from` already removed has nothing left to release. Whoever
+    /// later removes an owning descendant walks on from it the same way.
     pub(crate) fn release_retired_branch_history(
         &self,
         from: &CompositeCommitIdentity,
@@ -142,6 +144,11 @@ fn retired_branch_need(
     let reachability = lock_index(&state.reachability)
         .lookup(commit)
         .expect("an installed commit has a reachability row");
+    // A head a live product reference carries owns its ancestry whatever
+    // else is forming on it; one still in custody is only held.
+    if reachability.held_by_product_head() {
+        return RetiredBranchNeed::Owned;
+    }
     if reachability.descendant_dependencies() > 0 {
         // A child still forming may be abandoned, leaving this commit with
         // no descendant; only an installed child owns the ancestry.
@@ -150,9 +157,6 @@ fn retired_branch_need(
         } else {
             RetiredBranchNeed::Owned
         };
-    }
-    if reachability.held_by_product_head() {
-        return RetiredBranchNeed::Owned;
     }
     let awaits_delivery = installed(state, commit)
         .and_then(|entry| entry.publication.as_ref())

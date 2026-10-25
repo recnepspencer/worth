@@ -35,7 +35,7 @@ impl std::fmt::Debug for CompositeHistoryProtectionObligation {
 impl Drop for CompositeHistoryProtectionObligation {
     fn drop(&mut self) {
         let mut reachability = lock_index(&self.reachability);
-        reachability.decrement_direct_protection(&self.identity, self.class);
+        reachability.decrement_direct_protection(&self.identity);
     }
 }
 
@@ -55,9 +55,21 @@ impl CompositeHistoryProtectionObligation {
 
 /// History-issued proof that one product head keeps its exact installed commit
 /// reachable. The generic protection class remains private to History.
+///
+/// Only a seated head owns the ancestry behind its commit: one a live product
+/// reference carries. A head still in publication or creation custody is held
+/// like a read, so a closed branch's release waits for it instead of leaving
+/// the custody's eventual drop with nothing to walk.
 #[must_use = "a product head must retain its exact installed commit"]
 pub(crate) struct ProductHeadHistoryProtectionObligation {
     protection: CompositeHistoryProtectionObligation,
+    seated: bool,
+}
+
+impl Drop for ProductHeadHistoryProtectionObligation {
+    fn drop(&mut self) {
+        self.unseat();
+    }
 }
 
 impl std::fmt::Debug for ProductHeadHistoryProtectionObligation {
@@ -72,7 +84,31 @@ impl std::fmt::Debug for ProductHeadHistoryProtectionObligation {
 impl ProductHeadHistoryProtectionObligation {
     pub(in crate::history) fn issued(protection: CompositeHistoryProtectionObligation) -> Self {
         debug_assert_eq!(protection.class, HistoryProtectionClass::ProductHead);
-        Self { protection }
+        Self {
+            protection,
+            seated: false,
+        }
+    }
+
+    /// A live product reference now carries this head.
+    pub(crate) fn seat(&mut self) {
+        if !self.seated {
+            lock_index(&self.protection.reachability).seat_product_head(&self.protection.identity);
+            self.seated = true;
+        }
+    }
+
+    /// The product reference that carried this head let it go.
+    pub(crate) fn unseat(&mut self) {
+        if self.seated {
+            lock_index(&self.protection.reachability)
+                .unseat_product_head(&self.protection.identity);
+            self.seated = false;
+        }
+    }
+
+    pub(crate) const fn is_seated(&self) -> bool {
+        self.seated
     }
 
     pub(crate) fn commit_identity(&self) -> &CompositeCommitIdentity {

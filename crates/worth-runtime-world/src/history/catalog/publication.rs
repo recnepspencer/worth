@@ -43,8 +43,7 @@ impl CompositeHistoryCatalog {
         if publication.facts().is_none() {
             return Err(Denial::NotPerformed);
         }
-        lock_index(&state.reachability)
-            .increment_direct_protection(identity, HistoryProtectionClass::ExplicitObligation)?;
+        lock_index(&state.reachability).increment_direct_protection(identity)?;
         let history = ExplicitCommitHistoryProtectionObligation::issued(
             CompositeHistoryProtectionObligation::new(
                 Arc::clone(&state.reachability),

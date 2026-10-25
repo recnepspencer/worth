@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::history::retention::HistoryProtectionClass;
 use crate::identity::CompositeCommitIdentity;
 
 use super::counters::{lock_counters, HistoryCatalogCountersHandle};
@@ -10,9 +9,10 @@ use super::denial::CompositeHistoryCatalogDenial;
 /// The only reachability fact the history owner stores for an installed
 /// occurrence. A dependency is acquired before a child reservation escapes;
 /// direct protection is acquired by an exact RAII obligation. The share of
-/// direct protections held by live product heads is counted apart, so a
-/// retired branch can tell history a live branch owns from a held read; so is
-/// the share of dependencies whose child is still forming.
+/// direct protections seated in a live product reference is counted apart, so
+/// a retired branch can tell history a live branch owns from a held read or a
+/// head still in custody; so is the share of dependencies whose child is
+/// still forming.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(in crate::history) struct HistoryReachabilityRecord {
     descendant_dependencies: usize,
@@ -36,37 +36,6 @@ impl HistoryReachabilityRecord {
 
     pub(super) const fn held_by_product_head(self) -> bool {
         self.product_head_protections > 0
-    }
-
-    fn acquire(
-        &mut self,
-        class: HistoryProtectionClass,
-        identity: &CompositeCommitIdentity,
-    ) -> Result<(), CompositeHistoryCatalogDenial> {
-        let overflow = || CompositeHistoryCatalogDenial::ProtectionCountOverflow(identity.clone());
-        let direct = self
-            .direct_protections
-            .checked_add(1)
-            .ok_or_else(overflow)?;
-        if class == HistoryProtectionClass::ProductHead {
-            // Product-head protections are a share of the direct ones.
-            self.product_head_protections += 1;
-        }
-        self.direct_protections = direct;
-        Ok(())
-    }
-
-    fn release(&mut self, class: HistoryProtectionClass) {
-        if class == HistoryProtectionClass::ProductHead {
-            self.product_head_protections = self
-                .product_head_protections
-                .checked_sub(1)
-                .expect("each product head releases its own protection");
-        }
-        self.direct_protections = self
-            .direct_protections
-            .checked_sub(1)
-            .expect("each protection obligation releases one direct protection");
     }
 }
 
@@ -193,8 +162,7 @@ impl HistoryReachabilityIndex {
     }
 
     /// The catalog still owns its installation lock and has not exposed this
-    /// fresh row. Its first protection is its product head, with no capacity
-    /// check.
+    /// fresh row. Its first protection is exactly one, with no capacity check.
     pub(super) fn protect_reserved_slot(&mut self, slot: &HistoryReachabilitySlot) {
         let mut held = lock_slot(slot);
         let record = held
@@ -202,7 +170,6 @@ impl HistoryReachabilityIndex {
             .expect("new installation has a reachability row");
         assert_eq!(*record, HistoryReachabilityRecord::default());
         record.direct_protections = 1;
-        record.product_head_protections = 1;
         lock_counters(&self.counters).record_direct_protection_acquisition();
     }
 
@@ -210,11 +177,12 @@ impl HistoryReachabilityIndex {
         &self,
         slot: &HistoryReachabilitySlot,
         identity: &CompositeCommitIdentity,
-        class: HistoryProtectionClass,
     ) -> Result<(), CompositeHistoryCatalogDenial> {
         let mut held = lock_slot(slot);
         let record = held.as_mut().expect("installed reachability record");
-        record.acquire(class, identity)?;
+        record.direct_protections = record.direct_protections.checked_add(1).ok_or_else(|| {
+            CompositeHistoryCatalogDenial::ProtectionCountOverflow(identity.clone())
+        })?;
         lock_counters(&self.counters).record_direct_protection_acquisition();
         Ok(())
     }
@@ -222,29 +190,57 @@ impl HistoryReachabilityIndex {
     pub(super) fn increment_direct_protection(
         &mut self,
         identity: &CompositeCommitIdentity,
-        class: HistoryProtectionClass,
     ) -> Result<(), CompositeHistoryCatalogDenial> {
         let slot = self
             .records
             .get(identity)
             .expect("installed reachability record");
-        self.increment_reserved_protection(slot, identity, class)
+        self.increment_reserved_protection(slot, identity)
     }
 
     pub(in crate::history) fn decrement_direct_protection(
         &mut self,
         identity: &CompositeCommitIdentity,
-        class: HistoryProtectionClass,
     ) {
         let slot = self
             .records
             .get(identity)
             .expect("a live protection obligation retains its installed row");
         let mut held = lock_slot(slot);
-        held.as_mut()
-            .expect("installed reachability record")
-            .release(class);
+        let record = held.as_mut().expect("installed reachability record");
+        record.direct_protections = record
+            .direct_protections
+            .checked_sub(1)
+            .expect("each protection obligation releases one direct protection");
         lock_counters(&self.counters).record_direct_protection_release();
+    }
+
+    /// A live product reference now carries the head protection on
+    /// `identity`; it is a share of that commit's direct protections.
+    pub(in crate::history) fn seat_product_head(&mut self, identity: &CompositeCommitIdentity) {
+        self.adjust_seated_heads(identity, |seated| seated.checked_add(1));
+    }
+
+    /// The product reference that carried a head on `identity` let it go.
+    pub(in crate::history) fn unseat_product_head(&mut self, identity: &CompositeCommitIdentity) {
+        self.adjust_seated_heads(identity, |seated| seated.checked_sub(1));
+    }
+
+    fn adjust_seated_heads(
+        &mut self,
+        identity: &CompositeCommitIdentity,
+        adjust: impl FnOnce(usize) -> Option<usize>,
+    ) {
+        let slot = self
+            .records
+            .get(identity)
+            .expect("a seated head protection retains its installed row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
+        let seated = adjust(record.product_head_protections)
+            .expect("each head is seated at most once and unseated once");
+        assert!(seated <= record.direct_protections);
+        record.product_head_protections = seated;
     }
 
     pub(super) fn remove_installed(

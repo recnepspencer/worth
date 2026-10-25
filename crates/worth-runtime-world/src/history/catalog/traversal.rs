@@ -152,8 +152,7 @@ pub(super) fn protect_installed(
     state: &CompositeHistoryCatalogState,
     identity: &CompositeCommitIdentity,
 ) -> Result<CompositeHistoryProtectionObligation, CompositeHistoryCatalogDenial> {
-    lock_index(&state.reachability)
-        .increment_direct_protection(identity, HistoryProtectionClass::ExplicitObligation)?;
+    lock_index(&state.reachability).increment_direct_protection(identity)?;
     Ok(CompositeHistoryProtectionObligation::new(
         Arc::clone(&state.reachability),
         identity.clone(),

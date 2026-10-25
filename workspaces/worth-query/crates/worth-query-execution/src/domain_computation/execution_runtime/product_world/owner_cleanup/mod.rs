@@ -166,13 +166,12 @@ pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
     retired_component_count: usize,
 }
 
-pub(super) enum WorthQueryProductBranchHistoryCleanup {
-    /// A closed fork releases its history from `resume`, first its retired
-    /// head, toward the root until something live owns the rest.
-    RetiredBranch { resume: CompositeCommitIdentity },
-    ExactUnpublished {
-        pending: Vec<CompositeCommitIdentity>,
-    },
+/// Where history release resumes: a closed fork's retired head, or the
+/// successor an unpublished attempt installed. Each walks toward the root
+/// until something live owns the rest, so a recovered successor also frees
+/// the closed branch it alone kept.
+pub(super) struct WorthQueryProductBranchHistoryCleanup {
+    resume: Vec<CompositeCommitIdentity>,
 }
 
 impl WorthQueryProductBranchOwnerCleanupRecord {
@@ -180,10 +179,8 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         let (retired_head, retirement_boundary, pending) = report.into_cleanup_parts();
         Self {
             // The root branch has no boundary; its history outlives it.
-            history: retirement_boundary.map(|_| {
-                WorthQueryProductBranchHistoryCleanup::RetiredBranch {
-                    resume: retired_head,
-                }
+            history: retirement_boundary.map(|_| WorthQueryProductBranchHistoryCleanup {
+                resume: vec![retired_head],
             }),
             pending,
             retired_component_count: 0,
@@ -194,8 +191,8 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         let (unpublished_history_candidates, pending) = cleanup.into_parts();
         Self {
             history: (!unpublished_history_candidates.is_empty()).then_some(
-                WorthQueryProductBranchHistoryCleanup::ExactUnpublished {
-                    pending: unpublished_history_candidates,
+                WorthQueryProductBranchHistoryCleanup {
+                    resume: unpublished_history_candidates,
                 },
             ),
             pending,
@@ -210,14 +207,13 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         mut checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
     {
-        let history_work = self.history.as_ref().map_or(0, |history| match history {
-            WorthQueryProductBranchHistoryCleanup::ExactUnpublished { pending } => pending.len(),
-            WorthQueryProductBranchHistoryCleanup::RetiredBranch { .. } => runtime
+        let history_work = self.history.as_ref().map_or(0, |_| {
+            runtime
                 .owner
                 .inspection_port()
                 .history_snapshot()
                 .map(|snapshot| snapshot.installed_commits())
-                .unwrap_or(0),
+                .unwrap_or(0)
         });
         let history_work = u64::try_from(history_work)
             .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;

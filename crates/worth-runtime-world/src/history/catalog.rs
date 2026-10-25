@@ -226,7 +226,7 @@ impl CompositeHistoryCatalog {
                 identity,
             ));
         }
-        lock_index(&state.reachability).increment_direct_protection(&identity, class)?;
+        lock_index(&state.reachability).increment_direct_protection(&identity)?;
         Ok(CompositeHistoryProtectionObligation::new(
             Arc::clone(&state.reachability),
             identity,

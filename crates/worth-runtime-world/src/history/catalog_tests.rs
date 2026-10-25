@@ -30,3 +30,5 @@ mod ancestor_selection;
 
 #[path = "catalog_tests/branch_release.rs"]
 mod branch_release;
+#[path = "catalog_tests/branch_release_custody.rs"]
+mod branch_release_custody;

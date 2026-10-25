@@ -69,7 +69,10 @@ A selected occurrence pins exact history for repeatable reads while the branch
 head advances. Closing a product retires its World history first and then any
 private component branches. History a live branch still reaches is not the
 closed branch's to release: a live fork keeps its whole ancestry, including
-history it inherited from the closed branch, and the close completes. Retained
+history it inherited from the closed branch, and the close completes. A
+publication that installed its successor without moving the head keeps that
+history until its recovery is released, and the release then frees the closed
+branch's history the same way. Retained
 reads can defer cleanup; the returned pending cleanup retains the only retry
 authority. A retired occurrence cannot be selected again, even if an
 application later reuses the same display name.

@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use super::super::CompositeHistoryCatalog;
 use super::fixtures::{history_contract, linear_history, HistoryFixture};
-use crate::history::CompositeRuntimeWorldCommit;
+use crate::history::{CompositeRuntimeWorldCommit, ProductHeadHistoryProtectionObligation};
 
-fn installed(
+pub(super) fn installed(
     fixture: &HistoryFixture,
     commits: &[Arc<CompositeRuntimeWorldCommit>],
     maximum_commits: u64,
@@ -19,7 +19,7 @@ fn installed(
     catalog
 }
 
-fn append(
+pub(super) fn append(
     catalog: &CompositeHistoryCatalog,
     fixture: &mut HistoryFixture,
     parent: &CompositeRuntimeWorldCommit,
@@ -30,14 +30,24 @@ fn append(
         .expect("child install")
 }
 
+/// A head a live product reference carries, as the registry seats it.
+pub(super) fn live_head(
+    catalog: &CompositeHistoryCatalog,
+    commit: &CompositeRuntimeWorldCommit,
+) -> ProductHeadHistoryProtectionObligation {
+    let mut head = catalog.protect_product_head(commit).unwrap();
+    head.seat();
+    head
+}
+
 #[test]
 fn a_refused_fork_closing_onto_its_live_parent_releases_only_its_own_commits() {
     let (mut fixture, commits) = linear_history(3);
     let catalog = installed(&fixture, &commits, 8);
-    let _parent_head = catalog.protect_product_head(&commits[2]).unwrap();
+    let _parent_head = live_head(&catalog, &commits[2]);
     let first = append(&catalog, &mut fixture, &commits[2]);
     let head = append(&catalog, &mut fixture, &first);
-    drop(catalog.protect_product_head(&head).unwrap());
+    drop(live_head(&catalog, &head));
 
     let (released, held) = catalog
         .release_retired_branch_history(head.identity())
@@ -53,9 +63,9 @@ fn a_refused_fork_closing_onto_its_live_parent_releases_only_its_own_commits() {
 fn a_closed_parent_a_live_fork_extends_releases_nothing_and_completes() {
     let (mut fixture, commits) = linear_history(3);
     let catalog = installed(&fixture, &commits, 8);
-    let parent_head = catalog.protect_product_head(&commits[2]).unwrap();
+    let parent_head = live_head(&catalog, &commits[2]);
     let fork = append(&catalog, &mut fixture, &commits[2]);
-    let _fork_head = catalog.protect_product_head(&fork).unwrap();
+    let _fork_head = live_head(&catalog, &fork);
 
     drop(parent_head);
     let (released, held) = catalog
@@ -70,7 +80,7 @@ fn a_closed_parent_a_live_fork_extends_releases_nothing_and_completes() {
 fn a_held_read_keeps_the_release_pending_until_it_lets_go() {
     let (mut fixture, commits) = linear_history(3);
     let catalog = installed(&fixture, &commits, 8);
-    let _parent_head = catalog.protect_product_head(&commits[2]).unwrap();
+    let _parent_head = live_head(&catalog, &commits[2]);
     let first = append(&catalog, &mut fixture, &commits[2]);
     let head = append(&catalog, &mut fixture, &first);
     let read = catalog.protect_explicit_commit(&first).unwrap();
@@ -100,10 +110,10 @@ fn a_held_read_keeps_the_release_pending_until_it_lets_go() {
 fn the_last_closed_branch_releases_inherited_history_nothing_live_reaches() {
     let (mut fixture, commits) = linear_history(3);
     let catalog = installed(&fixture, &commits, 8);
-    let _root_head = catalog.protect_product_head(&commits[0]).unwrap();
-    let parent_head = catalog.protect_product_head(&commits[2]).unwrap();
+    let _root_head = live_head(&catalog, &commits[0]);
+    let parent_head = live_head(&catalog, &commits[2]);
     let fork = append(&catalog, &mut fixture, &commits[2]);
-    let fork_head = catalog.protect_product_head(&fork).unwrap();
+    let fork_head = live_head(&catalog, &fork);
 
     drop(parent_head);
     let (released, _) = catalog
@@ -136,7 +146,7 @@ fn the_last_closed_branch_releases_inherited_history_nothing_live_reaches() {
 fn a_forming_child_holds_the_release_until_it_settles() {
     let (mut fixture, commits) = linear_history(2);
     let catalog = installed(&fixture, &commits, 8);
-    let _root_head = catalog.protect_product_head(&commits[0]).unwrap();
+    let _root_head = live_head(&catalog, &commits[0]);
     let child = fixture.child_of(&commits[1]);
     let forming = catalog.reserve(child.as_ref()).expect("child reservation");
 
@@ -161,13 +171,13 @@ fn fork_head_step_adopt_cycles_retain_constant_history() {
     let (mut fixture, commits) = linear_history(1);
     let catalog = installed(&fixture, &commits, 6);
     let mut head = Arc::clone(&commits[0]);
-    let mut head_protection = catalog.protect_product_head(&head).unwrap();
+    let mut head_protection = live_head(&catalog, &head);
     let mut steady = None;
     for cycle in 0..100 {
         let fork = append(&catalog, &mut fixture, &head);
-        let fork_protection = catalog.protect_product_head(&fork).unwrap();
+        let fork_protection = live_head(&catalog, &fork);
         let step = append(&catalog, &mut fixture, &fork);
-        let step_protection = catalog.protect_product_head(&step).unwrap();
+        let step_protection = live_head(&catalog, &step);
         drop(fork_protection);
         drop(catalog.retire_unprotected_history(step.identity()).unwrap());
 

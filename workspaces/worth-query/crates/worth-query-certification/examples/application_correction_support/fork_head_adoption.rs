@@ -3,7 +3,12 @@
 //! as its own, so corrections reach across the adoption, and retained history
 //! grows by the same amount each cycle.
 use super::{
-    authentication::*, edit::Value, host, other_edit::OtherEdit, query::Row, tree_reapplication::*,
+    authentication::*,
+    edit::{Edited, MissingValue, Value},
+    host,
+    other_edit::OtherEdit,
+    query::Row,
+    tree_reapplication::*,
 };
 use worth_query_host::facade::{
     application_entry::*, application_installation::WorthQueryCheckpointCapturePolicy,
@@ -14,6 +19,7 @@ pub fn run() {
     adoption_cycles_retain_linear_history();
     refused_fork_leaves_its_parent_unchanged();
     corrections_reach_across_an_adoption();
+    super::fork_head_cleanup::run();
 }
 
 const CYCLES: usize = 100;
@@ -148,7 +154,7 @@ fn corrections_reach_across_an_adoption() {
     println!("corrections reverse parent-made and fork-made sources across an adoption");
 }
 
-fn fork(host: &host::Host, from: WorthQueryProductBranch) -> WorthQueryProductBranch {
+pub(super) fn fork(host: &host::Host, from: WorthQueryProductBranch) -> WorthQueryProductBranch {
     host.with_host_advancement(|phase| {
         host.runtime()
             .branches()
@@ -161,7 +167,7 @@ fn fork(host: &host::Host, from: WorthQueryProductBranch) -> WorthQueryProductBr
 }
 
 /// Closes a replaced head; its cleanup must finish now, not wait on its fork.
-fn adopt(host: &host::Host, replaced: WorthQueryProductBranch) {
+pub(super) fn adopt(host: &host::Host, replaced: WorthQueryProductBranch) {
     let closed = host
         .with_host_advancement(|phase| {
             host.runtime()
@@ -205,10 +211,22 @@ fn selected_commit(
 
 /// Whether the ordinary edit refuses in the domain, publishing nothing.
 fn refuses(host: &host::Host, branch: WorthQueryProductBranch, value: Value, key: &str) -> bool {
+    matches!(
+        mutate(host, branch, value, key),
+        WorthQueryApplicationMutationOutcome::DomainDenied(_)
+    )
+}
+
+/// One admitted ordinary edit on `branch`, whatever its outcome.
+pub(super) fn mutate(
+    host: &host::Host,
+    branch: WorthQueryProductBranch,
+    value: Value,
+    key: &str,
+) -> WorthQueryApplicationMutationOutcome<MissingValue, Edited> {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
-    let outcome = host
-        .runtime()
+    host.runtime()
         .request(&principal, &scope)
         .on_branch(branch)
         .advanced()
@@ -219,11 +237,7 @@ fn refuses(host: &host::Host, branch: WorthQueryProductBranch, value: Value, key
         .without_source()
         .idempotency(&key.to_owned())
         .execute_in_program(host, ExecutionAllocationPolicy::SystemAllocation)
-        .expect("the ordinary edit is admitted");
-    matches!(
-        outcome,
-        WorthQueryApplicationMutationOutcome::DomainDenied(_)
-    )
+        .expect("the ordinary edit is admitted")
 }
 
 fn reverse_on(

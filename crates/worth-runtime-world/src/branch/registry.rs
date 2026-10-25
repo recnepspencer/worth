@@ -262,6 +262,9 @@ fn release_installed_entry(
     branch: &ProductBranchIdentity,
 ) -> Option<ProductBranchRegistryEntry> {
     let entry = state.entries.remove(branch)?;
+    // A clone of the cell may outlive the registry entry; its head no longer
+    // owns history either way.
+    entry.cell.seat_head(false);
     state.lifecycles.remove(&entry.lifecycle);
     if state.root.as_ref() == Some(branch) {
         state.root = None;
