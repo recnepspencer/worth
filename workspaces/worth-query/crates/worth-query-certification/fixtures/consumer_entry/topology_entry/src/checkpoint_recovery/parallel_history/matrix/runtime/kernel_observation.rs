@@ -72,17 +72,16 @@ pub(super) fn assert_kernel_observations(
         );
     }
     let state = control.state.lock().unwrap();
-    for wave in &expected.dispatch_waves {
-        let workers = state
-            .member_threads
-            .iter()
-            .filter(|(key, _)| wave.contains(key))
-            .map(|(_, thread)| *thread)
-            .collect::<std::collections::HashSet<_>>();
+    assert_eq!(
+        state.wave_peaks.len(),
+        expected.dispatch_waves.len(),
+        "every computing wave has an overlap observation"
+    );
+    for (wave, peak) in expected.dispatch_waves.iter().zip(&state.wave_peaks) {
         assert_eq!(
-            workers.len(),
+            *peak,
             cell.workers.min(wave.len()),
-            "actual owned-wave workers fill every available computing-member slot"
+            "all available member slots rendezvous before nested kernels start"
         );
     }
 

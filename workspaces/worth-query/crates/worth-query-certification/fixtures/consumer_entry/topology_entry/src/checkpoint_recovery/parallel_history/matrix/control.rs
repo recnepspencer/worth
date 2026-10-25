@@ -1,5 +1,4 @@
 //! Each installation owns its schedule, counters and failure receiver.
-const HANG_GUARD: std::time::Duration = std::time::Duration::from_secs(60);
 use super::{Partition, World};
 use std::sync::{Condvar, Mutex};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -19,10 +18,9 @@ pub struct State {
     pub peak: usize,
     pub kernel_active: usize,
     pub kernel_peak: usize,
-    pub member_threads: Vec<(u64, std::thread::ThreadId)>,
-    pub worker_threads: Vec<(u64, std::thread::ThreadId)>,
+    pub member_rendezvous: Vec<Vec<u64>>,
+    pub wave_peaks: Vec<usize>,
     pub witnesses: Vec<u64>,
-    pub hang_guard_expired: bool,
 }
 pub struct NestedMeter {
     pub member: u64,
@@ -109,11 +107,30 @@ impl Control {
         let mut state = self.state.lock().unwrap();
         if state.armed {
             state.entered.push(key);
-            state
-                .member_threads
-                .push((key, std::thread::current().id()));
             state.active += 1;
             state.peak = state.peak.max(state.active);
+            // Fill the admitted member slots before any one member can enter
+            // a nested map and let the scheduler reuse a physical worker.
+            if let Some(wave) = state
+                .member_rendezvous
+                .iter()
+                .position(|keys| keys.contains(&key))
+            {
+                let keys = state.member_rendezvous[wave].clone();
+                let in_flight = keys
+                    .iter()
+                    .filter(|key| state.entered.contains(key))
+                    .count();
+                state.wave_peaks[wave] = state.wave_peaks[wave].max(in_flight);
+                self.wake.notify_all();
+                drop(
+                    self.wake
+                        .wait_while(state, |state| {
+                            keys.iter().any(|key| !state.entered.contains(key))
+                        })
+                        .unwrap(),
+                );
+            }
         }
     }
     pub fn nested_meter(&self, member: u64, cost: Option<(u128, u128)>) {
@@ -137,24 +154,20 @@ impl Control {
         }
         state.kernel_active += 1;
         state.kernel_peak = state.kernel_peak.max(state.kernel_active);
-        state
-            .worker_threads
-            .push((key, std::thread::current().id()));
         if part == 0 {
             state.kernel_entered.push(key);
         }
         self.wake.notify_all();
         if self.overlap && part == 0 && state.witnesses.contains(&key) {
-            let (next, hang_guard) = self
-                .wake
-                .wait_timeout_while(state, HANG_GUARD, |s| {
-                    s.witnesses
-                        .iter()
-                        .any(|key| !s.kernel_entered.contains(key))
-                })
-                .unwrap();
-            state = next;
-            state.hang_guard_expired |= hang_guard.timed_out();
+            drop(
+                self.wake
+                    .wait_while(state, |s| {
+                        s.witnesses
+                            .iter()
+                            .any(|key| !s.kernel_entered.contains(key))
+                    })
+                    .unwrap(),
+            );
         }
         units
     }

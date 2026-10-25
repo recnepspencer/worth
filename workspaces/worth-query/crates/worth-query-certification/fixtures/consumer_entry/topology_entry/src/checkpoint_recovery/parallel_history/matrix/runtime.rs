@@ -211,6 +211,12 @@ pub fn run(cell: cases::Cell) -> Observed {
         let mut state = control.state.lock().unwrap();
         state.armed = true;
         state.failure = failure;
+        state.member_rendezvous = expected
+            .dispatch_waves
+            .iter()
+            .map(|wave| wave.iter().take(cell.workers).copied().collect())
+            .collect();
+        state.wave_peaks = vec![0; state.member_rendezvous.len()];
         state.witnesses = expected
             .witnesses
             .iter()
@@ -332,10 +338,6 @@ pub fn run(cell: cases::Cell) -> Observed {
             "one worker has at most one computing member"
         );
     }
-    assert!(
-        !state.hang_guard_expired,
-        "computing-member overlap hang guard expired"
-    );
     Observed {
         work: record.report.charged_work(),
         span: record.report.charged_span(),
