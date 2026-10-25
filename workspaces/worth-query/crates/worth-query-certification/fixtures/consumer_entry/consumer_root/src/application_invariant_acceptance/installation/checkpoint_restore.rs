@@ -21,6 +21,7 @@ where
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::clone(&world.invariant_calls),
             invariant_probe: Arc::clone(&world.invariant_probe),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::clone(&world.producer_authorization_denials),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },

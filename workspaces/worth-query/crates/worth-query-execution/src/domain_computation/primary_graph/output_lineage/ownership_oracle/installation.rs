@@ -45,6 +45,7 @@ impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
                     resolver,
                     Arc::new(AtomicUsize::new(0)),
                     Arc::new(AtomicUsize::new(planar_invariant::INVARIANT_PROBE_STANDARD)),
+                    None,
                 )
             },
         )?;

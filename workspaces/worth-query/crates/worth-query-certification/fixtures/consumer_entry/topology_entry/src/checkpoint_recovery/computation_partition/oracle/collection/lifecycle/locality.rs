@@ -90,8 +90,8 @@ fn run(count: usize) -> Work {
         reads.examined_candidate_count(),
         reads.projected_record_count(),
         reads.projected_field_count(),
-        reads.adjacency_list_read_count(),
-        reads.edge_scan_count(),
+        reads.reads().adjacency_lists_read(),
+        reads.reads().adjacency_edges_inspected(),
     ];
     drop(rows);
     let selected = request

@@ -78,8 +78,7 @@ pub(super) fn select_root_path_union(
         predicate_work_units: work.predicate_work_units,
         work_units: work.work_units,
         predicate_index_generation: None,
-        adjacency_lists_read: work.adjacency_lists_read,
-        relation_records_examined: work.relation_records_examined,
+        reads: work.reads,
     })
 }
 
@@ -267,6 +266,7 @@ fn apply_guards(
         work.charge_predicate(
             read.entity_records_examined(),
             read.matching_entity_ids_reserved(),
+            read.field_reads(),
             guard.field().as_str(),
         )?;
         let matching = read.into_matching_entity_ids();

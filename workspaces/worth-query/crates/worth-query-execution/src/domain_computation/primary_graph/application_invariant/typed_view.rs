@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use worth_foundational::facade::ContractValidatedAspectValueView;
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::{
     identity::{EntityId, RelationId},
@@ -9,12 +8,17 @@ use worth_relational::facade::{
 
 use super::prepared_scope::{ApplicationInvariantAdmission, ApplicationInvariantAdmissionAccess};
 use super::{
-    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
+    WorthQueryApplicationInvariantFieldBinding, WorthQueryInvariantAccessDenial,
+    WorthQueryInvariantAccessDenialKind,
 };
 
+use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
+use super::read_observation::InvariantReadObservation;
+
+mod field_reads;
 mod interruption;
 mod relation_reads;
+mod touched_entities;
 
 pub struct WorthQueryApplicationInvariantEntity<Schema, Entity> {
     entity_id: EntityId,
@@ -94,6 +98,7 @@ pub struct WorthQueryApplicationInvariantReadView<'runtime, Schema> {
     binding_identity: ApplicationSchemaBindingIdentity,
     admission: ApplicationInvariantAdmissionAccess,
     posture: ViewPosture,
+    reads: &'runtime InvariantReadObservation,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -101,6 +106,7 @@ pub struct WorthQueryApplicationInvariantScopePlanner<'borrow, 'runtime, Schema 
     lower: &'borrow mut CustomInvariantScopePlanner<'runtime>,
     binding_identity: ApplicationSchemaBindingIdentity,
     admission: ApplicationInvariantAdmissionAccess,
+    reads: InvariantReadObservation,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -108,6 +114,7 @@ pub struct WorthQueryApplicationInvariantContext<'borrow, 'runtime, Schema = ()>
     lower: &'borrow CustomInvariantExecutionContext<'runtime>,
     binding_identity: ApplicationSchemaBindingIdentity,
     admission: ApplicationInvariantAdmissionAccess,
+    reads: InvariantReadObservation,
     _schema: PhantomData<fn() -> Schema>,
 }
 
@@ -122,12 +129,19 @@ impl<'borrow, 'runtime, Schema>
             lower,
             binding_identity,
             admission: ApplicationInvariantAdmissionAccess::planning(),
+            reads: InvariantReadObservation::default(),
             _schema: PhantomData,
         }
     }
 
     pub(super) fn freeze_admission(&self) -> std::sync::Arc<ApplicationInvariantAdmission> {
         self.admission.freeze()
+    }
+
+    /// Actual reads made during preparation so far, across proposed and committed views.
+    /// Observations grant no access and do not affect the rule's verdict.
+    pub fn reads(&self) -> WorthQueryInvariantProjectionWork {
+        self.reads.reads()
     }
 
     pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
@@ -139,6 +153,7 @@ impl<'borrow, 'runtime, Schema>
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
             posture: ViewPosture::Proposed,
+            reads: &self.reads,
             _schema: PhantomData,
         }
     }
@@ -152,6 +167,7 @@ impl<'borrow, 'runtime, Schema>
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
             posture: ViewPosture::Committed,
+            reads: &self.reads,
             _schema: PhantomData,
         }
     }
@@ -162,13 +178,22 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         lower: &'borrow CustomInvariantExecutionContext<'runtime>,
         binding_identity: ApplicationSchemaBindingIdentity,
         admission: std::sync::Arc<ApplicationInvariantAdmission>,
+        preparation_reads: WorthQueryInvariantProjectionWork,
     ) -> Self {
         Self {
             lower,
             binding_identity,
             admission: ApplicationInvariantAdmissionAccess::Evaluation(admission),
+            reads: InvariantReadObservation::from_preparation(preparation_reads),
             _schema: PhantomData,
         }
+    }
+
+    /// Actual preparation reads plus reads made by this evaluation so far.
+    /// Each evaluation starts from the same immutable preparation observation;
+    /// creating another view does not reset it. Counts do not affect the verdict.
+    pub fn reads(&self) -> WorthQueryInvariantProjectionWork {
+        self.reads.reads()
     }
 
     pub fn proposed(&self) -> WorthQueryApplicationInvariantReadView<'_, Schema> {
@@ -180,6 +205,7 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
             posture: ViewPosture::Proposed,
+            reads: &self.reads,
             _schema: PhantomData,
         }
     }
@@ -193,103 +219,13 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
             binding_identity: self.binding_identity.clone(),
             admission: self.admission.clone(),
             posture: ViewPosture::Committed,
+            reads: &self.reads,
             _schema: PhantomData,
         }
     }
 }
 
 impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> {
-    /// Returns directly mutated visible entities of the bound kind, including
-    /// old and new relation endpoints but excluding traversal-only neighbors.
-    pub fn touched_entities_of<Entity>(
-        &self,
-        entity: &WorthQueryApplicationInvariantEntityBinding<Schema, Entity>,
-    ) -> Result<
-        Vec<WorthQueryApplicationInvariantEntity<Schema, Entity>>,
-        WorthQueryInvariantAccessDenial,
-    > {
-        self.check_binding(&entity.binding_identity)?;
-        self.relations
-            .require_entity_kind(entity.entity_kind)
-            .map_err(|error| map_structural_error(error, "touched entity kind"))?;
-        let mut entities = Vec::new();
-        for entity_id in self.touched_entities.iter().copied() {
-            let kind = match self.relations.readable_entity_kind(entity_id) {
-                Ok(kind) => kind,
-                Err(StructuralReadError::RecordUnavailable) => continue,
-                Err(error) => return Err(map_structural_error(error, "touched entity")),
-            };
-            if kind == Some(entity.entity_kind) {
-                self.admission.entity(entity_id)?;
-                entities.push(self.entity(entity_id, entity.entity_kind));
-            }
-        }
-        Ok(entities)
-    }
-
-    /// Returns directly mutated visible entities carrying the bound field.
-    /// Relation before- and after-image endpoints are included; adjacency-only
-    /// traversal neighbors are excluded.
-    pub fn touched_entities<Entity, Value>(
-        &self,
-        field: &WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value>,
-    ) -> Result<
-        Vec<WorthQueryApplicationInvariantEntity<Schema, Entity>>,
-        WorthQueryInvariantAccessDenial,
-    > {
-        self.check_binding(&field.binding_identity)?;
-        self.relations
-            .require_entity_kind(field.entity_kind)
-            .map_err(|error| map_structural_error(error, "touched entity kind"))?;
-        let mut entities = Vec::new();
-        for entity_id in self.touched_entities.iter().copied() {
-            let kind = match self.relations.readable_entity_kind(entity_id) {
-                Ok(kind) => kind,
-                Err(StructuralReadError::RecordUnavailable) => continue,
-                Err(error) => return Err(map_structural_error(error, "touched entity")),
-            };
-            if kind == Some(field.entity_kind) {
-                self.admission.entity(entity_id)?;
-                entities.push(self.entity(entity_id, field.entity_kind));
-            }
-        }
-        Ok(entities)
-    }
-
-    pub fn field<Entity, Value>(
-        &self,
-        field: &WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value>,
-        entity: &WorthQueryApplicationInvariantEntity<Schema, Entity>,
-    ) -> Result<Option<Value>, WorthQueryInvariantAccessDenial> {
-        self.check_binding(&field.binding_identity)?;
-        self.check_entity(entity, field.entity_kind)?;
-        let state = self
-            .aspects
-            .entity_aspect_state(entity.entity_id)
-            .map_err(|error| map_structural_error(error, "entity aspect state"))?;
-        let Some(value) = state.get(field.locator.aspect().aspect_key()) else {
-            return self.absent_field(field.presence);
-        };
-        let ContractValidatedAspectValueView::Struct(fields) = value.view() else {
-            return Err(denial(
-                WorthQueryInvariantAccessDenialKind::InvalidValue,
-                "field aspect shape",
-            ));
-        };
-        let Some(raw) = field
-            .locator
-            .field_path()
-            .fields()
-            .first()
-            .and_then(|key| fields.get(key))
-        else {
-            return self.absent_field(field.presence);
-        };
-        (field.decode)(raw)
-            .map(Some)
-            .map_err(|error| denial(WorthQueryInvariantAccessDenialKind::InvalidValue, error))
-    }
-
     fn check_binding(
         &self,
         binding: &ApplicationSchemaBindingIdentity,
@@ -301,20 +237,6 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> 
                 WorthQueryInvariantAccessDenialKind::ForeignBinding,
                 "schema binding",
             ))
-        }
-    }
-
-    fn absent_field<Value>(
-        &self,
-        presence: worth_query_declaration::facade::application_schema::ApplicationFieldPresence,
-    ) -> Result<Option<Value>, WorthQueryInvariantAccessDenial> {
-        use worth_query_declaration::facade::application_schema::ApplicationFieldPresence;
-        match presence {
-            ApplicationFieldPresence::Optional => Ok(None),
-            ApplicationFieldPresence::Required => Err(denial(
-                WorthQueryInvariantAccessDenialKind::MissingRequiredField,
-                "required field",
-            )),
         }
     }
 
@@ -340,6 +262,7 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> 
             .relations
             .entity_kind(entity.entity_id)
             .map_err(|error| map_structural_error(error, "entity kind"))?;
+        self.reads.endpoint();
         if actual != expected {
             return Err(denial(
                 WorthQueryInvariantAccessDenialKind::WrongEntityKind,

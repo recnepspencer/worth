@@ -93,8 +93,8 @@ fn nested_projection_preserves_sibling_slots_cardinality_and_direction() {
     assert_ne!(all[0], all[1]);
     assert_eq!(result.receipt().projected_record_count(), 7);
     assert_eq!(result.receipt().projected_field_count(), 6);
-    assert_eq!(result.receipt().adjacency_list_read_count(), 4);
-    assert_eq!(result.receipt().edge_scan_count(), 6);
+    assert_eq!(result.receipt().reads().adjacency_lists_read(), 4);
+    assert_eq!(result.receipt().reads().adjacency_edges_inspected(), 6);
     assert!(result.receipt().ordering_comparison_count() > 0);
     assert_eq!(result.receipt().per_result_neighbor_lookup_count(), 0);
     assert_eq!(result.receipt().fallback_count(), 0);

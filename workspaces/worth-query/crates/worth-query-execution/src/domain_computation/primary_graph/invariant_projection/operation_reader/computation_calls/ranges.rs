@@ -22,8 +22,7 @@ impl<Schema, Operation>
             return false;
         };
         let mut budget = self.reader.work_budget;
-        self.reader.work.with_carried(accounting.work).is_some()
-            && budget.carry(accounting.demand, accounting.consumed)
+        budget.carry(accounting.demand, accounting.consumed)
     }
     pub(in crate::domain_computation::primary_graph) fn begin_call_ranges(
         &mut self,
@@ -87,11 +86,6 @@ impl<Schema, Operation>
                 .reader
                 .work_budget
                 .carry(accounting.demand, accounting.consumed));
-            self.reader.work = self
-                .reader
-                .work
-                .with_carried(accounting.work)
-                .expect("range preflight checked work arithmetic");
         }
         crate::domain_computation::primary_graph::fact_verification_observation::computation_call_carry();
         Ok(true)

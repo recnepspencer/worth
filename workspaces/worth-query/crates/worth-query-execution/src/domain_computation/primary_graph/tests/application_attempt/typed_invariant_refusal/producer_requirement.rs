@@ -22,10 +22,12 @@ const LEDGER: &[WorthQueryProducerInvariantRequirement] =
 
 fn install() -> world::World {
     let visits = Arc::new(Mutex::new(Vec::new()));
+    let reads = Arc::new(Mutex::new(Vec::new()));
     let rule = |ordinal| Rule {
         ordinal,
         cancellation: None,
         visits: visits.clone(),
+        reads: reads.clone(),
     };
     world::install(rule(1), rule(2))
 }

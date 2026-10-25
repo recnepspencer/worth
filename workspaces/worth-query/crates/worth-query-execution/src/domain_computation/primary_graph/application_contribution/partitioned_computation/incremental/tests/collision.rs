@@ -83,7 +83,10 @@ fn a_collision_met_routing_again_makes_the_run_in_full() {
         [(Run::Full(Cause::IdentityCollision), Some(_))]
     ));
     assert_eq!(next.gathered, full.gathered);
-    assert_eq!(next.work, full.work, "the reader charged a fresh build");
+    assert!(
+        next.work.field_reads() > full.work.field_reads(),
+        "the aborted routing reads remain observed before the complete retry"
+    );
 }
 
 /// A digest-boundary adversary models the impossible-to-search-for SHA prefix

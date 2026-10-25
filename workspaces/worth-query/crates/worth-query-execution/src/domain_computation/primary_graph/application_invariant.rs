@@ -25,6 +25,7 @@ pub enum WorthQueryApplicationInvariantVerdict<Refusal> {
 mod access_denial;
 mod prepared_scope;
 mod program_selection;
+mod read_observation;
 mod registration;
 mod typed_binding;
 mod typed_view;

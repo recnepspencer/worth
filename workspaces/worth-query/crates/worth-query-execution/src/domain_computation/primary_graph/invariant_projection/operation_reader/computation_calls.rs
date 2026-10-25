@@ -22,7 +22,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_contribution::Comparator;
 use crate::domain_computation::primary_graph::invariant_projection::work::WorthQueryInvariantProjectionWorkBudget;
-use crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWork;
 
 mod ranges;
 mod sequence;
@@ -40,7 +39,6 @@ pub(in crate::domain_computation::primary_graph) struct ComputationCallCharge {
 
 #[derive(Clone, Copy, Debug)]
 struct ComputationCallAccounting {
-    work: WorthQueryInvariantProjectionWork,
     /// The remaining work the call needed at its start to pass every
     /// preflight it made.
     demand: usize,
@@ -61,7 +59,6 @@ impl ComputationCallCharge {
 /// abandoned before any result can be made again from its start.
 #[derive(Clone, Copy)]
 pub(in crate::domain_computation::primary_graph) struct ComputationRunStart {
-    work: WorthQueryInvariantProjectionWork,
     work_budget: WorthQueryInvariantProjectionWorkBudget,
 }
 
@@ -80,20 +77,17 @@ impl<Schema, Operation>
         _: &Comparator,
     ) -> ComputationRunStart {
         ComputationRunStart {
-            work: self.reader.work,
             work_budget: self.reader.work_budget,
         }
     }
 
-    /// Takes the reader back to `start`, so the calls made again charge as a
-    /// fresh run's do. What the abandoned calls read stays read: the same
-    /// calls are made again over the same snapshot, and read it all again.
+    /// Restores the private charge policy so the full retry has a fresh run's
+    /// bill. Diagnostic observations retain reads already performed before retry.
     pub(in crate::domain_computation::primary_graph) fn restart(
         &mut self,
         _: &Comparator,
         start: ComputationRunStart,
     ) {
-        self.reader.work = start.work;
         self.reader.work_budget = start.work_budget;
         self.decision_facts.materialize_carried();
     }
@@ -107,7 +101,6 @@ impl<Schema, Operation>
         call: impl FnOnce(&mut Self) -> Output,
     ) -> (Output, Option<ComputationCallCharge>) {
         let accounted = self.reader.execution.has_accounting();
-        let work = accounted.then_some(self.reader.work);
         self.decision_facts.begin_fresh_call(read);
         if accounted {
             self.reader.work_budget.begin_call();
@@ -115,16 +108,11 @@ impl<Schema, Operation>
         self.reader.realized_scope.begin_call();
         let output = self.attributed(read, call);
         let reached = self.reader.realized_scope.end_call();
-        let accounting = if let Some(work) = work {
-            let budget = self.reader.work_budget.end_call();
-            let Some(((demand, consumed), work)) = budget.zip(self.reader.work.since(work)) else {
+        let accounting = if accounted {
+            let Some((demand, consumed)) = self.reader.work_budget.end_call() else {
                 return (output, None);
             };
-            Some(ComputationCallAccounting {
-                work,
-                demand,
-                consumed,
-            })
+            Some(ComputationCallAccounting { demand, consumed })
         } else {
             None
         };
@@ -147,9 +135,6 @@ impl<Schema, Operation>
             let Some(accounting) = charge.accounting else {
                 return false;
             };
-            let Some(work) = self.reader.work.with_carried(accounting.work) else {
-                return false;
-            };
             if !self
                 .reader
                 .work_budget
@@ -157,7 +142,6 @@ impl<Schema, Operation>
             {
                 return false;
             }
-            self.reader.work = work;
         }
         self.reader.realized_scope.extend(&charge.reached);
         true

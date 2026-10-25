@@ -36,6 +36,17 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationField
     AspectAbsent,
     UnsupportedAspectShape,
 }
+impl WorthQueryApplicationFieldObservation {
+    pub(in crate::domain_computation::primary_graph) fn into_value(
+        self,
+    ) -> Option<worth_foundational::facade::AspectValue> {
+        match self {
+            Self::Present(value) => Some(value),
+            Self::Absent | Self::AspectAbsent | Self::UnsupportedAspectShape => None,
+        }
+    }
+}
+
 impl From<worth_relational::facade::runtime::RelationalProjectedFieldObservation<'_>>
     for WorthQueryApplicationFieldObservation
 {
@@ -98,15 +109,10 @@ pub(in crate::domain_computation::primary_graph) fn observe_field_value(
     Option<worth_foundational::facade::AspectValue>,
     worth_relational::facade::transactions::RelationalExecutionDenialCause,
 > {
-    match observe_field(runtime, execution, snapshot, entity_id, kind, locator)? {
-        Some(WorthQueryApplicationFieldObservation::Present(value)) => Ok(Some(value)),
-        Some(
-            WorthQueryApplicationFieldObservation::Absent
-            | WorthQueryApplicationFieldObservation::AspectAbsent
-            | WorthQueryApplicationFieldObservation::UnsupportedAspectShape,
-        )
-        | None => Ok(None),
-    }
+    Ok(
+        observe_field(runtime, execution, snapshot, entity_id, kind, locator)?
+            .and_then(WorthQueryApplicationFieldObservation::into_value),
+    )
 }
 
 pub(super) fn exact_relations(

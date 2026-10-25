@@ -58,7 +58,6 @@ impl CallSummary {
     fn then(self, next: Self) -> Option<Self> {
         let accounting = match self.accounting.zip(next.accounting) {
             Some((a, b)) => Some(ComputationCallAccounting {
-                work: a.work.with_carried(b.work)?,
                 demand: a.demand.max(a.consumed.checked_add(b.demand)?),
                 consumed: a.consumed.checked_add(b.consumed)?,
             }),

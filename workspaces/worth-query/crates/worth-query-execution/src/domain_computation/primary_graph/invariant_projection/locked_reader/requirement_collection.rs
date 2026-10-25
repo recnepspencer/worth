@@ -70,7 +70,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             self.work_budget.consume(1),
             "the same owner preflighted one work unit"
         );
-        self.work.record_endpoint();
         self.endpoint::<Entity>(
             self.execution,
             identity.entity_id,
@@ -113,10 +112,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
             ));
         }
-        self.work.record_adjacency(
-            read.relation_records_examined(),
-            read.endpoint_records_reserved(),
-        );
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         let records = read.into_records();
         let bytes = records
             .len()

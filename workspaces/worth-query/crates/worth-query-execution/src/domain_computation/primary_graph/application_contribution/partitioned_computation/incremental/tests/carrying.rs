@@ -11,11 +11,18 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
     let installed = installed(StatusRead::Gather(1), sum);
     let first = first_run(&world, &installed);
     let outcome = *first.outcome.as_ref().unwrap();
-    let charged = first.work;
+    assert!(
+        first.work.field_reads() > 0,
+        "the original owner read its inputs"
+    );
     *installed.owner.calls.lock().unwrap() = [0; 4];
 
     let next = attempt(&world, &installed, Some(prior_of(first, false)));
-    assert_eq!(next.work, charged, "comparator reads add no charge");
+    assert_eq!(
+        next.work.field_reads(),
+        0,
+        "carriage performs no owner field reads"
+    );
     assert!(matches!(next.runs.as_slice(), [(Run::Incremental, None)]));
     assert!(next.gathered.is_empty(), "no partition is gathered again");
     assert_eq!(
@@ -23,7 +30,7 @@ fn unchanged_facts_carry_every_partition_to_the_same_outcome() {
         [0; 4],
         "the second retained attempt invokes neither membership, key, gather nor kernel owners"
     );
-    // The total and the charged work are a full run's.
+    // Private charged work and the result remain a full run's; observations do not replay it.
     assert_eq!(next.outcome.unwrap(), outcome);
     assert!(next.sealed.unwrap().is_some(), "it retains its state");
 }

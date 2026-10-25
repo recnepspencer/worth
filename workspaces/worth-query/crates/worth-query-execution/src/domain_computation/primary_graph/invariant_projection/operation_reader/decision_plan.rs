@@ -165,9 +165,12 @@ where
             &mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
         ) -> Result<Relations, Cause>,
     ) -> Result<Relations, Cause> {
-        let before = self.reader.work;
+        let before = self.reader.work_budget;
         let relations = read(self.reader);
-        let maximum_work_units = adjacency_recomparison_limit(before, self.reader.work);
+        let maximum_work_units = self
+            .reader
+            .work_budget
+            .adjacency_recomparison_limit_since(before);
         self.decision_facts.record(
             WorthQueryApplicationFactKey::Adjacency {
                 relation: target_relation_name(target),
@@ -319,19 +322,6 @@ fn target_relation_name(target: &ApplicationOperationDecisionReadTarget) -> Stri
         ApplicationOperationDecisionReadTarget::Relation { relation, .. } => relation.clone(),
         _ => unreachable!("relation_target always constructs a relation target"),
     }
-}
-
-fn adjacency_recomparison_limit(
-    before: super::super::WorthQueryInvariantProjectionWork,
-    after: super::super::WorthQueryInvariantProjectionWork,
-) -> usize {
-    let examined = after
-        .adjacency_edges_inspected()
-        .saturating_sub(before.adjacency_edges_inspected());
-    let endpoints = after
-        .endpoint_records_read()
-        .saturating_sub(before.endpoint_records_read());
-    examined.saturating_add(endpoints).saturating_add(2)
 }
 
 fn decision_traversal_denial(

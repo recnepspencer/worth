@@ -108,6 +108,7 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
