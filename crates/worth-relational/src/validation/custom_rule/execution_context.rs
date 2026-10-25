@@ -52,7 +52,10 @@ pub struct CustomInvariantProvenance {
     #[serde(skip)]
     pub proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     pub work_units: std::num::NonZeroU64,
-    /// `None` when the rule evaluated the candidate.
+    /// `None` when the rule evaluated the candidate. An artifact written
+    /// before this field decodes as `None`: no basis, so a not-applicable
+    /// verdict stays unexplained and producer admission refuses it.
+    #[serde(default)]
     pub non_applicability: Option<CustomInvariantNonApplicability>,
 }
 

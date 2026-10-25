@@ -4,6 +4,8 @@ mod affected_record_filter;
 mod execution_context;
 mod interruption;
 pub use interruption::CustomInvariantInterruption;
+#[cfg(test)]
+mod provenance_decode_tests;
 mod registration;
 mod scope_planner;
 mod structural_views;
