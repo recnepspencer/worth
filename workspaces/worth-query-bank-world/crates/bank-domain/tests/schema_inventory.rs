@@ -344,6 +344,7 @@ fn assert_payment_and_authorization_programs(members: &[ApplicationSchemaMember]
             "link:PostingAccount:Posting->Account",
             "write:Account/AccountState/AccountingRevision",
             "write:JournalEntry/JournalIdentity/JournalIdentityField",
+            "write:JournalEntry/JournalIdentity/JournalInstitutionContext",
             "write:JournalEntry/JournalState/JournalPurpose",
             "write:PaymentIntent/PaymentState/PaymentStatusField",
             "write:Posting/PostingIdentity/PostingIdentityField",

@@ -91,6 +91,7 @@ pub(super) fn assert_money_program(members: &[ApplicationSchemaMember], operatio
         "link:PostingAccount:Posting->Account",
         "write:Account/AccountState/AccountingRevision",
         "write:JournalEntry/JournalIdentity/JournalIdentityField",
+        "write:JournalEntry/JournalIdentity/JournalInstitutionContext",
         "write:JournalEntry/JournalState/JournalPurpose",
         "write:Posting/PostingIdentity/PostingIdentityField",
         "write:Posting/PostingValue/PostingAccountSequence",
