@@ -2,7 +2,7 @@
 
 use std::collections::BTreeSet;
 
-use worth_runtime_world::facade::CompositeCommitIdentity;
+use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
 
 use super::WorthQueryPrimaryGraphProvider;
 
@@ -38,43 +38,49 @@ impl WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .release_occurrence(incarnation);
         // Evidence on a commit history still retains passes to the forks
-        // that reach it; the rest goes with the occurrence.
-        let published = self
-            .completed_commit_evidence
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .occurrence_commits(branch, incarnation);
-        let worlds: Vec<_> = published.iter().map(|(_, world)| world.clone()).collect();
-        let retained = self.retained_world_commits(&worlds);
-        for (commit, world) in published {
-            let released = {
-                let mut evidence = self
-                    .completed_commit_evidence
-                    .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                if retained.contains(&world) {
-                    evidence.inherit(commit);
-                    None
-                } else {
-                    evidence.release(commit)
-                }
-            };
-            self.receipt_basis_retention
+        // that reach it; the rest goes with the occurrence. The World read and
+        // the hand-over share one evidence lock: history released after the
+        // read is swept after its release, and that sweep waits here and then
+        // finds the evidence inherited.
+        let (commits, released): (Vec<_>, Vec<_>) = {
+            let mut evidence = self
+                .completed_commit_evidence
                 .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .release(commit);
-            drop(released);
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let published = evidence.occurrence_commits(branch, incarnation);
+            let worlds: Vec<_> = published.iter().map(|(_, world)| world.clone()).collect();
+            let retained = self.retained_world_commits(&worlds);
+            published
+                .into_iter()
+                .map(|(commit, world)| {
+                    let released = if retained.contains(&world) {
+                        evidence.inherit(commit);
+                        None
+                    } else {
+                        evidence.release(commit)
+                    };
+                    (commit, released)
+                })
+                .unzip()
+        };
+        {
+            let mut bases = self
+                .receipt_basis_retention
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            for commit in commits {
+                bases.release(commit);
+            }
         }
+        drop(released);
         self.graph
             .release_workflow_instance_progress_for_branch(incarnation.ordinal());
         self.retire_application_branch_commit_lane(incarnation);
     }
 
-    /// Releases inherited evidence whose World commit history let go; a
-    /// branch cleanup calls it after releasing history.
-    pub(in crate::domain_computation::primary_graph) fn release_unretained_inherited_evidence(
-        &self,
-    ) {
+    /// Releases inherited evidence whose World commit history let go; every
+    /// branch or recovery cleanup calls it after releasing history.
+    pub(in crate::domain_computation) fn release_unretained_inherited_evidence(&self) {
         let inherited = self
             .completed_commit_evidence
             .lock()
@@ -98,19 +104,39 @@ impl WorthQueryPrimaryGraphProvider {
         drop(released);
     }
 
-    /// The World commits of `candidates` history still retains. A World that
-    /// cannot answer keeps them all; nothing is lost but capacity.
     fn retained_world_commits(
         &self,
         candidates: &[CompositeCommitIdentity],
     ) -> BTreeSet<CompositeCommitIdentity> {
-        let Some(world) = self.world_history.get() else {
-            return BTreeSet::new();
-        };
-        world
-            .retained_commits(candidates)
-            .unwrap_or_else(|_| candidates.to_vec())
-            .into_iter()
-            .collect()
+        retained_among(self.world_history.get(), candidates)
+    }
+}
+
+/// The World commits of `candidates` history still retains. A World that is
+/// not attached or cannot answer keeps them all; nothing is lost but capacity.
+fn retained_among(
+    world: Option<&RuntimeWorldLifecyclePort>,
+    candidates: &[CompositeCommitIdentity],
+) -> BTreeSet<CompositeCommitIdentity> {
+    world
+        .and_then(|world| world.retained_commits(candidates).ok())
+        .unwrap_or_else(|| candidates.to_vec())
+        .into_iter()
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::retained_among;
+    use crate::domain_computation::primary_graph::tests::recoverable_commit_support;
+
+    #[test]
+    fn a_provider_without_world_history_keeps_every_candidate() {
+        let receipt = recoverable_commit_support::committed_recoverable_application();
+        let commit = receipt
+            .committed_product_publication()
+            .composite_commit()
+            .clone();
+        assert!(retained_among(None, std::slice::from_ref(&commit)).contains(&commit));
     }
 }

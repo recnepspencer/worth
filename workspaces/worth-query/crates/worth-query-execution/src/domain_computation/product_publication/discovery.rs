@@ -50,9 +50,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
         WorthQueryProductUnpublishedRecoveryReleaseFailure,
     >{
-        self.prepare_product_publication_recovery_release(recovery, minimum_age_ticks)?
-            .retry()
-            .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
+        let released = self
+            .prepare_product_publication_recovery_release(recovery, minimum_age_ticks)?
+            .retry();
+        // Evidence a closed branch left on the released history goes with it.
+        self.primary_provider
+            .release_unretained_inherited_evidence();
+        released.map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
     }
 
     pub fn release_product_publication_recovery_in_advancement(
@@ -95,6 +99,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .map_err(WorthQueryProductUnpublishedRecoveryReleaseFailure::OwnerCleanup)
                 })
         });
+        self.primary_provider
+            .release_unretained_inherited_evidence();
         match outcome {
             Ok(Ok((outcome, _))) => outcome,
             Ok(Err(denial)) | Err(denial) => Err(recovery_failure(
