@@ -31,6 +31,20 @@ impl UnresolvingMedium {
 }
 
 impl RelationalDurableMedium for UnresolvingMedium {
+    fn read_transition(
+        &self,
+        sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        RelationalBranchTransitionArtifact,
+        worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
+    > {
+        Err(
+            worth_relational::facade::durability::RelationalDurableTransitionReadFailure::Missing(
+                sequence,
+            ),
+        )
+    }
+
     fn publish(
         &self,
         _artifact: &RelationalCanonicalCommitArtifact,

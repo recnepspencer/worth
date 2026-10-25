@@ -88,6 +88,7 @@ pub mod durability {
         RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
         RelationalDurableCheckpointSource, RelationalDurableMedium, RelationalDurablePublication,
         RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
+        RelationalDurableTransitionReadFailure,
     };
     pub use crate::durability::migration::ReadmittedCanonicalCommit;
     pub use crate::durability::{

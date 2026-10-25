@@ -14,7 +14,6 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
     pub(super) retired_branch_names: Vec<crate::history::data::BranchId>,
     pub(super) covered_transitions: crate::branch::RelationalBranchTransitionSequence,
-    pub(super) branch_transitions: Vec<crate::durability::data::DurableBranchTransitionImage>,
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
@@ -130,14 +129,6 @@ impl CapturedCheckpointBasis {
             branch_lifecycle: runtime.history.branch_lifecycle_snapshot(),
             retired_branch_names: runtime.history.retired_branch_names(),
             covered_transitions,
-            branch_transitions: routes
-                .branch_transitions_snapshot()
-                .iter()
-                .filter(|transition| transition.sequence() <= covered_transitions)
-                .map(|transition| {
-                    crate::durability::data::DurableBranchTransitionImage::capture(transition)
-                })
-                .collect(),
             branch_roots,
             record_identity: CapturedRecordIdentity {
                 generation_high_water: runtime.record_identity.generation_snapshot(),

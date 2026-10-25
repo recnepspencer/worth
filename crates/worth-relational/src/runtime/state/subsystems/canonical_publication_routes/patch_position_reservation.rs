@@ -4,9 +4,9 @@
 //!
 //! How a publisher meets a held reservation is the runtime's admission:
 //!
-//! - Memory-only runtimes defer. The holder only links an in-memory node, so a
-//!   contended publisher returns `PatchPositionReservationContended` and the
-//!   caller decides whether to retry.
+//! - Memory-only commits defer behind another commit. Behind a held or queued
+//!   branch transition they wait within their request, so lifecycle operations
+//!   never add a candidate-consuming deferral source.
 //! - Runtimes with a durable medium wait (D2). The holder is doing durable I/O
 //!   for its own commit; deferring would turn ordinary concurrency into
 //!   caller-visible refusals. Waiters are served first come, first served,
@@ -38,6 +38,9 @@ const WAITER_CANCELLATION_CHECK: Duration = Duration::from_millis(2);
 pub(crate) enum PatchPositionReservationAdmission<'request, 'scope, 'authority> {
     /// Return `ReservationContended` at once (memory-only runtimes).
     DeferWhenHeld,
+    /// Memory commits wait behind lifecycle transitions, but still defer
+    /// behind other memory commits.
+    DeferBehindCommit(&'request worth_execution::ExecutionRequest<'scope, 'authority>),
     /// Wait in arrival order until the reservation is free, or until the
     /// request is cancelled or its deadline passes (durable runtimes).
     WaitWithin(&'request worth_execution::ExecutionRequest<'scope, 'authority>),
@@ -64,6 +67,8 @@ pub(super) struct PatchPositionReservation {
 #[derive(Default)]
 struct ReservationQueue {
     held: bool,
+    held_transition: bool,
+    waiting_transitions: usize,
     next_ticket: u64,
     /// Tickets of waiting publishers, oldest first.
     waiting: VecDeque<u64>,
@@ -84,18 +89,26 @@ impl PatchPositionReservation {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
     ) -> Result<PatchPositionReservationGuard<'_>, CanonicalPublicationRecordError> {
         match admission {
-            PatchPositionReservationAdmission::DeferWhenHeld => {
+            PatchPositionReservationAdmission::DeferWhenHeld
+            | PatchPositionReservationAdmission::DeferBehindCommit(_) => {
                 self.contacts.fetch_add(1, Ordering::Relaxed);
                 let mut queue = self.queue();
                 if !queue.held && queue.waiting.is_empty() {
                     queue.held = true;
                     return Ok(PatchPositionReservationGuard { reservation: self });
                 }
+                if let PatchPositionReservationAdmission::DeferBehindCommit(execution) = admission
+                    && (queue.held_transition || queue.waiting_transitions != 0)
+                {
+                    return self
+                        .wait_from_queue(execution, false, queue)
+                        .map_err(CanonicalPublicationRecordError::ReservationWaitStopped);
+                }
                 self.deferrals.fetch_add(1, Ordering::Relaxed);
                 Err(CanonicalPublicationRecordError::ReservationContended)
             }
             PatchPositionReservationAdmission::WaitWithin(execution) => self
-                .wait_within(execution)
+                .wait_as(execution, false)
                 .map_err(CanonicalPublicationRecordError::ReservationWaitStopped),
         }
     }
@@ -108,23 +121,45 @@ impl PatchPositionReservation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<PatchPositionReservationGuard<'_>, worth_execution::WorkCeilingDenial> {
+        self.wait_as(execution, true)
+    }
+
+    fn wait_as(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transition: bool,
+    ) -> Result<PatchPositionReservationGuard<'_>, worth_execution::WorkCeilingDenial> {
         self.contacts.fetch_add(1, Ordering::Relaxed);
-        let mut queue = self.queue();
+        self.wait_from_queue(execution, transition, self.queue())
+    }
+
+    fn wait_from_queue<'reservation>(
+        &'reservation self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transition: bool,
+        mut queue: MutexGuard<'reservation, ReservationQueue>,
+    ) -> Result<PatchPositionReservationGuard<'reservation>, worth_execution::WorkCeilingDenial>
+    {
         if !queue.held && queue.waiting.is_empty() {
             queue.held = true;
+            queue.held_transition = transition;
             return Ok(PatchPositionReservationGuard { reservation: self });
         }
+        queue.waiting_transitions += usize::from(transition);
         let ticket = queue.next_ticket;
         queue.next_ticket = queue.next_ticket.wrapping_add(1);
         queue.waiting.push_back(ticket);
         loop {
             if !queue.held && queue.waiting.front() == Some(&ticket) {
                 queue.waiting.pop_front();
+                queue.waiting_transitions -= usize::from(transition);
                 queue.held = true;
+                queue.held_transition = transition;
                 return Ok(PatchPositionReservationGuard { reservation: self });
             }
             if let Err(stop) = execution.consult() {
                 queue.waiting.retain(|waiting| *waiting != ticket);
+                queue.waiting_transitions -= usize::from(transition);
                 drop(queue);
                 self.released.notify_all();
                 return Err(stop);
@@ -155,7 +190,11 @@ impl PatchPositionReservation {
 
 impl Drop for PatchPositionReservationGuard<'_> {
     fn drop(&mut self) {
-        self.reservation.queue().held = false;
+        {
+            let mut queue = self.reservation.queue();
+            queue.held = false;
+            queue.held_transition = false;
+        }
         self.reservation.released.notify_all();
     }
 }

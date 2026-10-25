@@ -6,6 +6,7 @@ mod medium_recovery_plan;
 mod medium_transition_tail;
 mod native_checkpoint_recovery_plan;
 mod recovery_plan_entrypoint;
+mod transition_history;
 
 pub use recovery_plan_entrypoint::DurabilityAccess;
 

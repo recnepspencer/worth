@@ -1,7 +1,7 @@
 error[E0599]: the method `clone` exists for struct `Box<dyn RelationalDurableMedium>`, but its trait bounds were not satisfied
-  --> tests/ui/durable_medium/medium_cannot_be_cloned.rs:25:71
+  --> tests/ui/durable_medium/medium_cannot_be_cloned.rs:39:71
    |
-25 |     let _first = RelationalRuntimeApi::builder().build_durable(medium.clone());
+39 |     let _first = RelationalRuntimeApi::builder().build_durable(medium.clone());
    |                                                                       ^^^^^ method cannot be called on `Box<dyn RelationalDurableMedium>` due to unsatisfied trait bounds
    |
   ::: src/durability/medium.rs

@@ -221,13 +221,25 @@ impl RelationalForkPort {
         let installable = self
             .prepare_installation(prepared, return_basis)
             .map_err(denied)?;
+        let source_cell = self
+            .owner
+            .branch_cell(validated.descriptor.source_branch())
+            .ok_or(denied(RelationalForkDenial::SourceBranchMissing))?
+            .publication_cell();
+        let _coordination = source_cell.coordination().enter();
+        let source_state = source_cell.enter_state();
         let transition = validated.transition(installable.target_branch().clone());
         let installed = self.owner.record_transition_with_cutover(
             execution,
             step,
-            || self.recheck_fork_source(&validated).map(|()| transition),
+            || {
+                self.recheck_fork_source(&validated, &source_state)
+                    .map(|()| transition)
+            },
             |_| self.install_fork_target(&validated, installable),
         )?;
+        drop(source_state);
+        drop(_coordination);
         pause_after_install();
         Ok(installed)
     }

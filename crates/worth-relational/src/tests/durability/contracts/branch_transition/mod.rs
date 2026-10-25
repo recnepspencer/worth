@@ -1,7 +1,9 @@
 //! Durable branch lifecycle admission, interruption and reconstruction.
 
+mod checkpoint_state;
 mod fates;
 mod recovery;
+mod replay;
 mod tampering;
 
 use crate::branch::{

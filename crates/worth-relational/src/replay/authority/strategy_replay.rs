@@ -168,10 +168,11 @@ fn rebuild_strategy_basis_runtime(
     mismatches: &mut Vec<ReplayMismatch>,
 ) -> Result<Option<RelationalRuntime>, RelationalRecoveryStop> {
     let basis_plan = super::super::planning::replay_recovery_plan_for_chain(
+        execution,
         runtime,
         basis_commits,
         verification_mode,
-    );
+    )?;
     let basis_runtime = match runtime.rebuild_runtime_from_plan(execution, basis_plan) {
         Ok(runtime) => runtime,
         Err(RelationalRecoveryStop::Request(cause)) => {

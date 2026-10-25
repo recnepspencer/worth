@@ -60,7 +60,7 @@ impl serde::Serialize for LayoutFile<'_> {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         use serde::ser::SerializeStruct;
         let mut file = serializer.serialize_struct("PersistedDurableCheckpointFile", 2)?;
-        file.serialize_field("checkpoint_protocol_version", &7u16)?;
+        file.serialize_field("checkpoint_protocol_version", &8u16)?;
         file.serialize_field("checkpoint", &LayoutCheckpoint(self))?;
         file.end()
     }
@@ -76,7 +76,6 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
             branch_cells,
             branch_lifecycle,
             retired_branch_names,
-            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -98,7 +97,7 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
         } = self.0.checkpoint;
         let mut fields = serializer.serialize_struct(
             "PersistedDurableCheckpoint",
-            22 + usize::from(self.0.version.is_some()),
+            21 + usize::from(self.0.version.is_some()),
         )?;
         macro_rules! payload_fields {
             ($($name:ident),* $(,)?) => {
@@ -110,7 +109,6 @@ impl serde::Serialize for LayoutCheckpoint<'_, '_> {
             branch_cells,
             branch_lifecycle,
             retired_branch_names,
-            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,

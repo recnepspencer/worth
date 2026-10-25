@@ -44,7 +44,6 @@ struct CheckpointWire<'a> {
     branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
     branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
     retired_branch_names: Vec<crate::history::data::BranchId>,
-    branch_transitions: Vec<crate::durability::data::DurableBranchTransitionImage>,
     #[serde(default)]
     branch_roots: Vec<crate::durability::data::DurableBranchRootImage>,
     #[serde(default)]
@@ -100,7 +99,6 @@ impl CheckpointFileWire<'_> {
                 branch_cells: input.branch_cells,
                 branch_lifecycle: input.branch_lifecycle,
                 retired_branch_names: input.retired_branch_names,
-                branch_transitions: input.branch_transitions,
                 branch_roots: input.branch_roots,
                 branch_root_schema_images: input.branch_root_schema_images,
                 record_identity: input.record_identity,

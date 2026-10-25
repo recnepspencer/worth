@@ -185,37 +185,10 @@ fn fork_and_publication_consume_complete_old_and_new_roots() {
     let port = runtime.publication_port();
     let publisher = std::thread::spawn({
         let publication_request = std::sync::Arc::clone(&host_request);
-        let publication_runtime = Arc::clone(&runtime);
         move || {
             let execution = &worth_execution::ExecutionRequest::serial(&publication_request);
 
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
-            let mut candidate = candidate;
-            let outcome = loop {
-                let outcome = port.compare_and_publish(execution, candidate);
-                if !matches!(outcome, crate::mvcc::RelationalPublicationOutcome::Deferred(
-                    crate::mvcc::RelationalPublicationDeferred::PatchPositionReservationContended
-                )) {
-                    break outcome;
-                }
-                // D8 forks share the reservation. A memory-only publisher
-                // defers honestly, then rebuilds its consumed candidate.
-                assert!(
-                    std::time::Instant::now() < deadline,
-                    "fork contention must settle"
-                );
-                let mut transaction = test_owner_begin_transaction_for_main(&publication_runtime);
-                transaction
-                    .push_batch(
-                        batch_create("fork-race-new-root"),
-                        execution.allocation_policy(),
-                    )
-                    .expect("retry staging remains valid");
-                candidate = publication_runtime
-                    .prepare_branch_transaction(execution, transaction)
-                    .expect("unchanged source prepares a fresh candidate");
-                std::thread::yield_now();
-            };
+            let outcome = port.compare_and_publish(execution, candidate);
             publisher_done_signal.store(true, Ordering::Release);
             publication_finished
                 .send(())

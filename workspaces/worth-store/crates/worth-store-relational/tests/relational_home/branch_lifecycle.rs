@@ -166,6 +166,48 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
         .collect()
 }
 
+/// Historical artifacts are read from their authority, not retained in the
+/// runtime checkpoint. Independently compare the live tail to that journal.
+pub(crate) fn artifacts_of_home(
+    home: &worth_store_relational::RelationalStoreHome,
+) -> Vec<Vec<u8>> {
+    let journal = home.certification_serving().branch_transitions().unwrap();
+    let head = journal.head().unwrap().map_or(0, |entry| entry.position());
+    let durable = (1..=head)
+        .map(|sequence| journal.read(sequence, 1 << 20).unwrap().into_bytes())
+        .collect::<Vec<_>>();
+    let live = home
+        .runtime()
+        .durability()
+        .branch_transition_artifacts(ExecutionAllocationPolicy::SystemAllocation);
+    let covered = live.covered_sequence().0 as usize;
+    let tail = live
+        .map(|artifact| artifact.unwrap().as_bytes().to_vec())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        tail,
+        durable[covered..],
+        "live transition tail differs from durable history"
+    );
+    durable
+}
+
+pub(crate) fn live_count(runtime: &RelationalRuntime) -> usize {
+    let tail = runtime
+        .durability()
+        .branch_transition_artifacts(ExecutionAllocationPolicy::SystemAllocation);
+    tail.covered_sequence().0 as usize + tail.len()
+}
+
+pub(crate) fn append_live(runtime: &RelationalRuntime, acknowledged: &[Vec<u8>]) -> Vec<Vec<u8>> {
+    let tail = runtime
+        .durability()
+        .branch_transition_artifacts(ExecutionAllocationPolicy::SystemAllocation);
+    let mut combined = acknowledged[..tail.covered_sequence().0 as usize].to_vec();
+    combined.extend(tail.map(|artifact| artifact.unwrap().as_bytes().to_vec()));
+    combined
+}
+
 pub(crate) fn state_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> State {
     let postures = BRANCHES
         .into_iter()

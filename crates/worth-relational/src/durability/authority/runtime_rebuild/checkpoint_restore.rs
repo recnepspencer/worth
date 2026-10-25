@@ -179,18 +179,7 @@ fn prepare_history(
             )
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
-    let transitions = crate::durability::data::readmit_branch_transition_images(
-        &checkpoint.branch_transitions,
-        checkpoint.coverage.up_to_branch_transition,
-        crate::durability::access::checkpoint_coverage(checkpoint),
-    )
-    .map_err(|detail| {
-        DurabilityError::new(
-            crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-            detail,
-        )
-    })?;
-    history.restore_branch_transitions(transitions);
+    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
     Ok(history)
 }
 

@@ -37,11 +37,9 @@ pub(super) fn check_current_codec_meaning(
                             continue;
                         };
                         if source.authority_digest() != *selected.roots().schema_root() {
-                            return Err(DurabilityError::new(
-                                RecoveryFailureClass::CorruptCheckpoint,
-                                "current branch schema carrier differs from its native target",
-                            )
-                            .into());
+                            // Root readmission owns descriptor identity and reports
+                            // SchemaRootMismatch; codec comparison cannot substitute it.
+                            continue;
                         }
                         compare_registries(source.registry(), target, context)?;
                         // Symmetry refuses added as well as removed canonical carriers.

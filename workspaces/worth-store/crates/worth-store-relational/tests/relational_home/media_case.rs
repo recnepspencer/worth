@@ -72,7 +72,7 @@ pub(crate) fn run_case(
     };
     apply(&home, execution, lead);
     let before = workload::artifacts_of(home.runtime());
-    let mut acknowledged_transitions = super::branch_lifecycle::artifacts_of(home.runtime());
+    let mut acknowledged_transitions = super::branch_lifecycle::artifacts_of_home(&home);
     let mut transition_flight = InFlight::Nothing;
     let checkpoint_before = selected_checkpoint::generation(&home);
     let transition_state_before = matches!(target, Target::BranchTransition(_))

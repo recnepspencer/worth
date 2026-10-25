@@ -30,6 +30,22 @@ impl DurabilityState {
     }
 
     pub(super) fn push_checkpoint(&mut self, checkpoint: DurableCheckpoint) {
+        // Encoding runs outside publication locks, so captures can complete
+        // out of order. Never replace the basis for an already compacted tail
+        // with an older coverage frontier. Equal coverage can carry updated
+        // derived index images and remains a valid new checkpoint.
+        if self.checkpoints.last().is_some_and(|current| {
+            crate::durability::access::checkpoint_coverage(current)
+                >= crate::durability::access::checkpoint_coverage(&checkpoint)
+                && current.coverage.up_to_branch_transition
+                    >= checkpoint.coverage.up_to_branch_transition
+                && (crate::durability::access::checkpoint_coverage(current)
+                    > crate::durability::access::checkpoint_coverage(&checkpoint)
+                    || current.coverage.up_to_branch_transition
+                        > checkpoint.coverage.up_to_branch_transition)
+        }) {
+            return;
+        }
         let checkpoint_index = self.checkpoints.len();
         for (envelope_index, envelope) in checkpoint.envelopes.iter().enumerate() {
             self.checkpoint_commit_index.insert(

@@ -288,7 +288,6 @@ pub struct DurableCheckpoint {
     /// Every retired branch name, sorted; none may be reused.
     pub(crate) retired_branch_names: Vec<crate::history::data::BranchId>,
     /// Every branch transition the checkpoint covers, in sequence.
-    pub(crate) branch_transitions: Vec<super::DurableBranchTransitionImage>,
     pub(crate) branch_roots: Vec<DurableBranchRootImage>,
     pub(crate) branch_root_schema_images: Vec<super::DurableBranchRootSchemaImage>,
     pub(crate) record_identity: DurableRecordIdentityState,

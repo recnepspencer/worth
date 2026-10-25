@@ -314,7 +314,7 @@ fn hostile_commit_replay_equivalence_test() {
             }
             .build_registry(),
         )
-        .build_durable(TestDurableMedium::new().attachment());
+        .build_durable(crate::tests::support::attached_test_medium(&runtime).attachment());
     recovered
         .durability_recovery()
         .recover(execution, recovery_plan)

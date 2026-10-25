@@ -77,6 +77,32 @@ impl std::fmt::Debug for StoreJournalMedium {
 }
 
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn read_transition(
+        &self,
+        sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        RelationalBranchTransitionArtifact,
+        worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
+    > {
+        use worth_relational::facade::durability::RelationalDurableTransitionReadFailure as Failure;
+        let journal = self
+            .serving
+            .branch_transitions()
+            .map_err(|denial| Failure::Unavailable {
+                detail: format!("{denial:?}"),
+            })?;
+        let bytes = journal
+            .read(
+                sequence.0,
+                crate::recovered_transitions::MAXIMUM_TRANSITION_BYTES,
+            )
+            .map_err(|failure| Failure::Unavailable {
+                detail: format!("{failure:?}"),
+            })?;
+        RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.into_bytes())
+            .map_err(Failure::Frame)
+    }
+
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,

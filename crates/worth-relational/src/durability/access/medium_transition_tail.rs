@@ -76,7 +76,7 @@ fn out_of_order(detail: String) -> RelationalRecoveryStop {
     .into()
 }
 
-fn artifact_refusal_stop(
+pub(super) fn artifact_refusal_stop(
     sequence: RelationalBranchTransitionSequence,
     refusal: RelationalBranchTransitionArtifactRefusal,
 ) -> RelationalRecoveryStop {

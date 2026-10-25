@@ -26,7 +26,8 @@ pub(super) struct BranchTransitionStream {
 struct BranchTransitionStreamState {
     /// The last sequence performed, or restored from a checkpoint's coverage.
     head: RelationalBranchTransitionSequence,
-    /// Every transition this runtime performed or replayed, in sequence.
+    /// Retained transitions after the latest captured checkpoint.
+    covered: RelationalBranchTransitionSequence,
     log: Vec<Arc<PositionedBranchTransition>>,
 }
 
@@ -114,14 +115,35 @@ impl RelationalCanonicalPublicationRoutes {
         self.branch_transitions.head()
     }
 
-    /// Resume the stream from a checkpoint's retained transitions, which
-    /// readmission proved contiguous from sequence one.
-    pub(crate) fn restore_branch_transitions(&self, transitions: Vec<PositionedBranchTransition>) {
+    pub(crate) fn restore_branch_transition_coverage(
+        &self,
+        covered: RelationalBranchTransitionSequence,
+    ) {
         let mut state = self.branch_transitions.state();
-        if let Some(last) = transitions.last() {
-            state.head = last.sequence();
-        }
-        state.log = transitions.into_iter().map(Arc::new).collect();
+        state.head = covered;
+        state.covered = covered;
+        state.log.clear();
+    }
+
+    pub(crate) fn compact_branch_transitions_through(
+        &self,
+        covered: RelationalBranchTransitionSequence,
+    ) {
+        let mut state = self.branch_transitions.state();
+        state.covered = state.covered.max(covered);
+        state
+            .log
+            .retain(|transition| transition.sequence() > covered);
+    }
+
+    pub(crate) fn retained_branch_transitions(
+        &self,
+    ) -> (
+        RelationalBranchTransitionSequence,
+        Vec<Arc<PositionedBranchTransition>>,
+    ) {
+        let state = self.branch_transitions.state();
+        (state.covered, state.log.clone())
     }
 
     /// Every transition in the stream, in sequence.
@@ -142,6 +164,7 @@ impl BranchTransitionStream {
         Arc::new(Self {
             state: Mutex::new(BranchTransitionStreamState {
                 head: state.head,
+                covered: state.covered,
                 log: state.log.clone(),
             }),
         })

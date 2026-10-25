@@ -120,14 +120,30 @@ impl HistorySubsystem {
             .branch_transitions_snapshot()
     }
 
-    /// Resume the transition stream from a checkpoint's retained
-    /// transitions, readmitted contiguous from sequence one.
-    pub(crate) fn restore_branch_transitions(
+    pub(crate) fn restore_branch_transition_coverage(
         &self,
-        transitions: Vec<crate::branch::PositionedBranchTransition>,
+        covered: crate::branch::RelationalBranchTransitionSequence,
     ) {
         self.canonical_publication_routes
-            .restore_branch_transitions(transitions);
+            .restore_branch_transition_coverage(covered);
+    }
+
+    pub(crate) fn compact_branch_transitions_through(
+        &self,
+        covered: crate::branch::RelationalBranchTransitionSequence,
+    ) {
+        self.canonical_publication_routes
+            .compact_branch_transitions_through(covered);
+    }
+
+    pub(crate) fn retained_branch_transitions(
+        &self,
+    ) -> (
+        crate::branch::RelationalBranchTransitionSequence,
+        Vec<Arc<crate::branch::PositionedBranchTransition>>,
+    ) {
+        self.canonical_publication_routes
+            .retained_branch_transitions()
     }
 
     pub(crate) fn mark_publication_settled(&self, commit_id: CommitId) -> bool {

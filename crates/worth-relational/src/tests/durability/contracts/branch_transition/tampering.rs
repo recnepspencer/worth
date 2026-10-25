@@ -25,10 +25,11 @@ fn a_damaged_transition_frame_is_refused_at_the_medium_read() {
     let medium = attached_test_medium(&runtime);
     let bytes = medium.transition_bytes(Sequence(1)).unwrap();
     medium.flip_transition_byte(Sequence(1), bytes.len() - 1);
-    assert!(
-        medium.recovery_source().is_err(),
-        "damaged frame must refuse at the medium read"
-    );
+    let error = medium.recovery_source().unwrap_err();
+    let crate::tests::support::TestRecoverySourceRefusal::Transition(refusal) = error else {
+        panic!("expected transition frame refusal: {error:?}");
+    };
+    assert!(matches!(refusal, crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactFrameRefusal::DigestMismatch { .. }));
 }
 
 #[test]

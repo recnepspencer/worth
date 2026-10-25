@@ -73,16 +73,29 @@ impl RelationalForkPort {
     /// can move the source: require it still to be exactly the validated
     /// source, so the installed target never shares a superseded head.
     ///
-    /// Cost: one atomic snapshot of the source cell. It is the same lookup
-    /// validation made, so it is not counted again.
+    /// The source guard was acquired before the reservation. Rechecking never
+    /// locks a branch while holding the global reservation.
     pub(super) fn recheck_fork_source(
         &self,
         validated: &ValidatedForkSource,
+        state: &crate::branch::reference_publication_cell::RelationalBranchPublicationStateGuard<
+            '_,
+        >,
     ) -> Result<(), RelationalForkDenial> {
-        let (observation, truth_version, _) =
-            self.observe_live_source(validated.descriptor.source_branch())?;
-        if truth_version != validated.source_truth_version
-            || validated.source_observation.compare(&observation).is_err()
+        match state.lifecycle_posture() {
+            RelationalBranchLifecyclePosture::Live => {}
+            RelationalBranchLifecyclePosture::Archived => {
+                return Err(RelationalForkDenial::SourceArchived)
+            }
+            RelationalBranchLifecyclePosture::Deleting => {
+                return Err(RelationalForkDenial::SourceDeleting)
+            }
+        }
+        if state.truth_version() != validated.source_truth_version
+            || validated
+                .source_observation
+                .compare(state.observation())
+                .is_err()
         {
             return Err(RelationalForkDenial::StaleSource);
         }

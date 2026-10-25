@@ -23,6 +23,21 @@ impl TestDurableMediumAttachment {
 }
 
 impl RelationalDurableMedium for TestDurableMediumAttachment {
+    fn read_transition(
+        &self,
+        sequence: crate::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+        crate::durability::medium::RelationalDurableTransitionReadFailure,
+    > {
+        use crate::durability::medium::RelationalDurableTransitionReadFailure as Failure;
+        let bytes = self
+            .contents
+            .transition_bytes(sequence)
+            .ok_or(Failure::Missing(sequence))?;
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.into_vec()).map_err(Failure::Frame)
+    }
+
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,

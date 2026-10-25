@@ -22,6 +22,11 @@ impl<'runtime> DurabilityAuthority<'runtime> {
             &checkpoint,
             policy,
         )?;
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(transitions);
+        }
         Ok(
             crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
                 bytes,
@@ -70,6 +75,21 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 vec![checkpoint_created(&checkpoint)],
             );
         self.runtime.durability.push_checkpoint(checkpoint.clone());
+        if self.runtime.durability.medium().is_some()
+            || matches!(
+                self.runtime
+                    .runtime_config()
+                    .durability
+                    .policy
+                    .log
+                    .retention_mode,
+                crate::config::data::DurableLogRetentionMode::CompactAfterCheckpoint
+            )
+        {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);
+        }
         Ok(checkpoint)
     }
 

@@ -20,7 +20,7 @@ use partition_aliases::{
 pub(super) use section_accounting::CaptureSectionRecorder;
 use section_accounting::{MeasuredValue, NativeSection};
 
-const CHECKPOINT_PROTOCOL_VERSION: u16 = 7;
+const CHECKPOINT_PROTOCOL_VERSION: u16 = 8;
 
 #[derive(Serialize, Deserialize)]
 pub(super) struct PersistedDurableCheckpointFile {
@@ -90,7 +90,6 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
             branch_cells,
             branch_lifecycle,
             retired_branch_names,
-            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -112,7 +111,7 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         // partitions retain their independently readmitted image.
         let aliases = PartitionAliasPlan::for_checkpoint(self.checkpoint)
             .map_err(serde::ser::Error::custom)?;
-        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 23)?;
+        let mut fields = serializer.serialize_struct("PersistedDurableCheckpoint", 22)?;
         fields.serialize_field("coverage", coverage)?;
         fields.serialize_field(
             "branch_cells",
@@ -124,7 +123,6 @@ impl Serialize for PersistedDurableCheckpointRef<'_> {
         )?;
         fields.serialize_field("branch_lifecycle", branch_lifecycle)?;
         fields.serialize_field("retired_branch_names", retired_branch_names)?;
-        fields.serialize_field("branch_transitions", branch_transitions)?;
         let root_refs = CheckpointBranchRootRefs {
             roots: branch_roots,
             aliases: &aliases.roots,
@@ -231,7 +229,6 @@ struct PersistedDurableCheckpoint {
     branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
     branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
     retired_branch_names: Vec<crate::history::data::BranchId>,
-    branch_transitions: Vec<crate::durability::data::DurableBranchTransitionImage>,
     #[serde(default)]
     branch_roots: Vec<crate::durability::data::DurableBranchRootImage>,
     #[serde(default)]
@@ -271,7 +268,6 @@ impl PersistedDurableCheckpointFile {
             branch_cells,
             branch_lifecycle,
             retired_branch_names,
-            branch_transitions,
             branch_roots,
             branch_root_schema_images,
             record_identity,
@@ -296,7 +292,6 @@ impl PersistedDurableCheckpointFile {
                 branch_cells,
                 branch_lifecycle,
                 retired_branch_names,
-                branch_transitions,
                 branch_roots,
                 branch_root_schema_images,
                 record_identity,
@@ -357,7 +352,6 @@ impl PersistedDurableCheckpointFile {
                 branch_cells: checkpoint.branch_cells,
                 branch_lifecycle: checkpoint.branch_lifecycle,
                 retired_branch_names: checkpoint.retired_branch_names,
-                branch_transitions: checkpoint.branch_transitions,
                 branch_roots: checkpoint.branch_roots,
                 branch_root_schema_images: checkpoint.branch_root_schema_images,
                 record_identity: checkpoint.record_identity,

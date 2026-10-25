@@ -54,10 +54,11 @@ fn an_artifact_whose_frame_is_damaged_is_refused_at_the_read() {
 
     medium.flip_artifact_byte(PatchStreamPosition(2), last_byte);
 
-    assert!(
-        medium.recovery_source().is_err(),
-        "a payload that no longer matches its digest never becomes an artifact"
-    );
+    let error = medium.recovery_source().unwrap_err();
+    let TestRecoverySourceRefusal::Commit(refusal) = error else {
+        panic!("expected commit frame refusal: {error:?}");
+    };
+    assert!(matches!(refusal, crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal::DigestMismatch { .. }));
 }
 
 #[test]

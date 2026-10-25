@@ -11,9 +11,7 @@ mod recovery_outcome;
 mod recovery_plan;
 mod recovery_stop;
 
-pub(crate) use branch_lifecycle_images::{
-    readmit_branch_transition_images, DurableBranchLifecycleImage, DurableBranchTransitionImage,
-};
+pub(crate) use branch_lifecycle_images::DurableBranchLifecycleImage;
 pub(crate) use branch_root_schema_images::{
     DurableBranchRootSchemaImage, DurableEntitySchemaRegistration,
 };

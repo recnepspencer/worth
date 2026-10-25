@@ -127,7 +127,7 @@ pub(crate) fn assert_lifecycle_prefix(
     commits: usize,
     case: &str,
 ) {
-    let transitions = super::branch_lifecycle::artifacts_of(home.runtime());
+    let transitions = super::branch_lifecycle::artifacts_of_home(&home);
     assert_eq!(
         transitions,
         script.transitions[..transitions.len()],

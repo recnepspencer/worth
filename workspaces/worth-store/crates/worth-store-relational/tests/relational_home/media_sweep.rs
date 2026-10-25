@@ -10,9 +10,9 @@
 //! checkpoint fault leaves the old or the new checkpoint selected; the rest
 //! of the script, a second recovery and fresh identities follow.
 //!
-//! Targets: the first commit, a fork publication, the first commit on a
-//! durably forked branch, the schema-transition commit, and a checkpoint
-//! that replaces a selected one; two seeds each.
+//! Targets: the first commit, each of fork/archive/deletion-requested/delete,
+//! the first commit on a durably forked branch, the schema-transition commit,
+//! and a checkpoint that replaces a selected one; two seeds each.
 
 use std::num::NonZeroU64;
 use std::panic::{self, AssertUnwindSafe};
@@ -34,6 +34,9 @@ const CHECKPOINT_EVERY: usize = 3;
 /// Cases are independent homes in their own directories, so they run on a
 /// few workers; each case's fault schedule belongs to its own Store.
 const WORKERS: usize = 6;
+/// Libtest runs target sweeps concurrently. Keep that from multiplying the
+/// worker allowance and starving process-kill children of their Store seam.
+static SWEEP_EXECUTION: Mutex<()> = Mutex::new(());
 
 /// How many cases ran and how the target ended in them.
 #[derive(Default, Debug)]
@@ -105,6 +108,7 @@ impl SeedSweep {
         if matches!(self.target, Target::BranchTransition(_)) {
             let _ = super::branch_lifecycle::state_of(home.runtime(), &self.script.records);
         }
+        let _ = super::branch_lifecycle::artifacts_of_home(&home);
         media_faults::arm(&activations);
         match self.target {
             Target::Commit(index) => {
@@ -129,6 +133,9 @@ impl SeedSweep {
 }
 
 fn sweep(select: impl Fn(&Script) -> Target) {
+    let _workers = SWEEP_EXECUTION
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let request = workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
     let seeds: Vec<_> = SEEDS
@@ -271,4 +278,15 @@ fn every_media_operation_of_a_branch_transition_recovers() {
                 .unwrap(),
         )
     });
+}
+
+#[test]
+fn every_media_operation_of_archive_and_delete_transitions_recovers() {
+    for select in [
+        (|step: &Step| matches!(step, Step::Archive { .. })) as fn(&Step) -> bool,
+        |step| matches!(step, Step::RequestDeletion { .. }),
+        |step| matches!(step, Step::Delete { .. }),
+    ] {
+        sweep(|script| Target::BranchTransition(script.steps.iter().position(select).unwrap()));
+    }
 }

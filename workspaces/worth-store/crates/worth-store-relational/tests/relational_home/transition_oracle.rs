@@ -22,7 +22,7 @@ pub(crate) fn outcome(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> (Ended, Vec<Vec<u8>>, InFlight) {
-    let now = branch_lifecycle::artifacts_of(home.runtime());
+    let now = branch_lifecycle::append_live(home.runtime(), before);
     match result {
         Ok(()) => {
             assert_eq!(
@@ -81,7 +81,7 @@ pub(crate) fn assert_recovered(
     flight: &InFlight,
     case: &str,
 ) -> bool {
-    let recovered = branch_lifecycle::artifacts_of(home.runtime());
+    let recovered = branch_lifecycle::artifacts_of_home(&home);
     assert!(
         recovered.starts_with(acknowledged),
         "{case}: lost acknowledged transitions"

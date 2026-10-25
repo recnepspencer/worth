@@ -140,10 +140,10 @@ impl PreparedBranchPublicationPreflight {
         let medium = self.medium.clone();
         let durable_policy = execution.allocation_policy();
         // A durable publisher waits for a publisher whose durable I/O holds
-        // the reservation; a memory-only one defers (D2).
+        // the reservation. Memory-only commits defer only behind other commits.
         let admission = match &medium {
             Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
-            None => crate::runtime::PatchPositionReservationAdmission::DeferWhenHeld,
+            None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
         let positioned_commit = match self
             .movement

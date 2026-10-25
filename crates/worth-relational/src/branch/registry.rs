@@ -189,6 +189,13 @@ impl RelationalBranchReferenceRegistry {
                 ));
             }
         }
+        for (name, cell) in &state.cells {
+            if cell.lifecycle_posture() == super::RelationalBranchLifecyclePosture::Deleting
+                && !restored.contains(name)
+            {
+                return Err(format!("deleting branch `{}` has no retired name", name.0));
+            }
+        }
         state.retired_names = restored;
         Ok(())
     }

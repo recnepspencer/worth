@@ -146,7 +146,7 @@ pub(crate) fn assert_continues(
     case: &str,
 ) {
     let before = workload::artifacts_of(home.runtime());
-    let transitions = super::branch_lifecycle::artifacts_of(home.runtime()).len();
+    let transitions = super::branch_lifecycle::artifacts_of_home(&home).len();
     apply(
         &home,
         execution,

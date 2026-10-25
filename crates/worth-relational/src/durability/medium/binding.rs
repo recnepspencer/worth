@@ -43,6 +43,17 @@ pub(crate) enum RelationalDurableStepStop {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(crate) fn read_transition(
+        &self,
+        sequence: crate::branch::RelationalBranchTransitionSequence,
+    ) -> Result<RelationalBranchTransitionArtifact, super::RelationalDurableTransitionReadFailure>
+    {
+        self.state()
+            .medium
+            .as_ref()
+            .ok_or(super::RelationalDurableTransitionReadFailure::MediumMoved)?
+            .read_transition(sequence)
+    }
     pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
         Self {
             state: Mutex::new(BindingState {

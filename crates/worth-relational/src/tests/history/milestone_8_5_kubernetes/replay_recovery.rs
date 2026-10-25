@@ -157,24 +157,30 @@ pub(super) fn recover_stage_from_final_history(
     let covered_transitions = checkpoint.as_ref().map_or(0, |checkpoint| {
         checkpoint.coverage.up_to_branch_transition.0
     });
-    let chain_branches = tail_log
+    let mut chain_branches = tail_log
         .iter()
         .map(|envelope| envelope.branch_context.clone())
         .collect::<BTreeSet<_>>();
-    let forks = source
-        .history
-        .positioned_branch_transitions_snapshot()
+    let mut forks = source
+        .durability()
+        .reconstruct_branch_transition_history(execution)
+        .unwrap()
         .into_iter()
+        .rev()
         .filter(|transition| transition.sequence().0 > covered_transitions)
-        .filter(|transition| {
-            matches!(
-                transition.transition(),
-                crate::branch::RelationalBranchTransition::Fork { target, .. }
-                    if chain_branches.contains(target)
-            )
+        .filter_map(|transition| {
+            if let crate::branch::RelationalBranchTransition::Fork { target, source, .. } =
+                transition.transition()
+                && chain_branches.contains(target)
+            {
+                chain_branches.insert(source.clone());
+                Some(transition)
+            } else {
+                None
+            }
         })
-        .map(|transition| transition.as_ref().clone())
-        .collect();
+        .collect::<Vec<_>>();
+    forks.reverse();
     let plan = crate::durability::data::RecoveryPlan::new(
         source.config().clone(),
         checkpoint,
