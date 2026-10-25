@@ -29,3 +29,5 @@ pub use home_descriptor::RelationalStoreHomeDescriptorRefusal;
 pub use physical_store::{RelationalStorePhysicalRefusal, RelationalStorePhysicalStage};
 pub use recovered_history::RelationalStoreJournalRefusal;
 pub use recovered_transitions::RelationalStoreTransitionJournalRefusal;
+
+mod cold_source;

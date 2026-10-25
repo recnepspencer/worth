@@ -119,7 +119,7 @@ impl TestDurableMedium {
     /// every commit and transition after its coverage. A frame-damaged
     /// artifact refuses here, as it would at the home's own read.
     pub(crate) fn recovery_source(
-        &self,
+        self: &Arc<Self>,
     ) -> Result<RelationalDurableRecoverySource, TestRecoverySourceRefusal> {
         let journal = self.journal();
         let checkpoint = journal.checkpoint.clone();
@@ -146,6 +146,7 @@ impl TestDurableMedium {
             checkpoint,
             tail,
             transitions,
+            self.clone(),
         ))
     }
 
@@ -187,3 +188,5 @@ impl TestDurableMedium {
         self.transition_journal().publish(artifact)
     }
 }
+
+mod cold_source;

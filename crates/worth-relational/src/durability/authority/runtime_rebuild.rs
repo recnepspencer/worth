@@ -70,6 +70,11 @@ pub(super) fn rebuild_runtime_from_plan(
     unshared_state(&mut restored)?.commit_strategies.executors =
         plan.commit_strategy_executors.clone();
 
+    if let Some(source) = &plan.cold_source {
+        unshared_state(&mut restored)?
+            .durability
+            .attach_cold_source(source.clone());
+    }
     let mut checkpoint_work = None;
     if let Some(checkpoint) = plan.checkpoint.take() {
         let mut work = crate::durability::data::CheckpointRestoreWork::default();

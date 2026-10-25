@@ -86,7 +86,8 @@ pub mod durability {
     };
     pub use crate::durability::medium::{
         RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
-        RelationalDurableCheckpointSource, RelationalDurableMedium, RelationalDurablePublication,
+        RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMedium,
+        RelationalDurableMemberLocator, RelationalDurablePublication,
         RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
         RelationalDurableTransitionReadFailure,
     };
@@ -376,6 +377,7 @@ pub mod storage {
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
         AuthoritativeFieldComparisonKeyDecodeDenial,
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
 }
 

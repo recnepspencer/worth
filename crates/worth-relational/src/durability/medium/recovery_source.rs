@@ -59,6 +59,7 @@ pub struct RelationalDurableRecoverySource {
     checkpoint: Option<RelationalDurableCheckpointSource>,
     tail: Vec<RelationalCanonicalCommitArtifact>,
     transitions: Vec<RelationalBranchTransitionArtifact>,
+    cold_source: std::sync::Arc<dyn super::RelationalDurableColdSource>,
 }
 
 impl RelationalDurableRecoverySource {
@@ -66,11 +67,13 @@ impl RelationalDurableRecoverySource {
         checkpoint: Option<RelationalDurableCheckpointSource>,
         tail: Vec<RelationalCanonicalCommitArtifact>,
         transitions: Vec<RelationalBranchTransitionArtifact>,
+        cold_source: std::sync::Arc<dyn super::RelationalDurableColdSource>,
     ) -> Self {
         Self {
             checkpoint,
             tail,
             transitions,
+            cold_source,
         }
     }
 
@@ -91,6 +94,7 @@ impl RelationalDurableRecoverySource {
             checkpoint: self.checkpoint,
             tail: self.tail,
             transitions: self.transitions,
+            cold_source: self.cold_source,
         }
     }
 }
@@ -100,4 +104,5 @@ pub(crate) struct RecoverySourceParts {
     pub(crate) checkpoint: Option<RelationalDurableCheckpointSource>,
     pub(crate) tail: Vec<RelationalCanonicalCommitArtifact>,
     pub(crate) transitions: Vec<RelationalBranchTransitionArtifact>,
+    pub(crate) cold_source: std::sync::Arc<dyn super::RelationalDurableColdSource>,
 }

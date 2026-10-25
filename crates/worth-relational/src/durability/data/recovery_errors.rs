@@ -32,6 +32,7 @@ pub enum RecoveryFailureClass {
     MissingAuthoritativeParentClosure,
     ReplayFailure,
     DurableIoFailure,
+    ColdStorageUnavailable,
     CheckpointPublicationInFlight,
     PerformedPublicationRequiresSettlement,
     CheckpointSizeOverflow,
@@ -211,6 +212,7 @@ pub struct DurabilityError {
     pub detail: String,
     pub history_drift_class: Option<HistoryDriftClass>,
     pub authority_continuity_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
+    pub storage_unavailable: Option<crate::storage::data::RelationalStorageUnavailable>,
     pub context: ErrorContext,
 }
 
@@ -223,7 +225,8 @@ impl DurabilityError {
             _ => Some(SuggestedFix::RepairDurableStore),
         };
         let operation = match class {
-            RecoveryFailureClass::DurableIoFailure => ErrorOperation::ReadDurableStore,
+            RecoveryFailureClass::DurableIoFailure
+            | RecoveryFailureClass::ColdStorageUnavailable => ErrorOperation::ReadDurableStore,
             RecoveryFailureClass::CheckpointPublicationInFlight
             | RecoveryFailureClass::PerformedPublicationRequiresSettlement
             | RecoveryFailureClass::CheckpointSizeOverflow
@@ -251,6 +254,7 @@ impl DurabilityError {
             detail: detail.into(),
             history_drift_class: None,
             authority_continuity_mismatch: None,
+            storage_unavailable: None,
             context,
         }
     }

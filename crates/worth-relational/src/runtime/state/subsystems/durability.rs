@@ -21,9 +21,23 @@ pub(crate) struct DurabilitySubsystem {
     medium: Option<Arc<RelationalDurableMediumBinding>>,
     /// Speculative copies retain historical reads, never publication access.
     transition_history: Option<RelationalTransitionHistoryReader>,
+    cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn cold_source(
+        &self,
+    ) -> Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>> {
+        self.cold_source.clone()
+    }
+
+    pub(crate) fn attach_cold_source(
+        &mut self,
+        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) {
+        self.cold_source = Some(source);
+    }
+
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         self.medium = Some(Arc::new(RelationalDurableMediumBinding::new(medium)));
     }
@@ -112,6 +126,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             state: RuntimeOwnedState::new(DurabilityState::default()),
             medium: None,
             transition_history: None,
+            cold_source: None,
         }
     }
 
@@ -120,6 +135,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
             state: self.state.detached(),
             medium: None,
             transition_history: self.transition_history(),
+            cold_source: self.cold_source.clone(),
         }
     }
 }

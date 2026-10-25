@@ -162,6 +162,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
         RecoveryVerificationMode::NormalRecoveryVerification,
         DescriptorSemanticsVersion::default(),
         vec![child.commit.commit_id],
+        None,
     );
     let mut recovered = runtime_with_test_schema();
     let error = recovered

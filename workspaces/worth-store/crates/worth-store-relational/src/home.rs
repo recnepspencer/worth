@@ -173,7 +173,7 @@ fn admit_descriptor(
 /// Hand the selected checkpoint, and the commits and branch transitions after
 /// it, to Relational.
 fn readmit_history(
-    serving: &ServingPhysicalRuntime,
+    serving: &Arc<ServingPhysicalRuntime>,
     runtime: &mut RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Refusal> {
@@ -187,10 +187,14 @@ fn readmit_history(
     let tail = recovered_history::journal_tail(serving, covered).map_err(Refusal::Journal)?;
     let transitions = recovered_transitions::transition_tail(serving, covered_transitions)
         .map_err(Refusal::TransitionJournal)?;
-    if checkpoint.is_none() && tail.is_empty() && transitions.is_empty() {
-        return Ok(());
-    }
-    let source = RelationalDurableRecoverySource::new(checkpoint, tail, transitions);
+    let source = RelationalDurableRecoverySource::new(
+        checkpoint,
+        tail,
+        transitions,
+        Arc::new(crate::cold_source::StoreColdSource::new(Arc::clone(
+            serving,
+        ))),
+    );
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

@@ -53,6 +53,7 @@ pub(super) fn retained_recovery_plan(
         verification_mode,
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
+        runtime.durability.cold_source(),
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
 }
