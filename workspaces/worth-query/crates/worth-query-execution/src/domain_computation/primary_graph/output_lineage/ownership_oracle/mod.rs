@@ -46,3 +46,5 @@ mod installation;
 mod journey;
 
 mod optional_aspects;
+
+mod commit_interruption;

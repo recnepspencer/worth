@@ -90,7 +90,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
     use crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial as Resource;
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     use WorthQueryApplicationCommitDenialKind as Application;
-    for (session, expected) in [
+    for (session, expected, expected_demand) in [
         (
             Session::ExecutionResource {
                 denial: Resource::WorkExhausted,
@@ -102,6 +102,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
                 partition_identity: Some(7),
                 policy_ancestor: Some(2),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionNestedPatternStopped {
@@ -110,6 +111,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionNestedPatternStopped {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionWorkerPanicked {
@@ -118,6 +120,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionWorkerPanicked {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionWorkerPanicked {
@@ -126,6 +129,9 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionWorkerPanicked {
                 partition_identity: None,
             },
+            WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                graph::WorthQueryAdvancementDenial::Panicked,
+            ),
         ),
         (
             Session::ExecutionUncheckedCustomKernel {
@@ -134,6 +140,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionUncheckedCustomKernel {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
         (
             Session::ExecutionIdentitiesNotCanonical {
@@ -142,6 +149,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             Application::ExecutionIdentitiesNotCanonical {
                 partition_identity: Some(7),
             },
+            WorthQueryOutputDemandDenialKind::ProducerUnavailable,
         ),
     ] {
         let commit = crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_denied(
@@ -154,10 +162,7 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             WorthQueryApplicationCommitOutcome::Denied(commit),
         )
         .unwrap_err();
-        assert_eq!(
-            observed.kind(),
-            WorthQueryOutputDemandDenialKind::ProducerUnavailable
-        );
+        assert_eq!(observed.kind(), expected_demand);
         assert_eq!(observed.commit_denial_kind(), Some(expected));
     }
 }
@@ -198,26 +203,41 @@ fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
         WorthQueryAdvancementDenial as Request, WorthQueryApplicationCommitDenialStage as Stage,
         WorthQueryManagedComputationResourceDenial as Resource,
     };
+    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     use WorthQueryOutputDemandDenialKind as Demand;
-    for (partition_identity, policy_ancestor, expected) in [
+    for (cause, expected) in [
         (
-            None,
-            None,
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: None,
+            }),
             Demand::ExecutionRequest(Request::Resource(Resource::WorkExhausted)),
         ),
-        (Some(7), None, Demand::ProducerUnavailable),
-        (None, Some(2), Demand::ProducerUnavailable),
+        (
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: Some(7),
+                policy_ancestor: None,
+            }),
+            Demand::ProducerUnavailable,
+        ),
+        (
+            Ok(Session::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity: None,
+                policy_ancestor: Some(2),
+            }),
+            Demand::ProducerUnavailable,
+        ),
+        (Err(Control::Cancelled), Demand::Cancelled),
+        (Err(Control::TimedOut), Demand::TimedOut),
     ] {
-        let kind = Session::ExecutionResource {
-            denial: Resource::WorkExhausted,
-            partition_identity,
-            policy_ancestor,
-        };
         let commit = provider_session_execution_denied(
-            Ok(kind),
+            cause,
             Stage::ProviderCommit,
-            "work stopped before publication",
+            "request stopped before publication",
         );
         let observed = commit_receipt(
             "producer",
@@ -227,16 +247,22 @@ fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
         assert_eq!(observed.kind(), expected);
         assert_eq!(
             observed.commit_execution_denial(),
-            Some((Stage::ProviderCommit, Ok(kind)))
+            Some((Stage::ProviderCommit, cause))
         );
-        assert_eq!(
-            observed.commit_denial_kind(),
-            Some(WorthQueryApplicationCommitDenialKind::ExecutionResource {
-                denial: Resource::WorkExhausted,
+        let expected_commit = match cause {
+            Ok(Session::ExecutionResource {
+                denial,
                 partition_identity,
                 policy_ancestor,
-            })
-        );
+            }) => WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial,
+                partition_identity,
+                policy_ancestor,
+            },
+            Err(_) => WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            _ => unreachable!(),
+        };
+        assert_eq!(observed.commit_denial_kind(), Some(expected_commit));
     }
 }
 

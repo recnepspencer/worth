@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
 
 mod content_identity;
+mod request_execution;
 mod source_readmission;
 pub(super) use content_identity::identity_failed;
 pub(super) use source_readmission::{query_admission_denied, query_execution_denied};
@@ -153,7 +154,7 @@ pub(super) fn execution_failed(
         match attempt.kind() {
             WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
                 return denial(
-                    source_readmission::request_execution_kind(cause),
+                    request_execution::kind(cause),
                     format!("{subject}: {error:?}"),
                 )
                 .into();
@@ -229,7 +230,7 @@ fn projection_budget(
         Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
             use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
             Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
-                Ok(cause) => source_readmission::request_execution_kind(cause),
+                Ok(cause) => request_execution::kind(cause),
                 Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
                 Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
             })
@@ -292,7 +293,7 @@ pub(super) fn identity_unavailable(
     )
 }
 
-/// Root request resource stops stay typed; producer failures keep their category.
+/// A native stop keeps the same request ownership at source read and commit.
 pub(super) fn commit_execution_stopped(
     subject: &str,
     error: impl std::fmt::Debug,
@@ -301,19 +302,9 @@ pub(super) fn commit_execution_stopped(
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Native;
-    let request_resource = match cause {
-        Ok(
-            cause @ Native::ExecutionResource {
-                partition_identity: None,
-                policy_ancestor: None,
-                ..
-            },
-        ) => cause,
-        _ => return failed(subject, error),
-    };
     denial(
-        source_readmission::request_execution_kind(request_resource),
+        request_execution::stop(cause)
+            .unwrap_or(WorthQueryOutputDemandDenialKind::ProducerUnavailable),
         format!("{subject}: {error:?}"),
     )
 }
