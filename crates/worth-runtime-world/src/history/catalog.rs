@@ -33,6 +33,7 @@ pub use ancestry::{CompositeAncestorSelectionDenial, RetainedCompositeAncestor};
 pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;
 pub(crate) use entry::CompositeHistoryCatalogEntry;
+pub(crate) use history_retirement::RetiredHistoryEntries;
 pub use metadata::HistoryMetadataLedger;
 pub(super) use metadata::HistoryReservationMetadata;
 pub use publication_page::{
@@ -225,7 +226,7 @@ impl CompositeHistoryCatalog {
                 identity,
             ));
         }
-        lock_index(&state.reachability).increment_direct_protection(&identity)?;
+        lock_index(&state.reachability).increment_direct_protection(&identity, class)?;
         Ok(CompositeHistoryProtectionObligation::new(
             Arc::clone(&state.reachability),
             identity,

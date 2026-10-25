@@ -35,7 +35,7 @@ impl std::fmt::Debug for CompositeHistoryProtectionObligation {
 impl Drop for CompositeHistoryProtectionObligation {
     fn drop(&mut self) {
         let mut reachability = lock_index(&self.reachability);
-        reachability.decrement_direct_protection(&self.identity);
+        reachability.decrement_direct_protection(&self.identity, self.class);
     }
 }
 

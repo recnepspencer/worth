@@ -76,7 +76,7 @@ pub(super) fn release_reservation(
     lock_counters(&state.counters).record_metadata_release();
     if let CompositeCommitParent::Ordinary(parent) = &reservation.parent {
         let mut reachability = lock_index(&state.reachability);
-        reachability.decrement_descendant_dependency(parent.commit());
+        reachability.abandon_forming_child(parent.commit());
     }
     if matches!(reservation.parent, CompositeCommitParent::Root) {
         state.root_reserved = false;

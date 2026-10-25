@@ -56,8 +56,9 @@ pub use crate::history::{
     CompositeHistoryReclamationRequest, CompositeHistoryTraversal, CompositeRuntimeWorldCommit,
     CompositeSignalPublicationIdentity, HistoryCatalogCounters, HistoryMetadataLedger,
     HistoryReclamationDenial, HistoryReclamationOutcome, OrdinaryParent,
-    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
-    RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage, RuntimeWorldPublicationRow,
+    RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
+    RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
+    RuntimeWorldPublicationRow,
 };
 
 pub use crate::identity::{

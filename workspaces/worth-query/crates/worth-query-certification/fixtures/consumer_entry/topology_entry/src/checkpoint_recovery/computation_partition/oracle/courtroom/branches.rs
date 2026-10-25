@@ -155,10 +155,11 @@ fn seeded_branch_alphabet_has_exact_counts_on_forks_switches_and_deletion() {
                 }
             }
         }
-        // Closing ancestors cannot release the nested branch's retained basis.
+        // Closing ancestors completes and cannot release the nested branch's
+        // retained basis.
         for (a, b) in [(child, full_child), (parent, full_parent)] {
-            let _kept_cleanup = super::super::branch_sharing::close_ancestor(&kept, a);
-            let _fresh_cleanup = super::super::branch_sharing::close_ancestor(&fresh, b);
+            super::super::branch_sharing::close_ancestor(&kept, a);
+            super::super::branch_sharing::close_ancestor(&fresh, b);
             let step = models[2].step(Kind::Value, &mut rng);
             apply(&kept, nested, &step.changes, &mut command);
             apply(&fresh, full_nested, &step.changes, &mut command);

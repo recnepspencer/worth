@@ -28,6 +28,13 @@ fn correction_history_rebuild_preserves_causality_and_source_expiry() {
     model::history_reapplication::run();
 }
 
+/// A hundred adoptions outgrow the example's whole-run stall watch; the
+/// example still runs this court alone as `adoption-cycles`.
+#[test]
+fn fork_head_adoption_retains_linear_history_and_corrections() {
+    model::fork_head_adoption::run();
+}
+
 #[test]
 fn performed_source_survives_operation_close_and_receipt_copy() {
     let host = host::install();

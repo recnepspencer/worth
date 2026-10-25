@@ -22,6 +22,7 @@ pub mod composite_definition_runtime;
 pub mod correction;
 pub mod correction_race_court;
 pub mod edit;
+pub mod fork_head_adoption;
 pub mod history_reapplication;
 pub mod host;
 pub mod other_edit;

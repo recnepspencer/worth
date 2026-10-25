@@ -67,9 +67,21 @@ shows explicit older-alternative selection, pagination and ordinary close.
 
 A selected occurrence pins exact history for repeatable reads while the branch
 head advances. Closing a product retires its World history first and then any
-private component branches. Retained reads can defer cleanup; the returned
-pending cleanup retains the only retry authority. A retired occurrence cannot
-be selected again, even if an application later reuses the same display name.
+private component branches. History a live branch still reaches is not the
+closed branch's to release: a live fork keeps its whole ancestry, including
+history it inherited from the closed branch, and the close completes. Retained
+reads can defer cleanup; the returned pending cleanup retains the only retry
+authority. A retired occurrence cannot be selected again, even if an
+application later reuses the same display name.
+
+A transaction can therefore run on a fork of the current head and adopt it by
+closing the head it replaces. The adopted fork reads its parent's history as its
+own, so a correction selects a source made on either branch, and retained history
+grows by the same amount for each adoption rather than replaying the journal.
+A refused step on the fork leaves the parent's head and history unchanged; close
+the fork to discard it. The
+[fork-head adoption court](../../../worth-query-certification/examples/application_correction_support/fork_head_adoption.rs)
+runs 100 such cycles.
 History pages are branch-occurrence scoped and bounded by the caller's nonzero
 limit. Their entries are descriptive until `select` asks World to issue an
 exact historical observation; copied commit identities cannot perform that

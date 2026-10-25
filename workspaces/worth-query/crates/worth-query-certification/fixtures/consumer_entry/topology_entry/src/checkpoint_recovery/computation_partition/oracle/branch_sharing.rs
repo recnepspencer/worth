@@ -75,28 +75,17 @@ fn judge(kept: &[OracleRun], fresh: &[OracleRun], expected: Option<Run>) {
     );
 }
 
+/// The live descendant keeps the history it reaches, so the ancestor's close
+/// completes: its own components retire while the descendant keeps reading.
 pub(super) fn close_ancestor<const MODE: u8>(
     app: &Application<false, TOTALS_WORK, 1, MODE>,
     branch: WorthQueryProductBranch,
-) -> worth_query_host::facade::product::WorthQueryApplicationProductBranchCleanup {
-    use worth_query_host::facade::product::{
-        WorthQueryApplicationProductBranchCleanupDenial as Cleanup,
-        WorthQueryApplicationProductBranchCloseDenial as Close,
-        WorthQueryProductBranchOwnerCleanupDenial as Product,
-    };
-    let Err(denial) = crate::checkpoint_recovery::support::host_call(app, |phase| {
+) {
+    if let Err(denial) = crate::checkpoint_recovery::support::host_call(app, |phase| {
         app.on_branch(branch).close(phase).map_err(Box::new)
-    }) else {
-        panic!("the ancestor's live descendant retains Native history");
-    };
-    let Close::OwnerCleanupPending(pending) = *denial else {
-        panic!("the ancestor closes with its live descendant retaining Native history");
-    };
-    assert!(matches!(
-        pending.denial(),
-        Cleanup::Product(Product::WorldHistoryStillRetained)
-    ));
-    pending.into_cleanup()
+    }) {
+        panic!("an ancestor of a live descendant must close completely: {denial:?}");
+    }
 }
 
 fn clone_change(change: &Change) -> Change {

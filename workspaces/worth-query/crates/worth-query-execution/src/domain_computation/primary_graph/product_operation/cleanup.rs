@@ -8,6 +8,7 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryProductBranchOwnerCleanup, WorthQueryProductBranchOwnerCleanupDenial,
     WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupWork,
 };
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphProvider;
 
 #[derive(Debug)]
 pub enum WorthQueryApplicationProductBranchCleanupDenial {
@@ -21,6 +22,7 @@ pub enum WorthQueryApplicationProductBranchCleanupDenial {
 pub struct WorthQueryApplicationProductBranchCleanup {
     product: WorthQueryProductBranchOwnerCleanup,
     conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+    provider: Arc<WorthQueryPrimaryGraphProvider>,
 }
 
 impl std::fmt::Debug for WorthQueryApplicationProductBranchCleanup {
@@ -36,10 +38,12 @@ impl WorthQueryApplicationProductBranchCleanup {
     pub(in crate::domain_computation) fn new(
         product: WorthQueryProductBranchOwnerCleanup,
         conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        provider: Arc<WorthQueryPrimaryGraphProvider>,
     ) -> Self {
         Self {
             product,
             conditional,
+            provider,
         }
     }
 
@@ -56,11 +60,16 @@ impl WorthQueryApplicationProductBranchCleanup {
         let Self {
             product,
             conditional,
+            provider,
         } = self;
-        if let Err(denial) = product.release_retired_history() {
+        let released = product.release_retired_history();
+        // Evidence a closed branch left on history it released goes with it.
+        provider.release_unretained_inherited_evidence();
+        if let Err(denial) = released {
             return Err(Self::failed(
                 product,
                 conditional,
+                provider,
                 WorthQueryApplicationProductBranchCleanupDenial::Product(denial),
             ));
         }
@@ -70,6 +79,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 return Err(Self::failed(
                     product,
                     conditional,
+                    provider,
                     WorthQueryApplicationProductBranchCleanupDenial::SignalBasisObservation(denial),
                 ));
             }
@@ -85,6 +95,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 return Err(Self::failed(
                     product,
                     conditional,
+                    provider,
                     WorthQueryApplicationProductBranchCleanupDenial::ConditionalRetirement(denial),
                 ));
             }
@@ -96,6 +107,7 @@ impl WorthQueryApplicationProductBranchCleanup {
                 Err(Self::failed(
                     failure.into_cleanup(),
                     conditional,
+                    provider,
                     WorthQueryApplicationProductBranchCleanupDenial::Product(denial),
                 ))
             }
@@ -105,6 +117,7 @@ impl WorthQueryApplicationProductBranchCleanup {
     fn failed(
         product: WorthQueryProductBranchOwnerCleanup,
         conditional: Arc<RwLock<BridgeSealedRuntimeAssembly>>,
+        provider: Arc<WorthQueryPrimaryGraphProvider>,
         denial: WorthQueryApplicationProductBranchCleanupDenial,
     ) -> WorthQueryApplicationProductBranchCleanupFailure {
         WorthQueryApplicationProductBranchCleanupFailure {
@@ -112,6 +125,7 @@ impl WorthQueryApplicationProductBranchCleanup {
             cleanup: Self {
                 product,
                 conditional,
+                provider,
             },
         }
     }

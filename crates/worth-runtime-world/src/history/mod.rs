@@ -13,7 +13,8 @@ pub use catalog::{
     RuntimeWorldPublicationRow,
 };
 pub(crate) use catalog::{
-    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RuntimeWorldHistoryCatalogContract,
+    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetiredHistoryEntries,
+    RuntimeWorldHistoryCatalogContract,
 };
 #[allow(
     unused_imports,
@@ -32,6 +33,7 @@ pub(crate) use publication::{
 };
 pub use reclamation::{
     CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
+    RetiredBranchHistoryRelease,
 };
 pub(crate) use retention::{
     ExplicitCommitHistoryProtectionObligation, ProductHeadHistoryProtectionObligation,

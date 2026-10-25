@@ -321,6 +321,17 @@ pub(crate) trait RuntimeWorldLifecycleService:
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    /// Release the history only a closed branch needed, from `from` toward
+    /// the root, and reclaim the pins only that history held.
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
+    /// The commits of `candidates` history still retains.
+    fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Vec<crate::identity::CompositeCommitIdentity>;
     fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

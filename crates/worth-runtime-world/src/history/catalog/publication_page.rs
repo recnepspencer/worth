@@ -143,7 +143,10 @@ impl CompositeHistoryCatalog {
                 .and_then(|entry| entry.publication.as_ref().map(|envelope| (entry, envelope)))
             {
                 Some((entry, envelope)) if envelope.facts().is_some() => {
-                    lock_index(&state.reachability).increment_direct_protection(identity)?;
+                    lock_index(&state.reachability).increment_direct_protection(
+                        identity,
+                        HistoryProtectionClass::ExplicitObligation,
+                    )?;
                     rows.push(RuntimeWorldPublicationRow {
                         commit: Arc::clone(&entry.commit),
                         envelope: Arc::clone(envelope),

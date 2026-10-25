@@ -59,7 +59,8 @@ impl CompositeHistoryCatalog {
                 identity.clone(),
             ));
         }
-        lock_index(&state.reachability).increment_direct_protection(identity)?;
+        lock_index(&state.reachability)
+            .increment_direct_protection(identity, HistoryProtectionClass::ExplicitObligation)?;
         Ok(RuntimeWorldPerformedPublicationProtection {
             identity: identity.clone(),
             _history: CompositeHistoryProtectionObligation::new(

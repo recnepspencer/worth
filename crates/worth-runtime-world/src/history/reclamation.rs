@@ -123,3 +123,35 @@ pub enum HistoryReclamationDenial {
     DuplicateCandidate(CompositeCommitIdentity),
     UnknownCandidate(CompositeCommitIdentity),
 }
+
+/// What releasing a closed branch's history left behind. The walk removes
+/// every commit only that branch needed, from its retired head toward the
+/// root, and stops at the first commit something else still needs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RetiredBranchHistoryRelease {
+    reclaimed: Vec<CompositeCommitIdentity>,
+    held: Option<CompositeCommitIdentity>,
+}
+
+impl RetiredBranchHistoryRelease {
+    pub(crate) fn new(
+        reclaimed: Vec<CompositeCommitIdentity>,
+        held: Option<CompositeCommitIdentity>,
+    ) -> Self {
+        Self { reclaimed, held }
+    }
+
+    /// Commits removed by this walk, newest first.
+    pub fn reclaimed_commits(&self) -> &[CompositeCommitIdentity] {
+        &self.reclaimed
+    }
+
+    /// The commit a held read, receipt, forming child or unconsumed delivery
+    /// still needs. Nothing else owns the history from it down, so the closed
+    /// branch resumes its release here once that holder lets go. `None` means
+    /// the release is complete: what remains is a live branch's head or a
+    /// live descendant's ancestry.
+    pub fn held_commit(&self) -> Option<&CompositeCommitIdentity> {
+        self.held.as_ref()
+    }
+}

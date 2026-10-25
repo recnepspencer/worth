@@ -99,6 +99,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         WorthQueryApplicationProductBranchCleanup::new(
             cleanup,
             self.application.bridge.conditional_operations(),
+            std::sync::Arc::clone(&self.application.primary_provider),
         )
         .retry()
         .map(|receipt| WorthQueryProductBranchCloseReceipt::from_owner_cleanup(branch, receipt))

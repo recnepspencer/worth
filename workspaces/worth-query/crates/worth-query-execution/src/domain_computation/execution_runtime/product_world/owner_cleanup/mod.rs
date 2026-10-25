@@ -167,11 +167,9 @@ pub(super) struct WorthQueryProductBranchOwnerCleanupRecord {
 }
 
 pub(super) enum WorthQueryProductBranchHistoryCleanup {
-    RetiredBranch {
-        retired_head: CompositeCommitIdentity,
-        retirement_boundary: CompositeCommitIdentity,
-        pending: Option<Vec<CompositeCommitIdentity>>,
-    },
+    /// A closed fork releases its history from `resume`, first its retired
+    /// head, toward the root until something live owns the rest.
+    RetiredBranch { resume: CompositeCommitIdentity },
     ExactUnpublished {
         pending: Vec<CompositeCommitIdentity>,
     },
@@ -181,11 +179,10 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     pub(super) fn from_retirement(report: ProductBranchRetirementReport) -> Self {
         let (retired_head, retirement_boundary, pending) = report.into_cleanup_parts();
         Self {
-            history: retirement_boundary.map(|retirement_boundary| {
+            // The root branch has no boundary; its history outlives it.
+            history: retirement_boundary.map(|_| {
                 WorthQueryProductBranchHistoryCleanup::RetiredBranch {
-                    retired_head,
-                    retirement_boundary,
-                    pending: None,
+                    resume: retired_head,
                 }
             }),
             pending,
@@ -215,11 +212,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     {
         let history_work = self.history.as_ref().map_or(0, |history| match history {
             WorthQueryProductBranchHistoryCleanup::ExactUnpublished { pending } => pending.len(),
-            WorthQueryProductBranchHistoryCleanup::RetiredBranch {
-                pending: Some(pending),
-                ..
-            } => pending.len(),
-            WorthQueryProductBranchHistoryCleanup::RetiredBranch { pending: None, .. } => runtime
+            WorthQueryProductBranchHistoryCleanup::RetiredBranch { .. } => runtime
                 .owner
                 .inspection_port()
                 .history_snapshot()

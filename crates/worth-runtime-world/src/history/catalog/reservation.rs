@@ -251,6 +251,7 @@ impl ReservedCompositeCommitCapacity {
                         .expect("live reserved slots")
                         .reachability,
                     &identity,
+                    HistoryProtectionClass::ExplicitObligation,
                 )
                 .expect("a new entry with one head protection has room for its delivery");
             if successor_observation.is_some() {
@@ -262,6 +263,7 @@ impl ReservedCompositeCommitCapacity {
                             .expect("live reserved slots")
                             .reachability,
                         &identity,
+                        HistoryProtectionClass::ExplicitObligation,
                     )
                     .expect("a new entry has room for its reserved successor observation");
             }

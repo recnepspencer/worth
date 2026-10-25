@@ -118,24 +118,34 @@ where
             .history
             .retire_unprotected_history(keep)
             .map_err(HistoryReclamationDenial::Catalog)?;
-        let keys: Vec<_> = retired
-            .iter()
-            .filter_map(|slot| slot.get())
-            .flat_map(|entry| entry.retention_keys())
-            .collect();
-        let identities = retired
-            .iter()
-            .filter_map(|slot| slot.get())
-            .map(|entry| entry.commit().identity().clone())
-            .collect();
-        // Dropping the entries releases their pins; a pin no other holder
-        // shares is then reclaimed from the registry.
-        drop(retired);
-        self.state
-            .retention
-            .reclaim_keys(&keys, keys.len())
-            .expect("retired history pins belong to this owner");
-        Ok(identities)
+        Ok(self.reclaim_retired_entries(retired))
+    }
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial> {
+        let _operation = self
+            .reserve_recovery_operation_if_open_and_bootstrapped()
+            .map_err(|_| {
+                HistoryReclamationDenial::OwnerUnavailable(
+                    super::RuntimeWorldOwnerUnavailable::new(),
+                )
+            })?;
+        let (released, held) = self
+            .state
+            .history
+            .release_retired_branch_history(from)
+            .map_err(HistoryReclamationDenial::Catalog)?;
+        Ok(crate::history::RetiredBranchHistoryRelease::new(
+            self.reclaim_retired_entries(released),
+            held,
+        ))
+    }
+    fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Vec<crate::identity::CompositeCommitIdentity> {
+        self.state.history.retained_commits(candidates)
     }
     fn reclaim_retention(
         &self,
@@ -192,5 +202,38 @@ impl RuntimeWorldCloseContract {
             RuntimeWorldCloseState::Open => Err(RuntimeWorldCloseDenial::AlreadyClosing),
             RuntimeWorldCloseState::Closed => Err(RuntimeWorldCloseDenial::AlreadyClosed),
         }
+    }
+}
+
+impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    /// Drops removed history entries and reclaims the pins only they held.
+    /// Returns the removed commits in the order given.
+    fn reclaim_retired_entries(
+        &self,
+        retired: crate::history::RetiredHistoryEntries,
+    ) -> Vec<crate::identity::CompositeCommitIdentity> {
+        let keys: Vec<_> = retired
+            .iter()
+            .filter_map(|slot| slot.get())
+            .flat_map(|entry| entry.retention_keys())
+            .collect();
+        let identities = retired
+            .iter()
+            .filter_map(|slot| slot.get())
+            .map(|entry| entry.commit().identity().clone())
+            .collect();
+        // Dropping the entries releases their pins; a pin no other holder
+        // shares is then reclaimed from the registry.
+        drop(retired);
+        self.state
+            .retention
+            .reclaim_keys(&keys, keys.len())
+            .expect("retired history pins belong to this owner");
+        identities
     }
 }
