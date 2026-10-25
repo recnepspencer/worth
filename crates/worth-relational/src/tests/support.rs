@@ -293,9 +293,14 @@ pub(super) fn capture_inspection_truth_bundle(
             )
             .expect("read request remains live"),
         retention_summary: inspection
-            .retention_summary(&crate::tests::support::inspection::default_retention_request()),
+            .retention_summary(
+                execution,
+                &crate::tests::support::inspection::default_retention_request(),
+            )
+            .unwrap(),
         record_retention: inspection
-            .inspect_record_retention(RecordRef::Entity(entity_id))
+            .inspect_record_retention(execution, RecordRef::Entity(entity_id))
+            .unwrap()
             .expect("record retention"),
         branch_head: inspection.inspect_branch_head(branch_id),
         latest_commit: inspection

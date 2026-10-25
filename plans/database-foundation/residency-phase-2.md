@@ -66,8 +66,8 @@ historical materialization. It carries storage failures through Query and bank
 outcomes and counts slots from directory facts without warming payloads.
 
 Phase 2 remains open: commit/merge and candidate-wide invariant probe rounds, accepted-candidate
-lease carriage, resident pin/publication witnesses, fallible retention and
-inspection, envelope catalog retirement and the remaining history
+lease carriage, resident pin/publication witnesses, envelope catalog retirement
+and the remaining history
 readers, lineage page serving, and the complete symbol/unique-field audit still
 require implementation and their specified fault evidence. The visibility
 slice's checks do not certify those unfinished boundaries.
@@ -114,3 +114,17 @@ failure through the existing application-attempt denial.
 This closes the explicit retention authority's cold entry path. General
 inspection, replay pin admission and publication's carried resident witness are
 still required; this paragraph does not certify those surfaces.
+
+
+## Inspection custody
+
+Current graph and connectivity summaries read the exact retained Full mirror
+edition demanded by their operation. Neighborhood and structural inspection
+also carry that resident edition into private record, adjacency and sidecar
+reads. Pure-looking storage accessors perform no loads. Retention summaries and
+per-record retention inspection now take the caller request and return the
+native execution/storage failure; record absence remains a successful `None`,
+and existing budget-degradation summaries retain their meaning. The cold fault
+matrix exercises all six of these inspection doors, sticky failure, unchanged
+journal position and no offered publication. Existing inspection budget and
+substrate-acquisition courts remain green.

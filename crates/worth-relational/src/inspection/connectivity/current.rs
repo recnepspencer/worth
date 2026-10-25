@@ -2,6 +2,7 @@ use super::*;
 impl InspectionAccess<'_> {
     pub(super) fn current_connectivity_summary(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &ConnectivityInspectionRequest,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
@@ -12,13 +13,10 @@ impl InspectionAccess<'_> {
         let mut entities = Vec::new();
         let mut work = ConnectivityWork::default();
 
-        for partition_id in self.current_partition_ids() {
+        for (partition_id, partition) in resident.entries() {
             if !partition_scope.allows(partition_id) {
                 continue;
             }
-            let Some(partition) = self.current_partition_state(partition_id) else {
-                continue;
-            };
             for slot in partition.entity_arena.live_bitset.set_slots() {
                 context
                     .checkpoint(1)
@@ -57,9 +55,12 @@ impl InspectionAccess<'_> {
 
         for entity in &entities {
             adjacency.entry(*entity).or_default();
-            for relation_id in
-                self.scoped_relation_ids_for_entity(execution, &InspectionScope::Current, *entity)?
-            {
+            for relation_id in self.scoped_relation_ids_for_entity(
+                resident,
+                execution,
+                &InspectionScope::Current,
+                *entity,
+            )? {
                 context
                     .checkpoint(1)
                     .map_err(crate::execution::denial::kernel_stop)?;
@@ -84,6 +85,7 @@ impl InspectionAccess<'_> {
                     ));
                 }
                 let Some(record) = self.scoped_authoritative_relation_record(
+                    resident,
                     execution,
                     &InspectionScope::Current,
                     relation_id,

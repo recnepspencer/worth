@@ -1,6 +1,4 @@
-use crate::identity::data::{
-    EntityId, LineageId, PartitionId, RelationId, StructuralFingerprint, VersionId,
-};
+use crate::identity::data::{EntityId, LineageId, RelationId, StructuralFingerprint, VersionId};
 use crate::inspection::data::InspectionScope;
 use crate::storage::access::RecordSlotSurface;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
@@ -9,37 +7,28 @@ use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 use super::InspectionAccess;
 
 impl<'runtime> InspectionAccess<'runtime> {
-    pub(crate) fn current_partition_ids(&self) -> Vec<PartitionId> {
-        self.runtime.storage_access().partition_ids()
-    }
-
-    pub(crate) fn current_partition_state(
-        &self,
-        partition_id: PartitionId,
-    ) -> Option<crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>>
-    {
-        self.runtime.partitions.partition(partition_id)
-    }
-
     pub(crate) fn current_entity_slot_surface(
         &self,
+        edition: &crate::runtime::ResidentPartitionEdition,
         entity_id: EntityId,
     ) -> Option<RecordSlotSurface> {
-        self.runtime
-            .storage_access()
-            .record_slot_surface::<EntityRecordKind>(entity_id.partition_id, entity_id.slot_index())
+        crate::storage::access::record_slot_surface_in::<EntityRecordKind>(
+            edition,
+            entity_id.partition_id,
+            entity_id.slot_index(),
+        )
     }
 
     pub(crate) fn current_relation_slot_surface(
         &self,
+        edition: &crate::runtime::ResidentPartitionEdition,
         relation_id: RelationId,
     ) -> Option<RecordSlotSurface> {
-        self.runtime
-            .storage_access()
-            .record_slot_surface::<RelationRecordKind>(
-                relation_id.partition_id,
-                relation_id.slot_index(),
-            )
+        crate::storage::access::record_slot_surface_in::<RelationRecordKind>(
+            edition,
+            relation_id.partition_id,
+            relation_id.slot_index(),
+        )
     }
 
     pub(crate) fn inspect_snapshot(
@@ -69,6 +58,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_authoritative_entity_record(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
@@ -86,7 +76,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                         self.runtime
                             .read_truth()
                             .authoritative_entity_record_for_id_at_version(
-                                &self.runtime.storage_access().current_edition(),
+                                resident,
                                 entity_id,
                                 self.runtime.current_version_id(),
                             )
@@ -104,6 +94,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_authoritative_relation_record(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
@@ -121,7 +112,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                         self.runtime
                             .read_truth()
                             .authoritative_relation_record_for_id_at_version(
-                                &self.runtime.storage_access().current_edition(),
+                                resident,
                                 relation_id,
                                 self.runtime.current_version_id(),
                             )
@@ -139,6 +130,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_relation_ids_for_entity(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         entity_id: EntityId,
@@ -149,10 +141,14 @@ impl<'runtime> InspectionAccess<'runtime> {
             _ => self.read_view_for_scope(execution, scope)?,
         };
         Ok(match scope {
-            InspectionScope::Current => self
-                .runtime
-                .storage_access()
-                .all_relations_for_entity(entity_id, self.runtime.current_version_id()),
+            InspectionScope::Current => {
+                crate::storage::partition::adjacency_queries::all_relations_for_entity_from_state(
+                    self.runtime,
+                    resident,
+                    entity_id,
+                    self.runtime.current_version_id(),
+                )
+            }
             InspectionScope::Version(_) | InspectionScope::Snapshot(_) => read_view
                 .as_ref()
                 .map(|read_view| {
@@ -169,6 +165,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn scoped_relation_endpoints(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         scope: &InspectionScope,
         relation_id: RelationId,
@@ -177,12 +174,12 @@ impl<'runtime> InspectionAccess<'runtime> {
         crate::execution::check_request(execution)?;
         let record = match scope {
             InspectionScope::Current => None,
-            _ => self.scoped_authoritative_relation_record(execution, scope, relation_id)?,
+            _ => {
+                self.scoped_authoritative_relation_record(resident, execution, scope, relation_id)?
+            }
         };
         Ok(match scope {
-            InspectionScope::Current => self
-                .runtime
-                .partitions
+            InspectionScope::Current => resident
                 .partition(relation_id.partition_id)
                 .and_then(|partition| {
                     partition
@@ -199,10 +196,10 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn entity_structural_sidecars(
         &self,
+        resident: &crate::runtime::ResidentPartitionEdition,
         entity_id: EntityId,
     ) -> (Option<LineageId>, Option<StructuralFingerprint>) {
-        self.runtime
-            .partitions
+        resident
             .partition(entity_id.partition_id)
             .and_then(|partition| {
                 partition.entity_arena.get(&entity_id).map(|slot_view| {

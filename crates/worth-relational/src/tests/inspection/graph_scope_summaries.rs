@@ -273,13 +273,17 @@ fn retention_summary_refuses_work_budget_with_explicit_degradation() {
     let entity = create_entity(execution, &runtime, "retained");
     let _relation = create_relation(execution, &runtime, entity, entity, "loop");
 
-    let summary = runtime.inspect_what_happened().retention_summary(
-        &crate::facade::inspection::RetentionInspectionRequest {
-            max_entity_slots_scanned: 32,
-            max_relation_slots_scanned: 32,
-            max_work_units: 1,
-        },
-    );
+    let summary = runtime
+        .inspect_what_happened()
+        .retention_summary(
+            execution,
+            &crate::facade::inspection::RetentionInspectionRequest {
+                max_entity_slots_scanned: 32,
+                max_relation_slots_scanned: 32,
+                max_work_units: 1,
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         summary.availability,

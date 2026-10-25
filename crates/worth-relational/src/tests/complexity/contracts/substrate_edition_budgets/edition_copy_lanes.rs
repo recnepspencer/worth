@@ -82,13 +82,17 @@ fn complexity_budget_read_only_retention_sweep_pins_one_edition_for_every_slot()
     }
 
     runtime.performance_access().reset_counters();
-    let summary = runtime.inspect_what_happened().retention_summary(
-        &crate::facade::inspection::RetentionInspectionRequest {
-            max_entity_slots_scanned: 64,
-            max_relation_slots_scanned: 64,
-            max_work_units: 256,
-        },
-    );
+    let summary = runtime
+        .inspect_what_happened()
+        .retention_summary(
+            execution,
+            &crate::facade::inspection::RetentionInspectionRequest {
+                max_entity_slots_scanned: 64,
+                max_relation_slots_scanned: 64,
+                max_work_units: 256,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     // A read-only sweep over S slots acquires the substrate once, not once per

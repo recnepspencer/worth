@@ -59,14 +59,6 @@ impl<'runtime> StorageAccess<'runtime> {
             .max(1)
     }
 
-    pub(crate) fn record_slot_surface<K: RecordKind>(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-        slot: usize,
-    ) -> Option<RecordSlotSurface> {
-        record_slot_surface_in::<K>(&self.current_edition(), partition_id, slot)
-    }
-
     pub fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
         crate::storage::partition::storage_stats::partition_ids(self.runtime)
     }
@@ -193,26 +185,25 @@ impl<'runtime> StorageAccess<'runtime> {
 /// Slot-by-slot loops must go through this rather than the acquiring twin: a
 /// read-only sweep over S slots should acquire the substrate once, not S times.
 pub(crate) fn record_slots_in<K: RecordKind>(
-    edition: &PartitionEdition,
+    edition: &impl crate::storage::overlay::PartitionAccess,
     partition_id: crate::identity::data::PartitionId,
 ) -> Vec<usize> {
     edition
-        .partition(partition_id)
+        .get_partition(partition_id)
         .map(|partition| K::arena(partition).occupied_slots())
         .unwrap_or_default()
 }
 
 /// One slot's retention surface, read out of an edition the caller pinned.
 ///
-/// A read-modify-read pass must NOT pin one edition across its writes: holding
-/// an edition while writing forces the writer to copy the partition the pass is
-/// still observing. Such passes keep using the acquiring twin, once per step.
+/// Retention mutations use a resident writer entry instead; an inspection
+/// holds its immutable resident edition for the entire traversal.
 pub(crate) fn record_slot_surface_in<K: RecordKind>(
-    edition: &PartitionEdition,
+    edition: &impl crate::storage::overlay::PartitionAccess,
     partition_id: crate::identity::data::PartitionId,
     slot: usize,
 ) -> Option<RecordSlotSurface> {
-    let partition = edition.partition(partition_id)?;
+    let partition = edition.get_partition(partition_id)?;
     let arena = K::arena(partition);
     let slot_view = arena.get_slot(slot)?;
     Some(RecordSlotSurface {

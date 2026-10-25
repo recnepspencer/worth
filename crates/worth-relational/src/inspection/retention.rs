@@ -12,10 +12,12 @@ use super::access::{empty_retention_plan, InspectionAccess};
 impl<'runtime> InspectionAccess<'runtime> {
     pub fn retention_summary(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &RetentionInspectionRequest,
-    ) -> RetentionInspectionSummary {
-        let (plan, availability, degradations) = self.inspect_retention_plan(request);
-        RetentionInspectionSummary {
+    ) -> Result<RetentionInspectionSummary, crate::execution::RelationalExecutionDenialCause> {
+        let resident = self.demand_mirror(execution)?;
+        let (plan, availability, degradations) = self.inspect_retention_plan(&resident, request);
+        Ok(RetentionInspectionSummary {
             current_version_id: self.runtime.current_version_id(),
             active_snapshot_count: plan.active_snapshot_count as u64,
             branch_pinned_entities: plan.branch_pinned_entities as u64,
@@ -30,35 +32,33 @@ impl<'runtime> InspectionAccess<'runtime> {
             access_path: InspectionAccessPath::DirectLookup,
             availability,
             degradations,
-        }
+        })
     }
 
-    pub fn inspect_record_retention(&self, target: RecordRef) -> Option<RecordRetentionInspection> {
+    pub fn inspect_record_retention(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: RecordRef,
+    ) -> Result<Option<RecordRetentionInspection>, crate::execution::RelationalExecutionDenialCause>
+    {
+        let resident = self.demand_mirror(execution)?;
         let version_id = self.runtime.current_version_id();
-        match target {
-            RecordRef::Entity(entity_id) => {
-                let surface = self.current_entity_slot_surface(entity_id)?;
-                Some(self.record_retention_inspection(
-                    RecordRef::Entity(entity_id),
-                    surface.lifecycle,
-                    surface.snapshot_pins,
-                    surface.branch_pins,
-                    surface.replay_pins,
-                    version_id,
-                ))
-            }
+        let surface = match &target {
+            RecordRef::Entity(entity_id) => self.current_entity_slot_surface(&resident, *entity_id),
             RecordRef::Relation(relation_id) => {
-                let surface = self.current_relation_slot_surface(relation_id)?;
-                Some(self.record_retention_inspection(
-                    RecordRef::Relation(relation_id),
-                    surface.lifecycle,
-                    surface.snapshot_pins,
-                    surface.branch_pins,
-                    surface.replay_pins,
-                    version_id,
-                ))
+                self.current_relation_slot_surface(&resident, *relation_id)
             }
-        }
+        };
+        Ok(surface.map(|surface| {
+            self.record_retention_inspection(
+                target,
+                surface.lifecycle,
+                surface.snapshot_pins,
+                surface.branch_pins,
+                surface.replay_pins,
+                version_id,
+            )
+        }))
     }
 
     pub fn inspect_snapshot_pinning(
@@ -132,6 +132,7 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     fn inspect_retention_plan(
         &self,
+        edition: &crate::runtime::ResidentPartitionEdition,
         request: &RetentionInspectionRequest,
     ) -> (
         crate::storage::data::RetentionPlan,
@@ -153,11 +154,10 @@ impl<'runtime> InspectionAccess<'runtime> {
         // One edition for the whole retention sweep. This inspection only
         // reads, so pinning is safe here and keeps a scan of S slots at one
         // substrate acquisition instead of one per slot surface.
-        let edition = self.runtime.acquire_partition_edition();
-        for partition_id in self.current_partition_ids() {
+        for (partition_id, _) in edition.entries() {
             for slot in crate::storage::access::record_slots_in::<
                 crate::storage::substrate::EntityRecordKind,
-            >(&edition, partition_id)
+            >(edition, partition_id)
             {
                 entity_slot_scans += 1;
                 work_units += 1;
@@ -181,7 +181,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                 }
                 if let Some(surface) = crate::storage::access::record_slot_surface_in::<
                     crate::storage::substrate::EntityRecordKind,
-                >(&edition, partition_id, slot)
+                >(edition, partition_id, slot)
                 {
                     if surface.branch_pins > 0 {
                         branch_pinned_entities += 1;
@@ -199,7 +199,7 @@ impl<'runtime> InspectionAccess<'runtime> {
             }
             for slot in crate::storage::access::record_slots_in::<
                 crate::storage::substrate::RelationRecordKind,
-            >(&edition, partition_id)
+            >(edition, partition_id)
             {
                 relation_slot_scans += 1;
                 work_units += 1;
@@ -223,7 +223,7 @@ impl<'runtime> InspectionAccess<'runtime> {
                 }
                 if let Some(surface) = crate::storage::access::record_slot_surface_in::<
                     crate::storage::substrate::RelationRecordKind,
-                >(&edition, partition_id, slot)
+                >(edition, partition_id, slot)
                 {
                     if surface.branch_pins > 0 {
                         branch_pinned_relations += 1;

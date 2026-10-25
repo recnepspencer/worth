@@ -4,6 +4,12 @@ use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
 enum ReadDoor {
+    GraphInspection,
+    ConnectivityInspection,
+    NeighborInspection,
+    StructuralInspection,
+    RetentionSummary,
+    RecordRetention,
     RetentionInspection,
     RetentionPass,
     StorageStatistics,
@@ -37,6 +43,62 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::GraphInspection => runtime
+                .inspect_what_happened()
+                .graph_summary(
+                    execution,
+                    &crate::inspection::data::GraphInspectionRequest {
+                        scope: crate::inspection::data::InspectionScope::Current,
+                        partition_scope: None,
+                        relation_kind_scope: None,
+                        summary_only: true,
+                        budget: crate::tests::support::default_graph_budget(),
+                    },
+                )
+                .map(|_| ()),
+            Self::ConnectivityInspection => runtime
+                .inspect_what_happened()
+                .connectivity_summary(
+                    execution,
+                    &crate::inspection::data::ConnectivityInspectionRequest {
+                        scope: crate::inspection::data::InspectionScope::Current,
+                        partition_scope: None,
+                        relation_kind_scope: None,
+                        include_members: false,
+                        budget: crate::tests::support::default_connectivity_budget(),
+                    },
+                )
+                .map(|_| ()),
+            Self::NeighborInspection => runtime
+                .inspect_what_happened()
+                .neighbors(
+                    execution,
+                    crate::inspection::data::InspectionScope::Current,
+                    entity,
+                )
+                .map(|_| ()),
+            Self::StructuralInspection => runtime
+                .inspect_what_happened()
+                .structural_identity(
+                    execution,
+                    crate::inspection::data::InspectionScope::Current,
+                    crate::transactions::data::RecordRef::Entity(entity),
+                )
+                .map(|_| ()),
+            Self::RetentionSummary => runtime
+                .inspect_what_happened()
+                .retention_summary(
+                    execution,
+                    &crate::tests::support::default_retention_request(),
+                )
+                .map(|_| ()),
+            Self::RecordRetention => runtime
+                .inspect_what_happened()
+                .inspect_record_retention(
+                    execution,
+                    crate::transactions::data::RecordRef::Entity(entity),
+                )
+                .map(|_| ()),
             Self::RetentionInspection => runtime.retention().inspect_plan(execution).map(|_| ()),
             Self::RetentionPass => runtime.retention().run_pass(execution).map(|_| ()),
             Self::StorageStatistics => runtime
@@ -159,6 +221,12 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in [
+        ReadDoor::GraphInspection,
+        ReadDoor::ConnectivityInspection,
+        ReadDoor::NeighborInspection,
+        ReadDoor::StructuralInspection,
+        ReadDoor::RetentionSummary,
+        ReadDoor::RecordRetention,
         ReadDoor::RetentionInspection,
         ReadDoor::RetentionPass,
         ReadDoor::StorageStatistics,

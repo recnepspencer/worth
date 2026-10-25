@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, RelationId, VersionId};
-use crate::runtime::{PartitionEdition, RelationalRuntime};
+use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::PartitionAccess;
 
 use super::AdjacencyDirection;
@@ -63,10 +63,19 @@ pub(crate) fn all_relations_for_entity(
     entity_id: EntityId,
     version_id: VersionId,
 ) -> Vec<RelationId> {
-    let slot = entity_id.slot_index();
     let edition = runtime.acquire_partition_edition();
+    all_relations_for_entity_from_state(runtime, &edition, entity_id, version_id)
+}
+
+pub(crate) fn all_relations_for_entity_from_state(
+    runtime: &RelationalRuntime,
+    state: &dyn PartitionAccess,
+    entity_id: EntityId,
+    version_id: VersionId,
+) -> Vec<RelationId> {
+    let slot = entity_id.slot_index();
     let mut candidates = BTreeSet::new();
-    if let Some(partition) = edition.partition(entity_id.partition_id) {
+    if let Some(partition) = state.get_partition(entity_id.partition_id) {
         for direction in [AdjacencyDirection::Outgoing, AdjacencyDirection::Incoming] {
             if let Some(relations) = direction.table(partition).get(slot) {
                 relations.extend_into(&mut candidates);
@@ -74,7 +83,7 @@ pub(crate) fn all_relations_for_entity(
         }
     }
     charge_copied_ids(runtime, candidates.len());
-    retain_visible(runtime, &edition, candidates, version_id)
+    retain_visible(runtime, state, candidates, version_id)
 }
 
 /// The whole unfiltered neighborhood, which is an owned answer by contract.
@@ -106,7 +115,7 @@ fn whole_neighborhood(
 /// filtered against editions that never coexisted.
 fn retain_visible(
     runtime: &RelationalRuntime,
-    edition: &PartitionEdition,
+    edition: &dyn PartitionAccess,
     candidates: impl IntoIterator<Item = RelationId>,
     version_id: VersionId,
 ) -> Vec<RelationId> {

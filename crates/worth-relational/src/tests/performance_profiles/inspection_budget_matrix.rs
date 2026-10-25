@@ -237,7 +237,8 @@ fn perf_inspection_budget_matrix() {
         let retention_started_at = Instant::now();
         let retention = runtime
             .inspect_what_happened()
-            .retention_summary(&default_retention_request());
+            .retention_summary(execution, &default_retention_request())
+            .unwrap();
         let retention_micros = retention_started_at.elapsed().as_micros();
 
         let commit_started_at = Instant::now();

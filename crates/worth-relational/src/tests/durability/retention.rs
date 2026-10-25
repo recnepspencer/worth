@@ -206,10 +206,12 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
 
     let inspection = runtime.inspect_what_happened();
     let entity_retention = inspection
-        .inspect_record_retention(RecordRef::Entity(source_entity))
+        .inspect_record_retention(execution, RecordRef::Entity(source_entity))
+        .unwrap()
         .expect("deleted entity retention");
     let relation_retention = inspection
-        .inspect_record_retention(RecordRef::Relation(relation))
+        .inspect_record_retention(execution, RecordRef::Relation(relation))
+        .unwrap()
         .expect("retained relation retention");
 
     assert_eq!(entity_retention.pins.snapshot_pins, 0);

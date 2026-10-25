@@ -21,6 +21,20 @@ impl RelationalRuntime {
 }
 
 impl<'runtime> InspectionAccess<'runtime> {
+    /// Operation demand: Full mirror custody before an inspection can read it.
+    pub(super) fn demand_mirror(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::runtime::ResidentPartitionEdition,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.runtime
+            .acquire_partition_edition()
+            .demand_all(execution)
+            .map_err(Into::into)
+    }
+
     pub(crate) fn new(runtime: &'runtime RelationalRuntime) -> Self {
         Self { runtime }
     }

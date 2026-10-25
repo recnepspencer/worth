@@ -135,7 +135,8 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
-            .inspect_record_retention(RecordRef::Entity(entity))
+            .inspect_record_retention(execution, RecordRef::Entity(entity))
+            .unwrap()
             .expect("entity retention after create")
             .pins
             .branch_pins,
@@ -153,7 +154,8 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
-            .inspect_record_retention(RecordRef::Entity(entity))
+            .inspect_record_retention(execution, RecordRef::Entity(entity))
+            .unwrap()
             .expect("entity retention after branch create")
             .pins
             .branch_pins,
@@ -164,7 +166,8 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
-            .inspect_record_retention(RecordRef::Entity(entity))
+            .inspect_record_retention(execution, RecordRef::Entity(entity))
+            .unwrap()
             .expect("entity retention after main update")
             .pins
             .branch_pins,
@@ -181,7 +184,8 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     let inspection = runtime.inspect_what_happened();
     assert_eq!(
         inspection
-            .inspect_record_retention(RecordRef::Entity(entity))
+            .inspect_record_retention(execution, RecordRef::Entity(entity))
+            .unwrap()
             .expect("entity retention after feature update")
             .pins
             .branch_pins,

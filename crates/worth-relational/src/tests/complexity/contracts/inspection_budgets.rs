@@ -217,11 +217,15 @@ fn complexity_budget_retention_summary_reports_bounded_slot_scans() {
     runtime.performance_access().reset_counters();
     let summary = runtime
         .inspect_what_happened()
-        .retention_summary(&RetentionInspectionRequest {
-            max_entity_slots_scanned: 32,
-            max_relation_slots_scanned: 32,
-            max_work_units: 128,
-        });
+        .retention_summary(
+            execution,
+            &RetentionInspectionRequest {
+                max_entity_slots_scanned: 32,
+                max_relation_slots_scanned: 32,
+                max_work_units: 128,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(

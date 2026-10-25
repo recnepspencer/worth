@@ -23,6 +23,14 @@ impl<'runtime> InspectionAccess<'runtime> {
         request: &ConnectivityInspectionRequest,
     ) -> Result<ConnectivityInspectionSummary, crate::execution::RelationalExecutionDenialCause>
     {
+        if matches!(request.scope, InspectionScope::Current) {
+            let resident = self.demand_mirror(execution)?;
+            return crate::visibility::materialization::read_records::read_work::metered(
+                execution,
+                |context| self.current_connectivity_summary(&resident, execution, request, context),
+                |_| 0,
+            )?;
+        }
         crate::visibility::materialization::read_records::read_work::metered(
             execution,
             |context| self.connectivity_summary_funded(execution, request, context),
@@ -42,9 +50,6 @@ impl<'runtime> InspectionAccess<'runtime> {
             InspectionScope::Current => None,
             _ => self.read_view_for_scope(execution, &request.scope)?,
         };
-        if matches!(request.scope, InspectionScope::Current) {
-            return self.current_connectivity_summary(execution, request, context);
-        }
         (|| {
             self.count_connectivity_summary_request();
             let version_id = self.scope_version_id(&request.scope);
@@ -167,14 +172,16 @@ impl<'runtime> InspectionAccess<'runtime> {
         scope: InspectionScope,
         entity_id: EntityId,
     ) -> Result<NeighborInspectionResult, crate::execution::RelationalExecutionDenialCause> {
+        let resident = self.demand_mirror(execution)?;
         self.count_neighbor_request();
         let version_id = self.scope_version_id(&scope);
-        let relation_ids = self.scoped_relation_ids_for_entity(execution, &scope, entity_id)?;
+        let relation_ids =
+            self.scoped_relation_ids_for_entity(&resident, execution, &scope, entity_id)?;
         let mut outgoing_relation_ids = Vec::new();
         let mut incoming_relation_ids = Vec::new();
         for relation_id in relation_ids {
             if self
-                .scoped_relation_endpoints(execution, &scope, relation_id)?
+                .scoped_relation_endpoints(&resident, execution, &scope, relation_id)?
                 .is_some_and(|(source, _)| source == entity_id)
             {
                 outgoing_relation_ids.push(relation_id);
