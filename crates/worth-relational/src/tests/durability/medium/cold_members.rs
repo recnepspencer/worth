@@ -163,6 +163,32 @@ fn a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal() {
         reads,
         "damage cannot be silently retried"
     );
+    let branch = crate::history::data::BranchId("main".into());
+    let before = receiving.history().branch_head(&branch);
+    let mut writer = test_owner_begin_transaction_for_main(&receiving);
+    writer
+        .push_batch(
+            WorkerIntentBatch::new("damaged-member-write").push(
+                crate::transactions::data::MutationIntent::Entity(
+                    crate::transactions::data::EntityMutationIntent::Delete(
+                        crate::transactions::data::DeleteEntityIntent { entity_id: entity },
+                    ),
+                ),
+            ),
+            execution.allocation_policy(),
+        )
+        .unwrap();
+    let crate::transactions::data::TransactionCommitError::Preparation { error, .. } =
+        writer.commit(execution, &receiving).unwrap_err()
+    else {
+        panic!("a cold write must refuse before publication")
+    };
+    assert_eq!(
+        error.reason(),
+        crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure)
+    );
+    assert_eq!(receiving.history().branch_head(&branch), before);
+    assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
 }
 
 #[test]

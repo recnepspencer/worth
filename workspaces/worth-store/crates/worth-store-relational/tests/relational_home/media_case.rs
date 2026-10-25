@@ -188,6 +188,22 @@ fn commit_outcome(
             assert!(now == before, "{case}: a refused commit was installed");
             (Ended::Refused, before, InFlight::Refused)
         }
+        Err(TransactionCommitError::Preparation { error, .. })
+            if matches!(
+                error.reason(),
+                worth_relational::facade::transactions::CommitPreparationReason::StorageUnavailable(
+                    _
+                )
+            ) =>
+        {
+            // A media fault can now refuse a declared cold demand before the
+            // durable step. Recovery must prove there was no journal append.
+            assert!(
+                now == before,
+                "{case}: unavailable cold storage published a commit"
+            );
+            (Ended::Refused, before, InFlight::NotDurable)
+        }
         Err(error) => {
             let fate = error
                 .durability_unresolved_fate()
