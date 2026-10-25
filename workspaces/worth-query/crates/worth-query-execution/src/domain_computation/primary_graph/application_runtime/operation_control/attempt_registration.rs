@@ -40,6 +40,21 @@ struct ExactAttemptPause {
 }
 
 impl ExactAttemptPause {
+    fn observe_arrivals(&self, timeout: Duration) -> bool {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let (state, _) = self
+            .changed
+            .wait_timeout_while(state, timeout, |s| s.0 != self.target && !s.1)
+            .unwrap_or_else(|e| e.into_inner());
+        let failure = state.2.clone();
+        let reached = state.0 == self.target;
+        drop(state);
+        if let Some(failure) = failure {
+            panic!("{failure}");
+        }
+        reached
+    }
+
     fn wait(&self, arrivals: bool) -> bool {
         let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
         let (mut state, expired) = self
@@ -171,14 +186,7 @@ impl WorthQueryApplicationAttemptRegistrationPauseForTest {
     }
 
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
-        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
-        self.latch
-            .changed
-            .wait_timeout_while(state, timeout, |state| state.0 != self.latch.target)
-            .unwrap_or_else(|e| e.into_inner())
-            .0
-             .0
-            == self.latch.target
+        self.latch.observe_arrivals(timeout)
     }
 
     pub fn release(&self) {
@@ -196,14 +204,7 @@ impl Drop for WorthQueryApplicationAttemptRegistrationPauseForTest {
 
 impl WorthQueryApplicationCandidatePreparationPauseForTest {
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
-        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
-        self.latch
-            .changed
-            .wait_timeout_while(state, timeout, |state| state.0 != self.latch.target)
-            .unwrap_or_else(|e| e.into_inner())
-            .0
-             .0
-            == self.latch.target
+        self.latch.observe_arrivals(timeout)
     }
 
     pub fn release(&self) {
@@ -244,6 +245,11 @@ mod arrival_tests {
                     })
                 })
                 .collect::<Vec<_>>();
+            let observer = scope.spawn(|| {
+                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    pause.wait_until_reached(Duration::from_secs(120))
+                }))
+            });
             let stopped = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 pause.wait_for_arrivals()
             }));
@@ -253,6 +259,11 @@ mod arrival_tests {
                 message.contains("backstop expired") && message.contains("4]"),
                 "{message}"
             );
+            let observed = observer
+                .join()
+                .expect("bounded observer catches the stop")
+                .expect_err("bounded observers must receive the same fatal stop");
+            assert_eq!(observed.downcast_ref::<String>().unwrap(), message);
             for worker in parked {
                 assert!(
                     worker.join().expect("worker catches the timeout").is_err(),
