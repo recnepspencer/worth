@@ -1,5 +1,3 @@
-use std::num::NonZeroU64;
-
 use worth_query_decl::facade::application_schema::{
     ApplicationInvariantCostPosture, ApplicationInvariantDefinition,
     ApplicationInvariantEnforcement, ApplicationInvariantExecutionPoint, ApplicationInvariantGroup,
@@ -25,9 +23,9 @@ pub(crate) fn posting_integrity_invariant(
     ApplicationInvariantDefinition::new(
         BankPostingIntegrity::reference(),
         ApplicationInvariantExecutionPoint::CommitBoundary,
-        RelationalInvariantWorkBudget::new(Some(
-            NonZeroU64::new(16_384).expect("bank posting invariant budget is non-zero"),
-        )),
+        // The enclosing Execution request bounds the complete touched batch.
+        // A per-rule quota cannot describe both one journal and a bulk seed.
+        RelationalInvariantWorkBudget::new(None),
         ApplicationInvariantOperationalContract::new(
             ApplicationInvariantEnforcement::BlockCommit,
             [ApplicationInvariantGroup::RelationIntegrity],

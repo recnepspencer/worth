@@ -74,6 +74,11 @@ fn expected_program() -> BTreeSet<InstalledProgramTarget> {
         InstalledProgramTarget::Create("Posting".to_owned()),
         write("Account", "AccountState", "AccountingRevision"),
         write("JournalEntry", "JournalIdentity", "JournalIdentityField"),
+        write(
+            "JournalEntry",
+            "JournalIdentity",
+            "JournalInstitutionContext",
+        ),
         write("JournalEntry", "JournalState", "JournalPurpose"),
         write("Posting", "PostingIdentity", "PostingIdentityField"),
         write("Posting", "PostingValue", "PostingAmount"),

@@ -18,7 +18,7 @@ fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(8, 10_000))
+        .controls(controls(8))
         .execute()
         .expect("an approver should discover approval-required payments");
 
@@ -36,7 +36,7 @@ fn fixed_role_and_status_guards_are_query_owned_and_receipted() {
             .runtime
             .query(queries::pending_payments())
             .as_principal(&actor)
-            .controls(controls(8, 10_000))
+            .controls(controls(8))
             .execute()
             .expect("a lawful non-approver receives an empty result");
         assert!(result.rows().is_empty());
@@ -52,7 +52,7 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(3, 10_000))
+        .controls(controls(3))
         .execute()
         .expect("three pending payments should fit the exact result limit");
     let ids = result
@@ -68,7 +68,7 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
         .runtime
         .query(queries::pending_payments())
         .as_principal(&approver)
-        .controls(controls(2, 10_000))
+        .controls(controls(2))
         .execute();
     assert!(matches!(
         denial,
@@ -78,25 +78,36 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
 }
 
 #[test]
-fn guarded_frontier_stops_when_dynamic_work_is_exhausted() {
-    let fixture =
-        over_budget_discovery_world_with_role("pending-guard-work", 265, CustomerRole::Approver);
-    let actor = fixture.authenticate();
-    let denial = fixture
-        .world
-        .runtime
-        .query(queries::pending_payments())
-        .as_principal(&actor)
-        .controls(controls(1, 2_116))
-        .execute();
-    match denial {
-        Err(BankApplicationQueryDenial::Execution(denial))
-            if denial.kind() == BankApplicationOneShotDenialKind::WorkLimitExceeded => {}
-        Err(other) => panic!("unexpected denial stage: {other:?}"),
-        Ok(_) => panic!("guarded frontier exceeded its admitted dynamic work"),
+fn empty_guarded_frontier_work_grows_at_most_linearly() {
+    let mut baseline = None;
+    for count in [16, 64, 265] {
+        let fixture = over_budget_discovery_world_with_role(
+            "pending-guard-scale",
+            count,
+            CustomerRole::Approver,
+        );
+        let actor = fixture.authenticate();
+        let result = fixture
+            .world
+            .runtime
+            .query(queries::pending_payments())
+            .as_principal(&actor)
+            .controls(controls(1))
+            .execute()
+            .expect("guarded discovery needs no caller work estimate");
+        assert!(result.rows().is_empty());
+        let inspection = result.receipt().inspect();
+        let work = inspection.ordinary_work_units();
+        assert!(work > 0);
+        assert!(inspection.terminal_resources_released());
+        let (base_count, base_work) = *baseline.get_or_insert((count, work));
+        assert!(
+            work * base_count <= base_work * count * 4,
+            "guarded-frontier work must remain linear with headroom: {count} accounts cost {work}, baseline {base_count} cost {base_work}"
+        );
     }
 }
 
-fn controls(maximum_results: usize, maximum_work: usize) -> BankReadControls {
+fn controls(maximum_results: usize) -> BankReadControls {
     BankReadControls::current(request_scope(), maximum_results).unwrap()
 }
