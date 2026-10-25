@@ -190,9 +190,11 @@ where
                     let result = report
                         .into_outcome()
                         .map_err(|error| execution_failed(Binding::IDENTITY, error))?;
-                    completed_handler(Binding::IDENTITY, result, |denial| {
-                        declared_domain_denial::<Schema, Binding>(&provider, denial)
-                    })
+                    completed_handler::<_, _, DeclaredDenial<Schema, Binding>>(
+                        Binding::IDENTITY,
+                        result,
+                        |denial| provider.domain_denial_reason(denial),
+                    )
                     .map(|_| unreachable!("a refused preparation cannot produce a candidate"))
                     .map_err(ProducerExecutionStop::ExecutionStopped)
                 },
@@ -205,14 +207,14 @@ where
 
             let _observation = application_identity.map(crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::observation::application::apply_identity);
             let identities = owned_identities.borrow();
-            let completed = completed_handler(
+            let completed = completed_handler::<_, _, DeclaredDenial<Schema, Binding>>(
                 Binding::IDENTITY,
                 completion
                     .finish(runtime, &identities, slots, phase.execution_for(&runtime.product_runtime)
                         .map_err(|cause| denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "producer completion phase"))?)
                     .into_outcome()
                     .map_err(|error| execution_failed(Binding::IDENTITY, error))?,
-                |denial| declared_domain_denial::<Schema, Binding>(&provider, denial),
+                |denial| provider.domain_denial_reason(denial),
             )?;
             let (mut program, _) = completed.into_parts(); // Retries bind the complete typed dependency set.
             let identity_execution = phase.execution_request_for(&runtime.product_runtime)
@@ -273,25 +275,7 @@ where
     ).with_inputs(inputs))
 }
 
-/// The rejecting provider's diagnostic words beside the value its declared
-/// binding encodes; the binding, not the words, is the caller's authority.
-fn declared_domain_denial<Schema, Binding>(
-    provider: &Binding::Provider,
-    denial: &<Operation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Denial,
-) -> (
-    Option<&'static str>,
-    crate::domain_computation::primary_graph::WorthQueryProducerDenialValue,
-)
-where
-    Schema: ApplicationSchema + 'static,
-    Binding: WorthQueryApplicationProducerBinding<Schema>,
-{
-    use crate::domain_computation::primary_graph::WorthQueryProducerDenialDeclaration;
-    type Declaration<Schema, Binding> = <<Binding as WorthQueryApplicationProducerBinding<
-        Schema,
-    >>::Provider as WorthQueryApplicationProducerProvider<Schema, Binding>>::DenialValue;
-    (
-        provider.domain_denial_reason(denial),
-        Declaration::<Schema, Binding>::declared_value(denial),
-    )
-}
+/// The domain-denial value declaration of the binding's provider.
+type DeclaredDenial<Schema, Binding> = <<Binding as WorthQueryApplicationProducerBinding<
+    Schema,
+>>::Provider as WorthQueryApplicationProducerProvider<Schema, Binding>>::DenialValue;

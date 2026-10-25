@@ -93,22 +93,24 @@ impl PreparedProducerExecutionOutcome {
     }
 }
 
-pub(super) fn completed_handler<Value, DomainDenial>(
+/// Settles a handler's result. A domain denial carries the rejecting
+/// provider's diagnostic words beside the value its `Declared` binding
+/// encodes; the binding, not the words, is the caller's authority.
+pub(super) fn completed_handler<Value, DomainDenial, Declared>(
     identity: &'static str,
     result: HandlerResult<Value, DomainDenial>,
-    declared_domain_denial: impl FnOnce(
-        &DomainDenial,
-    ) -> (
-        Option<&'static str>,
-        super::super::WorthQueryProducerDenialValue,
-    ),
-) -> Result<Value, WorthQueryOutputDemandDenial> {
+    domain_reason: impl FnOnce(&DomainDenial) -> Option<&'static str>,
+) -> Result<Value, WorthQueryOutputDemandDenial>
+where
+    Declared: graph::WorthQueryProducerDenialDeclaration<DomainDenial>,
+{
     match result {
         HandlerResult::Completed(value) => Ok(value),
         HandlerResult::DomainDenied(domain_denial) => {
-            let (reason, value) = declared_domain_denial(&domain_denial);
             Err(WorthQueryOutputDemandDenial::producer_domain_denied(
-                identity, reason, value,
+                identity,
+                domain_reason(&domain_denial),
+                Declared::declared_value(&domain_denial),
             ))
         }
         HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),
@@ -360,3 +362,6 @@ mod tests;
 
 #[cfg(test)]
 mod invariant_refusal_tests;
+
+#[cfg(test)]
+mod domain_denial_tests;

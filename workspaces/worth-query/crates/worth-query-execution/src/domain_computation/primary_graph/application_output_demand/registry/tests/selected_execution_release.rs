@@ -96,6 +96,21 @@ fn selected_execution_failure_fails_the_row_only_for_an_intrinsic_stop() {
                 ),
                 !peer_executes
             );
+            // The peer is told the original refusal and its declared value,
+            // not a denial rebuilt by the code under test.
+            if kind == Kind::ProducerDomainDenied {
+                let super::super::WorthQueryOutputDemandAdvanceAdmission::Failed(peer_denial) =
+                    &next
+                else {
+                    unreachable!("a domain denial fails the row for every peer")
+                };
+                assert_eq!(peer_denial.kind(), Kind::ProducerDomainDenied);
+                assert_eq!(peer_denial.domain_reason(), Some("original domain refusal"));
+                assert_eq!(
+                    peer_denial.producer_denial_bytes(),
+                    Some(b"original".as_slice())
+                );
+            }
         }
     });
 }
