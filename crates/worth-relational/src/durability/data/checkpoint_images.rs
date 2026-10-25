@@ -282,6 +282,9 @@ pub(crate) fn branch_root_image_digest(
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DurableCheckpoint {
     pub coverage: CheckpointCoverage,
+    pub(crate) commit_descriptors:
+        BTreeMap<CommitId, crate::branch::RelationalBranchRootDescriptor>,
+    pub(crate) mirror_schema_digest: Option<[u8; 32]>,
     pub(crate) branch_cells: Vec<RelationalBranchCellCheckpoint>,
     /// One posture for every branch cell, in branch order.
     pub(crate) branch_lifecycle: Vec<super::DurableBranchLifecycleImage>,

@@ -1,6 +1,8 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
 mod cell;
+mod kind_authority;
 mod lease;
+pub(crate) use kind_authority::RelationalRegionKindAuthority;
 mod region_capture;
 mod region_image;
 mod region_load;
@@ -14,3 +16,6 @@ pub(crate) use views::{RelationalRegionFullView, RelationalRegionHeadView};
 
 use cell::ResidentRegion;
 pub(crate) use cell::{RelationalColdRegion, RelationalRegionResidency};
+
+mod retention;
+pub(crate) use retention::RelationalRegionRetention;

@@ -17,6 +17,10 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
+    pub(super) commit_descriptors: std::collections::BTreeMap<
+        crate::history::data::CommitId,
+        crate::branch::RelationalBranchRootDescriptor,
+    >,
     pub(super) partitions: Vec<crate::storage::overlay::PartitionState>,
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
@@ -136,6 +140,12 @@ impl CapturedCheckpointBasis {
                 append_frontiers: runtime.record_identity.frontier_snapshot(),
                 pending_reservations: runtime.record_identity.pending_snapshot(),
             },
+            commit_descriptors: runtime
+                .history
+                .commit_artifacts()
+                .iter()
+                .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
+                .collect(),
             envelopes,
             partitions: runtime.materialize_partitions(),
             mirror_schema_authority,

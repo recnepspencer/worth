@@ -29,6 +29,10 @@ impl<Level> RelationalResidencyLease<Level> {
         }
     }
 
+    pub(crate) fn cell(&self) -> &Arc<RelationalRegionResidency> {
+        &self.cell
+    }
+
     pub(crate) fn head_view(&self) -> RelationalRegionHeadView<'_> {
         RelationalRegionHeadView::new(&self.region)
     }

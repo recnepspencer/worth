@@ -19,6 +19,7 @@ impl CapturedCheckpointBasis {
             branch_roots,
             record_identity,
             envelopes,
+            commit_descriptors,
             partitions,
             aspect_contracts,
             mirror_schema_authority,
@@ -67,7 +68,17 @@ impl CapturedCheckpointBasis {
             .sum();
         let record_identity = checkpoint_record_identity(record_identity)?;
         let (branch_roots, branch_root_schema_images) = branch_root_images(branch_roots)?;
+        let mirror_schema_digest = mirror_schema_authority
+            .as_ref()
+            .map(crate::durability::data::DurableBranchRootSchemaImage::capture)
+            .transpose()
+            .map_err(|error| {
+                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
+            })?
+            .map(|image| image.carrier_digest());
         Ok(DurableCheckpoint {
+            commit_descriptors,
+            mirror_schema_digest,
             coverage: CheckpointCoverage {
                 up_to_commit: latest_commit.clone(),
                 up_to_version: latest_commit.map(|commit| commit.version_id),

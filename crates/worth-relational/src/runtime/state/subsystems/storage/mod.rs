@@ -11,7 +11,7 @@ use crate::runtime::state::subsystems::{
     RuntimeInstrumentation, RuntimeOwnedState, RuntimeSubsystem,
 };
 use crate::storage::overlay::PartitionState;
-use std::sync::Arc;
+use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 /// The runtime's record substrate, owned behind its own lock.
 ///
@@ -49,7 +49,10 @@ impl StorageSubsystem {
         self.partitions.read().partition_ids()
     }
 
-    pub(crate) fn partition(&self, partition_id: PartitionId) -> Option<Arc<PartitionState>> {
+    pub(crate) fn partition(
+        &self,
+        partition_id: PartitionId,
+    ) -> Option<RelationalResidencyLease<Full>> {
         self.partitions.read().shared_partition(partition_id)
     }
 
@@ -79,7 +82,9 @@ impl StorageSubsystem {
     ) {
         let installed: PartitionMap = partitions
             .into_iter()
-            .map(|(partition_id, partition)| (partition_id, Arc::new(partition)))
+            .map(|(partition_id, partition)| {
+                (partition_id, RelationalRegionRetention::resident(partition))
+            })
             .collect();
         self.edit(instrumentation, lane).install(installed);
     }
@@ -99,7 +104,7 @@ impl RuntimeSubsystem for StorageSubsystem {
     fn fork(&self) -> Self {
         let mut partitions = self.acquire().cloned_map();
         for partition in partitions.values_mut() {
-            Arc::make_mut(partition).clear_runtime_pin_counters();
+            partition.make_mut().clear_runtime_pin_counters();
         }
         Self {
             partitions: RuntimeOwnedState::new(PartitionEdition::new(partitions)),

@@ -52,7 +52,7 @@ pub(super) fn load_head(
     verify_leaf(cold, &partition, &commitment)?;
     Ok(Arc::new(ResidentRegion {
         partition,
-        commitment,
+        commitment: Some(commitment),
     }))
 }
 
@@ -105,7 +105,7 @@ pub(super) fn load_full(
     verify_leaf(cold, &partition, &commitment)?;
     Ok(Arc::new(ResidentRegion {
         partition,
-        commitment,
+        commitment: Some(commitment),
     }))
 }
 

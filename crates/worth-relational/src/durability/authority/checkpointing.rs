@@ -14,14 +14,30 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::durability::data::RelationalNativeCheckpoint,
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
+        self.native_checkpoint_with_policy(
+            policy,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+        )
+    }
+
+    pub fn native_checkpoint_with_policy(
+        &self,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
+    ) -> Result<
+        crate::durability::data::RelationalNativeCheckpoint,
+        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
+    > {
         policy.check_live()?;
         let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
         let coverage = crate::durability::access::checkpoint_coverage(&checkpoint);
         let transitions = checkpoint.coverage.up_to_branch_transition;
-        let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            &checkpoint,
-            policy,
-        )?;
+        let (bytes, sections, members) =
+            crate::durability::log::native_checkpoint_codec::encode_checkpoint_members(
+                &checkpoint,
+                policy,
+                artifact_policy,
+            )?;
         if self.runtime.durability.medium().is_some() {
             self.runtime
                 .history
@@ -33,7 +49,8 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 sections,
                 coverage,
                 transitions,
-            ),
+            )
+            .with_captured_members(members),
         )
     }
 

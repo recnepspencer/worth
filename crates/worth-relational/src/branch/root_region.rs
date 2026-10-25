@@ -1,4 +1,4 @@
-use crate::storage::residency::{Full, RelationalRegionResidency, RelationalResidencyLease};
+use crate::storage::residency::{RelationalRegionResidency, RelationalRegionRetention};
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -10,7 +10,7 @@ pub(crate) struct RelationalRootRegion {
     pub(super) creation_root_id: u64,
     pub(super) id: u64,
     pub(super) partition_id: PartitionId,
-    pub(super) partition: RelationalResidencyLease<Full>,
+    pub(super) partition: RelationalRegionRetention,
     pub(super) allocation_inventory:
         crate::storage::overlay::RelationalPartitionAllocationInventory,
     pub(super) content_digest: [u8; 32],
@@ -76,7 +76,10 @@ impl RelationalRootRegion {
             partition_id: partition.partition_id,
             allocation_inventory,
             content_digest,
-            partition: RelationalRegionResidency::resident(partition, content_commitment),
+            partition: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
+                partition,
+                content_commitment,
+            )),
             content_values_hashed,
             materialization_unavailable_records,
         })

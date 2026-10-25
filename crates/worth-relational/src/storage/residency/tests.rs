@@ -100,6 +100,7 @@ fn region_with_history() -> RegionFixture {
     );
     let cold = RelationalColdRegion {
         source: source.clone(),
+        kind_authority: Arc::new(RelationalRegionKindAuthority::default()),
         partition_id: partition.partition_id,
         head: members.head.0,
         history: members.history.0,
@@ -280,3 +281,6 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
     assert_eq!(error.storage_unavailable, Some(failure));
     assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
 }
+
+#[path = "kind_authority_tests.rs"]
+mod kind_authority_tests;

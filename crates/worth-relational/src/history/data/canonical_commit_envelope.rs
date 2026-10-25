@@ -21,10 +21,9 @@ use crate::transactions::data::{
 };
 
 mod authoritative_artifact_encoding;
+mod embedded_checkpoint;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
-#[path = "canonical_commit_envelope/checkpoint_encoding.rs"]
-mod checkpoint_encoding;
-pub(crate) use checkpoint_encoding::CheckpointCanonicalEnvelopeRef;
+pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
 mod descriptive_touches;
 mod required_output_codec_retirement;

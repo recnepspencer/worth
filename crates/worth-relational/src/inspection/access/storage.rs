@@ -4,7 +4,6 @@ use crate::identity::data::{
 use crate::inspection::data::InspectionScope;
 use crate::storage::access::RecordSlotSurface;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::storage::overlay::PartitionState;
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
 
 use super::InspectionAccess;
@@ -17,7 +16,8 @@ impl<'runtime> InspectionAccess<'runtime> {
     pub(crate) fn current_partition_state(
         &self,
         partition_id: PartitionId,
-    ) -> Option<std::sync::Arc<PartitionState>> {
+    ) -> Option<crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>>
+    {
         self.runtime.partitions.partition(partition_id)
     }
 

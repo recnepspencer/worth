@@ -1,4 +1,5 @@
-use std::sync::{Arc, RwLockWriteGuard};
+use crate::storage::residency::RelationalRegionRetention;
+use std::sync::RwLockWriteGuard;
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -92,10 +93,14 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
     }
 
     pub(crate) fn insert(&mut self, partition_id: PartitionId, partition: PartitionState) {
-        self.map_mut().insert(partition_id, Arc::new(partition));
+        self.map_mut()
+            .insert(partition_id, RelationalRegionRetention::resident(partition));
     }
 
-    pub(crate) fn remove(&mut self, partition_id: PartitionId) -> Option<Arc<PartitionState>> {
+    pub(crate) fn remove(
+        &mut self,
+        partition_id: PartitionId,
+    ) -> Option<RelationalRegionRetention> {
         self.map_mut().remove(&partition_id)
     }
 
@@ -121,13 +126,13 @@ impl Drop for PartitionEditionWriter<'_> {
 /// nobody performed.
 fn own_partition<'partition>(
     copies: &mut PartitionCopyTally,
-    partition: &'partition mut Arc<PartitionState>,
+    partition: &'partition mut RelationalRegionRetention,
 ) -> &'partition mut PartitionState {
-    if Arc::get_mut(partition).is_none() {
+    if !partition.is_uniquely_owned() {
         copies.record_partition_copy(
             partition.entity_arena.slot_count(),
             partition.relation_arena.slot_count(),
         );
     }
-    Arc::make_mut(partition)
+    partition.make_mut()
 }

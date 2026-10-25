@@ -52,6 +52,9 @@ impl<'lease> RelationalRegionFullView<'lease> {
         &self.region.partition
     }
     pub(crate) fn commitment(&self) -> &'lease PartitionContentCommitment {
-        &self.region.commitment
+        self.region
+            .commitment
+            .as_ref()
+            .expect("committed root has a content commitment")
     }
 }

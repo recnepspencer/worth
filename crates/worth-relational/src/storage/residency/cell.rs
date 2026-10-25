@@ -9,11 +9,12 @@ use crate::storage::data::{
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::symbols::data::StringInterner;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
+    pub(crate) kind_authority: Arc<super::kind_authority::RelationalRegionKindAuthority>,
     pub(crate) partition_id: PartitionId,
     pub(crate) head: RelationalDurableMemberLocator,
     pub(crate) history: RelationalDurableMemberLocator,
@@ -29,7 +30,7 @@ pub(crate) struct RelationalColdRegion {
 #[derive(Debug)]
 pub(crate) struct ResidentRegion {
     pub(super) partition: PartitionState,
-    pub(super) commitment: PartitionContentCommitment,
+    pub(super) commitment: Option<PartitionContentCommitment>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -53,6 +54,9 @@ enum ResidencyState {
 pub(crate) struct RelationalRegionResidency {
     partition_id: PartitionId,
     state: Mutex<ResidencyState>,
+    backing: Option<RelationalColdRegion>,
+    raw_head: OnceLock<Result<Arc<ResidentRegion>, Cause>>,
+    raw_full: OnceLock<Result<Arc<ResidentRegion>, Cause>>,
     pub(super) leases: AtomicUsize,
 }
 
@@ -60,6 +64,9 @@ impl RelationalRegionResidency {
     pub(crate) fn cold(cold: RelationalColdRegion) -> Arc<Self> {
         Arc::new(Self {
             partition_id: cold.partition_id,
+            backing: Some(cold.clone()),
+            raw_head: OnceLock::new(),
+            raw_full: OnceLock::new(),
             state: Mutex::new(ResidencyState::Cold(cold)),
             leases: AtomicUsize::new(0),
         })
@@ -69,12 +76,28 @@ impl RelationalRegionResidency {
         partition: PartitionState,
         commitment: PartitionContentCommitment,
     ) -> RelationalResidencyLease<Full> {
+        Self::resident_with_commitment(partition, Some(commitment))
+    }
+
+    pub(crate) fn resident_uncommitted(
+        partition: PartitionState,
+    ) -> RelationalResidencyLease<Full> {
+        Self::resident_with_commitment(partition, None)
+    }
+
+    fn resident_with_commitment(
+        partition: PartitionState,
+        commitment: Option<PartitionContentCommitment>,
+    ) -> RelationalResidencyLease<Full> {
         let region = Arc::new(ResidentRegion {
             partition,
             commitment,
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
+            backing: None,
+            raw_head: OnceLock::new(),
+            raw_full: OnceLock::new(),
             state: Mutex::new(ResidencyState::Full(region.clone())),
             leases: AtomicUsize::new(1),
         });
@@ -113,16 +136,18 @@ impl RelationalRegionResidency {
                 return Err(failure.cause.clone());
             }
             if let ResidencyState::Cold(cold) = &*state {
-                let region = region_load::load_head(cold, limit)?;
+                let region = self.raw_head(limit)?;
+                cold.kind_authority.verify_head(&region, limit)?;
                 *state = ResidencyState::Head {
                     cold: cold.clone(),
                     region,
                 };
             }
             if matches!(demand, ResidencyDemand::Full)
-                && let ResidencyState::Head { cold, region } = &*state
+                && let ResidencyState::Head { cold, .. } = &*state
             {
-                let region = region_load::load_full(cold, region, limit)?;
+                let region = self.raw_full(limit)?;
+                cold.kind_authority.verify_full(&region, limit)?;
                 *state = ResidencyState::Full(region);
             }
             match &*state {
@@ -147,6 +172,86 @@ impl RelationalRegionResidency {
                 Err(failure)
             }
         }
+    }
+
+    pub(crate) fn lease_resident_full(
+        self: &Arc<Self>,
+    ) -> Result<Option<RelationalResidencyLease<Full>>, RelationalStorageUnavailable> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match &*state {
+            ResidencyState::Full(region) => {
+                self.leases
+                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+                        count.checked_add(1)
+                    })
+                    .map_err(|_| self.failure(Cause::MemoryExhausted))?;
+                Ok(Some(RelationalResidencyLease::accepted(
+                    self.clone(),
+                    region.clone(),
+                )))
+            }
+            ResidencyState::Damaged(failure) => Err(failure.clone()),
+            _ => Ok(None),
+        }
+    }
+
+    pub(crate) fn into_partition(self) -> PartitionState {
+        drop(self.raw_head.into_inner());
+        drop(self.raw_full.into_inner());
+        let state = self
+            .state
+            .into_inner()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let ResidencyState::Full(region) = state else {
+            panic!("publication requires full residency")
+        };
+        match Arc::try_unwrap(region) {
+            Ok(region) => region.partition,
+            Err(region) => region.partition.clone(),
+        }
+    }
+
+    pub(crate) fn partition_mut(&mut self) -> &mut PartitionState {
+        // Only an exclusive mirror writer can reach this method. Old roots and
+        // editions retain their old cell; no accepted lease sees a mutation.
+        self.raw_head.take();
+        self.raw_full.take();
+        self.backing = None;
+        let state = self
+            .state
+            .get_mut()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let ResidencyState::Full(region) = state else {
+            panic!("writer requires full residency")
+        };
+        let region = Arc::get_mut(region).expect("exclusive cell has no readers");
+        region.commitment = None;
+        &mut region.partition
+    }
+
+    // Raw readmission authenticates record content independently of derived
+    // buckets. Keeping it separate breaks cross-partition adjacency cycles:
+    // bucket verification never waits for another region's serving admission.
+    pub(super) fn raw_head(&self, limit: u64) -> Result<Arc<ResidentRegion>, Cause> {
+        self.raw_head
+            .get_or_init(|| {
+                let cold = self.backing.as_ref().ok_or(Cause::SourceUnavailable)?;
+                region_load::load_head(cold, limit)
+            })
+            .clone()
+    }
+
+    pub(super) fn raw_full(&self, limit: u64) -> Result<Arc<ResidentRegion>, Cause> {
+        self.raw_full
+            .get_or_init(|| {
+                let cold = self.backing.as_ref().ok_or(Cause::SourceUnavailable)?;
+                let head = self.raw_head(limit)?;
+                region_load::load_full(cold, &head, limit)
+            })
+            .clone()
     }
 
     fn failure(&self, cause: Cause) -> RelationalStorageUnavailable {

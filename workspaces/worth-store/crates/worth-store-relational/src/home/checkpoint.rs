@@ -66,7 +66,7 @@ impl RelationalStoreHome {
         let checkpoint = self
             .runtime
             .durability_authority()
-            .native_checkpoint(policy)
+            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers)
             .map_err(RelationalStoreCheckpointFailure::Capture)?;
         let covered = checkpoint
             .covered_position()

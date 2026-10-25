@@ -6,38 +6,17 @@ use super::CanonicalCommitEnvelope;
 /// Checkpoint wire projection of canonical authority. New envelope fields must
 /// be classified here because the destructure is exhaustive; only rebuildable
 /// index caches are replaced with an empty payload.
-pub(crate) struct CheckpointCanonicalEnvelopeRef<'a> {
+pub(crate) struct EmbeddedCheckpointEnvelopeRef<'a> {
     envelope: &'a CanonicalCommitEnvelope,
-    include_descriptive_touches: bool,
-    include_codec_retirements: bool,
 }
 
-impl<'a> CheckpointCanonicalEnvelopeRef<'a> {
+impl<'a> EmbeddedCheckpointEnvelopeRef<'a> {
     pub(crate) fn new(envelope: &'a CanonicalCommitEnvelope) -> Self {
-        Self {
-            envelope,
-            include_descriptive_touches: true,
-            include_codec_retirements: true,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn legacy_without_touches_for_test(envelope: &'a CanonicalCommitEnvelope) -> Self {
-        Self {
-            envelope,
-            include_descriptive_touches: false,
-            include_codec_retirements: true,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn without_codec_retirements_for_test(mut self) -> Self {
-        self.include_codec_retirements = false;
-        self
+        Self { envelope }
     }
 }
 
-impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
+impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -69,18 +48,11 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
         } = self.envelope;
-        let field_count = if self.include_descriptive_touches {
-            25
-        } else {
-            24
-        } - usize::from(!self.include_codec_retirements);
-        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
-        if self.include_codec_retirements {
-            fields.serialize_field(
-                "required_output_codec_retirements",
-                required_output_codec_retirements,
-            )?;
-        }
+        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", 25)?;
+        fields.serialize_field(
+            "required_output_codec_retirements",
+            required_output_codec_retirements,
+        )?;
         fields.serialize_field("required_output_origin", required_output_origin)?;
         fields.serialize_field(
             "required_output_materialization",
@@ -100,9 +72,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         fields.serialize_field("symbol_texts", symbol_texts)?;
         fields.serialize_field("record_allocations", record_allocations)?;
         fields.serialize_field("patch", patch)?;
-        if self.include_descriptive_touches {
-            fields.serialize_field("descriptive_touches", descriptive_touches)?;
-        }
+        fields.serialize_field("descriptive_touches", descriptive_touches)?;
         fields.serialize_field("diagnostics_summary", diagnostics_summary)?;
         fields.serialize_field("lineage", lineage)?;
         fields.serialize_field(
