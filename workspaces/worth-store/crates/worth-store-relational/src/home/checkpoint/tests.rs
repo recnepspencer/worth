@@ -89,6 +89,7 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
     assert!(selected.covered_transitions().0 > earlier.covered_branch_transitions().unwrap().0);
     let refused = checkpoint_record::publish(
         &home.serving,
+        &home.cold_source,
         earlier.covered_position().unwrap(),
         earlier.covered_branch_transitions().unwrap(),
         &earlier,

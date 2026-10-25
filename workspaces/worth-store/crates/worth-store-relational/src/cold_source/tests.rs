@@ -46,6 +46,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
         }],
     );
     let source = StoreColdSource::new(serving.clone());
+    source.select_members(first.version().generation(), first.members());
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), payload);
     assert!(matches!(
         source.read_member(locator, 1),
@@ -57,6 +58,7 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
             locator: first.members()[0],
         }],
     );
+    source.select_members(second.version().generation(), second.members());
     assert_eq!(second.members(), first.members());
     assert_eq!(source.read_member(locator, 1 << 20).unwrap(), payload);
 
@@ -83,7 +85,13 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
         source.read_commit(PatchStreamPosition(2), 1 << 20),
         Err(Cause::SourceUnavailable)
     );
-    publish(2, vec![]);
+    let empty = publish(2, vec![]);
+    assert_eq!(
+        source.read_member(locator, 1 << 20),
+        Err(Cause::SourceUnavailable),
+        "a cached locator never grants membership in a replaced anchor"
+    );
+    source.select_members(empty.version().generation(), empty.members());
     assert_eq!(
         source.read_member(locator, 1 << 20),
         Err(Cause::SourceUnavailable)

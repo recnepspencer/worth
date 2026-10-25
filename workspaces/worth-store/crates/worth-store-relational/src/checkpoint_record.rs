@@ -54,6 +54,7 @@ fn anchor() -> AnchoredRecordName {
 /// The selected checkpoint, or `None` when the home has never checkpointed.
 pub(crate) fn read(
     serving: &ServingPhysicalRuntime,
+    cold_source: &crate::cold_source::StoreColdSource,
 ) -> Result<Option<RelationalDurableCheckpointSource>, Refusal> {
     let records = serving.anchored_records().map_err(Refusal::Unavailable)?;
     let Some(record) = records
@@ -62,6 +63,7 @@ pub(crate) fn read(
     else {
         return Ok(None);
     };
+    cold_source.select_members(record.version().generation(), record.members());
     let bytes = record.into_bytes();
     let (covered, covered_transitions) = decode_header(&bytes).ok_or(Refusal::Malformed)?;
     let checkpoint = RelationalNativeCheckpoint::from_untrusted_bytes(&bytes[HEADER_BYTES..]);
@@ -77,6 +79,7 @@ pub(crate) fn read(
 /// checkpoint holds.
 pub(crate) fn publish(
     serving: &ServingPhysicalRuntime,
+    cold_source: &crate::cold_source::StoreColdSource,
     covered: PatchStreamPosition,
     covered_transitions: RelationalBranchTransitionSequence,
     checkpoint: &RelationalNativeCheckpoint,
@@ -97,16 +100,16 @@ pub(crate) fn publish(
     let old_members = previous
         .as_ref()
         .map(|record| record.members())
-        .unwrap_or(&[]);
+        .unwrap_or(&[])
+        .iter()
+        .map(|member| ((member.sha256(), member.length()), *member))
+        .collect::<std::collections::BTreeMap<_, _>>();
     let members = checkpoint
         .members()
         .iter()
         .map(|member| {
             let key = member.locator();
-            if let Some(locator) = old_members
-                .iter()
-                .find(|locator| locator.sha256() == key.sha256 && locator.length() == key.length)
-            {
+            if let Some(locator) = old_members.get(&(key.sha256, key.length)) {
                 return Ok(AnchoredRecordMember::Carried { locator: *locator });
             }
             match member {
@@ -143,6 +146,7 @@ pub(crate) fn publish(
     {
         AnchoredRecordPublished::Published(membership)
         | AnchoredRecordPublished::AlreadyPublished(membership) => {
+            cold_source.select_members(membership.version().generation(), membership.members());
             Ok(membership.version().generation())
         }
     }

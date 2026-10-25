@@ -2,7 +2,7 @@
 //! frames after Store has verified physical integrity and current membership.
 use std::sync::{
     atomic::{AtomicU64, Ordering},
-    Arc,
+    Arc, RwLock,
 };
 
 use worth_relational::facade::durability::{
@@ -11,8 +11,9 @@ use worth_relational::facade::durability::{
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::{
-    AnchoredRecordMemberDamage, AnchoredRecordMemberReadFailure, AnchoredRecordName,
-    AnchoredRecordReadFailure, OrderedJournalReadFailure, ServingPhysicalRuntime,
+    AnchoredRecordMemberDamage, AnchoredRecordMemberLocator, AnchoredRecordMemberReadFailure,
+    AnchoredRecordName, AnchoredRecordReadFailure, OrderedJournalReadFailure,
+    ServingPhysicalRuntime,
 };
 
 #[cfg(test)]
@@ -27,6 +28,10 @@ pub struct RelationalStoreColdReadCounters {
 
 pub(crate) struct StoreColdSource {
     serving: Arc<ServingPhysicalRuntime>,
+    members: RwLock<(
+        u64,
+        std::collections::BTreeMap<RelationalDurableMemberLocator, AnchoredRecordMemberLocator>,
+    )>,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
 }
@@ -41,8 +46,31 @@ impl StoreColdSource {
     pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Self {
         Self {
             serving,
+            members: RwLock::new((0, Default::default())),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
+        }
+    }
+    /// A verified selected membership supplied by open or completed publication.
+    pub(crate) fn select_members(&self, generation: u64, members: &[AnchoredRecordMemberLocator]) {
+        let selected = members
+            .iter()
+            .map(|member| {
+                (
+                    RelationalDurableMemberLocator {
+                        sha256: member.sha256(),
+                        length: member.length(),
+                    },
+                    *member,
+                )
+            })
+            .collect();
+        let mut current = self
+            .members
+            .write()
+            .unwrap_or_else(|error| error.into_inner());
+        if generation >= current.0 {
+            *current = (generation, selected);
         }
     }
     pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
@@ -71,14 +99,12 @@ impl RelationalDurableColdSource for StoreColdSource {
             .anchored_records()
             .map_err(|_| Cause::SourceUnavailable)?;
         let anchor = AnchoredRecordName::new("relational.checkpoint").expect("static anchor");
-        let record = records
-            .read(anchor, 1 << 30)
-            .map_err(|failure| anchor_failure(failure, 1 << 30))?
-            .ok_or(Cause::SourceUnavailable)?;
-        let placed = record
-            .members()
-            .iter()
-            .find(|member| member.sha256() == locator.sha256 && member.length() == locator.length)
+        let placed = self
+            .members
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .1
+            .get(&locator)
             .copied()
             .ok_or(Cause::SourceUnavailable)?;
         records

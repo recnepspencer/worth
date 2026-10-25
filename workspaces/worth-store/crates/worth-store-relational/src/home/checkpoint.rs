@@ -77,9 +77,14 @@ impl RelationalStoreHome {
         let covered_transitions = checkpoint
             .covered_branch_transitions()
             .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
-        let generation =
-            checkpoint_record::publish(&self.serving, covered, covered_transitions, &checkpoint)
-                .map_err(RelationalStoreCheckpointFailure::Record)?;
+        let generation = checkpoint_record::publish(
+            &self.serving,
+            &self.cold_source,
+            covered,
+            covered_transitions,
+            &checkpoint,
+        )
+        .map_err(RelationalStoreCheckpointFailure::Record)?;
         checkpoint.acknowledge_publication();
         complete_physical_checkpoint(&self.serving, generation)?;
         Ok(RelationalStoreCheckpoint {
