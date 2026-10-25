@@ -1,5 +1,26 @@
 //! Authored source selection through the ordinary request and a real performed receipt.
 #![recursion_limit = "256"]
+#[path = "../tests/application_graph/document_retention_model/host/world_resources.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod document_world_resources;
+#[path = "../tests/application_graph/document_retention_model/operator_identity.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod operator_identity;
+#[path = "../tests/support/execution_policy.rs"]
+#[allow(
+    dead_code,
+    reason = "Shared execution policy includes the other consumer courts? request adapter"
+)]
+mod test_request_policy;
+
 mod application_correction_support;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};

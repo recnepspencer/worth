@@ -9,6 +9,10 @@ use worth_query_host::facade::application_entry::{
 use worth_query_host::facade::application_installation::WorthQueryCheckpointCapturePolicy as CapturePolicy;
 
 #[test]
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     let _guard = checkpoint_recovery_test_guard();
     let application = install(None);

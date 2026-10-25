@@ -179,6 +179,10 @@ fn output_probe() -> PlanarOperation {
     }])
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 fn mutate_anchor<'application>(
     request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
         'application,

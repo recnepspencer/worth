@@ -24,6 +24,14 @@ pub fn configuration() -> program::ExampleConfiguration {
     }
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
+#[allow(
+    dead_code,
+    reason = "The default-policy example and shared-service example compile this module independently"
+)]
 pub fn install<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     seeded: impl FnOnce(),
@@ -40,6 +48,10 @@ pub fn install<const ERASE: bool>(
     )
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 pub fn install_configured<const ERASE: bool>(
     configuration: program::ExampleConfiguration,
     build_identity: installation::ApplicationBuildIdentity,
@@ -101,6 +113,10 @@ fn entity_key(key: &str) -> primary_graph::WorthQueryApplicationEntityKey<Exampl
 pub fn length(value: u64) -> worth_query_consumer_values::PositiveLength {
     worth_query_consumer_values::PositiveLength::new(value).unwrap()
 }
+#[allow(
+    dead_code,
+    reason = "The default-policy example and shared-service example compile this module independently"
+)]
 fn limits() -> installation::WorthQueryInMemoryApplicationLimits {
     let policy = worth_foundational::ExecutionRequestPolicy::new(
         worth_foundational::ExecutionPosture::Serial,

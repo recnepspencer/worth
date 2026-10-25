@@ -5,6 +5,10 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::{application_entry::*, primary_graph::*};
 
 #[test]
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 fn public_family_history_chooser_survives_handle_and_index_disposal() {
     let _guard = checkpoint_recovery_test_guard();
     let mut app = correction::install(0);

@@ -285,7 +285,6 @@ fn closed_consumer_equal_source_successor_preserves_posted_custody() {
         .close(&request)
         .unwrap_or_else(|stop| panic!("{:?}", stop.denial()));
     drop((closed, closed_successor));
-    drop(request);
     drop((principal, scope));
     application.close_conditional_runtime().unwrap();
 }

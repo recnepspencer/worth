@@ -10,12 +10,14 @@ use program::{JointProgram, JointSchema};
 
 #[test]
 fn required_conditional_native_binding_assembles_with_its_real_installed_owner() {
-    assert!(<PlanarMutationBinding<JointSchema> as ApplicationMutationBinding<JointSchema>>::REQUIRES_APPLICATION_PROGRAM);
-    assert!(
-        !<PlanarMutationBinding<CheckpointSchema> as ApplicationMutationBinding<
-            CheckpointSchema,
-        >>::REQUIRES_APPLICATION_PROGRAM
-    );
+    const {
+        assert!(<PlanarMutationBinding<JointSchema> as ApplicationMutationBinding<JointSchema>>::REQUIRES_APPLICATION_PROGRAM);
+        assert!(
+            !<PlanarMutationBinding<CheckpointSchema> as ApplicationMutationBinding<
+                CheckpointSchema,
+            >>::REQUIRES_APPLICATION_PROGRAM
+        );
+    }
     let application =
         installation::install::<0>().expect("both independent guards admit the real binding");
     let binding = application
