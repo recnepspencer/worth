@@ -66,7 +66,7 @@ fn prelookup_and_midscan_budgets_deny_on_the_real_relational_reads() {
     assert_eq!(midscan.work.aggregate_rebuild_input_rows(), 1);
     assert_eq!(midscan.work.adjacency_lists_read(), 1);
     assert_eq!(midscan.work.adjacency_edges_inspected(), 1);
-    assert_eq!(midscan.work.endpoint_records_read(), 1);
+    assert_eq!(midscan.work.endpoint_records_read(), 0);
     assert_eq!(midscan.work.field_reads(), 0);
     world
         .with_host_advancement(|phase| {
@@ -94,7 +94,7 @@ fn outgoing_and_field_budgets_count_only_performed_work_and_do_not_poison() {
     assert_eq!(outgoing_denial.work.aggregate_rebuild_input_rows(), 1);
     assert_eq!(outgoing_denial.work.adjacency_lists_read(), 2);
     assert_eq!(outgoing_denial.work.adjacency_edges_inspected(), 1);
-    assert_eq!(outgoing_denial.work.endpoint_records_read(), 1);
+    assert_eq!(outgoing_denial.work.endpoint_records_read(), 0);
     assert_eq!(outgoing_denial.work.field_reads(), 0);
     let field_world = AggregateWorld::values([7]);
     let field_denial = field_world.observe_bounded(execution, 5);
@@ -107,7 +107,7 @@ fn outgoing_and_field_budgets_count_only_performed_work_and_do_not_poison() {
     assert_eq!(field_denial.work.aggregate_rebuild_input_rows(), 1);
     assert_eq!(field_denial.work.adjacency_lists_read(), 2);
     assert_eq!(field_denial.work.adjacency_edges_inspected(), 2);
-    assert_eq!(field_denial.work.endpoint_records_read(), 2);
+    assert_eq!(field_denial.work.endpoint_records_read(), 0);
     assert_eq!(field_denial.work.field_reads(), 0);
     field_world
         .with_host_advancement(|phase| {
@@ -135,7 +135,7 @@ fn partial_outgoing_denial_carries_exact_scan_work_and_does_not_poison() {
     assert_eq!(partial_outgoing.work.aggregate_rebuild_input_rows(), 1);
     assert_eq!(partial_outgoing.work.adjacency_lists_read(), 2);
     assert_eq!(partial_outgoing.work.adjacency_edges_inspected(), 3);
-    assert_eq!(partial_outgoing.work.endpoint_records_read(), 2);
+    assert_eq!(partial_outgoing.work.endpoint_records_read(), 0);
     assert_eq!(partial_outgoing.work.field_reads(), 0);
     ambiguous_world
         .with_host_advancement(|phase| {

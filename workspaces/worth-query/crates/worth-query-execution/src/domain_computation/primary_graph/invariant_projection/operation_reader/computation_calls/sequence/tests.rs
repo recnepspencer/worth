@@ -5,19 +5,11 @@ pub(super) fn calls() -> Vec<(ComputationRead, Call)> {
         .into_iter()
         .enumerate()
         .map(|(i, (demand, consumed))| {
-            let mut work = WorthQueryInvariantProjectionWork::default();
-            for _ in 0..consumed {
-                work.record_field();
-            }
             (
                 ComputationRead::ItemKey(worth_execution::PartitionItemId(i as u64)),
                 (
                     ComputationCallCharge {
-                        accounting: Some(ComputationCallAccounting {
-                            work,
-                            demand,
-                            consumed,
-                        }),
+                        accounting: Some(ComputationCallAccounting { demand, consumed }),
                         reached: Arc::from([]),
                     },
                     Some(i as u64 + 1),
@@ -40,14 +32,6 @@ fn call_range_demand_and_consumption_match_independent_sequential_prefixes() {
                     sequential.carry(cost.demand, cost.consumed)
                 });
                 let sum = summary(&tree, &(start..end)).unwrap();
-                assert_eq!(
-                    sum.accounting.unwrap().work.field_reads(),
-                    calls[start..end]
-                        .iter()
-                        .map(|(_, (charge, _))| charge.accounting.unwrap().work.field_reads())
-                        .sum::<usize>(),
-                    "descriptive reader work also survives range carriage"
-                );
                 let mut ranged = Budget::bounded(remaining);
                 assert_eq!(
                     ranged.carry(

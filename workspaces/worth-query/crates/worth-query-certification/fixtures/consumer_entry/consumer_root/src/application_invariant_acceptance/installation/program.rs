@@ -36,6 +36,7 @@ Program::Outputs: installation::WorthQueryApplicationProgramRoots<ConsumerSchema
             setup_calls: Arc::clone(&topology_calls),
             invariant_calls: Arc::clone(&invariant_calls),
             invariant_probe: Arc::clone(&invariant_probe),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::clone(&producer_authorization_denials),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },

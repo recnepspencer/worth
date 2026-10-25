@@ -17,6 +17,7 @@ struct Case {
     before: Vec<u8>,
     after: Vec<u8>,
     visits: Vec<u64>,
+    reads: Vec<rule::ReadSample>,
 }
 
 struct RestorePlacement(WorthQueryExecutionPlacementForTest);
@@ -40,18 +41,22 @@ fn run(status: String, cancel: bool) -> Case {
         crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let cancellation = WorthQueryCancellationSource::new();
     let visits = Arc::new(Mutex::new(Vec::new()));
+    let reads = Arc::new(Mutex::new(Vec::new()));
     let world = world::install(
         Rule {
             ordinal: 1,
             cancellation: cancel.then(|| cancellation.clone()),
             visits: visits.clone(),
+            reads: reads.clone(),
         },
         Rule {
             ordinal: 2,
             cancellation: None,
             visits: visits.clone(),
+            reads: reads.clone(),
         },
     );
+    reads.lock().unwrap().clear();
     let scope = WorthQueryRequestScope::new(None, cancellation.token());
     let program = program::prepare(&world, &scope, status);
     let before = checkpoint(&world);
@@ -80,11 +85,13 @@ fn run(status: String, cancel: bool) -> Case {
     };
     let after = checkpoint(&world);
     let visits = visits.lock().unwrap().clone();
+    let reads = reads.lock().unwrap().clone();
     Case {
         denial,
         before,
         after,
         visits,
+        reads,
     }
 }
 
@@ -180,4 +187,55 @@ fn identical_candidates_return_identical_refusal_bytes_on_two_runs() {
         second.denial.invariant_refusal_bytes()
     );
     assert!(first.denial.invariant_refusal_bytes().is_some());
+}
+
+#[test]
+fn installed_rule_reads_survive_repeated_views_and_domain_refusal() {
+    let case = run("closed".into(), false);
+    assert!(case
+        .denial
+        .decode_invariant_refusal::<RefusalBinding>()
+        .is_ok());
+    assert_read_observations(&case.reads);
+}
+
+#[test]
+fn cancellation_preserves_the_reads_done_before_the_stop() {
+    let case = run("closed".into(), true);
+    assert_eq!(
+        case.denial.execution_denial_cause(),
+        Some(Err(WorthQueryProviderSessionControlStopKind::Cancelled))
+    );
+    assert_read_observations(&case.reads);
+}
+
+fn assert_read_observations(samples: &[rule::ReadSample]) {
+    use rule::ReadStage;
+    let prepared = samples
+        .iter()
+        .find(|s| matches!(s.stage, ReadStage::Prepared))
+        .unwrap()
+        .reads;
+    let evaluation: Vec<_> = samples
+        .iter()
+        .filter(|s| !matches!(s.stage, ReadStage::Prepared))
+        .take(3)
+        .collect();
+    assert!(matches!(evaluation[0].stage, ReadStage::EvaluationStart));
+    assert!(matches!(evaluation[1].stage, ReadStage::FirstView));
+    assert!(matches!(evaluation[2].stage, ReadStage::SecondView));
+    assert_eq!(evaluation[0].reads, prepared);
+    for read_kind in [
+        WorthQueryInvariantProjectionWork::field_reads,
+        WorthQueryInvariantProjectionWork::adjacency_lists_read,
+        WorthQueryInvariantProjectionWork::adjacency_edges_inspected,
+    ] {
+        let first = read_kind(evaluation[1].reads) - read_kind(evaluation[0].reads);
+        let second = read_kind(evaluation[2].reads) - read_kind(evaluation[1].reads);
+        assert!(first > 0, "the real installed read was observed");
+        assert_eq!(
+            first, second,
+            "equivalent reads from fresh views contribute equally"
+        );
+    }
 }

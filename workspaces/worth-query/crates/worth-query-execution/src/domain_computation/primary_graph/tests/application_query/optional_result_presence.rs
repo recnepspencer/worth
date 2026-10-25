@@ -360,6 +360,12 @@ fn execute_with_note_fact(
     let footprint = result.observed_sources()[0].footprint_for_test();
     assert_eq!(footprint.aspects.len(), 4);
     assert_eq!(
+        result.receipt().reads().field_reads(),
+        footprint.aspects.len(),
+        "every requested field was acquired, including each absent optional value"
+    );
+    assert_eq!(result.receipt().reads().index_candidates_examined(), 0);
+    assert_eq!(
         footprint
             .aspects
             .iter()

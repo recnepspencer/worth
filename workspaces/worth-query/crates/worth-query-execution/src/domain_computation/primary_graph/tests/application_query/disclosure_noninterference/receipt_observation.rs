@@ -16,6 +16,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryBasisPosture,
     WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryFreshness,
     WorthQueryApplicationQueryOmissionPosture, WorthQueryApplicationQueryWorkEvidence,
+    WorthQueryInvariantProjectionWork,
 };
 use crate::domain_computation::provider_session::{
     WorthQueryGraphReadCompletion, WorthQueryGraphReadDependencyEvidence,
@@ -42,11 +43,8 @@ pub(super) struct StableReceiptObservation {
     examined_candidate_count: usize,
     projected_record_count: usize,
     projected_field_count: usize,
-    adjacency_list_read_count: usize,
-    edge_scan_count: usize,
+    reads: WorthQueryInvariantProjectionWork,
     ordering_comparison_count: usize,
-    ordered_index_entry_count: usize,
-    target_identity_index_entry_count: usize,
     per_result_neighbor_lookup_count: usize,
     fallback_count: usize,
     result_count: usize,
@@ -157,11 +155,8 @@ impl StableReceiptObservation {
             examined_candidate_count: receipt.examined_candidate_count(),
             projected_record_count: receipt.projected_record_count(),
             projected_field_count: receipt.projected_field_count(),
-            adjacency_list_read_count: receipt.adjacency_list_read_count(),
-            edge_scan_count: receipt.edge_scan_count(),
+            reads: receipt.reads(),
             ordering_comparison_count: receipt.ordering_comparison_count(),
-            ordered_index_entry_count: receipt.ordered_index_entry_count(),
-            target_identity_index_entry_count: receipt.target_identity_index_entry_count(),
             per_result_neighbor_lookup_count: receipt.per_result_neighbor_lookup_count(),
             fallback_count: receipt.fallback_count(),
             result_count: receipt.result_count(),
@@ -210,22 +205,10 @@ impl StableReceiptObservation {
         );
         assert_eq!(self.projected_record_count, other.projected_record_count);
         assert_eq!(self.projected_field_count, other.projected_field_count);
-        assert_eq!(
-            self.adjacency_list_read_count,
-            other.adjacency_list_read_count
-        );
-        assert_eq!(self.edge_scan_count, other.edge_scan_count);
+        assert_eq!(self.reads, other.reads, "actual query reads");
         assert_eq!(
             self.ordering_comparison_count,
             other.ordering_comparison_count
-        );
-        assert_eq!(
-            self.ordered_index_entry_count,
-            other.ordered_index_entry_count
-        );
-        assert_eq!(
-            self.target_identity_index_entry_count,
-            other.target_identity_index_entry_count
         );
         assert_eq!(
             self.per_result_neighbor_lookup_count,

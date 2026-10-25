@@ -11,6 +11,7 @@ pub use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
     WorthQueryInvariantRefusalDecodeDenial,
 };
+pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWork;
 pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationInvariantFactories, WorthQueryApplicationInvariantSchemaResolver,
 };

@@ -55,10 +55,8 @@ impl<'work> AggregateWorkAccounting<'work> {
     ) -> WorthQueryInvariantAggregateDenial {
         if self.budget.consume(limit.consumed_work_units()) {
             self.record_cold_lookup(limit.relation_records_examined());
-            self.work.record_adjacency(
-                limit.relation_records_examined(),
-                limit.endpoint_records_reserved(),
-            );
+            self.work
+                .record_adjacencies(1, limit.relation_records_examined());
         }
         self.budget.mark_exceeded();
         denial(
@@ -73,10 +71,8 @@ impl<'work> AggregateWorkAccounting<'work> {
         member: &str,
     ) -> WorthQueryInvariantAggregateDenial {
         if self.budget.consume(limit.consumed_work_units()) {
-            self.work.record_adjacency(
-                limit.relation_records_examined(),
-                limit.endpoint_records_reserved(),
-            );
+            self.work
+                .record_adjacencies(1, limit.relation_records_examined());
         }
         self.budget.mark_exceeded();
         denial(
@@ -89,7 +85,6 @@ impl<'work> AggregateWorkAccounting<'work> {
         &mut self,
         consumed: usize,
         examined: usize,
-        endpoints: usize,
         member: &str,
     ) -> Result<(), WorthQueryInvariantAggregateDenial> {
         if !self.budget.consume(consumed) {
@@ -98,7 +93,7 @@ impl<'work> AggregateWorkAccounting<'work> {
                 member,
             ));
         }
-        self.work.record_adjacency(examined, endpoints);
+        self.work.record_adjacencies(1, examined);
         Ok(())
     }
 
@@ -106,9 +101,11 @@ impl<'work> AggregateWorkAccounting<'work> {
         &mut self,
         member: &str,
     ) -> Result<(), WorthQueryInvariantAggregateDenial> {
-        self.admit(1, member)?;
-        self.work.record_field();
-        Ok(())
+        self.admit(1, member)
+    }
+
+    pub(in super::super) fn record_source_field(&mut self) {
+        self.work.record_fields(1);
     }
 
     fn admit(

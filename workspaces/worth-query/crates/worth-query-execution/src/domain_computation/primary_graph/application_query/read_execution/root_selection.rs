@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::indexes::DerivedIndexGenerationId;
@@ -29,8 +30,7 @@ pub(super) struct BoundedRootSelection {
     pub(super) predicate_work_units: usize,
     pub(super) work_units: usize,
     pub(super) predicate_index_generation: Option<DerivedIndexGenerationId>,
-    pub(super) adjacency_lists_read: usize,
-    pub(super) relation_records_examined: usize,
+    pub(super) reads: WorthQueryInvariantProjectionWork,
 }
 
 mod work;
@@ -83,8 +83,7 @@ pub(super) fn select_bounded_roots(
                 predicate_work_units: 1,
                 work_units: 1,
                 predicate_index_generation: None,
-                adjacency_lists_read: 0,
-                relation_records_examined: 0,
+                reads: WorthQueryInvariantProjectionWork::default(),
             })
         }
         [predicate] => select_scoped_root(
@@ -192,6 +191,7 @@ fn select_scoped_root(
     work.charge_predicate(
         lookup.entity_records_examined(),
         lookup.matching_entity_ids_reserved(),
+        lookup.field_reads(),
         field,
     )?;
     let examined_candidates = lookup.entity_records_examined();
@@ -209,7 +209,6 @@ fn select_scoped_root(
         predicate_work_units: work.predicate_work_units,
         work_units: work.work_units,
         predicate_index_generation: None,
-        adjacency_lists_read: 0,
-        relation_records_examined: 0,
+        reads: work.reads,
     })
 }

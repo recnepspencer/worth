@@ -411,6 +411,9 @@ cross-feature proof gates before final certification:
   admitted composite-history operations over exact source world commits and
   target product-branch heads; it replaces the provisional linear Phase 8
   experiment without creating a Query-owned history stack
+- `Milestone 9.18.1` gives applications Relational's structural laws, graph walks,
+  orbit and component reads, rule-readable derived relations and persistent
+  aggregate identity with lineage, through Query declarations and readers
 - `Milestones 9.19` through `9.22` add advanced generic computation through
   the same front door: managed access and verified footprints, correlated and
   set-oriented execution, governed decision evidence, and occurrence-safe
@@ -445,7 +448,8 @@ contracts required by physical integration:
   proprietary CAD M0 consumer proof -> `Milestone 9.17.4` static graph closure ->
   `Milestone 9.17.5` branch program evolution -> `Milestone 9.17.6` dynamic workflows ->
   `Milestone 9.17.6.1` shared expressions (also required by Worth UI 3.17) ->
-  `Milestone 9.17.7` inbound occurrences -> `Milestone 9.18` -> `Milestone 9.19` ->
+  `Milestone 9.17.7` inbound occurrences -> `Milestone 9.18` -> `Milestone 9.18.1` ->
+  `Milestone 9.19` ->
   `Milestone 9.20` -> `Milestone 9.21` -> `Milestone 9.22` ->
   `Milestone 13`
 
@@ -5740,6 +5744,48 @@ authored lifecycle, family regeneration and 10/1,000-entry locality journeys are
 acceptance gates. Private CAD/Studio adoption belongs to a separate consumer
 milestone, as defined by the governing 9.18 specification.
 
+## Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
+
+**Progress, 2026-10-25:** Phase 1 is complete: one actual-read observation
+surface, compiled public evidence and verified Proprietary SDK adoption.
+Phases 2–6 remain unfinished. The
+[implementation record](milestone-9.18.1-implementation.md#phase-1-closeout)
+holds Phase 1's evidence; declared relation laws are next.
+
+### Goal
+
+Give applications the structural machinery Relational and Execution already
+have: declared relation laws, multi-hop walks, orbit and component reads,
+derived relations that rules can read, and a persistent identity with lineage
+for derived aggregates. All of it is domain-neutral and reached through Query
+declarations and readers, never through raw handles.
+
+### Specification
+
+The governing milestone spec is
+[milestone-9.18.1.md](./milestone-9.18.1.md).
+
+### Must Ship
+
+- acyclicity, symmetry, uniqueness, minimum connectivity and partition
+  isolation as declared relation laws, lowered through the existing seam
+- walks, reachability and closure on the invariant and decision readers and as
+  a declared-query step, with complete read footprints
+- orbit relations with orbit reads, and one persistent aggregate identity owner
+  with split and merge lineage
+- the Components plan shape with persistent component identity
+- derived relations readable by rules at the proposed state
+- one documented read-count surface, and deletion of consumer workarounds in
+  the public fixtures and WORTH Proprietary
+
+### Acceptance Evidence
+
+Independent graph, permutation and union-find models agree with every law
+verdict, walk, orbit, component, identity and lineage under seeded edit
+sequences, replay and branches. Footprint and proposed-state mutants prove that
+no rule goes stale. WORTH Proprietary builds against the candidate with its hand
+walks, cycle checks and private counters deleted.
+
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 
 ### Goal
@@ -6123,6 +6169,7 @@ answer is "store-gated" or "shared with another subsystem."
 | Observable workflow truth | Milestone 9.17.6.5; successor to 9.17.6.4 | Governed discovery/re-acquisition, exact-basis observation, required canonical actor roles, positive occurrence-bound capability requirements, awaiting-proposal outcome, owning capability commands and consumer guidance | No legacy fallback, second status/actor store, observation-as-authority, constructible or serializable live ref, implicit current-world read, catalog exposure of platform kinds, unrelated-population scan, ungated disclosure, caller-asserted actor or missing-actor success | Current-checkpoint restore and intact predecessor refusal; cross-request, exact-basis, disclosure, fork/migration, deferred attribution, actor/replay, native command recovery, bounded lookup and rebuildability proofs; compiled mixed workflow and zero consumer fence debt |
 | Inbound occurrences and external effect completion | Milestone 9.17.7 | Installed inbound protocols; authenticated bounded immutable occurrences; exact dispatch/branch correlation; external-effect-owner consumption; workflow posture delivery | Raw callback, payload, status, transport acknowledgement or workflow command cannot complete an effect; fork, duplicate and redispatch races cannot duplicate consumption | Static Bank death-notice process court, publication-gap/custody owner court and approved-payment workflow reconstruction; real CAD remote effects require a later adoption court |
 | Tree-based semantic undo and redo | Milestone 9.18 | Exact source composite commit and target product branch/head, explicit per-component correction posture, installed inverse/compensation/reconciliation/reapplication contracts, applicability against intervening history, fresh Query admission, owner-local preparation, Runtime World coordinated publication, correction causality, and typed next actions | Reversal and reapplication create new composite commits; unchanged components retain exact bases; Signal reconciliation remains Signal-owned; history and alternatives remain intact; copied receipts and prior authority open no door; stale/conflicting divergence is typed before effects; external effects retain honest compensation/irreversibility posture; Query owns no history head | Milestone 9.18 composite-divergence, stale-head, component-basis, Signal-reconciliation, authority, compensation, external-effect, partial-preparation, zero-ordinary-work, facade, documentation, and residue certification + later cross-runtime merge/rebase/recovery suites |
+| Structural graph laws, walks and aggregate identity | Milestone 9.18.1 | Declared acyclic/symmetric/unique/connectivity/partition laws, walk/reachability/closure reads and declared-query step, orbit relations, Components plan shape, rule-readable derived relations, persistent aggregate identity and lineage, one read-count surface | Laws judge the proposed commit for every writer; interrupted evaluation refuses; walks never truncate silently; read footprints are complete; identity survives anchor removal and follows split/merge lineage deterministically; derived values never grant authority; no domain types in the platform | Milestone 9.18.1 seeded model differentials, footprint/proposed-state mutants, replay/branch identity, growth, facade, documentation and WORTH Proprietary adoption |
 | Managed advanced access and verified footprints | Milestone 9.19 | Installed-query-bound search and access products, Milestone 9.10 requirement/inventory/plan extensions, lifecycle products, coverage/membership witnesses, exact refinement, and verified realized footprints | Search preserves capability, purpose, exact composite product-world basis, disclosure, cursor, recovery, and aftermath; membership remains complete under negative-space change; protected candidates do not leak; footprints narrow but never widen authority | Milestone 9.19 bank/geometry search, disclosure, no-N+1, membership, footprint, lifecycle, memory, alternate-provider, facade/docs, and prohibition certification + Milestone 13 parity |
 | Correlated paths and set execution | Milestone 9.20 | Typed heterogeneous path programs, admitted provider lowering, complete path dependencies, installed conflict relations, verified partitions, provider set operations, canonical reductions, and structural-cost evidence | Paths remain bounded and schema-typed; correlated reads consume one admitted graph plan; partitions are complete and conflict-free; bulk work is truly set-oriented; planning is not quadratic; unauthorized members are not processed or leaked | Milestone 9.20 chip/geometry/bank interpreter, no-N+1, partition-parity, slope, authority, facade/docs, and prohibition certification + Milestone 13 parity |
 | Governed decision evidence | Milestone 9.21 | Schema-bound attachments, exact execution/occurrence binding, nested governance, retention/deletion, derived incremental summaries, typed omissions, and rebuild evidence | Attachments and summaries preserve classification, disclosure, purpose, capability, review, and deletion while opening no graph, operation, branch, correction, approval, or recovery authority | Milestone 9.21 bank/research privacy, deletion, invalidation, rebuild, stale-summary, authority, facade/docs, and prohibition certification + Milestone 13 parity |
@@ -6243,6 +6290,7 @@ must gain a row in the same patch or the roadmap is incomplete.
 - [milestone-9.17.6.5.md](./milestone-9.17.6.5.md)
 - [milestone-9.17.7.md](./milestone-9.17.7.md)
 - [milestone-9.18.md](./milestone-9.18.md)
+- [milestone-9.18.1.md](./milestone-9.18.1.md)
 - [milestone-9.19.md](./milestone-9.19.md)
 - [milestone-9.20.md](./milestone-9.20.md)
 - [milestone-9.21.md](./milestone-9.21.md)

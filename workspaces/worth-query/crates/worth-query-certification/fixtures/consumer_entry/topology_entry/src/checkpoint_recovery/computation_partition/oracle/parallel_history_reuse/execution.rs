@@ -16,6 +16,7 @@ impl Default for HistoryConfiguration {
                 setup_calls: Default::default(),
                 invariant_calls: Default::default(),
                 invariant_probe: Default::default(),
+                invariant_read_observer: None,
                 producer_authorization_denials: Default::default(),
                 producer_domain_denial: Default::default(),
             },
