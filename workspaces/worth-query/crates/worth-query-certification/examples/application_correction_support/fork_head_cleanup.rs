@@ -1,5 +1,5 @@
-//! A fork closed without adoption leaves nothing behind, not even the
-//! history an unpublished successor kept.
+//! A fork closed without adoption leaves nothing behind: neither the
+//! evidence of its steps nor the history an unpublished successor kept.
 use super::{
     edit::Value,
     fork_head_adoption::{adopt, fork, mutate},
@@ -10,7 +10,37 @@ use worth_query_host::facade::{
 };
 
 pub fn run() {
+    abandoned_forks_release_their_evidence();
     an_unpublished_fork_closes_after_its_recovery();
+}
+
+const ABANDONED: usize = 8;
+
+/// A closed fork's commits pass their evidence on while World history still
+/// holds them; once the close releases that history, its sweep lets the
+/// evidence go too.
+fn abandoned_forks_release_their_evidence() {
+    let host = host::install();
+    let head = fork(&host, host.runtime().current_world());
+    host::edit_on(&host, head, Value::Primary(11), "kept");
+    let kept = host.runtime().completed_evidence_retained_for_test();
+    for abandoned in 1..=ABANDONED {
+        let branch = fork(&host, head);
+        host::edit_on(
+            &host,
+            branch,
+            Value::Secondary(20 + abandoned as u64),
+            &format!("abandoned-{abandoned}"),
+        );
+        adopt(&host, branch);
+        assert!(host.runtime().branches().pending_cleanup().is_empty());
+        assert_eq!(
+            host.runtime().completed_evidence_retained_for_test(),
+            kept,
+            "abandoned fork {abandoned}: its evidence goes with its history"
+        );
+    }
+    println!("{ABANDONED} abandoned forks released their evidence");
 }
 
 /// A fork's publication installs its successor but never moves the head. The
