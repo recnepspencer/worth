@@ -131,6 +131,5 @@ where
     K: Ord + Borrow<Q>,
     Q: Ord + ?Sized,
 {
-    let query = KeyQuery(key);
-    map.get_prev(&query as &dyn KeyOrder<Q>)
+    super::predecessor_seek::get(map, key)
 }

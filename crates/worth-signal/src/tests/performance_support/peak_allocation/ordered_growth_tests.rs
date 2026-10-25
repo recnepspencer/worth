@@ -41,45 +41,6 @@ fn ordered_batch_bound_covers_a_three_level_root_split() {
 }
 
 #[test]
-fn diagnostics_overlay_bound_covers_shared_retirement_and_readmission_at_scale() {
-    use crate::data::persistent_ord_map::PersistentOrdMap;
-    let mut base = PersistentOrdMap::<u64, u64>::new();
-    for key in 0..16_384 {
-        base.insert(key, key);
-    }
-    let mut overlay = base.fork_persistent();
-    for key in (0..16_384).step_by(2) {
-        overlay.insert(key, key + 1);
-    }
-    let snapshot = overlay.fork_persistent();
-    for retire in [true, false] {
-        let forecast = overlay
-            .batch_edit_structure_growth_bound(8_192)
-            .unwrap()
-            .bytes();
-        let (updated, peak) = measure(|| {
-            for key in (1..16_384).step_by(2) {
-                if retire {
-                    overlay.remove(&key);
-                } else {
-                    overlay.insert(key, key);
-                }
-            }
-            overlay
-        });
-        assert!(
-            peak.unwrap() as u64 <= forecast,
-            "retire={retire}: {peak:?} > {forecast}"
-        );
-        overlay = updated;
-    }
-    assert_eq!(overlay.len(), snapshot.len());
-    for key in 0..16_384 {
-        assert_eq!(overlay.get(&key), snapshot.get(&key));
-    }
-}
-
-#[test]
 fn ordered_batch_bound_alone_covers_shared_three_level_trees() {
     // More than 64 + 65*64 entries requires at least three im 15.1 levels.
     for count in [1, 32, 300, 8_192] {

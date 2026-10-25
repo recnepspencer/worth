@@ -22,6 +22,14 @@ mod charge_updates;
 #[cfg(test)]
 #[path = "persistent_ord_map/lookup_work_tests.rs"]
 mod lookup_work_tests;
+#[cfg(all(test, feature = "test-peak-allocation"))]
+#[path = "persistent_ord_map/peak_allocation_intervals.rs"]
+mod peak_allocation_intervals;
+#[path = "persistent_ord_map/predecessor_seek.rs"]
+mod predecessor_seek;
+#[cfg(test)]
+#[path = "persistent_ord_map/predecessor_tests.rs"]
+mod predecessor_tests;
 #[path = "persistent_ord_map/retained_charge.rs"]
 mod retained_charge;
 #[cfg(test)]

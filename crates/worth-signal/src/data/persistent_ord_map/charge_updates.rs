@@ -191,20 +191,13 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
         let future_changes = changes
             .checked_add(prospective_edits)
             .ok_or(Denial::ChargeOverflow)?;
-        let future_retired = retired
-            .checked_add(prospective_edits)
-            .and_then(|count| count.checked_add(1))
-            .ok_or(Denial::ChargeOverflow)?;
         // A readmission or retirement edits one changed-key path and at most
         // three interval paths. One overlay value and up to three key cells
         // may be new during that edit.
-        let interval_edits = prospective_edits
-            .checked_mul(3)
-            .ok_or(Denial::ChargeOverflow)?;
         ordered_batch_growth_charge::<SharedKey<K>, Arc<V>>(future_changes, prospective_edits)?
-            .checked_add(ordered_batch_growth_charge::<SharedKey<K>, SharedKey<K>>(
-                future_retired,
-                interval_edits,
+            .checked_add(interval_batch_growth_bound::<K>(
+                retired,
+                prospective_edits,
             )?)?
             .checked_add(
                 arc_allocation_charge::<K>()?
@@ -213,6 +206,23 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
             )?
             .checked_add(arc_allocation_charge::<V>()?.checked_mul(prospective_edits)?)
     }
+}
+
+/// Retirement can merge two intervals and readmission can split one in two:
+/// both require at most three tree edits. Existing intervals remain live and
+/// may be copied when the overlay root is shared.
+pub(super) fn interval_batch_growth_bound<K>(
+    retired: usize,
+    prospective_edits: usize,
+) -> Result<Charge, Denial> {
+    let future_retired = retired
+        .checked_add(prospective_edits)
+        .and_then(|count| count.checked_add(1))
+        .ok_or(Denial::ChargeOverflow)?;
+    let interval_edits = prospective_edits
+        .checked_mul(3)
+        .ok_or(Denial::ChargeOverflow)?;
+    ordered_batch_growth_charge::<SharedKey<K>, SharedKey<K>>(future_retired, interval_edits)
 }
 
 /// Only intervals containing this key or its immediate base neighbors can
