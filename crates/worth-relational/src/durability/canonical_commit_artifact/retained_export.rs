@@ -67,12 +67,44 @@ pub struct RelationalCanonicalCommitArtifacts<'scope, 'authority> {
     policy: ExecutionAllocationPolicy<'scope, 'authority>,
 }
 
+impl RelationalCanonicalCommitArtifacts<'_, '_> {
+    /// Select positions strictly above an acknowledged prefix before any
+    /// journal body is demanded. Ordinary iterator skipping may pull and
+    /// discard a body; this seek advances only immutable index entries.
+    pub fn after_position(
+        mut self,
+        position: crate::publication::patch::data::PatchStreamPosition,
+    ) -> Self {
+        let count = self
+            .retained
+            .as_slice()
+            .iter()
+            .take_while(|entry| {
+                let selected = match entry {
+                    RetainedArtifact::Resident(commit) => commit.position(),
+                    RetainedArtifact::Cold { entry, .. } => entry.position,
+                };
+                selected <= position
+            })
+            .count();
+        if count != 0 {
+            let _ = self.retained.nth(count - 1);
+        }
+        self
+    }
+}
+
 impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
     type Item =
         Result<RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.retained.next().map(|commit| match commit {
+        self.nth(0)
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        // Skipping an immutable index prefix does not demand its bodies.
+        self.retained.nth(n).map(|commit| match commit {
             RetainedArtifact::Resident(commit) => {
                 RelationalCanonicalCommitArtifact::from_positioned(&commit, self.policy)
             }
@@ -124,3 +156,7 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifacts<'_, '_> {
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+#[path = "retained_export/skip_tests.rs"]
+mod skip_tests;

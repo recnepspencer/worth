@@ -41,9 +41,7 @@ impl MirrorResidencyDemandBinding {
         }
         let edition = self.partitions.read().clone();
         for id in ids {
-            if let Some((_, region)) = edition.cells().find(|(candidate, _)| *candidate == id) {
-                region.demand_full(execution, 1 << 30)?;
-            }
+            edition.demand_partition(execution, id)?;
         }
         Ok(())
     }

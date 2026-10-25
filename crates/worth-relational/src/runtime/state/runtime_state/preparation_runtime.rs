@@ -25,6 +25,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
+    durability_admission: crate::durability::medium::RelationalDurablePreparationAdmission,
 }
 
 /// Narrow cloneable state used only for validation and candidate preparation.
@@ -36,6 +37,8 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
+    pub(crate) durability_admission:
+        crate::durability::medium::RelationalDurablePreparationAdmission,
     pub(crate) history: RelationalPreparationHistory,
     pub(crate) record_identity: RecordIdentitySubsystem,
     pub(crate) services: RuntimeServices,
@@ -62,6 +65,10 @@ impl RelationalPreparationOwnerBinding {
             lineage_identity: runtime.lineage.identity_allocator(),
             diagnostics: runtime.publication.diagnostics.clone(),
             index_definitions: runtime.indexes.definition_read_binding(),
+            durability_admission:
+                crate::durability::medium::RelationalDurablePreparationAdmission::new(
+                    runtime.durability.medium(),
+                ),
             mirror_residency: runtime
                 .partitions
                 .residency_demand_binding(runtime.history.main_branch.clone()),
@@ -87,6 +94,7 @@ impl RelationalPreparationOwnerBinding {
             diagnostics: self.diagnostics.clone(),
             index_definitions: self.index_definitions.clone(),
             mirror_residency: self.mirror_residency.clone(),
+            durability_admission: self.durability_admission.clone(),
             history: self.history.clone(),
             record_identity: self.record_identity.clone(),
             services: self.services.clone(),

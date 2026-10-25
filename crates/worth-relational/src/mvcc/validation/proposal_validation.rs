@@ -84,6 +84,9 @@ impl RelationalPreparationRuntime {
                 "transaction basis is no longer current",
             ));
         }
+        self.durability_admission
+            .require_open()
+            .map_err(TransactionCommitError::durability_unresolved)?;
         transaction.demand_preparation_regions(
             execution,
             &self.services.symbols,

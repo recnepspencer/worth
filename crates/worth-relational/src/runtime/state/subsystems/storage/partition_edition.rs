@@ -63,6 +63,17 @@ impl PartitionEdition {
         self.partitions.iter().map(|(id, region)| (*id, region))
     }
 
+    pub(super) fn demand_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if let Some(region) = self.partitions.get(&id) {
+            region.demand_full(execution, 1 << 30)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.partitions.len()
     }

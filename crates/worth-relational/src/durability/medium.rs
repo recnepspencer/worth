@@ -108,3 +108,6 @@ pub enum RelationalDurablePublicationRefusal {
         crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactEncodeDenial,
     ),
 }
+
+mod preparation_admission;
+pub(crate) use preparation_admission::RelationalDurablePreparationAdmission;
