@@ -12,6 +12,7 @@ pub struct RelationalStorageUnavailable {
     pub cause: RelationalStorageUnavailableCause,
 }
 
+/// The committed region, journal envelope, or page whose readmission failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalStorageSubject {
     Region(PartitionId),
@@ -21,6 +22,7 @@ pub enum RelationalStorageSubject {
     Index(DerivedIndexId),
 }
 
+/// Why the cold source or its authenticated contents could not be admitted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalStorageUnavailableCause {
     SourceUnavailable,
