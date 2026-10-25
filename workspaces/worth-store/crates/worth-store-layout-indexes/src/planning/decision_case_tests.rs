@@ -113,12 +113,16 @@ fn declared_selection_cases_equal_cases_emitted_by_ordinary_requests() {
     observed.insert(select_case(
         AccessPlanSelector
             .admit_read_request(
-                wal_family,
-                wal_key(),
-                wal_materialization.clone(),
-                access_planning().point_access(),
+                page_family,
+                page_key(),
+                page_exact.clone(),
+                crate::access_shapes()
+                    .explicit_degraded_exact_scan(
+                        crate::DegradedExactScanRequest::new().with_budget_rows(8),
+                    )
+                    .expect("positive degraded scan demand must admit"),
             )
-            .expect("LSM budget denial must follow ordinary request admission"),
+            .expect("budget denial must follow ordinary positive-cost request admission"),
         PreExecutionBudgetEnvelope::new(PreExecutionBudgetScope::Foreground, 0, 0, 0, 0, 0),
     ));
     observed.insert(select_case(
@@ -240,14 +244,8 @@ fn select_case<Request: AdmittedPlanningRequest>(
             assert_eq!(estimate.estimated_byte_reads(), 8 * 64);
             assert_budget_binding(estimate, plan.budget_receipt());
         }
-        AccessPlanSelectionView::Denied(denial) => {
-            eprintln!("WORTH-UI-TEMPORARY-INSTRUMENTATION denied {denial:?}")
-        }
+        AccessPlanSelectionView::Denied(_) => {}
     }
-    eprintln!(
-        "WORTH-UI-TEMPORARY-INSTRUMENTATION case {:?}",
-        outcome.case_id()
-    );
     outcome.case_id()
 }
 
