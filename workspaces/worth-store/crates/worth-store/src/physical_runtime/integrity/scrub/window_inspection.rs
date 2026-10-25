@@ -21,6 +21,15 @@ pub(super) fn inspect(
             bytes,
             scheduler,
         } => {
+            let observed_scope_bytes = physical
+                .completed_bytes()
+                .saturating_sub(
+                    scope
+                        .byte_range()
+                        .offset()
+                        .saturating_sub(physical.range().offset()),
+                )
+                .min(scope.byte_range().length());
             let same_source = if matches!(
                 physical.range().target(),
                 worth_store_physical_format::PhysicalArtifactReadTarget::Checkpoint(_)
@@ -50,7 +59,7 @@ pub(super) fn inspect(
                 validator.invalidate(scope);
                 indeterminate(
                     scope,
-                    physical.completed_bytes(),
+                    observed_scope_bytes,
                     late,
                     physical.stable() && same_source,
                 )
@@ -61,7 +70,7 @@ pub(super) fn inspect(
                 (inspection.outcome(), validation)
             } else {
                 validator.invalidate(scope);
-                indeterminate(scope, physical.completed_bytes(), false, true)
+                indeterminate(scope, observed_scope_bytes, false, true)
             }
         }
         PhysicalWorkSettlementEvidence::InspectionDenied(failure)
