@@ -34,8 +34,36 @@ struct PendingAttemptPause {
 
 struct ExactAttemptPause {
     target: usize,
-    state: Mutex<(usize, bool)>,
+    state: Mutex<(usize, bool, Option<String>)>,
+    backstop: Duration,
     changed: Condvar,
+}
+
+impl ExactAttemptPause {
+    fn wait(&self, arrivals: bool) -> bool {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let (mut state, expired) = self
+            .changed
+            .wait_timeout_while(state, self.backstop, |s| {
+                !s.1 && (!arrivals || s.0 < self.target)
+            })
+            .unwrap_or_else(|e| e.into_inner());
+        if expired.timed_out() && !state.1 && (!arrivals || state.0 < self.target) {
+            state.2 = Some(format!(
+                "application-attempt pause backstop expired: missing arrival slots {:?}; arrived {}/{}; owner release={}",
+                (state.0 + 1..=self.target).collect::<Vec<_>>(), state.0, self.target, state.1,
+            ));
+            state.1 = true;
+            self.changed.notify_all();
+        }
+        let failure = state.2.clone();
+        let reached = state.0 == self.target;
+        drop(state);
+        if let Some(failure) = failure {
+            panic!("{failure}");
+        }
+        reached
+    }
 }
 
 pub struct WorthQueryApplicationAttemptRegistrationPauseForTest {
@@ -91,7 +119,8 @@ impl WorthQueryApplicationAttemptOperationControl {
 fn arm(slot: &PendingAttemptPause, attempts: NonZeroUsize) -> Arc<ExactAttemptPause> {
     let latch = Arc::new(ExactAttemptPause {
         target: attempts.get(),
-        state: Mutex::new((0, false)),
+        state: Mutex::new((0, false, None)),
+        backstop: Duration::from_secs(120),
         changed: Condvar::new(),
     });
     let mut pending = slot.pending.lock().unwrap_or_else(|e| e.into_inner());
@@ -120,13 +149,8 @@ fn reach(slot: &PendingAttemptPause) {
     }
     drop(pending);
     latch.changed.notify_all();
-    // The owner releases this latch; scheduler contention is not a failed attempt.
-    drop(
-        latch
-            .changed
-            .wait_while(state, |state| !state.1)
-            .unwrap_or_else(|e| e.into_inner()),
-    );
+    drop(state);
+    latch.wait(false);
 }
 
 fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
@@ -141,15 +165,9 @@ fn clear(slot: &PendingAttemptPause, latch: &Arc<ExactAttemptPause>) {
 }
 
 impl WorthQueryApplicationAttemptRegistrationPauseForTest {
-    /// Wait for every parked attempt, or report an early release by a failed worker.
+    /// Wait for arrivals or early release; a 120-second backstop releases all waiters and panics.
     pub fn wait_for_arrivals(&self) -> bool {
-        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
-        self.latch
-            .changed
-            .wait_while(state, |state| state.0 != self.latch.target && !state.1)
-            .unwrap_or_else(|e| e.into_inner())
-            .0
-            == self.latch.target
+        self.latch.wait(true)
     }
 
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
@@ -204,6 +222,46 @@ impl Drop for WorthQueryApplicationCandidatePreparationPauseForTest {
 #[cfg(test)]
 mod arrival_tests {
     use super::*;
+    #[test]
+    fn missing_arrival_backstop_releases_every_parked_attempt() {
+        let control = WorthQueryApplicationAttemptOperationControl::default();
+        let mut pause = control.pause_after_registration(NonZeroUsize::new(4).unwrap());
+        let short = Arc::new(ExactAttemptPause {
+            target: 4,
+            state: Mutex::new((0, false, None)),
+            changed: Condvar::new(),
+            backstop: Duration::from_millis(250),
+        });
+        *control.pending_registration.pending.lock().unwrap() = Some(short.clone());
+        pause.latch = short;
+        std::thread::scope(|scope| {
+            let parked = (0..3)
+                .map(|_| {
+                    scope.spawn(|| {
+                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            control.after_registration()
+                        }))
+                    })
+                })
+                .collect::<Vec<_>>();
+            let stopped = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                pause.wait_for_arrivals()
+            }));
+            let message = stopped.expect_err("the fourth member never arrives");
+            let message = message.downcast_ref::<String>().unwrap();
+            assert!(
+                message.contains("backstop expired") && message.contains("4]"),
+                "{message}"
+            );
+            for worker in parked {
+                assert!(
+                    worker.join().expect("worker catches the timeout").is_err(),
+                    "all parked workers receive the stop"
+                );
+            }
+        });
+    }
+
     #[test]
     fn arrivals_are_observed_as_an_event_and_early_release_aborts_the_wait() {
         let control = WorthQueryApplicationAttemptOperationControl::default();
