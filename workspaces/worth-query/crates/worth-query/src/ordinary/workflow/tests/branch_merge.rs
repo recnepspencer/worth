@@ -223,6 +223,7 @@ fn explicit_merge(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),

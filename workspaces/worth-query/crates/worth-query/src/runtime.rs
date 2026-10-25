@@ -33,7 +33,9 @@ use crate::subscription::{
     SubscriptionConsumerAttachmentRequest, SubscriptionLifecycleCloseRequest,
 };
 use crate::view_shape_live::LiveViewShapeFamily;
-use worth_relational::facade::branch::{RelationalForkDenial, RelationalForkOutcome};
+use worth_relational::facade::branch::{
+    RelationalBranchTransitionStop, RelationalForkDenial, RelationalForkOutcome,
+};
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_bridge::facade::{
@@ -45,12 +47,15 @@ use worth_runtime_bridge::facade::{
 /// The helper deliberately keeps the exact fork basis local to this call; no
 /// raw branch selector is passed into Relational's fork transition.
 pub(crate) fn fork_branch_from_exact_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     target_branch: BranchId,
     source_branch: &BranchId,
-) -> Result<RelationalForkOutcome, RelationalForkDenial> {
-    let (_, basis) = runtime.observe_fork_source(source_branch)?;
-    runtime.fork_branch(target_branch, basis)
+) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {
+    let (_, basis) = runtime
+        .observe_fork_source(source_branch)
+        .map_err(RelationalBranchTransitionStop::Denied)?;
+    runtime.fork_branch(execution, target_branch, basis)
 }
 
 mod aspect_api_closeout;

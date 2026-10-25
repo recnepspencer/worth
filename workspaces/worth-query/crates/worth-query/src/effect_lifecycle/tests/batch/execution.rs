@@ -34,6 +34,7 @@ fn mutation_batch_executes_through_one_batch_native_lowered_plan() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -116,6 +117,7 @@ fn mutation_batch_preserves_branch_scoped_authority_target() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -170,6 +172,7 @@ fn retained_lowered_batch_denies_after_intervening_truth_change() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -231,6 +234,7 @@ fn lowered_branch_batch_does_not_deny_when_only_another_branch_moves() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -286,6 +290,7 @@ fn mutation_batch_rejects_mixed_target_branches_before_publication() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

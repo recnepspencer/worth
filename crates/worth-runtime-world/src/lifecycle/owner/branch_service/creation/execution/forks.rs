@@ -12,8 +12,9 @@ use super::{install_custody, CreationDestination};
 
 use worth_relational::facade::branch::RelationalBranchReferenceObservation;
 use worth_relational::facade::branch::{
-    AdmittedRelationalBranchBasis, AdmittedRelationalForkSourceBasis, RelationalBranchVersion,
-    RelationalForkDenial, RelationalForkSourceDescriptor,
+    AdmittedRelationalBranchBasis, AdmittedRelationalForkSourceBasis,
+    RelationalBranchTransitionStop, RelationalBranchVersion, RelationalForkDenial,
+    RelationalForkSourceDescriptor,
 };
 use worth_relational::facade::history::BranchId;
 
@@ -32,6 +33,7 @@ pub(super) struct ForkFailure {
 /// one. Custody is recorded only after the owner reports the branch exists.
 pub(super) fn fork_relational<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     attempt: &mut ReservedBranchCreationAttempt,
     destination: &CreationDestination,
 ) -> Result<RelationalAttemptProgress, ForkFailure>
@@ -59,8 +61,8 @@ where
         .reserve_fork_target(target.clone())
         .map_err(|denial| relational_fork_failure(&denial))?;
     let (fork, target_basis) = fork_port
-        .fork_reserved_with_basis(reservation, source)
-        .map_err(|denial| relational_fork_failure(&denial))?;
+        .fork_reserved_with_basis(execution, reservation, source)
+        .map_err(|stop| relational_fork_stop(&stop))?;
     let target_identity = fork.target_identity().clone();
     let progress = RelationalAttemptProgress::forked(fork, target_basis);
     attempt.record_progress(&crate::publication::CompositeAttemptProgress::new(
@@ -210,6 +212,31 @@ where
         },
     );
     Ok(progress)
+}
+
+/// The Relational fork did not take effect live. A fork whose durable fate is
+/// unknown installed nothing; the Relational owner refuses every later
+/// commit and transition until reopening resolves it.
+fn relational_fork_stop(
+    stop: &RelationalBranchTransitionStop<RelationalForkDenial>,
+) -> ForkFailure {
+    use worth_execution::{MapKernelStop, WorkCeilingDenial};
+    let denial = match stop {
+        RelationalBranchTransitionStop::Denied(denial) => return relational_fork_failure(denial),
+        RelationalBranchTransitionStop::RequestStopped(WorkCeilingDenial::Stopped(
+            MapKernelStop::DeadlineElapsed,
+        )) => RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+        RelationalBranchTransitionStop::RequestStopped(WorkCeilingDenial::Stopped(_)) => {
+            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
+        }
+        RelationalBranchTransitionStop::RequestStopped(_) => {
+            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+        }
+        RelationalBranchTransitionStop::DurabilityUnresolved(_) => {
+            RuntimeWorldBranchAdmissionDenial::RelationalDurabilityUnresolved
+        }
+    };
+    ForkFailure { denial }
 }
 
 fn relational_fork_failure(denial: &RelationalForkDenial) -> ForkFailure {

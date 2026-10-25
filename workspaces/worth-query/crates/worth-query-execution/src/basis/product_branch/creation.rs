@@ -158,6 +158,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let cancellation = RuntimeWorldCancellationSource::new();
         match runtime
             .create_product_branch(
+                execution,
                 &source,
                 source_program.as_ref(),
                 intent,

@@ -53,6 +53,7 @@ pub(super) struct CreationDestination {
 /// rechecked exactly as a publication rechecks it.
 pub(super) fn execute_creation<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut attempt: ReservedBranchCreationAttempt,
     destination: &CreationDestination,
     cancellation: &RuntimeWorldCancellationToken,
@@ -68,7 +69,7 @@ where
         return BranchCreationExecution::NoEffect(denial);
     }
 
-    let relational = match fork_relational(owner, &mut attempt, destination) {
+    let relational = match fork_relational(owner, execution, &mut attempt, destination) {
         Ok(progress) => progress,
         Err(ForkFailure { denial }) => return BranchCreationExecution::NoEffect(denial),
     };

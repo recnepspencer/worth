@@ -85,8 +85,8 @@ pub(super) fn map_refusal(
         return WorthQueryPrimaryGraphInstallationDenial::new(
             crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind::RelationalDurabilityUnresolved,
             format!(
-                "checkpoint native transition durability is unresolved at position {}",
-                unresolved.position().0
+                "checkpoint native transition durability is unresolved for {}",
+                unresolved.subject()
             ),
         );
     }

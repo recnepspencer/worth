@@ -42,6 +42,7 @@ fn lowered_mutation_execution_preserves_branch_scoped_authority_target() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -114,6 +115,7 @@ fn retained_lowered_mutation_denies_after_intervening_truth_change() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -192,6 +194,7 @@ fn lowered_branch_mutation_does_not_deny_when_only_another_branch_moves() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

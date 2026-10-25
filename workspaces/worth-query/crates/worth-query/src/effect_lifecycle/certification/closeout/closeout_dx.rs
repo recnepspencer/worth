@@ -191,7 +191,7 @@ fn inspectable_lowered_story(
         "before",
         BranchId("main".to_string()),
     );
-    fork_seed_branch_from_main(&mut runtime, branch);
+    fork_seed_branch_from_main(execution, &mut runtime, branch);
     let basis = EffectAuthoringBasis::from(branch_mutation_basis(branch));
     let binding =
         runtime_workflow_binding_for_branch(branch_snapshot_identity(&runtime, branch), branch);

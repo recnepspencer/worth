@@ -8,6 +8,7 @@ mod certification;
 mod counter_profiles;
 mod counters;
 mod diagnostics;
+mod durability_unresolved_subject;
 mod eligibility;
 mod envelope;
 mod exact_snapshot_closeout;
@@ -61,6 +62,7 @@ pub use certification::{
 };
 pub use counters::EffectLifecycleCounters;
 pub use diagnostics::{EffectDiagnosticsMaterialization, EffectDiagnosticsRequest};
+pub(crate) use durability_unresolved_subject::unresolved_commit_id;
 pub use eligibility::{
     AdmittedEffectIntent, AdvisoryEffectEligibility, DeferredEffectEligibility,
     DeniedEffectEligibility, EffectEligibility, EffectEligibilityDecisionTrace,

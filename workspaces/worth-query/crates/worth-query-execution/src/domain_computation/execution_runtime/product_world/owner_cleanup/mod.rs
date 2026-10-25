@@ -57,6 +57,10 @@ pub enum WorthQueryProductBranchOwnerCleanupDenial {
     WorldHistoryStillRetained,
     RelationalOwnerDenied,
     RelationalOperationsStillActive,
+    /// The Relational branch deletion's durable fate is unknown: nothing
+    /// changed live, and the Relational owner refuses every later commit and
+    /// branch transition until reopening it decides the fate.
+    RelationalDurabilityUnresolved,
     SignalOwnerDenied,
 }
 
@@ -208,6 +212,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
 
     pub(super) fn retry(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryProductRuntime,
         mut after_component_progress: impl FnMut(),
         mut checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
@@ -236,7 +241,7 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
         self.release_retired_history(runtime)?;
         while let Some(work) = self.pending.first() {
             checkpoint(1)?;
-            runtime.retire_owner_component(work)?;
+            runtime.retire_owner_component(execution, work)?;
             self.pending.remove(0);
             self.retired_component_count += 1;
             after_component_progress();
