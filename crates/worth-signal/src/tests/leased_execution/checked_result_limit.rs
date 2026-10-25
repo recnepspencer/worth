@@ -89,6 +89,13 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
 
 #[test]
 fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets() {
+    use super::support::private_authority_process::{
+        run_with_private_authority, NativeExecutionEvidence,
+    };
+    if run_with_private_authority(
+        "tests::leased_execution::checked_result_limit::omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets",
+        NativeExecutionEvidence::ResultCapacity,
+    ) { return; }
     let mut graph = SignalGraph::new();
     let node = graph
         .node()
@@ -109,7 +116,9 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
             &|context| {
                 // An omitted declaration adapts to the finite process owner.
                 // It cannot promise unbounded post-effect admission.
-                assert!(context.result_capacity_bytes().is_some());
+                // D12's maximal grant for this single-producer shape under
+                // the isolated 512 MiB process ceiling, with no own ceiling.
+                assert_eq!(context.result_capacity_bytes(), Some(3_656_928));
                 calls.fetch_add(1, Ordering::SeqCst);
                 Ok(result().with_label("owned-output".repeat(8192)))
             },
@@ -120,4 +129,5 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 7);
     assert_eq!(lease.charged_memory_bytes(), 0);
+    println!("RESULT_CAPACITY exact grant verified and result tickets refunded");
 }
