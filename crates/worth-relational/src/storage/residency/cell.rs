@@ -52,7 +52,10 @@ enum ResidencyState {
 
 #[derive(Debug)]
 pub(crate) struct RelationalRegionResidency {
-    partition_id: PartitionId,
+    pub(super) partition_id: PartitionId,
+    pub(super) checkpoint_bindings: Mutex<
+        std::collections::BTreeMap<[u8; 32], crate::durability::data::RelationalCheckpointRegion>,
+    >,
     state: Mutex<ResidencyState>,
     backing: Option<RelationalColdRegion>,
     raw_head: OnceLock<Result<Arc<ResidentRegion>, Cause>>,
@@ -64,6 +67,18 @@ impl RelationalRegionResidency {
     pub(crate) fn cold(cold: RelationalColdRegion) -> Arc<Self> {
         Arc::new(Self {
             partition_id: cold.partition_id,
+            checkpoint_bindings: Mutex::new(std::collections::BTreeMap::from([(
+                cold.schema_carrier_digest,
+                crate::durability::data::RelationalCheckpointRegion {
+                    partition_id: cold.partition_id,
+                    content_digest: cold.content_digest,
+                    entity_slots: cold.entity_slots,
+                    relation_slots: cold.relation_slots,
+                    unavailable_records: cold.unavailable_records,
+                    head: cold.head,
+                    history: cold.history,
+                },
+            )])),
             backing: Some(cold.clone()),
             raw_head: OnceLock::new(),
             raw_full: OnceLock::new(),
@@ -95,6 +110,7 @@ impl RelationalRegionResidency {
         });
         let cell = Arc::new(Self {
             partition_id: region.partition.partition_id,
+            checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
             raw_head: OnceLock::new(),
             raw_full: OnceLock::new(),
@@ -147,7 +163,7 @@ impl RelationalRegionResidency {
                 && let ResidencyState::Head { cold, .. } = &*state
             {
                 let region = self.raw_full(limit)?;
-                cold.kind_authority.verify_full(&region, limit)?;
+                let region = cold.kind_authority.admit_full(&region, limit)?;
                 *state = ResidencyState::Full(region);
             }
             match &*state {
@@ -171,6 +187,53 @@ impl RelationalRegionResidency {
                 *state = ResidencyState::Damaged(failure.clone());
                 Err(failure)
             }
+        }
+    }
+
+    pub(crate) fn resident_inventory(
+        &self,
+    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match &*state {
+            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
+                region.partition.allocation_inventory()
+            }
+            _ => Default::default(),
+        }
+    }
+
+    pub(crate) fn residency_allocation_bytes(&self) -> u64 {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let resident = matches!(
+            &*state,
+            ResidencyState::Head { .. } | ResidencyState::Full(_)
+        );
+        (std::mem::size_of::<Self>()
+            + 2 * std::mem::size_of::<usize>()
+            + if resident {
+                std::mem::size_of::<ResidentRegion>() + 2 * std::mem::size_of::<usize>()
+            } else {
+                0
+            }) as u64
+    }
+
+    pub(crate) fn resident_commitment_bytes(&self) -> u64 {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match &*state {
+            ResidencyState::Head { region, .. } | ResidencyState::Full(region) => region
+                .commitment
+                .as_ref()
+                .map_or(0, |commitment| commitment.allocation_bytes()),
+            _ => 0,
         }
     }
 
@@ -220,6 +283,10 @@ impl RelationalRegionResidency {
         self.raw_head.take();
         self.raw_full.take();
         self.backing = None;
+        self.checkpoint_bindings
+            .get_mut()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clear();
         let state = self
             .state
             .get_mut()

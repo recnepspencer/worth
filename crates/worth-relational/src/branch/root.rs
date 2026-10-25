@@ -30,6 +30,8 @@ mod output_publication;
 mod owner_allocation_ledger;
 #[path = "root_readmission.rs"]
 mod readmission;
+#[path = "root_region_access.rs"]
+mod region_access;
 #[path = "root_schema.rs"]
 mod schema;
 #[path = "root_schema_meaning.rs"]
@@ -50,6 +52,8 @@ pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum RelationalBranchRootCaptureDenial {
     PublishedPartitionMissing(PartitionId),
+    DuplicateRegion(PartitionId),
+    SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {
         descriptor_root: [u8; 32],
@@ -304,53 +308,11 @@ impl RelationalBranchRoot {
         self.regions.materialization_unavailable_records() > 0
     }
 
-    pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.regions
-            .get(partition_id)
-            .map(|region| region.partition.as_ref())
-    }
-
-    pub(crate) fn visit_content_cache_allocations(
-        &self,
-        partition_id: PartitionId,
-        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
-    ) {
-        if let Some(region) = self.regions.get(partition_id) {
-            region
-                .partition
-                .full_view()
-                .commitment()
-                .visit_allocations(visitor);
-        }
-    }
-
-    pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
-        self.regions.materialize().keys().copied().collect()
-    }
-
-    pub(crate) fn partition_ids_iter(&self) -> impl Iterator<Item = PartitionId> + '_ {
-        self.regions.partition_ids_iter()
-    }
-
-    pub(crate) fn try_visit_partitions<E>(
-        &self,
-        visit: impl FnMut(super::RelationalPartitionVisit) -> Result<(), E>,
-    ) -> Result<(), E> {
-        self.regions.try_visit_partitions(visit)
-    }
-
-    pub(crate) fn try_for_each_partition_id<E>(
-        &self,
-        visit: impl FnMut(PartitionId) -> Result<(), E>,
-    ) -> Result<(), E> {
-        self.regions.try_for_each_partition_id(visit)
-    }
-
     /// Logical authoritative partition payload bytes reachable from this root.
     pub(crate) fn logical_partition_payload_bytes(&self) -> u64 {
         self.regions
             .values()
-            .map(|region| region.allocation_inventory.authoritative_bytes)
+            .map(|region| region.allocation_inventory().authoritative_bytes)
             .sum()
     }
 

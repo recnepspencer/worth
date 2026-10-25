@@ -1,6 +1,9 @@
 //! Read-only placement adapter. Relational verifies its own member and artifact
 //! frames after Store has verified physical integrity and current membership.
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU64, Ordering},
+    Arc,
+};
 
 use worth_relational::facade::durability::{
     RelationalDurableColdSource, RelationalDurableMemberLocator,
@@ -15,8 +18,17 @@ use worth_store::physical_runtime::{
 #[cfg(test)]
 mod tests;
 
+/// Calls through the home's demand-read port, including typed refusals.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RelationalStoreColdReadCounters {
+    pub member_reads: u64,
+    pub commit_reads: u64,
+}
+
 pub(crate) struct StoreColdSource {
     serving: Arc<ServingPhysicalRuntime>,
+    member_reads: AtomicU64,
+    commit_reads: AtomicU64,
 }
 
 impl std::fmt::Debug for StoreColdSource {
@@ -27,7 +39,17 @@ impl std::fmt::Debug for StoreColdSource {
 
 impl StoreColdSource {
     pub(crate) fn new(serving: Arc<ServingPhysicalRuntime>) -> Self {
-        Self { serving }
+        Self {
+            serving,
+            member_reads: AtomicU64::new(0),
+            commit_reads: AtomicU64::new(0),
+        }
+    }
+    pub(crate) fn counters(&self) -> RelationalStoreColdReadCounters {
+        RelationalStoreColdReadCounters {
+            member_reads: self.member_reads.load(Ordering::Relaxed),
+            commit_reads: self.commit_reads.load(Ordering::Relaxed),
+        }
     }
 }
 
@@ -37,6 +59,7 @@ impl RelationalDurableColdSource for StoreColdSource {
         locator: RelationalDurableMemberLocator,
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
+        self.member_reads.fetch_add(1, Ordering::Relaxed);
         if locator.length > limit {
             return Err(Cause::LimitExceeded {
                 length: locator.length,
@@ -74,6 +97,7 @@ impl RelationalDurableColdSource for StoreColdSource {
     }
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        self.commit_reads.fetch_add(1, Ordering::Relaxed);
         self.serving
             .canonical_commits()
             .map_err(|_| Cause::SourceUnavailable)?

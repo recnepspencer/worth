@@ -11,9 +11,10 @@ pub(crate) struct RelationalRootRegion {
     pub(super) id: u64,
     pub(super) partition_id: PartitionId,
     pub(super) partition: RelationalRegionRetention,
-    pub(super) allocation_inventory:
-        crate::storage::overlay::RelationalPartitionAllocationInventory,
+    allocation_inventory: Option<crate::storage::overlay::RelationalPartitionAllocationInventory>,
     pub(super) content_digest: [u8; 32],
+    pub(super) entity_slots: usize,
+    pub(super) relation_slots: usize,
     pub(super) content_values_hashed: u64,
     materialization_unavailable_records: usize,
 }
@@ -47,8 +48,10 @@ impl RelationalRootRegion {
         let content_digest = content_commitment.digest(partition.partition_id);
         let (allocation_inventory, materialization_unavailable_records) =
             if let Some((previous, journal)) = previous {
-                let inventory = partition
-                    .allocation_inventory_since(&previous.partition, previous.allocation_inventory);
+                let inventory = partition.allocation_inventory_since(
+                    &previous.partition,
+                    previous.allocation_inventory(),
+                );
                 let counts = unavailable_delta(
                     &partition.entity_arena,
                     &previous.partition.entity_arena,
@@ -74,8 +77,10 @@ impl RelationalRootRegion {
             creation_root_id,
             id,
             partition_id: partition.partition_id,
-            allocation_inventory,
+            allocation_inventory: Some(allocation_inventory),
             content_digest,
+            entity_slots: partition.entity_arena.slot_count(),
+            relation_slots: partition.relation_arena.slot_count(),
             partition: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
                 partition,
                 content_commitment,
@@ -85,24 +90,50 @@ impl RelationalRootRegion {
         })
     }
 
+    pub(super) fn from_checkpoint(
+        creation_root_id: u64,
+        id: u64,
+        checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
+    ) -> Self {
+        Self {
+            creation_root_id,
+            id,
+            partition_id: checkpoint.partition_id,
+            partition: RelationalRegionRetention::new(checkpoint.cell),
+            allocation_inventory: None,
+            content_digest: checkpoint.content_digest,
+            entity_slots: checkpoint.entity_slots,
+            relation_slots: checkpoint.relation_slots,
+            content_values_hashed: 0,
+            materialization_unavailable_records: checkpoint.unavailable_records,
+        }
+    }
+
+    pub(super) fn allocation_inventory(
+        &self,
+    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
+        self.allocation_inventory
+            .unwrap_or_else(|| self.partition.cell().resident_inventory())
+    }
+
     pub(super) fn materialization_unavailable_records(&self) -> usize {
         self.materialization_unavailable_records
     }
 
     pub(super) fn observation(&self) -> RelationalRootRegionObservation {
-        debug_assert_eq!(self.partition.partition_id, self.partition_id);
+        let inventory = self.allocation_inventory();
         RelationalRootRegionObservation {
             creation_root_id: self.creation_root_id,
             region_id: self.id,
             partition_id: self.partition_id,
             root_region_bytes: std::mem::size_of::<Self>() as u64,
-            partition_state_bytes: self.partition.residency_allocation_bytes(),
-            authoritative_bytes: self.allocation_inventory.authoritative_bytes,
-            diagnostic_bytes: self.allocation_inventory.diagnostic_bytes,
-            retention_metadata_bytes: self.allocation_inventory.retention_metadata_bytes,
-            allocator_bookkeeping_bytes: self.allocation_inventory.allocator_bookkeeping_bytes,
-            optional_cache_bytes: self.allocation_inventory.optional_cache_bytes
-                + self.partition.full_view().commitment().allocation_bytes(),
+            partition_state_bytes: self.partition.cell().residency_allocation_bytes(),
+            authoritative_bytes: inventory.authoritative_bytes,
+            diagnostic_bytes: inventory.diagnostic_bytes,
+            retention_metadata_bytes: inventory.retention_metadata_bytes,
+            allocator_bookkeeping_bytes: inventory.allocator_bookkeeping_bytes,
+            optional_cache_bytes: inventory.optional_cache_bytes
+                + self.partition.cell().resident_commitment_bytes(),
         }
     }
 

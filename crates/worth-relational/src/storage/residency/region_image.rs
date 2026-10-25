@@ -10,8 +10,8 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-const MAGIC: &[u8] = b"WORTH-REL-REG1\n";
-const VERSION: u16 = 1;
+const MAGIC: &[u8] = b"WORTH-REL-REG2\n";
+const VERSION: u16 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RelationalRegionImageKind {
@@ -37,8 +37,6 @@ pub(crate) struct RegionHeadImage {
 pub(crate) struct RegionHistoryImage {
     pub(crate) entities: Vec<Vec<VersionedEntityMetadataImage>>,
     pub(crate) relations: Vec<Vec<VersionedRelationMetadataImage>>,
-    pub(crate) adjacency_kinds: Vec<RegionAdjacencyKinds>,
-    pub(crate) reverse_adjacency_kinds: Vec<RegionAdjacencyKinds>,
 }
 
 #[derive(Serialize, Deserialize)]

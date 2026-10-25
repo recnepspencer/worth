@@ -284,3 +284,23 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
 
 #[path = "kind_authority_tests.rs"]
 mod kind_authority_tests;
+
+#[test]
+fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
+    let fixture = region_with_history();
+    let captured = fixture
+        .cell
+        .capture_checkpoint(
+            &fixture.cold.schema,
+            fixture.cold.schema_carrier_digest,
+            &fixture.cold.symbols,
+        )
+        .unwrap();
+    assert_eq!(captured.leaf.content_digest, fixture.expected_digest);
+    assert!(captured.members.iter().all(|member| matches!(
+        member,
+        crate::durability::data::RelationalCheckpointMember::Carried { .. }
+    )));
+    assert_eq!(fixture.source.reads.load(Ordering::SeqCst), 0);
+    assert_eq!(fixture.cell.leases.load(Ordering::SeqCst), 0);
+}

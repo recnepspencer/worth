@@ -1,13 +1,13 @@
 //! Adjacency buckets are accelerators, not truth. Verify their complete current
-//! membership against admitted relation heads, and historical membership against
-//! retained relation metadata, before issuing a serving lease.
+//! membership against admitted relation heads. Historical buckets are rebuilt
+//! from retained relation metadata before a full serving lease is issued.
 use std::collections::BTreeMap;
 use std::sync::{Arc, OnceLock, Weak};
 
 use super::{RelationalRegionResidency, ResidentRegion};
 use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
-use crate::storage::partition::{AdjacencyKindBasis, SparseAdjacencyTable};
+use crate::storage::partition::AdjacencyKindBasis;
 
 #[derive(Debug, Default)]
 pub(crate) struct RelationalRegionKindAuthority {
@@ -64,7 +64,11 @@ impl RelationalRegionKindAuthority {
         Ok(())
     }
 
-    pub(super) fn verify_full(&self, region: &ResidentRegion, limit: u64) -> Result<(), Cause> {
+    pub(super) fn admit_full(
+        &self,
+        region: &Arc<ResidentRegion>,
+        limit: u64,
+    ) -> Result<Arc<ResidentRegion>, Cause> {
         self.verify_head(region, limit)?;
         let mut authority =
             BTreeMap::from([(region.partition.partition_id, region.partition.clone())]);
@@ -80,16 +84,13 @@ impl RelationalRegionKindAuthority {
         }
         crate::storage::partition::rebuild_adjacency_kind_buckets(&mut authority)
             .map_err(|_| Cause::IntegrityMismatch)?;
-        let expected = authority
-            .get(&region.partition.partition_id)
+        let partition = authority
+            .remove(&region.partition.partition_id)
             .ok_or(Cause::Damaged)?;
-        if historical(&region.partition.adjacency) != historical(&expected.adjacency)
-            || historical(&region.partition.reverse_adjacency)
-                != historical(&expected.reverse_adjacency)
-        {
-            return Err(Cause::IntegrityMismatch);
-        }
-        Ok(())
+        Ok(Arc::new(ResidentRegion {
+            partition,
+            commitment: region.commitment.clone(),
+        }))
     }
 
     fn cell(&self, id: PartitionId) -> Result<Arc<RelationalRegionResidency>, Cause> {
@@ -99,20 +100,4 @@ impl RelationalRegionKindAuthority {
             .and_then(|(_, cell)| cell.upgrade())
             .ok_or(Cause::SourceUnavailable)
     }
-}
-
-fn historical(table: &SparseAdjacencyTable) -> BTreeMap<usize, BTreeMap<KindId, Vec<RelationId>>> {
-    table
-        .iter()
-        .map(|(&slot, adjacency)| {
-            (
-                slot,
-                adjacency
-                    .checkpoint_kind_memberships(AdjacencyKindBasis::Historical)
-                    .into_iter()
-                    .filter(|(_, ids)| !ids.is_empty())
-                    .collect(),
-            )
-        })
-        .collect()
 }

@@ -105,7 +105,7 @@ pub(crate) use root::{
     RelationalBranchRootIdentityIssuer, RelationalBranchRootSchemaAuthority,
     RelationalBranchRootState, RelationalRootAuthoritativeAllocationKind,
 };
-pub(crate) use root_checkpoint::RelationalBranchRootCheckpoint;
+pub(crate) use root_checkpoint::{RelationalBranchRootCheckpoint, RelationalRootRegionCheckpoint};
 pub(crate) use root_regions::{
     RelationalPersistentRegionAllocationKind, RelationalPersistentRegionSet,
 };

@@ -31,3 +31,4 @@ pub use recovered_history::RelationalStoreJournalRefusal;
 pub use recovered_transitions::RelationalStoreTransitionJournalRefusal;
 
 mod cold_source;
+pub use cold_source::RelationalStoreColdReadCounters;

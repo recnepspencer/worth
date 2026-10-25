@@ -14,9 +14,10 @@ mod manifest_capture;
 mod member_frame;
 mod member_source;
 pub(crate) use checkpoint_decoding::{decode_checkpoint, decode_checkpoint_from_source};
+pub(crate) use checkpoint_encoding::encode_captured;
 #[cfg(test)]
 pub(crate) use checkpoint_encoding::encode_checkpoint;
-pub(crate) use checkpoint_encoding::encode_checkpoint_members;
+pub(crate) use manifest_capture::CapturedManifest;
 
 /// A checkpoint decoded from native bytes. Decoding readmits managed text and
 /// the canonical envelopes; recovery still checks continuity before use.

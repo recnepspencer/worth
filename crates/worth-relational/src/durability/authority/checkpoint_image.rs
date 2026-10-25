@@ -95,7 +95,7 @@ impl CapturedCheckpointBasis {
             record_slot_frontiers: Vec::new(),
             envelopes,
             partition_images: partitions
-                .into_iter()
+                .materialize_owned_partitions().into_iter()
                 .map(|partition| partition_to_image_with_contracts(partition, mirror_plans, &mirror_contracts))
                 .collect::<Result<Vec<_>, _>>()?,
             aspect_contracts: mirror_contracts.portable_contracts(),

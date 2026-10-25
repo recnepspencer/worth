@@ -21,7 +21,7 @@ pub(super) struct CapturedCheckpointBasis {
         crate::history::data::CommitId,
         crate::branch::RelationalBranchRootDescriptor,
     >,
-    pub(super) partitions: Vec<crate::storage::overlay::PartitionState>,
+    pub(super) partitions: crate::runtime::PartitionEdition,
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -147,7 +147,7 @@ impl CapturedCheckpointBasis {
                 .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
                 .collect(),
             envelopes,
-            partitions: runtime.materialize_partitions(),
+            partitions: runtime.acquire_partition_edition(),
             mirror_schema_authority,
             aspect_contracts: runtime
                 .schema_contract_runtime

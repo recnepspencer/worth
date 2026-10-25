@@ -29,12 +29,14 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
         policy.check_live()?;
-        let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
-        let coverage = crate::durability::access::checkpoint_coverage(&checkpoint);
-        let transitions = checkpoint.coverage.up_to_branch_transition;
-        let (bytes, sections, members) =
-            crate::durability::log::native_checkpoint_codec::encode_checkpoint_members(
-                &checkpoint,
+        let captured = self
+            .capture_checkpoint_basis()?
+            .build_native_capture(policy, self.runtime.durability.cold_source())?;
+        let coverage = captured.manifest.covered_position;
+        let transitions = captured.manifest.coverage.up_to_branch_transition;
+        let (bytes, sections, members, publications) =
+            crate::durability::log::native_checkpoint_codec::encode_captured(
+                captured,
                 policy,
                 artifact_policy,
             )?;
@@ -50,7 +52,8 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 coverage,
                 transitions,
             )
-            .with_captured_members(members),
+            .with_captured_members(members)
+            .with_region_publications(publications),
         )
     }
 

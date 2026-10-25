@@ -39,11 +39,6 @@ pub(crate) fn capture_region_members(
             .iter_mut()
             .map(std::mem::take)
             .collect(),
-        adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Historical),
-        reverse_adjacency_kinds: capture_kinds(
-            &partition.reverse_adjacency,
-            AdjacencyKindBasis::Historical,
-        ),
     };
     let head = RegionHeadImage {
         partition: image,

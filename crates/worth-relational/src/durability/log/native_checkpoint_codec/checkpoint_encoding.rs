@@ -1,8 +1,10 @@
 use super::checkpoint_wire::{ByteString, CheckpointWire};
 use super::manifest_capture::CapturedManifest;
+#[cfg(test)]
+use crate::durability::data::DurableCheckpoint;
 use crate::durability::data::{
-    DurableCheckpoint, NativeCheckpointSectionBytes, RelationalCheckpointArtifactPolicy,
-    RelationalCheckpointMember, RelationalNativeCheckpointCaptureDenial,
+    NativeCheckpointSectionBytes, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
+    RelationalNativeCheckpointCaptureDenial,
 };
 use std::io::Write;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer, ExecutionImmutableBytes};
@@ -25,6 +27,7 @@ pub(crate) fn encode_checkpoint(
     Ok((bytes, sections))
 }
 
+#[cfg(test)]
 pub(crate) fn encode_checkpoint_members(
     checkpoint: &DurableCheckpoint,
     policy: ExecutionAllocationPolicy<'_, '_>,
@@ -39,14 +42,61 @@ pub(crate) fn encode_checkpoint_members(
 > {
     policy.check_live()?;
     let captured = CapturedManifest::capture(checkpoint, policy)?;
+    let (bytes, sections, members, _) = encode_captured(captured, policy, placement)?;
+    Ok((bytes, sections, members))
+}
+
+pub(crate) fn encode_captured(
+    mut captured: CapturedManifest,
+    policy: ExecutionAllocationPolicy<'_, '_>,
+    placement: RelationalCheckpointArtifactPolicy,
+) -> Result<
+    (
+        ExecutionImmutableBytes,
+        NativeCheckpointSectionBytes,
+        Vec<RelationalCheckpointMember>,
+        Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
+    ),
+    RelationalNativeCheckpointCaptureDenial,
+> {
     let embedded = placement == RelationalCheckpointArtifactPolicy::Embedded;
+    if embedded {
+        for member in captured.members.values_mut() {
+            if let RelationalCheckpointMember::Carried { locator } = member {
+                let locator = *locator;
+                let source = captured.cold_source.as_ref().ok_or_else(|| {
+                    super::manifest_capture::corrupt(
+                        "inline capture lacks its carried member source",
+                    )
+                })?;
+                let bytes = source.read_member(locator, 1 << 30).map_err(|cause| {
+                    super::manifest_capture::corrupt(format!("carried inline member: {cause:?}"))
+                })?;
+                if super::member_frame::locator(&bytes) != locator {
+                    return Err(super::manifest_capture::corrupt(
+                        "carried inline member integrity mismatch",
+                    )
+                    .into());
+                }
+                *member = RelationalCheckpointMember::New {
+                    locator,
+                    bytes: bytes.into(),
+                };
+            }
+        }
+    }
     let wire = CheckpointWire {
         manifest: captured.manifest,
         members: if embedded {
             captured
                 .members
                 .iter()
-                .map(|(key, bytes)| (*key, ByteString(bytes)))
+                .map(|(key, member)| {
+                    let RelationalCheckpointMember::New { bytes, .. } = member else {
+                        unreachable!("inline member admitted above")
+                    };
+                    (*key, ByteString(bytes))
+                })
                 .collect()
         } else {
             Vec::new()
@@ -108,10 +158,6 @@ pub(crate) fn encode_checkpoint_members(
             .ok_or_else(|| frame_mismatch("native checkpoint section accounting overflow"))?,
     };
     drop(wire);
-    let members = captured
-        .members
-        .into_iter()
-        .map(|(locator, bytes)| RelationalCheckpointMember::New { locator, bytes })
-        .collect();
-    Ok((bytes.seal()?, sections, members))
+    let members = captured.members.into_values().collect();
+    Ok((bytes.seal()?, sections, members, captured.publications))
 }

@@ -312,18 +312,7 @@ impl HistorySubsystem {
         }
         Ok(roots
             .into_iter()
-            .map(|(commit_id, root)| {
-                let partitions = root
-                    .partition_ids()
-                    .into_iter()
-                    .filter_map(|partition_id| root.partition_state(partition_id).cloned())
-                    .collect();
-                crate::branch::RelationalBranchRootCheckpoint::new(
-                    commit_id,
-                    partitions,
-                    root.retained_schema_authority(),
-                )
-            })
+            .map(|(_, root)| crate::branch::RelationalBranchRootCheckpoint::new(root))
             .collect())
     }
 

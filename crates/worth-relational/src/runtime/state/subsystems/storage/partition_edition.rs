@@ -59,6 +59,10 @@ impl PartitionEdition {
             .map(|region| region.lease().clone())
     }
 
+    pub(crate) fn cells(&self) -> impl Iterator<Item = (PartitionId, &RelationalRegionRetention)> {
+        self.partitions.iter().map(|(id, region)| (*id, region))
+    }
+
     pub(crate) fn len(&self) -> usize {
         self.partitions.len()
     }

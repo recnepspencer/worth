@@ -90,16 +90,6 @@ pub(super) fn load_full(
         .map_err(|_| Cause::Damaged)?;
     partition.adjacency = head.partition.adjacency.clone();
     partition.reverse_adjacency = head.partition.reverse_adjacency.clone();
-    install_kinds(
-        &mut partition.adjacency,
-        history.adjacency_kinds,
-        AdjacencyKindBasis::Historical,
-    )?;
-    install_kinds(
-        &mut partition.reverse_adjacency,
-        history.reverse_adjacency_kinds,
-        AdjacencyKindBasis::Historical,
-    )?;
     let (commitment, _) = PartitionContentCommitment::capture(&partition, &cold.symbols, None)
         .map_err(|_| Cause::Damaged)?;
     verify_leaf(cold, &partition, &commitment)?;

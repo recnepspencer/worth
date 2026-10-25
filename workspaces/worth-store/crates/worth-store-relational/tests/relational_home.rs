@@ -42,3 +42,6 @@ mod selected_checkpoint;
 mod transition_oracle;
 #[path = "relational_home/workload.rs"]
 mod workload;
+
+#[path = "relational_home/residency_capture.rs"]
+mod residency_capture;

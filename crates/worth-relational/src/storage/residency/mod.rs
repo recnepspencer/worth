@@ -19,3 +19,6 @@ pub(crate) use cell::{RelationalColdRegion, RelationalRegionResidency};
 
 mod retention;
 pub(crate) use retention::RelationalRegionRetention;
+
+mod checkpoint_capture;
+pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;

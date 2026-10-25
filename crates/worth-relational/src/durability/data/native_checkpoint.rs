@@ -18,6 +18,7 @@ pub struct RelationalNativeCheckpoint {
     captured_sections: Option<NativeCheckpointSectionBytes>,
     captured_coverage: Option<NativeCheckpointCoverage>,
     members: Arc<[super::RelationalCheckpointMember]>,
+    publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last
@@ -49,6 +50,7 @@ impl Clone for RelationalNativeCheckpoint {
             captured_sections: self.captured_sections,
             captured_coverage: self.captured_coverage,
             members: self.members.clone(),
+            publications: self.publications.clone(),
         }
     }
 }
@@ -80,6 +82,7 @@ impl RelationalNativeCheckpoint {
             captured_sections: None,
             captured_coverage: None,
             members: Arc::from([]),
+            publications: Arc::from([]),
         }
     }
 
@@ -99,6 +102,7 @@ impl RelationalNativeCheckpoint {
             captured_sections: None,
             captured_coverage: None,
             members: Arc::from([]),
+            publications: Arc::from([]),
         })
     }
 
@@ -120,6 +124,23 @@ impl RelationalNativeCheckpoint {
         self
     }
 
+    /// Confirm that the manifest and its complete member set were selected in
+    /// one durable publication. The home calls this only after that decision,
+    /// even if its subsequent physical checkpoint is interrupted.
+    pub fn acknowledge_publication(&self) {
+        for publication in self.publications.iter() {
+            publication.acknowledge();
+        }
+    }
+
+    pub(crate) fn with_region_publications(
+        mut self,
+        publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
+    ) -> Self {
+        self.publications = publications.into();
+        self
+    }
+
     /// Available only on a checkpoint captured by this runtime, not bytes
     /// received from a caller or an enclosing checkpoint container.
     pub fn captured_sections(&self) -> Option<NativeCheckpointSectionBytes> {
@@ -137,6 +158,7 @@ impl RelationalNativeCheckpoint {
             bytes,
             region,
             members: Arc::from([]),
+            publications: Arc::from([]),
             captured_sections: Some(sections),
             captured_coverage: Some(NativeCheckpointCoverage {
                 position,
