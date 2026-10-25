@@ -1,10 +1,10 @@
 //! Refusals when a restored generated output's required invariants are checked.
 
-/// Why the invariant evidence of a prepared output was not admitted. Nothing
-/// was published.
 use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
 use worth_relational::facade::runtime::InvariantDecisionKind;
 
+/// Why the invariant evidence of a prepared output was not admitted. Nothing
+/// was published.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputInvariantAdmissionDenial {
     /// The evidence was recorded for a different branch.
