@@ -42,13 +42,22 @@ fn first_with_segment_bytes(
         command.env(WAL_SEGMENT_BYTES_ENV, bytes.get().to_string());
     }
     let mut child = command.spawn().unwrap();
-    let deadline = Instant::now() + Duration::from_secs(240);
+    // The 66-chunk world performs many separately bounded operations. Guard
+    // stalled progress, rather than treating their sum as one operation.
+    let mut deadline = Instant::now() + Duration::from_secs(240);
+    let mut last_progress = String::new();
     while !marker.is_file() {
+        if let Ok(progress) = fs::read_to_string(marker.with_extension("progress"))
+            && progress != last_progress
+        {
+            last_progress = progress;
+            deadline = Instant::now() + Duration::from_secs(240);
+        }
         if child.try_wait().unwrap().is_some() || Instant::now() >= deadline {
             let _ = child.kill();
             let output = child.wait_with_output().unwrap();
             panic!(
-                "pending V3 descriptor seam not reached: {} {}",
+                "pending V3 descriptor seam not reached after {last_progress:?}: {} {}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );

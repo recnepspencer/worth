@@ -23,3 +23,21 @@ slow-timeout = { period = "60s", terminate-after = 15 }
 filter = 'binary(/compile_fail|_ui$/)'
 test-group = 'compiler-boundary'
 slow-timeout = { period = "60s", terminate-after = 15 }
+
+# These proofs build scale worlds or enumerate every physical interruption.
+# Give each the whole fixture pool: their internal readers/writers still run
+# concurrently, while unrelated worlds cannot consume the same I/O budget.
+# Their aggregate work exceeds the ordinary ten-minute case limit on Windows;
+# individual Store operations retain their own deadlines and all proof checks.
+[[profile.default.overrides]]
+platform = 'cfg(windows)'
+filter = '''
+test(canonical_world_reopens_into_the_cold_extent_interleave) +
+test(held_readers_block_retirement_without_scanning_every_root) +
+test(every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_value) +
+test(every_media_operation_of_an_anchored_publication_recovers_to_the_old_or_new_value) +
+test(recovered_seal_refuses_a_different_serving_policy_then_reopens_under_its_own) +
+test(pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head)
+'''
+threads-required = "num-test-threads"
+slow-timeout = { period = "60s", terminate-after = 30 }

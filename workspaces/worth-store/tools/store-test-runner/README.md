@@ -39,6 +39,13 @@ scenarios each run complete Store instances with bounded checkpoint seams;
 using the host's logical CPU count can oversubscribe those fixtures. An explicit
 `RUST_TEST_THREADS` override takes precedence for Cargo runs.
 
+On Windows, the six scale and exhaustive interruption proofs named in
+`.config/nextest.toml` reserve the entire nextest fixture pool and have a
+thirty-minute aggregate limit. Their own concurrent readers and writers still
+run, and Store operation deadlines remain enforced. The long pending-WAL
+producer reports completed operations to its parent; four minutes without
+progress fails fixture setup.
+
 `relational_home` requires the certification feature because its crash oracle
 uses the compiled media and interruption controls. Windows confinement tests
 create real file and directory symlinks. Run with Windows Developer Mode enabled
