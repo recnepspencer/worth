@@ -101,9 +101,33 @@ impl ScratchUiWorld {
         .unwrap();
         std::fs::write(
             root.join("Cargo.toml"),
-            "[workspace]\nresolver = \"2\"\n\n[workspace.package]\nedition = \"2021\"\nversion = \"0.0.0\"\nlicense = \"UNLICENSED\"\n\n[workspace.dependencies]\n\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n\n[profile.test]\n\n[profile.diagnostic-test]\ninherits = \"test\"\n",
+            "[workspace]\nresolver = \"2\"\nmembers = [\"dependency\"]\n\n[workspace.package]\nedition = \"2021\"\nversion = \"0.0.0\"\nlicense = \"UNLICENSED\"\n\n[workspace.dependencies]\n\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n\n[profile.test]\nopt-level = 1\n\n[profile.test.package.\"*\"]\nopt-level = 2\n\n[profile.diagnostic-test]\ninherits = \"test\"\n",
         )
         .unwrap();
+        // Exercise the real diagnostic profile against a base policy that
+        // optimizes dependencies. Its build script observes Cargo's decision.
+        let store_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .nth(2)
+            .unwrap();
+        let declared = std::fs::read_to_string(store_root.join("Cargo.toml"))
+            .unwrap()
+            .parse::<toml::Table>()
+            .unwrap();
+        let mut fixture = std::fs::read_to_string(root.join("Cargo.toml"))
+            .unwrap()
+            .parse::<toml::Table>()
+            .unwrap();
+        fixture
+            .get_mut("profile")
+            .unwrap()
+            .as_table_mut()
+            .unwrap()
+            .insert(
+                "diagnostic-test".to_owned(),
+                declared["profile"]["diagnostic-test"].clone(),
+            );
+        std::fs::write(root.join("Cargo.toml"), toml::to_string(&fixture).unwrap()).unwrap();
         std::fs::write(root.join("Cargo.lock"), "# UI harness identity lock\n").unwrap();
         std::fs::write(
             root.join("dependency/Cargo.toml"),
@@ -114,6 +138,11 @@ impl ScratchUiWorld {
             root.join("dependency/src/lib.rs"),
             "pub struct Sealed { value: u64 }\n\
              impl Sealed { pub fn value(&self) -> u64 { self.value } }\n",
+        )
+        .unwrap();
+        std::fs::write(
+            root.join("dependency/build.rs"),
+            "fn main() { assert_eq!(std::env::var(\"OPT_LEVEL\").unwrap(), \"0\", \"diagnostic dependencies must remain unoptimized\"); }\n",
         )
         .unwrap();
         for fixture in ["private_a.rs", "private_b.rs"] {

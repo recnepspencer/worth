@@ -48,6 +48,11 @@ incremental sessions explicitly; the repository's global Cargo setting otherwise
 overrides their profiles. Compiled dependencies remain cached in each lane's
 target directory.
 
+The diagnostic profile keeps every dependency unoptimized: isolated compiler
+workspaces would otherwise apply the ordinary dependency optimization wildcard
+to Store's own crates. Compiler denials still use the declared profile and
+retain their exact semantic checks.
+
 Nextest runs compiler-boundary fixtures one at a time because trybuild shares
 Cargo's artifact lock. On Windows their aggregate limit is thirty minutes,
 including the cold dependency build and every pass/fail fixture.

@@ -141,3 +141,9 @@ incremental = false
 inherits = "test"
 debug = 2
 incremental = false
+opt-level = 0
+
+# Isolated compiler fixtures see Store members as path dependencies. Keep all
+# type-checking dependencies unoptimized instead of inheriting test's wildcard.
+[profile.diagnostic-test.package]
+"*".opt-level = 0
