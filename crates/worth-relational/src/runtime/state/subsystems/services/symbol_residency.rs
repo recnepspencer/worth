@@ -45,18 +45,21 @@ impl RuntimeSymbolResidency {
         }
     }
 
-    pub(super) fn detached(&self) -> Self {
-        Self {
-            by_id: self.by_id.clone(),
-            by_value: self.by_value.clone(),
-            source: self.source.clone(),
-            pages: Mutex::new(
-                self.pages
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
-                    .clone(),
-            ),
-        }
+    pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
+        let pages = self
+            .pages
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let owner = snapshot();
+        (
+            Self {
+                by_id: self.by_id.clone(),
+                by_value: self.by_value.clone(),
+                source: self.source.clone(),
+                pages: Mutex::new(pages.clone()),
+            },
+            owner,
+        )
     }
 
     pub(super) fn same_directory(&self, other: &Self) -> bool {

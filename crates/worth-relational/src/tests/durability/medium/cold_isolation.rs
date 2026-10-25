@@ -12,14 +12,32 @@ fn recover_relations(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     missing_history: Option<PartitionId>,
 ) -> ColdRoot {
+    recover_shape(execution, missing_history, 16, false)
+}
+
+fn recover_shape(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    missing_history: Option<PartitionId>,
+    count: u32,
+    ring: bool,
+) -> ColdRoot {
     let runtime = durable_runtime_with_test_schema();
     let mut entities = Vec::new();
-    for id in 1..=16 {
+    let mut targets = Vec::new();
+    for id in 1..=count {
         let partition = PartitionId(id);
         let a = create_entity_in_partition(execution, &runtime, "source", partition);
         let b = create_entity_in_partition(execution, &runtime, "target", partition);
-        create_relation_in_partition(execution, &runtime, a, b, "edge", partition);
         entities.push(a);
+        targets.push(b);
+    }
+    for (index, &a) in entities.iter().enumerate() {
+        let b = if ring {
+            entities[(index + 1) % entities.len()]
+        } else {
+            targets[index]
+        };
+        create_relation_in_partition(execution, &runtime, a, b, "edge", a.partition_id);
     }
     let native = runtime
         .durability_authority()
@@ -126,7 +144,7 @@ fn missing_history_damages_only_its_own_region() {
         .root()
         .unwrap();
     let first = root
-        .demand_regions_full(execution, [PartitionId(5)])
+        .demand_regions_full(execution, &cold.runtime.services.symbols, [PartitionId(5)])
         .unwrap_err();
     assert!(
         matches!(&first, crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(f)
@@ -134,7 +152,7 @@ fn missing_history_damages_only_its_own_region() {
     );
     let reads = cold.source.reads.load(Ordering::Relaxed);
     assert_eq!(
-        root.demand_regions_full(execution, [PartitionId(5)])
+        root.demand_regions_full(execution, &cold.runtime.services.symbols, [PartitionId(5)])
             .unwrap_err(),
         first
     );
@@ -173,6 +191,7 @@ fn fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write() {
             .effective()
             .is_some());
         create_entity_in_partition(execution, runtime, name, PartitionId(id as u32));
+        update_entity_and_release_snapshot(execution, runtime, cold.entities[id - 1], name);
     }
     for runtime in [&cold.runtime, &fork] {
         for entity in &cold.entities {
@@ -185,3 +204,7 @@ fn fork_of_a_cold_runtime_shares_cells_and_both_copies_can_read_and_write() {
         }
     }
 }
+
+#[path = "cold_fork_edits.rs"]
+mod fork_edits;
+

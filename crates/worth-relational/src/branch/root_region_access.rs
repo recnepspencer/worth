@@ -4,11 +4,13 @@ impl RelationalBranchRoot {
     pub(crate) fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
                 region.partition.demand_full(execution, 1 << 30)?;
+                region.partition.lease().admit_symbols(execution, symbols)?;
             }
         }
         Ok(())

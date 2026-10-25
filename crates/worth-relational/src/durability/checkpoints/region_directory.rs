@@ -51,7 +51,10 @@ impl ReadmittedRegionDirectory {
         Ok(Self {
             schemas,
             directory,
-            symbols,
+            // Cells retain an isolated readmission dictionary, never a live
+            // runtime's writable symbol authority. Serving leases readmit into
+            // the demanding runtime separately, including after a fork.
+            symbols: symbols.detached_owner_snapshot(),
             cells: BTreeMap::new(),
         })
     }

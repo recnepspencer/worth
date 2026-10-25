@@ -60,24 +60,35 @@ impl Eq for RuntimeSymbolTable {}
 
 impl RuntimeSymbolTable {
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
-        let state = self
-            .state
+        let cold = self
+            .cold
             .read()
-            .expect("runtime symbol table lock poisoned");
-        let configuration = self
-            .configuration_snapshot
-            .read()
-            .expect("runtime symbol configuration snapshot lock poisoned");
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        let snapshot = || {
+            let state = self
+                .state
+                .read()
+                .expect("runtime symbol table lock poisoned");
+            let configuration = self
+                .configuration_snapshot
+                .read()
+                .expect("runtime symbol configuration snapshot lock poisoned");
+            (state.clone(), configuration.clone())
+        };
+        // Page admission locks pages before the owner dictionary. Fork uses
+        // that same order, so copied admission marks and text are one snapshot.
+        let (cold, (state, configuration)) = match cold {
+            Some(pages) => {
+                let (pages, snapshot) = pages.detached_with_owner(snapshot);
+                (Some(Arc::new(pages)), snapshot)
+            }
+            None => (None, snapshot()),
+        };
         Self {
-            state: Arc::new(RwLock::new(state.clone())),
-            configuration_snapshot: Arc::new(RwLock::new(configuration.clone())),
-            cold: Arc::new(RwLock::new(
-                self.cold
-                    .read()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
-                    .as_ref()
-                    .map(|pages| Arc::new(pages.detached())),
-            )),
+            state: Arc::new(RwLock::new(state)),
+            configuration_snapshot: Arc::new(RwLock::new(configuration)),
+            cold: Arc::new(RwLock::new(cold)),
         }
     }
     pub(crate) fn normalize_client_keys(

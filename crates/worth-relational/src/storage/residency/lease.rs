@@ -21,6 +21,19 @@ pub(crate) struct RelationalResidencyLease<Level> {
 }
 
 impl<Level> RelationalResidencyLease<Level> {
+    /// A shared cell authenticates bytes once; each demanding runtime admits
+    /// their dictionary closure into its own independently writable authority.
+    pub(crate) fn admit_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        symbols.demand_symbol_ids(
+            execution,
+            super::required_symbols::collect(&self.region.partition),
+        )
+    }
+
     pub(super) fn accepted(
         cell: Arc<RelationalRegionResidency>,
         region: Arc<ResidentRegion>,
