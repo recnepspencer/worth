@@ -80,7 +80,6 @@ impl AggregateScanReader<'_, '_> {
         self.accounting.complete_adjacency(
             read.work_units(),
             row_count,
-            read.endpoint_records_reserved(),
             self.plan.relation_member(),
         )?;
         self.accounting.record_cold_lookup(row_count);
@@ -120,7 +119,6 @@ impl AggregateScanReader<'_, '_> {
         self.accounting.complete_adjacency(
             relations.work_units(),
             relations.relation_records_examined(),
-            relations.endpoint_records_reserved(),
             self.plan.relation_member(),
         )?;
         if relations.into_records().as_slice() != [record.clone()] {

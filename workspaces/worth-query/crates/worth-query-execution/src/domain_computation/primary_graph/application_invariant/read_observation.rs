@@ -16,7 +16,7 @@ impl InvariantReadObservation {
     }
 
     pub(super) fn adjacency(&self) {
-        self.record(|reads| reads.record_adjacency(0, 0));
+        self.record(|reads| reads.record_adjacency(0));
     }
 
     pub(super) fn edge(&self) {

@@ -49,3 +49,48 @@ read equality and meaningful locality/growth checks. MENTALITY section 7 and
 the performance laws explicitly reject exact counts as performance contracts.
 Counts describe reads, not a promise that lawful implementation changes preserve
 an incidental number.
+
+## Phase 1, slice 2: snapshot endpoint observations
+
+Boundary review: snapshot traversal and body collection record native endpoint
+reservation counts before acquiring endpoint metadata. Aggregate scans also
+pass reservation counts to the same observation method despite performing no
+separate endpoint lookup. Decision adjacency facts derive their recomparison
+allowance from these public observations. Native adjacency reads, the existing
+private projection budget and retained decision facts keep their authority.
+
+Adversarial constraint: a native adjacency scan may reserve records and stop
+before any endpoint lookup. A later endpoint read may acquire metadata and
+reject its kind. Observations must distinguish those cases without changing
+which ordinary reads or decision rechecks fit the existing budget.
+
+Plan:
+
+1. Remove the endpoint-reservation argument from `record_adjacency`, including
+   aggregate and body-collection callers. Keep native budget consumption as is.
+2. Record endpoint metadata only inside the native `endpoint` acquisition
+   callback. Count acquired but invalid metadata; count nothing when no callback
+   ran. Remove the body-collection anchor's duplicate pre-recording.
+3. Move adjacency recomparison demand to the private budget's consumed-work
+   delta, preserving its extra final check and minimum allowance. Public read
+   observations no longer select that allowance.
+4. Add real snapshot tests for partial scans, endpoint rejection and pre-read
+   cancellation; retain the lawful counterpart. Exercise existing decision
+   adjacency/currentness, body requirements and aggregate tests, plus the
+   affected grouped public certification families. Check formatting, dirty
+   composition/size/function advisories, boundary-check and agent-context.
+5. The persistent reviewer checks the living patch and final results before
+   this slice's commit. No master merge until all Phase 1 work is complete.
+
+Destination topology stays under `invariant_projection`: `traversal` owns
+endpoint observations, `work` owns the existing private budget, and aggregate
+accounting consumes native charges without inventing endpoint observations.
+Tests stay at their owning operation. No additional budget, traversal engine,
+public metric type or exported test door is introduced.
+
+Snapshot field preflight observations, declared receipt unification, public
+examples/differentials and Proprietary adoption remain later Phase 1 work.
+Managed computation range carriage also copies historical read observations
+into a current run (`computation_calls/ranges.rs`). The shared observation slice
+must keep actual read observations separate from the existing private carried
+budget charges; historic reads must not masquerade as current acquisitions.

@@ -11,10 +11,11 @@
 /// Reads refused before acquisition add no observation. These are Query boundary
 /// observations, not storage-engine I/O or authorization work.
 ///
-/// Snapshot projections still include reserved endpoint capacity in
-/// `endpoint_records_read`, before acquiring those endpoints. Installed rules
-/// record acquired metadata instead. Phase 1 unification must separate that
-/// existing projection reservation accounting from actual read observations.
+/// Snapshot endpoint counts record metadata acquired by the endpoint reader,
+/// including metadata rejected after acquisition. Endpoint reservation capacity
+/// belongs to the private projection budget and is not an endpoint observation.
+/// Snapshot field counts still include admitted calls that may stop before
+/// acquiring a value; Phase 1 field-observation unification remains outstanding.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryInvariantProjectionWork {
     equality_lookups: usize,
@@ -148,11 +149,9 @@ impl WorthQueryInvariantProjectionWork {
     pub(in crate::domain_computation::primary_graph) fn record_adjacency(
         &mut self,
         examined: usize,
-        endpoints: usize,
     ) {
         self.adjacency_lists_read += 1;
         self.adjacency_edges_inspected += examined;
-        self.endpoint_records_read += endpoints;
     }
 
     pub(in crate::domain_computation::primary_graph) fn record_edge(&mut self) {
@@ -247,6 +246,16 @@ impl WorthQueryInvariantProjectionWorkBudget {
         }
     }
 
+    /// Rechecks need the adjacency read's existing charge plus a final admission
+    /// check. A read refused before charging retains the empty-read allowance.
+    /// Public diagnostic observations do not determine this private demand.
+    pub(super) fn adjacency_recomparison_limit_since(self, before: Self) -> usize {
+        self.consumed
+            .saturating_sub(before.consumed)
+            .saturating_add(1)
+            .max(2)
+    }
+
     pub(super) fn begin_call(&mut self) {
         self.call = Some((self.consumed, 0));
     }
@@ -301,8 +310,12 @@ mod tests {
     #[test]
     fn absent_projection_work_keeps_unrepresentable_charges_owned_and_refused() {
         let mut work = Budget::unbounded();
+        let before = work;
         assert!(work.consume(usize::MAX));
+        assert_eq!(work.adjacency_recomparison_limit_since(before), usize::MAX);
+        let before_stop = work;
         assert!(!work.consume(1));
+        assert_eq!(work.adjacency_recomparison_limit_since(before_stop), 2);
         assert_eq!(work.consumed, usize::MAX);
         assert_eq!(work.remaining(), None);
         assert!(work.exceeded());
