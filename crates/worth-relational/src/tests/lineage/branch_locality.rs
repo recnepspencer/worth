@@ -15,6 +15,7 @@ fn lineage_branch_divergence_is_queryable() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

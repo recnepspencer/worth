@@ -1,7 +1,8 @@
-//! Canonical-form check for a readmitted payload: re-serialize the admitted
-//! commit and compare it, byte for byte and without allocating, against the
-//! digested payload. Equal bytes make the payload digest a faithful identity
-//! of the commit, so two encodings of one commit can never carry two digests.
+//! Canonical-form check shared by Relational's framed durable artifacts:
+//! re-serialize the admitted record and compare it, byte for byte and without
+//! allocating, against the digested payload. Equal bytes make the payload
+//! digest a faithful identity of the record, so two encodings of one commit
+//! or one branch transition can never carry two digests.
 
 use std::io::{self, Write};
 
@@ -9,8 +10,8 @@ use serde::Serialize;
 
 /// True when `payload` is exactly the canonical encoding of `canonical`.
 ///
-/// Cost: one serializer pass over the commit; O(payload bytes) comparison.
-pub(super) fn is_canonical_payload(canonical: &impl Serialize, payload: &[u8]) -> bool {
+/// Cost: one serializer pass over the record; O(payload bytes) comparison.
+pub(crate) fn is_canonical_payload(canonical: &impl Serialize, payload: &[u8]) -> bool {
     let mut comparison = PayloadComparison {
         remaining: payload,
         diverged: false,

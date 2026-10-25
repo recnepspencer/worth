@@ -308,7 +308,7 @@ mod tests {
             .expect("committed main remains forkable");
         let child = BranchId("strategy-root-child".to_owned());
         runtime
-            .fork_branch(child.clone(), basis)
+            .fork_branch(execution, child.clone(), basis)
             .expect("child branch installs a committed root");
         runtime
             .history

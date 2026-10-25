@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
+use crate::durability::medium::RelationalTransitionHistoryReader;
 use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
@@ -18,6 +19,8 @@ pub(crate) struct DurabilitySubsystem {
     /// The durable medium every commit is published to before it becomes
     /// live. A forked runtime is a speculative copy and never inherits it.
     medium: Option<Arc<RelationalDurableMediumBinding>>,
+    /// Speculative copies retain historical reads, never publication access.
+    transition_history: Option<RelationalTransitionHistoryReader>,
 }
 
 impl DurabilitySubsystem {
@@ -34,6 +37,13 @@ impl DurabilitySubsystem {
 
     pub(crate) fn medium(&self) -> Option<Arc<RelationalDurableMediumBinding>> {
         self.medium.clone()
+    }
+
+    pub(crate) fn transition_history(&self) -> Option<RelationalTransitionHistoryReader> {
+        self.medium
+            .as_ref()
+            .map(|medium| medium.transition_history())
+            .or_else(|| self.transition_history.clone())
     }
 
     pub(crate) fn push_log_envelope(&self, commit: PositionedCanonicalCommit) {
@@ -101,6 +111,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::default()),
             medium: None,
+            transition_history: None,
         }
     }
 
@@ -108,6 +119,7 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: self.state.detached(),
             medium: None,
+            transition_history: self.transition_history(),
         }
     }
 }

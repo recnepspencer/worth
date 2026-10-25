@@ -95,8 +95,13 @@ pub(super) fn create_entity(
     entity
 }
 
-pub(super) fn fork_seed_branch_from_main(runtime: &mut RelationalRuntime, branch: &str) {
+pub(super) fn fork_seed_branch_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    branch: &str,
+) {
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         runtime,
         BranchId(branch.to_string()),
         &BranchId("main".to_string()),

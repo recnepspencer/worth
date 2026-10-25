@@ -269,8 +269,16 @@ fn unresolved_durable_transition_installs_nothing_and_names_its_fate() {
         panic!("the medium could not say whether the transition is durable")
     };
     let offered = medium.offered().pop().expect("the medium was asked first");
-    assert_eq!(fate.position(), offered.position());
-    assert_eq!(fate.digest(), offered.payload_digest());
+    let crate::durability::medium::RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position,
+        digest,
+        ..
+    } = fate.subject()
+    else {
+        panic!("a commit's unresolved fate names the commit")
+    };
+    assert_eq!(position, offered.position());
+    assert_eq!(digest, offered.payload_digest());
     assert_eq!(main_basis(&runtime).descriptor(), predecessor.descriptor());
     assert_eq!(runtime.history().immutable_commit_count(), count);
     assert_eq!(runtime.visibility.published_snapshot_handle_count(), 0);

@@ -146,6 +146,7 @@ impl ModelRun {
             .world
             .branch_port()
             .create_product_branch(
+                request_execution,
                 self.heads["main"].clone(),
                 ProductBranchCreationIntent::from_source("work", plans).unwrap(),
                 &RuntimeWorldCancellationSource::new().token(),

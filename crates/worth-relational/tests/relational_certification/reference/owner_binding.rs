@@ -128,7 +128,7 @@ fn public_owner_binding_path_prepares_merge_without_test_adapter() {
         .expect("main has a fork source");
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
         .expect("storm branch is installed by the owner");
 
     let raw = MergeExecutionRequest::new(
@@ -160,7 +160,7 @@ fn unrelated_branch_progress_is_not_staled_by_main_branch_movement() {
         .expect("main has a fork source");
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
         .expect("storm branch is installed by the owner");
 
     let storm_identity = world
@@ -228,7 +228,7 @@ fn source_movement_cannot_mutate_a_forked_target_reference() {
         .expect("main exposes an exact source basis");
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
         .expect("storm fork succeeds");
 
     let before = capture_reference_evidence(

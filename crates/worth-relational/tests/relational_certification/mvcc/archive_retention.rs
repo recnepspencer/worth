@@ -17,7 +17,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
-    let identity = fork_branch(&world.runtime, "storm");
+    let identity = fork_branch(execution, &world.runtime, "storm");
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let immutable_observation = basis.observation();
     let retained_commit = immutable_observation.canonical_commit().cloned();
@@ -50,7 +50,7 @@ fn archive_preserves_existing_reads_and_closes_every_new_mutation_door() {
         .unwrap();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
 
-    world.runtime.archive_branch(&identity).unwrap();
+    world.runtime.archive_branch(execution, &identity).unwrap();
     assert_eq!(basis.observation().selected_root_identity(), retained_root);
     assert_eq!(
         immutable_observation.canonical_commit(),

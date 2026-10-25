@@ -11,6 +11,7 @@ fn branch_creation_and_branch_targeted_commits_build_a_version_graph() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -65,6 +66,7 @@ fn branch_history_helpers_expose_ancestor_and_merge_base_reasoning() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -101,6 +103,7 @@ fn duplicate_branch_creation_is_rejected() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -108,6 +111,7 @@ fn duplicate_branch_creation_is_rejected() {
     let error = runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

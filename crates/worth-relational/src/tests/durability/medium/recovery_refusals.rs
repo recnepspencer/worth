@@ -54,10 +54,11 @@ fn an_artifact_whose_frame_is_damaged_is_refused_at_the_read() {
 
     medium.flip_artifact_byte(PatchStreamPosition(2), last_byte);
 
-    assert!(
-        medium.recovery_source().is_err(),
-        "a payload that no longer matches its digest never becomes an artifact"
-    );
+    let error = medium.recovery_source().unwrap_err();
+    let TestRecoverySourceRefusal::Commit(refusal) = error else {
+        panic!("expected commit frame refusal: {error:?}");
+    };
+    assert!(matches!(refusal, crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal::DigestMismatch { .. }));
 }
 
 #[test]
@@ -134,7 +135,14 @@ fn a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt() {
         .unwrap();
     assert_eq!(native.covered_position(), Some(PatchStreamPosition(2)));
 
-    attached_test_medium(&runtime).file_checkpoint_under(PatchStreamPosition(1), native);
+    let covered_transitions = native
+        .covered_branch_transitions()
+        .expect("a captured checkpoint knows its transition coverage");
+    attached_test_medium(&runtime).file_checkpoint_under(
+        PatchStreamPosition(1),
+        covered_transitions,
+        native,
+    );
 
     assert_eq!(
         refusal_class(execution, &runtime),

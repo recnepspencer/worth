@@ -165,6 +165,8 @@ fn prepare_history(
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
+            &checkpoint.branch_lifecycle,
+            &checkpoint.retired_branch_names,
             &mut branch_roots.partitions,
             &branch_roots.schema_authorities,
             &restored.config.schema.registry,
@@ -177,6 +179,7 @@ fn prepare_history(
             )
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
+    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
     Ok(history)
 }
 

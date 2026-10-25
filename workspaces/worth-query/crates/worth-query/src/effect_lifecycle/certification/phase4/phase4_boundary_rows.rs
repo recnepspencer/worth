@@ -188,6 +188,7 @@ pub(super) fn stale_after_admission_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -244,6 +245,7 @@ pub(super) fn stale_after_lowering_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

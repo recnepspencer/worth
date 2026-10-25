@@ -229,6 +229,7 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

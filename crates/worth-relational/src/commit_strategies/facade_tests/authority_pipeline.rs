@@ -84,7 +84,11 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId("strategy-version-child".to_owned()), basis)
+        .fork_branch(
+            request_execution,
+            BranchId("strategy-version-child".to_owned()),
+            basis,
+        )
         .expect("child branch installs from main");
 
     let request = canonical_request();

@@ -24,6 +24,7 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("field-sibling".to_owned()),
             &BranchId("main".to_owned()),
         )

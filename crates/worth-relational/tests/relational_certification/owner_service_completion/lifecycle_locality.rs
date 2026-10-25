@@ -57,8 +57,13 @@ fn parked_branch_lifecycle_call_does_not_block_unrelated_basis_service() {
     let waits_before = coordination_waits(&runtime, &parked_identity);
     let lifecycle_port = services.lifecycle_port();
     let lifecycle_identity = parked_identity.clone();
-    let lifecycle_worker =
-        std::thread::spawn(move || lifecycle_port.archive_branch(&lifecycle_identity));
+    let lifecycle_worker = std::thread::spawn({
+        let lifecycle_request = std::sync::Arc::clone(&host_request);
+        move || {
+            let execution = &worth_execution::ExecutionRequest::serial(&lifecycle_request);
+            lifecycle_port.archive_branch(execution, &lifecycle_identity)
+        }
+    });
     let lifecycle_is_parked =
         wait_for_coordination_wait(&runtime, &parked_identity, waits_before, LOCALITY_TIMEOUT);
 

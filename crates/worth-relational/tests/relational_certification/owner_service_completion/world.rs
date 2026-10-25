@@ -74,6 +74,7 @@ pub(super) fn commit_direct(
 }
 
 pub(super) fn fork_through_services(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     services: &RelationalOwnerServicePorts,
     target: &str,
 ) -> RelationalForkOutcome {
@@ -81,16 +82,20 @@ pub(super) fn fork_through_services(
     let (_, source) = fork
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("committed main supplies an exact fork basis");
-    fork.fork_branch(BranchId(target.to_owned()), source)
+    fork.fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("fork service installs the exact target")
 }
 
-pub(super) fn fork_direct(runtime: &RelationalRuntime, target: &str) -> RelationalForkOutcome {
+pub(super) fn fork_direct(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    target: &str,
+) -> RelationalForkOutcome {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("committed main supplies a direct fork basis");
     runtime
-        .fork_branch(BranchId(target.to_owned()), source)
+        .fork_branch(execution, BranchId(target.to_owned()), source)
         .expect("direct compatibility path installs the exact target")
 }
 
@@ -105,7 +110,7 @@ pub(super) fn committed_fork(
     let runtime = empty_runtime();
     let services = runtime.owner_component_services();
     commit_through_services(execution, &runtime, &services, "owner-service-world");
-    let identity = fork_through_services(&services, target)
+    let identity = fork_through_services(execution, &services, target)
         .target_identity()
         .clone();
     (runtime, services, identity)

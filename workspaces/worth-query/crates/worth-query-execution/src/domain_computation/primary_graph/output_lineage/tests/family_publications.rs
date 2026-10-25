@@ -51,10 +51,13 @@ impl Court {
             ),
         )
         .unwrap();
+        let host_request = crate::test_request_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let RuntimeWorldBranchCreationOutcome::Performed(child) = world
             .application
             .product_runtime()
             .create_product_branch(
+                execution,
                 &product,
                 None,
                 intent,

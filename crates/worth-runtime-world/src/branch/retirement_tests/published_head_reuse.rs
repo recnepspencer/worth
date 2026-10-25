@@ -50,6 +50,8 @@ fn exact_reuse_after_a_publication_selects_the_published_commit() {
 /// refused as a stale source head and charges nothing.
 #[test]
 fn exact_reuse_from_a_displaced_source_head_denies_as_stale_before_any_charge() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (mut fixture, owner, first) = setup_with_relational_source(3);
     let held_source = first.clone();
     seed_relational_source(&owner, &mut fixture, first);
@@ -61,6 +63,7 @@ fn exact_reuse_from_a_displaced_source_head_denies_as_stale_before_any_charge() 
     let denial = RuntimeWorldBranchService::create_product_branch(
         &owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             held_source.clone(),
             reuse_intent("displaced-head-child"),
             &cancellation.token(),

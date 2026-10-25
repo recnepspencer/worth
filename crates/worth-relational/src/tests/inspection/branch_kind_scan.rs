@@ -20,7 +20,7 @@ fn a_fork_view_scans_its_own_writes_and_not_its_parents_later_ones() {
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
     let forked = crate::tests::support::create_relation_in_partition_on_branch(
         execution,
@@ -83,7 +83,7 @@ fn a_historical_branch_view_scans_live_only_at_the_current_version() {
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &BranchId("main".to_owned()))
+        .fork_branch_from(execution, feature.clone(), &BranchId("main".to_owned()))
         .expect("the fork publishes");
     let later = create_entity(execution, &runtime, "later");
     let forked = crate::tests::support::create_entity_in_partition_on_branch(

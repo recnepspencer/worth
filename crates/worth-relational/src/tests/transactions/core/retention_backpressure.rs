@@ -1,5 +1,6 @@
 use crate::facade::branch::{
-    RelationalBranchBasisDenial, RelationalBranchDeleteDenial, RelationalForkDenial,
+    RelationalBranchBasisDenial, RelationalBranchDeleteDenial, RelationalBranchTransitionStop,
+    RelationalForkDenial,
 };
 use crate::facade::history::BranchId;
 use crate::facade::mvcc::{
@@ -122,21 +123,23 @@ fn pending_delete_reserves_its_retired_name_before_other_deletions_consume_capac
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
     let branch_id = BranchId("reserved-pending-delete".to_owned());
-    runtime.fork_branch(branch_id.clone(), source).unwrap();
+    runtime
+        .fork_branch(execution, branch_id.clone(), source)
+        .unwrap();
     let identity = runtime.branch_identity(&branch_id).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let transaction = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
 
-    let waiting = runtime.delete_branch(&identity).unwrap();
+    let waiting = runtime.delete_branch(execution, &identity).unwrap();
     assert_eq!(waiting.waiting().unwrap().active_operation_count(), 1);
     runtime.fill_retired_branch_name_capacity_for_test();
     drop(transaction);
     drop(basis);
 
     assert!(runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .is_some());
@@ -155,9 +158,9 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .unwrap();
     assert_eq!(
         fork_runtime
-            .fork_branch(BranchId("capacity-fork".to_owned()), source)
+            .fork_branch(execution, BranchId("capacity-fork".to_owned()), source)
             .unwrap_err(),
-        RelationalForkDenial::RetentionCapacityExhausted,
+        RelationalBranchTransitionStop::Denied(RelationalForkDenial::RetentionCapacityExhausted),
     );
     assert!(fork_runtime
         .branch_identity(&BranchId("capacity-fork".to_owned()))
@@ -226,7 +229,7 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
     deletion_runtime
-        .fork_branch(BranchId("capacity-delete".to_owned()), source)
+        .fork_branch(execution, BranchId("capacity-delete".to_owned()), source)
         .unwrap();
     let deletion_identity = deletion_runtime
         .branch_identity(&BranchId("capacity-delete".to_owned()))
@@ -234,9 +237,9 @@ fn head_and_retirement_capacity_fail_before_reference_movement() {
     deletion_runtime.set_retention_capacity_for_test(8, 0);
     assert_eq!(
         deletion_runtime
-            .delete_branch(&deletion_identity)
+            .delete_branch(execution, &deletion_identity)
             .unwrap_err(),
-        RelationalBranchDeleteDenial::RetentionBackpressure,
+        RelationalBranchTransitionStop::Denied(RelationalBranchDeleteDenial::RetentionBackpressure),
     );
     deletion_runtime
         .observe_branch(&deletion_identity)

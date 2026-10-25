@@ -15,11 +15,15 @@ pub(crate) fn expect_durability_failure(
     }
 }
 
+/// Fork `branch_name` from main on a serial request of its own, as a test
+/// fixture step whose request is irrelevant to the behavior under test.
 pub(crate) fn create_branch_from_main(runtime: &RelationalRuntime, branch_name: &str) -> BranchId {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let branch_id = BranchId(branch_name.to_string());
     runtime
         .history_authority()
-        .fork_branch_from(branch_id.clone(), &BranchId("main".to_string()))
+        .fork_branch_from(execution, branch_id.clone(), &BranchId("main".to_string()))
         .unwrap();
     branch_id
 }

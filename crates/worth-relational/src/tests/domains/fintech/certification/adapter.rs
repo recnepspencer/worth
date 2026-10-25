@@ -163,7 +163,7 @@ impl WorkflowCertificationAdapter for RelationalFintechWorkflowCertificationAdap
                 })
             }
             FintechWorkflowStep::OpenAnalysisBranch { alias } => {
-                let branch = open_analysis_branch(&mut session.world);
+                let branch = open_analysis_branch(execution, &mut session.world);
                 session.named_branches.insert((*alias).to_string(), branch);
                 Ok(WorkflowStepOutcome::applied())
             }

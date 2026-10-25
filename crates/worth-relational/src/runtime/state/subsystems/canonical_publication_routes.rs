@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
+use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
 use dashmap::DashMap;
 
@@ -7,8 +7,13 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
+#[path = "canonical_publication_routes/branch_transition_stream.rs"]
+mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[cfg(test)]
+#[path = "canonical_publication_routes/lifecycle_order_control.rs"]
+mod lifecycle_order_control;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/performed_stream.rs"]
@@ -16,6 +21,10 @@ mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
 
+use branch_transition_stream::BranchTransitionStream;
+pub(crate) use branch_transition_stream::{
+    BranchTransitionPublication, BranchTransitionRecordError,
+};
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
@@ -29,7 +38,10 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     by_commit: DashMap<CommitId, Arc<CanonicalPublicationRoute>>,
     by_version: DashMap<VersionId, Arc<CanonicalPublicationRoute>>,
     performed_stream: PerformedPublicationStream,
+    branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
+    #[cfg(test)]
+    lifecycle_order: lifecycle_order_control::LifecycleOrderControl,
 }
 
 impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
@@ -83,7 +95,10 @@ impl Default for RelationalCanonicalPublicationRoutes {
             by_commit: DashMap::new(),
             by_version: DashMap::new(),
             performed_stream: PerformedPublicationStream::default(),
+            branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
+            #[cfg(test)]
+            lifecycle_order: Default::default(),
         }
     }
 }
@@ -230,18 +245,6 @@ impl RelationalCanonicalPublicationRoutes {
         self.by_commit
             .get(&commit_id)
             .is_some_and(|route| !route.settled.load(Ordering::Acquire))
-    }
-
-    pub(crate) fn enter_fork(
-        &self,
-    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
-        match self.lifecycle.try_write() {
-            Ok(guard) => Ok(guard),
-            Err(TryLockError::WouldBlock) => {
-                Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
-            }
-            Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
-        }
     }
 
     pub(crate) fn performed_snapshot(&self) -> Vec<Arc<PositionedCanonicalCommit>> {

@@ -1,18 +1,21 @@
-//! Relational's durable medium, implemented over the home's canonical commit
-//! journal.
+//! Relational's durable medium, implemented over the home's two ordered
+//! journals: canonical commits at their positions, branch transitions at
+//! their sequences.
 //!
-//! Store never decodes the artifact. It persists the bytes at the artifact's
-//! position under one durable root decision and reports the fate in
-//! Relational's terms: durable, proven to have had no effect, or unknown.
+//! Store never decodes an artifact. It persists the bytes at the artifact's
+//! position or sequence under one durable root decision and reports the fate
+//! in Relational's terms: durable, proven to have had no effect, or unknown.
 
 use std::sync::Arc;
 
 use worth_relational::facade::durability::{
-    RelationalCanonicalCommitArtifact, RelationalDurableMedium, RelationalDurablePublication,
+    RelationalBranchTransitionArtifact, RelationalCanonicalCommitArtifact, RelationalDurableMedium,
+    RelationalDurablePublication,
 };
 use worth_store::physical_runtime::{
-    AdmittedRecordPlacementPolicy, OrderedJournalPublication, OrderedJournalPublicationFailure,
-    OrderedJournalPublished, PhysicalMutationDeadline, ServingPhysicalRuntime,
+    AdmittedRecordPlacementPolicy, OrderedJournal, OrderedJournalDenial, OrderedJournalPublication,
+    OrderedJournalPublicationFailure, OrderedJournalPublished, PhysicalMutationDeadline,
+    ServingPhysicalRuntime,
 };
 
 /// How long one journal publication may take before Store refuses it.
@@ -30,22 +33,15 @@ impl StoreJournalMedium {
     ) -> Self {
         Self { serving, placement }
     }
-}
 
-impl std::fmt::Debug for StoreJournalMedium {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        formatter
-            .debug_struct("StoreJournalMedium")
-            .finish_non_exhaustive()
-    }
-}
-
-impl RelationalDurableMedium for StoreJournalMedium {
-    fn publish(
+    /// Append `bytes` at `entry` of the borrowed journal.
+    fn publish_entry(
         &self,
-        artifact: &RelationalCanonicalCommitArtifact,
+        journal: Result<OrderedJournal<'_>, OrderedJournalDenial>,
+        entry: u64,
+        bytes: &[u8],
     ) -> RelationalDurablePublication {
-        let journal = match self.serving.canonical_commits() {
+        let journal = match journal {
             Ok(journal) => journal,
             Err(denial) => {
                 return RelationalDurablePublication::ProvenNoEffect {
@@ -60,12 +56,8 @@ impl RelationalDurableMedium for StoreJournalMedium {
                 detail: "publication deadline is not representable".to_owned(),
             };
         };
-        let publication = OrderedJournalPublication::new(
-            artifact.position().0,
-            artifact.as_bytes().to_vec(),
-            self.placement,
-            deadline,
-        );
+        let publication =
+            OrderedJournalPublication::new(entry, bytes.to_vec(), self.placement, deadline);
         match journal.publish(publication) {
             Ok(
                 OrderedJournalPublished::Committed(_)
@@ -73,6 +65,64 @@ impl RelationalDurableMedium for StoreJournalMedium {
             ) => RelationalDurablePublication::Committed,
             Err(failure) => publication_failure(failure),
         }
+    }
+}
+
+impl std::fmt::Debug for StoreJournalMedium {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("StoreJournalMedium")
+            .finish_non_exhaustive()
+    }
+}
+
+impl RelationalDurableMedium for StoreJournalMedium {
+    fn read_transition(
+        &self,
+        sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        RelationalBranchTransitionArtifact,
+        worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
+    > {
+        use worth_relational::facade::durability::RelationalDurableTransitionReadFailure as Failure;
+        let journal = self
+            .serving
+            .branch_transitions()
+            .map_err(|denial| Failure::Unavailable {
+                detail: format!("{denial:?}"),
+            })?;
+        let bytes = journal
+            .read(
+                sequence.0,
+                crate::recovered_transitions::MAXIMUM_TRANSITION_BYTES,
+            )
+            .map_err(|failure| Failure::Unavailable {
+                detail: format!("{failure:?}"),
+            })?;
+        RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.into_bytes())
+            .map_err(Failure::Frame)
+    }
+
+    fn publish(
+        &self,
+        artifact: &RelationalCanonicalCommitArtifact,
+    ) -> RelationalDurablePublication {
+        self.publish_entry(
+            self.serving.canonical_commits(),
+            artifact.position().0,
+            artifact.as_bytes(),
+        )
+    }
+
+    fn publish_transition(
+        &self,
+        artifact: &RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.publish_entry(
+            self.serving.branch_transitions(),
+            artifact.sequence().0,
+            artifact.as_bytes(),
+        )
     }
 }
 

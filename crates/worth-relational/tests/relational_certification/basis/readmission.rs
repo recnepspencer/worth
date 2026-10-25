@@ -42,7 +42,7 @@ fn unretained_descriptor_cannot_follow_a_moved_reference() {
     let program = world.program;
     let handles = world.handles;
     let branch_id = BranchId("storm".to_owned());
-    fork_supply_chain_branch_from_main(&runtime, branch_id.clone());
+    fork_supply_chain_branch_from_main(execution, &runtime, branch_id.clone());
     let identity = runtime.branch_identity(&branch_id).unwrap();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let descriptor = basis.descriptor().clone();

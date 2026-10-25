@@ -109,7 +109,9 @@ pub(super) fn map_world_denial(
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
-        | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
+        | RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+        ) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {

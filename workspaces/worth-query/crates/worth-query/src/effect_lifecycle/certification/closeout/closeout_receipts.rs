@@ -89,7 +89,7 @@ pub(super) fn mutation_receipt_surface(
         "before",
         BranchId("main".to_string()),
     );
-    fork_seed_branch_from_main(&mut runtime, branch);
+    fork_seed_branch_from_main(execution, &mut runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let raw = scenarios::raw_mutation_effect_with_binding(
         scenarios::runtime_workflow_binding_for_branch(
@@ -136,7 +136,7 @@ pub(super) fn batch_receipt_surface(
     let main = BranchId("main".to_string());
     let left = create_entity(execution, &mut runtime, "left", main.clone());
     let right = create_entity(execution, &mut runtime, "right", main);
-    fork_seed_branch_from_main(&mut runtime, branch);
+    fork_seed_branch_from_main(execution, &mut runtime, branch);
     let basis = EffectAuthoringBasis::from(scenarios::branch_mutation_basis(branch));
     let binding = scenarios::runtime_workflow_binding_for_branch(
         branch_snapshot_identity(&runtime, branch),

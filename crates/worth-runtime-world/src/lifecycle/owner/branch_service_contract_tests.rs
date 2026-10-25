@@ -92,10 +92,17 @@ fn create_reused_branch(
     source: &ProductBranchObservation,
     intent: ProductBranchCreationIntent,
 ) -> ProductBranchObservation {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let cancellation = RuntimeWorldCancellationSource::new();
     match RuntimeWorldBranchService::create_product_branch(
         owner,
-        RuntimeWorldBranchCreationRequest::new(source.clone(), intent, &cancellation.token()),
+        RuntimeWorldBranchCreationRequest::new(
+            execution,
+            source.clone(),
+            intent,
+            &cancellation.token(),
+        ),
     )
     .expect("exact reuse is admitted")
     {
@@ -108,6 +115,8 @@ fn create_reused_branch(
 
 #[test]
 fn installed_duplicate_name_maps_to_the_exact_branch_denial() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, root) = setup();
     let cancellation = RuntimeWorldCancellationSource::new();
     create_reused_branch(&owner, &root, reuse_intent("installed-duplicate"));
@@ -117,6 +126,7 @@ fn installed_duplicate_name_maps_to_the_exact_branch_denial() {
         RuntimeWorldBranchService::create_product_branch(
             &owner,
             RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root.clone(),
                 reuse_intent("installed-duplicate"),
                 &cancellation.token(),
@@ -129,6 +139,8 @@ fn installed_duplicate_name_maps_to_the_exact_branch_denial() {
 
 #[test]
 fn held_duplicate_name_maps_to_the_same_denial_and_drop_releases_it() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, root) = setup();
     let cancellation = RuntimeWorldCancellationSource::new();
     let held = owner
@@ -144,6 +156,7 @@ fn held_duplicate_name_maps_to_the_same_denial_and_drop_releases_it() {
         RuntimeWorldBranchService::create_product_branch(
             &owner,
             RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root.clone(),
                 reuse_intent("held-duplicate"),
                 &cancellation.token(),
@@ -161,6 +174,8 @@ fn held_duplicate_name_maps_to_the_same_denial_and_drop_releases_it() {
 /// is denied by name before any owner is contacted.
 #[test]
 fn creation_without_per_owner_plans_is_denied_before_any_owner_effect() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, root) = setup();
     let cancellation = RuntimeWorldCancellationSource::new();
     let before_history = owner.state.history.counters();
@@ -172,7 +187,12 @@ fn creation_without_per_owner_plans_is_denied_before_any_owner_effect() {
     assert!(matches!(
         RuntimeWorldBranchService::create_product_branch(
             &owner,
-            RuntimeWorldBranchCreationRequest::new(root.clone(), intent, &cancellation.token()),
+            RuntimeWorldBranchCreationRequest::new(
+                execution,
+                root.clone(),
+                intent,
+                &cancellation.token()
+            ),
         ),
         Err(RuntimeWorldBranchAdmissionDenial::PlansOmitted)
     ));

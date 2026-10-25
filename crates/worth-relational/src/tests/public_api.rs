@@ -129,7 +129,7 @@ fn main_movement_does_not_change_an_inherited_child_observation() {
         .expect("main exposes an owner-issued fork basis");
     let child_id = facade::history::BranchId("observation-child".to_owned());
     runtime
-        .fork_branch(child_id.clone(), source_basis)
+        .fork_branch(execution, child_id.clone(), source_basis)
         .expect("child retains the inherited immutable root");
     crate::tests::support::create_entity_outcome(execution, &runtime, "main-advances");
     let child = runtime.branch_identity(&child_id).unwrap();

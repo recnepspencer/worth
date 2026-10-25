@@ -154,10 +154,11 @@ impl<'runtime> ReplayAuthority<'runtime> {
     ) -> Result<ControlFlow<RelationalReplayOutcome, ReplayReconstruction>, RelationalRecoveryStop>
     {
         let replay_plan = replay_recovery_plan_for_chain(
+            execution,
             self.runtime,
             &admission.commit_closure,
             request.verification_mode,
-        );
+        )?;
         let runtime = match self
             .runtime
             .rebuild_runtime_from_plan(execution, replay_plan)

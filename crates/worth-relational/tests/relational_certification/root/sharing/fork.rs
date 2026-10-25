@@ -10,8 +10,8 @@ fn phase5_fork_observation_reports_shared_root_and_distinct_cells() {
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &expected);
-    fork_from_main(&world.runtime, "storm");
-    fork_from_main(&world.runtime, "maintenance");
+    fork_from_main(execution, &world.runtime, "storm");
+    fork_from_main(execution, &world.runtime, "maintenance");
 
     let identities = [
         world.runtime.main_branch_identity(),
@@ -90,7 +90,7 @@ fn standard_fanout_samples(
     let mut samples = Vec::with_capacity(fanouts.len());
     for ordinal in 0..*fanouts.last().expect("at least one fan-out sample") {
         let name = format!("standard-fanout-{ordinal}");
-        fork_from_main(&world.runtime, &name);
+        fork_from_main(execution, &world.runtime, &name);
         branches.push(branch_identity(&world.runtime, &name));
         let fanout = ordinal + 1;
         if fanouts.contains(&fanout) {
@@ -160,12 +160,16 @@ fn fitted_slope(samples: &[ForkFanoutSample]) -> f64 {
     covariance / variance
 }
 
-fn fork_from_main(runtime: &worth_relational::facade::runtime::RelationalRuntime, name: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    name: &str,
+) {
     let (_, source_basis) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId(name.to_owned()), source_basis)
+        .fork_branch(execution, BranchId(name.to_owned()), source_basis)
         .expect("fork remains metadata-only");
 }
 

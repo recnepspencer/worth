@@ -37,6 +37,7 @@ fn relational_fork_creation_compares_a_freshly_observed_source_token() {
     let denial = RuntimeWorldBranchService::create_product_branch(
         &owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             source.clone(),
             fork_intent(
                 "branch-source-token-stale",

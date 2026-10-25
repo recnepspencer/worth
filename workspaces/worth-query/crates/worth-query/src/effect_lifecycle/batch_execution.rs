@@ -147,22 +147,16 @@ impl EffectBatchDurabilityUnresolved {
     ) -> Self {
         let message = message.into();
         let batch_identity = lowered.batch_identity().clone();
-        let outcome_identity =
+        let outcome_identity = super::durability_unresolved_subject::field_unresolved_subject(
             WorthQueryEvidenceIdentity::compose(WorthQueryEvidenceScope::WorkflowMutationLowering)
                 .field_shape(
                     WorthQueryEvidenceTag::new("identity_family"),
                     "effect_batch_durability_unresolved_v1",
                 )
-                .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity)
-                .field_usize(
-                    WorthQueryEvidenceTag::new("commit_id"),
-                    unresolved.commit_id().0 as usize,
-                )
-                .field_usize(
-                    WorthQueryEvidenceTag::new("position"),
-                    unresolved.position().0 as usize,
-                )
-                .seal();
+                .field_evidence_identity(WorthQueryEvidenceTag::new("batch"), &batch_identity),
+            &unresolved,
+        )
+        .seal();
         Self {
             message,
             batch_identity,
@@ -193,8 +187,10 @@ impl EffectBatchDurabilityUnresolved {
         &self.counters
     }
 
-    pub fn commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.unresolved.commit_id()
+    /// The unresolved commit, or `None` when the publication blocking this
+    /// batch is an unresolved branch transition.
+    pub fn commit_id(&self) -> Option<worth_relational::facade::history::CommitId> {
+        super::durability_unresolved_subject::unresolved_commit_id(&self.unresolved)
     }
 
     /// The unresolved durable publication this stop retains.

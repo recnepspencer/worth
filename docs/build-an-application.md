@@ -3236,10 +3236,11 @@ cancellation and precommit atomicity are unchanged; real allocator refusals rema
 owned by their allocating operation. This installation does not bound aggregate
 process RSS or guarantee available RAM.
 
-`RetentionCounterOverflow` and `RetainedCompanionCounterOverflow` report an
-unrepresentable retained total with its original requested/retained operands.
-They are distinct from finite `RetentionCapacityExhausted` and
-`RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
+`RetentionCounterOverflow` reports an unrepresentable retained total with its
+original requested/retained operands. It is distinct from finite
+`RetentionCapacityExhausted` and does not trigger finite-capacity eviction.
+Companion admission reports a finite retained ceiling through
+`RetainedCompanionCapacityExhausted`.
 Preparation counter overflow likewise remains distinct from a supplied ceiling.
 Keep the returned original owner and its policy values on refusal; retry that
 owner with a fresh authorized request.

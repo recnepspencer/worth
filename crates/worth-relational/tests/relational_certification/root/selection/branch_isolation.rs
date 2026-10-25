@@ -28,7 +28,7 @@ fn main_advances_before_child_read_keeps_child_snapshot_on_fork_root() {
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork_from_main(&world.runtime, "storm");
+    fork_from_main(execution, &world.runtime, "storm");
     let child = branch_identity(&world.runtime, "storm");
     let child_root_before_main_advance = world
         .runtime
@@ -204,7 +204,7 @@ fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
         ),
     ];
     for (branch, _, _) in scenarios {
-        fork_from_main(&world.runtime, branch);
+        fork_from_main(execution, &world.runtime, branch);
     }
     let main_before = world
         .runtime
@@ -283,12 +283,16 @@ fn phase5_named_supply_chain_deltas_keep_sibling_roots_and_work_independent() {
     assert_eq!(main_after, main_before);
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("sibling fork shares the operating root");
 }
 

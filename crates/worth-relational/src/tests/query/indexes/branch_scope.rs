@@ -10,6 +10,7 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -88,6 +89,7 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -175,6 +177,7 @@ fn derived_index_contract_relation_field_equals_branch_scoped_generation_reports
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -286,6 +289,7 @@ fn derived_index_contract_branch_scoped_generation_reports_unsupported_branch() 
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

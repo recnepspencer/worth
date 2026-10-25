@@ -26,13 +26,14 @@ const LATER_CREATE: usize = 2_000_000;
 #[derive(Clone, Copy)]
 pub(crate) enum Target {
     Commit(usize),
+    BranchTransition(usize),
     Checkpoint(usize),
 }
 
 impl Target {
     pub(crate) fn index(self) -> usize {
         match self {
-            Self::Commit(index) | Self::Checkpoint(index) => index,
+            Self::Commit(index) | Self::BranchTransition(index) | Self::Checkpoint(index) => index,
         }
     }
 }
@@ -71,7 +72,11 @@ pub(crate) fn run_case(
     };
     apply(&home, execution, lead);
     let before = workload::artifacts_of(home.runtime());
+    let mut acknowledged_transitions = super::branch_lifecycle::artifacts_of_home(&home);
+    let mut transition_flight = InFlight::Nothing;
     let checkpoint_before = selected_checkpoint::generation(&home);
+    let transition_state_before = matches!(target, Target::BranchTransition(_))
+        .then(|| super::branch_lifecycle::state_of(home.runtime(), &script.records));
     media_faults::arm(&activations);
     let (ended, acknowledged, in_flight, checkpoints) = match target {
         Target::Commit(index) => {
@@ -93,6 +98,33 @@ pub(crate) fn run_case(
             let (ended, checkpoints) = checkpoint_outcome(outcome, checkpoint_before, case);
             (ended, before, InFlight::Nothing, checkpoints)
         }
+        Target::BranchTransition(index) => {
+            let outcome = script.steps[index].lifecycle(home.runtime(), execution);
+            assert!(
+                activations[0].is_consumed(),
+                "{case}: transition fault did not fire"
+            );
+            if outcome.is_err() {
+                assert_eq!(
+                    Some(super::branch_lifecycle::state_of(
+                        home.runtime(),
+                        &script.records
+                    )),
+                    transition_state_before,
+                    "{case}: stopped transition changed live state"
+                );
+            }
+            let (ended, acknowledged, flight) = super::transition_oracle::outcome(
+                &home,
+                &acknowledged_transitions,
+                outcome,
+                execution,
+                case,
+            );
+            acknowledged_transitions = acknowledged;
+            transition_flight = flight;
+            (ended, before, InFlight::Nothing, vec![checkpoint_before])
+        }
     };
     home.certification_abort();
 
@@ -104,9 +136,16 @@ pub(crate) fn run_case(
         "{case}: checkpoint {selected} selected, expected one of {checkpoints:?}"
     );
     let commits = assert_recovered(&recovered, script, &acknowledged, &in_flight, case);
+    let transition_landed = super::transition_oracle::assert_recovered(
+        &recovered,
+        &acknowledged_transitions,
+        &transition_flight,
+        case,
+    );
     let landed = match target {
         Target::Commit(_) => commits > acknowledged.len(),
         Target::Checkpoint(_) => selected > checkpoint_before,
+        Target::BranchTransition(_) => transition_landed,
     };
     assert_continues(
         prepared.location(),
@@ -155,7 +194,11 @@ fn commit_outcome(
                 .unwrap_or_else(|| panic!("{case}: unexpected commit error {error:?}"))
                 .clone();
             assert!(now == before, "{case}: an unresolved commit was installed");
-            assert_eq!(fate.position().0, before.len() as u64 + 1, "{case}");
+            assert_eq!(
+                super::crash_oracle::commit_subject(&fate).0 .0,
+                before.len() as u64 + 1,
+                "{case}"
+            );
             // A later commit that would otherwise publish is refused with the
             // same unresolved fate.
             let later = workload::commit(

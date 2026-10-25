@@ -47,8 +47,7 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         | CompanionPreflightStop::WorkCounterOverflow
         | CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }
-        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } => false,
+        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => false,
     }
 }
 
@@ -66,10 +65,6 @@ mod tests {
             CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 0 },
             CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: u64::MAX },
             CompanionPreflightStop::WorkCounterOverflow,
-            CompanionPreflightStop::RetainedCompanionCounterOverflow {
-                requested: 1,
-                retained: u64::MAX,
-            },
         ] {
             assert!(
                 !companion_stop_is_transient(&stop),

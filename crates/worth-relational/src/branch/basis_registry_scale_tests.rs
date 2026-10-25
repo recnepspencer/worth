@@ -5,18 +5,23 @@ fn prove_registry_lookup_work_is_population_independent(
 ) {
     let runtime = crate::tests::support::runtime_with_test_schema();
     crate::tests::support::create_entity(execution, &runtime, "basis-scale-root");
-    populate_branches(&runtime, branch_population);
+    populate_branches(execution, &runtime, branch_population);
     let (target, retained) = retain_one_basis_per_branch(&runtime, branch_population);
     let after = prove_single_readmission_is_fixed_work(&runtime, &target, branch_population);
     drop(retained);
     assert_exact_registry_cleanup(&runtime, after, branch_population);
 }
 
-fn populate_branches(runtime: &crate::runtime::RelationalRuntime, branch_population: usize) {
+fn populate_branches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+    branch_population: usize,
+) {
     for index in 1..branch_population {
         runtime
             .history_authority()
             .fork_branch_from(
+                execution,
                 BranchId(format!("basis-scale-{index}")),
                 &BranchId("main".to_owned()),
             )
@@ -119,7 +124,7 @@ fn ordinary_publication_does_not_scan_branch_or_branch_head_populations() {
     for branch_population in [64, 4_096] {
         let runtime = crate::tests::support::runtime_with_test_schema();
         crate::tests::support::create_entity(execution, &runtime, "publication-scan-root");
-        populate_branches(&runtime, branch_population);
+        populate_branches(execution, &runtime, branch_population);
         let branch_scans_before = runtime
             .phase4_reference_cost_counters()
             .branch_population_scans;

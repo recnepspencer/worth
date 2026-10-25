@@ -16,8 +16,8 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build();
     create_entity(execution, &runtime, "shared-root");
-    fork_from_main(&mut runtime, "storm");
-    fork_from_main(&mut runtime, "maintenance");
+    fork_from_main(execution, &mut runtime, "storm");
+    fork_from_main(execution, &mut runtime, "maintenance");
 
     let mut storm = begin_on(&runtime, "storm");
     storm
@@ -114,12 +114,16 @@ fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residu
     before.assert_unchanged(&runtime);
 }
 
-fn fork_from_main(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.into()), source)
+        .fork_branch(execution, BranchId(branch.into()), source)
         .expect("branch fork succeeds");
 }
 

@@ -209,9 +209,9 @@ where
 {
     fn create_product_branch(
         &self,
-        request: RuntimeWorldBranchCreationRequest<'_>,
+        request: RuntimeWorldBranchCreationRequest<'_, '_, '_>,
     ) -> Result<RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchAdmissionDenial> {
-        let (source, intent, cancellation) = request.into_parts();
+        let (execution, source, intent, cancellation) = request.into_parts();
         if source.owner_identity() != self.owner_identity()
             || source.branch_identity().owner_identity() != self.owner_identity()
         {
@@ -231,7 +231,7 @@ where
                 .create_reused_branch(source, intent.name().clone(), cancellation)
                 .map(RuntimeWorldBranchCreationOutcome::Performed);
         }
-        creation::create_forked_branch(self, source, intent, cancellation)
+        creation::create_forked_branch(self, execution, source, intent, cancellation)
     }
 
     fn retire_product_branch(

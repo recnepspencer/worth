@@ -36,7 +36,7 @@ pub(super) fn archive_and_observe(
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "archive snapshot", error));
     world
         .runtime
-        .archive_branch(&identity)
+        .archive_branch(execution, &identity)
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "archive", error));
     let reference = world
         .runtime
@@ -117,7 +117,7 @@ pub(super) fn delete_and_prove_absence(
     let survivors = survivor_references(world, branches, &state.branch);
     let deleted = world
         .runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap_or_else(|error| trace_panic(trace, scenario_index, "delete", error))
         .deleted()
         .cloned()

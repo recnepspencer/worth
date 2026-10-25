@@ -11,7 +11,7 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
     let claimed_sibling = BranchId("feature".to_string());
     runtime
         .history_authority()
-        .fork_branch_from(claimed_sibling.clone(), &actual_branch)
+        .fork_branch_from(execution, claimed_sibling.clone(), &actual_branch)
         .expect("feature branch forks from the admitted main root");
     let main_identity = runtime.main_branch_identity();
     let (_, admitted_basis) = runtime
@@ -77,6 +77,7 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -133,6 +134,7 @@ fn commit_index_build_returns_retention_backpressure_instead_of_panicking() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

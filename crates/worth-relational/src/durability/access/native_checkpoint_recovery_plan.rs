@@ -23,6 +23,7 @@ pub(crate) fn native_checkpoint_recovery_plan(
         runtime.runtime_config().clone(),
         Some(checkpoint),
         Vec::new(),
+        crate::durability::data::RecoveryBranchTransitions::Contiguous(Vec::new()),
         continuity,
         verification_mode,
         descriptor_semantics_version,

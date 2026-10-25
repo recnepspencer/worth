@@ -166,7 +166,7 @@ fn standard_supply_chain_baseline_matches_oracle_and_forks_without_copying() {
         .expect("standard main branch has a fork source");
     let outcome = world
         .runtime
-        .fork_branch(BranchId("standard-storm".to_owned()), basis)
+        .fork_branch(execution, BranchId("standard-storm".to_owned()), basis)
         .expect("standard fork succeeds");
     assert_eq!(outcome.shared_commit_id(), Some(world.commit.commit_id));
     assert_eq!(

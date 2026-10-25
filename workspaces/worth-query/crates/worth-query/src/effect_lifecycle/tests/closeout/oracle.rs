@@ -35,6 +35,7 @@ fn mutation_execution_verifies_against_independent_relational_runtime_state() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -82,6 +83,7 @@ fn merge_execution_verifies_against_independent_relational_runtime_state() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
@@ -181,6 +183,7 @@ fn mutation_batch_verifies_against_independent_relational_runtime_state() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -234,6 +237,7 @@ fn relational_oracle_rejects_independent_commit_mismatch() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

@@ -29,6 +29,7 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("index-sibling".to_owned()),
             &BranchId("main".to_owned()),
         )

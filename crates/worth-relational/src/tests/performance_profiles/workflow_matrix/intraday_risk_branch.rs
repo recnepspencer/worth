@@ -8,7 +8,7 @@ pub(super) fn certify_fintech_intraday_risk_branch_round_trip(
         capture_perf_samples(suite, "fintech_intraday_risk_branch_round_trip", || {
             let mut world = setup_intraday_risk_perf_world(execution);
             let baseline_observability = perf_capture_baseline_observability(&world);
-            let analysis = perf_open_analysis_branch(&mut world);
+            let analysis = perf_open_analysis_branch(execution, &mut world);
 
             world.runtime.performance_access().reset_counters();
             let stress_started_at = Instant::now();

@@ -118,8 +118,10 @@ fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
     );
     assert_eq!(direct_commit.patch().len(), port_commit.patch().len());
 
-    let direct_identity = fork_direct(&direct, "equivalent").target_identity().clone();
-    let port_identity = fork_through_services(&services, "equivalent")
+    let direct_identity = fork_direct(execution, &direct, "equivalent")
+        .target_identity()
+        .clone();
+    let port_identity = fork_through_services(execution, &services, "equivalent")
         .target_identity()
         .clone();
     let (direct_descriptor, _) = direct.observe_branch(&direct_identity).unwrap();
@@ -152,10 +154,10 @@ fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
     );
     assert_eq!(direct_descriptor.posture(), port_descriptor.posture());
 
-    let direct_archived = direct.archive_branch(&direct_identity).unwrap();
+    let direct_archived = direct.archive_branch(execution, &direct_identity).unwrap();
     let port_archived = services
         .lifecycle_port()
-        .archive_branch(&port_identity)
+        .archive_branch(execution, &port_identity)
         .unwrap();
     assert_eq!(
         direct_archived.observation().generation(),
@@ -176,21 +178,21 @@ fn direct_and_service_routes_have_equivalent_semantics_on_separate_worlds() {
         RelationalBranchLifecyclePosture::Archived
     );
 
-    let direct_deleted = fork_direct(&direct, "equivalent-deleted")
+    let direct_deleted = fork_direct(execution, &direct, "equivalent-deleted")
         .target_identity()
         .clone();
-    let ported_deleted = fork_through_services(&services, "equivalent-deleted")
+    let ported_deleted = fork_through_services(execution, &services, "equivalent-deleted")
         .target_identity()
         .clone();
     assert!(matches!(
-        direct.delete_branch(&direct_deleted).unwrap(),
+        direct.delete_branch(execution, &direct_deleted).unwrap(),
         RelationalBranchDeletionOutcome::Deleted(ref deleted)
             if deleted.identity().branch_id() == direct_deleted.branch_id()
     ));
     assert!(matches!(
         services
             .lifecycle_port()
-            .delete_branch(&ported_deleted)
+            .delete_branch(execution, &ported_deleted)
             .unwrap(),
         RelationalBranchDeletionOutcome::Deleted(ref deleted)
             if deleted.identity().branch_id() == ported_deleted.branch_id()
@@ -206,23 +208,23 @@ fn movement_through_either_route_is_immediately_visible_through_the_other() {
     let mut runtime = empty_runtime();
     let services = runtime.owner_component_services();
     commit_through_services(execution, &runtime, &services, "shared-state-visibility");
-    let port_archived = fork_through_services(&services, "port-archived")
+    let port_archived = fork_through_services(execution, &services, "port-archived")
         .target_identity()
         .clone();
-    let direct_archived = fork_through_services(&services, "direct-archived")
+    let direct_archived = fork_through_services(execution, &services, "direct-archived")
         .target_identity()
         .clone();
 
     services
         .lifecycle_port()
-        .archive_branch(&port_archived)
+        .archive_branch(execution, &port_archived)
         .unwrap();
     assert!(matches!(
         runtime.observe_branch(&port_archived),
         Err(RelationalBranchBasisDenial::ArchivedBranch(_))
     ));
 
-    runtime.archive_branch(&direct_archived).unwrap();
+    runtime.archive_branch(execution, &direct_archived).unwrap();
     assert!(matches!(
         services.basis_port().observe_branch(&direct_archived),
         Err(RelationalBranchBasisDenial::ArchivedBranch(_))
@@ -276,7 +278,7 @@ fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
         .expect("the port observes the non-empty canonical source");
     let port_target = services
         .fork_port()
-        .fork_branch(BranchId("port-catalog".to_owned()), port_source)
+        .fork_branch(execution, BranchId("port-catalog".to_owned()), port_source)
         .expect("the port installs its target in the canonical catalog")
         .target_identity()
         .clone();
@@ -291,7 +293,11 @@ fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
         .expect("the direct route observes the same canonical source");
     let direct_target = world
         .runtime
-        .fork_branch(BranchId("direct-catalog".to_owned()), direct_source)
+        .fork_branch(
+            execution,
+            BranchId("direct-catalog".to_owned()),
+            direct_source,
+        )
         .expect("the direct route installs its target in the canonical catalog")
         .target_identity()
         .clone();
@@ -301,7 +307,7 @@ fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
         .expect("the port observes the direct-installed target");
 
     assert!(matches!(
-        world.runtime.delete_branch(&port_target),
+        world.runtime.delete_branch(execution, &port_target),
         Ok(RelationalBranchDeletionOutcome::Deleted(ref deleted))
             if deleted.identity() == &port_target
     ));
@@ -311,7 +317,7 @@ fn basis_and_lifecycle_routes_share_exact_artifacts_on_one_owner() {
             if branch == port_target.branch_id()
     ));
     assert!(matches!(
-        services.lifecycle_port().delete_branch(&direct_target),
+        services.lifecycle_port().delete_branch(execution, &direct_target),
         Ok(RelationalBranchDeletionOutcome::Deleted(ref deleted))
             if deleted.identity() == &direct_target
     ));

@@ -17,14 +17,17 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
-    let transaction_identity = fork_branch(&world.runtime, "deleting-transaction");
+    let transaction_identity = fork_branch(execution, &world.runtime, "deleting-transaction");
     let (_, transaction_basis) = world.runtime.observe_branch(&transaction_identity).unwrap();
     let transaction = world
         .runtime
         .begin_branch_transaction(&transaction_basis, RelationalTransactionIntent::ordinary())
         .unwrap();
 
-    let waiting = world.runtime.delete_branch(&transaction_identity).unwrap();
+    let waiting = world
+        .runtime
+        .delete_branch(execution, &transaction_identity)
+        .unwrap();
     assert_eq!(waiting.waiting().unwrap().active_operation_count(), 1);
     assert!(matches!(
         world
@@ -35,12 +38,12 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
     drop(transaction);
     assert!(world
         .runtime
-        .delete_branch(&transaction_identity)
+        .delete_branch(execution, &transaction_identity)
         .unwrap()
         .deleted()
         .is_some());
 
-    let candidate_identity = fork_branch(&world.runtime, "deleting-candidate");
+    let candidate_identity = fork_branch(execution, &world.runtime, "deleting-candidate");
     let (_, candidate_basis) = world.runtime.observe_branch(&candidate_identity).unwrap();
     let candidate_transaction = world
         .runtime
@@ -53,7 +56,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
     assert_eq!(
         world
             .runtime
-            .delete_branch(&candidate_identity)
+            .delete_branch(execution, &candidate_identity)
             .unwrap()
             .waiting()
             .unwrap()
@@ -69,7 +72,7 @@ fn deletion_closes_admission_then_waits_for_transaction_and_candidate_operations
     ));
     assert!(world
         .runtime
-        .delete_branch(&candidate_identity)
+        .delete_branch(execution, &candidate_identity)
         .unwrap()
         .deleted()
         .is_some());
@@ -82,7 +85,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
-    let identity = fork_branch(&world.runtime, "settlement-retention");
+    let identity = fork_branch(execution, &world.runtime, "settlement-retention");
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let transaction = world
         .runtime
@@ -117,7 +120,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
     assert_eq!(
         world
             .runtime
-            .delete_branch(&identity)
+            .delete_branch(execution, &identity)
             .unwrap()
             .waiting()
             .unwrap()
@@ -145,7 +148,7 @@ fn performed_publication_retains_the_branch_operation_until_settlement() {
         .unwrap();
     assert!(world
         .runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .is_some());
@@ -159,12 +162,12 @@ fn deleted_shared_root_survives_while_the_main_head_still_owns_it() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
-    let identity = fork_branch(&world.runtime, "maintenance");
+    let identity = fork_branch(execution, &world.runtime, "maintenance");
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let external = world.runtime.retain_component_basis(&basis).unwrap();
     let deleted = world
         .runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .expect("branch without active operations deletes immediately")
@@ -188,7 +191,7 @@ fn deleted_shared_root_survives_while_the_main_head_still_owns_it() {
         .unwrap();
     assert!(world
         .runtime
-        .fork_branch(BranchId("maintenance".to_owned()), source)
+        .fork_branch(execution, BranchId("maintenance".to_owned()), source)
         .is_err());
 }
 
@@ -202,7 +205,7 @@ fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
     for _ in 0..4 {
         world.runtime.run_branch_root_reclamation_pass();
     }
-    let identity = fork_branch(&world.runtime, "unique-maintenance");
+    let identity = fork_branch(execution, &world.runtime, "unique-maintenance");
     let (_, initial_basis) = world.runtime.observe_branch(&identity).unwrap();
     let transaction = world
         .runtime
@@ -218,7 +221,7 @@ fn maintenance_reclaims_a_deleted_unique_root_only_after_last_pin_release() {
         .unwrap();
     let deleted = world
         .runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .expect("branch without active operations deletes immediately")
@@ -255,7 +258,7 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (mut world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
-    let identity = fork_branch(&world.runtime, "snapshot-obligation");
+    let identity = fork_branch(execution, &world.runtime, "snapshot-obligation");
     let (_, initial_basis) = world.runtime.observe_branch(&identity).unwrap();
     let transaction = world
         .runtime
@@ -281,7 +284,7 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
     drop(basis);
     let deleted = world
         .runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .expect("a snapshot observation is not a mutable branch operation")

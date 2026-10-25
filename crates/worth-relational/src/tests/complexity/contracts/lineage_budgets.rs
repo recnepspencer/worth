@@ -61,6 +61,7 @@ fn complexity_budget_lineage_branch_divergence_reports_breadth() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

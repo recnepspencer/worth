@@ -35,7 +35,7 @@ pub fn source_addition_inspection_artifact(
         "root",
         BranchId(TARGET_BRANCH.to_string()),
     );
-    create_branch_from_main(&mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
     create_entity_on_branch(
         request_execution,
         &mut runtime,
@@ -55,7 +55,7 @@ pub fn deleted_vs_modified_inspection_artifact(
         "shared",
         BranchId(TARGET_BRANCH.to_string()),
     );
-    create_branch_from_main(&mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
     update_entity_on_branch(
         request_execution,
         &mut runtime,
@@ -125,7 +125,7 @@ pub fn topology_region_conflict_inspection_artifact(
         BranchId(TARGET_BRANCH.to_string()),
     );
 
-    create_branch_from_main(&mut runtime, SOURCE_BRANCH);
+    create_branch_from_main(request_execution, &mut runtime, SOURCE_BRANCH);
     delete_relation_on_branch(
         request_execution,
         &mut runtime,
@@ -273,8 +273,13 @@ fn topology_merge_registry() -> RelationalSchemaRegistry {
         .expect("topology merge registry")
 }
 
-fn create_branch_from_main(runtime: &mut RelationalRuntime, branch_name: &str) {
+fn create_branch_from_main(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    branch_name: &str,
+) {
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         runtime,
         BranchId(branch_name.to_string()),
         &BranchId(TARGET_BRANCH.to_string()),

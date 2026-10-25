@@ -2,9 +2,9 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
 use super::frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
-use super::payload_emission::{count_payload, emit_payload};
 use super::payload_wire::ArtifactPayloadRef;
 use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
+use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {

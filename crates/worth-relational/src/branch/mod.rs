@@ -34,6 +34,7 @@ mod root_runtime_access;
 mod root_selection;
 mod sharing_cost_cell;
 mod target;
+mod transition;
 mod version;
 
 pub(crate) use authority::issue_relational_branch_mutation_authority;
@@ -64,6 +65,7 @@ pub use fork::{RelationalForkDenial, RelationalForkOutcome};
 pub use fork_port::RelationalForkPort;
 pub use fork_source_basis::{AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor};
 pub use identity::{RelationalBranchIdentity, RelationalBranchIdentityDenial};
+pub(crate) use lifecycle::RelationalBranchDeletionKind;
 pub use lifecycle::{
     ArchivedRelationalBranch, DeletedRelationalBranch, RelationalBranchArchiveDenial,
     RelationalBranchDeleteDenial, RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
@@ -110,6 +112,15 @@ pub(crate) use root_regions::{
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;
 pub use target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
+pub(crate) use transition::{
+    LiveBranchTransitionStep, RelationalBranchTransitionDenial,
+    RelationalBranchTransitionDurableStep, ReplayedBranchTransitionDivergence,
+    ReplayedBranchTransitionStep,
+};
+pub use transition::{
+    PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
+    RelationalBranchTransitionStop,
+};
 pub use version::RelationalBranchVersion;
 
 #[cfg(test)]

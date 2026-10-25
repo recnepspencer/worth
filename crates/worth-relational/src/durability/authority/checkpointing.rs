@@ -17,13 +17,22 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         policy.check_live()?;
         let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
         let coverage = crate::durability::access::checkpoint_coverage(&checkpoint);
+        let transitions = checkpoint.coverage.up_to_branch_transition;
         let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
             &checkpoint,
             policy,
         )?;
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(transitions);
+        }
         Ok(
             crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
-                bytes, sections, coverage,
+                bytes,
+                sections,
+                coverage,
+                transitions,
             ),
         )
     }
@@ -66,6 +75,13 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 vec![checkpoint_created(&checkpoint)],
             );
         self.runtime.durability.push_checkpoint(checkpoint.clone());
+        // Memory-only history has no external copy, including forks needed
+        // by replay chains older than any retained checkpoint.
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);
+        }
         Ok(checkpoint)
     }
 

@@ -157,6 +157,7 @@ fn durability_contract_failure_missing_authoritative_parent_closure_is_explicit(
                 ),
             ),
         ],
+        crate::durability::data::RecoveryBranchTransitions::Contiguous(Vec::new()),
         RecoveryAuthorityContinuityCheck::verified_at(ReplayVerificationLayer::DigestParity),
         RecoveryVerificationMode::NormalRecoveryVerification,
         DescriptorSemanticsVersion::default(),

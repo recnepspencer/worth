@@ -82,15 +82,6 @@ impl RelationalBranchPublicationCell {
         &self.head_retention
     }
 
-    pub(crate) fn selected_root(&self) -> Option<Arc<super::RelationalBranchRoot>> {
-        self.state
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .root
-            .as_ref()
-            .map(Arc::clone)
-    }
-
     pub(crate) fn register_basis(
         &self,
         basis: super::AdmittedRelationalBranchBasis,
@@ -111,6 +102,10 @@ impl RelationalBranchPublicationCell {
 }
 
 impl RelationalBranchPublicationStateGuard<'_> {
+    pub(crate) fn selected_root(&self) -> Option<Arc<super::RelationalBranchRoot>> {
+        self.state.root.as_ref().map(Arc::clone)
+    }
+
     pub(crate) fn observation(&self) -> &super::RelationalBranchReferenceObservation {
         &self.state.observation
     }
@@ -123,11 +118,20 @@ impl RelationalBranchPublicationStateGuard<'_> {
         self.state.lifecycle_posture()
     }
 
-    pub(crate) fn archive(
-        &mut self,
+    /// The observation archiving this branch would install.
+    pub(crate) fn archived_observation(
+        &self,
     ) -> Result<super::RelationalBranchReferenceObservation, super::RelationalBranchCellDenial>
     {
-        self.state.archive()
+        self.state.archived_observation()
+    }
+
+    /// Install a prepared archive. Cannot fail.
+    pub(crate) fn install_archive(
+        &mut self,
+        observation: super::RelationalBranchReferenceObservation,
+    ) {
+        self.state.install_archive(observation);
     }
 
     pub(crate) fn mark_deleting(&mut self) {

@@ -56,10 +56,7 @@ fn companion(cause: CompanionPreflightStop) -> BankHttpDenial {
         | D::PreparationMemoryExhausted { .. } => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest)
         }
-        D::ForeignCell
-        | D::WorkCounterOverflow
-        | D::PreparationMemoryCounterOverflow
-        | D::RetainedCompanionCounterOverflow { .. } => operator(),
+        D::ForeignCell | D::WorkCounterOverflow | D::PreparationMemoryCounterOverflow => operator(),
     }
 }
 

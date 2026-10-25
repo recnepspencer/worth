@@ -11,6 +11,7 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

@@ -16,13 +16,13 @@ fn phase5_cost_scope_excludes_prior_target_work_and_later_sibling_work() {
 
     let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &expected);
-    fork(&world.runtime, "before-capture");
+    fork(execution, &world.runtime, "before-capture");
     let observed_branch = world
         .runtime
         .branch_identity(&BranchId("before-capture".to_owned()))
         .expect("the owner issues the target identity after fork");
     let scope = RelationalMvccCostScope::capture(&world.runtime, vec![observed_branch]);
-    fork(&world.runtime, "after-capture");
+    fork(execution, &world.runtime, "after-capture");
     let observation = world.runtime.observe_mvcc_cost(&scope).unwrap();
     assert_eq!(observation.sharing_cost_delta().shared_root_acquisitions, 0);
 }
@@ -38,7 +38,7 @@ fn phase5_selected_publication_tuple_is_stable_across_target_history_lengths() {
         let (world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
         assert_oracle_matches(execution, &world, &expected);
         let branch_id = BranchId("medical-hold".to_owned());
-        fork(&world.runtime, &branch_id.0);
+        fork(execution, &world.runtime, &branch_id.0);
         for sequence in 0..history_len {
             commit_branch_batch(
                 execution,
@@ -104,9 +104,10 @@ fn phase5_selected_publication_tuple_ignores_unrelated_population_reads_and_vali
             certified_supply_chain_world(execution, SupplyChainScale::court());
         assert_oracle_matches(execution, &world, &expected);
         let selected_branch = BranchId("medical-hold".to_owned());
-        fork(&world.runtime, &selected_branch.0);
+        fork(execution, &world.runtime, &selected_branch.0);
         let selected = world.runtime.branch_identity(&selected_branch).unwrap();
-        let unrelated_branches = fork_unrelated_branches(&mut world, unrelated_branch_count);
+        let unrelated_branches =
+            fork_unrelated_branches(execution, &mut world, unrelated_branch_count);
         let unrelated_scope =
             RelationalMvccCostScope::capture(&world.runtime, vec![selected.clone()]);
         let unrelated_work_scope = RelationalMvccCostScope::capture(
@@ -186,6 +187,7 @@ fn phase5_selected_publication_tuple_ignores_unrelated_population_reads_and_vali
 }
 
 fn fork_unrelated_branches(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut super::world::supply_chain::ProductionSeededSupplyChainWorld,
     branch_count: usize,
 ) -> Vec<(BranchId, RelationalBranchIdentity)> {
@@ -197,7 +199,7 @@ fn fork_unrelated_branches(
                 _ => format!("unrelated-{ordinal}"),
             };
             let branch_id = BranchId(branch_name);
-            fork(&world.runtime, &branch_id.0);
+            fork(execution, &world.runtime, &branch_id.0);
             let identity = world.runtime.branch_identity(&branch_id).unwrap();
             (branch_id, identity)
         })
@@ -238,11 +240,15 @@ fn exercise_unrelated_branch_reads_and_validation(
     }
 }
 
-fn fork(runtime: &worth_relational::facade::runtime::RelationalRuntime, name: &str) {
+fn fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    name: &str,
+) {
     let (_, source_basis) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
     runtime
-        .fork_branch(BranchId(name.to_owned()), source_basis)
+        .fork_branch(execution, BranchId(name.to_owned()), source_basis)
         .unwrap();
 }

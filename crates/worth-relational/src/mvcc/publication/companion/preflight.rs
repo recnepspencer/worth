@@ -57,10 +57,6 @@ pub enum CompanionPreflightStop {
         retained: u64,
         maximum: u64,
     },
-    RetainedCompanionCounterOverflow {
-        requested: u64,
-        retained: u64,
-    },
     Interrupted(RelationalInterruptionEvent),
 }
 

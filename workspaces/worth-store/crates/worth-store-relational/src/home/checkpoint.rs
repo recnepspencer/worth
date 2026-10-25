@@ -1,3 +1,4 @@
+use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial;
 use worth_relational::facade::publication::PatchStreamPosition;
 
@@ -8,6 +9,7 @@ use crate::checkpoint_record::{self, RelationalStoreCheckpointRecordRefusal};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelationalStoreCheckpoint {
     covered: PatchStreamPosition,
+    covered_transitions: RelationalBranchTransitionSequence,
     generation: u64,
     bytes: usize,
 }
@@ -17,6 +19,12 @@ impl RelationalStoreCheckpoint {
     /// only the journal after it.
     pub fn covered(&self) -> PatchStreamPosition {
         self.covered
+    }
+
+    /// The last branch transition the checkpoint includes. Recovery replays
+    /// only the transitions after it.
+    pub fn covered_transitions(&self) -> RelationalBranchTransitionSequence {
+        self.covered_transitions
     }
 
     /// How many checkpoints this home has selected, including this one.
@@ -63,11 +71,16 @@ impl RelationalStoreHome {
         let covered = checkpoint
             .covered_position()
             .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
-        let generation = checkpoint_record::publish(&self.serving, covered, &checkpoint)
-            .map_err(RelationalStoreCheckpointFailure::Record)?;
+        let covered_transitions = checkpoint
+            .covered_branch_transitions()
+            .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
+        let generation =
+            checkpoint_record::publish(&self.serving, covered, covered_transitions, &checkpoint)
+                .map_err(RelationalStoreCheckpointFailure::Record)?;
         complete_physical_checkpoint(&self.serving, generation)?;
         Ok(RelationalStoreCheckpoint {
             covered,
+            covered_transitions,
             generation,
             bytes: checkpoint.bytes().len(),
         })

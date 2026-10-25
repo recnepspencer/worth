@@ -48,6 +48,10 @@ runtime it builds. Recovery moves it out of the recovering runtime into the
 rebuilt one; the attachment it left refuses every later publication with the
 pre-effect `MediumMoved`.
 
+A speculative runtime fork may carry a read-only transition-history reader
+for gaps its source compacted. That reader cannot publish, and refuses if the
+source medium has moved or closed; the fork never receives a publication binding.
+
 **D2. Durable before live.** With a medium attached, publication runs in this
 order: preparation and validation against the exact admitted basis;
 reservation of the next patch position; publication of the positioned commit's
@@ -69,7 +73,8 @@ Live state never selects a commit the medium has not made durable.
   any effect, holding no position. The wait cannot deadlock: a publisher takes
   its own branch's critical section before the reservation, and the holder
   takes no other branch's while holding it. Memory-only runtimes keep their
-  existing reservation behavior.
+  existing reservation behavior against other commits, but wait within the
+  request behind a branch transition rather than consume a candidate by deferral.
 - The settlement-time append and its "performed but durability deferred"
   repair path are deleted: durability can no longer fail after the cutover.
   Settlement that fails for another reason keeps the durable commit under its
@@ -145,13 +150,38 @@ The design keeps transitions apart from commits:
   commit must not overtake an unresolved delete.
 - **Typed stop.** Fork, archive and delete return
   `RelationalBranchTransitionStop<Denial>`, either `Denied` (including
-  `DurablePublicationRefused`) or `DurabilityUnresolved`.
+  `DurablePublicationRefused`), `RequestStopped` (cancellation, deadline or
+  request admission while waiting, before any effect), or `DurabilityUnresolved`.
+  World retains an unresolved fork as `ProductUnpublished` with its native fate
+  and destination attempt until reopen; it must never report definite no-effect.
 - **Resolution.** The home resolves a transition's fate by sequence and digest.
 
-Checkpoints record the transitions they cover, every branch's lifecycle
-posture and the retired branch names. Recovery restores all three and no
-longer clears retired names, so an archive, a deletion or a retired name
-survives a crash.
+Checkpoints record the last covered transition sequence T, every branch's
+lifecycle posture and the retired branch names, never the covered transition
+artifacts. A deleting cell must have its name retired. A durable capture releases
+its covered in-memory transition log without retaining a second checkpoint
+image; the medium remains the history authority even if manifest filing fails.
+Memory-only runtimes retain transition history: no medium can reconstruct
+forks required by a replay chain older than a checkpoint. Retained transition
+export exposes its coverage and subsequent tail. Replay reads only the gap
+between its selected checkpoint's T and the retained transition tail through
+`read_transition`; it never rereads transitions already covered by its basis.
+The public retained recovery plan uses the same fallible gap reconstruction,
+so native capture need not retain a duplicate checkpoint image. The home
+oracle compares the durable journal directly.
+Reopen restores manifest state and replays only transitions above T, so archive,
+deletion and retired names survive a crash without rereading covered history.
+
+The nested lock order is routes lifecycle admission, branch coordination,
+branch state, the patch-position reservation, then registry membership/name
+locks. Registry locks are leaves: snapshots copy cell handles and release the
+registry before reading state. Every transition acquires lifecycle admission
+before coordination/state, as commits do. Fork rechecks through its source
+state guard inside the reservation, then releases state before durable I/O
+and target insertion; coordination excludes source writers until installation.
+Archive/delete carry their previously acquired state through cutover. A holder
+never acquires another live branch's locks. Partial replay selects forks
+transitively through their source forks, including branches with no own commit.
 
 Recovery merges the transition tail into the commit tail: before replaying
 commit q it applies every transition that follows a position below q. Each
@@ -397,12 +427,13 @@ Location: `worth-store-relational` tests.
   only the manifest and the partitions an operation touches (measured through
   the read port with headroom, not exact counts). A region or history read that
   fails refuses the operation with its typed outcome. Cold and warm reads agree.
-- **Media sweep.** Every media operation of a commit, a branch transition, the
+- **Media sweep.** Every media operation of a commit, fork, archive,
+  deletion-requested and delete, the
   first checkpoint and a later checkpoint, and a region load, with
   `FailBefore` and `IndeterminateAfterEffect`.
 - **Real processes.** A child is killed at every Store mutation seam of a
   commit (before the WAL append through durable-not-yet-live), during a branch
-  transition, during a checkpoint including Store's physical checkpoint, and
+  fork, archive, deletion-requested and delete, during a checkpoint including Store's physical checkpoint, and
   idle on both sides of the first checkpoint.
 - **Recovery interruption.** Recovery is killed at each Store recovery stage
   and during Relational readmission. Repeated recoveries reach the same state.

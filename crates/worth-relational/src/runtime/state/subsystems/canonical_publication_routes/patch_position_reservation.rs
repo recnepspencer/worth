@@ -4,20 +4,37 @@
 //!
 //! How a publisher meets a held reservation is the runtime's admission:
 //!
-//! - Memory-only runtimes defer. The holder only links an in-memory node, so a
-//!   contended publisher returns `PatchPositionReservationContended` and the
-//!   caller decides whether to retry.
+//! - Memory-only commits defer behind another commit. Behind a held or queued
+//!   branch transition they wait within their request, so lifecycle operations
+//!   never add a candidate-consuming deferral source.
 //! - Runtimes with a durable medium wait (D2). The holder is doing durable I/O
 //!   for its own commit; deferring would turn ordinary concurrency into
 //!   caller-visible refusals. Waiters are served first come, first served,
 //!   within the caller's execution deadline, and observe cancellation.
+//! - Branch transitions wait in either runtime (D8): a fork, archive or
+//!   delete is not deferred because a commit is linking its node.
 //!
-//! Lock order: a publisher takes its own branch's critical section and
-//! publication state, then this reservation. The holder never takes another
-//! branch's critical section or state while holding it, and its durable step
-//! and cutover touch only its own branch, so a waiter that holds its branch
-//! cannot be in the holder's way. Two publishers on one branch meet at that
-//! branch's critical section, before either reaches the reservation.
+//! Nested lock order (including cold capture and maintenance):
+//! 1. Routes lifecycle admission: shared for publications, exclusive for a
+//!    runtime fork or quiescent reclamation. Capture selects and validates
+//!    under exclusive admission, but reconstructs outside it.
+//! 2. The publishing branch's coordination critical section.
+//! 3. That branch's publication state.
+//! 4. The global patch-position reservation.
+//! 5. Registry membership/name locks, which are leaf locks: they never acquire
+//!    lifecycle, coordination, state, or the reservation. Registry snapshots
+//!    copy cell handles and release membership before observing cell state.
+//!
+//! A lookup may precede admission only when its registry guard is released
+//! first. No holder acquires another live branch's coordination or state;
+//! an unpublished fork target or detached snapshot has no competing owner.
+//! Fork releases source state after its reserved recheck, before durable I/O
+//! and target insertion, while coordination excludes source writers through
+//! cutover. Archive/delete carry their already-acquired state through cutover.
+//! Lifecycle admission is carried by the transition publication handle and
+//! is never reacquired under coordination/state. Thus a reservation waiter
+//! cannot hold a lock its holder needs, and a lifecycle writer cannot wait
+//! on state held by a publisher waiting for lifecycle admission.
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -36,6 +53,9 @@ const WAITER_CANCELLATION_CHECK: Duration = Duration::from_millis(2);
 pub(crate) enum PatchPositionReservationAdmission<'request, 'scope, 'authority> {
     /// Return `ReservationContended` at once (memory-only runtimes).
     DeferWhenHeld,
+    /// Memory commits wait behind lifecycle transitions, but still defer
+    /// behind other memory commits.
+    DeferBehindCommit(&'request worth_execution::ExecutionRequest<'scope, 'authority>),
     /// Wait in arrival order until the reservation is free, or until the
     /// request is cancelled or its deadline passes (durable runtimes).
     WaitWithin(&'request worth_execution::ExecutionRequest<'scope, 'authority>),
@@ -62,6 +82,8 @@ pub(super) struct PatchPositionReservation {
 #[derive(Default)]
 struct ReservationQueue {
     held: bool,
+    held_transition: bool,
+    waiting_transitions: usize,
     next_ticket: u64,
     /// Tickets of waiting publishers, oldest first.
     waiting: VecDeque<u64>,
@@ -81,47 +103,81 @@ impl PatchPositionReservation {
         &self,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
     ) -> Result<PatchPositionReservationGuard<'_>, CanonicalPublicationRecordError> {
-        self.contacts.fetch_add(1, Ordering::Relaxed);
-        let mut queue = self.queue();
-        if !queue.held && queue.waiting.is_empty() {
-            queue.held = true;
-            return Ok(PatchPositionReservationGuard { reservation: self });
-        }
         match admission {
-            PatchPositionReservationAdmission::DeferWhenHeld => {
+            PatchPositionReservationAdmission::DeferWhenHeld
+            | PatchPositionReservationAdmission::DeferBehindCommit(_) => {
+                self.contacts.fetch_add(1, Ordering::Relaxed);
+                let mut queue = self.queue();
+                if !queue.held && queue.waiting.is_empty() {
+                    queue.held = true;
+                    return Ok(PatchPositionReservationGuard { reservation: self });
+                }
+                if let PatchPositionReservationAdmission::DeferBehindCommit(execution) = admission
+                    && (queue.held_transition || queue.waiting_transitions != 0)
+                {
+                    return self
+                        .wait_from_queue(execution, false, queue)
+                        .map_err(CanonicalPublicationRecordError::ReservationWaitStopped);
+                }
                 self.deferrals.fetch_add(1, Ordering::Relaxed);
                 Err(CanonicalPublicationRecordError::ReservationContended)
             }
-            PatchPositionReservationAdmission::WaitWithin(execution) => {
-                self.wait_in_turn(queue, execution)
-            }
+            PatchPositionReservationAdmission::WaitWithin(execution) => self
+                .wait_as(execution, false)
+                .map_err(CanonicalPublicationRecordError::ReservationWaitStopped),
         }
     }
 
-    /// Queue behind the holder and every earlier waiter, and take the
-    /// reservation in turn. A stopped request leaves the queue before any
-    /// effect: it was assigned nothing.
-    fn wait_in_turn<'reservation>(
-        &'reservation self,
-        mut queue: MutexGuard<'_, ReservationQueue>,
+    /// Take the reservation in arrival order, waiting behind the holder and
+    /// every earlier waiter within `execution`'s cancellation and deadline. A
+    /// stopped request leaves the queue before any effect: it was assigned
+    /// nothing. Branch transitions always take the reservation this way.
+    pub(super) fn wait_within(
+        &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<PatchPositionReservationGuard<'reservation>, CanonicalPublicationRecordError> {
+    ) -> Result<PatchPositionReservationGuard<'_>, worth_execution::WorkCeilingDenial> {
+        self.wait_as(execution, true)
+    }
+
+    fn wait_as(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transition: bool,
+    ) -> Result<PatchPositionReservationGuard<'_>, worth_execution::WorkCeilingDenial> {
+        self.contacts.fetch_add(1, Ordering::Relaxed);
+        self.wait_from_queue(execution, transition, self.queue())
+    }
+
+    fn wait_from_queue<'reservation>(
+        &'reservation self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        transition: bool,
+        mut queue: MutexGuard<'reservation, ReservationQueue>,
+    ) -> Result<PatchPositionReservationGuard<'reservation>, worth_execution::WorkCeilingDenial>
+    {
+        if !queue.held && queue.waiting.is_empty() {
+            queue.held = true;
+            queue.held_transition = transition;
+            return Ok(PatchPositionReservationGuard { reservation: self });
+        }
+        queue.waiting_transitions += usize::from(transition);
         let ticket = queue.next_ticket;
         queue.next_ticket = queue.next_ticket.wrapping_add(1);
         queue.waiting.push_back(ticket);
         loop {
             if !queue.held && queue.waiting.front() == Some(&ticket) {
                 queue.waiting.pop_front();
+                queue.waiting_transitions -= usize::from(transition);
                 queue.held = true;
+                queue.held_transition = transition;
                 return Ok(PatchPositionReservationGuard { reservation: self });
             }
             if let Err(stop) = execution.consult() {
                 queue.waiting.retain(|waiting| *waiting != ticket);
+                queue.waiting_transitions -= usize::from(transition);
                 drop(queue);
                 self.released.notify_all();
-                return Err(CanonicalPublicationRecordError::ReservationWaitStopped(
-                    stop,
-                ));
+                return Err(stop);
             }
             queue = self
                 .released
@@ -149,7 +205,11 @@ impl PatchPositionReservation {
 
 impl Drop for PatchPositionReservationGuard<'_> {
     fn drop(&mut self) {
-        self.reservation.queue().held = false;
+        {
+            let mut queue = self.reservation.queue();
+            queue.held = false;
+            queue.held_transition = false;
+        }
         self.reservation.released.notify_all();
     }
 }

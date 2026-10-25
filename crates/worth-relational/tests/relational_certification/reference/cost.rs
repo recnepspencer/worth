@@ -34,6 +34,7 @@ fn phase4_reference_cost_probe_separates_setup_and_operation_work() {
             world
                 .runtime
                 .fork_branch(
+                    execution,
                     BranchId(format!("probe-{fanout}-{}", previous.reference_allocations)),
                     source_basis,
                 )

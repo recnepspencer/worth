@@ -22,6 +22,12 @@ pub enum RecoveryFailureClass {
     CorruptCanonicalArtifact,
     /// A medium's tail skipped or repeated a position after the checkpoint.
     NonContiguousCanonicalTail,
+    /// A branch transition artifact a medium returned did not readmit.
+    CorruptBranchTransitionArtifact,
+    /// A medium's branch transition tail skipped or repeated a sequence after
+    /// the checkpoint, or a transition follows a position out of order or
+    /// beyond the recovered commit head.
+    NonContiguousBranchTransitionTail,
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
@@ -228,6 +234,8 @@ impl DurabilityError {
             RecoveryFailureClass::CorruptCheckpoint
             | RecoveryFailureClass::CorruptCanonicalArtifact
             | RecoveryFailureClass::NonContiguousCanonicalTail
+            | RecoveryFailureClass::CorruptBranchTransitionArtifact
+            | RecoveryFailureClass::NonContiguousBranchTransitionTail
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure

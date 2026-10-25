@@ -23,7 +23,7 @@ fn port_publication_moves_supply_chain_truth_and_stales_the_direct_basis() {
 
     let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
-    let storm = fork_supply_chain_branch(&services, "storm");
+    let storm = fork_supply_chain_branch(execution, &services, "storm");
     let predecessor = services
         .basis_port()
         .admit_branch_basis(&storm)
@@ -117,7 +117,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
 
     let (world, _baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let services = world.runtime.owner_component_services();
-    let maintenance = fork_supply_chain_branch(&services, "maintenance");
+    let maintenance = fork_supply_chain_branch(execution, &services, "maintenance");
     let predecessor = services
         .basis_port()
         .admit_branch_basis(&maintenance)
@@ -180,6 +180,7 @@ fn direct_commit_moves_supply_chain_truth_visible_through_the_basis_port() {
 }
 
 fn fork_supply_chain_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     services: &RelationalOwnerServicePorts,
     branch: &str,
 ) -> RelationalBranchIdentity {
@@ -189,7 +190,7 @@ fn fork_supply_chain_branch(
         .expect("the non-empty Supply Chain main branch is a fork source");
     services
         .fork_port()
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("the fork port installs the exact Supply Chain branch")
         .target_identity()
         .clone()

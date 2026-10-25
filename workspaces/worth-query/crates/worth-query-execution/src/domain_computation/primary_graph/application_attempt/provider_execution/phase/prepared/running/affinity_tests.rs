@@ -115,7 +115,13 @@ fn exact_affinity_accepts_its_real_session_and_rejects_runtime_snapshot_and_bran
                         .observe_fork_source(lease.snapshot().branch_id())
                         .expect("test runtime can observe the exact source basis");
                     runtime
-                        .fork_branch(foreign.clone(), fork_basis)
+                        .fork_branch(
+                            &phase
+                                .execution_request_for(&world.application.product_runtime)
+                                .expect("fixture issuer"),
+                            foreign.clone(),
+                            fork_basis,
+                        )
                         .expect("test runtime can issue a real sibling branch");
                     let identity = runtime.branch_identity(&foreign).unwrap();
                     let (_, basis) = runtime.observe_branch(&identity).unwrap();
@@ -254,10 +260,13 @@ fn fork_product(
         ),
     )
     .expect("the sibling intent is valid");
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let outcome = world
         .application
         .product_runtime()
         .create_product_branch(
+            execution,
             source,
             None,
             intent,

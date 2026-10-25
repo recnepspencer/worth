@@ -121,6 +121,7 @@ fn lagging_sibling_root_survives_without_per_record_branch_pins() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -179,6 +180,7 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

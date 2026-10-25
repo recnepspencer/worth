@@ -1,42 +1,57 @@
 //! The durable medium port: the one seam through which Relational's committed
-//! history reaches durable storage.
+//! history and branch lifecycle transitions reach durable storage.
 //!
 //! Relational never names a storage engine. A runtime with an attached medium
 //! publishes each positioned commit's canonical artifact to it after the
 //! commit is fully prepared and its position is reserved, and installs the
-//! commit into live state only after the medium answers `Committed`. Live
-//! state therefore never selects a commit the medium has not made durable.
+//! commit into live state only after the medium answers `Committed`. A fork,
+//! archive or delete publishes its branch transition artifact the same way,
+//! before any live effect. Live state therefore never selects a commit or a
+//! branch the medium has not made durable.
 //!
 //! The medium's owner (Worth Store's Relational home) also owns recovery
-//! sequencing: it hands the recovered checkpoint and journal tail back to
-//! Relational through
+//! sequencing: it hands the recovered checkpoint, journal tail and transition
+//! tail back to Relational through
 //! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
 
 mod binding;
 mod recovery_source;
+mod transition_read;
+mod unresolved;
+pub use transition_read::RelationalDurableTransitionReadFailure;
+pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
 pub(crate) use binding::{RelationalDurableMediumBinding, RelationalDurableStepStop};
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
+pub use unresolved::{RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject};
 
-use crate::durability::canonical_commit_artifact::{
-    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
-};
-use crate::history::data::CommitId;
-use crate::publication::patch::data::PatchStreamPosition;
+use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 
-/// Durable storage for Relational's canonical commit history.
+/// Durable storage for Relational's canonical commit history and its branch
+/// lifecycle transitions.
 ///
-/// Implementations publish each artifact at exactly its position, which is
+/// Implementations publish each commit artifact at exactly its position,
 /// always one past the last position the medium made durable for this
-/// runtime. Publications are issued one at a time.
+/// runtime, and each transition artifact at exactly its sequence, always one
+/// past the last durable sequence. The two streams are independent: a
+/// transition never consumes a position. Publications are issued one at a
+/// time across both.
 ///
 /// A medium is moved into exactly one runtime, as a
 /// `Box<dyn RelationalDurableMedium>`, by
 /// [`RelationalRuntimeBuilder::build_durable`](crate::facade::runtime::RelationalRuntimeBuilder::build_durable).
-/// Relational never clones or shares it: recovery moves it into the rebuilt
-/// runtime, and a forked runtime never inherits it.
+/// Publication access stays with that owner: recovery moves it into the rebuilt
+/// runtime, and a forked runtime never inherits publication access. Speculative
+/// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
-    /// Make one artifact durable, or say exactly why not.
+    /// Read one historical transition for explicit replay. Implementations
+    /// bound the admitted artifact size and verify its frame before returning.
+    fn read_transition(
+        &self,
+        sequence: crate::branch::RelationalBranchTransitionSequence,
+    ) -> Result<RelationalBranchTransitionArtifact, RelationalDurableTransitionReadFailure>;
+    /// Make one commit artifact durable, or say exactly why not.
     ///
     /// `Committed` means the artifact is durable at its position, including an
     /// identical retry of an artifact that already was. `ProvenNoEffect` means
@@ -44,6 +59,13 @@ pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// may not have become durable; only the medium's own recovery can tell.
     fn publish(&self, artifact: &RelationalCanonicalCommitArtifact)
         -> RelationalDurablePublication;
+
+    /// Make one branch transition artifact durable at its sequence, with the
+    /// same answers as [`Self::publish`].
+    fn publish_transition(
+        &self,
+        artifact: &RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication;
 
     /// The in-crate test medium's durable contents behind this medium, so
     /// Relational's own durability tests can recover from the medium a
@@ -66,57 +88,6 @@ pub enum RelationalDurablePublication {
     Indeterminate { detail: String },
 }
 
-/// A commit whose durable publication neither completed nor was proven to
-/// have had no effect.
-///
-/// The commit was not installed into live state. Its fate is decided by the
-/// medium's recovery: after reopening, the commit is durable exactly when the
-/// recovered journal holds this position with this digest. Until the runtime
-/// is reopened it refuses every later publication with the same answer.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RelationalDurabilityUnresolved {
-    position: PatchStreamPosition,
-    commit_id: CommitId,
-    digest: RelationalCanonicalCommitArtifactDigest,
-    detail: String,
-}
-
-impl RelationalDurabilityUnresolved {
-    pub(crate) fn new(
-        position: PatchStreamPosition,
-        commit_id: CommitId,
-        digest: RelationalCanonicalCommitArtifactDigest,
-        detail: String,
-    ) -> Self {
-        Self {
-            position,
-            commit_id,
-            digest,
-            detail,
-        }
-    }
-
-    /// The position whose fate is unresolved.
-    pub fn position(&self) -> PatchStreamPosition {
-        self.position
-    }
-
-    /// The commit identity the unresolved artifact carries.
-    pub fn commit_id(&self) -> CommitId {
-        self.commit_id
-    }
-
-    /// The unresolved artifact's payload digest, for resolving its fate.
-    pub fn digest(&self) -> RelationalCanonicalCommitArtifactDigest {
-        self.digest
-    }
-
-    /// The medium's description of why the fate is unknown.
-    pub fn detail(&self) -> &str {
-        &self.detail
-    }
-}
-
 /// Why a medium-backed publication stopped before any effect.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -129,5 +100,9 @@ pub enum RelationalDurablePublicationRefusal {
     /// The commit could not be encoded as its canonical artifact.
     Encoding(
         crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    ),
+    /// The branch transition could not be encoded as its artifact.
+    TransitionEncoding(
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactEncodeDenial,
     ),
 }

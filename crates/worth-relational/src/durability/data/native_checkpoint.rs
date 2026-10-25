@@ -16,7 +16,15 @@ pub struct RelationalNativeCheckpoint {
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
-    captured_coverage: Option<crate::publication::patch::data::PatchStreamPosition>,
+    captured_coverage: Option<NativeCheckpointCoverage>,
+}
+
+/// What a captured checkpoint covers: its last commit position and its last
+/// branch transition sequence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NativeCheckpointCoverage {
+    position: crate::publication::patch::data::PatchStreamPosition,
+    transitions: crate::branch::RelationalBranchTransitionSequence,
 }
 
 /// Actual MessagePack value bytes emitted during one native capture. The
@@ -103,14 +111,18 @@ impl RelationalNativeCheckpoint {
     pub(crate) fn from_captured_bytes(
         bytes: ExecutionImmutableBytes,
         sections: NativeCheckpointSectionBytes,
-        coverage: crate::publication::patch::data::PatchStreamPosition,
+        position: crate::publication::patch::data::PatchStreamPosition,
+        transitions: crate::branch::RelationalBranchTransitionSequence,
     ) -> Self {
         let region = 0..bytes.len();
         Self {
             bytes,
             region,
             captured_sections: Some(sections),
-            captured_coverage: Some(coverage),
+            captured_coverage: Some(NativeCheckpointCoverage {
+                position,
+                transitions,
+            }),
         }
     }
 
@@ -118,6 +130,15 @@ impl RelationalNativeCheckpoint {
     /// checkpoint this process captured. A medium files the checkpoint under
     /// this position; recovery checks the decoded checkpoint against it.
     pub fn covered_position(&self) -> Option<crate::publication::patch::data::PatchStreamPosition> {
-        self.captured_coverage
+        self.captured_coverage.map(|coverage| coverage.position)
+    }
+
+    /// The last branch transition sequence this checkpoint includes, known
+    /// only for a checkpoint this process captured. A medium files it beside
+    /// the covered position; recovery checks the decoded checkpoint against it.
+    pub fn covered_branch_transitions(
+        &self,
+    ) -> Option<crate::branch::RelationalBranchTransitionSequence> {
+        self.captured_coverage.map(|coverage| coverage.transitions)
     }
 }

@@ -26,7 +26,7 @@ mod owner_contact_tests;
 #[path = "execution/terminal.rs"]
 mod terminal;
 
-use forks::{fork_relational, fork_signal, ForkFailure};
+use forks::{fork_relational, fork_signal, ForkFailure, RelationalForkFailure};
 
 /// Where the two owner fork calls of one creation ended.
 pub(super) enum BranchCreationExecution {
@@ -53,6 +53,7 @@ pub(super) struct CreationDestination {
 /// rechecked exactly as a publication rechecks it.
 pub(super) fn execute_creation<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut attempt: ReservedBranchCreationAttempt,
     destination: &CreationDestination,
     cancellation: &RuntimeWorldCancellationToken,
@@ -68,9 +69,25 @@ where
         return BranchCreationExecution::NoEffect(denial);
     }
 
-    let relational = match fork_relational(owner, &mut attempt, destination) {
+    let relational = match fork_relational(owner, execution, &mut attempt, destination) {
         Ok(progress) => progress,
-        Err(ForkFailure { denial }) => return BranchCreationExecution::NoEffect(denial),
+        Err(RelationalForkFailure::Denied(ForkFailure { denial })) => {
+            return BranchCreationExecution::NoEffect(denial)
+        }
+        Err(RelationalForkFailure::Unresolved(unresolved)) => {
+            let progress = CompositeAttemptProgress::new(
+                crate::publication::RelationalAttemptProgress::durability_unresolved(unresolved),
+                SignalAttemptProgress::untouched(),
+            );
+            return terminal::retain_or_no_effect(
+                owner,
+                terminal::SettledCreationAttempt { attempt, progress },
+                terminal::CreationDenialNaming {
+                    cause: ProductUnpublishedCause::RelationalDurabilityUnresolved,
+                    denial: RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
+                },
+            );
+        }
     };
     let progress = CompositeAttemptProgress::new(relational, SignalAttemptProgress::untouched());
 
