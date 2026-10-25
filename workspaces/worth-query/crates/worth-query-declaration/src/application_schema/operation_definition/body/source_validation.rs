@@ -67,7 +67,7 @@ pub(super) fn validate(
     if let Step::CapturedPathField {
         target_presence, ..
     } = step
-        && !target_metadata.is_some_and(|(_, presence)| presence == target_presence)
+        && target_metadata.is_none_or(|(_, presence)| presence != target_presence)
     {
         return Err(Denial::decision_read_body_dependency(operation));
     }

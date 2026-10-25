@@ -8,6 +8,10 @@ use worth_query_installation::{
     facade as runtime_domain, worth_query_conditional_node as conditional_node,
 };
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/base_model.rs"]
+#[expect(
+    dead_code,
+    reason = "Shared consumer fixture includes doors exercised by its owning consumer courts"
+)]
 mod base_model;
 use base_model::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/principal.rs"]
@@ -20,16 +24,26 @@ use output_contract::*;
 mod planar_topology;
 use planar_topology::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant.rs"]
+#[expect(
+    dead_code,
+    reason = "Shared consumer fixture includes doors exercised by its owning consumer courts"
+)]
 mod planar_invariant;
 
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_read.rs"]
 mod planar_read;
 use planar_read::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/region_output.rs"]
+#[expect(
+    dead_code,
+    reason = "Shared consumer fixture includes doors exercised by its owning consumer courts"
+)]
 mod region_output;
 use region_output::*;
-#[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer.rs"]
-mod output_producer;
+mod output_producer {
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/binding.rs");
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/readiness.rs");
+}
 use output_producer::*;
 mod facts {
     use super::*;
@@ -41,6 +55,10 @@ mod readiness {
 include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/producer/resources.rs");
 mod admission;
 mod birth;
+#[expect(
+    dead_code,
+    reason = "Shared consumer fixture includes doors exercised by its owning consumer courts"
+)]
 mod fixture_values;
 mod installation;
 mod journey;

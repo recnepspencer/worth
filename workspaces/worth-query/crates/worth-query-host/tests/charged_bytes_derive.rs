@@ -6,6 +6,10 @@ use worth_query_host::facade::application_contribution::ChargedBytes;
 struct RetainedResult {
     total: u64,
     labels: Vec<String>,
+    #[expect(
+        clippy::box_collection,
+        reason = "The derive court covers the charges of nested Box and Vec allocations"
+    )]
     resident_notes: Option<Box<Vec<String>>>,
 }
 

@@ -120,30 +120,24 @@ fn distinct_absent_predicates_survive_sealing_and_compare_only_their_own_matches
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            assert_eq!(
-                currentness(
-                    &phase,
-                    &host_custody.borrowed_request_for_test(),
-                    &world,
-                    &predicates[0]
-                ),
-                true
-            )
+            assert!(currentness(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                &predicates[0]
+            ))
         })
         .expect("the fixture read owns its installed host call");
     world
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            assert_eq!(
-                currentness(
-                    &phase,
-                    &host_custody.borrowed_request_for_test(),
-                    &world,
-                    &predicates[1]
-                ),
-                true
-            )
+            assert!(currentness(
+                &phase,
+                &host_custody.borrowed_request_for_test(),
+                &world,
+                &predicates[1]
+            ))
         })
         .expect("the fixture read owns its installed host call");
 

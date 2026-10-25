@@ -199,7 +199,7 @@ fn value_meaning_nested_changes_require_an_explicit_revision_advance() {
 fn value_meaning_refuses_ambiguous_rosters() {
     let original = field::<Original>(BOUNDS);
     assert_eq!(
-        ApplicationAspectValueMeaning::from_members(&[original.clone()]),
+        ApplicationAspectValueMeaning::from_members(std::slice::from_ref(&original)),
         Err(ApplicationValueMeaningDenial::FieldWithoutAspect)
     );
     let mut members = vec![

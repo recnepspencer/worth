@@ -223,7 +223,6 @@ where
                     Read::Cancelled => Outcome::Cancelled,
                     Read::DeadlineExceeded => Outcome::DeadlineExceeded,
                     Read::PredicateIndexUnavailable
-                    | Read::PredicateLookupOverflow
                     | Read::TargetIdentityIndexUnavailable
                     | Read::TargetIdentityLookupOverflow
                     | Read::TargetIdentityNotFound

@@ -252,7 +252,6 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::SnapshotIdentityExhausted
         | ExecutionKind::ExpiredBasis
         | ExecutionKind::BasisReleaseFailed
-        | ExecutionKind::PredicateLookupOverflow
         | ExecutionKind::ResultLimitExceeded
         | ExecutionKind::CardinalityMismatch
         | ExecutionKind::ProjectionUnavailable

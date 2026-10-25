@@ -55,28 +55,6 @@ fn fixture_with_commit(
     (registry, old_interest, next_interest, commit)
 }
 
-fn replacement_shape(
-    commit: Commit,
-    own: bool,
-) -> (
-    WorthQueryOutputDemandRegistry,
-    WorthQueryOutputDemandInterest,
-    WorthQueryOutputDemandInterest,
-    Commit,
-) {
-    let fixture = fixture_with_commit(commit);
-    let other = key_with_identity("replacement", 0, if own { 1 } else { 2 }, 1);
-    assert_eq!(other.same_occurrence(&fixture.1.key), own);
-    fixture
-        .0
-        .state
-        .lock()
-        .unwrap()
-        .records
-        .insert(other, record(occurrence(), DemandState::Admitted, 0));
-    fixture
-}
-
 #[test]
 fn replacement_prepares_exact_commit_growth_and_transfers_matching_obligations() {
     let (registry, old, next, commit) = fixture();

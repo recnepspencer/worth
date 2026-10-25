@@ -165,7 +165,6 @@ pub(super) fn one_shot(
         | Kind::ExpiredBasis
         | Kind::BasisReleaseFailed
         | Kind::PredicateIndexUnavailable
-        | Kind::PredicateLookupOverflow
         | Kind::ResultLimitExceeded
         | Kind::CardinalityMismatch
         | Kind::TraversalUnavailable

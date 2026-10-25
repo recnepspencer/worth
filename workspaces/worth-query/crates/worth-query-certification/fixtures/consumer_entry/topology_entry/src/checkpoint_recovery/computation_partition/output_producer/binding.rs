@@ -6,7 +6,7 @@ use std::marker::PhantomData;
 
 use super::fixture_values::PositiveLength;
 use super::runtime_api::application_contribution::{
-    self, WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
+    self, WorthQueryApplicationProducerBinding,
     WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
     WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
     WorthQueryProducerLifecyclePosture, WorthQueryProducerOutputFamily,
@@ -34,20 +34,6 @@ impl<Schema: TopologySchemaBinding> WorthQueryProducerOutputFamily<Schema> for R
     const SUPPORTED: &'static [WorthQueryProducerApplicability] = APPLICABILITY;
     fn profile_kind(_: &PlanarReadResult) -> &'static str {
         "region-output"
-    }
-}
-
-/// A demand for the region output of the scope it names.
-#[derive(Clone)]
-pub(super) struct RegionOutputDemand(pub(super) String);
-impl<Schema: TopologySchemaBinding> WorthQueryApplicationOutputDemand<Schema>
-    for RegionOutputDemand
-{
-    type OutputFamily = RegionOutputFamily;
-    fn source_intent(&self) -> PlanarRead {
-        PlanarRead {
-            body_key: self.0.clone(),
-        }
     }
 }
 

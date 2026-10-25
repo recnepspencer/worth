@@ -86,6 +86,24 @@ fn bind_native_reference_invariants(
     Ok(())
 }
 
+pub(crate) fn bind_application_candidate_effect_closure(
+    closure: &mut WorthQueryProviderPlanDeclaredClosure,
+    posture: WorthQueryApplicationEffectPosture,
+    touches_application: bool,
+    application_effects: &[String],
+    application_invariants: &[String],
+) {
+    closure.effect.clear();
+    closure.invariant.clear();
+    if posture.includes_application() && touches_application {
+        closure.effect.extend_from_slice(application_effects);
+        closure.invariant.extend_from_slice(application_invariants);
+    }
+    if posture.includes_platform() {
+        closure.effect.push("mutation".to_owned());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -171,29 +189,11 @@ mod tests {
         let mut closure = WorthQueryProviderPlanDeclaredClosure::default();
         let exact = WorthQueryInvariantExecutionContract::declared([original.clone()]).unwrap();
         bind_native_reference_invariants(&mut closure, &mut requirements, &exact).unwrap();
-        assert_eq!(requirements, [original.clone()]);
+        assert_eq!(requirements.as_slice(), std::slice::from_ref(&original));
         let conflict = WorthQueryInvariantExecutionContract::declared([requirement(2)]).unwrap();
         assert!(
             bind_native_reference_invariants(&mut closure, &mut requirements, &conflict).is_err()
         );
         assert_eq!(requirements, [original]);
-    }
-}
-
-pub(crate) fn bind_application_candidate_effect_closure(
-    closure: &mut WorthQueryProviderPlanDeclaredClosure,
-    posture: WorthQueryApplicationEffectPosture,
-    touches_application: bool,
-    application_effects: &[String],
-    application_invariants: &[String],
-) {
-    closure.effect.clear();
-    closure.invariant.clear();
-    if posture.includes_application() && touches_application {
-        closure.effect.extend_from_slice(application_effects);
-        closure.invariant.extend_from_slice(application_invariants);
-    }
-    if posture.includes_platform() {
-        closure.effect.push("mutation".to_owned());
     }
 }

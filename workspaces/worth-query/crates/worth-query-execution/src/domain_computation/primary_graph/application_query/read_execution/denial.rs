@@ -3,7 +3,6 @@ pub(in crate::domain_computation::primary_graph::application_query) enum WorthQu
 {
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     PredicateIndexUnavailable,
-    PredicateLookupOverflow,
     TargetIdentityIndexUnavailable,
     TargetIdentityLookupOverflow,
     TargetIdentityNotFound,

@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::output_lineage::own_write_fixture::with_committed_own_write;
 #[test]
 fn a_current_proof_from_another_basis_acknowledges_nothing() {
-    with_committed_own_write(|world, _receipt, _recorded, resources| {
+    with_committed_own_write(|world, _receipt, _recorded, _resources| {
         world.application.with_host_advancement(|phase| {
         let execution = phase.execution_request_for(&world.application.product_runtime).unwrap();
         let runtime = &world.application;
