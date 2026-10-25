@@ -11,6 +11,7 @@ use worth_runtime_world::facade::{
 };
 
 use super::WorthQueryProductRuntime;
+pub(crate) use history::WorthQueryReleasedHistoryFollower;
 pub(crate) use registry::WorthQueryProductBranchOwnerCleanupReservation;
 pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 

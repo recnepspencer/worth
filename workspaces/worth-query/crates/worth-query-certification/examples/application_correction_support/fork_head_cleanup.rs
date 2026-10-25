@@ -6,11 +6,17 @@ use super::{
     host,
 };
 use worth_query_host::facade::{
-    application_entry::*, primary_graph::*, runtime::ProductUnpublishedCause,
+    application_entry::*,
+    primary_graph::*,
+    product::{
+        WorthQueryApplicationProductBranchCleanupDenial, WorthQueryProductBranchOwnerCleanupDenial,
+    },
+    runtime::ProductUnpublishedCause,
 };
 
 pub fn run() {
     abandoned_forks_release_their_evidence();
+    a_held_read_keeps_only_the_evidence_it_needs();
     an_unpublished_fork_closes_after_its_recovery();
 }
 
@@ -41,6 +47,55 @@ fn abandoned_forks_release_their_evidence() {
         );
     }
     println!("{ABANDONED} abandoned forks released their evidence");
+}
+
+/// A read held on a fork's first step stops the close's walk there. The step
+/// past it is released all the same, and its evidence goes with it before
+/// the close reports; the held step's evidence waits for the retry.
+fn a_held_read_keeps_only_the_evidence_it_needs() {
+    let host = host::install();
+    let head = fork(&host, host.runtime().current_world());
+    host::edit_on(&host, head, Value::Primary(11), "kept");
+    let kept = host.runtime().completed_evidence_retained_for_test();
+    let branch = fork(&host, head);
+    host::edit_on(&host, branch, Value::Secondary(31), "held-step");
+    let held_evidence = host.runtime().completed_evidence_retained_for_test();
+    let read = host
+        .with_host_advancement(|phase| host.runtime().on_branch(branch).select(&phase).unwrap())
+        .unwrap();
+    host::edit_on(&host, branch, Value::Secondary(32), "released-step");
+    let stepped_evidence = host.runtime().completed_evidence_retained_for_test();
+    assert!(
+        stepped_evidence > held_evidence,
+        "the released step keeps evidence of its own: {kept} {held_evidence} {stepped_evidence}"
+    );
+    let Some(WorthQueryApplicationProductBranchCloseDenial::OwnerCleanupPending(failure)) = host
+        .with_host_advancement(|phase| host.runtime().on_branch(branch).close(&phase).err())
+        .unwrap()
+    else {
+        panic!("the held read defers the close's history release")
+    };
+    assert!(matches!(
+        failure.denial(),
+        WorthQueryApplicationProductBranchCleanupDenial::Product(
+            WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryStillRetained
+        )
+    ));
+    assert_eq!(
+        host.runtime().completed_evidence_retained_for_test(),
+        held_evidence,
+        "the released step's evidence goes though the walk stopped at the read"
+    );
+    drop((failure, read));
+    for cleanup in host.runtime().branches().pending_cleanup() {
+        assert!(cleanup.retry().unwrap().is_complete());
+    }
+    assert_eq!(
+        host.runtime().completed_evidence_retained_for_test(),
+        kept,
+        "the retry releases the held step and its evidence"
+    );
+    println!("a held read kept only the evidence it needs");
 }
 
 /// A fork's publication installs its successor but never moves the head. The

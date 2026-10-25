@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldLifecyclePort};
 
 use super::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryReleasedHistoryFollower;
 
 impl WorthQueryPrimaryGraphProvider {
     pub(in crate::domain_computation::primary_graph) fn has_outstanding_dispatch_for_branch(
@@ -39,9 +40,9 @@ impl WorthQueryPrimaryGraphProvider {
             .release_occurrence(incarnation);
         // Evidence on a commit history still retains passes to the forks
         // that reach it; the rest goes with the occurrence. The World read and
-        // the hand-over share one evidence lock: history released after the
-        // read is swept after its release, and that sweep waits here and then
-        // finds the evidence inherited.
+        // the hand-over share one evidence lock: a cleanup that releases
+        // history after the read sweeps once its walk ends, and that sweep
+        // waits here and then finds the evidence inherited.
         let (commits, released): (Vec<_>, Vec<_>) = {
             let mut evidence = self
                 .completed_commit_evidence
@@ -78,9 +79,8 @@ impl WorthQueryPrimaryGraphProvider {
         self.retire_application_branch_commit_lane(incarnation);
     }
 
-    /// Releases inherited evidence whose World commit history let go; every
-    /// branch or recovery cleanup calls it after releasing history.
-    pub(in crate::domain_computation) fn release_unretained_inherited_evidence(&self) {
+    /// Releases inherited evidence whose World commit history let go.
+    fn release_unretained_inherited_evidence(&self) {
         let inherited = self
             .completed_commit_evidence
             .lock()
@@ -109,6 +109,13 @@ impl WorthQueryPrimaryGraphProvider {
         candidates: &[CompositeCommitIdentity],
     ) -> BTreeSet<CompositeCommitIdentity> {
         retained_among(self.world_history.get(), candidates)
+    }
+}
+
+/// Every history release a branch or recovery cleanup makes reaches here.
+impl WorthQueryReleasedHistoryFollower for WorthQueryPrimaryGraphProvider {
+    fn history_released(&self) {
+        self.release_unretained_inherited_evidence();
     }
 }
 

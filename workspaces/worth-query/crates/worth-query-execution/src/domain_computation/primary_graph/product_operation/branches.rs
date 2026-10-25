@@ -159,7 +159,6 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 WorthQueryApplicationProductBranchCleanup::new(
                     cleanup,
                     std::sync::Arc::clone(&conditional),
-                    std::sync::Arc::clone(&self.application.primary_provider),
                 )
             })
             .collect()

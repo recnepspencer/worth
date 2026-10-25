@@ -45,7 +45,7 @@ where
     ))?;
     graph
         .primary_provider
-        .install_world_history(product_runtime.owner.lifecycle_port());
+        .install_world_history(&product_runtime);
     let runtime_authority = graph.runtime.authority_identity();
     let schema_binding = installed_schema.binding_identity();
     let application_readiness_schema_token = format!(
