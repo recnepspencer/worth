@@ -171,7 +171,7 @@ fn commit_outcome(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> (Ended, Vec<Vec<u8>>, InFlight) {
-    let now = workload::artifacts_of(home.runtime());
+    let now = workload::append_live_artifacts(home.runtime(), &before);
     match outcome {
         Ok(_) => {
             assert_eq!(

@@ -262,6 +262,36 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
         .collect()
 }
 
+/// Inspect only newly performed positions while Store may be indeterminate.
+/// The acknowledged prefix is retained by the oracle before arming the fault;
+/// full byte agreement is checked independently after reopening the home.
+pub(crate) fn append_live_artifacts(
+    runtime: &RelationalRuntime,
+    before: &[Vec<u8>],
+) -> Vec<Vec<u8>> {
+    let artifacts = runtime
+        .durability()
+        .canonical_commit_artifacts(ExecutionAllocationPolicy::SystemAllocation);
+    assert!(
+        artifacts.len() >= before.len(),
+        "live selection lost an acknowledged index prefix"
+    );
+    let mut now = before.to_vec();
+    now.extend(
+        artifacts
+            .after_position(worth_relational::facade::publication::PatchStreamPosition(
+                before.len() as u64,
+            ))
+            .map(|artifact| {
+                artifact
+                    .expect("newly performed artifact encodes")
+                    .as_bytes()
+                    .to_vec()
+            }),
+    );
+    now
+}
+
 /// Every registered branch's head, read record by record.
 pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> BranchStates {
     let host = serial_request();

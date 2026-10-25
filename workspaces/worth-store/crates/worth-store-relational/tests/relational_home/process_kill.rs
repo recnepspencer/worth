@@ -47,6 +47,8 @@ pub(crate) enum Stop {
     Delete(Seam),
     /// The checkpoint replacing the first one, parked at a seam.
     Checkpoint(Seam),
+    /// An unanchored member batch, before the manifest selection.
+    CheckpointMembers(Seam),
 }
 
 const SEAMS: [Seam; 5] = [
@@ -71,6 +73,7 @@ impl Stop {
             .chain(SEAMS.into_iter().map(Self::RequestDeletion))
             .chain(SEAMS.into_iter().map(Self::Delete))
             .chain(SEAMS.into_iter().map(Self::Checkpoint))
+            .chain(SEAMS.into_iter().map(Self::CheckpointMembers))
     }
 
     /// The script steps the child completes before it parks, and the step it
@@ -93,7 +96,7 @@ impl Stop {
                 let target = position(|step| matches!(step, Step::Transition { .. }), 0);
                 (target, Some(target))
             }
-            Self::Checkpoint(_) => {
+            Self::Checkpoint(_) | Self::CheckpointMembers(_) => {
                 let target = position(|step| matches!(step, Step::Checkpoint), 1);
                 (target, Some(target))
             }
@@ -176,6 +179,7 @@ fn assert_killed_home_recovers(stop: Stop) {
         Stop::AboveCheckpoint => (InFlight::Nothing, 1),
         Stop::Commit(Seam::BeforeWalAppend) => (InFlight::NotDurable, 2),
         Stop::Commit(_) => (InFlight::Durable, 2),
+        Stop::CheckpointMembers(_) => (InFlight::Nothing, 1),
         Stop::Checkpoint(Seam::BeforeWalAppend) => (InFlight::Nothing, 1),
         Stop::Checkpoint(_) => (InFlight::Nothing, 2),
         Stop::BranchTransition(_)
@@ -238,6 +242,7 @@ fn a_commit_killed_at_each_mutation_seam_recovers_durable_before_live() {
 #[test]
 fn a_checkpoint_killed_at_each_mutation_seam_keeps_one_selected() {
     for seam in SEAMS {
+        assert_killed_home_recovers(Stop::CheckpointMembers(seam));
         assert_killed_home_recovers(Stop::Checkpoint(seam));
     }
 }
@@ -293,7 +298,8 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
         | Stop::Archive(seam)
         | Stop::RequestDeletion(seam)
         | Stop::Delete(seam)
-        | Stop::Checkpoint(seam) => seam,
+        | Stop::Checkpoint(seam)
+        | Stop::CheckpointMembers(seam) => seam,
         Stop::BeforeFirstCheckpoint | Stop::AboveCheckpoint => {
             let live = acknowledged.len().to_string();
             killed_child::announce(
@@ -306,7 +312,7 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     };
     let target = &script.steps[parked.expect("a parked step")];
     std::thread::scope(|scope| {
-        let gate = home
+        let mut gate = home
             .certification_serving()
             .certification_pause_physical_mutation_at(seam);
         let worker = scope.spawn(|| {
@@ -331,6 +337,20 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
             // assertion. Preserve the actual attempt's result in the failure.
             gate.release();
             panic!("{stop:?}: target did not park: {:?}", worker.join());
+        }
+        if matches!(stop, Stop::Checkpoint(_)) {
+            // This small fixture's new members form one batch. Its durable
+            // root does not select the checkpoint; the following anchored
+            // append is the decision the existing checkpoint court judges.
+            let anchor = home
+                .certification_serving()
+                .certification_pause_physical_mutation_at(seam);
+            gate.release();
+            gate = anchor;
+            if !gate.await_arrival() {
+                gate.release();
+                panic!("{stop:?}: anchor did not park: {:?}", worker.join());
+            }
         }
         if let Step::Fork { target } = target {
             assert!(
