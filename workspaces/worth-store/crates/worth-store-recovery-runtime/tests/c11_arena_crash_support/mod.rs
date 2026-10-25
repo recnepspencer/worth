@@ -30,9 +30,7 @@ pub(crate) fn observe_arena_in_separate_process(
     run: &str,
     scenario: &str,
 ) -> serde_json::Value {
-    const OBSERVER: &str = "WORTH_C9_OBSERVER_EXECUTABLE";
-    let executable = std::env::var_os(OBSERVER)
-        .unwrap_or_else(|| panic!("{OBSERVER} must name the independent observer executable"));
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let output = Command::new(executable)
         .args(["observe", "--store-root"])
         .arg(root)

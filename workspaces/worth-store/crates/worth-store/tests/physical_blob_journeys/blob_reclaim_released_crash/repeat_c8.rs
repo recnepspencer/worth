@@ -97,19 +97,7 @@ fn selected_v3_witness_changed_after_first_c8_denies_repeat() {
 }
 
 fn run_recovery(root: &Path) -> Output {
-    let binary = std::env::var_os("WORTH_C8_RECOVERY_EXECUTABLE")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .and_then(Path::parent)
-                .unwrap()
-                .join(format!(
-                    "physical_store_recover{}",
-                    std::env::consts::EXE_SUFFIX
-                ))
-        });
+    let binary = worth_store_test_support::FRESH_PROCESS_RECOVERY.path();
     Command::new(binary)
         .arg(root)
         .arg("--bounded-profile=c11-blob-crash-v1")

@@ -1,4 +1,4 @@
-mod bounded_process;
+pub(crate) mod bounded_process;
 mod cargo_environment;
 mod declaration;
 mod diagnostics;

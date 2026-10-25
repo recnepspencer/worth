@@ -1,6 +1,5 @@
 use std::{collections::BTreeSet, path::Path};
 
-use super::offline_observer_build::offline_observer_build;
 use super::TestExecutionUnit;
 
 #[derive(Clone, Copy)]
@@ -34,18 +33,12 @@ fn integration_units(
     shard: Option<(usize, usize)>,
     workspace_root: &Path,
 ) -> Vec<TestExecutionUnit> {
-    let tests = TestExecutionUnit::cargo(
+    // Process tests build the independent executables they run themselves.
+    vec![TestExecutionUnit::cargo(
         format!("{lane}::nextest"),
         workspace_root,
         integration_arguments(selections, shard),
-    );
-    if selections.iter().any(|selection| {
-        selection.package == "worth-store" && selection.target == "physical_record_journeys"
-    }) {
-        vec![offline_observer_build(workspace_root), tests]
-    } else {
-        vec![tests]
-    }
+    )]
 }
 
 fn integration_arguments(
@@ -242,7 +235,7 @@ const UI_TARGETS: &[IntegrationTarget] = &[
     ),
     target(
         "worth-store-certification",
-        "s5_physical_isolation_entry_compile_fail",
+        "recovery_read_authority_compile_fail",
         None,
     ),
     target(

@@ -24,18 +24,40 @@ list tests, count tests, record Git revisions, or write generated reports.
 Cargo and the selected test executables provide the verdict through their exit
 status.
 
+The runner's owner, scenario, UI, and formal partitions require `cargo-nextest`
+on `PATH`. The full Cargo lanes also run directly:
+
+```text
+cargo test --workspace --no-fail-fast
+cargo test -p worth-store-recovery-runtime --features certification-test-authority --no-fail-fast
+cargo test -p worth-store-relational --features certification-test-authority --no-fail-fast
+cargo clippy --workspace --all-targets
+```
+
+`relational_home` requires the certification feature because its crash oracle
+uses the compiled media and interruption controls. Windows confinement tests
+create real file and directory symlinks. Run with Windows Developer Mode enabled
+or an account holding the symbolic-link creation privilege; fixture creation
+must succeed before those tests can exercise confinement.
+
+The separate `scripts/ci/verify_worth_store_formal_toolchain.ps1` (or `.sh`)
+check requires Java on `PATH` and the checksum-pinned TLC jar described in
+`worth-store-formal-models/formal-toolchain.toml`. It downloads the jar into
+`target/formal-tools` when absent; offline runs must provision that jar first.
+
 ## Fresh-process recovery
 
-The C8 process suite builds the production writer, offline observer, and
-recovery executable independently, then runs the recovery scenarios with
-those three executable paths:
+The C8 process suite runs the recovery scenarios against a production writer,
+offline observer, and recovery executable that the suite builds itself, each
+independently of the test image:
 
 ```text
 cargo run -q -p store-test-runner -- ci --partition process-scenario
 ```
 
-The builds reuse Cargo's configured target directory so repeated runs keep the
-normal compilation cache. There is no source inventory, executable digest,
-proof report, or retained certification bundle. Git identifies the source
-revision, Cargo builds the binaries, and the process tests decide whether the
-behavior passes.
+The same suite runs under plain `cargo test`; the runner only bounds it. The
+suite's builds use their own target directory beside the test's, so repeated
+runs keep the normal compilation cache. There is no source inventory,
+executable digest report, proof report, or retained certification bundle. Git
+identifies the source revision, Cargo builds the binaries, and the process
+tests decide whether the behavior passes.

@@ -27,10 +27,10 @@ pub(crate) fn execute(
 fn command(unit: &TestExecutionUnit, target_root: Option<&Path>) -> Command {
     let mut command = Command::new(unit.program());
     command.args(unit.arguments()).current_dir(unit.directory());
-    if unit.program() == "cargo" {
-        if let Some(root) = target_root {
-            command.env("CARGO_TARGET_DIR", root);
-        }
+    if unit.program() == "cargo"
+        && let Some(root) = target_root
+    {
+        command.env("CARGO_TARGET_DIR", root);
     }
     command
 }

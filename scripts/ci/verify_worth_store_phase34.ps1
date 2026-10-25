@@ -33,29 +33,17 @@ try {
     Invoke-Checked "layout authority compile-fail suites" @(
         "test", "-p", "worth-store-layout-indexes", "--test", "layout_compile_fail"
     )
-    Invoke-Checked "physical compaction interlock" @(
-        "test", "-p", "worth-store-physical-isolation", "compaction_interlock"
+    Invoke-Checked "physical isolation placement scenarios" @(
+        "test", "-p", "worth-store-physical-isolation", "--test", "layout_scenarios"
     )
     Invoke-Checked "durable LSM membership authority" @(
         "test", "-p", "worth-store-lsm-authority"
     )
-    Invoke-Checked "layout access-path courtroom" @(
-        "test", "-p", "worth-store-certification", "--test", "s8_layout_access_path_harness"
+    Invoke-Checked "layout access planning scenarios" @(
+        "test", "-p", "worth-store-layout-indexes", "--test", "layout_scenarios"
     )
-    Invoke-Checked "layout corruption and rebuild courtroom" @(
-        "test", "-p", "worth-store-certification", "--test", "s8_layout_corruption_rebuild"
-    )
-    Invoke-Checked "B-tree lookup courtroom" @(
-        "test", "-p", "worth-store-certification", "--test", "s8_btree_lookup_authority"
-    )
-    Invoke-Checked "B-tree replay courtroom" @(
-        "test", "-p", "worth-store-certification", "--test", "s8_btree_replay_authority"
-    )
-    Invoke-Checked "LSM lookup and replay courtroom" @(
-        "test", "-p", "worth-store-certification", "--test", "s8_lsm_lookup_authority"
-    )
-    Invoke-Checked "certification owner topology" @(
-        "test", "-p", "worth-store-certification", "--lib", "owner_topology"
+    Invoke-Checked "layout corruption, rebuild and bootstrap courtroom" @(
+        "test", "-p", "worth-store-certification", "--test", "layout_access"
     )
     Invoke-Checked "test support compilation" @(
         "test", "-p", "worth-store-test-support", "--no-run"

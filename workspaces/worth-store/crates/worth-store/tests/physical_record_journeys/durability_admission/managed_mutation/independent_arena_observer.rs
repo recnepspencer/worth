@@ -5,7 +5,6 @@ use std::{
 };
 
 static NEXT_REPORT: AtomicU64 = AtomicU64::new(0);
-const OBSERVER: &str = "WORTH_C9_OBSERVER_EXECUTABLE";
 
 pub(super) fn observe_arena_in_separate_process(
     root: &Path,
@@ -13,8 +12,7 @@ pub(super) fn observe_arena_in_separate_process(
     run: &str,
     scenario: &str,
 ) -> serde_json::Value {
-    let executable = std::env::var_os(OBSERVER)
-        .unwrap_or_else(|| panic!("{OBSERVER} must name the independent observer executable"));
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let ordinal = NEXT_REPORT.fetch_add(1, Ordering::Relaxed);
     let report_path = directory.join(format!("c11-{run}-{scenario}-{ordinal}.json"));
     let output = Command::new(executable)
