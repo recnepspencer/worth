@@ -1,0 +1,176 @@
+//! Complete one-kind reads on the native candidate/before-image view.
+use crate::identity::data::{EntityId, KindId};
+
+use super::super::{CustomInvariantWorkMeter, CustomPreparationStop, StructuralReadError};
+use super::breadth_first::{self, BreadthFirstRead};
+mod retention_extent;
+use super::complete_result::*;
+use super::{StructuralRelationView, TraversalDirection};
+
+impl StructuralRelationView<'_> {
+    /// Complete outgoing reachability, including roots at distance zero.
+    ///
+    /// O((v+a) log(v+a)) time and O(v+e) retained space, where a includes
+    /// adjacency candidates at visited vertices and e is matching edges.
+    /// Reads use this view's original meter and the caller's original request.
+    pub fn walk_outgoing_from(
+        &self,
+        seeds: &[EntityId],
+        relation_kind: KindId,
+    ) -> Result<CompleteStructuralWalk, StructuralWalkDenial> {
+        self.walk_complete(seeds, relation_kind, TraversalDirection::Outgoing)
+    }
+
+    /// Complete incoming reachability with the same ordering, authority and
+    /// cost contract as `walk_outgoing_from`.
+    pub fn walk_incoming_from(
+        &self,
+        seeds: &[EntityId],
+        relation_kind: KindId,
+    ) -> Result<CompleteStructuralWalk, StructuralWalkDenial> {
+        self.walk_complete(seeds, relation_kind, TraversalDirection::Incoming)
+    }
+
+    fn walk_complete(
+        &self,
+        seeds: &[EntityId],
+        relation_kind: KindId,
+        direction: TraversalDirection,
+    ) -> Result<CompleteStructuralWalk, StructuralWalkDenial> {
+        let mut read = CompleteRead {
+            view: self,
+            work: self.work_meter(),
+            relation_kind,
+            direction,
+            result: CompleteStructuralWalk {
+                steps: Vec::new(),
+                relations: Vec::new(),
+                reads: StructuralWalkReads::default(),
+                _retention: self.work_meter(),
+            },
+        };
+        read.check_live()?;
+        self.require_relation_kind(relation_kind)
+            .map_err(|error| read.refuse(error))?;
+        breadth_first::walk(seeds, &mut read)?;
+        read.check_live()?;
+        read.result
+            .steps
+            .sort_unstable_by_key(|step| (step.distance, step.entity));
+        read.result
+            .relations
+            .sort_unstable_by_key(|record| record.relation_id);
+        read.check_live()?;
+        Ok(read.result)
+    }
+}
+
+struct CompleteRead<'read, 'runtime> {
+    view: &'read StructuralRelationView<'runtime>,
+    work: CustomInvariantWorkMeter,
+    relation_kind: KindId,
+    direction: TraversalDirection,
+    result: CompleteStructuralWalk,
+}
+
+impl CompleteRead<'_, '_> {
+    fn check_live(&self) -> Result<(), StructuralWalkDenial> {
+        self.view
+            .check_walk_live()
+            .map_err(|stop| StructuralWalkDenial {
+                kind: StructuralWalkDenialKind::Interrupted(stop),
+                reads: self.result.reads,
+            })
+    }
+
+    fn refuse(&self, error: StructuralReadError) -> StructuralWalkDenial {
+        use super::super::CustomInvariantInterruption;
+        let kind = match self.work.leased_stop() {
+            Some(CustomPreparationStop::Cancelled) => {
+                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::Cancelled)
+            }
+            Some(CustomPreparationStop::DeadlineElapsed) => {
+                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::DeadlineElapsed)
+            }
+            Some(CustomPreparationStop::MemoryExhausted) => {
+                StructuralWalkDenialKind::MemoryBudgetExceeded
+            }
+            Some(CustomPreparationStop::MemoryAdmission(cause)) => {
+                StructuralWalkDenialKind::MemoryAdmission(cause)
+            }
+            _ => StructuralWalkDenialKind::Read(error),
+        };
+        StructuralWalkDenial {
+            kind,
+            reads: self.result.reads,
+        }
+    }
+
+    fn claim(&self, bytes: usize) -> Result<(), StructuralWalkDenial> {
+        if self.work.try_claim_bytes(bytes as u64) {
+            Ok(())
+        } else {
+            Err(self.refuse(StructuralReadError::WorkBudgetExceeded))
+        }
+    }
+}
+
+impl BreadthFirstRead for CompleteRead<'_, '_> {
+    type Error = StructuralWalkDenial;
+
+    fn retain(&mut self, _entity: EntityId, _distance: usize) -> Result<(), Self::Error> {
+        self.check_live()?;
+        // BTree visited/frontier entries and result Vec growth coexist. Use
+        // the original structural payer before growing any of those owners.
+        self.claim(retention_extent::vertex_bytes())?;
+        if !self.work.try_charge_work(1) {
+            return Err(self.refuse(StructuralReadError::WorkBudgetExceeded));
+        }
+        Ok(())
+    }
+
+    fn expand(
+        &mut self,
+        entity: EntityId,
+        distance: usize,
+        mut enqueue: impl FnMut(&mut Self, EntityId) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error> {
+        self.check_live()?;
+        let kind = self
+            .view
+            .entity_kind_observed(entity, || {
+                self.result.reads.entity_records += 1;
+            })
+            .map_err(|error| self.refuse(error))?;
+        self.result.steps.push(StructuralWalkStep {
+            entity,
+            kind,
+            distance,
+        });
+        #[cfg(test)]
+        self.view.record_walk_visit_for_test(entity);
+        self.check_live()?;
+        let ids = match self.direction {
+            TraversalDirection::Outgoing => self.view.outgoing_relations_for_entity(entity),
+            TraversalDirection::Incoming => self.view.incoming_relations_for_entity(entity),
+        }
+        .map_err(|_| self.refuse(StructuralReadError::WorkBudgetExceeded))?;
+        self.result.reads.adjacency_lists += 1;
+        for id in ids {
+            self.check_live()?;
+            let record = self.view.relation(id).map_err(|error| self.refuse(error))?;
+            self.result.reads.relation_records += 1;
+            if record.kind_id != self.relation_kind {
+                continue;
+            }
+            self.claim(retention_extent::relation_bytes())?;
+            let neighbor = match self.direction {
+                TraversalDirection::Outgoing => record.target,
+                TraversalDirection::Incoming => record.source,
+            };
+            self.result.relations.push(record);
+            enqueue(self, neighbor)?;
+        }
+        Ok(())
+    }
+}

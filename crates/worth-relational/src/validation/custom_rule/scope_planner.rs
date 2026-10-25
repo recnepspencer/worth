@@ -254,9 +254,14 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);
         let aspect_states =
             StructuralAspectStateView::new(state_view.clone(), work.clone(), access.clone());
-        let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
-        let committed_relations =
-            StructuralRelationView::new(committed_state_view.clone(), work.clone(), access.clone());
+        let relations =
+            StructuralRelationView::new(state_view, execution, work.clone(), access.clone());
+        let committed_relations = StructuralRelationView::new(
+            committed_state_view.clone(),
+            execution,
+            work.clone(),
+            access.clone(),
+        );
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),

@@ -80,24 +80,62 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
     state_view: InvariantStateView<'runtime>,
+    execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     work: super::CustomInvariantWorkMeter,
     access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+    #[cfg(test)]
+    walk_observer: Option<std::sync::Arc<dyn Fn(EntityId) + Send + Sync>>,
 }
 
 impl<'runtime> StructuralRelationView<'runtime> {
+    pub(super) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+        self.work.clone()
+    }
+
     pub(crate) fn new(
         state_view: InvariantStateView<'runtime>,
+        execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         work: super::CustomInvariantWorkMeter,
         access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
     ) -> Self {
         Self {
             state_view,
+            execution,
             work,
             access,
+            #[cfg(test)]
+            walk_observer: None,
         }
     }
 
+    #[cfg(test)]
+    pub(super) fn observe_walk_for_test(
+        &mut self,
+        observer: std::sync::Arc<dyn Fn(EntityId) + Send + Sync>,
+    ) {
+        self.walk_observer = Some(observer);
+    }
+
+    #[cfg(test)]
+    pub(super) fn record_walk_visit_for_test(&self, entity: EntityId) {
+        if let Some(observer) = &self.walk_observer {
+            observer(entity);
+        }
+    }
+
+    pub(super) fn check_walk_live(&self) -> Result<(), super::CustomInvariantInterruption> {
+        super::interruption::check_live(self.execution)
+    }
+
     pub fn entity_kind(&self, entity_id: EntityId) -> Result<KindId, StructuralReadError> {
+        self.entity_kind_observed(entity_id, || {})
+    }
+
+    pub(super) fn entity_kind_observed(
+        &self,
+        entity_id: EntityId,
+        acquired: impl FnOnce(),
+    ) -> Result<KindId, StructuralReadError> {
         if !self.work.try_charge_work(1) {
             return Err(StructuralReadError::WorkBudgetExceeded);
         }
@@ -105,6 +143,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             .state_view
             .entity_metadata(entity_id)
             .ok_or(StructuralReadError::RecordUnavailable)?;
+        acquired();
         if !self.access.reads_entity(metadata.kind_id) {
             return Err(StructuralReadError::OutsideDeclaredAccess);
         }

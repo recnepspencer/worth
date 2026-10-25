@@ -1648,3 +1648,138 @@ qualified Phase 2 result for final integration review. Default branches advance
 only after fresh ancestry checks and without force, preserving both original
 dirty checkouts and the private local main. Phase 3 walks/reachability is next
 after this reviewed Phase 2 is integrated; Phases 3-6 are not claimed complete.
+
+## Phase 3, slice 1: complete native traversal boundary review
+
+Phase 2 is integrated. The next missing foundation is a complete, kind-filtered
+native walk. An adversarial graph can have more than 32 hops, cycles, duplicate
+routes and unrelated relation kinds at a visited vertex. A product read must
+either exhaust its frontier or refuse; it must never certify a truncated answer.
+
+Relational's `StructuralRelationView` owns proposed/committed visibility and
+declared kind access. Its original custom meter owns work and retained memory.
+The caller's original `ExecutionRequest` owns cancellation/deadline even in the
+ordinary serial lane. These authorities must be consumed, not reconstructed from
+IDs or replaced with a fresh allowance.
+
+The existing `BoundedStructuralTraversal` is scope widening: it traverses all
+declared relation kinds, applies touched-derived quotas and a depth maximum of
+32, and returns identity-sorted sets without distances. It is not a product
+walk. Its existing policy and accounting remain separate from complete reads;
+both policies will use one private native breadth-first driver. Query must not
+grow a host loop of one-hop reads. Snapshot projection and leased native query
+traversal have separate visibility/resource lifecycles; their consumer adapters
+belong to the subsequent operation/declared-query slice.
+
+The native complete result must carry ordered entity visits with kind/distance,
+every examined matching physical relation (including edges to already visited
+vertices), and actual adjacency/edge/endpoint observations. A refusal carries
+observations but no partial successful result. This is the handoff the next
+typed invariant slice will consume to admit every entity/relation in preparation
+and enforce that frozen admission during evaluation. Those allow-sets are not
+native touched inputs or read counters. Declared native access still controls
+kind applicability; no copied graph or synthetic footprint becomes authority.
+
+The capability index and installed facades provide one-hop reads and scope
+widening but no complete typed reader walk. Complete traversal needs no new
+legality witness, substrate authority or public construction bypass. This slice
+ends at the native facade and real native graph; it does not claim the Query
+reader API, installed footprint court or Phase 3 complete. Material source facts
+for this boundary are resolved before implementation planning.
+
+### Slice 1 implementation plan
+
+The native caller uses
+`relations.walk_outgoing_from(&[root], relation_kind)?`; incoming
+uses the corresponding method. These are complete read operations, not the
+bounded scope planner's methods. Roots are included at distance zero; duplicate
+roots and cycle/diamond arrivals appear once. Entity visits sort by distance,
+then native identity, independently of storage/seed order. This fixes the
+otherwise unspecified canonical BFS tie break for the consumer slices.
+
+Boundary correction before the next source change: passing an execution request
+to the walk itself would permit fresh cancellation state beside an old meter.
+The native view will instead privately carry the exact original request from
+its existing planner/context construction; the walk consumes that request with
+no substitutable argument. Legacy reads merely carry this field and retain
+their existing behavior. Metadata acquired before an access refusal must count
+as an acquisition, while pre-acquisition work refusal must not. The complete
+result also retains the original meter's memory custody while its owned facts
+remain live; returning a result must not release its payer early.
+
+The first focused run exposed an invalid fixture assumption, before its random
+traversal could execute: Native rejects duplicate relation creation identities
+against existing storage as well as within one proposal. The actual authority
+is `relation_creation_admission::reject_existing_relation_identity` and
+`relation_identity_scan`, not client-key uniqueness. The generator must author
+distinct `(kind, source, target)` pairs and pass that same legal graph to the
+independent model. Remove the attempted multi-commit duplicate seeding path;
+do not weaken Native identity admission or fabricate parallel records. Self,
+back and diamond edges still prove non-discovery footprint retention. Other
+focused courts passed, but that run is not a passing slice portfolio.
+
+1. Add the private BFS driver beneath `validation/custom_rule/traversal/`.
+   Retention and expansion are policy-owned steps. Cut the current bounded
+   walker over to this driver, preserving its seed/frontier/step charges,
+   depth limit and public result contract. Existing bounded session tests
+   protect that cutover.
+2. Add complete traversal data and reader policy as children of that same
+   traversal owner, exported through the existing runtime facade. The policy
+   filters one installed relation kind, validates visible/readable entities,
+   checks the original request at entry and every expansion, and uses the
+   original custom meter for reads and pre-growth retention. Complete traversal
+   has no touched-derived or constant depth limit. Typed refusal retains reads
+   and discards output; successful output records all matching edges even when
+   they discover no new entity. Complexity is O((v+a) log(v+a)) time and
+   O(v+e) retained space, where a includes candidates at visited vertices and e
+   is matching physical edges; unrelated disconnected entities do no work.
+3. Add focused real-native-graph proofs under `traversal/tests/`: seeded
+   independent BFS comparison (both directions, multiple roots, self/cyclic/
+   diamond/disconnected shapes), a 1,000-edge chain, access filtering, unchanged
+   observations with 10 versus 10,000 disconnected entities, original serial
+   and leased cancellation/deadline versus funded twins, and work/memory
+   exhaustion without partial success. Test the shared driver only through
+   these production readers and the existing bounded courts.
+4. Run scoped formatting, dirty line caps/function advisories, focused native
+   traversal/custom-rule tests, broader Relational tests appropriate to the
+   shared cutover, and normal boundary-check/agent-context. Gate the patch and
+   final evidence with the persistent reviewer using qa-loop, qa-tests and
+   code-quality-qa; commit only after clearance.
+
+The native result carries facts, never Query identity authority. The next slice
+adds endorelation-typed invariant walk/reaches/closure, preserving binding,
+candidate affinity and Proposed/Committed posture, then the installed deep-edge
+footprint court and mandatory first-hop-only mutant. Operation/declared paths,
+consumer migrations, compiled feature documentation and Phase 3 merge remain
+later work. No unresolved blocker or new permission is required for this slice.
+
+### Slice 1 implementation and qualification
+
+Complete structural reads now consume the request sealed on their native view,
+preserve original work/memory causes, retain result custody, and expose actual
+boundary acquisitions on success and refusal. The shared private driver stays
+under `custom_rule/traversal`: its two consumers share that view/access/meter
+lifecycle. The typed invariant adapter will consume these facts. Operation and
+declared-query reads instead belong to the existing native pinned-query
+executor, whose checkpoint, packet memory, visibility and fragment-reduction
+lifecycle must remain authoritative. Their later boundary review must reconcile
+its root-seed/via-edge ordering with the promised distance/identity order; it
+must not import custom-rule internals or assume the existing snapshot traversal
+already satisfies the product contract.
+
+The final native artifact passes all 28 focused custom-rule courts and the full
+Relational library: 1,819 passes, zero failures and 31 existing ignores. The seven
+new courts cover seeded independent BFS in both directions and multiple roots,
+non-discovery edges, 1,000 hops and disconnected growth, actual candidate versus
+committed walks during an ordinary retarget, acquired-but-denied metadata,
+original serial/leased interruption with completing twins, work/memory denial,
+and owned-result payer retention/release. The earlier 27-pass/one-invalid-fixture
+run remains a failed setup run, corrected by legal tuple-distinct generation.
+
+Downstream Query compilation and agent-context check pass. All 17 changed Rust
+files pass the dirty line cap and formatting; whitespace checks pass, and the
+persistent reviewer accepts the final twelve function advisories by cohesion
+with zero scan errors. Source, tests and composition are reviewed under qa-loop,
+qa-tests and code-quality-qa. Normal boundary-check also passes with valid Cargo
+topology. All slice checks are terminal and passing, and the persistent reviewer
+clears this native foundation slice to commit. Phase 3 is not complete.

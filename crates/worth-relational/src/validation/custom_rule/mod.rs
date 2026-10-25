@@ -30,7 +30,10 @@ pub use structural_views::{
     StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
     StructuralRelationView,
 };
-pub use traversal::CustomInvariantTraversalSummary;
+pub use traversal::{
+    CompleteStructuralWalk, CustomInvariantTraversalSummary, StructuralWalkDenial,
+    StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
+};
 
 pub(crate) use registration::PreparedCustomInvariantExecution;
 pub(crate) use work_meter::{

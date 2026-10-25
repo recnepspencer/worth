@@ -25,6 +25,7 @@ fn adjacency_budget_charges_candidates_even_when_access_filters_every_relation()
     let work = CustomInvariantWorkMeter::new(Some(NonZeroU64::new(4).unwrap()));
     let relations = StructuralRelationView::new(
         state,
+        *execution,
         work.clone(),
         Arc::new(CustomInvariantAccessContract::default()),
     );
@@ -57,6 +58,7 @@ fn rejected_adjacency_budget_never_consumes_the_denied_scan() {
     let work = CustomInvariantWorkMeter::new(Some(NonZeroU64::new(3).unwrap()));
     let relations = StructuralRelationView::new(
         state,
+        *execution,
         work.clone(),
         Arc::new(CustomInvariantAccessContract::default()),
     );

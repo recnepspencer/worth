@@ -1,10 +1,20 @@
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::BTreeSet;
 use std::sync::Mutex;
 
 use crate::identity::data::EntityId;
 
 use super::structural_views::StructuralRelationView;
 use crate::validation::data::{CustomInvariantTraversalError, TouchedStructuralSet};
+
+mod breadth_first;
+mod complete;
+mod complete_result;
+pub use complete_result::{
+    CompleteStructuralWalk, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
+    StructuralWalkStep,
+};
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct TraversalBudgetSession {
@@ -174,58 +184,20 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
         self.performance
             .count_custom_invariant_traversal(seeds.len(), 0);
 
-        let mut visited_entities = BTreeSet::new();
-        let mut traversed_relations = BTreeSet::new();
-        let mut queue = VecDeque::new();
-        for seed in seeds {
-            if visited_entities.insert(*seed) {
-                queue.push_back((*seed, 0usize));
-            }
-        }
-
-        while let Some((entity_id, depth)) = queue.pop_front() {
-            if depth >= allowed_depth {
-                continue;
-            }
-            let relation_ids = match direction {
-                TraversalDirection::Outgoing => {
-                    self.relations.outgoing_relations_for_entity(entity_id)?
-                }
-                TraversalDirection::Incoming => {
-                    self.relations.incoming_relations_for_entity(entity_id)?
-                }
-            };
-            budget.charge_step(relation_ids.len())?;
-            if !self.work.try_charge(relation_ids.len().max(1)) {
-                return Err(CustomInvariantTraversalError::new(
-                    "custom invariant traversal exceeded its work budget",
-                ));
-            }
-            self.performance
-                .count_custom_invariant_traversal(0, relation_ids.len());
-            for relation_id in relation_ids {
-                traversed_relations.insert(relation_id);
-                let relation = self.relations.relation(relation_id).map_err(|error| {
-                    CustomInvariantTraversalError::new(format!(
-                        "custom invariant relation read failed: {error:?}"
-                    ))
-                })?;
-                let next_entity = match direction {
-                    TraversalDirection::Outgoing => relation.target,
-                    TraversalDirection::Incoming => relation.source,
-                };
-                if visited_entities.insert(next_entity) {
-                    budget.charge_frontier(1)?;
-                    self.performance.count_custom_invariant_traversal(1, 0);
-                    queue.push_back((next_entity, depth + 1));
-                }
-            }
-        }
+        let mut read = ScopeRead {
+            owner: self,
+            budget: &mut budget,
+            allowed_depth,
+            direction,
+            traversed_relations: BTreeSet::new(),
+        };
+        let visited_entities = breadth_first::walk(seeds, &mut read)?;
+        let traversed_relations = read.traversed_relations;
 
         Ok(StructuralTraversalResult {
             visited_entities: visited_entities.into_iter().collect::<Vec<_>>().into(),
             traversed_relations: traversed_relations.into_iter().collect::<Vec<_>>().into(),
-            frontier_exhausted: queue.is_empty(),
+            frontier_exhausted: true,
         })
     }
 }
@@ -234,4 +206,69 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
 enum TraversalDirection {
     Outgoing,
     Incoming,
+}
+
+struct ScopeRead<'read, 'runtime> {
+    owner: &'read BoundedStructuralTraversal<'runtime>,
+    budget: &'read mut TraversalBudgetSession,
+    allowed_depth: usize,
+    direction: TraversalDirection,
+    traversed_relations: BTreeSet<crate::identity::data::RelationId>,
+}
+
+impl breadth_first::BreadthFirstRead for ScopeRead<'_, '_> {
+    type Error = CustomInvariantTraversalError;
+
+    fn retain(&mut self, _entity: EntityId, distance: usize) -> Result<(), Self::Error> {
+        // Legacy scope policy charges the raw seed list once, including duplicates.
+        if distance != 0 {
+            self.budget.charge_frontier(1)?;
+            self.owner
+                .performance
+                .count_custom_invariant_traversal(1, 0);
+        }
+        Ok(())
+    }
+
+    fn expand(
+        &mut self,
+        entity: EntityId,
+        distance: usize,
+        mut enqueue: impl FnMut(&mut Self, EntityId) -> Result<(), Self::Error>,
+    ) -> Result<(), Self::Error> {
+        if distance >= self.allowed_depth {
+            return Ok(());
+        }
+        let ids = match self.direction {
+            TraversalDirection::Outgoing => {
+                self.owner.relations.outgoing_relations_for_entity(entity)?
+            }
+            TraversalDirection::Incoming => {
+                self.owner.relations.incoming_relations_for_entity(entity)?
+            }
+        };
+        self.budget.charge_step(ids.len())?;
+        if !self.owner.work.try_charge(ids.len().max(1)) {
+            return Err(CustomInvariantTraversalError::new(
+                "custom invariant traversal exceeded its work budget",
+            ));
+        }
+        self.owner
+            .performance
+            .count_custom_invariant_traversal(0, ids.len());
+        for id in ids {
+            self.traversed_relations.insert(id);
+            let relation = self.owner.relations.relation(id).map_err(|error| {
+                CustomInvariantTraversalError::new(format!(
+                    "custom invariant relation read failed: {error:?}"
+                ))
+            })?;
+            let neighbor = match self.direction {
+                TraversalDirection::Outgoing => relation.target,
+                TraversalDirection::Incoming => relation.source,
+            };
+            enqueue(self, neighbor)?;
+        }
+        Ok(())
+    }
 }
