@@ -87,10 +87,8 @@ where
         }
         match &input.operation {
             PlanarOperation::CreateCycle(vertices) => {
-                if vertices.len() < 3 {
-                    return HandlerResult::DomainDenied(
-                        PlanarMutationDenial::CycleNeedsThreeVertices,
-                    );
+                if vertices.is_empty() {
+                    return HandlerResult::DomainDenied(PlanarMutationDenial::EmptyCycle);
                 }
             }
             PlanarOperation::Adjust(adjustments) => {

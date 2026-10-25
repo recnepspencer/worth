@@ -1,7 +1,7 @@
 use worth_query_installation::facade::WorthQueryPortablePackageRecordFamily as Family;
 
-/// Current record grammar includes explicit retained-source reapplication support.
-pub const WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION: u16 = 13;
+/// Current record grammar owns all declared relation laws and target-kind names.
+pub const WORTH_QUERY_PACKAGE_ARCHIVE_RECORD_PROTOCOL_VERSION: u16 = 14;
 pub(crate) const RECORD_FRAME_HEADER_BYTES: u64 = 2 + 2 + 4 + 4;
 
 pub(super) const fn family_tag(family: Family) -> u16 {

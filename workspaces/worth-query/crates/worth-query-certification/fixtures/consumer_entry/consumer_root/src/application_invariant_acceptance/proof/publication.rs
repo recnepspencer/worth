@@ -16,6 +16,8 @@ use super::{
 };
 
 pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &ProgramApplication) {
+    declared_minimum_is_program_meaning();
+    short_cycles_reach_the_platform(request, application);
     for (ordinal, coordinates) in [
         vec![(41, 1), (50, 1), (41, 10)],
         vec![(61, 1), (70, 1), (70, 10), (61, 10)],
@@ -103,25 +105,7 @@ pub(super) fn create_and_reject_cycles(request: &Request<'_>, application: &Prog
             200 + ordinal as u64,
         ));
         assert_eq!(source_version(request), before);
-        for vertex in malformed {
-            let absent = request
-                .query(PlanarRead {
-                    body_key: vertex.body_key,
-                })
-                .execute();
-            match absent {
-                Err(WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial)) => {
-                    assert_eq!(
-                        denial.kind(),
-                        WorthQueryEntityResolutionDenialKind::Refused(
-                            ResolutionRefusal::UnknownEntity
-                        )
-                    )
-                }
-                Err(denial) => panic!("another denial cannot prove vertex absence: {denial:?}"),
-                Ok(_) => panic!("a rejected candidate vertex must not be selectable"),
-            }
-        }
+        require_absent_vertices(request, malformed);
     }
 }
 
@@ -135,4 +119,113 @@ fn cycle_vertices(prefix: &str, coordinates: &[(u64, u64)]) -> Vec<PlanarVertex>
             y: length(y),
         })
         .collect()
+}
+
+fn declared_minimum_is_program_meaning() {
+    use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
+    use worth_query_topology_entry::{Body, PlanarSuccessor};
+    let integrity = PlanarSuccessor::reference::<crate::ConsumerSchema>().integrity();
+    let minimum = integrity
+        .reaches_at_least
+        .expect("the real ring declares its minimum");
+    assert_eq!(minimum.minimum_reachable_targets, 2);
+    assert_eq!(
+        minimum.target_kinds,
+        &[Body::reference::<crate::ConsumerSchema>().name()]
+    );
+    let bound = crate::application_program::validated_program().unwrap();
+    let unbound =
+        ApplicationProgramAuthoring::<crate::ConsumerSchema, crate::ConsumerProgram>::begin()
+            .validated_program()
+            .unwrap();
+    assert_ne!(
+        bound.revision(),
+        unbound.revision(),
+        "the installed program revision includes its actual schema's graph laws"
+    );
+    let declaration = crate::ConsumerSchema::declaration().unwrap();
+    let explicit =
+        ApplicationProgramAuthoring::<crate::ConsumerSchema, crate::ConsumerProgram>::begin()
+            .with_schema(&declaration)
+            .validated_program()
+            .unwrap();
+    assert_eq!(bound.revision(), explicit.revision());
+}
+
+fn short_cycles_reach_the_platform(request: &Request<'_>, application: &ProgramApplication) {
+    for count in [1, 2] {
+        let vertices = cycle_vertices(&format!("short-{count}"), &[(71, 1), (80, 1)][..count]);
+        let before = source_version(request);
+        let outcome = mutate(
+            request,
+            application,
+            PlanarMutation {
+                scope_key: "anchor-a".to_owned(),
+                operation: PlanarOperation::CreateCycle(vertices.clone()),
+            },
+            700 + count as u64,
+        );
+        if count == 1 {
+            require_original_self_edge(outcome);
+        } else {
+            require_planar_violation(outcome);
+        }
+        assert_eq!(source_version(request), before);
+        require_absent_vertices(request, vertices);
+    }
+}
+
+fn require_absent_vertices(request: &Request<'_>, vertices: Vec<PlanarVertex>) {
+    for vertex in vertices {
+        let absent = request
+            .query(PlanarRead {
+                body_key: vertex.body_key,
+            })
+            .execute();
+        match absent {
+            Err(WorthQueryApplicationRequestQueryDenial::ScopeResolution(denial)) => {
+                assert_eq!(
+                    denial.kind(),
+                    WorthQueryEntityResolutionDenialKind::Refused(ResolutionRefusal::UnknownEntity)
+                );
+            }
+            Err(denial) => panic!("another denial cannot prove vertex absence: {denial:?}"),
+            Ok(_) => panic!("a rejected candidate vertex must not be selectable"),
+        }
+    }
+}
+
+fn require_original_self_edge(outcome: super::MutationOutcome) {
+    use worth_query_host::facade::{
+        application_invariants::EntityReference,
+        primary_graph::{
+            WorthQueryApplicationCommitDenialKind as Kind,
+            WorthQueryApplicationCommitDenialStage as Stage, WorthQueryApplicationUncommitted,
+            WorthQueryRelationLawDenial,
+        },
+    };
+    let WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
+        denial,
+    )) = outcome
+    else {
+        panic!("the self edge must reach platform validation: {outcome:?}");
+    };
+    assert_eq!(denial.kind(), Kind::ProviderRejected);
+    assert_eq!(denial.stage(), Stage::InvariantExecution);
+    let Some(WorthQueryRelationLawDenial::SelfEdge {
+        contract_id,
+        source,
+        target,
+        self_edge,
+        ..
+    }) = denial.relation_law()
+    else {
+        panic!("the original endpoint cause must survive: {denial:?}");
+    };
+    assert!(self_edge);
+    assert_eq!(contract_id.as_str(), "PlanarSuccessor:endpoints");
+    assert_eq!(source, target);
+    let EntityReference::Created(_) = source else {
+        panic!("the unpublished endpoint must keep its creation identity: {source:?}");
+    };
 }

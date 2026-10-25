@@ -63,6 +63,7 @@ pub fn install_rings_configured<const ERASE: bool>(
     installation::WorthQueryInMemoryApplicationDenial,
 > {
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<ERASE>>::begin()
+        .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     installation::in_memory_program(

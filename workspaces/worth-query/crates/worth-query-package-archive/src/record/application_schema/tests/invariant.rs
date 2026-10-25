@@ -156,7 +156,8 @@ fn schema(invariant: ApplicationSchemaMember) -> WorthQueryPortableApplicationSc
             relation: "Edge".to_owned(),
             from: "Node".to_owned(),
             to: "Node".to_owned(),
-            integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+                .into(),
         },
     ];
     members.sort();

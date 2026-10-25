@@ -25,6 +25,7 @@ pub(super) fn install(fanout: usize, unrelated: usize) -> Runtime {
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
+        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     in_memory_program(

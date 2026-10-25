@@ -8,21 +8,15 @@ pub struct ApplicationRelationMinimumReachability {
     pub minimum_reachable_targets: u32,
     pub target_kinds: &'static [&'static str],
 }
-impl ApplicationRelationMinimumReachability {
-    pub(crate) fn normalized_kinds(self) -> Vec<&'static str> {
-        let mut kinds = self.target_kinds.to_vec();
-        kinds.sort_unstable();
-        kinds.dedup();
-        kinds
-    }
-}
 
 pub(super) fn validate_minimum_kinds(
     members: &[ApplicationSchemaMember],
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let minima = || {
         members.iter().filter_map(|member| match member {
-            ApplicationSchemaMember::Relation { integrity, .. } => integrity.reaches_at_least,
+            ApplicationSchemaMember::Relation { integrity, .. } => {
+                integrity.reaches_at_least.as_ref()
+            }
             _ => None,
         })
     };
@@ -42,7 +36,7 @@ pub(super) fn validate_minimum_kinds(
             || minimum
                 .target_kinds
                 .iter()
-                .any(|kind| !entities.contains(kind))
+                .any(|kind| !entities.contains(kind.as_str()))
         {
             return Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity);
         }

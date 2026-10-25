@@ -3,9 +3,13 @@ mod deletion;
 mod endpoints;
 mod law_meaning;
 mod minimum;
+mod record;
 mod uniqueness;
 pub(crate) use law_meaning::{ApplicationRelationLawMeaning, ApplicationRelationLawValue};
 pub use minimum::ApplicationRelationMinimumReachability;
+pub use record::{
+    ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
+};
 pub use uniqueness::ApplicationRelationUniquenessScope;
 
 pub use cardinality::ApplicationRelationCardinality;

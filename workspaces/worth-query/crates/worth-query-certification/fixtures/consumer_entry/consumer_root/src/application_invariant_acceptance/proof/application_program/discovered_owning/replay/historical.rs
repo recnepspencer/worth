@@ -8,6 +8,7 @@ use worth_query_topology_entry::PlanarInitialAdjustment;
 #[test]
 fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, DiscoveredProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let world = installation::install_selected_program(
@@ -58,6 +59,7 @@ fn discovered_restored_historical_commit_is_terminal_and_closes_without_rerun() 
     assert_eq!(planar_source_adjustment_contacts(&contacts), (1, 1));
     drop(operation);
     let program = ApplicationProgramAuthoring::<ConsumerSchema, DiscoveredProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let checkpoint=world.application.with_host_advancement(|phase|world.application.runtime()

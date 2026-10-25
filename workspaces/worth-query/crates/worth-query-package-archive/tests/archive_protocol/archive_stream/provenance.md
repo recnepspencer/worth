@@ -1,5 +1,17 @@
 # Retained original package and current grammar expectations
 
+Record14 preserves the complete owned relation-integrity laws, including the
+uniqueness scope and minimum-reachability count and kind names. The retained
+record13 fixtures remain unchanged and are refused by the current-only reader.
+The current14 fixtures contain no nondefault relation-integrity record, so their
+payloads remain unchanged. Each record header changes from13 to14; the outer
+archive2, manifest1 and envelope1 framing remains unchanged. The encoder-produced
+minimal archive was checked to differ only at its record header, and the release
+envelope only at that nested header and the checksum at bytes50–81. Independent
+header replacement and Python's SHA-256 also reproduce both current vectors
+exactly from the retained13 bytes. The frozen vectors are decoded and compared
+against their complete typed records.
+
 `preactor_2bc_all_families.wqpkg` is the unmodified output of the production
 `export_typed_records` and `encode_package_archive` at revision
 `2bc38889c763853b8e56724b83deef8ca6caa71a` (record frame 6). It is 4,678 bytes;

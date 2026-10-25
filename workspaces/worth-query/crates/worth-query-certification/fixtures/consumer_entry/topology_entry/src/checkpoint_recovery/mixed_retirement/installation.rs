@@ -19,10 +19,11 @@ pub(super) fn install(
         producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
         producer_domain_denial: Arc::new(AtomicBool::new(false)),
     },);
+    let declaration = MixedSchema::declaration().expect("the checkpoint schema is valid");
     let program = ApplicationProgramAuthoring::<MixedSchema, MixedProgram>::begin()
+        .with_schema(&declaration)
         .validated_program()
         .expect("the checkpoint program is complete");
-    let declaration = MixedSchema::declaration().expect("the checkpoint schema is valid");
     match checkpoint {
         Some(checkpoint) => application_installation::in_memory_program_from_checkpoint(
             program,

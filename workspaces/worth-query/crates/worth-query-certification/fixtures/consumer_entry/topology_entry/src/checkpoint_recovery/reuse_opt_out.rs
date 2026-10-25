@@ -51,6 +51,7 @@ fn install_no_reuse_with_build(
     build_identity: ApplicationBuildIdentity,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<NoReuseSchema, NoReuseProgram> {
     let program = ApplicationProgramAuthoring::<NoReuseSchema, NoReuseProgram>::begin()
+        .with_schema(&NoReuseSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let configuration = (TopologyConfiguration {

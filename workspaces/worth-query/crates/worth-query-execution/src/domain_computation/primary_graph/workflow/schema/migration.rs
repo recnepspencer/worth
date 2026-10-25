@@ -22,7 +22,7 @@ pub(super) fn register(
         migrated_from,
         instance,
         instance,
-        relations::single_successor_integrity(),
+        &relations::single_successor_integrity().into(),
         None,
     )?;
     register_relation(
@@ -33,7 +33,7 @@ pub(super) fn register(
         prior_effect,
         instance,
         transition,
-        relations::prior_effect_integrity(),
+        &relations::prior_effect_integrity().into(),
         None,
     )
 }

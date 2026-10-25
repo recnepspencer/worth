@@ -166,6 +166,7 @@ pub(super) fn assert_required_output_source_cannot_be_an_action() {
         ConsumerSchema,
         crate::application_program::RequiredSourceAsActionProgram,
     >::begin()
+    .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the overlapping action is declaration-valid");
     let result = installation::in_memory_program(

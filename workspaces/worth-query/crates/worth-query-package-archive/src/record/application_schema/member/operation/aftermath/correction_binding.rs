@@ -59,7 +59,9 @@ pub(super) fn decode(
             inverse_query: decode_optional(input, |input| Ok(input.text()?.to_owned()))?,
             disclosure: disclosure::decode(input)?,
             source_output_fields: source_outputs::decode(input, budget)?,
-            authored_identity: decode_optional(input, authored_identity::decode)?,
+            authored_identity: decode_optional(input, |input| {
+                authored_identity::decode(input, budget)
+            })?,
             completed_external_reconciliation: decode_optional(input, |input| {
                 DeclaredReconciliationProcedure::new(input.text()?.to_owned()).map_err(|_| {
                     Denial::new(

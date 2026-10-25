@@ -91,6 +91,13 @@ archive, manifest, record frame, and application program description. Bytes
 framed under an earlier version are refused, never reinterpreted. Compatibility
 changes must add real readers; callers cannot widen the window.
 
+Record frame protocol `14` carries all relation-law fields, including scoped
+uniqueness and the minimum count and kind names. Record frames from protocol
+`13` are refused before payload decoding. Re-export them with a compatible
+producer; changing the version bytes does not migrate their meaning. The
+release-envelope, archive, manifest and program-description protocol versions
+are independent of this record grammar.
+
 ## Small Example
 
 ```rust
@@ -224,7 +231,11 @@ each application schema through a digest freshly derived from its complete
 canonical meaning, including the schema domain and rule version. The package
 retains and exports the full schema source. Fresh reconstruction readmits that
 source and derives the child and package identities again; a carried digest
-does not confer validation authority. Child derivations and the parent package
+does not confer validation authority. Typed relation declarations remain const
+values; exported and decoded schema records own their kind names. Round trips
+preserve every declared graph law. Fresh schema readmission applies the same
+integrity and kind-membership validation as typed declaration completion.
+Child derivations and the parent package
 derivation share the installation's existing aggregate canonical byte and entry
 allowances. Canonical work evidence includes all of those derivations.
 Previously derived v3 package identities differ from v4 identities and fail the

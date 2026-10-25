@@ -69,6 +69,7 @@ pub(crate) fn run() {
     drop(first);
 
     let program = ApplicationProgramAuthoring::<ExampleSchema, ExampleProgram<false>>::begin()
+        .with_schema(&ExampleSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let mut reopened = installation::in_memory_program_from_checkpoint(

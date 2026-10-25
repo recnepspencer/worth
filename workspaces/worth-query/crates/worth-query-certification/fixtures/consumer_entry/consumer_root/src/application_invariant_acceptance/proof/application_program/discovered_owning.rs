@@ -16,7 +16,8 @@ use worth_query_topology_entry::{
 };
 macro_rules! declared_world {
     ($world:ident,$request:ident,$delivery:ty) => {
-        let program=ApplicationProgramAuthoring::<ConsumerSchema,Program<$delivery>>::begin().validated_program().unwrap();
+        let program=ApplicationProgramAuthoring::<ConsumerSchema,Program<$delivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid")).validated_program().unwrap();
         let grants=[crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<Program<$delivery>>("model-owner","model-owner")];
         let $world=installation::install_selected_program(&crate::installed_schema(),worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new(),&grants,program).unwrap();
         let adapter=authentication::admit($world.application.installed_schema());
@@ -49,6 +50,7 @@ impl ApplicationMutationIntent<ConsumerSchema> for Original {
 #[test]
 fn discovered_owning_original_partial_recovers_native_settlement_and_closes() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [

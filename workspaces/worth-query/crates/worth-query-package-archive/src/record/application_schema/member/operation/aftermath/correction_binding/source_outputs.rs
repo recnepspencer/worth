@@ -40,7 +40,7 @@ pub(super) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<Vec<DeclaredCorrectionOutputField>, Denial> {
-    decode_sequence(input, budget, 14, |input, _| {
+    decode_sequence(input, budget, 14, |input, budget| {
         let source_binding = decode_type_identity(input)?;
         let role = input.text()?.to_owned();
         let binding_unit = decode_optional(input, |input| Ok(input.text()?.to_owned()))?;
@@ -61,7 +61,7 @@ pub(super) fn decode(
             writable: false,
             equality_queryable: false,
             unique: false,
-        } = schema::decode(tag, input)?
+        } = schema::decode(tag, input, budget)?
         else {
             return Err(Denial::new(Kind::UnsupportedRecordVariant));
         };

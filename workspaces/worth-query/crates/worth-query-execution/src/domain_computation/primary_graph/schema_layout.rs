@@ -161,7 +161,7 @@ impl WorthQueryPrimaryGraphLayout {
                 required_kind(&relation_kinds, relation)?,
                 required_kind(&entity_kinds, from)?,
                 required_kind(&entity_kinds, to)?,
-                *integrity,
+                integrity,
                 Some(&entity_kinds),
             )?;
         }

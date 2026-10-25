@@ -169,6 +169,7 @@ fn conditional_native_builder_and_dsl_preserve_complete_binding_meaning() {
     );
     assert_eq!(action.feature(), original.feature());
     let program = ApplicationProgramAuthoring::<JointSchema, JointProgram<0>>::begin()
+        .with_schema(&JointSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     assert!(program

@@ -48,6 +48,7 @@ macro_rules! settle {
 #[test]
 fn fixed_batch_aggregate_refusal_and_fresh_retry_preserve_settled_owner() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, BatchProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -219,6 +220,7 @@ fn fixed_batch_empty_declaration_refuses_before_execution() {
         ConsumerSchema,
         crate::application_program::fixed_batch::EmptyBatchProgram,
     >::begin()
+    .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     {
         Err(denial) => denial,
@@ -230,12 +232,14 @@ fn fixed_batch_empty_declaration_refuses_before_execution() {
 #[test]
 fn fixed_batch_cardinality_is_installed_program_meaning() {
     let two = ApplicationProgramAuthoring::<ConsumerSchema, BatchProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let three = ApplicationProgramAuthoring::<
         ConsumerSchema,
         crate::application_program::fixed_batch::TripleBatchProgram,
     >::begin()
+    .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .unwrap();
     assert_ne!(

@@ -14,6 +14,14 @@ use worth_relational::facade::transactions::{
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum WorthQueryRelationLawDenial<'a> {
+    /// The relation's endpoint policy forbids this original self edge.
+    SelfEdge {
+        contract_id: &'a ContractId,
+        relation_kind_id: KindId,
+        source: &'a EntityReference,
+        target: &'a EntityReference,
+        self_edge: bool,
+    },
     /// A source has too few distinct reachable targets of the declared kinds.
     ConnectivityMinimum {
         contract_id: &'a ContractId,
@@ -58,6 +66,19 @@ pub enum WorthQueryRelationLawDenial<'a> {
 impl<'a> WorthQueryRelationLawDenial<'a> {
     pub(crate) fn from_fields(fields: &'a InvariantViolationFields) -> Option<Self> {
         match fields {
+            InvariantViolationFields::RelationEndpointKindSelfEdge {
+                contract_id,
+                relation_kind_id,
+                source,
+                target,
+                self_edge,
+            } => Some(Self::SelfEdge {
+                contract_id,
+                relation_kind_id: *relation_kind_id,
+                source,
+                target,
+                self_edge: *self_edge,
+            }),
             InvariantViolationFields::ConnectivityMinimum {
                 contract_id,
                 relation_kind_id,

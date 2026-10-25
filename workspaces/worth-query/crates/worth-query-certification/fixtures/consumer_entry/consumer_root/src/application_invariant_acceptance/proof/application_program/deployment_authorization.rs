@@ -26,6 +26,9 @@ fn fixed_adoption_requires_an_explicit_source_revision_grant() {
             &crate::installed_schema(),
             WorthQueryApplicationProgramRoster::new().support(
                 ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin()
+                    .with_schema(
+                        &ConsumerSchema::declaration().expect("the completed schema is valid"),
+                    )
                     .validated_program()
                     .unwrap(),
             ),

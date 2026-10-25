@@ -58,6 +58,7 @@ fn install_program_seeded<
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, P>::begin()
+        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the separate membership graph and operation authorization are complete");
     let application = in_memory_program(

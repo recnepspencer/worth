@@ -37,6 +37,7 @@ fn common_operation_handoff_native_inventory_refuses_required_source() {
         ),
         &[],
         ApplicationProgramAuthoring::<ConsumerSchema, RequiredSourceRequestedAsCompletion>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap(),
     )

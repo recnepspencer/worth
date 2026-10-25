@@ -92,7 +92,8 @@ pub(super) type Application = WorthQueryProgramApplicationRuntime<OwnerSchema, O
 pub(super) const ANCHOR: &str = "owner-source:a";
 pub(super) fn install() -> Application {
     in_memory_program(
-        ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin().validated_program().unwrap(),
+        ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin()
+        .with_schema(&OwnerSchema::declaration().unwrap()).validated_program().unwrap(),
         OwnerSchema::declaration().unwrap(), ((),),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(

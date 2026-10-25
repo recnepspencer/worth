@@ -773,3 +773,240 @@ errors; the scoped candidates were reviewed and accepted. The persistent
 reviewer granted final commit clearance under all three requested QA skills.
 Public consumer cutovers and Proprietary adoption still gate Phase 2; this slice
 does not close the phase or merge it to master.
+
+
+## Phase 2, slice 5: Planar consumer declaration cutover
+
+Boundary review: PlanarSuccessor is a same-context, no-self Body-to-Body
+relation with exactly one incoming and outgoing edge. Its finite components
+are directed rings. The handler currently refuses CreateCycle inputs shorter
+than three before authoring a candidate. Declare
+`.reaches_at_least(2, &[Body::reference::<Schema>().name()])` on that existing
+relation: two distinct other reachable Bodies is the ring's structural minimum.
+Acyclicity would forbid the intended graph; symmetry would force two-cycles
+under the existing degree contract. Extra uniqueness/partition flags would not
+replace any remaining hand algorithm here.
+
+The empty command creates no Body or edge and only preserves an anchor output.
+It must retain a narrow domain denial, renamed to EmptyCycle to state its actual
+meaning. Nonempty one-/two-member candidate rejection moves to the platform's
+existing endpoint, geometric and graph-law boundaries. Geometry may reject a
+two-cycle before publication minimum executes; do not weaken that rule to force
+a particular diagnostic. Slice 4's independent public court already proves the
+native minimum. Consumer evidence must prove the actual declaration/program
+binding, removal of the handler size judgment, non-publication of malformed
+rings, and lawful three-, four- and twelve-member rings.
+
+PositiveTurnRule's exactly_one extracts a typed neighbor from the current Vec
+read API for its geometric triple. Keep it and the determinant/coordinate rules:
+Phase 3 supplies the walk API and Phase 4 the orbit replacement. The final
+producer's explicit three-member closure is that output group's triangle shape,
+not a general ring-minimum validator. It stays with its output owner.
+
+This is the first law in the shared topology schema. Every real selected or
+supported program must capture that schema through existing with_schema before
+its revision is minted. ConsumerRoot's direct authoring, deployment-grant source
+revisions, checkpoint fixtures, standalone examples, and Execution's source-
+included ownership fixtures all participate. Their unbound paths cannot remain
+ordinary installable programs. Bind the actual completed declaration; reuse a
+locally held declaration where available. Preserve intentionally omitted rules,
+bindings and malformed contributions so their tests still reach their named
+refusals. No new authoring wrapper or admission bypass is introduced.
+
+Plan:
+
+1. Add minimum2 to PlanarSuccessor's existing integrity. Change only the empty
+   CreateCycle input to a domain denial, rename its value, and update its public
+   no-publication proof. Keep geometric and typed-neighbor semantics.
+2. Cut over the shared-schema selected/support program authoring sites, including
+   deployment source revision calculation, to with_schema. Do not bind unrelated
+   schemas merely because their program builder has the same shape.
+3. Extend the existing public consumer publication court with nonempty one-/two-
+   member candidate refusals, unchanged committed version, and direct absence
+   queries for every attempted key. Retain lawful 3/4/12 rings and reversed-
+   winding twins. Add a focused schema/program meaning assertion using the
+   actual declaration rather than a parallel law oracle.
+4. Compile and run the standalone required-feature/read-count/shared-execution
+   journeys and the ordinary ConsumerRoot journey. Compile its grouped tests and
+   run affected selected/support/deployment/checkpoint consumers; use failure
+   evidence to complete any missed schema-binding cutover, preserving each
+   refusal's intended cause.
+5. Compile Execution's full test library to catch shared source callers and run
+   the 15 ownership courts. Run the existing grouped public graph law target,
+   compiled documentation, normal boundary and context checks, scoped formatting,
+   caps and function scrutiny. Avoid the unrelated full boundary-tool suite:
+   this slice changes no source resolver or authority-sealing implementation.
+6. The persistent reviewer applies qa-loop, qa-tests and code-quality-qa to the
+   living scoped diff and final evidence. Commit/push after clearance. Phase 2
+   remains open for private acyclic adoption and its verified native-before-
+   custom preparation prerequisite; no phase master merge in this slice.
+
+Destination topology stays with the current owners: relation meaning in
+TopologyEntry's planar_topology, command semantics in handler and ConsumerValues,
+public evidence in ConsumerRoot's publication family, authoring at each existing
+program root/installer, and shared-source ownership evidence in Execution. No
+new engine, traversal, budget, runtime test door or general helper is added.
+
+
+### Slice 5 boundary expansion: Portable schema law ownership
+
+The required source-included ownership suite compiled and ran: 14 passed, but
+optional_aspects_archive_birth_preserve_and_cold_complete_roster failed at
+fresh reconstructed package identity validation. The real package contained the
+new PlanarSuccessor minimum. PackageArchive's relation codec writes only the old
+endpoint/cardinality/deletion fields; decoding calls the old no-law constructor.
+All five law declarations are therefore lost at this actual portable-schema
+handoff. Program-description archive tests from Slice 4 exercise a different
+record and do not prove this boundary. The failing-before log is
+`targets/query-9.18.1-slice5-ownership-tests.log` outside the checkout.
+
+An additional ownership defect prevents merely appending bytes: authored
+minimum kinds are &'static slices, correctly supporting Copy const relation
+references, while decoded untrusted names require owned storage. Leaking strings,
+interning them forever, guessing authored values, or storing a parallel minimum
+sidecar would not restore portable truth. Preserve authored Copy/const values and
+materialize one owned ApplicationRelationIntegrityRecord at the existing typed
+relation-to-erased-member boundary. Its owned minimum holds Vec<String>. Keep
+that erased record as the sole downstream law truth: canonical schema meaning,
+retained normalized law values, completed-kind validation, archive decoding and
+native lowering borrow it. Numeric preimages, normalized kind-set preimages and
+no-law absence remain exactly the same. Authored and decoded kind-name order and
+duplicates retain their existing set semantics; the canonical-law owner still
+normalizes them. No record is converted back into a fabricated static authoring
+value.
+
+Revised implementation steps before consumer closeout:
+
+1. Add relation_integrity/record.rs and its subordinate minimum record, exporting
+   the pure owned record vocabulary through the existing declaration facade.
+   ApplicationSchemaMember::Relation owns this record. The declaration builder's
+   relation method performs the authored conversion once. Carry references
+   through canonical/law validation and native registry lowering; generated
+   workflow no-law values convert at their existing registration calls into the
+   same sole record lowerer. Update direct record constructors where the compiler
+   exposes this ownership boundary. No alternate lowering or validator is added.
+2. Move retained law-kind values to owned strings. Keep the one normalized set
+   representation for schema, manifest, facts and support identity. Preserve the
+   original numeric/default encodings and genuine completed-schema kind binding.
+3. Encode/decode all five law fields at the existing relation codec, preserving
+   uniqueness scope and minimum count/names. Separate its subordinate integrity
+   codec if needed for cohesion/400-line caps. The default relation tag applies
+   only to the complete default/no-law record, never a law-bearing default shape.
+   Thread the existing RecordDecodeAttempt into schema decode; minimum's variable
+   kind list uses its existing nested-entry/depth admission before allocation.
+   This extends existing archive protection, not runtime resource bookkeeping.
+4. Advance record grammar 13 to 14. The archive owner's declared exact-current
+   record compatibility window already establishes current-only support; reject
+   13 at the typed version boundary before payload work, without interpreting it
+   as lawless 14. Update the current grammar description and relevant published
+   compatibility prose. Other independent protocol layers retain their versions.
+5. Add one coherent codec proof family for all five fields/uniqueness scopes,
+   heap-owned target names, canonical/schema identity after round trip, malformed
+   discriminants and existing structural-limit admission. Prove previous record
+   version rejection before work with the existing decoder boundary. Retain and
+   rerun the actual failing optional-aspects package court; do not replace it
+   with member-only serialization evidence.
+6. Recompile the complete affected owner libraries and external consumer tests.
+   Run Declaration, Installation and PackageArchive owners, focused native law
+   lowering/denial/bootstrap/ownership courts, the rebuilt public graph court,
+   actual consumer/examples and affected checkpoint evidence. Reuse already
+   accepted test intent but rerun changed authority/serialization seams. Final
+   boundary/context, formatting, scoped caps/function scrutiny and the persistent
+   review gate apply to the expanded final living diff before commit.
+
+The reviewer independently confirmed this causal boundary and owned-record
+shape using all three requested QA skills. Earlier Slice 5 source review remains
+closed except this named new ownership/codec seam and its mechanical compiler
+propagation. Private acyclic adoption and safe native-before-custom sequencing
+remain later Phase 2 work. The observed archive defect is repaired in this slice;
+it is not deferred as repository debt.
+
+
+### Slice 5 original self-edge refusal
+
+The ordinary ConsumerRoot executable reaches platform validation for the first
+one-member candidate and returns ProviderRejected, not the custom geometric
+violation provisionally expected by the new court. Native already owns typed
+RelationEndpointKindSelfEdge fields. Query's original-field mapping recognizes
+the five new laws but currently discards this older self-edge payload. Extend
+only the existing borrowed non-exhaustive relation-law view with SelfEdge,
+preserving the exact contract/relation IDs, both original endpoint references
+and self_edge flag through the existing storage path. Keep the outer rejection
+category unchanged; add no inference, second verdict or generic legacy project.
+The one-member court requires this original cause, the actual endpoint contract
+and equal original Created references. Its direct authored-key absence and
+unchanged-version probes remain. The two-member case still requires the actual
+PositivePlanarTurn violation if confirmed by execution. Extend the existing
+invariant/provider/bootstrap transport family with this payload. The persistent
+reviewer accepted this named correction before implementation.
+
+The rebuilt ordinary consumer confirms that native naming admission interns the
+original creation key: ClientKey::canonical_text renders its opaque symbol
+coordinate, not the authored text. The public request has no interner authority.
+Remove the unsupported raw-text comparison from this proof and its helper
+parameter; preserve the original payload rather than reinterpret it or expose a
+new interner door. This candidate creates exactly one vertex. Its equal typed
+Created endpoints and exact endpoint contract establish the refused creation
+origin, while the caller independently queries every authored key for absence
+and checks the unchanged source version. The transport court separately compares
+all original fields through each Query translation. The persistent reviewer
+approved this bounded correction before editing.
+
+### Slice 5 verification and review evidence
+
+The actual optional-aspects archive court first failed fresh package identity
+validation because the relation codec discarded the declared minimum. After the
+owned-record repair, all 15 ownership-oracle cases pass, including that exact
+archive/reconstruction/cold-completion journey. The complete Execution unit
+library compiles with 1,974 tests; its eight relation-integrity lowering cases
+and five original-denial translation cases pass. The translation case exercises
+invariant, provider and bootstrap paths with original fields. Two exploratory
+filters matched no tests and are not counted as evidence.
+
+Declaration's 464 and Installation's 343 owner tests pass. PackageArchive's full
+run passes 122 unit tests, 78 archive-protocol integration tests and one
+compile-fail doc test. Initial golden failures were version13 expectations, not
+payload repair: current record14 standalone vectors preserve all unrelated payload
+bytes, and the envelope differs only at its nested record header and existing
+checksum. Historical record13 vectors remain intact as unsupported inputs. Independent
+header replacement and SHA-256 reproduce the current archive/envelope vectors.
+
+The rebuilt public application_graph court passes 424 tests with five existing
+ignored cases; its 31 relation-law cases are included in that total. Rebuilt
+ConsumerRoot passes all 80 tests, and shared_execution's integration test passes.
+All three ordinary production examples pass: required_feature, invariant_reads
+and shared_execution. The final ordinary ConsumerRoot executable also passes its
+whole public journey after the typed creation-identity correction, including
+one/two-member refusals, independent absence/version checks, lawful 3-, 4- and
+12-member rings and geometric refusals. The two-member refusal remains the
+actual custom PositivePlanarTurn violation; the one-member refusal preserves
+native SelfEdge.
+
+Before owned record materialization, the complete 301-case Topology suite passed
+in 1,389.61 seconds with the new planar minimum already installed. The reviewer
+approved retaining the two expensive history-locality/regeneration passes from
+that run: materializing per-relation kind names and borrowing them into the same
+lowerer adds no per-history traversal or evaluator. The final rebuilt run covers
+the other 299, including compiled-example drift, checkpoint, selected/support
+construction and worker-matrix evidence. All 299 pass in 1,359.58 seconds with
+zero failures and the two named cases filtered out. This is not a final-source
+rerun of all 301 cases.
+
+All 105 scoped Rust files were formatted and passed the 400-line cap. Function
+scrutiny scanned 104 files with 59 advisory candidates and no scan errors; the
+known long Windows path was scanned explicitly, adding one file/two candidates.
+The persistent reviewer accepted all 61 advisories in scope. Whitespace passes.
+Normal boundary-check reports Road 1 Cargo topology valid on the expanded
+ownership/codec source, and agent-context check passes. The later tiny consumer
+assertion correction changes no authority/dependency boundary and is covered by
+its rebuilt ordinary executable, scoped format/scrutiny, caps and whitespace.
+The all-targets test build emits five dead-code warnings in the shared_execution
+example's cfg-disabled-main test harness; its ordinary example builds and runs
+successfully. No warning-free claim is made for that extra harness.
+
+The persistent reviewer has cleared the initial consumer changes and the focused
+owned-record/codec/SelfEdge follow-up using all three requested QA skills. Final
+Slice 5 commit-and-push clearance was granted after the completed 299-case
+Topology result and closeout evidence. Phase 2 private acyclic adoption and
+native-before-custom preparation remain open; this slice does not authorize a
+Phase 2 master merge.

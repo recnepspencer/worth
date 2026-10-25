@@ -110,7 +110,7 @@ fn decision_read_denial_identifies_the_missing_relation_and_endpoints() {
         relation: "Owns".to_owned(),
         from: "Entity".to_owned(),
         to: "Entity".to_owned(),
-        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
     });
     ApplicationSchemaDeclarationBuilder::<Schema>::from_test_members(members.clone())
         .build()

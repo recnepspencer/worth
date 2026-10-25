@@ -30,7 +30,7 @@ pub(super) fn register(
         kind,
         instance_kind,
         subject_kinds,
-        super::relations::subject_integrity(),
+        &super::relations::subject_integrity().into(),
         None,
     )?;
     Ok((registry, kind))

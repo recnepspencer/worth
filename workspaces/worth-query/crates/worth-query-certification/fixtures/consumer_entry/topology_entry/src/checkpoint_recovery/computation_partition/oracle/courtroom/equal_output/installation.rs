@@ -138,10 +138,11 @@ fn install_configured(
     indexed_selection: bool,
 ) -> application_installation::WorthQueryProgramApplicationRuntime<Schema, Program> {
     assert!(witnesses <= 2);
+    let declaration = Schema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<Schema, Program>::begin()
+        .with_schema(&declaration)
         .validated_program()
         .unwrap();
-    let declaration = Schema::declaration().unwrap();
 
     let limits = support::limits_with_room(32, 16, 64, support::invalidation());
     application_installation::in_memory_program(program, declaration, ((witnesses, indexed_selection),), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits, |_bootstrap_phase, graph, installed| {

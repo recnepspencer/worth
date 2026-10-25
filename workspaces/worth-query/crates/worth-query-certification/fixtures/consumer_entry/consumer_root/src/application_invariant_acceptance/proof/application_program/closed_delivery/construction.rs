@@ -12,6 +12,7 @@ use worth_query_host::facade::{
 fn fixed_constructor_rejects_missing_governed_locality_without_effects() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let program = ApplicationProgramAuthoring::<ConsumerSchema, MissingLocalityProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let mut world = installation::install_selected_program(

@@ -1,7 +1,7 @@
 use super::lower_cross_context;
 use std::collections::BTreeMap;
 use worth_query_installation::facade::{
-    ApplicationRelationDeletionPolicy, ApplicationRelationIntegrity,
+    ApplicationRelationDeletionPolicy, ApplicationRelationIntegrityRecord,
     ApplicationRelationUniquenessScope,
 };
 use worth_relational::facade::identity::KindId;
@@ -18,7 +18,7 @@ pub(super) fn lower_relation_integrity(
     relation: &str,
     from_kind: KindId,
     to_kinds: Vec<KindId>,
-    integrity: ApplicationRelationIntegrity,
+    integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationIntegrityDeclarations, super::WorthQueryPrimaryGraphInstallationDenial> {
     let endpoints = vec![EndpointKindContractDeclaration {
@@ -94,14 +94,14 @@ pub(super) fn lower_relation_integrity(
 fn lower_minimum(
     relation: &str,
     from_kind: KindId,
-    integrity: ApplicationRelationIntegrity,
+    integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<
     Option<ConnectivityMinimumContractDeclaration>,
     super::WorthQueryPrimaryGraphInstallationDenial,
 > {
     use super::super::installation_primitives::{invalid_member, required_kind};
-    let Some(minimum) = integrity.reaches_at_least else {
+    let Some(minimum) = integrity.reaches_at_least.as_ref() else {
         return Ok(None);
     };
     let binding = entity_kinds.ok_or_else(|| invalid_member(relation))?;

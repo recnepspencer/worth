@@ -116,6 +116,7 @@ fn install_selected_with_window(demand_key: &str, window: Arc<EnrollmentWindow>)
     ),);
     application_installation::in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program>::begin()
+            .with_schema(&Schema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap(),
         Schema::declaration().unwrap(),

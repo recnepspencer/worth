@@ -171,10 +171,11 @@ fn install_configured(
     const RETAINED_COMMITS: u64 = 32;
     let invalidation = support::invalidation();
     let limits = support::limits_with_room(RETAINED_COMMITS, 16, 64, invalidation);
+    let declaration = CheckpointSchema::declaration().unwrap();
     let program = ApplicationProgramAuthoring::<CheckpointSchema, HistoryProgram>::begin()
+        .with_schema(&declaration)
         .validated_program()
         .unwrap();
-    let declaration = CheckpointSchema::declaration().unwrap();
     application_installation::in_memory_program(
         program, declaration, (configuration,), ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(), limits,
         |_phase, graph, installed| {

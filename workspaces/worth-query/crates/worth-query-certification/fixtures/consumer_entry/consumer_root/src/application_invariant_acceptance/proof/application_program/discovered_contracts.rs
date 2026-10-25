@@ -11,6 +11,7 @@ type Binding = PlanarSourceAdjustmentBinding<ConsumerSchema>;
 #[test]
 fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -72,16 +73,19 @@ fn discovered_installed_concrete_delivery_and_occurrence_are_exact() {
 fn discovered_closed_projection_shapes_and_empty_batch_authoring() {
     assert!(
         ApplicationProgramAuthoring::<ConsumerSchema, Program<BatchDelivery<2>>>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .is_ok()
     );
     assert!(
         ApplicationProgramAuthoring::<ConsumerSchema, Program<NoProjectionDelivery>>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .is_ok()
     );
     let denial =
         match ApplicationProgramAuthoring::<ConsumerSchema, Program<BatchDelivery<0>>>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
         {
             Err(denial) => denial,
@@ -119,6 +123,7 @@ fn discovered_closed_projection_shapes_and_empty_batch_authoring() {
 #[test]
 fn discovered_authoring_refuses_wrong_occurrence_and_missing_actual_root() {
     let wrong = match ApplicationProgramAuthoring::<ConsumerSchema, WrongOccurrenceProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
     {
         Err(denial) => denial,
@@ -129,6 +134,7 @@ fn discovered_authoring_refuses_wrong_occurrence_and_missing_actual_root() {
         ApplicationProgramValidationDenialKind::InvalidActionDelivery
     );
     let missing = match ApplicationProgramAuthoring::<ConsumerSchema, MissingRootProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
     {
         Err(denial) => denial,
@@ -139,9 +145,11 @@ fn discovered_authoring_refuses_wrong_occurrence_and_missing_actual_root() {
         ApplicationProgramValidationDenialKind::InvalidActionDelivery
     );
     let two = ApplicationProgramAuthoring::<ConsumerSchema, Program<BatchDelivery<2>>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let three = ApplicationProgramAuthoring::<ConsumerSchema, Program<BatchDelivery<3>>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     assert_eq!(two.identity(), three.identity());

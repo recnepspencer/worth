@@ -49,15 +49,20 @@ impl ApplicationProgramDefinition<CheckpointSchema> for Unowned {
 
 pub(super) fn install_rostered(model: &Model) -> Application {
     let initial = ApplicationProgramAuthoring::<CheckpointSchema, OracleProgram>::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let adopted = ApplicationProgramAuthoring::<CheckpointSchema, Adopted>::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let roster = application_installation::WorthQueryApplicationProgramRoster::new()
         .support(adopted)
         .support(
             ApplicationProgramAuthoring::<CheckpointSchema, Unowned>::begin()
+                .with_schema(
+                    &CheckpointSchema::declaration().expect("the completed schema is valid"),
+                )
                 .validated_program()
                 .unwrap(),
         );

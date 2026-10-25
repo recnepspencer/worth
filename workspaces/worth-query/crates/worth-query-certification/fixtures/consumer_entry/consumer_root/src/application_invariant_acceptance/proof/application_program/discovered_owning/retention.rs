@@ -4,6 +4,7 @@ use super::*;
 #[test]
 fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [

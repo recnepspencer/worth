@@ -76,7 +76,7 @@ fn members(projection_work: Option<usize>) -> Vec<ApplicationSchemaMember> {
             relation: text("relates"),
             from: text("Entity"),
             to: text("Other"),
-            integrity: worth_query_installation::facade::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            integrity: worth_query_installation::facade::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
         },
         principal_binding(),
         ApplicationSchemaMember::ApplicationQuery {

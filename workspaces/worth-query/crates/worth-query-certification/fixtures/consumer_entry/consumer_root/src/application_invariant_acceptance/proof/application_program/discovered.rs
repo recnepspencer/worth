@@ -35,6 +35,7 @@ pub(super) fn performed_source_discovers_required_root(
     >,
 ) {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -162,6 +163,7 @@ pub(super) fn isolated_source_settles_without_roots(
 ) {
     let program =
         ApplicationProgramAuthoring::<ConsumerSchema, Program<NoProjectionDelivery>>::begin()
+            .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
             .validated_program()
             .unwrap();
     let grants = [

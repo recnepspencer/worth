@@ -28,7 +28,7 @@ pub(super) fn register(
         kind,
         instance,
         instance,
-        super::relations::single_successor_integrity(),
+        &super::relations::single_successor_integrity().into(),
         None,
     )?;
     Ok((registry, kind))

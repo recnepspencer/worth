@@ -244,6 +244,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the region totals program is complete")
     .revision()
@@ -257,6 +258,7 @@ where
         CheckpointSchema,
         RegionTotalsProgram<DeclaredOnly<Computation>>,
     >::begin()
+        .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .err()
     .map(|denial| denial.kind())
@@ -269,6 +271,7 @@ fn program_with_one_partitioned_computation_installs_with_its_owner() {
         CheckpointSchema,
         RegionTotalsProgram<owner::PartitionedOwner>,
     >::begin()
+    .with_schema(&CheckpointSchema::declaration().expect("the completed schema is valid"))
     .validated_program()
     .expect("the region totals program is complete");
     let computations = program

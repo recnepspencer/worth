@@ -10,10 +10,11 @@ pub(super) fn install<const MODE: u8>() -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<JointSchema, JointProgram<MODE>>,
     WorthQueryInMemoryApplicationDenial,
 > {
+    let declaration = JointSchema::declaration().expect("the real topology schema validates");
     let program = ApplicationProgramAuthoring::<JointSchema, JointProgram<MODE>>::begin()
+        .with_schema(&declaration)
         .validated_program()
         .expect("each guard control is a well-formed program");
-    let declaration = JointSchema::declaration().expect("the real topology schema validates");
     application_installation::in_memory_program(
         program,
         declaration,

@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_installation::facade::{
     ApplicationRelationCrossContextPolicy, ApplicationRelationDeletionPolicy,
-    ApplicationRelationIntegrity, ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
-    WorthQueryInstalledApplicationSchemaContractCatalog,
+    ApplicationRelationIntegrityRecord, ApplicationSchemaMember,
+    ErasedApplicationSchemaDeclaration, WorthQueryInstalledApplicationSchemaContractCatalog,
 };
 use worth_relational::facade::config::{CascadeDeletePolicy, CrossContextPolicy};
 use worth_relational::facade::identity::KindId;
@@ -136,7 +136,7 @@ pub(in crate::domain_computation::primary_graph) fn register_relation(
     kind_id: KindId,
     from_kind: KindId,
     to_kind: KindId,
-    integrity: ApplicationRelationIntegrity,
+    integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
     register_relation_to_kinds(
@@ -160,10 +160,10 @@ pub(in crate::domain_computation::primary_graph) fn register_relation_to_kinds(
     kind_id: KindId,
     from_kind: KindId,
     to_kinds: Vec<KindId>,
-    integrity: ApplicationRelationIntegrity,
+    integrity: &ApplicationRelationIntegrityRecord,
     entity_kinds: Option<&BTreeMap<String, KindId>>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
-    let cross_context_policy = lower_cross_context(integrity.cross_context_policy());
+    let cross_context_policy = lower_cross_context(integrity.endpoints.cross_context_policy);
     let relation_integrity =
         lower_relation_integrity(relation, from_kind, to_kinds, integrity, entity_kinds)?;
     registry

@@ -65,7 +65,7 @@ pub(super) fn lower(
         membership,
         transition,
         entity_kind,
-        owned_fact_integrity(),
+        &owned_fact_integrity().into(),
         None,
     )?;
     let registry = register_relation_to_kinds(
@@ -76,7 +76,7 @@ pub(super) fn lower(
         target,
         entity_kind,
         targets,
-        ApplicationRelationIntegrity::new(
+        &ApplicationRelationIntegrity::new(
             ApplicationRelationEndpoints::new(
                 false,
                 ApplicationRelationCrossContextPolicy::AllowExplicit,
@@ -86,7 +86,8 @@ pub(super) fn lower(
             // decoder preserve exactly one immutable historical reference.
             ApplicationRelationCardinality::new(None, Some(1), None, None, None, Some(1)),
             ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
-        ),
+        )
+        .into(),
         None,
     )?;
     Ok((

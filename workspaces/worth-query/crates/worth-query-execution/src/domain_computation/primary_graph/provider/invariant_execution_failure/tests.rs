@@ -143,7 +143,24 @@ fn original_law_payload_survives_all_query_refusal_translations() {
         kind_id: KindId(11),
         client_key: worth_relational::facade::symbols::ClientKey::raw("unpublished-target"),
     });
+    // A deliberately false self-edge flag proves transport does not infer it from endpoint equality.
     for (fields, expected) in [
+        (
+            InvariantViolationFields::RelationEndpointKindSelfEdge {
+                contract_id: contract_id.clone(),
+                relation_kind_id: KindId(77),
+                source: target.clone(),
+                target: target.clone(),
+                self_edge: false,
+            },
+            Some(WorthQueryRelationLawDenial::SelfEdge {
+                contract_id: &contract_id,
+                relation_kind_id: KindId(77),
+                source: &target,
+                target: &target,
+                self_edge: false,
+            }),
+        ),
         (
             InvariantViolationFields::Acyclicity {
                 contract_id: contract_id.clone(),

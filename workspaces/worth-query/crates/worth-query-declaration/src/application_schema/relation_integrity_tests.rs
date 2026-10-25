@@ -25,7 +25,7 @@ fn members(integrity: ApplicationRelationIntegrity) -> Vec<ApplicationSchemaMemb
             relation: "Contains".into(),
             from: "From".into(),
             to: "To".into(),
-            integrity,
+            integrity: integrity.into(),
         },
     ]
 }
@@ -40,7 +40,7 @@ fn relation_declaration_retains_its_explicit_integrity_contract() {
 
     assert!(declaration.erased().members().iter().any(|member| matches!(
         member,
-        ApplicationSchemaMember::Relation { integrity: actual, .. } if *actual == integrity
+        ApplicationSchemaMember::Relation { integrity: actual, .. } if *actual == integrity.into()
     )));
 }
 

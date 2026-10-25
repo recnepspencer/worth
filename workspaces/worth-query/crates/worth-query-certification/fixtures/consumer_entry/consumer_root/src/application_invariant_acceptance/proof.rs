@@ -197,7 +197,7 @@ fn typed_domain_denial_has_no_publication(
     assert!(matches!(
         outcome,
         WorthQueryApplicationMutationOutcome::DomainDenied(
-            worth_query_consumer_values::PlanarMutationDenial::CycleNeedsThreeVertices
+            worth_query_consumer_values::PlanarMutationDenial::EmptyCycle
         )
     ));
     assert_eq!(source_version(request), before);

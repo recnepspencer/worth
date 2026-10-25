@@ -40,7 +40,10 @@ pub(super) fn write(
     schema::write(output, &parts.logical_key)
 }
 
-pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<DeclaredAuthoredCorrection, Denial> {
+pub(super) fn decode(
+    input: &mut BinaryInput<'_>,
+    budget: &mut crate::record::decode_budget::RecordDecodeAttempt,
+) -> Result<DeclaredAuthoredCorrection, Denial> {
     let family = decode_type_identity(input)?;
     let source_role = input.text()?.to_owned();
     let inverse_role = input.text()?.to_owned();
@@ -55,7 +58,7 @@ pub(super) fn decode(input: &mut BinaryInput<'_>) -> Result<DeclaredAuthoredCorr
     if !matches!(tag, 3 | 25) {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
-    let logical_key = schema::decode(tag, input)?;
+    let logical_key = schema::decode(tag, input, budget)?;
     Ok(DeclaredAuthoredCorrection::from_untrusted_parts(
         DeclaredAuthoredCorrectionParts {
             family,

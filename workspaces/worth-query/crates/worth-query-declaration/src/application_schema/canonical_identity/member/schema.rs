@@ -46,7 +46,7 @@ pub(super) fn append_schema_member(
             basis.text(format!("{prefix}.relation"), relation);
             basis.text(format!("{prefix}.from"), from);
             basis.text(format!("{prefix}.to"), to);
-            append_relation_integrity(basis, prefix, *integrity);
+            append_relation_integrity(basis, prefix, integrity);
         }
         ApplicationSchemaMember::PrincipalBinding { .. } => {
             append_principal_binding(basis, prefix, member)
@@ -58,7 +58,7 @@ pub(super) fn append_schema_member(
 fn append_relation_integrity(
     basis: &mut ApplicationSchemaCanonicalBasis,
     prefix: &str,
-    integrity: crate::application_schema::ApplicationRelationIntegrity,
+    integrity: &crate::application_schema::ApplicationRelationIntegrityRecord,
 ) {
     use crate::application_schema::{
         ApplicationRelationCrossContextPolicy as CrossContext,

@@ -95,6 +95,7 @@ pub(super) fn install<
 ) -> Application<Schema> {
     in_memory_program(
         ApplicationProgramAuthoring::<Schema, Program<Schema>>::begin()
+            .with_schema(&Schema::declaration().unwrap())
             .validated_program()
             .unwrap(),
         Schema::declaration().unwrap(),
@@ -161,6 +162,7 @@ pub(super) fn restore<
 ) -> Application<Schema> {
     crate::facade::application_installation::in_memory_program_from_checkpoint(
         ApplicationProgramAuthoring::<Schema, Program<Schema>>::begin()
+            .with_schema(&Schema::declaration().unwrap())
             .validated_program()
             .unwrap(),
         Schema::declaration().unwrap(),

@@ -18,12 +18,13 @@ fn declared_partition_isolation_is_lowered_independently_of_endpoint_permission(
         ApplicationRelationDeletionPolicy::RetainDanglingForAudit,
     );
     let original =
-        lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline, None).unwrap();
+        lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], &baseline.into(), None)
+            .unwrap();
     let isolated = lower_relation_integrity(
         "Peer",
         KindId(11),
         vec![KindId(11)],
-        baseline.same_partition_endpoints(),
+        &baseline.same_partition_endpoints().into(),
         None,
     )
     .unwrap();
@@ -46,7 +47,8 @@ fn paired_symmetry_and_exact_uniqueness_scope_lower_into_one_native_plan() {
     use worth_relational::facade::schema::{SymmetryMode, UniquenessScope as Native};
     let baseline = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     let original =
-        lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], baseline, None).unwrap();
+        lower_relation_integrity("Peer", KindId(11), vec![KindId(11)], &baseline.into(), None)
+            .unwrap();
     let mut revisions = Vec::new();
     for (declared, native) in [
         (Declared::DirectedSemanticEdge, Native::DirectedSemanticEdge),
@@ -59,7 +61,7 @@ fn paired_symmetry_and_exact_uniqueness_scope_lower_into_one_native_plan() {
             "Peer",
             KindId(11),
             vec![KindId(11)],
-            baseline.symmetric().unique(declared),
+            &baseline.symmetric().unique(declared).into(),
             None,
         )
         .unwrap();
@@ -87,8 +89,14 @@ fn declared_relation_integrity_lowers_exact_endpoint_cardinality_and_deletion_co
         ApplicationRelationDeletionPolicy::RequireRelationDeletionInSameCommit,
     );
 
-    let lowered =
-        lower_relation_integrity("Contains", KindId(11), vec![KindId(12)], declared, None).unwrap();
+    let lowered = lower_relation_integrity(
+        "Contains",
+        KindId(11),
+        vec![KindId(12)],
+        &declared.into(),
+        None,
+    )
+    .unwrap();
 
     let endpoints = &lowered.endpoint_kind_contracts[0];
     assert_eq!(endpoints.allowed_source_kinds, vec![KindId(11)]);
@@ -119,7 +127,7 @@ fn unbounded_relation_omits_a_false_cardinality_contract() {
         "Contains",
         KindId(11),
         vec![KindId(12)],
-        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        &ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
         None,
     )
     .unwrap();
@@ -136,7 +144,8 @@ fn no_self_edges_uses_the_same_relation_integrity_lowering_path() {
         "Contains",
         KindId(11),
         vec![KindId(11)],
-        ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
+        &ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+            .into(),
         None,
     )
     .unwrap();
@@ -156,7 +165,7 @@ fn minimum_uses_the_complete_carried_kind_binding_and_native_id_order() {
         "Reaches",
         KindId(11),
         vec![KindId(4)],
-        baseline.reaches_at_least(2, &["A", "Z", "A"]),
+        &baseline.reaches_at_least(2, &["A", "Z", "A"]).into(),
         Some(&binding),
     )
     .unwrap();
@@ -174,11 +183,18 @@ fn minimum_uses_the_complete_carried_kind_binding_and_native_id_order() {
             "Reaches",
             KindId(11),
             vec![KindId(4)],
-            baseline,
+            &baseline.into(),
             Some(&binding)
         )
         .unwrap(),
-        lower_relation_integrity("Reaches", KindId(11), vec![KindId(4)], baseline, None).unwrap()
+        lower_relation_integrity(
+            "Reaches",
+            KindId(11),
+            vec![KindId(4)],
+            &baseline.into(),
+            None
+        )
+        .unwrap()
     );
 }
 
@@ -186,16 +202,48 @@ fn minimum_uses_the_complete_carried_kind_binding_and_native_id_order() {
 fn enabled_minimum_cannot_silently_lose_missing_kind_bindings() {
     let minimum = ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
         .reaches_at_least(1, &["Unknown"]);
-    assert!(
-        lower_relation_integrity("Reaches", KindId(11), vec![KindId(12)], minimum, None).is_err()
-    );
+    assert!(lower_relation_integrity(
+        "Reaches",
+        KindId(11),
+        vec![KindId(12)],
+        &minimum.into(),
+        None
+    )
+    .is_err());
     let binding = std::collections::BTreeMap::from([("Known".into(), KindId(12))]);
     assert!(lower_relation_integrity(
         "Reaches",
         KindId(11),
         vec![KindId(12)],
-        minimum,
+        &minimum.into(),
         Some(&binding)
     )
     .is_err());
+}
+
+#[test]
+fn decoded_owned_minimum_names_use_the_same_native_lowerer() {
+    use worth_query_installation::facade::{
+        ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
+    };
+    let name = format!("DecodedTarget_{}", 42);
+    let binding = std::collections::BTreeMap::from([(name.clone(), KindId(12))]);
+    let mut record: ApplicationRelationIntegrityRecord =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into();
+    record.reaches_at_least = Some(ApplicationRelationMinimumReachabilityRecord {
+        minimum_reachable_targets: 2,
+        target_kinds: vec![name],
+    });
+    let lowered = lower_relation_integrity(
+        "DecodedReaches",
+        KindId(11),
+        vec![KindId(12)],
+        &record,
+        Some(&binding),
+    )
+    .unwrap();
+    let minimum = &lowered.connectivity_minimum_contracts[0];
+    assert_eq!(minimum.source_kind_ids, vec![KindId(11)]);
+    assert_eq!(minimum.target_kind_ids, vec![KindId(12)]);
+    assert_eq!(minimum.minimum_reachable_targets, 2);
 }

@@ -57,8 +57,10 @@ pub(in crate::application_invariant_acceptance::proof::application_program) fn o
     use crate::application_program::fixed_successors::{RemovedFixed, UnchangedFixed};
     use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
     let roster = worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new()
-        .support(ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin().validated_program().unwrap())
-        .support(ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin().validated_program().unwrap());
+        .support(ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid")).validated_program().unwrap())
+        .support(ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid")).validated_program().unwrap());
     let grants = [
         crate::program_deployment::ConsumerDeploymentGrantSeed::for_program::<crate::ConsumerProgram>(
             "model-owner",

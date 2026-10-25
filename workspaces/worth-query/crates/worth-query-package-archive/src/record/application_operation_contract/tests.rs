@@ -17,7 +17,7 @@ use crate::record::frame::{RecordFrameEncoding, WorthQueryPackageArchiveRecordDe
 fn complete_operation_contract_round_trips_every_payload_family_with_exact_work() {
     let record = fixture::complete_record();
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
-    // Displaced protocols are refused before payload decoding; protocol 13 is current.
+    // Displaced protocols are refused before payload decoding; protocol 14 is current.
     for (version, displaced_hex) in [
         (
             6_u16,
@@ -35,6 +35,10 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
             12_u16,
             include_str!("tests/application_operation_contract_v12.hex"),
         ),
+        (
+            13_u16,
+            include_str!("tests/application_operation_contract_v13.hex"),
+        ),
     ] {
         let original = decode_hex(displaced_hex.trim());
         let mut old_decoder =
@@ -48,9 +52,9 @@ fn complete_operation_contract_round_trips_every_payload_family_with_exact_work(
         );
         assert_eq!(original, decode_hex(displaced_hex.trim()));
     }
-    let frozen_hex = include_str!("tests/application_operation_contract_v13.hex").trim();
+    let frozen_hex = include_str!("tests/application_operation_contract_v14.hex").trim();
     assert_eq!(encode_hex(&bytes), frozen_hex);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 13);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 14);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 12);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
