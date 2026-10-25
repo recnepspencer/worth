@@ -58,7 +58,10 @@ fn producer_restoration_requires_one_exact_passing_owner_receipt() {
     ] {
         assert_eq!(
             admit_requirement_facts([fact(verdict)], REQUIREMENT),
-            Err(Denial::RequiredInvariantDidNotPass)
+            Err(Denial::RequiredInvariantDidNotPass {
+                verdict,
+                non_applicability: None
+            })
         );
     }
 }
@@ -85,7 +88,10 @@ fn scoped_or_unexplained_non_applicability_still_refuses() {
     ] {
         assert_eq!(
             admit_requirement_facts([receipt], REQUIREMENT),
-            Err(Denial::RequiredInvariantDidNotPass)
+            Err(Denial::RequiredInvariantDidNotPass {
+                verdict: InvariantDecisionKind::NotApplicable,
+                non_applicability: receipt.non_applicability,
+            })
         );
     }
     // A basis never upgrades a verdict that is not a non-applicability.
@@ -97,6 +103,9 @@ fn scoped_or_unexplained_non_applicability_still_refuses() {
             }],
             REQUIREMENT,
         ),
-        Err(Denial::RequiredInvariantDidNotPass)
+        Err(Denial::RequiredInvariantDidNotPass {
+            verdict: InvariantDecisionKind::Violated,
+            non_applicability: Some(Basis::CandidateOutsideClosure),
+        })
     );
 }

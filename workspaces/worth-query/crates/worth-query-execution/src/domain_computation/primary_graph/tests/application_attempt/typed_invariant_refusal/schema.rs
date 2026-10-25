@@ -1,4 +1,5 @@
-//! An authorized account and two ordered commit-boundary rules.
+//! An authorized account, two ordered commit-boundary rules over it, and a
+//! ledger rule no account publication touches.
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_declaration::facade::authentication::*;
 use worth_query_declaration::*;
@@ -9,7 +10,7 @@ worth_query_application_schema! {
         version: (1, 0),
         members: |schema| {
             schema.entity(ExternalMapping::reference()).entity(Principal::reference())
-                .entity(Account::reference())
+                .entity(Account::reference()).entity(Ledger::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference())
                 .field(ExternalMapping::reference(), MappingStatusField::reference())
@@ -35,12 +36,20 @@ worth_query_application_schema! {
                 .operation_write(ChangeStatus::reference(), AccountStatus::reference())
                 .invariant(super::rule::definition::<super::rule::First>())
                 .invariant(super::rule::definition::<super::rule::Second>())
+                .operation(CloseAccount::reference().definition().no_external_effect().no_aftermath().finish())
+                .operation_projection_work_budget(CloseAccount::reference(), 32)
+                .operation_requires_ability(CloseAccount::reference(), EditAccount::reference())
+                .operation_read_entity(CloseAccount::reference(), Account::reference())
+                .operation_read_field(CloseAccount::reference(), AccountStatus::reference())
+                .operation_delete(CloseAccount::reference(), Account::reference())
+                .invariant(super::ledger_rule::definition())
         }
     }
 }
 worth_query_entity!(pub ExternalMapping for RefusalSchema);
 worth_query_entity!(pub Principal for RefusalSchema);
 worth_query_entity!(pub Account for RefusalSchema);
+worth_query_entity!(pub Ledger for RefusalSchema);
 worth_query_aspect!(pub ExternalIdentity for RefusalSchema, ExternalMapping; identity = AspectIdentity(0x9176_6b01), revision = AspectContractRevision(1),);
 worth_query_field!(
     pub ExternalIdentityField for RefusalSchema, ExternalMapping, ExternalIdentity:
@@ -89,3 +98,11 @@ worth_query_operation_requires!(ChangeStatus => [EditAccount]);
 worth_query_operation_reads!(ChangeStatus => [Account, AccountStatus]);
 worth_query_operation_expects_fact!(ChangeStatus => [AccountStatus]);
 worth_query_operation_writes!(ChangeStatus => [AccountStatus]);
+#[derive(Clone, Debug)]
+pub struct CloseAccountInput;
+worth_query_portable_type!(CloseAccountInput => "worth.query.test.typed-refusal-close.v1");
+worth_query_structured_value_binding!(pub CloseAccountInputBinding for CloseAccountInput { identity: "worth.query.test.typed-refusal-close.v1" });
+worth_query_operation!(pub CloseAccount for RefusalSchema, input CloseAccountInputBinding);
+worth_query_operation_requires!(CloseAccount => [EditAccount]);
+worth_query_operation_reads!(CloseAccount => [Account, AccountStatus]);
+worth_query_operation_deletes!(CloseAccount => [Account]);

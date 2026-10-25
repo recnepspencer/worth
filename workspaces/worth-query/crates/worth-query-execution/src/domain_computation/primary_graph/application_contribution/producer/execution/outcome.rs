@@ -203,6 +203,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             let kind = commit_denial.kind();
             let capacity = commit_denial.output_verification_capacity_stop();
             let invariant = commit_denial.custom_invariant_denial().cloned();
+            let requirement = commit_denial
+                .invariant_execution_failure()
+                .and_then(|failure| match failure.kind() {
+                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
+                    _ => None,
+                });
             let execution = commit_denial
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
@@ -268,6 +274,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             Err(failure
                 .with_capacity_stop(capacity)
                 .with_custom_invariant_denial(invariant)
+                .with_producer_requirement_denial(requirement)
                 .with_commit_denial_kind(kind)
                 .with_commit_execution_denial(execution))
         }

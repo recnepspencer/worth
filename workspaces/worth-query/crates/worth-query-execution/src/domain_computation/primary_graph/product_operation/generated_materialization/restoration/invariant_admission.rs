@@ -112,16 +112,17 @@ fn admit_requirement_facts<'a>(
     // output must provably touch nothing the rule governs. Scoped or refused
     // non-applicability is valid for unrelated application rules, but does not
     // satisfy this producer-owned requirement.
-    match (
-        matching_version[0].verdict,
-        matching_version[0].non_applicability,
-    ) {
+    let receipt = matching_version[0];
+    match (receipt.verdict, receipt.non_applicability) {
         (InvariantDecisionKind::Passed, None) => Ok(RequirementSatisfaction::Affirmed),
         (
             InvariantDecisionKind::NotApplicable,
             Some(CustomInvariantNonApplicability::CandidateOutsideClosure),
         ) => Ok(RequirementSatisfaction::Vacuous),
-        _ => Err(Denial::RequiredInvariantDidNotPass),
+        (verdict, non_applicability) => Err(Denial::RequiredInvariantDidNotPass {
+            verdict,
+            non_applicability,
+        }),
     }
 }
 

@@ -2,6 +2,9 @@
 
 /// Why the invariant evidence of a prepared output was not admitted. Nothing
 /// was published.
+use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
+use worth_relational::facade::runtime::InvariantDecisionKind;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGeneratedOutputInvariantAdmissionDenial {
     /// The evidence was recorded for a different branch.
@@ -14,6 +17,12 @@ pub enum WorthQueryGeneratedOutputInvariantAdmissionDenial {
     RequiredInvariantVersionMismatch,
     /// A required invariant ran more than once at the same version.
     DuplicateRequiredInvariant,
-    /// A required invariant ran but did not pass.
-    RequiredInvariantDidNotPass,
+    /// A required invariant ran but neither affirmed the output nor was
+    /// proven untouched by it.
+    RequiredInvariantDidNotPass {
+        /// The receipt's verdict.
+        verdict: InvariantDecisionKind,
+        /// Why the rule was not applicable, when the verdict says so.
+        non_applicability: Option<CustomInvariantNonApplicability>,
+    },
 }

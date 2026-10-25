@@ -10,6 +10,61 @@ pub(super) fn prepare(
     scope: &WorthQueryRequestScope,
     status: String,
 ) -> WorthQueryApplicationEffectProgram<RefusalSchema, ChangeStatus, ChangeStatusInput, Account> {
+    authorized(
+        world,
+        scope,
+        ChangeStatus::reference(),
+        |effects, account| {
+            effects
+                .write_field(account, AccountStatus::reference(), status)
+                .unwrap();
+        },
+    )
+}
+
+/// Deletes the authorized account.
+pub(super) fn close(
+    world: &World,
+    scope: &WorthQueryRequestScope,
+) -> WorthQueryApplicationEffectProgram<RefusalSchema, CloseAccount, CloseAccountInput, Account> {
+    authorized(
+        world,
+        scope,
+        CloseAccount::reference(),
+        |effects, account| {
+            effects
+                .delete_entity(Account::reference(), account)
+                .unwrap();
+        },
+    )
+}
+
+fn authorized<Operation, Input>(
+    world: &World,
+    scope: &WorthQueryRequestScope,
+    operation: worth_query_declaration::facade::application_schema::ApplicationOperationRef<
+        RefusalSchema,
+        Operation,
+        Input,
+    >,
+    effect: impl FnOnce(
+        &mut WorthQueryApplicationEffectProgramBuilder<RefusalSchema, Operation, Input, Account>,
+        &WorthQueryApplicationEffectEntity<RefusalSchema, Account>,
+    ),
+) -> WorthQueryApplicationEffectProgram<RefusalSchema, Operation, Input, Account>
+where
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                RefusalSchema,
+            > + 'static,
+    Operation::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: 'static,
+    Account: worth_query_installation::facade::OperationReads<Operation>,
+    AccountStatus: worth_query_installation::facade::OperationReads<Operation>,
+{
     world
         .application
         .with_host_advancement(|phase| {
@@ -52,7 +107,7 @@ pub(super) fn prepare(
             let operation = world
                 .application
                 .installed_schema()
-                .installed_operation(ChangeStatus::reference())
+                .installed_operation(operation)
                 .unwrap();
             let admission = selected
                 .authorize_operation(
@@ -70,6 +125,9 @@ pub(super) fn prepare(
                     &phase,
                     &admission,
                     |reader, projected| {
+                        reader
+                            .require_decision_entity(projected, Account::reference())
+                            .unwrap();
                         reader
                             .require_decision_field(projected, AccountStatus::reference())
                             .unwrap();
@@ -95,9 +153,7 @@ pub(super) fn prepare(
                 .unwrap()
                 .begin_effect_program();
             let account = effects.existing_entity(&account).unwrap();
-            effects
-                .write_field(&account, AccountStatus::reference(), status)
-                .unwrap();
+            effect(&mut effects, &account);
             effects.finish().unwrap()
         })
         .unwrap()

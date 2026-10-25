@@ -944,7 +944,10 @@ descriptive history.
   intents leaves no receipt at all, so Query refuses it as a missing
   invariant. Any other not-applicable receipt, such as a scoped-out rule
   (a raw delete never proves its footprint) or refused preparation, still
-  refuses the publication.
+  refuses the publication. The refusal is typed: the commit denial's invariant
+  failure is `ProducerRequirementNotAdmitted`, carrying the receipt's verdict
+  and non-applicability basis, and the producer's demand denial returns the
+  same value from `producer_requirement_denial()`.
 - **Fixed required outputs.** The ordinary operation delegates performed publication,
   original-carrier retention, native output advancement and complete settlement.
   Registered replay resumes without another source effect. Delivery checks the

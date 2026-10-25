@@ -30,6 +30,9 @@ pub struct WorthQueryOutputDemandDenial {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 struct DemandDenialEvidence {
     custom_invariant: Option<crate::domain_computation::WorthQueryCustomInvariantDenial>,
+    producer_requirement: Option<
+        crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    >,
     publication_stale: Option<ProducerPublicationStale>,
     publication_companion_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,
     producer_admission_stop: Option<worth_relational::facade::mvcc::CompanionPreflightStop>,

@@ -1,4 +1,6 @@
 //! Domain evidence reaches the caller that attempted the installed commit.
+mod ledger_rule;
+mod producer_requirement;
 mod program;
 mod rule;
 mod schema;
