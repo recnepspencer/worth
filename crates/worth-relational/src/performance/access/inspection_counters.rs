@@ -12,7 +12,7 @@ impl PerformanceAccess<'_> {
         let relation_scans = relation_scans.min(usize::MAX as u64) as usize;
         let frontier_expansions = frontier_expansions.min(usize::MAX as u64) as usize;
         let components_evaluated = components_evaluated.min(usize::MAX as u64) as usize;
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.inspection_connectivity_entity_scans += entity_scans;
             counters.inspection_connectivity_relation_scans += relation_scans;
             counters.inspection_connectivity_frontier_expansions += frontier_expansions;
@@ -27,14 +27,14 @@ impl PerformanceAccess<'_> {
     ) {
         let entity_slot_scans = entity_slot_scans.min(usize::MAX as u64) as usize;
         let relation_slot_scans = relation_slot_scans.min(usize::MAX as u64) as usize;
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.inspection_retention_entity_slot_scans += entity_slot_scans;
             counters.inspection_retention_relation_slot_scans += relation_slot_scans;
         });
     }
 
     pub(crate) fn count_inspection_budget_refusal(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.inspection_budget_refusals += 1;
         });
     }

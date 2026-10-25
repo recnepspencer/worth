@@ -1,6 +1,8 @@
 //! Faults cross the production manifest recovery and transaction read doors.
 #[path = "cold_envelopes.rs"]
 mod cold_envelopes;
+#[path = "cold_invariants.rs"]
+mod cold_invariants;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
 use crate::durability::data::{

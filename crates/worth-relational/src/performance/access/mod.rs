@@ -1,3 +1,4 @@
+mod counter_sink;
 mod inspection_counters;
 mod lineage_counters;
 mod merge_counters;
@@ -12,19 +13,12 @@ mod validation_counters;
 mod working_state_counters;
 
 use crate::runtime::{RelationalRuntime, RuntimeInstrumentation};
+use counter_sink::ComplexityCounterSink;
 
 pub(crate) use replay_authority_basis_counters::ReplayLineageAuthorityIndexedSource;
 
 pub struct PerformanceAccess<'runtime> {
-    pub(super) runtime: PerformanceOwnerView<'runtime>,
-}
-
-pub(super) struct PerformanceOwnerView<'runtime> {
-    pub(super) services: PerformanceServicesView<'runtime>,
-}
-
-pub(super) struct PerformanceServicesView<'runtime> {
-    pub(super) instrumentation: &'runtime RuntimeInstrumentation,
+    counters: ComplexityCounterSink<'runtime>,
 }
 
 impl RelationalRuntime {
@@ -39,22 +33,31 @@ impl<'runtime> PerformanceAccess<'runtime> {
     }
 
     pub(crate) fn from_instrumentation(instrumentation: &'runtime RuntimeInstrumentation) -> Self {
+        Self::from_counters(&instrumentation.complexity_counters)
+    }
+
+    pub(crate) fn from_counters(
+        counters: &'runtime std::sync::Mutex<crate::performance::data::RuntimeComplexityCounters>,
+    ) -> Self {
         Self {
-            runtime: PerformanceOwnerView {
-                services: PerformanceServicesView { instrumentation },
-            },
+            counters: ComplexityCounterSink::new(counters),
         }
+    }
+
+    pub(crate) fn accumulate_round_counts(
+        &self,
+        counts: crate::performance::data::RuntimeComplexityCounters,
+    ) {
+        self.counters.count(|target| {
+            crate::performance::operation_complexity_accounting::accumulate_complexity_counts(
+                target, counts,
+            );
+        });
     }
 
     pub(crate) fn complexity_counters_snapshot(
         &self,
     ) -> crate::performance::data::RuntimeComplexityCounters {
-        self.runtime
-            .services
-            .instrumentation
-            .complexity_counters
-            .lock()
-            .expect("complexity counter lock poisoned")
-            .clone()
+        self.counters.snapshot()
     }
 }

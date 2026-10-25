@@ -9,18 +9,13 @@ pub(crate) enum ReplayLineageAuthorityIndexedSource {
 
 impl PerformanceAccess<'_> {
     pub(crate) fn count_replay_verification_layer(&self, layer: ReplayVerificationLayer) {
-        self.runtime
-            .services
-            .instrumentation
-            .count(|counters| match layer {
-                ReplayVerificationLayer::DigestParity => counters.replay_digest_parity_checks += 1,
-                ReplayVerificationLayer::SummaryParity => {
-                    counters.replay_summary_parity_checks += 1
-                }
-                ReplayVerificationLayer::DeepArtifactParity => {
-                    counters.replay_deep_artifact_parity_checks += 1
-                }
-            });
+        self.counters.count(|counters| match layer {
+            ReplayVerificationLayer::DigestParity => counters.replay_digest_parity_checks += 1,
+            ReplayVerificationLayer::SummaryParity => counters.replay_summary_parity_checks += 1,
+            ReplayVerificationLayer::DeepArtifactParity => {
+                counters.replay_deep_artifact_parity_checks += 1
+            }
+        });
     }
 
     pub(crate) fn count_replay_lineage_authority_basis(
@@ -30,7 +25,7 @@ impl PerformanceAccess<'_> {
         event_width: usize,
         decision_width: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.replay_lineage_authority_lookup_requests += 1;
             match indexed_source {
                 Some(ReplayLineageAuthorityIndexedSource::DurableLog) => {
@@ -55,7 +50,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_replay_lineage_authoritative_basis_rejection(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.replay_lineage_authoritative_basis_rejections += 1;
         });
     }

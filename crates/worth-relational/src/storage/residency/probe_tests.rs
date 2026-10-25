@@ -3,6 +3,73 @@ use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 
 #[test]
+fn related_sources_do_not_confuse_equal_partition_ids() {
+    let fixtures = [region_with_history(), region_with_history()];
+    assert_eq!(
+        fixtures[0].entity.partition_id,
+        fixtures[1].entity.partition_id
+    );
+    let editions = fixtures.each_ref().map(|fixture| {
+        crate::runtime::PartitionEdition::new(BTreeMap::from([(
+            fixture.entity.partition_id,
+            RelationalRegionRetention::new(fixture.cell.clone(), None),
+        )]))
+    });
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let id = fixtures[0].entity.partition_id;
+    let mut rounds = 0;
+    let answer = probe_full_sources(&execution, [&editions[0], &editions[1]], |views| {
+        rounds += 1;
+        views.map(|view| view.get_partition(id).is_some())
+    })
+    .unwrap();
+    assert_eq!(answer, [true, true]);
+    assert!(rounds > 1 && rounds < 4);
+    for fixture in fixtures {
+        assert!(fixture.source.history_reads.load(Ordering::SeqCst) > 0);
+    }
+}
+
+#[test]
+fn a_resident_overlay_does_not_hide_its_cold_before_image() {
+    let base = region_with_history();
+    let staged = region_with_history();
+    assert_eq!(base.entity.partition_id, staged.entity.partition_id);
+    let resident = full_demand(&staged.cell, 1 << 24).unwrap();
+    // This is a composite read-view test. It does not assert that a foreign
+    // runtime's staged records can acquire mutation or publication authority.
+    let staged = BTreeMap::from([(
+        base.entity.partition_id,
+        resident.full_view().partition().clone(),
+    )]);
+    let edition = crate::runtime::PartitionEdition::new(BTreeMap::from([(
+        base.entity.partition_id,
+        RelationalRegionRetention::new(base.cell.clone(), None),
+    )]));
+    let overlay = crate::storage::overlay::OverlayStateView::new(&edition, &staged);
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let mut rounds = 0;
+    let history = probe_full_sources(&execution, [&overlay], |[view]| {
+        rounds += 1;
+        assert!(view.get_partition(base.entity.partition_id).is_some());
+        view.base_partition(base.entity.partition_id)
+            .map(|partition| {
+                partition
+                    .entity_arena
+                    .metadata_history_at(base.entity.slot_index())
+                    .unwrap()
+                    .len()
+            })
+    })
+    .unwrap();
+    assert_eq!(history, Some(base.expected_history));
+    assert!(rounds > 1 && rounds < 4);
+    assert!(base.source.history_reads.load(Ordering::SeqCst) > 0);
+}
+
+#[test]
 fn a_cold_round_discards_absence_before_accepting_the_resident_answer() {
     let fixture = region_with_history();
     let edition = crate::runtime::PartitionEdition::new(BTreeMap::from([(

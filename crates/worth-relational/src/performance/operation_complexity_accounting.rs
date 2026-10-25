@@ -2,6 +2,15 @@ use crate::performance::data::RuntimeComplexityCounters;
 
 macro_rules! complexity_operations {
     ($($field:ident),+ $(,)?) => {
+        /// Settle operation counts without resetting publication's gauges.
+        pub(crate) fn accumulate_complexity_counts(
+            target: &mut RuntimeComplexityCounters,
+            mut counts: RuntimeComplexityCounters,
+        ) {
+            clear_commit_gauges(&mut counts);
+            $(target.$field = target.$field.saturating_add(counts.$field);)+
+        }
+
         pub(crate) fn complexity_delta(
             before: RuntimeComplexityCounters,
             after: RuntimeComplexityCounters,

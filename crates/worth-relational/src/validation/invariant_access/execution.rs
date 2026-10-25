@@ -101,34 +101,62 @@ impl<'runtime> InvariantAccess<'runtime> {
             )));
         }
 
-        let request = InvariantExecutionRequest::from_profile_with_contract_at_current_version(
-            profile,
-            &self.view,
-            observation,
-            version_id,
-            current_version_id,
-            merged_plan,
-            plan_contract,
-            &crate::validation::engine::InvariantPreparationControl::new(
-                crate::mvcc::RelationalOperationControl::uninterrupted(),
-                execution.allocation_policy(),
-                crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-            ),
-        )?;
-        if !request.should_execute_anything() {
-            return Ok(InvariantExecutionResult::skipped(self.execution_metadata(
-                profile,
-                observation_kind,
-                version_id,
-                current_version_id,
-                merged_plan,
-                plan_contract,
-                request.applicable_groups(),
-                request.max_cost(),
-                InvariantExecutionDisposition::SkippedByMayBreakMask,
-                request.proposal_identity(),
-            )));
-        }
-        InvariantEngine::from_view(&self.view).execute(execution, request)
+        let sources = [
+            observation.committed_partition_access(),
+            observation.enforcement_partition_access(),
+            observation
+                .before_image_partition_access()
+                .unwrap_or_else(|| observation.committed_partition_access()),
+        ];
+        let (answer, counts) = crate::storage::residency::probe_full_sources(
+            execution, sources, |views| {
+                let counts = std::sync::Mutex::new(Default::default());
+                let view = self.view.with_counter_sink(&counts);
+                let answer = (|| -> Result<InvariantExecutionResult, crate::transactions::data::TransactionCommitError> {
+                let request = InvariantExecutionRequest::from_profile_with_contract_at_current_version(
+                    profile,
+                    &view,
+                    observation.with_probed_sources(views),
+                    version_id,
+                    current_version_id,
+                    merged_plan,
+                    plan_contract,
+                    &crate::validation::engine::InvariantPreparationControl::new(
+                        crate::mvcc::RelationalOperationControl::uninterrupted(),
+                        execution.allocation_policy(),
+                        crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+                    ),
+                )?;
+                if !request.should_execute_anything() {
+                    return Ok(InvariantExecutionResult::skipped(self.execution_metadata(
+                        profile,
+                        observation_kind,
+                        version_id,
+                        current_version_id,
+                        merged_plan,
+                        plan_contract,
+                        request.applicable_groups(),
+                        request.max_cost(),
+                        InvariantExecutionDisposition::SkippedByMayBreakMask,
+                        request.proposal_identity(),
+                    )));
+                }
+                InvariantEngine::from_view(&view).execute(execution, request)
+                })();
+                drop(view);
+                (answer, counts.into_inner().unwrap_or_else(|error| error.into_inner()))
+            },
+        ).map_err(|failure| {
+            crate::transactions::data::TransactionCommitError::execution(
+                crate::transactions::data::CommitExecutionDenial {
+                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(failure.into()),
+                    partition_identity: None,
+                },
+            )
+        })?;
+        self.view
+            .performance_access()
+            .accumulate_round_counts(counts);
+        answer
     }
 }

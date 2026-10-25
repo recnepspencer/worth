@@ -65,7 +65,7 @@ point, adjacency, and frontier reads, and explicit demands to their scans and
 historical materialization. It carries storage failures through Query and bank
 outcomes and counts slots from directory facts without warming payloads.
 
-Phase 2 remains open: commit/merge and invariant probe rounds, accepted-candidate
+Phase 2 remains open: commit/merge and candidate-wide invariant probe rounds, accepted-candidate
 lease carriage, resident pin/publication witnesses, fallible retention and
 inspection, envelope catalog retirement and the remaining history
 readers, lineage page serving, and the complete symbol/unique-field audit still
@@ -82,3 +82,16 @@ Storage statistics, partition statistics, chunk summaries and chunk diagnostics
 now require the caller request and return typed native read failures. Their
 computations accept a `ResidentPartitionEdition` issued only after the entire
 mirror's Full demand succeeds; they retain that exact edition for all counts.
+
+## Next audited boundary: invariant rounds
+
+Invariant request construction already reads relation scopes, so the invariant
+access probe includes construction and execution together. Committed,
+enforcement and before-image sources share one miss ledger; an overlay hit does
+not hide a cold before-image. The probe preserves touched-slot declarations and
+overlay source selection. Provisional complexity telemetry uses a borrowed,
+stack-local sink and settles only with a miss-free round. Work already spent
+remains spent. This read boundary
+does not issue candidate identities; candidate-wide abandonment and symbol
+staging remain separate required cuts. The current Full-view substrate still
+requires the specified Head-only preparation cutover before phase completion.

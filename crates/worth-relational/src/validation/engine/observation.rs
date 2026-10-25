@@ -133,9 +133,30 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
 pub(crate) enum InvariantObservation<'runtime> {
     Committed(CommittedInvariantView<'runtime>),
     Speculative(SpeculativeInvariantView<'runtime>),
+    Probed {
+        meaning: &'runtime InvariantObservation<'runtime>,
+        committed: &'runtime dyn PartitionAccess,
+        enforcement: &'runtime dyn PartitionAccess,
+        before_image: Option<&'runtime dyn PartitionAccess>,
+    },
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
+    pub(crate) fn with_probed_sources<'round>(
+        &'round self,
+        [committed, enforcement, before_image]: [&'round dyn PartitionAccess; 3],
+    ) -> InvariantObservation<'round>
+    where
+        'runtime: 'round,
+    {
+        InvariantObservation::Probed {
+            meaning: self,
+            committed,
+            enforcement,
+            before_image: self.before_image_partition_access().map(|_| before_image),
+        }
+    }
+
     pub(crate) fn committed(state: PartitionEdition) -> Self {
         Self::Committed(CommittedInvariantView::new(state))
     }
@@ -176,6 +197,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(_) => InvariantObservationKind::Committed,
             Self::Speculative(_) => InvariantObservationKind::Speculative,
+            Self::Probed { meaning, .. } => meaning.kind(),
         }
     }
 
@@ -183,6 +205,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.committed_partition_access(),
             Self::Speculative(view) => view.partition_access(),
+            Self::Probed { committed, .. } => *committed,
         }
     }
 
@@ -190,6 +213,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.enforcement_partition_access(),
             Self::Speculative(view) => view.partition_access(),
+            Self::Probed { enforcement, .. } => *enforcement,
         }
     }
 
@@ -197,17 +221,23 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.enforcement.is_none(),
             Self::Speculative(_) => true,
+            Self::Probed { meaning, .. } => meaning.enforcement_uses_committed_state(),
         }
     }
 
     pub(crate) fn before_image_uses_committed_state(&self) -> bool {
-        matches!(self, Self::Committed(view) if view.enforcement.is_some())
+        match self {
+            Self::Committed(view) => view.enforcement.is_some(),
+            Self::Speculative(_) => false,
+            Self::Probed { meaning, .. } => meaning.before_image_uses_committed_state(),
+        }
     }
 
     pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
         match self {
             Self::Committed(view) => view.before_image_partition_access(),
             Self::Speculative(view) => Some(view.before_image_partition_access()),
+            Self::Probed { before_image, .. } => *before_image,
         }
     }
 
@@ -218,6 +248,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(_) => fallback,
             Self::Speculative(view) => view.before_image_version_id,
+            Self::Probed { meaning, .. } => meaning.before_image_version_id(fallback),
         }
     }
 
@@ -228,6 +259,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.enforcement_version_id(fallback),
             Self::Speculative(_) => fallback,
+            Self::Probed { meaning, .. } => meaning.enforcement_version_id(fallback),
         }
     }
 
@@ -237,6 +269,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         match self {
             Self::Committed(view) => view.proposal_identity(),
             Self::Speculative(view) => view.proposal_identity.as_ref(),
+            Self::Probed { meaning, .. } => meaning.proposal_identity(),
         }
     }
 }

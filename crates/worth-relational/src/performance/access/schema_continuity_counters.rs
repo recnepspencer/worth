@@ -11,7 +11,7 @@ impl PerformanceAccess<'_> {
         changed_subtrees_inspected: usize,
         unchanged_subtrees_reused_by_fingerprint: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.schema_transition_atoms_inspected += atoms_inspected;
             counters.schema_changed_subtrees_inspected += changed_subtrees_inspected;
             counters.schema_unchanged_subtrees_reused_by_fingerprint +=
@@ -25,7 +25,7 @@ impl PerformanceAccess<'_> {
         historical_interpretation: HistoricalInterpretationSensitivity,
         policy: SchemaReconciliationPolicy,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.schema_bridge_descriptors_built += 1;
             match continuation {
                 SchemaContinuationClassification::ContinueUnchanged => {
@@ -75,7 +75,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_schema_normalized_descriptor_composition(&self, count: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.schema_normalized_descriptor_compositions += count;
         });
     }
@@ -84,7 +84,7 @@ impl PerformanceAccess<'_> {
         &self,
         outcome: SchemaContinuationClassification,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.subscriber_resume_evaluations += 1;
             match outcome {
                 SchemaContinuationClassification::ContinueUnchanged => {
@@ -110,7 +110,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_descriptor_version_mismatch(&self) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.descriptor_version_mismatches_encountered += 1;
         });
     }

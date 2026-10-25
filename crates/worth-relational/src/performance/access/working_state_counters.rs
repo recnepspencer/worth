@@ -8,7 +8,7 @@ impl PerformanceAccess<'_> {
         entity_slots: usize,
         relation_slots: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.partitions_cloned += partitions;
             counters.entity_slots_cloned += entity_slots;
             counters.relation_slots_cloned += relation_slots;
@@ -16,14 +16,14 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_aosoa_prepare_chunks(&self, chunk_count: usize, slot_count: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.aosoa_entity_chunks_staged += chunk_count;
             counters.aosoa_entity_chunk_slots_materialized += slot_count;
         });
     }
 
     pub(crate) fn count_aosoa_publish_soa_merge(&self, chunk_count: usize, slot_count: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.aosoa_entity_chunks_published += chunk_count;
             counters.aosoa_entity_slot_soa_merges += slot_count;
             counters.aosoa_publish_soa_merge_count += 1;
@@ -31,7 +31,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_aosoa_publish_chunks(&self, chunk_count: usize) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.aosoa_entity_chunks_published += chunk_count;
         });
     }
@@ -43,7 +43,7 @@ impl PerformanceAccess<'_> {
         lineage_transition_count: usize,
         provenance_record_count: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.bulk_mutation_batch_count += 1;
             counters.bulk_mutation_entity_target_count += locality.entity_target_count;
             counters.bulk_mutation_relation_target_count += locality.relation_target_count;
@@ -62,7 +62,7 @@ impl PerformanceAccess<'_> {
         max_width: usize,
         scope_units: usize,
     ) {
-        self.runtime.services.instrumentation.count(|counters| {
+        self.counters.count(|counters| {
             counters.post_commit_consumer_packet_count += packets;
             counters.post_commit_consumer_item_count += items;
             counters.post_commit_consumer_peak_width_total += max_width;
@@ -71,9 +71,7 @@ impl PerformanceAccess<'_> {
     }
 
     pub(crate) fn count_post_commit_serial_strategy(&self) {
-        self.runtime
-            .services
-            .instrumentation
+        self.counters
             .count(|counters| counters.post_commit_serial_strategy_count += 1);
     }
 }

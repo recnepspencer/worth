@@ -49,6 +49,21 @@ impl SelectedRelationalBranchState {
 }
 
 impl PartitionAccess for SelectedRelationalBranchState {
+    fn probe_full_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        self.state().probe_full_partition(id)
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.state().demand_full_partition(execution, id)
+    }
+
     fn get_partition(
         &self,
         partition_id: crate::identity::data::PartitionId,

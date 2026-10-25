@@ -9,6 +9,9 @@ use memory::partition_id_bytes;
 pub(crate) use memory::{collect_partition_ids, PartitionIdMemory, PartitionIdsDenial};
 
 pub(crate) trait PartitionAccess: Sync {
+    fn base_source(&self) -> Option<&dyn PartitionAccess> {
+        None
+    }
     fn has_read_misses(&self) -> bool {
         false
     }
@@ -119,6 +122,36 @@ impl<'a, S> OverlayStateView<'a, S> {
 }
 
 impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
+    fn base_source(&self) -> Option<&dyn PartitionAccess> {
+        Some(self.base_partitions)
+    }
+
+    fn has_read_misses(&self) -> bool {
+        self.staged.has_read_misses() || self.base_partitions.has_read_misses()
+    }
+
+    fn probe_full_partition(&self, id: PartitionId) -> super::super::residency::PartitionProbe<'_> {
+        match self.staged.probe_full_partition(id) {
+            super::super::residency::PartitionProbe::Absent => {
+                self.base_partitions.probe_full_partition(id)
+            }
+            probe => probe,
+        }
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), super::super::residency::RelationalResidencyDemandFailure> {
+        match self.staged.probe_full_partition(id) {
+            super::super::residency::PartitionProbe::Absent => {
+                self.base_partitions.demand_full_partition(execution, id)
+            }
+            _ => self.staged.demand_full_partition(execution, id),
+        }
+    }
+
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.staged
             .get_partition(partition_id)
