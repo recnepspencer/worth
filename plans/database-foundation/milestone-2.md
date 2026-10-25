@@ -302,6 +302,8 @@ source carries it, because recovery needs it before the medium is bound.
   The cell's dictionary is an isolated readmission dictionary. Each demanding
   runtime admits the region's required text into its own symbol authority,
   including when a fork shares an already loaded cell.
+  Successful symbol admission is reused per runtime and immutable region view;
+  warm reads never rescan the region's records or history for that admission.
 
 **Guards.** Loads happen only in operation orchestrators, never behind a
 pure-looking accessor:

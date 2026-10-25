@@ -1,6 +1,6 @@
 //! Paged dictionary admission. I/O occurs only in explicit demands, before
 //! taking the symbol table's mutation lock.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 
 use super::symbol_table::RuntimeSymbolTable;
@@ -18,6 +18,7 @@ mod tests;
 
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
+    regions: Mutex<BTreeSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
     source: Arc<dyn RelationalDurableColdSource>,
@@ -38,6 +39,7 @@ impl RuntimeSymbolResidency {
         source: Arc<dyn RelationalDurableColdSource>,
     ) -> Self {
         Self {
+            regions: Mutex::new(BTreeSet::new()),
             by_id,
             by_value,
             source,
@@ -53,6 +55,7 @@ impl RuntimeSymbolResidency {
         let owner = snapshot();
         (
             Self {
+                regions: Mutex::new(BTreeSet::new()),
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
                 source: self.source.clone(),
@@ -64,6 +67,26 @@ impl RuntimeSymbolResidency {
 
     pub(super) fn same_directory(&self, other: &Self) -> bool {
         self.by_id == other.by_id && self.by_value == other.by_value
+    }
+
+    pub(super) fn demand_region(
+        &self,
+        owner: &RuntimeSymbolTable,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+        ids: impl FnOnce() -> BTreeSet<Symbol>,
+    ) -> Result<(), Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        let mut admitted = self
+            .regions
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if admitted.contains(&region) {
+            return Ok(());
+        }
+        self.demand_ids(owner, execution, ids())?;
+        admitted.insert(region);
+        Ok(())
     }
 
     pub(super) fn demand_ids(

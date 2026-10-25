@@ -228,6 +228,7 @@ impl RuntimeSymbolTable {
     }
 
     pub(crate) fn replace(&self, interner: StringInterner) {
+        *self.cold.write().unwrap_or_else(|error| error.into_inner()) = None;
         let snapshot = interner.snapshot();
         let mut state = self
             .state

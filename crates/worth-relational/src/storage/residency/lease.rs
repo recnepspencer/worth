@@ -28,10 +28,20 @@ impl<Level> RelationalResidencyLease<Level> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<(), RelationalResidencyDemandFailure> {
-        symbols.demand_symbol_ids(
-            execution,
-            super::required_symbols::collect(&self.region.partition),
-        )
+        // Published resident cells were captured under the owner's complete
+        // dictionary; forks copy that dictionary along with those warm cells.
+        if !self.cell.has_cold_backing() {
+            return Ok(());
+        }
+        symbols.demand_region_symbols(execution, self.symbol_admission_identity(), || {
+            super::required_symbols::collect(&self.region.partition)
+        })
+    }
+
+    pub(crate) fn symbol_admission_identity(
+        &self,
+    ) -> super::RelationalRegionSymbolAdmissionIdentity {
+        super::RelationalRegionSymbolAdmissionIdentity::new(&self.region)
     }
 
     pub(super) fn accepted(

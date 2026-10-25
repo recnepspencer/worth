@@ -34,3 +34,5 @@ pub(crate) use demand_failure::RelationalResidencyDemandFailure;
 
 mod cell_load_cache;
 mod required_symbols;
+mod symbol_admission_identity;
+pub(crate) use symbol_admission_identity::RelationalRegionSymbolAdmissionIdentity;

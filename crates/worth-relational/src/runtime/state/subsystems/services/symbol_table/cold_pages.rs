@@ -3,6 +3,23 @@ use super::super::symbol_residency::RuntimeSymbolResidency;
 use super::*;
 
 impl RuntimeSymbolTable {
+    pub(crate) fn demand_region_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+        ids: impl FnOnce() -> std::collections::BTreeSet<crate::symbols::data::Symbol>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        let pages = self
+            .cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        if let Some(pages) = pages {
+            pages.demand_region(self, execution, region, ids)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn checkpoint_contents_resident(&self) -> bool {
         self.cold
             .read()

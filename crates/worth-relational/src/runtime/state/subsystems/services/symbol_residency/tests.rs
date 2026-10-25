@@ -6,6 +6,8 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+mod region_admission_tests;
+
 #[derive(Debug)]
 struct PageSource {
     members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
