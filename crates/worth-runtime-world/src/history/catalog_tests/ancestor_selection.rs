@@ -96,7 +96,7 @@ fn selected_source_is_protected_and_retired_source_cannot_be_reselected() {
             .reclaim_batch(reclaim())
             .unwrap()
             .reclaimed_commits(),
-        &[source.clone()]
+        std::slice::from_ref(source)
     );
     assert!(matches!(
         catalog.select_retained_ancestor(&execution, commits[0].identity(), source, None,),
