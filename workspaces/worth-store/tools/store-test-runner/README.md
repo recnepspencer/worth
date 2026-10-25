@@ -43,6 +43,11 @@ scenarios each run complete Store instances with bounded checkpoint seams;
 using the host's logical CPU count can oversubscribe those fixtures. An explicit
 `RUST_TEST_THREADS` override takes precedence for Cargo runs.
 
+Commands using the CI profile and diagnostic compiler commands disable
+incremental sessions explicitly; the repository's global Cargo setting otherwise
+overrides their profiles. Compiled dependencies remain cached in each lane's
+target directory.
+
 Nextest runs compiler-boundary fixtures one at a time because trybuild shares
 Cargo's artifact lock. On Windows their aggregate limit is thirty minutes,
 including the cold dependency build and every pass/fail fixture.

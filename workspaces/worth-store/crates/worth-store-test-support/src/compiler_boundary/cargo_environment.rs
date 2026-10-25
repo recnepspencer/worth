@@ -121,6 +121,9 @@ fn run_fixture(
         ])
         .arg(environment.manifest_path)
         .env("CARGO_TARGET_DIR", environment.target_root)
+        // Diagnostic suites retain shared artifacts, not incremental sessions.
+        // A repository-level build.incremental setting overrides the profile.
+        .env("CARGO_INCREMENTAL", "0")
         .current_dir(environment.workspace_root);
     let output = bounded_process::run(&mut command, COMPILER_TIMEOUT, OUTPUT_LIMIT)
         .map_err(UiRunFailure::CompilerLaunch)?;

@@ -32,6 +32,16 @@ fn fixtures_in_one_environment_share_manifest_and_target_root() {
         .fixtures
         .iter()
         .all(|fixture| fixture.semantic_denial_matched));
+    let incremental = scratch
+        .root()
+        .join("target/store-ui/cargo-target/diagnostic-test/incremental");
+    match std::fs::read_dir(incremental) {
+        Ok(mut sessions) => assert!(
+            sessions.next().is_none(),
+            "repository configuration must not create incremental sessions for diagnostic proofs"
+        ),
+        Err(error) => assert_eq!(error.kind(), std::io::ErrorKind::NotFound),
+    }
 }
 
 #[test]
@@ -83,6 +93,12 @@ impl ScratchUiWorld {
         let fixture_root = root.join("fixtures");
         std::fs::create_dir_all(root.join("dependency/src")).unwrap();
         std::fs::create_dir_all(&fixture_root).unwrap();
+        std::fs::create_dir_all(root.join(".cargo")).unwrap();
+        std::fs::write(
+            root.join(".cargo/config.toml"),
+            "[build]\nincremental = true\n",
+        )
+        .unwrap();
         std::fs::write(
             root.join("Cargo.toml"),
             "[workspace]\nresolver = \"2\"\n\n[workspace.package]\nedition = \"2021\"\nversion = \"0.0.0\"\nlicense = \"UNLICENSED\"\n\n[workspace.dependencies]\n\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\n\n[profile.test]\n\n[profile.diagnostic-test]\ninherits = \"test\"\n",

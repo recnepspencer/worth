@@ -33,10 +33,17 @@ fn command(unit: &TestExecutionUnit, target_root: Option<&Path>) -> Result<Comma
         Command::new(unit.program())
     };
     command.args(unit.arguments()).current_dir(unit.directory());
-    if unit.program() == "cargo"
-        && let Some(root) = target_root
-    {
-        command.env("CARGO_TARGET_DIR", root);
+    if unit.program() == "cargo" {
+        if unit.arguments().windows(2).any(|pair| {
+            matches!(pair[0].as_str(), "--profile" | "--cargo-profile") && pair[1] == "ci-test"
+        }) {
+            // The repository's build.incremental setting overrides profiles.
+            // Preserve the CI profile's declared non-incremental compilation.
+            command.env("CARGO_INCREMENTAL", "0");
+        }
+        if let Some(root) = target_root {
+            command.env("CARGO_TARGET_DIR", root);
+        }
     }
     Ok(command)
 }
