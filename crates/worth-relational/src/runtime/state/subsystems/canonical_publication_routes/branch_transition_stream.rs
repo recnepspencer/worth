@@ -26,7 +26,7 @@ pub(super) struct BranchTransitionStream {
 struct BranchTransitionStreamState {
     /// The last sequence performed, or restored from a checkpoint's coverage.
     head: RelationalBranchTransitionSequence,
-    /// Retained transitions after the latest captured checkpoint.
+    /// Last released prefix; zero while memory-only history remains retained.
     covered: RelationalBranchTransitionSequence,
     log: Vec<Arc<PositionedBranchTransition>>,
 }

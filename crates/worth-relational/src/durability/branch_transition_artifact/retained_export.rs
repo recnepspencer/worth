@@ -7,10 +7,10 @@ use crate::branch::PositionedBranchTransition;
 use crate::durability::access::DurabilityAccess;
 
 impl DurabilityAccess<'_> {
-    /// The runtime's retained branch transitions after its latest checkpoint, in increasing
-    /// sequence, as artifacts. This reads the runtime's own transition stream,
-    /// the same one checkpoints record their coverage of; it is not a second
-    /// history store.
+    /// The runtime's retained branch transitions, in increasing sequence, as
+    /// artifacts. Durable captures release the covered prefix; memory-only
+    /// runtimes keep it for older replay chains. This reads the runtime's own
+    /// transition stream, not a second history store.
     ///
     /// The selection is fixed when this is called. Encoding is lazy: each
     /// item is framed only when pulled, under `policy`. Cost: O(performed
@@ -39,7 +39,7 @@ pub struct RelationalBranchTransitionArtifacts<'scope, 'authority> {
 }
 
 impl RelationalBranchTransitionArtifacts<'_, '_> {
-    /// Checkpoint coverage immediately preceding this retained tail. Historical
+    /// Compacted coverage immediately preceding this retained tail. Historical
     /// artifacts at or below this sequence belong to the durable journal.
     pub fn covered_sequence(&self) -> crate::branch::RelationalBranchTransitionSequence {
         self.covered
