@@ -156,15 +156,17 @@ fn seed(runtime: &RelationalRuntime, lease: &ExecutionResourceLease<'_>, kind: K
         .expect("the seed was created")
 }
 
-/// Validates one candidate and returns the closure rule's receipt facts.
-fn receipt(
+type ReceiptFacts = (
+    InvariantDecisionKind,
+    Option<CustomInvariantNonApplicability>,
+);
+
+/// Validates one candidate and returns every custom receipt's facts.
+fn receipts(
     runtime: &RelationalRuntime,
     lease: &ExecutionResourceLease<'_>,
     intents: Vec<MutationIntent>,
-) -> (
-    InvariantDecisionKind,
-    Option<CustomInvariantNonApplicability>,
-) {
+) -> Vec<ReceiptFacts> {
     let mut tx = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     let request = ExecutionRequest::leased(lease);
     let batch = intents
@@ -172,10 +174,31 @@ fn receipt(
         .fold(WorkerIntentBatch::new("candidate"), WorkerIntentBatch::push);
     tx.push_batch(batch, request.allocation_policy()).unwrap();
     let validated = tx.validate(&request, runtime).expect("candidate validates");
-    let [receipt] = validated.custom_invariant_execution_receipts() else {
+    validated
+        .custom_invariant_execution_receipts()
+        .iter()
+        .map(|receipt| (receipt.verdict(), receipt.non_applicability()))
+        .collect()
+}
+
+/// Validates one candidate and returns the closure rule's receipt facts.
+fn receipt(
+    runtime: &RelationalRuntime,
+    lease: &ExecutionResourceLease<'_>,
+    intents: Vec<MutationIntent>,
+) -> ReceiptFacts {
+    let [receipt] = receipts(runtime, lease, intents)[..] else {
         panic!("the closure rule leaves exactly one receipt")
     };
-    (receipt.verdict(), receipt.non_applicability())
+    receipt
+}
+
+/// An empty candidate plans no validation, so it carries no receipt, not a
+/// vacuous one: a producer requirement reads it as missing and refuses.
+#[test]
+fn an_empty_candidate_leaves_no_receipt_to_be_vacuous() {
+    let (runtime, lease) = (runtime(), lease());
+    assert_eq!(receipts(&runtime, &lease, vec![]), []);
 }
 
 #[test]

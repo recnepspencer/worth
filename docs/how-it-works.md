@@ -939,10 +939,12 @@ descriptive history.
   canonical order. The caller pumps progress; a worker does not publish.
 - **Producer-required invariants.** A producer's `REQUIRED_INVARIANTS` must
   each be satisfied by every publication: the rule passes, or Relational
-  proves the publication touches no kind in the rule's declared closure (an
-  empty write set, for one). The receipt types that vacuous case apart. Any
-  other not-applicable receipt, such as a scoped-out rule or refused
-  preparation, still refuses the publication.
+  proves the publication's footprint touches no kind in the rule's declared
+  closure. The receipt types that vacuous case apart. A candidate with no
+  intents leaves no receipt at all, so Query refuses it as a missing
+  invariant. Any other not-applicable receipt, such as a scoped-out rule
+  (a raw delete never proves its footprint) or refused preparation, still
+  refuses the publication.
 - **Fixed required outputs.** The ordinary operation delegates performed publication,
   original-carrier retention, native output advancement and complete settlement.
   Registered replay resumes without another source effect. Delivery checks the
