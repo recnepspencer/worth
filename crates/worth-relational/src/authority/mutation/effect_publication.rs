@@ -309,11 +309,11 @@ pub(super) fn canonical_publication_fragment(
 > {
     Ok(match authoritative_patch {
         Some(patch) => {
-            let patch = authoritative_patch_with_delta_supplements(&canonical_delta, patch)
+            let patch = authoritative_patch_with_delta_supplements(canonical_delta, patch)
                 .map_err(|error| error.to_commit_conflict())?;
             let published_patch =
                 crate::authority::mutation::canonical_deltas::published_patch_for_delta(
-                    &canonical_delta,
+                    canonical_delta,
                     &patch,
                 )
                 .map_err(|error| error.to_commit_conflict())?;
@@ -321,7 +321,7 @@ pub(super) fn canonical_publication_fragment(
                 target: canonical_delta.target.clone(),
                 structural_change: canonical_delta.structural_change,
                 semantic_changes: crate::authority::mutation::canonical_deltas::semantic_changes(
-                    &canonical_delta,
+                    canonical_delta,
                 ),
                 contains_opaque_aspect: canonical_delta.contains_opaque_aspect,
                 detail,
