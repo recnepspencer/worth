@@ -225,3 +225,109 @@ fn tail_replay_refuses_a_damaged_touched_member_as_cold_storage_unavailable() {
         "replay refusal must leave the receiving runtime untouched"
     );
 }
+
+#[test]
+fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_write() {
+    use crate::identity::data::PartitionId;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let source_entity =
+        create_entity_in_partition(execution, &runtime, "cross-source", PartitionId(2));
+    let target_entity =
+        create_entity_in_partition(execution, &runtime, "cross-target", PartitionId(3));
+    let relation = create_relation_outcome(
+        execution,
+        &runtime,
+        source_entity,
+        target_entity,
+        "cross-edge",
+    );
+    release_test_commit_snapshot(&runtime, &relation);
+    let native = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers,
+        )
+        .unwrap();
+    let covered = native.covered_position().unwrap();
+    let transitions = native.covered_branch_transitions().unwrap();
+    let artifacts = attached_test_medium(&runtime).offered();
+    let source = Arc::new(MemberSource {
+        members: native
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                _ => panic!("first capture owns all members"),
+            })
+            .collect(),
+        commits: artifacts
+            .iter()
+            .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
+            .collect(),
+        damaged: AtomicBool::new(false),
+        reads: AtomicUsize::new(0),
+    });
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            covered,
+            transitions,
+            native,
+        )),
+        Vec::new(),
+        Vec::new(),
+        source,
+    );
+    let mut receiving = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut receiving, runtime.durability.detach_medium().unwrap());
+    let plan = receiving
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    receiving
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    // Only the relation's owning partition changes. Its endpoints stay cold.
+    create_entity_in_partition(
+        execution,
+        &receiving,
+        "unrelated-record",
+        PartitionId::main(),
+    );
+    receiving
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers,
+        )
+        .unwrap();
+    let mut reader = test_owner_begin_transaction_for_main(&receiving);
+    assert!(reader
+        .read_entity(execution, source_entity)
+        .unwrap()
+        .effective()
+        .is_some());
+    let lease = reader
+        .basis
+        .inner
+        .root
+        .demand_region_head(execution, source_entity.partition_id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        lease
+            .head_view()
+            .outgoing(source_entity)
+            .iter()
+            .copied()
+            .collect::<Vec<_>>(),
+        changed_relations(&relation)
+    );
+}
