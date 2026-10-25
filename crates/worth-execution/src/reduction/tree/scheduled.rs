@@ -240,10 +240,10 @@ where
                     }
                 },
             );
-            if let Some(accepted) = accepted_task_work {
-                if !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted) {
-                    return Err(metrics_mismatch(shape_metrics));
-                }
+            if let Some(accepted) = accepted_task_work
+                && !context.reconcile_discarded_work(outcomes.report.charged_work(), accepted)
+            {
+                return Err(metrics_mismatch(shape_metrics));
             }
             let (tree, metrics) = settled.map_err(|mut failure| {
                 // The serial checked oracle reports an interrupted traversal's

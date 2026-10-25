@@ -7,10 +7,7 @@ fn packet(identity: u64, scratch: u64, result: u64) -> ReadOnlyPacket<()> {
         identity: PartitionIdentity::new(identity),
         value: (),
         input_bytes: 0,
-        memory: crate::execution::PacketMemory::Declared {
-            scratch: scratch,
-            result: result,
-        },
+        memory: crate::execution::PacketMemory::Declared { scratch, result },
     }
 }
 
