@@ -116,13 +116,12 @@ fn function_identity_excludes_parameter_names_and_includes_bodies() {
     };
     let function_identity = |parameter: &str, body: &str| {
         let catalog = catalog(parameter, body);
-        let identity = catalog
+        catalog
             .functions()
             .next()
             .expect("one function")
             .identity()
-            .clone();
-        identity
+            .clone()
     };
     let x = function_identity("x", "x * 2.0");
     assert_eq!(x, function_identity("y", "y * 2.0"));

@@ -54,26 +54,26 @@ pub(super) fn validate_conditional_read(
     conditional_read: &WorthServerConditionalRead,
     validator: &WorthServerReadValidator,
 ) -> Result<(), WorthServerQueryHandoffDenial> {
-    if let Some(expected) = conditional_read.if_match() {
-        if expected != validator.entity_tag() {
-            return Err(crate::WorthServerQueryHandoffDenial::new(
-                crate::WorthServerQueryHandoffDenialCode::CompatibilityConditionalReadPreconditionFailed,
-                prepared_request.admission().request_context().diagnostics_profile(),
-                "compatibility if-match validator does not match the canonical read validator",
-            ));
-        }
+    if let Some(expected) = conditional_read.if_match()
+        && expected != validator.entity_tag()
+    {
+        return Err(crate::WorthServerQueryHandoffDenial::new(
+            crate::WorthServerQueryHandoffDenialCode::CompatibilityConditionalReadPreconditionFailed,
+            prepared_request.admission().request_context().diagnostics_profile(),
+            "compatibility if-match validator does not match the canonical read validator",
+        ));
     }
-    if let Some(expected) = conditional_read.if_none_match() {
-        if expected == validator.entity_tag() {
-            return Err(crate::WorthServerQueryHandoffDenial::new(
-                crate::WorthServerQueryHandoffDenialCode::CompatibilityConditionalReadNotModified,
-                prepared_request
-                    .admission()
-                    .request_context()
-                    .diagnostics_profile(),
-                "compatibility if-none-match validator already matches the canonical read validator",
-            ));
-        }
+    if let Some(expected) = conditional_read.if_none_match()
+        && expected == validator.entity_tag()
+    {
+        return Err(crate::WorthServerQueryHandoffDenial::new(
+            crate::WorthServerQueryHandoffDenialCode::CompatibilityConditionalReadNotModified,
+            prepared_request
+                .admission()
+                .request_context()
+                .diagnostics_profile(),
+            "compatibility if-none-match validator already matches the canonical read validator",
+        ));
     }
     Ok(())
 }

@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use worth_proof::TransitionOutcome;
 use worth_server::{
     request_context::DiagnosticRichnessProfile,

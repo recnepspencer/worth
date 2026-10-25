@@ -106,18 +106,17 @@ pub(super) fn validate_payload_envelope(
             "operation payload envelope must carry a non-blank payload identity",
         ));
     }
-    if let Some(schema_identity) = payload_envelope.declared_schema_identity() {
-        if schema_identity.trim().is_empty()
+    if let Some(schema_identity) = payload_envelope.declared_schema_identity()
+        && (schema_identity.trim().is_empty()
             || schema_identity
                 .chars()
-                .any(|ch| ch.is_control() || !ch.is_ascii())
-        {
-            return Err(WorthServerOperationRequestDenial::new(
-                WorthServerOperationRequestDenialCode::InvalidDeclaredSchemaIdentity,
-                diagnostics_profile,
-                "operation payload declared schema identity must stay ASCII-printable and non-blank",
-            ));
-        }
+                .any(|ch| ch.is_control() || !ch.is_ascii()))
+    {
+        return Err(WorthServerOperationRequestDenial::new(
+            WorthServerOperationRequestDenialCode::InvalidDeclaredSchemaIdentity,
+            diagnostics_profile,
+            "operation payload declared schema identity must stay ASCII-printable and non-blank",
+        ));
     }
     Ok(())
 }

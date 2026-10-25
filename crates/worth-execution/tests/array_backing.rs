@@ -294,9 +294,9 @@ fn an_unbounded_process_still_refuses_counter_overflow_before_charging() {
     let held = first.reserve_memory(u64::MAX - 1).unwrap();
     assert_eq!(
         second.reserve_memory(2).unwrap_err(),
-        MemoryLimitDenial::Capacity {
+        MemoryLimitDenial::CounterOverflow {
             requested: 2,
-            admitted: 1,
+            charged: u64::MAX - 1,
             level: MemoryLimitLevel::Process,
         }
     );

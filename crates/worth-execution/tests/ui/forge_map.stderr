@@ -1,7 +1,7 @@
-error: cannot construct `ExecutionMap<_, _>` with struct literal syntax due to private fields
+error: cannot construct `ExecutionMap<_, _, _>` with struct literal syntax due to private fields
  --> tests/ui/forge_map.rs:4:43
   |
 4 |     let _forged: ExecutionMap<u64, u64> = ExecutionMap {};
   |                                           ^^^^^^^^^^^^
   |
-  = note: private fields `batch`, `_read_sets` and `_write_sets` that were not provided
+  = note: private fields `batch`, `_read_sets`, `_write_sets` and `_payload` that were not provided

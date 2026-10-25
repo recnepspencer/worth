@@ -175,9 +175,7 @@ fn waiter_sequence_overflow_denies_without_consuming_or_wrapping_work() {
     assert!(matches!(
         preparation_work::sequence_growth(&mut work, usize::MAX, 1),
         Err(PendingRevalidationPreparationDenial::Storage(
-            RetainedStoragePreparationDenial::WorkExhausted {
-                maximum_visits: 100
-            }
+            RetainedStoragePreparationDenial::ChargeOverflow
         ))
     ));
     assert_eq!(work.visits(), 7);

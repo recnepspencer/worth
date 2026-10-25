@@ -73,7 +73,7 @@ mod tests {
                 .reserve(1)
                 .unwrap_err(),
         );
-        let results = [Mutex::new(None), Mutex::new(Some(Err(denial.clone())))];
+        let results = [Mutex::new(None), Mutex::new(Some(Err(denial)))];
         let reason = worth_execution::MapStop::Failure {
             identity: PartitionIdentity::new(2),
             cause: MapKernelFailure::Domain(()),

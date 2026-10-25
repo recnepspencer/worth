@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub mod assumption_lifecycle;
 pub mod compile_fail;
 pub mod compile_pass;

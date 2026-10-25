@@ -45,14 +45,22 @@ fn candidate_growth_denies_overflow_and_exhaustion_before_reserving_storage() {
     let capacity = candidates.capacity();
     for count in [10, usize::MAX] {
         let mut work = Preparation::new(Some(0));
-        assert!(matches!(
-            reserve_additional(
-                &mut candidates,
-                count,
-                &mut EvaluationWork::Conditional(&mut work)
-            ),
-            Err(SignalError::ConditionalEvaluationWorkExhausted { maximum_visits: 0 })
-        ));
+        let denial = reserve_additional(
+            &mut candidates,
+            count,
+            &mut EvaluationWork::Conditional(&mut work),
+        );
+        if count == usize::MAX {
+            assert!(matches!(
+                denial,
+                Err(SignalError::RetainedStorageChargeOverflow)
+            ));
+        } else {
+            assert!(matches!(
+                denial,
+                Err(SignalError::ConditionalEvaluationWorkExhausted { maximum_visits: 0 })
+            ));
+        }
         assert_eq!(candidates, [NodeId::new(3, 2)]);
         assert_eq!(candidates.capacity(), capacity);
         assert_eq!(work.visits(), 0);

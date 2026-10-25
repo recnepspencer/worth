@@ -6,4 +6,4 @@ error[E0432]: unresolved imports `worth_runtime_world::facade::ProductBranchHead
   |     |                            |
   |     |                            no `ProductHeadRetentionObligation` in `facade`
   |     no `ProductBranchHeadProtection` in `facade`
-  |     help: a similar name exists in the module: `ProductBranchObservation`
+  |     help: a similar name exists in the module: `ProductBranchAncestorSelection`

@@ -1,11 +1,13 @@
-error[E0451]: fields `memory`, `cancellation` and `deadline` of struct `SerialRequest` are private
+error[E0451]: fields `memory`, `work_ceiling`, `cancellation` and `deadline` of struct `SerialRequest` are private
   --> tests/ui/serial_without_policy.rs:15:9
    |
 14 |     let _request = SerialRequest {
    |                    ------------- in this type
-15 |         memory,
+15 |         memory: Some(memory),
    |         ^^^^^^ private field
-16 |         cancellation,
+16 |         work_ceiling: None,
    |         ^^^^^^^^^^^^ private field
-17 |         deadline,
+17 |         cancellation,
+   |         ^^^^^^^^^^^^ private field
+18 |         deadline,
    |         ^^^^^^^^ private field
