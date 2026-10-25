@@ -44,7 +44,9 @@ pub(crate) fn validate_operation_bodies(
             ));
         }
         if !super::succession::valid(body) || !super::succession::readmit(body, members) {
-            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         super::principal_validation::validate_principals(operation, body, members)?;
         super::creation_link_validation::validate_links(operation, body, members)?;
@@ -153,7 +155,9 @@ pub(crate) fn validate_operation_bodies(
             && body.outputs().is_empty()
             && body.external_emission().is_none()
         {
-            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(operation));
+            return Err(ApplicationSchemaDeclarationDenial::program_body_dependency(
+                operation,
+            ));
         }
         if !members.iter().any(|member| {
             matches!(member, ApplicationSchemaMember::Operation { operation: candidate, .. }

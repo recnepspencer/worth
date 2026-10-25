@@ -89,10 +89,12 @@ fn differential<const WORK: usize, const RUNS: usize>(expected: &[Cause]) {
 }
 
 #[test]
-fn an_observation_bound_above_declared_work_falls_back_without_eviction() {
+fn a_funded_request_reuses_facts_above_the_compute_allowance() {
     let _guard = checkpoint_recovery_test_guard();
     // Incoming membership examines 160 edges and endpoints, so its sealed
-    // observation bound plus each set's outgoing membership exceeds 1,024 units. One item's encoding and kernel fit.
+    // observation bound exceeds the 1,024-unit compute allowance. Observation
+    // uses the funded caller request, while the owned compute limit applies to
+    // the kernel and reduction; it must not force a full run here.
     let seed = |graph: &mut Graph| {
         seed(graph);
         for number in 0..LARGEST_SET {
@@ -119,7 +121,7 @@ fn an_observation_bound_above_declared_work_falls_back_without_eviction() {
         9902,
     );
     let (_, kept) = demand(&request, &application);
-    assert_eq!(kept[0].runs, [Run::Full(Cause::ObservationOverBudget)]);
+    assert_eq!(kept[0].runs, [Run::Incremental]);
     let fresh = installation::install_variant::<false, 1_024, 1, 1>(None, Default::default(), seed);
     let (fresh_scope, fresh_principal) = authenticate(&fresh);
     let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
@@ -138,13 +140,21 @@ fn an_observation_bound_above_declared_work_falls_back_without_eviction() {
     assert_eq!(
         kept[0].calls,
         OwnerCalls {
+            plans: 0,
+            keys: 0,
+            gathers: 1,
+            kernels: 1
+        }
+    );
+    assert_eq!(
+        reference[0].calls,
+        OwnerCalls {
             plans: 1,
             keys: 1,
             gathers: 1,
             kernels: 1
         }
     );
-    assert_eq!(kept[0].calls, reference[0].calls);
     assert_eq!(kept[0].outcome, reference[0].outcome);
     assert_published_state(&kept, &reference);
 }

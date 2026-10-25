@@ -4,7 +4,9 @@ use worth_query_host::facade::application_entry::WorthQueryApplicationRecoveryRe
 use worth_query_host::facade::primary_graph::WorthQueryManagedApplicationRecoveryDenial as NativeDenial;
 
 fn zero_work() {
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+        .accounting()
+        .expect("this fixture declares accounting");
     bound(Some(worth_foundational::ExecutionBudget::new(
         NonZeroUsize::MIN,
         policy.charged_memory_bytes(),
