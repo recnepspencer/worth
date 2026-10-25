@@ -5,6 +5,9 @@ use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
+mod resident;
+pub(crate) use resident::ResidentPartitionEdition;
+
 /// The authoritative record substrate keyed by partition.
 ///
 /// The map is the spine only: every partition behind it is structurally shared,
@@ -78,11 +81,14 @@ impl PartitionEdition {
     pub(crate) fn demand_all(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+    ) -> Result<ResidentPartitionEdition, crate::storage::residency::RelationalResidencyDemandFailure>
+    {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for region in self.partitions.values() {
             region.demand_full(execution, 1 << 30)?;
         }
-        Ok(())
+        Ok(ResidentPartitionEdition::new(self.clone()))
     }
 
     pub(crate) fn len(&self) -> usize {

@@ -49,7 +49,8 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()
-                    .storage_stats()
+                    .storage_stats(request_execution)
+                    .unwrap()
                     .published_snapshot_handle_count
             });
     let first = world
@@ -151,7 +152,8 @@ fn first_post_commit_admission_failure_retains_exact_idempotent_recovery_evidenc
             .with_runtime(request_execution, |runtime| {
                 runtime
                     .storage_access()
-                    .storage_stats()
+                    .storage_stats(request_execution)
+                    .unwrap()
                     .published_snapshot_handle_count
             }),
         published_snapshot_baseline,

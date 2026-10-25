@@ -4,6 +4,10 @@ use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
 enum ReadDoor {
+    StorageStatistics,
+    PartitionStatistics,
+    ChunkSummary,
+    ChunkDiagnostics,
     Entity,
     EntityAspects,
     KindScan,
@@ -31,6 +35,22 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::StorageStatistics => runtime
+                .storage_access()
+                .storage_stats(execution)
+                .map(|_| ()),
+            Self::PartitionStatistics => runtime
+                .storage_access()
+                .partition_storage_stats(execution)
+                .map(|_| ()),
+            Self::ChunkSummary => runtime
+                .storage_access()
+                .chunked_storage_summary(execution, version)
+                .map(|_| ()),
+            Self::ChunkDiagnostics => runtime
+                .storage_access()
+                .chunk_diagnostics(execution, version)
+                .map(|_| ()),
             Self::Entity => reader
                 .visible_entity_at_version(execution, entity, version)
                 .map(|_| ()),
@@ -135,6 +155,10 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in [
+        ReadDoor::StorageStatistics,
+        ReadDoor::PartitionStatistics,
+        ReadDoor::ChunkSummary,
+        ReadDoor::ChunkDiagnostics,
         ReadDoor::Entity,
         ReadDoor::EntityAspects,
         ReadDoor::KindScan,

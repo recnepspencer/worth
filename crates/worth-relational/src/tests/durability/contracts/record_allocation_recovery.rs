@@ -24,7 +24,8 @@ fn tail_replay_consumes_canonical_reused_record_allocation() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         1
     );

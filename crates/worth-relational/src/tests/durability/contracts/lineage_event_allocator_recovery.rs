@@ -142,7 +142,11 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
     let runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "reservation-exhaustion-baseline");
     let baseline_head = baseline.commit.clone();
-    let baseline_entities = runtime.storage_access().storage_stats().live_entities;
+    let baseline_entities = runtime
+        .storage_access()
+        .storage_stats(execution)
+        .unwrap()
+        .live_entities;
     let (lineage_frontier, _) = runtime.lineage.identity_frontiers();
     runtime
         .lineage
@@ -178,7 +182,11 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
         baseline_head
     );
     assert_eq!(
-        runtime.storage_access().storage_stats().live_entities,
+        runtime
+            .storage_access()
+            .storage_stats(execution)
+            .unwrap()
+            .live_entities,
         baseline_entities
     );
 }

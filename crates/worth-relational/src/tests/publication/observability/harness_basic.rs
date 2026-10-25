@@ -149,7 +149,7 @@ fn runtime_packet_execution_and_storage_stats_are_readable() {
         vec![RecordRef::Entity(entity)],
     )
     .result;
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(result.entities.len(), 1);
     assert_eq!(stats.live_entities, 1);

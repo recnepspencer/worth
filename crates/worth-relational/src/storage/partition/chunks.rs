@@ -11,19 +11,21 @@ use crate::transactions::data::RecordRef;
 
 pub(crate) fn chunked_storage_summary(
     runtime: &RelationalRuntime,
+    edition: &crate::runtime::ResidentPartitionEdition,
     version_id: VersionId,
 ) -> ChunkedStorageSummary {
     ChunkedStorageSummary {
-        entity_chunks: summarize_entity_chunks(runtime, version_id),
-        relation_chunks: summarize_relation_chunks(runtime, version_id),
+        entity_chunks: summarize_entity_chunks(runtime, edition, version_id),
+        relation_chunks: summarize_relation_chunks(runtime, edition, version_id),
     }
 }
 
 pub(crate) fn chunk_diagnostics(
     runtime: &RelationalRuntime,
+    edition: &crate::runtime::ResidentPartitionEdition,
     version_id: VersionId,
 ) -> ChunkDiagnostics {
-    let summary = chunked_storage_summary(runtime, version_id);
+    let summary = chunked_storage_summary(runtime, edition, version_id);
     ChunkDiagnostics {
         version_id,
         entity_chunks_total: summary.entity_chunks.len(),
@@ -95,10 +97,10 @@ fn push_unique_chunk(chunks: &mut Vec<usize>, slot: usize, chunk_size: usize) {
 
 fn summarize_entity_chunks(
     runtime: &RelationalRuntime,
+    edition: &crate::runtime::ResidentPartitionEdition,
     version_id: VersionId,
 ) -> Vec<ChunkVisibilitySummary> {
-    runtime
-        .acquire_partition_edition()
+    edition
         .partitions()
         .flat_map(|partition| {
             summarize_arena_chunks(
@@ -113,10 +115,10 @@ fn summarize_entity_chunks(
 
 fn summarize_relation_chunks(
     runtime: &RelationalRuntime,
+    edition: &crate::runtime::ResidentPartitionEdition,
     version_id: VersionId,
 ) -> Vec<ChunkVisibilitySummary> {
-    runtime
-        .acquire_partition_edition()
+    edition
         .partitions()
         .flat_map(|partition| {
             summarize_arena_chunks(

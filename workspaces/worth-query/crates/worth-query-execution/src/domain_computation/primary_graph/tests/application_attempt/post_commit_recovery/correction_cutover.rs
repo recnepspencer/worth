@@ -127,15 +127,14 @@ fn pending_correction_cutover_never_looks_unseen_on_another_branch() {
     );
     let snapshots = || {
         let host = crate::bridge_host_request::serial_request();
-        provider.graph.with_runtime(
-            &worth_execution::ExecutionRequest::serial(&host),
-            |runtime| {
-                runtime
-                    .storage_access()
-                    .storage_stats()
-                    .published_snapshot_handle_count
-            },
-        )
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        provider.graph.with_runtime(&execution, |runtime| {
+            runtime
+                .storage_access()
+                .storage_stats(&execution)
+                .unwrap()
+                .published_snapshot_handle_count
+        })
     };
     let baseline = snapshots();
     let replayed = resolve(&world, &request, binding);

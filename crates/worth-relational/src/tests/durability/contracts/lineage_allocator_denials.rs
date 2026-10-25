@@ -44,7 +44,11 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
 
     let runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "lineage-exhaustion-baseline");
-    let baseline_entities = runtime.storage_access().storage_stats().live_entities;
+    let baseline_entities = runtime
+        .storage_access()
+        .storage_stats(execution)
+        .unwrap()
+        .live_entities;
     let (_, event_frontier) = runtime.lineage.identity_frontiers();
     runtime
         .lineage
@@ -74,7 +78,11 @@ fn live_lineage_allocator_exhaustion_denies_before_public_effects() {
         baseline.commit
     );
     assert_eq!(
-        runtime.storage_access().storage_stats().live_entities,
+        runtime
+            .storage_access()
+            .storage_stats(execution)
+            .unwrap()
+            .live_entities,
         baseline_entities
     );
 }

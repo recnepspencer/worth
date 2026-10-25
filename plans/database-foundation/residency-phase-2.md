@@ -66,8 +66,8 @@ historical materialization. It carries storage failures through Query and bank
 outcomes and counts slots from directory facts without warming payloads.
 
 Phase 2 remains open: commit/merge and invariant probe rounds, accepted-candidate
-lease carriage, resident pin/publication witnesses, fallible statistics,
-retention and inspection, envelope catalog retirement and the remaining history
+lease carriage, resident pin/publication witnesses, fallible retention and
+inspection, envelope catalog retirement and the remaining history
 readers, lineage page serving, and the complete symbol/unique-field audit still
 require implementation and their specified fault evidence. The visibility
 slice's checks do not certify those unfinished boundaries.
@@ -77,3 +77,8 @@ request and demand the selected indexed envelope. Journal refusal travels as
 the native execution storage failure through inbound completion reconstruction
 and the public index-repair outcome. This does not yet retire admitted envelopes
 or replace the remaining infallible history surfaces.
+
+Storage statistics, partition statistics, chunk summaries and chunk diagnostics
+now require the caller request and return typed native read failures. Their
+computations accept a `ResidentPartitionEdition` issued only after the entire
+mirror's Full demand succeeds; they retain that exact edition for all counts.

@@ -27,7 +27,8 @@ fn entity_slot_reuse_increments_generation() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         0
     );
@@ -225,7 +226,8 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         1
     );
@@ -252,7 +254,8 @@ fn snapshot_root_obligation_survives_substrate_reclaim_until_release() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         1
     );
@@ -308,7 +311,8 @@ fn epoch_retention_backend_preserves_snapshot_visibility_until_release() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         1
     );
@@ -377,7 +381,8 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .reusable_entity_slots,
         1
     );

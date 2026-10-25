@@ -98,14 +98,14 @@ fn released_publication_handles_stop_counting_as_readable_runtime_state() {
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
 
-    let before = runtime.storage_access().storage_stats();
+    let before = runtime.storage_access().storage_stats(execution).unwrap();
     assert_eq!(before.published_snapshot_handle_count, 2);
 
     assert!(runtime
         .visibility_authority()
         .release_snapshot(&first.snapshot)
         .is_ok());
-    let after_first_release = runtime.storage_access().storage_stats();
+    let after_first_release = runtime.storage_access().storage_stats(execution).unwrap();
     assert_eq!(after_first_release.published_snapshot_handle_count, 1);
     assert!(runtime
         .read_truth()
@@ -122,7 +122,7 @@ fn released_publication_handles_stop_counting_as_readable_runtime_state() {
         .visibility_authority()
         .release_snapshot(&second.snapshot)
         .is_ok());
-    let after_second_release = runtime.storage_access().storage_stats();
+    let after_second_release = runtime.storage_access().storage_stats(execution).unwrap();
     assert_eq!(after_second_release.published_snapshot_handle_count, 0);
 }
 
@@ -166,7 +166,7 @@ fn publication_handle_retention_is_bounded_by_policy() {
         )
     ));
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(stats.published_snapshot_handle_count, 2);
     assert!(runtime
@@ -284,7 +284,7 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
 
     let serial_bundle = serial.publication().latest_bundle().unwrap().clone();
     let parallel_bundle = parallel.publication().latest_bundle().unwrap().clone();
-    let parallel_stats = parallel.storage_access().storage_stats();
+    let parallel_stats = parallel.storage_access().storage_stats(execution).unwrap();
     let diagnostics = parallel.publication().diagnostics();
 
     assert_eq!(parallel_bundle.commit, serial_bundle.commit);

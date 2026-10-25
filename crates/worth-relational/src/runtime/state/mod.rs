@@ -33,9 +33,9 @@ pub(crate) use subsystems::{
     RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
     RelationalCheckpointManifestPublication, RelationalDiagnosticArtifactStore,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    ReplayRetentionState, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    ReplayRetentionState, ResidentPartitionEdition, RuntimeInstrumentation, RuntimeServices,
+    RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
+    StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

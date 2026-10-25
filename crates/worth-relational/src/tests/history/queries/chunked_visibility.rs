@@ -15,10 +15,15 @@ fn chunked_storage_summary_tracks_visibility_boundaries() {
 
     let summary_before_update = runtime
         .storage_access()
-        .chunked_storage_summary(snapshot.version_id);
+        .chunked_storage_summary(execution, snapshot.version_id)
+        .unwrap();
     let summary_current = runtime
         .storage_access()
-        .chunked_storage_summary(runtime.history().latest_commit().unwrap().version_id);
+        .chunked_storage_summary(
+            execution,
+            runtime.history().latest_commit().unwrap().version_id,
+        )
+        .unwrap();
 
     assert_eq!(summary_before_update.entity_chunks.len(), 2);
     assert_eq!(summary_before_update.entity_chunks[0].visible_records, 2);
@@ -51,7 +56,8 @@ fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
         .unwrap();
     let diagnostics = runtime
         .storage_access()
-        .chunk_diagnostics(snapshot.version_id);
+        .chunk_diagnostics(execution, snapshot.version_id)
+        .unwrap();
 
     assert_eq!(plan.target_count, 2);
     assert_eq!(plan.entity_chunk_indexes, vec![0]);

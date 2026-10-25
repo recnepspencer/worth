@@ -21,7 +21,10 @@ struct LiveFootprint {
     published_snapshot_capacity: usize,
 }
 
-fn live_footprint(runtime: &RelationalRuntime) -> LiveFootprint {
+fn live_footprint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> LiveFootprint {
     LiveFootprint {
         main_head: runtime.history().branch_head(&BranchId("main".to_owned())),
         durable_log_len: runtime.durability().durable_commit_count(),
@@ -29,7 +32,11 @@ fn live_footprint(runtime: &RelationalRuntime) -> LiveFootprint {
             .publication()
             .latest_patch()
             .map(|patch| patch.position),
-        live_entities: runtime.storage_access().storage_stats().live_entities,
+        live_entities: runtime
+            .storage_access()
+            .storage_stats(execution)
+            .unwrap()
+            .live_entities,
         published_snapshot_handles: runtime.visibility.published_snapshot_handle_count(),
         published_snapshot_capacity: runtime
             .preparation_runtime_snapshot()
@@ -60,7 +67,7 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     let anchor = create_entity_outcome(execution, &runtime, "anchor");
     release_test_commit_snapshot(&runtime, &anchor);
     let medium = attached_test_medium(&runtime);
-    let before = live_footprint(&runtime);
+    let before = live_footprint(execution, &runtime);
 
     medium.script_next_publication(ScriptedPublication::ProvenNoEffect);
     let refused = commit_one(execution, &runtime, "refused").expect_err("the medium refused");
@@ -76,7 +83,7 @@ fn a_refused_publication_was_offered_to_the_medium_and_moved_nothing_live() {
     ));
     let offered = medium.offered().pop().expect("the medium was asked");
     assert_eq!(offered.position(), PatchStreamPosition(2));
-    assert_eq!(live_footprint(&runtime), before);
+    assert_eq!(live_footprint(execution, &runtime), before);
     assert_eq!(medium.head(), PatchStreamPosition(1));
 }
 

@@ -29,7 +29,7 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
         .read_truth()
         .read_version(execution, first.version_id)
         .expect("read request remains live");
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.recent_visibility_cache_count, 0);
@@ -81,7 +81,7 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         .expect("read request remains live")
         .unwrap();
     let inspection = runtime.read_truth().inspect_snapshot(&snapshot).unwrap();
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(
         read_entity_field(read.get_entity(entity).unwrap(), field_key("name")),
@@ -136,7 +136,7 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
         .expect("read request remains live")
         .unwrap();
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.snapshot_count, 1);
@@ -183,7 +183,7 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
         .read_truth()
         .read_version(execution, second.version_id)
         .expect("read request remains live");
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.recent_visibility_cache_count, 1);
@@ -221,7 +221,7 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
             .read_version(execution, *version_id)
             .expect("read request remains live");
     }
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(
         runtime

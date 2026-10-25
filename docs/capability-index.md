@@ -115,6 +115,11 @@ exports `RelationalStorageUnavailable`, `RelationalStorageSubject`, and
 `RelationalStorageUnavailableCause`. Preserve that refusal when handling a
 provider-session failure; an unavailable record is not an absent record.
 
+Native storage statistics, partition statistics, chunk summaries and chunk
+diagnostics take the caller's execution request and return a fallible result.
+They explicitly demand the whole mirror and retain that resident edition for
+the computation; a cold-storage refusal must remain a typed read failure.
+
 Platform owners can borrow the existing targets of a validated native mutation
 with `ValidatedMutationFootprint::records()`. Iterate its borrowed records to
 inspect each target, preserving multiplicity and the footprint's field and scope

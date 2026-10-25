@@ -78,26 +78,72 @@ impl<'runtime> StorageAccess<'runtime> {
         crate::storage::partition::storage_stats::partition_ids(self.runtime)
     }
 
-    pub fn partition_storage_stats(&self) -> Vec<PartitionStorageStats> {
-        crate::storage::partition::storage_stats::partition_storage_stats(self.runtime)
+    /// Demand the whole mirror before reporting partition statistics.
+    pub fn partition_storage_stats(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Vec<PartitionStorageStats>, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::storage_stats::partition_storage_stats(
+            self.runtime,
+            &edition,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
-    pub fn storage_stats(&self) -> StorageStats {
-        crate::storage::partition::storage_stats::storage_stats(self.runtime)
+    /// Demand the whole mirror before reporting its storage and visibility statistics.
+    pub fn storage_stats(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<StorageStats, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer =
+            crate::storage::partition::storage_stats::storage_stats(self.runtime, &edition);
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn chunked_storage_summary(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> ChunkedStorageSummary {
-        crate::storage::partition::chunks::chunked_storage_summary(self.runtime, version_id)
+    ) -> Result<ChunkedStorageSummary, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::chunks::chunked_storage_summary(
+            self.runtime,
+            &edition,
+            version_id,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn chunk_diagnostics(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> ChunkDiagnostics {
-        crate::storage::partition::chunks::chunk_diagnostics(self.runtime, version_id)
+    ) -> Result<ChunkDiagnostics, crate::execution::RelationalExecutionDenialCause> {
+        let edition = self
+            .current_edition()
+            .demand_all(execution)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let answer = crate::storage::partition::chunks::chunk_diagnostics(
+            self.runtime,
+            &edition,
+            version_id,
+        );
+        crate::execution::check_request(execution)?;
+        Ok(answer)
     }
 
     pub fn plan_read_explicit_query_packet(

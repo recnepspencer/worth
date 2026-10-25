@@ -84,7 +84,8 @@ fn durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity() {
     assert_eq!(
         recovered
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .published_snapshot_handle_count,
         0,
         "replay closeout must not consume the live published-snapshot budget"
