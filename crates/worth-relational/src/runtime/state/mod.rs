@@ -25,8 +25,9 @@ pub(crate) use subsystems::{
     DurabilitySubsystem, HistorySubsystem, IndexDefinitionReadBinding, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
     MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
-    PendingRecordAllocations, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
     PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
@@ -35,8 +36,8 @@ pub(crate) use subsystems::{
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
     ReplayRetentionState, ResidentPartitionEdition, ResidentPartitionEntry, RuntimeInstrumentation,
     RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem,
-    SnapshotHandleBinding, StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency,
-    VisibilitySubsystem,
+    SnapshotHandleBinding, StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch,
+    VisibilityResidency, VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

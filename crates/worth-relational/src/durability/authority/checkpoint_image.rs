@@ -29,6 +29,7 @@ impl CapturedCheckpointBasis {
             carried_index_image: _,
             derived_index_checkpoint,
             symbol_table,
+            symbol_identity_frontier,
             runtime_name,
         } = self;
         // The mirror retains deleted records and MVCC cells from earlier
@@ -117,6 +118,7 @@ impl CapturedCheckpointBasis {
             derived_index_checkpoint_format:
                 crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
             symbol_table,
+            symbol_identity_frontier,
             runtime_name,
         })
     }

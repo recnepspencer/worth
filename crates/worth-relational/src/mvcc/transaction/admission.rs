@@ -160,6 +160,7 @@ impl crate::runtime::RelationalRuntime {
             savepoints: Vec::new(),
             next_savepoint_ordinal: 1,
             last_merged_plan: None,
+            pending_symbols: None,
             client_key_symbol_policy: self.config.identity.client_key_symbol_policy,
             retention: std::sync::Arc::new(retention),
             control,

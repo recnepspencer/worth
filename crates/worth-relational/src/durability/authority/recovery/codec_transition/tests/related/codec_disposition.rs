@@ -99,8 +99,9 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 .patch
                 .authoritative_record_patches
                 .push(hidden_write.clone());
-            let required =
+            let mut required =
                 crate::symbols::data::required_commit_symbols(&entry.merged_plan, &entry.patch);
+            required.extend(entry.revision_symbol_references.iter().copied());
             // Keep the hostile claim structurally current: its actual source
             // values retain their original native symbol meanings.
             entry.envelope_mut_for_test().symbol_texts.entries = required

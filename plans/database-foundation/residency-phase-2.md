@@ -162,3 +162,101 @@ recent inspection, branch-filtered recent inspection and artifact compilation,
 with readable index facts, sticky refusal and no journal/publication advance.
 These cuts do not yet close aspect history, subscriber continuity, retained
 export, envelope retirement or candidate-wide retry and symbol staging.
+
+## Candidate round boundary review
+
+The present proposal path simulates mutation with a detached identity allocator
+and cloned interner, then interprets the same plan again during authoritative
+preparation. A custom invariant can therefore observe identities that were never
+reserved by the live owner. A copied symbol frontier can likewise issue an id
+whose meaning differs from another concurrent candidate. Neither representation
+is adequate custody for a retryable candidate.
+
+The live identity allocator continues to own record reservations and monotonically
+spent generations. The runtime symbol owner must similarly own reservations for
+pending text, deduplicated across concurrent candidates. A pending symbol's bucket
+must already be resident before issuance. Its meaning remains unpublished until
+the exact branch cutover; dropping the last pending reservation removes its text
+entry but never rewinds its issued frontier. The standalone interner remains a
+meaning map; the runtime owns reservation lifetime and synchronization.
+
+A round borrows the selected root through an explicit probe view. It owns one
+mutation result, record reservations, pending symbol meaning, diagnostics and
+provisional instrumentation. Validation judges that exact result. A miss drops
+all of it before the operation orchestrator demands the recorded regions or
+symbol buckets. Unique transaction mutation authority stays outside the loop.
+Only an accepted round may move its evidence and leases into publication.
+
+Implementation order:
+
+1. Add runtime-owned pending symbol reservations and a candidate symbol binding;
+   prove concurrent deduplication, abandoned-identity spending, and refusal to
+   mint from an unadmitted bucket. Move existing symbol-table tests into their
+   owned test module to retain the file cap.
+2. Replace mutation's implicit field/aspect interning with explicit delta symbol
+   admission. Keep text reads pure and keep cold loads in the round orchestrator.
+3. Carry one applied draft and its live reservations from proposal validation
+   through authoritative preparation. Remove detached allocation simulation and
+   the second mutation interpretation. Publish pending meaning at the same
+   successful cutover as its root.
+4. Install candidate-wide bounded probe rounds for transactions, lowered
+   strategies and merge preparation. Isolate diagnostic and instrumentation
+   effects per round; preserve actual spent work. Accept only miss-free custody.
+5. Complete Head-only draft/history layering and resident mirror publication
+   witnesses. Use the existing authenticated history append frontiers; never
+   reinterpret an empty resident suffix as complete history.
+
+The proof matrix includes real cold failures before publication, custom invariant
+observations across discarded rounds, concurrent candidates sharing text, aborts
+between validation and publication, and retained observations across checkpoint
+and reopen. Focused Native proofs precede the complete requested lanes. No new
+Cargo features, cloned mutation authority or second publication lane is allowed.
+
+## Applied draft and pending dictionary custody
+
+The first three candidate-boundary steps are implemented. Proposal validation
+and publication now share one applied mutation and the live record reservations
+that produced it. Revision stamping explicitly admits its aspect and field
+references into the candidate dictionary. The canonical grammar records those
+references and requires the exact union with body references; recovery compares
+the same evidence. Required region symbol discovery includes both field-stamp
+key components.
+
+Pending text reservations belong to the runtime owner, deduplicate equal text
+across concurrent candidates and retain monotonically spent ids after abandonment.
+Accepted previews keep their own dictionary custody. Only the exact canonical
+dictionary publishes at successful branch cutover. Independently admitted field
+text retains its existing explicit publication semantics and shares an already
+pending id. Checkpoints preserve the symbol issuance frontier, including gaps.
+Strategy lowering takes the actual caller request and returns preparation failures
+by value; Query batch composition carries authored intents into its final owner
+instead of dropping the pending dictionary behind normalized symbol ids.
+
+The cold-symbol proof uses a genuine 601-record producer checkpoint, an actual
+hash-bucket collision and the production cold source. Field-text admission,
+plan preview, validation, candidate preparation and revision stamping preserve
+the typed sticky storage refusal without journal movement or published meaning.
+A healthy cold commit spends a fresh record identity after its discarded draft
+and warms a bounded minority of dictionary members. Concurrent reservation,
+abandonment, exact publication and checkpoint-frontier courts cover the owner.
+
+Two prior test claims are deliberately retired by the authoritative milestone-2
+decisions D7 and D9. Preview normalization no longer publishes global text:
+tests now check its owned meaning, absence before cutover and exact meaning after
+real publication. A refused already-applied draft no longer preserves issuance
+frontiers byte-for-byte: the retirement court compares every other checkpoint
+manifest fact exactly and asserts spent record/symbol frontiers independently.
+No test is removed, ignored or weakened into accepting a storage failure.
+
+Function scrutiny reports no scan errors. The added orchestration functions
+retain their single named phase responsibility; the applied-draft function's
+arguments are its explicit authority and input boundaries. Existing broad
+publication/checkpoint orchestration remains within the file cap. This slice
+does not claim candidate-wide probes, provisional counter/diagnostic settlement,
+Head-only mutation, resident publication witnesses or envelope/lineage retirement.
+
+The request court also names `PlanPreview` admission and each
+`PreparationRound` consult. These are distinct from the later authoritative
+`Draft` stage: a warm round adds one exact visit, while a cold retry starts a
+fresh round visit. The existing stage-count court retains its exact complete
+order and one visit per warm stage, extended with the newly named round.

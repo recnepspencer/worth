@@ -135,6 +135,28 @@ impl RuntimeSymbolResidency {
         Ok(())
     }
 
+    /// A probe may reserve a new text only after every candidate bucket page
+    /// has proved that no prior spelling owns the identity.
+    pub(super) fn value_bucket_is_resident(
+        &self,
+        value: &str,
+    ) -> Result<bool, RelationalStorageUnavailable> {
+        use sha2::{Digest, Sha256};
+        let bucket = Sha256::digest(value.as_bytes())[0];
+        let Some(bucket) = self.by_value.iter().find(|entry| entry.bucket == bucket) else {
+            return Ok(true);
+        };
+        let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
+        for locator in &bucket.pages {
+            match pages.get(locator) {
+                Some(Ok(())) => {}
+                Some(Err(failure)) => return Err(*failure),
+                None => return Ok(false),
+            }
+        }
+        Ok(true)
+    }
+
     fn demand_page(
         &self,
         owner: &RuntimeSymbolTable,

@@ -38,6 +38,7 @@ fn replay_commit_certifies_strategy_surface_for_strategy_bearing_commit() {
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -129,6 +130,7 @@ fn intent_reconciliation_strategy_commits_and_replays_end_to_end() {
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -237,6 +239,7 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,

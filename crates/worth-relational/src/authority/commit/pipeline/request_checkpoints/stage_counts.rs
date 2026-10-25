@@ -61,6 +61,7 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
     // Each literal names the stage beside its single allowed consult.
     let stages = [
         Validation,
+        PreparationRound,
         Admission,
         Draft,
         Boundary,
@@ -83,6 +84,7 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
         counts,
         [
             (Validation, 1),
+            (PreparationRound, 1),
             (Admission, 1),
             (Draft, 1),
             (Boundary, 1),

@@ -202,10 +202,12 @@ pub(super) fn admit_commit_execution(
         context.validated_against_commit_id,
         context.validated_against_version_id,
         context.validated_against_branch_version,
-        context
-            .prepared_scope
-            .as_ref()
-            .and_then(|scope| scope.proposal_identity.as_ref()),
+        context.prepared_scope.as_ref().and_then(|scope| {
+            scope
+                .mutation_proposal
+                .as_ref()
+                .map(|(identity, _)| identity)
+        }),
     )?;
     let selected_branch_state = context
         .prepared_scope

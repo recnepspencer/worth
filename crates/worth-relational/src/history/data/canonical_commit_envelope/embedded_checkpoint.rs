@@ -37,6 +37,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             schema_authority,
             merged_plan,
             symbol_texts,
+            revision_symbol_references,
             record_allocations,
             patch,
             descriptive_touches,
@@ -48,7 +49,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
         } = self.envelope;
-        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", 25)?;
+        let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", 26)?;
         fields.serialize_field(
             "required_output_codec_retirements",
             required_output_codec_retirements,
@@ -70,6 +71,7 @@ impl Serialize for EmbeddedCheckpointEnvelopeRef<'_> {
         fields.serialize_field("schema_authority", schema_authority)?;
         fields.serialize_field("merged_plan", merged_plan)?;
         fields.serialize_field("symbol_texts", symbol_texts)?;
+        fields.serialize_field("revision_symbol_references", revision_symbol_references)?;
         fields.serialize_field("record_allocations", record_allocations)?;
         fields.serialize_field("patch", patch)?;
         fields.serialize_field("descriptive_touches", descriptive_touches)?;

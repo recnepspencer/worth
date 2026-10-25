@@ -17,39 +17,6 @@ pub(crate) struct MergedPlanPreparationTiming {
 }
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
-    pub fn merged_plan(
-        &mut self,
-        runtime: &crate::runtime::RelationalRuntime,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<&MergedCommitPlan, CommitConflict> {
-        let preparation = runtime.preparation_runtime_snapshot();
-        self.merged_plan_for_preparation(&preparation, allocation_policy)?;
-        Ok(self.last_merged_plan.as_ref().expect("merged plan"))
-    }
-
-    fn merged_plan_for_preparation(
-        &mut self,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<&MergedCommitPlan, CommitConflict> {
-        allocation_policy.check_live().map_err(|denial| {
-            super::RelationalTransactionStagingDenial::from(denial).into_conflict()
-        })?;
-        if self.last_merged_plan.is_none() {
-            self.ensure_current_basis(runtime)?;
-            let selected_state =
-                crate::branch::SelectedRelationalBranchState::from_admitted_basis(&self.basis);
-            runtime.services.symbols.with_read(|symbols| {
-                self.validate_staged_branch_locality(selected_state.state(), symbols)
-            })?;
-            let intents = self.normalized_intents_for_merge(runtime, allocation_policy)?;
-            let plan =
-                self.build_merged_plan_for_state(runtime, selected_state.state(), intents)?;
-            self.last_merged_plan = Some(plan);
-        }
-        Ok(self.last_merged_plan.as_ref().expect("merged plan"))
-    }
-
     pub(crate) fn validate_staged_branch_locality(
         &self,
         current_state: &impl PartitionAccess,

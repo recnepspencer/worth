@@ -7,6 +7,10 @@ use crate::transactions::data::{
 pub(crate) enum CommitStage {
     /// A detached transaction read consults the same original request court.
     TransactionRead,
+    /// Explicit preview admission, before dictionary or plan preparation.
+    PlanPreview,
+    /// Each fresh residency candidate consults before it spends identities.
+    PreparationRound,
     Validation,
     Admission,
     Draft,

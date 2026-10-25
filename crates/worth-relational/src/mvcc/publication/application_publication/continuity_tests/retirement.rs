@@ -227,10 +227,12 @@ fn cold_replacement(
         format!("{denied:?}").contains("superseded complete family publication"),
         "{denied:?}"
     );
-    let before = runtime
-        .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
-        .unwrap();
+    let before = checkpoint_manifest(
+        &runtime
+            .durability_authority()
+            .native_checkpoint(execution.allocation_policy())
+            .unwrap(),
+    );
     // Existing spellings still request fresh native allocations. Equal keys
     // cannot authorize Birth, and ordinary key interning is not this court.
     let (batch, targets) = creates(["new-left", "new-right"]);
@@ -258,13 +260,19 @@ fn cold_replacement(
         absence.is_none(),
         "a published route requires its exact predecessor"
     );
-    assert_eq!(
-        runtime
+    let mut after = checkpoint_manifest(
+        &runtime
             .durability_authority()
             .native_checkpoint(execution.allocation_policy())
             .unwrap(),
-        before
     );
+    // Phase-2 D7 records spent draft identities even when publication refuses.
+    // Every other committed directory fact must remain byte-for-byte equal.
+    assert_ne!(after.record_identity, before.record_identity);
+    assert!(after.symbol_identity_frontier >= before.symbol_identity_frontier);
+    after.record_identity = before.record_identity.clone();
+    after.symbol_identity_frontier = before.symbol_identity_frontier;
+    assert_eq!(after, before);
     let roles = replacement_ids
         .into_iter()
         .enumerate()
@@ -315,4 +323,21 @@ fn cold_replacement(
     let born = publish(&runtime, execution, &installed, batch, birth).unwrap();
     assert_eq!(born.changed_records.len(), 2);
     release_test_commit_snapshot(&runtime, &born);
+}
+
+fn checkpoint_manifest(
+    checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+) -> crate::durability::data::RelationalCheckpointManifest {
+    #[derive(serde::Deserialize)]
+    struct Input {
+        manifest: crate::durability::data::RelationalCheckpointManifest,
+    }
+    rmp_serde::from_slice::<Input>(
+        checkpoint
+            .bytes()
+            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+            .expect("current native checkpoint framing"),
+    )
+    .unwrap()
+    .manifest
 }

@@ -59,6 +59,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -103,6 +104,7 @@ fn merge_planning_classifies_different_strategy_families_as_strategy_intent_conf
             );
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -212,6 +214,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -254,6 +257,7 @@ fn merge_planning_with_real_strategies_preserves_strategy_specific_manual_bounda
             );
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,

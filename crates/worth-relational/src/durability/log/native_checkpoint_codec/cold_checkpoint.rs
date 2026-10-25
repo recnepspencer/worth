@@ -63,7 +63,8 @@ pub(crate) fn readmit(
         index_definitions: manifest.index_definitions, derived_index_artifacts: Default::default(),
         derived_index_checkpoint: None,
         derived_index_checkpoint_format: crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
-        symbol_table: symbols.snapshot(), runtime_name: manifest.runtime_name,
+        symbol_table: symbols.snapshot(), symbol_identity_frontier: manifest.symbol_identity_frontier,
+        runtime_name: manifest.runtime_name,
     };
     Ok(checkpoint)
 }

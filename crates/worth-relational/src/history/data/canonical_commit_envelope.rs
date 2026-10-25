@@ -69,6 +69,8 @@ pub struct CanonicalCommitEnvelope {
     pub schema_authority: SchemaAuthoritySnapshot,
     pub merged_plan: MergedCommitPlan,
     pub(crate) symbol_texts: crate::symbols::data::SymbolTableSnapshot,
+    /// Exact dictionary references made by native aspect and field revision stamps.
+    pub(crate) revision_symbol_references: Vec<crate::symbols::data::Symbol>,
     #[serde(default)]
     pub(crate) record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
     pub patch: CanonicalAuthoritativePatch,
@@ -138,6 +140,7 @@ impl CanonicalCommitEnvelope {
             merged_plan,
             record_allocations: Vec::new(),
             symbol_texts: Default::default(),
+            revision_symbol_references: Vec::new(),
             patch,
             descriptive_touches,
             diagnostics_summary,

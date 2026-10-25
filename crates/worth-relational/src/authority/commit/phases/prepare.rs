@@ -161,20 +161,9 @@ fn sparse_relation_overlay_partitions_for_plan(
 pub(crate) fn prepare_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
+    selected_branch_state: SelectedRelationalBranchState,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
-    transaction
-        .ensure_current_basis(runtime)
-        .map_err(TransactionCommitError::conflict)?;
-    let selected_branch_state =
-        SelectedRelationalBranchState::from_admitted_basis(&transaction.basis);
-    runtime
-        .services
-        .symbols
-        .with_read(|symbols| {
-            transaction.validate_staged_branch_locality(selected_branch_state.state(), symbols)
-        })
-        .map_err(TransactionCommitError::conflict)?;
     let mut phase_timing = CommitPhaseTiming::default();
     let normalization_started = Instant::now();
     let intents = transaction

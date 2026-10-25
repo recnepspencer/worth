@@ -46,7 +46,12 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
         .is_some());
     assert_eq!(
         transaction
-            .merged_plan(&runtime, AllocationPolicy::SystemAllocation,)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ),
+                &runtime
+            )
             .expect("pre-rollback plan includes staged work")
             .merged_intents
             .len(),
@@ -75,7 +80,12 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
     );
     assert_eq!(
         transaction
-            .merged_plan(&runtime, AllocationPolicy::SystemAllocation,)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::serial(
+                    &crate::test_execution_policy::serial_request()
+                ),
+                &runtime
+            )
             .expect("post-rollback plan is rebuilt from retained batches")
             .merged_intents,
         vec![retained_intent]

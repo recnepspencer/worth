@@ -22,6 +22,18 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
             symbols.insert(fingerprint.family);
         }
     }
+    for revisions in partition
+        .entity_arena
+        .field_revisions
+        .iter()
+        .chain(partition.relation_arena.field_revisions.iter())
+        .flatten()
+    {
+        for (aspect, field) in revisions.keys() {
+            symbols.insert(*aspect);
+            symbols.insert(*field);
+        }
+    }
     let entities = partition
         .entity_arena
         .metadata_history

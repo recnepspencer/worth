@@ -116,9 +116,11 @@ impl DagFixture {
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-        txn.merged_plan(
+        txn.prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &self.runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone()

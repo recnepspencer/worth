@@ -54,6 +54,8 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let admitted = admit_commit_execution(runtime, context)?;
     let prepared = prepare_commit_execution(execution, runtime, admitted)?;
+    let round_runtime = runtime.with_candidate_symbols(prepared.candidate_symbols());
+    let runtime = &round_runtime;
     let boundary_validated =
         validate_commit_boundary(execution, runtime, prepared, &scope_control)?;
     let mutated = mutate_commit_execution(execution, runtime, boundary_validated, &scope_control)?;

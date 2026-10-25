@@ -7,7 +7,7 @@ use super::{MutationEffect, MutationWorkspace};
 pub(crate) fn assemble_effect(
     outcome: MutationOutcome,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationEffect, crate::transactions::data::CommitConflict> {
+) -> Result<MutationEffect, super::MutationApplyDenial> {
     let version_id = workspace.version_id();
     let mut effect = MutationEffect::with_capacity(outcome.changes.len(), outcome.events.len());
 

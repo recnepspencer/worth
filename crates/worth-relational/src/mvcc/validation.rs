@@ -13,6 +13,7 @@ pub(crate) mod proposal_identity;
 mod proposal_invariants;
 #[path = "validation/proposal_revalidation.rs"]
 mod proposal_revalidation;
+mod proposal_round;
 #[path = "validation/proposal_touches.rs"]
 mod proposal_touches;
 #[path = "validation/proposal_validation.rs"]

@@ -183,6 +183,15 @@ position. These types are in `worth_relational::facade::durability`.
 The owner catalog, branch cells, roots, and retention accounting stay
 memory-resident working state derived from that history.
 
+Plan preview uses `transaction.prepare_merged_plan(execution, runtime)` and can
+return a typed storage refusal before publication. Strategy `lower_execution`
+and `lower_execution_with_input` likewise take the caller's execution request.
+The transaction or lowered plan owns any newly reserved client-key meanings;
+preview does not publish them into the runtime dictionary. Validation judges
+the same applied draft later prepared for publication. Dropping it spends its
+record and text identities without publishing their meanings. A successful
+commit publishes only the text carried by its canonical envelope.
+
 ## Validated transitions before recovered installation
 
 `native_checkpoint(policy)` captures one immutable image and counts its actual

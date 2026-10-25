@@ -48,7 +48,10 @@ pub(crate) use record_identity::{
     PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
-pub(crate) use services::{RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable};
+pub(crate) use services::{
+    PendingSymbolMeanings, PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices,
+    RuntimeSymbolTable, SymbolReservationDenial,
+};
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,
     PartitionEditionWriter, ResidentPartitionEdition, ResidentPartitionEntry, StorageSubsystem,

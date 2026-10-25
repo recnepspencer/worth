@@ -14,9 +14,11 @@ mod engine_tests;
 #[cfg(test)]
 mod patch_fragments_tests;
 
+#[cfg(test)]
+use data::CanonicalDeltaError;
 pub(crate) use data::{
-    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalDeltaError,
-    CanonicalRecordAspectDelta, EvaluatedAspectBinding,
+    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta,
+    EvaluatedAspectBinding,
 };
 pub(crate) use engine::canonical_delta_for_mutation;
 pub(crate) use patch_fragments::{

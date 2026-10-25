@@ -70,8 +70,9 @@ pub(crate) use state::{
     CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
     MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
-    PendingRecordAllocations, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
     PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
@@ -84,7 +85,7 @@ pub(crate) use state::{
     RelationalRuntimePublicationBinding, ReplayRetentionState, ResidentPartitionEdition,
     ResidentPartitionEntry, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
     RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,

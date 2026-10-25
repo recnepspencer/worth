@@ -154,6 +154,9 @@ fn canonical_effect_drift(
     if durable.record_allocations() != replayed.record_allocations() {
         drifted.push("record_allocations");
     }
+    if durable.revision_symbol_references != replayed.revision_symbol_references {
+        drifted.push("revision_symbol_references");
+    }
     compare!(patch);
     if durable.published_lineage() != replayed.published_lineage() {
         drifted.push("lineage");

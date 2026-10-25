@@ -1,7 +1,3 @@
-use crate::authority::commit::phases::prepare::{
-    prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
-};
-use crate::authority::commit::phases::proposed_invariant_state::prepare_proposed_invariant_state;
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
 use crate::transactions::data::{
     CommitConflict, CommitValidation, ConflictClass, TransactionCommitError,
@@ -59,7 +55,6 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        let lease = crate::authority::commit::pipeline::request_lease(execution);
         let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
             &transaction.control,
@@ -95,45 +90,30 @@ impl RelationalPreparationRuntime {
         )?;
         let validated_against_version = basis.observation().version_id();
         let validated_against_commit = basis.observation().commit_id();
-        let prepared: PreparedWorkingStateScope = match lowered {
-            Some((selected_branch_state, merged_plan)) => prepare_lowered_working_state_scope(
-                self,
-                &transaction,
-                selected_branch_state,
-                merged_plan,
-            ),
-            None => prepare_working_state_scope(self, &mut transaction, allocation_policy)?,
-        };
+        let super::proposal_round::PreparedProposalRound {
+            prepared,
+            mutation: proposed_mutation,
+            identity: proposal_identity,
+            validation_input,
+            runtime: round_runtime,
+        } = self.prepare_proposal_round(execution, &mut transaction, lowered.as_ref())?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         let transaction_id = transaction.transaction_id;
-        let validation_input =
-            super::RelationalTransactionValidationInput::from_transaction(&transaction);
         let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
             &validation_input,
             allocation_policy,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         );
-        let proposal_identity =
-            self.issue_mutation_proposal_identity(transaction_id, &validation_input)?;
         let proposed_version = proposal_identity.proposed_version_id();
-        let proposed_working_state = prepare_proposed_invariant_state(
-            self,
-            &prepared.selected_branch_state,
-            &prepared.working_state,
-            &prepared.merged_plan,
-            prepared.schema_authority.as_ref(),
-            proposed_version,
-            lease,
-        )?;
-        let commit_boundary = self
+        let commit_boundary = round_runtime
             .invariant_authority()
             .enforce_commit_boundary_for_selected_branch(
                 &prepared.selected_branch_state,
-                &proposed_working_state,
+                proposed_mutation.state(),
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
@@ -141,9 +121,9 @@ impl RelationalPreparationRuntime {
                 &scope_control,
             )?;
         let (mutation_sensitive, publication) = validate_proposed_state(
-            self,
+            &round_runtime,
             &prepared,
-            &proposed_working_state,
+            proposed_mutation.state(),
             proposed_version,
             Some(&proposal_identity),
             execution,
@@ -197,7 +177,7 @@ impl RelationalPreparationRuntime {
             transaction_id,
             validation_input,
             prepared,
-            proposed_working_state,
+            proposed_mutation,
             commit_boundary,
             mutation_sensitive,
             snapshot_publication: publication,

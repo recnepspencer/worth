@@ -2,6 +2,38 @@ use super::*;
 use worth_query_execution::facade::application_contribution::WorthQueryManagedComputationResourceDenial as Resource;
 
 #[test]
+fn strategy_lowering_preserves_committed_storage_refusal_by_value() {
+    use worth_relational::facade::storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+    };
+    use worth_relational::facade::transactions::{
+        CommitExecutionDenialKind, RelationalExecutionDenialCause,
+    };
+    let failure = RelationalStorageUnavailable {
+        subject: RelationalStorageSubject::Region(
+            worth_relational::facade::identity::PartitionId::main(),
+        ),
+        cause: RelationalStorageUnavailableCause::IntegrityMismatch,
+    };
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host_request);
+    let mut error = crate::relational_execution_refusal::work_exhausted(&execution);
+    let TransactionCommitError::Execution { denial, .. } = &mut error else {
+        panic!("owner returned an execution refusal");
+    };
+    denial.kind = CommitExecutionDenialKind::Cause(
+        RelationalExecutionDenialCause::StorageUnavailable(failure),
+    );
+    let result = strategy_lowering(
+        worth_relational::facade::commit_strategies::StrategyLoweringError::Preparation(error),
+    );
+    assert!(matches!(result, RelationalEffectExecutionFailure::Denied {
+        kind: EffectExecutionDenialKind::RelationalExecutionDenied(
+            worth_query_execution::facade::primary_graph::WorthQueryProviderSessionDenialKind::StorageUnavailable(observed)), ..
+    } if observed == failure));
+}
+
+#[test]
 fn publication_request_stops_keep_the_existing_control_mapping() {
     for (stop, expected) in [
         (

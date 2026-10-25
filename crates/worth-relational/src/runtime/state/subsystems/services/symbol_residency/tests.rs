@@ -6,6 +6,27 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+#[test]
+fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
+    use super::super::symbol_table::SymbolReservationDenial;
+    let (table, _, source, snapshot) = dictionary();
+    let (existing, value) = snapshot.entries.last().unwrap();
+    let before = table.interner_snapshot();
+    let mut candidate = table.begin_pending_meanings();
+    assert!(matches!(
+        candidate.reserve(value.as_str()),
+        Err(SymbolReservationDenial::ColdBucket(_))
+    ));
+    assert_eq!(table.interner_snapshot(), before);
+    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
+    let request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    table.demand_text(&execution, value.as_str()).unwrap();
+    assert_eq!(candidate.reserve(value.as_str()).unwrap(), *existing);
+    let meanings = candidate.interner().snapshot();
+    candidate.seal_for_publication(&meanings).publish().unwrap();
+}
+
 #[derive(Debug)]
 struct PageSource {
     members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,

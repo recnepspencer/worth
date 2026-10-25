@@ -63,7 +63,7 @@ fn prepare_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
-    let symbols = prepare_symbols(restored, checkpoint);
+    let symbols = prepare_symbols(restored, checkpoint)?;
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
     recovered_codec_meaning::check_current_codec_meaning(
@@ -89,10 +89,18 @@ fn prepare_checkpoint_state(
 fn prepare_symbols(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
-) -> crate::symbols::data::StringInterner {
+) -> Result<crate::symbols::data::StringInterner, DurabilityError> {
     let mut symbols = restored.services.symbols.interner_snapshot();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
     symbols
+        .reserve_frontier(checkpoint.symbol_identity_frontier)
+        .map_err(|detail| {
+            DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                detail,
+            )
+        })?;
+    Ok(symbols)
 }
 
 fn prepare_partitions(

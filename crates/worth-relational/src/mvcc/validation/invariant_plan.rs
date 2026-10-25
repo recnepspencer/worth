@@ -1,7 +1,7 @@
 //! Branch-bound invariant planning owned by a live transaction.
 
 use crate::branch::SelectedRelationalBranchState;
-use crate::transactions::data::{CommitConflict, TransactionCommitError};
+use crate::transactions::data::TransactionCommitError;
 use crate::validation::engine::InvariantExecutionResult;
 
 impl crate::mvcc::BranchBoundRelationalTransaction {
@@ -16,9 +16,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )?;
-        let (selected_state, merged_plan) = self
-            .branch_bound_invariant_plan(execution, runtime)
-            .map_err(TransactionCommitError::conflict)?;
+        let (selected_state, merged_plan) = self.branch_bound_invariant_plan(execution, runtime)?;
         runtime
             .validation()
             .commit_boundary_for_selected_branch_plan(execution, &selected_state, &merged_plan)
@@ -35,9 +33,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             execution,
             crate::authority::commit::pipeline::CommitStage::Validation,
         )?;
-        let (selected_state, merged_plan) = self
-            .branch_bound_invariant_plan(execution, runtime)
-            .map_err(TransactionCommitError::conflict)?;
+        let (selected_state, merged_plan) = self.branch_bound_invariant_plan(execution, runtime)?;
         runtime
             .validation()
             .graph_composition_for_selected_branch_plan(execution, &selected_state, &merged_plan)
@@ -52,13 +48,12 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
             SelectedRelationalBranchState,
             crate::transactions::data::MergedCommitPlan,
         ),
-        CommitConflict,
+        TransactionCommitError,
     > {
-        self.ensure_current_basis_for_runtime(runtime)?;
+        self.ensure_current_basis_for_runtime(runtime)
+            .map_err(TransactionCommitError::conflict)?;
         let selected_state = SelectedRelationalBranchState::from_admitted_basis(&self.basis);
-        let merged_plan = self
-            .merged_plan(runtime, execution.allocation_policy())?
-            .clone();
+        let merged_plan = self.prepare_merged_plan(execution, runtime)?.clone();
         Ok((selected_state, merged_plan))
     }
 }

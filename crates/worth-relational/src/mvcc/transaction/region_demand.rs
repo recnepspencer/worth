@@ -37,25 +37,8 @@ impl super::BranchBoundRelationalTransaction {
             }
             self.demand_declared_regions(execution, mirror)
         })();
-        admitted.map_err(|failure| match failure {
-            RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
-                crate::transactions::data::TransactionCommitError::preparation(
-                    crate::transactions::data::CommitPreparationError::storage_unavailable(
-                        self.basis.identity().branch_id().clone(),
-                        self.basis.observation().commit_id().map(|id| id.0),
-                        self.basis.observation().version_id(),
-                        failure,
-                    ),
-                )
-            }
-            RelationalResidencyDemandFailure::Request(cause) => {
-                crate::transactions::data::TransactionCommitError::execution(
-                    crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-                        partition_identity: None,
-                    },
-                )
-            }
+        admitted.map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
         })
     }
 

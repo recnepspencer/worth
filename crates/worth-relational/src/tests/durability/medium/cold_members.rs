@@ -3,6 +3,8 @@
 mod cold_envelopes;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
+#[path = "cold_symbols.rs"]
+mod cold_symbols;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
 use crate::durability::data::{
@@ -30,6 +32,7 @@ struct MemberSource {
     reads: AtomicUsize,
     commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
     commits_damaged: AtomicBool,
+    failed_member: std::sync::Mutex<Option<RelationalDurableMemberLocator>>,
 }
 
 impl RelationalDurableColdSource for MemberSource {
@@ -39,6 +42,9 @@ impl RelationalDurableColdSource for MemberSource {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         self.reads.fetch_add(1, Ordering::Relaxed);
+        if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
+            return Err(Cause::Damaged);
+        }
         let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
@@ -155,6 +161,7 @@ fn fixture_from_runtime(
         reads: AtomicUsize::new(0),
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
+        failed_member: std::sync::Mutex::new(None),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(
@@ -322,6 +329,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         reads: AtomicUsize::new(0),
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
+        failed_member: std::sync::Mutex::new(None),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

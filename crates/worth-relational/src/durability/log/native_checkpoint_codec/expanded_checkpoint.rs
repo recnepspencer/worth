@@ -195,6 +195,7 @@ pub(super) fn expand(
         derived_index_checkpoint,
         derived_index_checkpoint_format,
         symbol_table,
+        symbol_identity_frontier: manifest.symbol_identity_frontier,
         runtime_name: manifest.runtime_name,
     })
 }

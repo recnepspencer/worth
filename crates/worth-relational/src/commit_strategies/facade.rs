@@ -51,6 +51,7 @@ impl CommitStrategiesAuthorityFacade {
 
     pub fn lower_execution(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         request: &CanonicalStrategyCommitRequest,
         execution: &StrategyExecutionDraft,
@@ -60,11 +61,12 @@ impl CommitStrategiesAuthorityFacade {
         let transaction = runtime
             .begin_branch_transaction(basis, intent)
             .map_err(crate::commit_strategies::lowering::strategy_transaction_admission_error)?;
-        lower_execution(runtime, request, execution, transaction)
+        lower_execution(request_execution, runtime, request, execution, transaction)
     }
 
     pub(crate) fn lower_execution_with_input(
         &mut self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &RelationalRuntime,
         request: &CanonicalStrategyCommitRequest,
         execution: &StrategyExecutionDraft,
@@ -73,7 +75,7 @@ impl CommitStrategiesAuthorityFacade {
         let transaction = runtime
             .begin_branch_transaction_with_owner_inputs(input)
             .map_err(crate::commit_strategies::lowering::strategy_transaction_admission_error)?;
-        lower_execution(runtime, request, execution, transaction)
+        lower_execution(request_execution, runtime, request, execution, transaction)
     }
 
     pub fn validate_lowered_plan(

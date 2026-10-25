@@ -309,6 +309,7 @@ pub struct DurableCheckpoint {
         Option<crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts>,
     pub(crate) derived_index_checkpoint_format: u16,
     pub symbol_table: SymbolTableSnapshot,
+    pub(crate) symbol_identity_frontier: u32,
     pub runtime_name: String,
 }
 

@@ -234,7 +234,13 @@ pub(super) fn execute_strategy_commit(
         });
     let mut authority = runtime.commit_strategies_authority();
     let lowered = authority
-        .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            request_execution,
+            runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let validated = authority
         .validate_lowered_plan(request_execution, runtime, lowered)

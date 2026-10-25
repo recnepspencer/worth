@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use super::super::artifact_execution::preparation::PublicationPreparation;
-use crate::authority::mutation::apply_adjacency_deltas;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::publication::bundle::PublicationStage;
@@ -10,7 +9,8 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{CommitLog, TransactionCommitError};
 
 pub(super) struct PreparedPublicationPhase {
-    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
     pub(super) committed_partitions: std::collections::BTreeMap<
         crate::identity::data::PartitionId,
@@ -73,7 +73,7 @@ impl PreparedPublicationPhase {
     }
 
     pub(super) fn reservation_count(&self) -> usize {
-        self.record_allocations.reservation_count()
+        self.mutation_identities.records.reservation_count()
     }
 
     pub(super) fn prepared_root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
@@ -94,7 +94,7 @@ impl PreparedPublicationPhase {
         let (next_cell, root, _envelope, prepared_history) =
             self.prepared_history.into_canonical_parts();
         let movement = crate::mvcc::PreparedCanonicalBranchMovement::new(
-            self.record_allocations,
+            self.mutation_identities,
             next_cell,
             root,
             self.canonical_publication_route,
@@ -130,7 +130,8 @@ pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) working_state: crate::storage::overlay::WorkingState,
-    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     pub(super) selected_branch_state: crate::branch::SelectedRelationalBranchState,
     pub(super) publication: PublicationPreparation,
     pub(super) version_id: VersionId,
@@ -156,7 +157,7 @@ pub(super) fn prepare_publication_phase(
         created_relations,
         commit_log,
         working_state,
-        record_allocations,
+        mutation_identities,
         selected_branch_state,
         publication,
         version_id,
@@ -172,7 +173,7 @@ pub(super) fn prepare_publication_phase(
         artifacts,
         changed_records,
         mut canonical_commit_envelope,
-        adjacency_deltas,
+        _adjacency_deltas,
         lineage_nodes,
         deferred_diagnostic_artifacts,
         target_schema_registry,
@@ -210,8 +211,6 @@ pub(super) fn prepare_publication_phase(
         None
     };
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
-    let mut working_state = working_state;
-    apply_adjacency_deltas(&mut working_state, &adjacency_deltas, version_id);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;
     runtime
@@ -281,7 +280,7 @@ pub(super) fn prepare_publication_phase(
         })?;
 
     Ok(PreparedPublicationPhase {
-        record_allocations,
+        mutation_identities,
         clone_mode,
         committed_partitions,
         prepared_history,

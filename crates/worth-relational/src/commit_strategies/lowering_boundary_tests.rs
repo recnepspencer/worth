@@ -33,8 +33,14 @@ fn stale_strategy_basis_denies_before_raw_key_normalization() {
     let request = canonical_request();
     let execution = execution_draft(&request);
 
-    let error = lower_execution(&runtime, &request, &execution, transaction)
-        .expect_err("stale basis denies before strategy key normalization");
+    let error = lower_execution(
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &runtime,
+        &request,
+        &execution,
+        transaction,
+    )
+    .expect_err("stale basis denies before strategy key normalization");
 
     assert!(matches!(
         error,
@@ -83,7 +89,15 @@ fn foreign_strategy_basis_preserves_taxonomy_and_exact_target_state() {
     let execution = execution_draft(&request);
 
     let error = crate::commit_strategies::facade::CommitStrategiesAuthorityFacade::new()
-        .lower_execution_with_input(&runtime_b, &request, &execution, validation_input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime_b,
+            &request,
+            &execution,
+            validation_input,
+        )
         .expect_err("foreign strategy basis is rejected at admission");
 
     assert!(matches!(
@@ -157,8 +171,14 @@ fn sibling_strategy_target_denies_before_normalization_with_zero_residue() {
     );
     let before = RuntimeState::capture(&runtime);
 
-    let error = lower_execution(&runtime, &request, &execution, transaction)
-        .expect_err("strategy lowering rejects sibling-only targets");
+    let error = lower_execution(
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &runtime,
+        &request,
+        &execution,
+        transaction,
+    )
+    .expect_err("strategy lowering rejects sibling-only targets");
 
     assert!(matches!(
         error,
@@ -198,8 +218,14 @@ fn unowned_strategy_created_endpoint_denies_with_zero_residue() {
     );
     let before = RuntimeState::capture(&runtime);
 
-    let error = lower_execution(&runtime, &request, &execution, transaction)
-        .expect_err("strategy created endpoints must belong to the transaction");
+    let error = lower_execution(
+        &worth_execution::ExecutionRequest::serial(&crate::test_execution_policy::serial_request()),
+        &runtime,
+        &request,
+        &execution,
+        transaction,
+    )
+    .expect_err("strategy created endpoints must belong to the transaction");
 
     assert!(matches!(
         error,

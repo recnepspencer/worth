@@ -33,6 +33,7 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) derived_index_checkpoint:
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts,
     pub(super) symbol_table: crate::symbols::data::SymbolTableSnapshot,
+    pub(super) symbol_identity_frontier: u32,
     pub(super) runtime_name: String,
 }
 
@@ -166,6 +167,10 @@ impl CapturedCheckpointBasis {
                     runtime, &retained,
                 )?,
             symbol_table: runtime.services.symbols.snapshot(),
+            symbol_identity_frontier: runtime
+                .services
+                .symbols
+                .with_read(|symbols| symbols.identity_frontier()),
             runtime_name: runtime.runtime_name().to_string(),
         };
         routes

@@ -148,6 +148,7 @@ impl CapturedManifest {
                 mirror: Vec::new(),
                 commits,
                 symbols: symbol_pages,
+                symbol_identity_frontier: checkpoint.symbol_identity_frontier,
                 symbol_buckets,
                 lineage: lineage_pages,
                 lineage_basis: checkpoint.lineage.digest_basis().clone(),

@@ -15,7 +15,7 @@ use super::{
 pub enum StrategyLoweringError {
     RequestExecutionMismatch { detail: String },
     MutationConflict(CommitConflict),
-    Preparation(CommitPreparationError),
+    Preparation(crate::transactions::data::TransactionCommitError),
 }
 
 impl StrategyLoweringError {
@@ -24,7 +24,7 @@ impl StrategyLoweringError {
     }
 
     pub(crate) fn preparation(error: CommitPreparationError) -> Self {
-        Self::Preparation(error)
+        Self::Preparation(crate::transactions::data::TransactionCommitError::preparation(error))
     }
 }
 

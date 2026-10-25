@@ -233,6 +233,7 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
     create_entity(execution, &runtime, "phase2-symbol-sharing-anchor");
     fork_from_main(execution, &runtime, "symbol-sharing-a");
     fork_from_main(execution, &runtime, "symbol-sharing-b");
+    let symbols_before = runtime.config().identity.symbol_table;
     let preparation = runtime.preparation_port();
     let cloned_preparation = preparation.clone();
 
@@ -257,28 +258,56 @@ fn cloned_preparation_ports_share_symbol_identity_and_public_snapshot_truth() {
     let second_candidate = preparation
         .prepare_branch_transaction(execution, second)
         .expect("original port prepares the second symbol");
+    assert_eq!(runtime.config().identity.symbol_table, symbols_before);
+    let first = runtime
+        .publish_prepared_candidate(execution, first_candidate)
+        .unwrap();
+    release_test_commit_snapshot(&runtime, &first);
     let symbols = runtime.config().identity.symbol_table;
     let first_symbol = symbols
         .entries
         .iter()
         .find_map(|(symbol, value)| (value == "clone-shared-symbol-a").then_some(*symbol))
-        .expect("clone-admitted symbol is visible in the runtime snapshot");
-    let second_symbol = symbols
+        .expect("published clone-admitted symbol is visible in the runtime snapshot");
+    assert!(!symbols
+        .entries
+        .iter()
+        .any(|(_, value)| value == "clone-shared-symbol-b"));
+    let second = runtime
+        .publish_prepared_candidate(execution, second_candidate)
+        .unwrap();
+    release_test_commit_snapshot(&runtime, &second);
+    let second_symbol = runtime
+        .config()
+        .identity
+        .symbol_table
         .entries
         .iter()
         .find_map(|(symbol, value)| (value == "clone-shared-symbol-b").then_some(*symbol))
-        .expect("original-port symbol is visible in the runtime snapshot");
+        .expect("published original-port symbol is visible in the runtime snapshot");
     assert_ne!(
         first_symbol, second_symbol,
         "distinct strings cannot collide across preparation-port clones"
     );
 
+    let symbols_before_discard = runtime.config().identity.symbol_table;
+    let mut abandoned = begin_transaction(&runtime, "symbol-sharing-a");
+    abandoned
+        .push_batch(
+            batch_create("clone-abandoned-symbol"),
+            Allocation::SystemAllocation,
+        )
+        .unwrap();
+    let abandoned = cloned_preparation
+        .prepare_branch_transaction(execution, abandoned)
+        .unwrap();
     preparation
-        .discard_prepared_candidate(first_candidate)
-        .expect("first candidate discards through the shared owner");
-    preparation
-        .discard_prepared_candidate(second_candidate)
-        .expect("second candidate discards through the shared owner");
+        .discard_prepared_candidate(abandoned)
+        .expect("candidate discards through the shared owner");
+    assert_eq!(
+        runtime.config().identity.symbol_table,
+        symbols_before_discard
+    );
 }
 
 fn fork_from_main(

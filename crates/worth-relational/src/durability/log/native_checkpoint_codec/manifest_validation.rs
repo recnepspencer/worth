@@ -83,6 +83,16 @@ pub(super) fn validate(
         prior_bucket = Some(bucket.bucket);
     }
     validate_pages(&manifest.symbols)?;
+    if manifest.symbol_identity_frontier == 0
+        || manifest
+            .symbols
+            .last()
+            .is_some_and(|page| page.last >= u64::from(manifest.symbol_identity_frontier))
+    {
+        return Err(corrupt(
+            "checkpoint symbol identity frontier does not cover its pages",
+        ));
+    }
     validate_pages(&manifest.lineage)?;
     Ok(heads)
 }

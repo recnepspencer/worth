@@ -1,97 +1,83 @@
 use super::boundary_validation::BoundaryValidatedCommitExecution;
+use super::draft_execution::PreparedCommitState;
+use crate::authority::commit::phases::applied_mutation::{
+    AppliedMutationDraft, PendingMutationIdentities,
+};
+use crate::authority::mutation::MutationApplyOutcome;
+use crate::storage::overlay::WorkingState;
 
-mod phase;
-
-use phase::{run_authoritative_mutation_phase, MutationPhaseInput};
+mod telemetry;
 
 pub(super) struct MutatedCommitExecution {
-    validated: BoundaryValidatedCommitExecution,
-    version_id: crate::identity::data::VersionId,
-    effect: crate::authority::mutation::MutationEffect,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
-    record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) prepared: PreparedCommitState,
+    pub(super) working_state: WorkingState,
+    pub(super) invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
+    pub(super) outcome: MutationApplyOutcome,
+    pub(super) mutation_identities: PendingMutationIdentities,
 }
 
 impl MutatedCommitExecution {
-    pub(super) fn validated_mut(&mut self) -> &mut BoundaryValidatedCommitExecution {
-        &mut self.validated
-    }
-
     pub(super) fn version_id(&self) -> crate::identity::data::VersionId {
-        self.version_id
-    }
-
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        BoundaryValidatedCommitExecution,
-        crate::identity::data::VersionId,
-        crate::authority::mutation::MutationEffect,
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
-        crate::runtime::PendingRecordAllocations,
-    ) {
-        (
-            self.validated,
-            self.version_id,
-            self.effect,
-            self.created_entities,
-            self.created_relations,
-            self.record_allocations,
-        )
+        self.prepared.version_id()
     }
 }
 
 pub(super) fn mutate_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut validated: BoundaryValidatedCommitExecution,
+    validated: BoundaryValidatedCommitExecution,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutatedCommitExecution, crate::transactions::data::TransactionCommitError> {
+    use crate::transactions::data::CommitPhase;
     super::consult_stage(execution, super::CommitStage::Mutation)?;
-    let selected_branch_state = validated.prepared_mut().selected_branch_state().clone();
-    let proposed_version_id = validated.prepared_mut().proposed_version_id();
-    let proposal_identity = validated.prepared_mut().proposal_identity().clone();
-    let prevalidated_mutation_sensitive = validated
-        .prepared_mut()
-        .admitted_mut()
-        .take_prevalidated_mutation_sensitive();
-    let (admitted, working_state) = validated.prepared_mut().mutation_parts();
-    let (transaction_id, validation_input, merged_plan, _, commit_log, phase_timing) =
-        admitted.phase_view().into_parts();
-    let mutation = run_authoritative_mutation_phase(
-        runtime,
-        MutationPhaseInput {
-            commit_log,
-            phase_timing,
-            transaction_id,
-            working_state,
-            merged_plan,
-            schema_authority: validation_input.schema_authority(),
-            selected_branch_state: &selected_branch_state,
-            proposed_version_id,
-            proposal_identity: &proposal_identity,
-            prevalidated_mutation_sensitive,
-            execution,
-        },
-        control,
-    )?;
+    let (prepared, mut invariant_executions) = validated.into_parts();
     let (
-        version_id,
-        effect,
-        invariant_results,
-        created_entities,
-        created_relations,
-        record_allocations,
-    ) = mutation.into_parts();
-    validated.push_invariant(invariant_results);
+        mut prepared,
+        AppliedMutationDraft {
+            state: working_state,
+            outcome,
+            identities: mutation_identities,
+        },
+    ) = prepared.into_parts();
+    let selected = prepared.selected_branch_state().clone();
+    let version = prepared.version_id();
+    let prevalidated = prepared.admitted.take_prevalidated_mutation_sensitive();
+    telemetry::record_preparation_telemetry(runtime, outcome.preparation_telemetry);
+    crate::authority::commit::phases::prepare::record_mutation_counters(runtime, &working_state);
+    let (_, _, merged_plan, _, commit_log, phase_timing) =
+        prepared.admitted.phase_view().into_parts();
+    commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
+    let started = std::time::Instant::now();
+    let invariant = match prevalidated {
+        Some(invariant) => invariant,
+        None => runtime
+            .invariant_authority()
+            .enforce_mutation_sensitive_for_working_state(
+                &selected,
+                &working_state,
+                version,
+                merged_plan,
+                Some(&prepared.proposal_identity),
+                execution,
+                control,
+            )
+            .map_err(|error| {
+                super::rejection::attach_rejection(
+                    commit_log,
+                    CommitPhase::AuthoritativeMutation,
+                    error,
+                )
+            })?,
+    };
+    commit_log.record_invariant_outcomes(&invariant);
+    commit_log.complete_phase(CommitPhase::AuthoritativeMutation);
+    phase_timing.authoritative_mutation_micros = super::rejection::elapsed_micros(started);
+    invariant_executions.push(invariant);
     Ok(MutatedCommitExecution {
-        validated,
-        version_id,
-        effect,
-        created_entities,
-        created_relations,
-        record_allocations,
+        prepared,
+        working_state,
+        invariant_executions,
+        outcome,
+        mutation_identities,
     })
 }

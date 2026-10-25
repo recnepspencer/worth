@@ -73,10 +73,22 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
         .unwrap();
     let raw_index = transaction.overlay.index.clone();
     let raw_footprint = transaction.footprint().clone();
+    let symbol_frontier_before = runtime
+        .services
+        .symbols
+        .with_read(|symbols| symbols.identity_frontier());
     let limited = parent.child(request(1)).unwrap();
     let failure = transaction
-        .merged_plan(&runtime, Policy::Execution(&limited))
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::leased(&limited),
+            &runtime,
+        )
         .unwrap_err();
+    let crate::transactions::data::TransactionCommitError::Conflict { error: failure, .. } =
+        failure
+    else {
+        panic!("selected normalization backing must retain its allocation conflict");
+    };
     let cause = failure
         .allocation_denial()
         .expect("normalization retains original allocation cause");
@@ -105,37 +117,52 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
     assert_eq!(transaction.overlay.normalization_generation, 0);
     assert!(transaction.last_merged_plan.is_none());
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, head);
-    // The interner advanced before the typed replacement refused. Its actual
-    // entries must still be published to the configuration snapshot.
+    // D9 abandons meaning on refusal; D7 preserves the spent identity floor.
     let entries = runtime.config().identity.symbol_table.entries;
-    let symbol = entries
-        .iter()
-        .find(|(_, value)| value == name)
-        .expect("actual new symbol is retained after refusal")
-        .0;
+    assert!(!entries.iter().any(|(_, value)| value == name));
     assert_eq!(
         runtime
-            .preparation_runtime_snapshot()
             .services
             .symbols
-            .resolve(symbol)
-            .as_deref(),
-        Some(name)
+            .with_read(|symbols| symbols.symbol(name)),
+        None
     );
+    let refused_frontier = runtime
+        .services
+        .symbols
+        .with_read(|symbols| symbols.identity_frontier());
+    assert!(refused_frontier > symbol_frontier_before);
     drop(limited);
     drop((raw_index, raw_footprint));
     let retained;
     let plan;
+    let symbol;
     {
         let child = parent.child(request(BUDGET)).unwrap();
         plan = transaction
-            .merged_plan(&runtime, Policy::Execution(&child))
+            .prepare_merged_plan(&worth_execution::ExecutionRequest::leased(&child), &runtime)
             .unwrap()
             .clone();
         let MutationIntent::Create(CreateIntent::Entity(spec)) = &plan.merged_intents[0] else {
             panic!("actual created entity")
         };
-        assert_eq!(spec.client_key.as_symbol(), Some(symbol));
+        symbol = spec
+            .client_key
+            .as_symbol()
+            .expect("accepted preview has a reserved identity");
+        assert!(
+            symbol.0 >= refused_frontier,
+            "retry cannot reuse a refused identity"
+        );
+        assert_eq!(
+            transaction
+                .pending_symbols
+                .as_ref()
+                .unwrap()
+                .interner()
+                .resolve(symbol),
+            Some(name)
+        );
         retained = transaction.footprint().clone();
     }
     assert_eq!(transaction.overlay.normalization_generation, 1);
@@ -182,11 +209,21 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
     let stopped = parent.child(stopped_request).unwrap();
     stopped_token.cancel();
     let failure = transaction
-        .merged_plan(&runtime, Policy::Execution(&stopped))
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::leased(&stopped),
+            &runtime,
+        )
         .unwrap_err();
+    let crate::transactions::data::TransactionCommitError::Execution { denial, .. } =
+        failure
+    else {
+        panic!("preview must preserve cancellation from its commit-stage consult");
+    };
     assert_eq!(
-        failure.allocation_denial().unwrap().kind(),
-        ExecutionAllocationDenialKind::Cancelled
+        denial.kind,
+        crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::execution::RelationalExecutionDenialCause::Cancelled
+        )
     );
     assert_eq!(transaction.last_merged_plan.as_ref(), Some(&plan));
     drop(stopped);

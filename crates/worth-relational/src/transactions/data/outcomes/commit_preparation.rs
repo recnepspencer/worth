@@ -13,6 +13,7 @@ pub enum SelectedBranchRootDenialReason {
 pub enum CommitPreparationReason {
     SelectedBranchRoot(SelectedBranchRootDenialReason),
     ProposalIdentityOrdinalExhausted,
+    SymbolIdentityExhausted,
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
 }
 
@@ -90,6 +91,21 @@ impl CommitPreparationError {
         }
     }
 
+    pub(crate) fn symbol_identity_exhausted(
+        branch_id: BranchId,
+        expected_version_id: VersionId,
+    ) -> Self {
+        Self {
+            branch_id,
+            reason: CommitPreparationReason::SymbolIdentityExhausted,
+            expected_commit_id: None,
+            expected_version_id,
+            context: ErrorContext::new(RelationalSubsystem::Transaction, ErrorOperation::Validate)
+                .with_version(expected_version_id)
+                .with_fix(SuggestedFix::InspectDiagnostics),
+        }
+    }
+
     pub fn branch_id(&self) -> &BranchId {
         &self.branch_id
     }
@@ -112,6 +128,10 @@ impl CommitPreparationError {
 
     pub fn detail(&self) -> String {
         match self.reason {
+            CommitPreparationReason::SymbolIdentityExhausted => format!(
+                "symbol identity exhausted for branch {} at version {}",
+                self.branch_id.0, self.expected_version_id.0
+            ),
             CommitPreparationReason::StorageUnavailable(failure) => {
                 format!("cold storage unavailable: {failure:?}")
             }

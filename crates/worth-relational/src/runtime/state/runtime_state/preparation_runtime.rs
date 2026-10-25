@@ -31,6 +31,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
 /// Narrow cloneable state used only for validation and candidate preparation.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalPreparationRuntime {
+    pub(crate) symbol_references: Arc<std::collections::BTreeSet<crate::symbols::data::Symbol>>,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: Arc<RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
@@ -88,6 +89,7 @@ impl RelationalPreparationOwnerBinding {
         configuration: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
     ) -> RelationalPreparationRuntime {
         RelationalPreparationRuntime {
+            symbol_references: Arc::default(),
             commit_work_budget: None,
             config: Arc::clone(&configuration.config),
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
@@ -108,6 +110,16 @@ impl RelationalPreparationOwnerBinding {
 }
 
 impl RelationalPreparationRuntime {
+    pub(crate) fn with_candidate_symbols(
+        &self,
+        symbols: &crate::runtime::PendingSymbolMeanings,
+    ) -> Self {
+        let mut runtime = self.clone();
+        runtime.services.symbols = symbols.binding();
+        runtime.symbol_references = Arc::new(symbols.required_references().clone());
+        runtime
+    }
+
     pub(crate) fn with_commit_work_budget(
         &self,
         prior: Option<crate::execution::RequestWorkBudget>,

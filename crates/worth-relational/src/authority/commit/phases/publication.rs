@@ -96,10 +96,17 @@ pub(crate) fn canonical_commit_envelope(
         schema_continuity.schema_reconciliation_descriptor.clone(),
         schema_continuity.descriptor_semantics_version,
     );
+    envelope.revision_symbol_references = runtime.symbol_references.iter().copied().collect();
     envelope.symbol_texts = runtime
         .services
         .symbols
-        .with_read(|symbols| symbols.commit_texts(merged_plan, &envelope.patch))
+        .with_read(|symbols| {
+            symbols.commit_texts(
+                merged_plan,
+                &envelope.patch,
+                runtime.symbol_references.iter().copied(),
+            )
+        })
         .map_err(|detail| {
             TransactionCommitError::publication(PublicationError::new(
                 PublicationStage::BundleAssembly,

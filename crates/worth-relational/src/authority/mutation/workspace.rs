@@ -6,11 +6,11 @@ use crate::authority::commit::preparation::planning::strategy::{
 use crate::config::data::MutationConfig;
 use crate::identity::data::VersionId;
 use crate::identity::data::{EntityId, RelationId};
+use crate::runtime::PendingSymbolMeanings;
 use crate::schema::data::{
     AspectContractPlanCatalog, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
 use crate::storage::overlay::WorkingState;
-use crate::symbols::data::StringInterner;
 use crate::transactions::data::{CreatedEntityRef, CreatedRelationRef, EntityReference};
 
 use super::mutation_context::MutationContext;
@@ -36,7 +36,7 @@ pub(crate) struct BranchLocalDeleteAllowance {
 pub(crate) struct MutationWorkspace<'a> {
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     state: &'a mut WorkingState,
-    symbols: &'a mut StringInterner,
+    symbols: &'a mut PendingSymbolMeanings,
     config: &'a MutationConfig,
     schema: &'a RelationalSchemaRegistry,
     aspect_plans: &'a AspectContractPlanCatalog,
@@ -51,7 +51,7 @@ pub(crate) struct MutationWorkspace<'a> {
 impl<'a> MutationWorkspace<'a> {
     pub(crate) fn new(
         state: &'a mut WorkingState,
-        symbols: &'a mut StringInterner,
+        symbols: &'a mut PendingSymbolMeanings,
         config: &'a MutationConfig,
         schema: &'a RelationalSchemaRegistry,
         aspect_plans: &'a AspectContractPlanCatalog,
@@ -87,10 +87,21 @@ impl<'a> MutationWorkspace<'a> {
             .expect("authoritative record creation requires allocation authority");
         f(MutationContext {
             state: self.state,
-            symbols: self.symbols,
+            symbols: self.symbols.interner(),
             schema: self.schema,
             record_allocations,
         })
+    }
+
+    pub(crate) fn write_delta_revision_stamps(
+        &mut self,
+        delta: &super::canonical_deltas::CanonicalRecordAspectDelta,
+        version: VersionId,
+    ) -> Result<(), crate::runtime::SymbolReservationDenial> {
+        let admitted = super::delta_symbols::AdmittedDeltaSymbols::admit(delta, self.symbols)?;
+        super::aspect_versions::write_aspect_versions_for_delta(self.state, &admitted, version);
+        super::field_versions::write_field_versions_for_delta(self.state, &admitted, version);
+        Ok(())
     }
 
     pub(crate) fn cascade_delete_policy(&self) -> crate::config::data::CascadeDeletePolicy {
@@ -177,12 +188,12 @@ impl<'a> MutationWorkspace<'a> {
         let created_entities =
             crate::transactions::data::CommitCreatedEntityBindings::from_owner_map(
                 created_entities,
-                symbols,
+                symbols.interner(),
             );
         let created_relations =
             crate::transactions::data::CommitCreatedRelationBindings::from_owner_map(
                 created_relations,
-                symbols,
+                symbols.interner(),
             );
         (created_entities, created_relations)
     }
