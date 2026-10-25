@@ -236,9 +236,9 @@ COMMAND_SUITES = {
 
 # Environment one command adds over the gate's own.
 COMMAND_ENV = {
-    # sccache 0.18.0 inserts `/WX-` after cc 1.9.0's `-Tp <file>`, so cl reads
-    # it as the source and libmimalloc-sys (via apps/platform-pulse) fails to
-    # build. The empty wrapper also overrides `rustc-wrapper = sccache` in
+    # sccache 0.18.0 inserts `/WX-` between cc 1.9.0's `-Tp` and its file, so
+    # cl reads it as the source and libmimalloc-sys (via apps/platform-pulse)
+    # fails to build. The empty wrapper also overrides `rustc-wrapper = sccache` in
     # ~/.cargo/config.toml; every other command keeps sccache.
     "check-ui-workspace": {"RUSTC_WRAPPER": ""},
 }
