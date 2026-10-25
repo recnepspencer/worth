@@ -24,6 +24,12 @@ fn worker_serial(cancellation: &CancellationSource) -> SerialRequest {
 // canonical cancellation fixtures: process construction is genuinely unique.
 #[test]
 fn worker_only_native_reduction_certifies_shared_scheduled_engine_without_accounting() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "worker_only_native_reduction_certifies_shared_scheduled_engine_without_accounting",
+    ) {
+        return;
+    }
     use std::sync::{Condvar, Mutex};
     let completion = (Mutex::new(ReorderedCompletion::default()), Condvar::new());
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {

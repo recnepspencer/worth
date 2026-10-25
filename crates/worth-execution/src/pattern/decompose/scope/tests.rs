@@ -5,6 +5,12 @@ use crate::tests::TEST_LOCK;
 
 #[test]
 fn a_refused_decomposition_handoff_cannot_be_taken() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "a_refused_decomposition_handoff_cannot_be_taken",
+    ) {
+        return;
+    }
     let _serial = TEST_LOCK.lock().unwrap();
     // This fixture tests a refused handoff, not incidental framework size. Its
     // physical authority lives in a fresh test process, like the allocation
