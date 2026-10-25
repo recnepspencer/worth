@@ -80,8 +80,10 @@ fn run() {
     let gate =
         serving.pause_physical_checkpoint_at(PhysicalCheckpointStep::CandidateSynchronization);
     let handle = start(serving, 0x7b);
+    // The pause probe waits five seconds per call; the admitted checkpoint has
+    // thirty seconds. Observe that whole envelope without restarting its work.
     assert!(
-        gate.await_arrival(),
+        (0..6).any(|_| gate.await_arrival()),
         "a capture on the reservation must reach file synchronization"
     );
     assert_eq!(recovery_bytes(serving), limit - 1, "no fresh capture bytes");
