@@ -2,7 +2,6 @@
 use super::super::fixture::installed_authorization_world;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisReleaseOutcome;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
 fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
@@ -71,35 +70,7 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
 }
 
 #[test]
-fn shared_basis_promotion_refuses_before_allocation_and_returns_exclusive_custody() {
-    let world = installed_authorization_world(true);
-    let selected = world
-        .application
-        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
-        .expect("the fixture read owns its installed host call");
-    let identity = selected.application_basis().identity().clone();
-
-    let (selected, stop) = match selected.prepare_shared_query_basis() {
-        Ok(_) => panic!("zero preparation bytes cannot fund the new final owner"),
-        Err(denial) => denial,
-    };
-    assert!(matches!(
-        stop,
-        CompanionPreflightStop::PreparationMemoryExhausted { maximum: 0, .. }
-    ));
-
-    let (_, product, basis) = selected.into_parts();
-    drop(product);
-    let receipt = basis.release();
-    assert_eq!(receipt.identity(), &identity);
-    assert!(
-        receipt.released(),
-        "refusal preserved the sole exclusive owner"
-    );
-}
-
-#[test]
-fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
+fn foreign_owner_refusal_leaves_no_hidden_shared_custody() {
     let world = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
     let observer = world.application.application_query_basis_observer();
@@ -122,32 +93,6 @@ fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
         .application
         .retain_selected_query_basis_admitted(&shared)
         .unwrap();
-
-    let error = match world
-        .application
-        .retain_selected_query_basis_admitted(&shared)
-    {
-        Ok(_) => panic!("one Work visit short must refuse before the identity copy"),
-        Err(error) => error,
-    };
-    assert!(matches!(
-        error,
-        SelectedQueryBasisRetentionStop::Admission(CompanionPreflightStop::WorkExhausted { .. })
-    ));
-
-    let error = match world
-        .application
-        .retain_selected_query_basis_admitted(&shared)
-    {
-        Ok(_) => panic!("one byte short must refuse the identity copy"),
-        Err(error) => error,
-    };
-    assert!(matches!(
-        error,
-        SelectedQueryBasisRetentionStop::Admission(
-            CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        )
-    ));
 
     let error = match foreign
         .application

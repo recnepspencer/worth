@@ -49,6 +49,9 @@ impl WorthQueryInvariantProjectionDenial {
         cause: super::WorthQueryValueDecodeDenial,
         work: Option<super::WorthQueryInvariantProjectionWork>,
     ) -> Self {
+        if let Some(worth_execution::WorkCeilingDenial::Stopped(stop)) = cause.request_cause() {
+            return Self::execution_request_stopped(stop.into(), work);
+        }
         Self {
             kind: Box::new(WorthQueryInvariantProjectionDenialKind::ValueDecode(cause)),
             projection_work: work,

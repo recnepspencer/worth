@@ -183,7 +183,7 @@ fn journey(case: Case) {
                         let mut retained = selected.retain_selection(&issued).unwrap();
                         selected.admit_retained_application_query_from_selection(
                             &phase, &mut retained, &entry_query, &access,
-                            ApplicationQueryParameterSet::new(), current_controls(local_scope), &foreign_batch,
+                            ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).unwrap(), local_scope), &foreign_batch,
                         ).unwrap()
                     } else {
 

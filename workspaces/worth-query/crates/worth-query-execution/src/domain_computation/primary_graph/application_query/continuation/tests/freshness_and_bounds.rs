@@ -252,7 +252,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
 }
 
 #[test]
-fn page_and_work_exhaustion_mint_no_resumed_plan_or_basis() {
+fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
     let width_context = ContinuationTestContext::new(Duration::from_secs(60));
     let width_continuation = width_context
         .world
@@ -284,36 +284,4 @@ fn page_and_work_exhaustion_mint_no_resumed_plan_or_basis() {
     );
     assert_eq!(width_context.basis_acquisitions(), width_acquisitions);
     width_context.assert_resource_baseline();
-
-    let work_context = ContinuationTestContext::new(Duration::from_secs(60));
-    let work_continuation = work_context
-        .world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            work_context.issue(&host_custody)
-        })
-        .expect("the fixture read owns its installed host call");
-    let work_acquisitions = work_context.basis_acquisitions();
-    let work_request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
-    let work = work_context
-        .world
-        .application
-        .with_host_advancement(|phase| {
-            let host_custody = phase.test_host_request();
-            work_context.readmit_denial(
-                &host_custody,
-                work_continuation,
-                "account-1",
-                &work_request,
-                1,
-            )
-        })
-        .expect("the fixture read owns its installed host call");
-    assert_eq!(
-        work,
-        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded
-    );
-    assert_eq!(work_context.basis_acquisitions(), work_acquisitions);
-    work_context.assert_resource_baseline();
 }

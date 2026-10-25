@@ -10,12 +10,9 @@ use crate::domain_computation::primary_graph::{
     workflow::{workflow_approval_fields, WorkflowApprovalFieldText, WorkflowApprovalMeaning},
     WorthQueryApplicationAttemptDenialKind as AttemptKind, WorthQueryApplicationCommittedChanges,
 };
-use std::{collections::BTreeMap, num::NonZeroUsize};
-use worth_execution::{CancellationSource, ExecutionRequest, ExecutionResourceLease, LeaseRequest};
-use worth_foundational::{
-    facade::{AspectFieldLocator, AspectValue, InternedString},
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
+use std::collections::BTreeMap;
+use worth_execution::{CancellationSource, ExecutionRequest};
+use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
 use worth_relational::facade::{
     identity::PartitionId,
     symbols::{ClientKey, Symbol},
@@ -24,19 +21,6 @@ use worth_relational::facade::{
         WorkerIntentBatch,
     },
 };
-
-fn payer(cancellation: &CancellationSource) -> ExecutionResourceLease<'static> {
-    ExecutionResourceLease::serial(LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(NonZeroUsize::MIN, None, Some(1_000_000)),
-        ),
-        deadline: None,
-        cancellation: cancellation.token(),
-    })
-    .unwrap()
-}
 
 // Only the five actual admitted encoder outputs and native principal/grant/scope
 // are relevant. Other labels are descriptive fixture data, not a workflow hash,
@@ -95,17 +79,18 @@ fn locators(
 fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_native_pin() {
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
-    let cancellation = CancellationSource::new();
-    let payer = payer(&cancellation);
-    let baseline = payer.charged_memory_bytes();
-    assert_eq!(baseline, 0);
+    const PAYLOAD_LIMIT: u64 = 64 * 1024 * 1024;
     let request = live_scope();
-    let (batch, carriers, expected, label_locator) = world
+    let (pin, symbols, expected, mut probe) = world
         .application
         .with_host_advancement(|phase| {
             let host = phase.test_host_request();
             let principal = authenticated_principal(&host, &world, &request);
             let admission = admitted_capability_operation(&host, &world, &principal, &request);
+            let payer = crate::test_request_policy::memory_child(
+                host.borrowed_request_for_test(),
+                PAYLOAD_LIMIT,
+            );
             let execution = ExecutionRequest::leased(&payer);
             let meaning = meaning(&admission, &execution);
             let expected = originals(&meaning); // Oracle copies precede native admission.
@@ -167,72 +152,74 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
                 })));
                 carriers.push(created);
             }
-            // End the installed host entry before running native publication
-            // under the original, independently retained text payer.
-            (batch, carriers, expected, label_locator)
+            let handle = world
+                .application
+                .runtime
+                .primary_graph()
+                .unwrap()
+                .integration_handle();
+            let prepared = prepare_relational_mutation_on_application(
+                &execution,
+                &world.application,
+                batch,
+                &request,
+            );
+            let Ok(Publication::Performed(performed)) = prepared.execute(execution) else {
+                panic!("the real native/World transport publication must perform");
+            };
+            let commit = performed
+                .component_results()
+                .relational_commit_result()
+                .unwrap();
+            let changes = WorthQueryApplicationCommittedChanges::from_commit(commit);
+            let mut actual_entities = std::collections::BTreeSet::new();
+            let symbols = carriers
+                .iter()
+                .map(|created| {
+                    let entity = commit
+                        .created_entity(created)
+                        .expect("actual Account carrier created reference");
+                    assert!(
+                        actual_entities.insert(entity),
+                        "five distinct actual carrier records"
+                    );
+                    let actual = changes
+                        .committed_field_values(entity, &[&label_locator])
+                        .expect("actual immutable committed AccountLabel");
+                    let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice()
+                    else {
+                        panic!("actual committed label must be exactly one Symbol: {actual:?}");
+                    };
+                    Symbol(symbol.0)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(symbols.len(), 5);
+            let pin = handle.with_runtime_mut(&execution, |runtime| {
+                let pin = runtime
+                    .read_truth()
+                    .pin_read_capability(&commit.snapshot, &[], &execution)
+                    .unwrap();
+                assert_eq!(pin.snapshot(), &commit.snapshot);
+                for (symbol, expected) in symbols.iter().zip(&expected) {
+                    assert_eq!(
+                        pin.symbols().resolve(*symbol).unwrap().as_bytes(),
+                        expected.as_bytes()
+                    );
+                }
+                release_test_commit_snapshot(runtime, commit);
+                pin
+            });
+            drop(changes);
+            drop(performed.consume());
+            drop(handle); // No integration/runtime owner may outlive the final pin oracle.
+            assert!(payer.charged_memory_bytes() > 0);
+            (pin, symbols, expected, payer.reserve_memory(0).unwrap())
         })
         .expect("genuine installed fixture host scope");
-    let execution = ExecutionRequest::leased(&payer);
-    let handle = world
-        .application
-        .runtime
-        .primary_graph()
-        .unwrap()
-        .integration_handle();
-    let prepared =
-        prepare_relational_mutation_on_application(&execution, &world.application, batch, &request);
-    let Ok(Publication::Performed(performed)) = prepared.execute(execution) else {
-        panic!("the real native/World transport publication must perform");
-    };
-    let commit = performed
-        .component_results()
-        .relational_commit_result()
-        .unwrap();
-    let changes = WorthQueryApplicationCommittedChanges::from_commit(commit);
-    let mut actual_entities = std::collections::BTreeSet::new();
-    let symbols = carriers
-        .iter()
-        .map(|created| {
-            let entity = commit
-                .created_entity(created)
-                .expect("actual Account carrier created reference");
-            assert!(
-                actual_entities.insert(entity),
-                "five distinct actual carrier records"
-            );
-            let actual = changes
-                .committed_field_values(entity, &[&label_locator])
-                .expect("actual immutable committed AccountLabel");
-            let [AspectValue::String(InternedString::Symbol(symbol))] = actual.as_slice() else {
-                panic!("actual committed label must be exactly one Symbol: {actual:?}");
-            };
-            Symbol(symbol.0)
-        })
-        .collect::<Vec<_>>();
-    assert_eq!(symbols.len(), 5);
-    let pin = handle.with_runtime_mut(&execution, |runtime| {
-        let pin = runtime
-            .read_truth()
-            .pin_read_capability(&commit.snapshot, &[], &execution)
-            .unwrap();
-        assert_eq!(pin.snapshot(), &commit.snapshot);
-        for (symbol, expected) in symbols.iter().zip(&expected) {
-            assert_eq!(
-                pin.symbols().resolve(*symbol).unwrap().as_bytes(),
-                expected.as_bytes()
-            );
-        }
-        release_test_commit_snapshot(runtime, commit);
-        pin
-    });
-    drop(changes);
-    drop(performed.consume());
-    drop(handle); // No integration/runtime owner may outlive the final pin oracle.
-    assert!(payer.charged_memory_bytes() > baseline);
     drop(request);
     drop(world); // Includes actual World/application/runtime/configuration owners.
     assert!(
-        payer.charged_memory_bytes() > baseline,
+        matches!(probe.resize(PAYLOAD_LIMIT), Err(worth_execution::MemoryLimitDenial::Capacity { admitted, .. }) if admitted < PAYLOAD_LIMIT),
         "only the real native pin retains payload custody"
     );
     for (symbol, expected) in symbols.iter().zip(&expected) {
@@ -250,7 +237,8 @@ fn five_admitted_envelopes_publish_original_json_and_keep_payer_until_last_nativ
     drop(pin);
     // Equal-text interning may consolidate values; never require five charges
     // or per-Symbol refunds. No independently owned payload remains here.
-    assert_eq!(payer.charged_memory_bytes(), baseline);
+    probe.resize(PAYLOAD_LIMIT).unwrap();
+    assert_eq!(probe.bytes(), PAYLOAD_LIMIT);
 }
 
 #[test]
@@ -259,12 +247,12 @@ fn original_cancellation_reaches_query_native_receiving_before_any_dictionary_or
     let world = installed_capability_authorization_world();
     world.authorization_time.hold(time(100));
     let cancellation = CancellationSource::new();
-    let payer = payer(&cancellation);
     let request = live_scope();
     world.application.with_host_advancement(|phase| {
         let host = phase.test_host_request();
         let principal = authenticated_principal(&host, &world, &request);
         let admission = admitted_capability_operation(&host, &world, &principal, &request);
+        let payer = host.borrowed_request_for_test().in_scope(|parent| parent.unwrap().controlled_child(cancellation.token(), None)).unwrap();
         let execution = ExecutionRequest::leased(&payer);
         let meaning = meaning(&admission, &execution);
         let expected = originals(&meaning);

@@ -1,6 +1,6 @@
 //! Real installed projection exercises the retained-key owner. No commit or
 //! downstream heap-closure claim is made by this proof.
-use super::custody::{authority, isolated, request, SERIAL};
+use super::custody::{isolated, SERIAL};
 use crate::domain_computation::primary_graph::{
     tests::{
         application_attempt::{authenticated_principal, resolved_account},
@@ -58,10 +58,11 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                 .unwrap()
         })
         .expect("the fixture read owns its installed host call");
-    let zero = authority().request_lease(request(0)).unwrap();
     let denial = world
         .application
         .with_host_advancement(|phase| {
+            let zero =
+                crate::test_request_policy::memory_child(phase.borrowed_request_for_test(), 0);
             match world.invariant.project_admitted_operation(
                 &phase,
                 &admission,
@@ -98,14 +99,16 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
         ))
     );
     assert!(allocation.requested_payload_bytes().unwrap() > 0);
-    drop(zero);
     const PAYLOAD: u64 = 4 * 1024 * 1024;
-    let parent = authority().request_lease(request(PAYLOAD)).unwrap();
-    let child = parent.child(request(PAYLOAD)).unwrap();
-    let (_, snapshot, work) = world
+    let (snapshot, work, mut probe) = world
         .application
         .with_host_advancement(|phase| {
-            world
+            let parent = crate::test_request_policy::memory_child(
+                phase.borrowed_request_for_test(),
+                PAYLOAD,
+            );
+            let child = parent.controlled_child(worth_execution::CancellationToken::new(), None);
+            let (_, snapshot, work) = world
                 .invariant
                 .project_admitted_operation(
                     &phase,
@@ -123,18 +126,19 @@ fn installed_absence_projection_refuses_before_retention_and_releases_snapshot()
                     Policy::Execution(&child),
                 )
                 .unwrap()
-                .into_parts()
+                .into_parts();
+            (snapshot, work, parent.reserve_memory(0).unwrap())
         })
         .expect("the fixture read owns its installed host call");
     assert_eq!(work.equality_lookups(), 1);
-    drop(child);
     assert!(
         matches!(
-            parent.reserve_memory(PAYLOAD),
+            probe.resize(PAYLOAD),
             Err(worth_execution::MemoryLimitDenial::Capacity { requested, admitted, level: worth_execution::MemoryLimitLevel::Policy { ancestor: 0 } }) if requested == PAYLOAD && admitted < PAYLOAD
         ),
         "sealed snapshot retains its actual inline/key backings"
     );
     drop(snapshot);
-    assert_eq!(parent.reserve_memory(PAYLOAD).unwrap().bytes(), PAYLOAD);
+    probe.resize(PAYLOAD).unwrap();
+    assert_eq!(probe.bytes(), PAYLOAD);
 }

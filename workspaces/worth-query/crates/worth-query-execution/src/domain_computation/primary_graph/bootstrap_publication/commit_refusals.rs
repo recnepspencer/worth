@@ -102,9 +102,8 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 );
                 let partition_identity = denial.partition_identity;
                 assert_eq!(
-                    partition_identity,
-                    Some(1),
-                    "the entity-kind packet boundary survives"
+                    partition_identity, None,
+                    "zero work refuses before a partition is selected"
                 );
                 let validation = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
                 assert_eq!(

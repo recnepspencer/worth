@@ -6,7 +6,13 @@ fn checkpoint_capture_includes_only_idle_ready_outputs_in_canonical_order() {
     let receipt = crate::domain_computation::primary_graph::tests::recoverable_commit_support::committed_recoverable_application();
     let idempotency = receipt
         .idempotency_binding()
-        .bind_source_partition(&[17; 32]);
+        .bind_source_partition(&[17; 32])
+        .bind_producing_implementation(
+            worth_relational::facade::mvcc::RequiredOutputProducingImplementation::from_checkpoint(
+                [0x11; 16], [0x22; 32],
+            )
+            .unwrap(),
+        );
     let receipt = receipt.with_idempotency_binding_for_test(idempotency);
     let occurrence = receipt.product_branch().occurrence();
     let registry = WorthQueryOutputDemandRegistry::default();

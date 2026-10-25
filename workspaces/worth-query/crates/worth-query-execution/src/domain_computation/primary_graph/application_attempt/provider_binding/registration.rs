@@ -124,8 +124,8 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
         Ok(application) => application,
         Err(failure) => {
             let _ = staged.abort();
-            return Err(WorthQueryProviderProgressionOutcome::Denied(
-                super::super::WorthQueryApplicationCommitDenial::decision_read_set_denied(failure),
+            return Err(super::super::provider_compare_denial::read_set_failure(
+                failure,
             ));
         }
     };
