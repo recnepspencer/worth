@@ -12,15 +12,20 @@ final-status-level = "slow"
 slow-timeout = { period = "60s", terminate-after = 10 }
 
 [test-groups.compiler-boundary]
-max-threads = 2
+# Trybuild fixtures share Cargo's artifact lock; concurrent fixtures spend
+# their timeout waiting for the same build and multiply Cargo's job budget.
+max-threads = 1
 
 [[profile.default.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
+platform = 'cfg(windows)'
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
 test-group = 'compiler-boundary'
-slow-timeout = { period = "60s", terminate-after = 15 }
+# A cold Windows dependency build alone can exceed twelve minutes before the
+# first pass/fail fixture starts. Keep a bounded aggregate compiler envelope.
+slow-timeout = { period = "60s", terminate-after = 30 }
 
-[[profile.ci.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
+[[profile.default.overrides]]
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
 test-group = 'compiler-boundary'
 slow-timeout = { period = "60s", terminate-after = 15 }
 

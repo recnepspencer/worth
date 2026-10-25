@@ -39,6 +39,10 @@ scenarios each run complete Store instances with bounded checkpoint seams;
 using the host's logical CPU count can oversubscribe those fixtures. An explicit
 `RUST_TEST_THREADS` override takes precedence for Cargo runs.
 
+Nextest runs compiler-boundary fixtures one at a time because trybuild shares
+Cargo's artifact lock. On Windows their aggregate limit is thirty minutes,
+including the cold dependency build and every pass/fail fixture.
+
 On Windows, the six scale and exhaustive interruption proofs named in
 `.config/nextest.toml` reserve the entire nextest fixture pool and have a
 thirty-minute aggregate limit. Their own concurrent readers and writers still
