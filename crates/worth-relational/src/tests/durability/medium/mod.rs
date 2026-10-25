@@ -11,4 +11,5 @@ mod single_owner;
 mod unresolved_fate;
 
 mod branch_transition_races;
+mod lifecycle_lock_order;
 mod slow_publication;

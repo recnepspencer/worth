@@ -5,16 +5,25 @@ use crate::durability::access::{
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::RelationalRuntime;
 
-pub(super) fn in_memory_recovery_plan(
+pub(super) fn retained_recovery_plan(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     verification_mode: RecoveryVerificationMode,
-) -> RecoveryPlan {
+) -> Result<RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
     let checkpoint = runtime
         .durable_checkpoints()
         .last()
         .map(|checkpoint| checkpoint.as_ref().clone());
     let tail_log = tail_log_after_in_memory_checkpoint(runtime, checkpoint.as_ref());
-    let branch_transitions = transitions_after_in_memory_checkpoint(runtime, checkpoint.as_ref());
+    let covered = checkpoint.as_ref().map_or(
+        crate::branch::RelationalBranchTransitionSequence(0),
+        |checkpoint| checkpoint.coverage.up_to_branch_transition,
+    );
+    let branch_transitions = crate::durability::data::RecoveryBranchTransitions::Contiguous(
+        runtime
+            .durability_access()
+            .reconstruct_branch_transition_history(execution, covered)?,
+    );
     let descriptor_semantics_version = descriptor_semantics_version_for_envelopes(
         checkpoint
             .as_ref()
@@ -35,7 +44,7 @@ pub(super) fn in_memory_recovery_plan(
         .map(|entry| entry.envelope().commit.commit_id)
         .collect();
 
-    RecoveryPlan::new(
+    Ok(RecoveryPlan::new(
         runtime.runtime_config().clone(),
         checkpoint,
         tail_log,
@@ -45,28 +54,7 @@ pub(super) fn in_memory_recovery_plan(
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
     )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
-}
-
-/// Every branch transition the runtime performed after the checkpoint's
-/// transition coverage, from its own transition stream.
-fn transitions_after_in_memory_checkpoint(
-    runtime: &RelationalRuntime,
-    checkpoint: Option<&crate::durability::data::DurableCheckpoint>,
-) -> crate::durability::data::RecoveryBranchTransitions {
-    let covered = checkpoint.map_or(
-        crate::branch::RelationalBranchTransitionSequence(0),
-        |checkpoint| checkpoint.coverage.up_to_branch_transition,
-    );
-    crate::durability::data::RecoveryBranchTransitions::Contiguous(
-        runtime
-            .history
-            .positioned_branch_transitions_snapshot()
-            .into_iter()
-            .filter(|transition| transition.sequence() > covered)
-            .map(|transition| transition.as_ref().clone())
-            .collect(),
-    )
+    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
 }
 
 fn tail_log_after_in_memory_checkpoint(

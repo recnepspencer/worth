@@ -111,15 +111,6 @@ impl HistorySubsystem {
         Ok(())
     }
 
-    /// Every branch transition this runtime performed or replayed, in
-    /// sequence.
-    pub(crate) fn positioned_branch_transitions_snapshot(
-        &self,
-    ) -> Vec<Arc<crate::branch::PositionedBranchTransition>> {
-        self.canonical_publication_routes
-            .branch_transitions_snapshot()
-    }
-
     pub(crate) fn restore_branch_transition_coverage(
         &self,
         covered: crate::branch::RelationalBranchTransitionSequence,

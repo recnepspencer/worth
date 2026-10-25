@@ -163,11 +163,13 @@ pub(super) fn recover_stage_from_final_history(
         .collect::<BTreeSet<_>>();
     let mut forks = source
         .durability()
-        .reconstruct_branch_transition_history(execution)
+        .reconstruct_branch_transition_history(
+            execution,
+            crate::branch::RelationalBranchTransitionSequence(covered_transitions),
+        )
         .unwrap()
         .into_iter()
         .rev()
-        .filter(|transition| transition.sequence().0 > covered_transitions)
         .filter_map(|transition| {
             if let crate::branch::RelationalBranchTransition::Fork { target, source, .. } =
                 transition.transition()

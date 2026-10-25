@@ -14,12 +14,27 @@
 //! - Branch transitions wait in either runtime (D8): a fork, archive or
 //!   delete is not deferred because a commit is linking its node.
 //!
-//! Lock order: a publisher takes its own branch's critical section and
-//! publication state, then this reservation. The holder never takes another
-//! branch's critical section or state while holding it, and its durable step
-//! and cutover touch only its own branch, so a waiter that holds its branch
-//! cannot be in the holder's way. Two publishers on one branch meet at that
-//! branch's critical section, before either reaches the reservation.
+//! Nested lock order (including cold capture and maintenance):
+//! 1. Routes lifecycle admission: shared for publications, exclusive for a
+//!    runtime fork or quiescent reclamation. Capture selects and validates
+//!    under exclusive admission, but reconstructs outside it.
+//! 2. The publishing branch's coordination critical section.
+//! 3. That branch's publication state.
+//! 4. The global patch-position reservation.
+//! 5. Registry membership/name locks, which are leaf locks: they never acquire
+//!    lifecycle, coordination, state, or the reservation. Registry snapshots
+//!    copy cell handles and release membership before observing cell state.
+//!
+//! A lookup may precede admission only when its registry guard is released
+//! first. No holder acquires another live branch's coordination or state;
+//! an unpublished fork target or detached snapshot has no competing owner.
+//! Fork releases source state after its reserved recheck, before durable I/O
+//! and target insertion, while coordination excludes source writers through
+//! cutover. Archive/delete carry their already-acquired state through cutover.
+//! Lifecycle admission is carried by the transition publication handle and
+//! is never reacquired under coordination/state. Thus a reservation waiter
+//! cannot hold a lock its holder needs, and a lifecycle writer cannot wait
+//! on state held by a publisher waiting for lifecycle admission.
 
 use std::collections::VecDeque;
 use std::sync::atomic::{AtomicU64, Ordering};

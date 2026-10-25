@@ -1,5 +1,5 @@
 use crate::capabilities::DurabilityRead;
-use crate::durability::access::in_memory_recovery_plan::in_memory_recovery_plan;
+use crate::durability::access::retained_recovery_plan::retained_recovery_plan;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
 use crate::runtime::RelationalRuntime;
 
@@ -12,9 +12,10 @@ impl<'runtime> DurabilityAccess<'runtime> {
         Self { runtime }
     }
 
-    /// Plan a reconstruction from this runtime's own in-memory canonical log
-    /// and checkpoints. A home whose history lives in a durable medium
-    /// recovers through [`Self::recovery_plan_from_source`] instead.
+    /// Plan reconstruction from the retained canonical log and checkpoints.
+    /// Compacted transition gaps are read fallibly from the owned medium;
+    /// native capture need not retain a duplicate checkpoint image. A home
+    /// reopens through [`Self::recovery_plan_from_source`].
     pub fn recovery_plan(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -23,7 +24,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        Ok(in_memory_recovery_plan(self.runtime, verification_mode))
+        retained_recovery_plan(self.runtime, execution, verification_mode)
     }
 
     /// Readmit what a durable medium recovered for this home and plan its

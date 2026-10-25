@@ -46,15 +46,17 @@ impl RelationalBranchReferenceRegistry {
     }
 
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
-        let state = self.read();
+        let (cells, retired_names) = {
+            let state = self.read();
+            (state.cells.clone(), state.retired_names.clone())
+        };
         Self {
             state: Arc::new(RwLock::new(RelationalBranchRegistryState {
-                cells: state
-                    .cells
-                    .iter()
-                    .map(|(branch_id, cell)| (branch_id.clone(), cell.detached_owner_snapshot()))
+                cells: cells
+                    .into_iter()
+                    .map(|(id, cell)| (id, cell.detached_owner_snapshot()))
                     .collect(),
-                retired_names: state.retired_names.clone(),
+                retired_names,
                 reserved_targets: HashSet::new(),
             })),
         }
@@ -112,9 +114,8 @@ impl RelationalBranchReferenceRegistry {
 
     pub(crate) fn checkpoints(&self) -> Vec<RelationalBranchCellCheckpoint> {
         let mut checkpoints = self
-            .read()
-            .cells
             .values()
+            .iter()
             .map(RelationalBranchReferenceCell::checkpoint)
             .collect::<Vec<_>>();
         checkpoints.sort_by(|left, right| left.branch_id.cmp(&right.branch_id));
@@ -126,12 +127,11 @@ impl RelationalBranchReferenceRegistry {
         &self,
     ) -> Vec<crate::durability::data::DurableBranchLifecycleImage> {
         let mut postures = self
-            .read()
-            .cells
+            .values()
             .iter()
             .map(
-                |(branch_id, cell)| crate::durability::data::DurableBranchLifecycleImage {
-                    branch_id: branch_id.clone(),
+                |cell| crate::durability::data::DurableBranchLifecycleImage {
+                    branch_id: cell.identity().branch_id().clone(),
                     posture: cell.lifecycle_posture(),
                 },
             )
@@ -170,11 +170,18 @@ impl RelationalBranchReferenceRegistry {
     /// still uses is refused: a branch is retired only by its deletion, which
     /// removes it or marks it deleting.
     pub(crate) fn restore_retired_names(&self, names: &[BranchId]) -> Result<(), String> {
+        // Recovery owns a quiescent registry. Observe cells before the leaf
+        // registry lock: no registry holder may wait on branch state.
+        let postures = self
+            .lifecycle_postures()
+            .into_iter()
+            .map(|image| (image.branch_id, image.posture))
+            .collect::<HashMap<_, _>>();
         let mut state = self.write();
         let mut restored = HashSet::with_capacity(names.len());
         for name in names {
-            let deleting = state.cells.get(name).is_some_and(|cell| {
-                cell.lifecycle_posture() == super::RelationalBranchLifecyclePosture::Deleting
+            let deleting = postures.get(name).is_some_and(|posture| {
+                *posture == super::RelationalBranchLifecyclePosture::Deleting
             });
             if state.cells.contains_key(name) && !deleting {
                 return Err(format!(
@@ -189,8 +196,8 @@ impl RelationalBranchReferenceRegistry {
                 ));
             }
         }
-        for (name, cell) in &state.cells {
-            if cell.lifecycle_posture() == super::RelationalBranchLifecyclePosture::Deleting
+        for (name, posture) in &postures {
+            if *posture == super::RelationalBranchLifecyclePosture::Deleting
                 && !restored.contains(name)
             {
                 return Err(format!("deleting branch `{}` has no retired name", name.0));

@@ -11,6 +11,9 @@ use crate::publication::patch::data::PatchStreamPosition;
 mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[cfg(test)]
+#[path = "canonical_publication_routes/lifecycle_order_control.rs"]
+mod lifecycle_order_control;
 #[path = "canonical_publication_routes/patch_position_reservation.rs"]
 mod patch_position_reservation;
 #[path = "canonical_publication_routes/performed_stream.rs"]
@@ -18,8 +21,10 @@ mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
 
-pub(crate) use branch_transition_stream::BranchTransitionRecordError;
 use branch_transition_stream::BranchTransitionStream;
+pub(crate) use branch_transition_stream::{
+    BranchTransitionPublication, BranchTransitionRecordError,
+};
 pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
 pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
@@ -35,6 +40,8 @@ pub(crate) struct RelationalCanonicalPublicationRoutes {
     performed_stream: PerformedPublicationStream,
     branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
+    #[cfg(test)]
+    lifecycle_order: lifecycle_order_control::LifecycleOrderControl,
 }
 
 impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
@@ -90,6 +97,8 @@ impl Default for RelationalCanonicalPublicationRoutes {
             performed_stream: PerformedPublicationStream::default(),
             branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
+            #[cfg(test)]
+            lifecycle_order: Default::default(),
         }
     }
 }

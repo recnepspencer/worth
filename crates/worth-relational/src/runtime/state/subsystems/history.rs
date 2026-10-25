@@ -58,7 +58,7 @@ mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
 pub(crate) use canonical_publication_routes::{
-    readmit_positioned_canonical_commit, BranchTransitionRecordError,
+    readmit_positioned_canonical_commit, BranchTransitionPublication, BranchTransitionRecordError,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     PatchPositionReservationAdmission, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,

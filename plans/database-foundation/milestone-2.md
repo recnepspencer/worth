@@ -48,6 +48,10 @@ runtime it builds. Recovery moves it out of the recovering runtime into the
 rebuilt one; the attachment it left refuses every later publication with the
 pre-effect `MediumMoved`.
 
+A speculative runtime fork may carry a read-only transition-history reader
+for gaps its source compacted. That reader cannot publish, and refuses if the
+source medium has moved or closed; the fork never receives a publication binding.
+
 **D2. Durable before live.** With a medium attached, publication runs in this
 order: preparation and validation against the exact admitted basis;
 reservation of the next patch position; publication of the positioned commit's
@@ -157,16 +161,26 @@ lifecycle posture and the retired branch names, never the covered transition
 artifacts. A deleting cell must have its name retired. A durable capture releases
 its covered in-memory transition log without retaining a second checkpoint
 image; the medium remains the history authority even if manifest filing fails.
-Memory-only runtimes follow their existing log retention policy. Retained
-transition export exposes its coverage and subsequent tail. Historical replay
-reads covered transitions on demand through the medium's fallible
-`read_transition` door; the home oracle compares the durable journal directly.
+Memory-only runtimes retain transition history: no medium can reconstruct
+forks required by a replay chain older than a checkpoint. Retained transition
+export exposes its coverage and subsequent tail. Replay reads only the gap
+between its selected checkpoint's T and the retained transition tail through
+`read_transition`; it never rereads transitions already covered by its basis.
+The public retained recovery plan uses the same fallible gap reconstruction,
+so native capture need not retain a duplicate checkpoint image. The home
+oracle compares the durable journal directly.
 Reopen restores manifest state and replays only transitions above T, so archive,
 deletion and retired names survive a crash without rereading covered history.
 
-Fork holds its source's coordination and publication-state guards before the
-patch-position reservation and rechecks through the held guard. A reservation
-holder acquires no other live branch lock. Partial replay selects forks
+The nested lock order is routes lifecycle admission, branch coordination,
+branch state, the patch-position reservation, then registry membership/name
+locks. Registry locks are leaves: snapshots copy cell handles and release the
+registry before reading state. Every transition acquires lifecycle admission
+before coordination/state, as commits do. Fork rechecks through its source
+state guard inside the reservation, then releases state before durable I/O
+and target insertion; coordination excludes source writers until installation.
+Archive/delete carry their previously acquired state through cutover. A holder
+never acquires another live branch's locks. Partial replay selects forks
 transitively through their source forks, including branches with no own commit.
 
 Recovery merges the transition tail into the commit tail: before replaying

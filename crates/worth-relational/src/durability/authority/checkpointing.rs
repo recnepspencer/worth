@@ -75,17 +75,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 vec![checkpoint_created(&checkpoint)],
             );
         self.runtime.durability.push_checkpoint(checkpoint.clone());
-        if self.runtime.durability.medium().is_some()
-            || matches!(
-                self.runtime
-                    .runtime_config()
-                    .durability
-                    .policy
-                    .log
-                    .retention_mode,
-                crate::config::data::DurableLogRetentionMode::CompactAfterCheckpoint
-            )
-        {
+        // Memory-only history has no external copy, including forks needed
+        // by replay chains older than any retained checkpoint.
+        if self.runtime.durability.medium().is_some() {
             self.runtime
                 .history
                 .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);

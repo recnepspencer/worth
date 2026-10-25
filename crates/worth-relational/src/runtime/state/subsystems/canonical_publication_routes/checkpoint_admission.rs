@@ -14,6 +14,8 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Option<R> {
         let _admission = self.enter_checkpoint_selection().ok()?;
         self.reject_unsettled().ok()?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
         Some(reclaim())
     }
 
@@ -55,13 +57,16 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn enter_fork(
         &self,
     ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
-        match self.lifecycle.try_write() {
+        let guard = match self.lifecycle.try_write() {
             Ok(guard) => Ok(guard),
             Err(TryLockError::WouldBlock) => {
                 Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
             }
             Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
-        }
+        }?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
+        Ok(guard)
     }
 
     fn enter_checkpoint_selection(

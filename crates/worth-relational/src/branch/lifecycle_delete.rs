@@ -68,6 +68,7 @@ impl crate::runtime::RelationalRuntime {
                 identity.branch_id().clone(),
             ))
         };
+        let publication = self.history.begin_branch_transition();
         let publication_cell = self
             .history
             .branch_cell(identity.branch_id())
@@ -75,11 +76,12 @@ impl crate::runtime::RelationalRuntime {
             .map(|cell| cell.publication_cell())
             .ok_or_else(unknown)?;
         let _coordination = publication_cell.coordination().enter();
-        let cell = self
+        let _cell = self
             .history
             .branch_cell(identity.branch_id())
             .filter(|cell| cell.identity() == identity)
             .ok_or_else(unknown)?;
+        let mut state = publication_cell.enter_state();
         let active_operation_count = publication_cell
             .head_retention()
             .binding()
@@ -88,7 +90,7 @@ impl crate::runtime::RelationalRuntime {
             .map_err(|_| denied(RelationalBranchDeleteDenial::OwnerFailure))?;
         let kind = match kind {
             RelationalBranchDeletionKind::ByActiveOperations if active_operation_count > 0 => {
-                if cell.lifecycle_posture() == RelationalBranchLifecyclePosture::Deleting {
+                if state.lifecycle_posture() == RelationalBranchLifecyclePosture::Deleting {
                     // Already requested and durable; nothing changes.
                     return Ok(waiting(identity, active_operation_count));
                 }
@@ -99,8 +101,8 @@ impl crate::runtime::RelationalRuntime {
             }
             explicit => explicit,
         };
-        let prior_generation = cell.observation().generation();
-        let prior_truth_version = cell.truth_version();
+        let prior_generation = state.observation().generation();
+        let prior_truth_version = state.truth_version();
         let branch = identity.branch_id().clone();
         if kind == RelationalBranchDeletionKind::Requested {
             let transition = RelationalBranchTransition::DeletionRequested {
@@ -108,13 +110,13 @@ impl crate::runtime::RelationalRuntime {
                 prior_generation,
                 prior_truth_version,
             };
-            self.history.record_branch_transition_with_cutover(
+            publication.record_with_cutover(
                 execution,
                 step,
                 || self.admit_name_retirement(&branch, transition),
                 |_| {
                     self.history.retire_admitted_branch_name(branch.clone());
-                    publication_cell.enter_state().mark_deleting();
+                    state.mark_deleting();
                 },
             )?;
             return Ok(waiting(identity, active_operation_count));
@@ -124,6 +126,8 @@ impl crate::runtime::RelationalRuntime {
             step,
             identity,
             &publication_cell,
+            &publication,
+            &mut state,
             prior_generation,
             prior_truth_version,
         )
@@ -135,17 +139,18 @@ impl crate::runtime::RelationalRuntime {
         step: &S,
         identity: &RelationalBranchIdentity,
         publication_cell: &RelationalBranchPublicationCell,
+        publication: &crate::runtime::BranchTransitionPublication<'_>,
+        state: &mut crate::branch::reference_publication_cell::RelationalBranchPublicationStateGuard<'_>,
         prior_generation: worth_foundational::FoundationalBranchReferenceGeneration,
         prior_truth_version: crate::branch::RelationalBranchVersion,
     ) -> Result<RelationalBranchDeletionOutcome, Failure<S::Stop>> {
         let denied = BranchTransitionRecordError::Denied;
-        let previous_head_version = self
-            .history()
-            .branch_head(identity.branch_id())
-            .map(|head| head.version_id);
-        let selected_root = publication_cell
+        let selected_root = state
             .selected_root()
             .ok_or(denied(RelationalBranchDeleteDenial::OwnerFailure))?;
+        let previous_head_version = selected_root
+            .canonical_envelope()
+            .map(|envelope| envelope.commit.version_id);
         let head_retirement = self
             .history
             .reserve_branch_head_retirement(
@@ -161,25 +166,21 @@ impl crate::runtime::RelationalRuntime {
             prior_truth_version,
             head_commit: selected_root.commit_id(),
         };
-        let retired_root_identity = self.history.record_branch_transition_with_cutover(
+        let retired_root_identity = publication.record_with_cutover(
             execution,
             step,
             || self.admit_name_retirement(&branch, transition),
             |_| {
                 self.history.retire_admitted_branch_name(branch.clone());
-                publication_cell.enter_state().mark_deleting();
+                state.mark_deleting();
                 let removed_cell = self
                     .history
                     .remove_branch_cell(&branch)
                     .expect("coordinated branch cell remains registered until deletion cutover");
-                let removed_root = removed_cell
-                    .root()
-                    .expect("deleted live branch cell retains its selected root");
-                assert!(
-                    std::sync::Arc::ptr_eq(&selected_root, &removed_root),
-                    "coordinated deletion retires the root that reserved capacity"
-                );
-                let retired_root_identity = head_retirement.retire_head(removed_root);
+                assert_eq!(removed_cell.identity(), identity);
+                // Coordination and state have been held since selection; the
+                // removed cell still selects this exact prepared root.
+                let retired_root_identity = head_retirement.retire_head(selected_root);
                 self.history
                     .move_branch_head_version(previous_head_version, None);
                 self.visibility_pins()

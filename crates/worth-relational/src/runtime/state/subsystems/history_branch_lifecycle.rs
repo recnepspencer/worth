@@ -50,20 +50,9 @@ impl HistorySubsystem {
         self.branch_cells.restore_retired_names(names)
     }
 
-    /// Record one branch transition: durable first, then live. See
-    /// `RelationalCanonicalPublicationRoutes::record_transition_with_cutover`.
-    pub(crate) fn record_branch_transition_with_cutover<D, R, S>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        step: &S,
-        prepare: impl FnOnce() -> Result<crate::branch::RelationalBranchTransition, D>,
-        cutover: impl FnOnce(&crate::branch::PositionedBranchTransition) -> R,
-    ) -> Result<R, super::BranchTransitionRecordError<D, S::Stop>>
-    where
-        S: crate::branch::RelationalBranchTransitionDurableStep,
-    {
-        self.canonical_publication_routes
-            .record_transition_with_cutover(execution, step, prepare, cutover)
+    /// Admit a transition before taking branch coordination or publication state.
+    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
+        self.canonical_publication_routes.begin_branch_transition()
     }
 
     #[cfg(test)]

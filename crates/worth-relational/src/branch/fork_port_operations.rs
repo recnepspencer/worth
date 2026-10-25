@@ -212,6 +212,7 @@ impl RelationalForkPort {
             .lifecycle
             .admit()
             .ok_or(denied(RelationalForkDenial::OwnerUnavailable))?;
+        let publication = self.owner.begin_branch_transition();
         let (descriptor, _authority) = source.into_parts();
         let validated = self.validate_fork_source(descriptor).map_err(denied)?;
         pause_before_install();
@@ -229,16 +230,18 @@ impl RelationalForkPort {
         let _coordination = source_cell.coordination().enter();
         let source_state = source_cell.enter_state();
         let transition = validated.transition(installable.target_branch().clone());
-        let installed = self.owner.record_transition_with_cutover(
+        let installed = publication.record_with_cutover(
             execution,
             step,
             || {
-                self.recheck_fork_source(&validated, &source_state)
-                    .map(|()| transition)
+                self.recheck_fork_source(&validated, &source_state)?;
+                // Coordination still excludes source writers. Readers must not
+                // wait on source state across durable I/O or registry insertion.
+                drop(source_state);
+                Ok(transition)
             },
             |_| self.install_fork_target(&validated, installable),
         )?;
-        drop(source_state);
         drop(_coordination);
         pause_after_install();
         Ok(installed)

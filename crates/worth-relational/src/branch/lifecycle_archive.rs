@@ -41,6 +41,7 @@ impl crate::runtime::RelationalRuntime {
         let denied = BranchTransitionRecordError::Denied;
         require_local_identity(self, identity)
             .map_err(|()| denied(RelationalBranchArchiveDenial::ForeignRuntime))?;
+        let publication = self.history.begin_branch_transition();
         let publication_cell = self
             .history
             .branch_cell(identity.branch_id())
@@ -74,7 +75,7 @@ impl crate::runtime::RelationalRuntime {
             prior_generation: state.observation().generation(),
             prior_truth_version: state.truth_version(),
         };
-        self.history.record_branch_transition_with_cutover(
+        publication.record_with_cutover(
             execution,
             step,
             || Ok(transition),

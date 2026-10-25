@@ -106,10 +106,9 @@ fn replay_fork_transitions(
     // over source forks, including intermediate branches with no own commits.
     let mut forks = source
         .durability()
-        .reconstruct_branch_transition_history(execution)?
+        .reconstruct_branch_transition_history(execution, covered)?
         .into_iter()
         .rev()
-        .filter(|transition| transition.sequence() > covered)
         .filter_map(|transition| {
             if let crate::branch::RelationalBranchTransition::Fork { target, source, .. } =
                 transition.transition()

@@ -57,20 +57,9 @@ impl RelationalForkOwnerBinding {
         }
     }
 
-    /// Record a fork: durable first, then live. See
-    /// `RelationalCanonicalPublicationRoutes::record_transition_with_cutover`.
-    pub(crate) fn record_transition_with_cutover<D, R, S>(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        step: &S,
-        prepare: impl FnOnce() -> Result<crate::branch::RelationalBranchTransition, D>,
-        cutover: impl FnOnce(&crate::branch::PositionedBranchTransition) -> R,
-    ) -> Result<R, super::BranchTransitionRecordError<D, S::Stop>>
-    where
-        S: crate::branch::RelationalBranchTransitionDurableStep,
-    {
-        self.routes
-            .record_transition_with_cutover(execution, step, prepare, cutover)
+    /// Admit a transition before taking branch coordination or publication state.
+    pub(crate) fn begin_branch_transition(&self) -> super::BranchTransitionPublication<'_> {
+        self.routes.begin_branch_transition()
     }
 
     pub(crate) fn with_visibility(

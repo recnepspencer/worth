@@ -3,22 +3,28 @@ use crate::durability::branch_transition_artifact::RelationalBranchTransitionArt
 use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 
 impl super::DurabilityAccess<'_> {
-    /// Explicit reconstruction: read covered history from the medium, then
-    /// append the fixed live tail. O(history), never part of ordinary reopen.
+    /// Reconstruct transitions strictly after the selected basis. Read only
+    /// the gap between that basis and the retained live tail from the medium.
+    /// Cost: O(missing gap + retained tail), never O(covered history).
     pub(crate) fn reconstruct_branch_transition_history(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: RelationalBranchTransitionSequence,
     ) -> Result<Vec<PositionedBranchTransition>, RelationalRecoveryStop> {
         let (covered, tail) = self.runtime.history.retained_branch_transitions();
         let mut transitions = Vec::new();
-        if covered.0 != 0 {
-            let medium = self.runtime.durability.medium().ok_or_else(|| {
-                DurabilityError::new(
-                    RecoveryFailureClass::DurableIoFailure,
-                    "covered transition history requires its durable medium",
-                )
-            })?;
-            for number in 1..=covered.0 {
+        if covered > after {
+            let medium = self
+                .runtime
+                .durability
+                .transition_history()
+                .ok_or_else(|| {
+                    DurabilityError::new(
+                        RecoveryFailureClass::DurableIoFailure,
+                        "covered transition history requires its durable medium",
+                    )
+                })?;
+            for number in after.0 + 1..=covered.0 {
                 execution
                     .consult()
                     .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
@@ -49,6 +55,7 @@ impl super::DurabilityAccess<'_> {
         }
         transitions.extend(
             tail.into_iter()
+                .filter(|transition| transition.sequence() > after)
                 .map(|transition| transition.as_ref().clone()),
         );
         Ok(transitions)

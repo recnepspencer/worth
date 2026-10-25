@@ -19,6 +19,7 @@ mod recovery_source;
 mod transition_read;
 mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
+pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
 pub(crate) use binding::{RelationalDurableMediumBinding, RelationalDurableStepStop};
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
@@ -40,8 +41,9 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// A medium is moved into exactly one runtime, as a
 /// `Box<dyn RelationalDurableMedium>`, by
 /// [`RelationalRuntimeBuilder::build_durable`](crate::facade::runtime::RelationalRuntimeBuilder::build_durable).
-/// Relational never clones or shares it: recovery moves it into the rebuilt
-/// runtime, and a forked runtime never inherits it.
+/// Publication access stays with that owner: recovery moves it into the rebuilt
+/// runtime, and a forked runtime never inherits publication access. Speculative
+/// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
     /// Read one historical transition for explicit replay. Implementations
     /// bound the admitted artifact size and verify its frame before returning.

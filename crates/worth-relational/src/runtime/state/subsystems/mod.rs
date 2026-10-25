@@ -24,12 +24,13 @@ pub(crate) use commit_strategies::CommitStrategiesSubsystem;
 pub(crate) use durability::DurabilitySubsystem;
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
-    BranchTransitionRecordError, CanonicalCheckpointAdmissionError, CanonicalPositionAdmission,
-    CanonicalPublicationRecordError, HistorySubsystem, PatchPositionReservationAdmission,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
+    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, HistorySubsystem,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{

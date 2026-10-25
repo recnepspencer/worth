@@ -65,7 +65,7 @@ pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     readmit_positioned_canonical_commit, AdmittedRelationalRuntimeOperation,
-    BranchHeadVersionIndexAuthority, BranchTransitionRecordError,
+    BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingState,
     IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem, PartitionEdition,

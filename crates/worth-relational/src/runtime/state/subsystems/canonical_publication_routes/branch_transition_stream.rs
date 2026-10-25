@@ -46,7 +46,27 @@ pub(crate) enum BranchTransitionRecordError<D, S> {
     Step(S),
 }
 
+/// Lifecycle admission acquired before any live branch coordination or state.
+pub(crate) struct BranchTransitionPublication<'routes> {
+    routes: &'routes RelationalCanonicalPublicationRoutes,
+    _lifecycle: std::sync::RwLockReadGuard<'routes, ()>,
+}
+
 impl RelationalCanonicalPublicationRoutes {
+    pub(crate) fn begin_branch_transition(&self) -> BranchTransitionPublication<'_> {
+        #[cfg(test)]
+        self.lifecycle_order.transition_contact();
+        BranchTransitionPublication {
+            routes: self,
+            _lifecycle: self
+                .lifecycle
+                .read()
+                .unwrap_or_else(|poisoned| poisoned.into_inner()),
+        }
+    }
+}
+
+impl BranchTransitionPublication<'_> {
     /// Record one branch transition: durable first, then live.
     ///
     /// The transition waits for the reservation within `execution` in every
@@ -62,23 +82,21 @@ impl RelationalCanonicalPublicationRoutes {
     ///
     /// Cost: one reservation wait, `prepare`, the durable step and
     /// `cutover`; O(1) stream bookkeeping.
-    pub(crate) fn record_transition_with_cutover<D, R, S: RelationalBranchTransitionDurableStep>(
+    pub(crate) fn record_with_cutover<D, R, S: RelationalBranchTransitionDurableStep>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         step: &S,
         prepare: impl FnOnce() -> Result<RelationalBranchTransition, D>,
         cutover: impl FnOnce(&PositionedBranchTransition) -> R,
     ) -> Result<R, BranchTransitionRecordError<D, S::Stop>> {
-        let _publication = self
-            .lifecycle
-            .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
         let (_reservation, follows) = self
+            .routes
             .performed_stream
             .hold_reservation_within(execution)
             .map_err(BranchTransitionRecordError::ReservationWaitStopped)?;
         let transition = prepare().map_err(BranchTransitionRecordError::Denied)?;
         let sequence = self
+            .routes
             .branch_transitions
             .head()
             .next()
@@ -87,10 +105,14 @@ impl RelationalCanonicalPublicationRoutes {
         step.take(&positioned)
             .map_err(BranchTransitionRecordError::Step)?;
         let positioned = Arc::new(positioned);
-        self.branch_transitions.append(Arc::clone(&positioned));
+        self.routes
+            .branch_transitions
+            .append(Arc::clone(&positioned));
         Ok(cutover(&positioned))
     }
+}
 
+impl RelationalCanonicalPublicationRoutes {
     /// Empty routes that continue this runtime's branch transition stream,
     /// for the routes recovery rebuilds from its recovered inventory.
     pub(crate) fn continuing_branch_transitions(&self) -> Self {
@@ -144,11 +166,6 @@ impl RelationalCanonicalPublicationRoutes {
     ) {
         let state = self.branch_transitions.state();
         (state.covered, state.log.clone())
-    }
-
-    /// Every transition in the stream, in sequence.
-    pub(crate) fn branch_transitions_snapshot(&self) -> Vec<Arc<PositionedBranchTransition>> {
-        self.branch_transitions.state().log.clone()
     }
 }
 
