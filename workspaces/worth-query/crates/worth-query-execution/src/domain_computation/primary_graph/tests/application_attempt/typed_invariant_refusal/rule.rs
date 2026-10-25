@@ -75,6 +75,7 @@ pub(super) enum ReadStage {
 }
 #[derive(Clone, Copy, Debug)]
 pub(super) struct ReadSample {
+    pub(super) rule: u64,
     pub(super) stage: ReadStage,
     pub(super) reads: WorthQueryInvariantProjectionWork,
 }
@@ -223,10 +224,10 @@ impl InstalledRule {
     }
 
     fn record_reads(&self, stage: ReadStage, reads: WorthQueryInvariantProjectionWork) {
-        self.rule
-            .reads
-            .lock()
-            .unwrap()
-            .push(ReadSample { stage, reads });
+        self.rule.reads.lock().unwrap().push(ReadSample {
+            rule: self.rule.ordinal,
+            stage,
+            reads,
+        });
     }
 }

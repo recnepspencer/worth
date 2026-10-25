@@ -231,8 +231,12 @@ fn cancellation_preserves_the_reads_done_before_the_stop() {
     assert_read_observations(&case.reads);
 }
 
+/// Both rules record on parallel workers, so their samples interleave; rule 1
+/// reads both views before it refuses or cancels, so its own sequence is
+/// asserted.
 fn assert_read_observations(samples: &[rule::ReadSample]) {
     use rule::ReadStage;
+    let samples: Vec<_> = samples.iter().filter(|s| s.rule == 1).collect();
     let prepared = samples
         .iter()
         .find(|s| matches!(s.stage, ReadStage::Prepared))
