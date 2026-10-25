@@ -1,4 +1,5 @@
 use super::WorthQueryApplicationBasisIdentity;
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane;
 use worth_query_installation::facade::{
@@ -49,11 +50,8 @@ pub struct WorthQueryApplicationQueryAccessReceipt {
     examined_candidate_count: usize,
     projected_record_count: usize,
     projected_field_count: usize,
-    adjacency_list_read_count: usize,
-    edge_scan_count: usize,
+    reads: WorthQueryInvariantProjectionWork,
     ordering_comparison_count: usize,
-    ordered_index_entry_count: usize,
-    target_identity_index_entry_count: usize,
     per_result_neighbor_lookup_count: usize,
     fallback_count: usize,
     result_count: usize,
@@ -86,11 +84,9 @@ pub(super) struct WorthQueryApplicationQueryAccessReceiptParts {
     pub predicate_work_units: usize,
     pub projected_record_count: usize,
     pub projected_field_count: usize,
-    pub adjacency_list_read_count: usize,
-    pub edge_scan_count: usize,
+    pub reads: WorthQueryInvariantProjectionWork,
     pub ordering_comparison_count: usize,
     pub ordered_index_entry_count: usize,
-    pub target_identity_index_entry_count: usize,
     pub per_result_neighbor_lookup_count: usize,
     pub fallback_count: usize,
     pub result_count: usize,
@@ -150,11 +146,9 @@ impl WorthQueryApplicationQueryAccessReceipt {
             predicate_work_units: raw.predicate_work_units,
             projected_record_count: raw.projected_records,
             projected_field_count: raw.projected_fields,
-            adjacency_list_read_count: raw.adjacency_lists_read,
-            edge_scan_count: raw.relation_records_examined,
+            reads: raw.reads,
             ordering_comparison_count: raw.ordering_comparisons,
             ordered_index_entry_count: raw.ordered_index_entries_examined,
-            target_identity_index_entry_count: raw.target_identity_index_entries_examined,
             per_result_neighbor_lookup_count: 0,
             fallback_count: 0,
             result_count: kernel.result_count,
@@ -250,24 +244,14 @@ impl WorthQueryApplicationQueryAccessReceipt {
         self.projected_field_count
     }
 
-    pub const fn adjacency_list_read_count(&self) -> usize {
-        self.adjacency_list_read_count
-    }
-
-    pub const fn edge_scan_count(&self) -> usize {
-        self.edge_scan_count
+    /// Actual reads by this query execution, excluding its authorization reads.
+    /// Counts are observations and never establish access or a work allowance.
+    pub const fn reads(&self) -> WorthQueryInvariantProjectionWork {
+        self.reads
     }
 
     pub const fn ordering_comparison_count(&self) -> usize {
         self.ordering_comparison_count
-    }
-
-    pub const fn ordered_index_entry_count(&self) -> usize {
-        self.ordered_index_entry_count
-    }
-
-    pub const fn target_identity_index_entry_count(&self) -> usize {
-        self.target_identity_index_entry_count
     }
 
     pub const fn per_result_neighbor_lookup_count(&self) -> usize {
@@ -329,11 +313,8 @@ impl WorthQueryApplicationQueryAccessReceipt {
             examined_candidate_count: parts.examined_candidate_count,
             projected_record_count: parts.projected_record_count,
             projected_field_count: parts.projected_field_count,
-            adjacency_list_read_count: parts.adjacency_list_read_count,
-            edge_scan_count: parts.edge_scan_count,
+            reads: parts.reads,
             ordering_comparison_count: parts.ordering_comparison_count,
-            ordered_index_entry_count: parts.ordered_index_entry_count,
-            target_identity_index_entry_count: parts.target_identity_index_entry_count,
             per_result_neighbor_lookup_count: parts.per_result_neighbor_lookup_count,
             fallback_count: parts.fallback_count,
             result_count: parts.result_count,
@@ -341,8 +322,9 @@ impl WorthQueryApplicationQueryAccessReceipt {
             work: WorthQueryApplicationQueryWorkEvidence::new(
                 parts.predicate_work_units,
                 parts
-                    .adjacency_list_read_count
-                    .saturating_add(parts.edge_scan_count),
+                    .reads
+                    .adjacency_lists_read()
+                    .saturating_add(parts.reads.adjacency_edges_inspected()),
                 parts.ordering_comparison_count,
                 parts.ordered_index_entry_count,
                 parts

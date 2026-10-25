@@ -16,7 +16,7 @@ impl InvariantReadObservation {
     }
 
     pub(super) fn adjacency(&self) {
-        self.record(|reads| reads.record_adjacency(0));
+        self.record(|reads| reads.record_adjacencies(1, 0));
     }
 
     pub(super) fn edge(&self) {
@@ -28,7 +28,7 @@ impl InvariantReadObservation {
     }
 
     pub(super) fn field(&self) {
-        self.record(|reads| reads.record_field());
+        self.record(|reads| reads.record_fields(1));
     }
 
     fn record(&self, record: impl FnOnce(&mut WorthQueryInvariantProjectionWork)) {

@@ -100,15 +100,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
                 .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: None,
-            target_identity_index_entries_examined: 0,
             projected_records: tree.projected_records,
             projected_fields: tree.projected_fields,
-            adjacency_lists_read: selection
-                .adjacency_lists_read
-                .saturating_add(tree.adjacency_lists_read),
-            relation_records_examined: selection
-                .relation_records_examined
-                .saturating_add(tree.relation_records_examined),
+            reads: selection.reads.combined(tree.reads),
             ordering_comparisons: tree.ordering_comparisons,
             ordered_index_generation: Some(progress.generation_id),
             ordered_index_entries_examined: tree.ordered_index_entries_examined,

@@ -3,6 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
+#[cfg(test)]
+mod tests;
+
 impl<Schema> WorthQueryApplicationInvariantProjectionReader<'_, Schema>
 where
     Schema: ApplicationSchema,
@@ -149,7 +152,8 @@ where
             .layout
             .field_locator(field.entity(), field.aspect(), field.field())?
             .clone();
-        self.work.record_field();
+        let reads = &mut self.work;
+        let decoder = self.value_decode;
         let observed = crate::domain_computation::primary_graph::application_attempt::observe_field_value_borrowed_admitted(
             self.runtime,
             execution,
@@ -157,7 +161,10 @@ where
             identity.entity_id,
             identity.kind,
             &locator,
-            |raw| raw.and_then(|value| self.value_decode.decode::<Field::Binding>(field.entity(), field.aspect(), field.field(), value)),
+            |raw| {
+                reads.record_fields(1);
+                raw.and_then(|value| decoder.decode::<Field::Binding>(field.entity(), field.aspect(), field.field(), value))
+            },
         )
         ;
         match observed {

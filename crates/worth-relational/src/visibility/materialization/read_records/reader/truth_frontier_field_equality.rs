@@ -10,6 +10,7 @@ use crate::visibility::materialization::read_records::entity_query_locus_compari
 pub struct BoundedFrontierFieldEqualityTruthRead {
     matching_entity_ids: BTreeSet<crate::identity::data::EntityId>,
     entity_records_examined: usize,
+    field_reads: usize,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,6 +38,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             let state = self.runtime.storage_access().current_edition();
             let mut matching_entity_ids = BTreeSet::new();
             let mut entity_records_examined = 0_usize;
+            let mut field_reads = 0_usize;
             for entity_id in entity_ids {
                 charge_frontier_field_work(
                     Some(maximum_work_units),
@@ -51,8 +53,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 };
                 if record.kind.kind_id != kind_id
                     || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
-                    || entity_query_locus_comparison_key(&record, field_locator).as_ref()
-                        != Some(&expected)
+                {
+                    continue;
+                }
+                field_reads += 1;
+                if entity_query_locus_comparison_key(&record, field_locator).as_ref()
+                    != Some(&expected)
                 {
                     continue;
                 }
@@ -66,6 +72,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             Ok(BoundedFrontierFieldEqualityTruthRead {
                 matching_entity_ids,
                 entity_records_examined,
+                field_reads,
             })
         })
     }
@@ -74,6 +81,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
 impl BoundedFrontierFieldEqualityTruthRead {
     pub const fn entity_records_examined(&self) -> usize {
         self.entity_records_examined
+    }
+
+    /// Field comparisons actually attempted after acquiring a live record of
+    /// the requested kind. This observation adds no work charge.
+    pub const fn field_reads(&self) -> usize {
+        self.field_reads
     }
 
     pub fn matching_entity_ids(&self) -> &BTreeSet<crate::identity::data::EntityId> {
@@ -152,6 +165,7 @@ impl ProjectionRecordReader<'_> {
         let expected = AuthoritativeFieldComparisonKey::from_aspect_value(expected);
         let mut matching_entity_ids = BTreeSet::new();
         let mut entity_records_examined = 0_usize;
+        let mut field_reads = 0_usize;
         for entity_id in entity_ids {
             charge_frontier_field_work(
                 maximum_work_units,
@@ -168,8 +182,11 @@ impl ProjectionRecordReader<'_> {
             };
             if record.kind.kind_id != kind_id
                 || record.lifecycle != crate::storage::data::RecordLifecycleState::Live
-                || entity_query_locus_comparison_key(&record, field_locator).as_ref()
-                    != Some(&expected)
+            {
+                continue;
+            }
+            field_reads += 1;
+            if entity_query_locus_comparison_key(&record, field_locator).as_ref() != Some(&expected)
             {
                 continue;
             }
@@ -185,6 +202,7 @@ impl ProjectionRecordReader<'_> {
         Ok(BoundedFrontierFieldEqualityTruthRead {
             matching_entity_ids,
             entity_records_examined,
+            field_reads,
         })
     }
 }

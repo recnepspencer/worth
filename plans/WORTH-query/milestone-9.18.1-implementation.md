@@ -94,3 +94,44 @@ Managed computation range carriage also copies historical read observations
 into a current run (`computation_calls/ranges.rs`). The shared observation slice
 must keep actual read observations separate from the existing private carried
 budget charges; historic reads must not masquerade as current acquisitions.
+
+## Phase 1, slice 3: shared actual-read observations
+
+Boundary review: field projections and aggregates record field admission before
+native acquisition. Managed call charges retain diagnostic read counts, replay
+them on reuse and rewind them on fallback. Their private demand/consumption
+already carry the genuine budget contract independently. Declared query
+receipts expose native adjacency observations but call preflight projection
+capacity a field count. Native frontier guards scan records, not indexes;
+they need acquisition-site field observations, not an inferred index count.
+
+Adversarial constraint: reuse must not claim historical reads happened again;
+fallback must not erase reads already performed. Optional absence and decoding
+failure still read a field, whereas a refused acquisition does not. A new
+receipt observable must preserve existing disclosure noninterference in every
+receipt lane.
+
+Plan:
+
+1. Move the existing public observation type to the primary graph's shared
+   `read_observation` owner, preserving its facade export. Keep the private
+   projection budget in `invariant_projection/work`. Remove diagnostic data
+   from managed call charge/start/summary state; preserve private charge,
+   scope and fact carriage. Restart only the private budget, not observations.
+2. Count snapshot/predecode/aggregate fields at native acquisition, including
+   absent optional values and failed decoding. Retain original budget admission
+   and native request controls. Add actual field observations to both native
+   frontier guard implementations without changing their work charges.
+3. Carry actual root/tree reads through RawOneShotRows and all receipt
+   constructors: one-shot, continuation and live refresh. Expose `reads()` using
+   the common type; migrate obsolete adjacency aliases to its canonical names.
+   Preserve authorization and non-read work evidence independently.
+4. Extend the existing disclosure receipt comparison, real managed reuse and
+   fallback tests, and field/receipt regressions. Run focused owner evidence and
+   affected grouped public targets, formatting, dirty structural checks,
+   boundary-check and agent-context. The persistent reviewer gates the living
+   patch and final results before commit.
+
+No additional budget, public counter type, observation-based admission or view
+engine. Public compiled planar examples, the feature guide and Proprietary
+adoption still gate Phase 1 closure and its merge to master.

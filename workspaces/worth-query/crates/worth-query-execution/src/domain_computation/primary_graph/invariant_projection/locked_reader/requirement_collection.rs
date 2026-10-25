@@ -112,7 +112,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
             ));
         }
-        self.work.record_adjacency(read.relation_records_examined());
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         let records = read.into_records();
         let bytes = records
             .len()

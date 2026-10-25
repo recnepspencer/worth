@@ -1,3 +1,4 @@
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_query::ApplicationQueryLiveTargetMode;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
@@ -134,15 +135,9 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
                 .saturating_add(tree.relation_predicate_work_units),
             predicate_index_generation: selection.predicate_index_generation,
             target_identity_index_generation: target.generation_id,
-            target_identity_index_entries_examined: target_lookup_work,
             projected_records: tree.projected_records,
             projected_fields: tree.projected_fields,
-            adjacency_lists_read: selection
-                .adjacency_lists_read
-                .saturating_add(tree.adjacency_lists_read),
-            relation_records_examined: selection
-                .relation_records_examined
-                .saturating_add(tree.relation_records_examined),
+            reads: selection.reads.combined(tree.reads).combined(target.reads),
             ordering_comparisons: tree.ordering_comparisons,
             ordered_index_generation: None,
             ordered_index_entries_examined: 0,
@@ -156,6 +151,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_live
 struct ResolvedLiveTarget {
     entity_id: worth_relational::facade::identity::EntityId,
     examined_entry_count: usize,
+    reads: WorthQueryInvariantProjectionWork,
     generation_id: Option<DerivedIndexGenerationId>,
 }
 
@@ -251,7 +247,10 @@ fn resolve_live_target<
             target.result_path(),
         ));
     };
+    let mut reads = WorthQueryInvariantProjectionWork::default();
+    reads.record_lookup(lookup.examined_entry_count());
     Ok(ResolvedLiveTarget {
+        reads,
         entity_id: *entity_id,
         examined_entry_count: lookup.examined_entry_count(),
         generation_id: Some(lookup.generation_id()),

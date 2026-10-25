@@ -51,7 +51,8 @@ where
         if !self.work_budget.consume(read.work_units()) {
             return Err(work_budget_exceeded(relation.name()));
         }
-        self.work.record_adjacency(read.relation_records_examined());
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -104,7 +105,8 @@ where
         if !self.work_budget.consume(read.work_units()) {
             return Err(work_budget_exceeded(relation.name()));
         }
-        self.work.record_adjacency(read.relation_records_examined());
+        self.work
+            .record_adjacencies(1, read.relation_records_examined());
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -158,7 +160,7 @@ where
     ) -> WorthQueryInvariantProjectionTraversalDenial {
         if self.work_budget.consume(limit.consumed_work_units()) {
             self.work
-                .record_adjacency(limit.relation_records_examined());
+                .record_adjacencies(1, limit.relation_records_examined());
         }
         self.work_budget.mark_exceeded();
         work_budget_exceeded(relation)

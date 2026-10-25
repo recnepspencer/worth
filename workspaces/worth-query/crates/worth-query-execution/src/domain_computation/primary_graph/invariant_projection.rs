@@ -45,6 +45,7 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
+pub use super::read_observation::WorthQueryInvariantProjectionWork;
 pub use super::value_decode::WorthQueryValueDecodeDenial;
 pub use admission_denial::{
     WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
@@ -81,7 +82,6 @@ pub use operation_reader::{
     WorthQueryPriorOutputFamilyMember,
 };
 pub(in crate::domain_computation::primary_graph) use realized_scope::WorthQueryRealizedProjectionScope;
-pub use work::WorthQueryInvariantProjectionWork;
 
 static NEXT_INVARIANT_PROJECTION_AUTHORITY: std::sync::atomic::AtomicU64 =
     std::sync::atomic::AtomicU64::new(1);
