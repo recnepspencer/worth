@@ -201,8 +201,10 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         0
     );
     assert_eq!(counters.custom_invariant_candidate_entity_reads, 2);
-    // MENTALITY section 7: cache probe totals are incidental. Reuse is proved
-    // by the distinct source reads above and their stability after a real edit.
+    // Scope restriction consults both the proposed and the committed metadata
+    // of each retained entity (two rules, two direct and two visible IDs); the
+    // committed reads are served from the shared capture, never re-read.
+    assert_eq!(counters.custom_invariant_candidate_reuse_hits, 41);
     assert!(counters.custom_invariant_traversal_frontier_count >= 2);
 
     create_relation_of_kind(
@@ -238,14 +240,8 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         changed_counters.custom_invariant_candidate_adjacency_relation_ids,
         2
     );
-    assert_eq!(
-        changed_counters.custom_invariant_candidate_entity_reads,
-        counters.custom_invariant_candidate_entity_reads
-    );
-    assert_eq!(
-        changed_counters.custom_invariant_candidate_adjacency_count_reads,
-        counters.custom_invariant_candidate_adjacency_count_reads
-    );
+    // The same restriction adds the same eight committed-metadata reuses.
+    assert_eq!(changed_counters.custom_invariant_candidate_reuse_hits, 53);
 }
 
 #[test]

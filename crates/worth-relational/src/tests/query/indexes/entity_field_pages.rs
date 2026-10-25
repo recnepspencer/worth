@@ -9,7 +9,7 @@ fn exact_posting_pages_resume_without_prefix_replay_and_reject_selector_or_gener
     let first = create_entity_outcome(execution, &runtime, "shared");
     let second = create_entity_outcome(execution, &runtime, "shared");
     let third = create_entity_outcome(execution, &runtime, "shared");
-    let mut expected = vec![
+    let mut expected = [
         changed_entities(&first)[0],
         changed_entities(&second)[0],
         changed_entities(&third)[0],

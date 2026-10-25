@@ -88,6 +88,17 @@ fn a_reclaim_keeps_a_superseded_row_whose_claim_did_not_move() {
         assert_eq!(claims(&state.records[&dependent]), vec![old.clone()]);
     }
     // The dependent's own retirement releases the claim on a row still there.
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .records
+        .get_mut(&dependent)
+        .unwrap()
+        .state = DemandState::Failed(WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::Superseded,
+        "dependent retired",
+    ));
     drop(interest);
     registry.drain_closed_cleanup_admitted().unwrap();
     let state = registry.state.lock().unwrap();

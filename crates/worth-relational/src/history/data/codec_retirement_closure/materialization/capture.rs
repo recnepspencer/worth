@@ -50,9 +50,7 @@ pub(crate) fn capture_materialization_producers(
                                 Ok(None) => continue,
                                 Err(cause) => return Err(cause),
                             };
-                        let origin = selected
-                            .validate_output_membership_header()
-                            .map_err(|cause| stop(cause.into()))?;
+                        let origin = selected.validate_output_membership_header().map_err(stop)?;
                         charge(context, publications.len() + 1).map_err(stop)?;
                         if publications.contains(&origin.commit.commit_id) {
                             continue;

@@ -8,6 +8,7 @@
 //! definition reuses the same component; its native publication names it, and a start
 //! from the superseded revision is refused naming the current one.
 
+mod actions;
 #[allow(dead_code, unused_imports)]
 #[path = "../../tests/application_graph/document_retention_model.rs"]
 mod document_retention_model;
@@ -15,7 +16,7 @@ mod information;
 mod review;
 
 use document_retention_model::{
-    host::{publish_owner_workflow, DocumentWorkflowRuntime},
+    host::{publish_workflow_on_first_program, DocumentWorkflowRuntime},
     operator_identity::{authenticate_operator, request_scope},
     readback::read_retention,
     retention_entry::{ReviewedSetRetentionBinding, ReviewedSetRetentionIntent, DOCUMENT_IDENTITY},
@@ -138,7 +139,7 @@ fn reviewed_document(
 
 fn run() {
     information::run();
-    let application = publish_owner_workflow();
+    let application = publish_workflow_on_first_program();
     let review = review();
     let first = reviewed_document(&review, "applied");
     let identity = first.identity().clone();
@@ -224,7 +225,7 @@ fn run() {
 }
 
 fn publish(
-    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
+    application: &DocumentWorkflowRuntime,
     definition: ValidatedWorkflowDefinition<ReviewedDocumentWorkflow>,
     predecessor: WorkflowDefinitionExpectedPredecessor,
     key: u64,
@@ -240,7 +241,7 @@ fn publish(
 }
 
 fn assert_discovery_disabled(
-    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
+    application: &DocumentWorkflowRuntime,
     identity: &ApplicationWorkflowDefinitionIdentity,
 ) {
     let result = document_retention_model::workflow::discover_definition_metadata(
@@ -263,7 +264,7 @@ struct Reviewed {
 /// review until it awaits approval, collecting evidence wherever a review
 /// demands it. Uses keys from `key` upward.
 fn review_proposal(
-    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -303,7 +304,7 @@ fn review_proposal(
 /// Applies the approved retention through the requirement the instance
 /// awaits; the change's commit also settles the `apply` step.
 fn apply_approved_retention(
-    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     days: u64,
     key: u64,
@@ -331,7 +332,7 @@ fn apply_approved_retention(
         .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .retain_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(application.program_runtime())
         .unwrap_or_else(|_|panic!("installed approved effect action"));
     let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
         worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
@@ -350,7 +351,7 @@ fn apply_approved_retention(
 
 /// Advances one step and names the node it completed.
 fn advance(
-    application: &DocumentWorkflowRuntime<document_retention_model::programs::WorkflowOwnerProgram>,
+    application: &DocumentWorkflowRuntime,
     instance: &PublishedWorkflowInstanceRef,
     key: u64,
 ) -> String {

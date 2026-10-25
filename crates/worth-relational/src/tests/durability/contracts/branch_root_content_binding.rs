@@ -90,6 +90,8 @@ fn checkpoint_rejects_same_commit_schema_root_relabeling() {
         ),
     );
 
+    // The current-codec fence compares the readmitted schema carrier with the
+    // branch target before any root is readmitted, so it names the relabeling.
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,

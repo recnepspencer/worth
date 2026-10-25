@@ -73,7 +73,9 @@ fn unrelated_lease_through_public_commit() {
                 *captured.lock().unwrap() = Some(denial);
                 Ok::<_, MapKernelFailure<()>>(((), ()))
             });
-            assert!(matches!(outcome, ScanOutcome::Stopped { .. }));
+            // The kernel observes and handles the refusal as data; it does not
+            // propagate a stop into the surrounding scan.
+            assert!(matches!(outcome, ScanOutcome::Complete { .. }));
             let denial = captured
                 .into_inner()
                 .unwrap()

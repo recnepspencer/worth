@@ -110,6 +110,8 @@ impl ReadPlan<'_> {
                 super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
                 self.name,
             )
+        } else if !self.contract.predicates().is_empty() {
+            self.predicate_unavailable_denial()
         } else {
             super::read_execution_denial(
                 super::WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,

@@ -70,8 +70,8 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
         Artifact,
         PublicationPreparation,
         CandidateRegistration,
-        PublicationAdmission,
         Publication,
+        PublicationCutover,
     ];
     let counts = stages.map(|stage| {
         (
@@ -92,8 +92,8 @@ fn assert_one_consult_per_stage(batches: usize, split: bool, strategy: bool) {
             (Artifact, 1),
             (PublicationPreparation, 1),
             (CandidateRegistration, 1),
-            (PublicationAdmission, 1),
-            (Publication, 1)
+            (Publication, 1),
+            (PublicationCutover, 1)
         ]
     );
     assert_eq!(*visits, stages);

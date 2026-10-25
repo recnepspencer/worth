@@ -45,7 +45,7 @@ fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
         rmp_serde::from_slice(bytes).unwrap();
     let mut plan = crate::tests::support::recovery_plan_for(
         execution,
-        &source,
+        source,
         RecoveryVerificationMode::NormalRecoveryVerification,
     )
     .unwrap();

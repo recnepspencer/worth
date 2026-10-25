@@ -15,8 +15,10 @@ pub(crate) enum CommitStage {
     Artifact,
     PublicationPreparation,
     CandidateRegistration,
-    PublicationAdmission,
     Publication,
+    /// The final pre-effect consult, after any companion preflight, where the
+    /// caller's original request keeps its first cause before the head moves.
+    PublicationCutover,
 }
 
 pub(crate) fn consult_stage(

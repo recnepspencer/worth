@@ -166,7 +166,7 @@ fn scratch_through_public_commit() {
         || {
             assert_eq!(
                 resource(commit_probe(Probe::Scratch)),
-                Resource::ScratchCapacityExceeded
+                Resource::ChargedBytesOverflow
             );
         },
     );

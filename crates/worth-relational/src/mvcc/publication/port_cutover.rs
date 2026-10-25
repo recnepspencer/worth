@@ -123,7 +123,7 @@ impl PreparedBranchPublicationPreflight {
         // a separate operation-control token cannot replace its first cause.
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
             execution,
-            crate::authority::commit::pipeline::CommitStage::Publication,
+            crate::authority::commit::pipeline::CommitStage::PublicationCutover,
         ) {
             return RelationalPublicationOutcome::RequestStopped(stop);
         }

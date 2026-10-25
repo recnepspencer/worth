@@ -54,7 +54,7 @@ fn cancellation_between_validation_and_publication_stops_without_publishing() {
     let slots_seen = Arc::clone(&slots_at_stage);
     let result = observation::with_observer(
         Box::new(move |stage| {
-            if stage == CommitStage::PublicationAdmission {
+            if stage == CommitStage::Publication {
                 seen.fetch_add(1, Ordering::Relaxed);
                 candidates_seen.store(publication.prepared_candidate_count(), Ordering::Relaxed);
                 slots_seen.store(preparation.published_snapshot_count(), Ordering::Relaxed);

@@ -286,10 +286,20 @@ mod tests {
         )]
     }
 
+    /// The admission declaration reads every key's clone size once, unmetered,
+    /// before the merge; only reads beyond these are merge progress.
+    const DECLARATION_KEY_READS: usize = 1_000;
+
+    fn merge_key_reads(reads: &AtomicUsize) -> usize {
+        reads
+            .load(Ordering::SeqCst)
+            .checked_sub(DECLARATION_KEY_READS)
+            .expect("the declaration reads every key before the merge")
+    }
+
     #[test]
     fn checked_merge_preserves_order_and_stops_inside_one_large_stream() {
         let expected = super::super::canonical_merge_streams(streams());
-        let declaration_visits = expected.len();
         let actual = canonical_merge_streams_checked(
             streams(),
             &lease(10_000, CancellationToken::new()),
@@ -327,10 +337,9 @@ mod tests {
             },
         )
         .unwrap_err();
-        // Declaring retained key capacity visits every input before the merge.
-        let merge_visits = visited.load(Ordering::SeqCst) - declaration_visits;
-        assert!(merge_visits > 1);
-        assert!(merge_visits < declaration_visits);
+        let merged = merge_key_reads(&visited);
+        assert!(merged > 1);
+        assert!(merged < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
@@ -344,25 +353,20 @@ mod tests {
     fn checked_merge_observes_cancellation_between_heap_pops() {
         let cancellation = CancellationSource::new();
         let visits = AtomicUsize::new(0);
-        let declaration_visits = streams()
-            .iter()
-            .map(|stream| stream.items.len())
-            .sum::<usize>();
         let stop = canonical_merge_streams_checked(
             streams(),
             &lease(10_000, cancellation.token()),
             None,
             |_, _| 0,
             |_| {
-                if visits.fetch_add(1, Ordering::SeqCst) == declaration_visits + 40 {
+                if visits.fetch_add(1, Ordering::SeqCst) == DECLARATION_KEY_READS + 40 {
                     cancellation.cancel();
                 }
                 0
             },
         )
         .unwrap_err();
-        let merge_visits = visits.load(Ordering::SeqCst) - declaration_visits;
-        assert!(merge_visits >= 40 && merge_visits < declaration_visits);
+        assert!(merge_key_reads(&visits) < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {

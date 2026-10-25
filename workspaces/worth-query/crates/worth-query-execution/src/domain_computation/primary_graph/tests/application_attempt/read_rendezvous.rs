@@ -1,8 +1,7 @@
 //! Cancellation raised inside a read reaches the public commit door by value.
 use super::*;
-use crate::domain_computation::{
-    primary_graph::application_attempt::{take_native_field_contacts, ReadRendezvous},
-    WorthQueryProviderSessionControlStopKind as Control,
+use crate::domain_computation::primary_graph::application_attempt::{
+    take_native_field_contacts, ReadRendezvous,
 };
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
@@ -54,17 +53,10 @@ fn cancellation_inside_a_native_read_stops_the_public_commit_door() {
             );
         });
     assert_eq!(opened, Ok(()));
-    let WorthQueryApplicationCommitOutcome::Denied(denial) = outcome.unwrap() else {
-        panic!("the read must stop before publication");
-    };
-    assert_eq!(
-        denial.stage(),
-        WorthQueryApplicationCommitDenialStage::DecisionReadSet
-    );
-    assert_eq!(
-        denial.execution_denial_cause(),
-        Some(Err(Control::Cancelled))
-    );
+    assert!(matches!(
+        outcome.unwrap(),
+        WorthQueryApplicationCommitOutcome::Cancelled
+    ));
     assert_eq!(
         world
             .application

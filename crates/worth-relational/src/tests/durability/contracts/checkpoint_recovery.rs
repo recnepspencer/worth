@@ -168,9 +168,10 @@ fn durability_contract_recovery_rejects_branch_cell_target_without_catalog_artif
         .expect_err("recovery must reject a branch target with no immutable artifact");
     let error = crate::tests::support::expect_durability_failure(error);
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error
-        .detail
-        .contains("current branch has no readmitted schema carrier"));
+    assert!(
+        error.detail.contains("references missing commit artifact"),
+        "{error:?}"
+    );
     assert_eq!(recovered.history().immutable_commit_count(), 0);
     assert!(recovered
         .history()

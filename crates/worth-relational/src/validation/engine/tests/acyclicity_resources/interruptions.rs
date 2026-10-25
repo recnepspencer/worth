@@ -16,7 +16,7 @@ fn native_validation_preserves_original_cancellation_and_deadline() {
                 cancellation.cancel();
             }
             let serial = worth_execution::SerialRequest::from_policy(
-                &lease.policy(),
+                lease.policy(),
                 cancellation.token(),
                 deadline,
             );
