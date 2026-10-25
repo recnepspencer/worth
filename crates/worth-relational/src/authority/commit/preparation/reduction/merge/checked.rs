@@ -289,6 +289,7 @@ mod tests {
     #[test]
     fn checked_merge_preserves_order_and_stops_inside_one_large_stream() {
         let expected = super::super::canonical_merge_streams(streams());
+        let declaration_visits = expected.len();
         let actual = canonical_merge_streams_checked(
             streams(),
             &lease(10_000, CancellationToken::new()),
@@ -326,8 +327,10 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(visited.load(Ordering::SeqCst) > 1);
-        assert!(visited.load(Ordering::SeqCst) < 1_000);
+        // Declaring retained key capacity visits every input before the merge.
+        let merge_visits = visited.load(Ordering::SeqCst) - declaration_visits;
+        assert!(merge_visits > 1);
+        assert!(merge_visits < declaration_visits);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
@@ -341,20 +344,25 @@ mod tests {
     fn checked_merge_observes_cancellation_between_heap_pops() {
         let cancellation = CancellationSource::new();
         let visits = AtomicUsize::new(0);
+        let declaration_visits = streams()
+            .iter()
+            .map(|stream| stream.items.len())
+            .sum::<usize>();
         let stop = canonical_merge_streams_checked(
             streams(),
             &lease(10_000, cancellation.token()),
             None,
             |_, _| 0,
             |_| {
-                if visits.fetch_add(1, Ordering::SeqCst) == 40 {
+                if visits.fetch_add(1, Ordering::SeqCst) == declaration_visits + 40 {
                     cancellation.cancel();
                 }
                 0
             },
         )
         .unwrap_err();
-        assert!(visits.load(Ordering::SeqCst) < 1_000);
+        let merge_visits = visits.load(Ordering::SeqCst) - declaration_visits;
+        assert!(merge_visits >= 40 && merge_visits < declaration_visits);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {

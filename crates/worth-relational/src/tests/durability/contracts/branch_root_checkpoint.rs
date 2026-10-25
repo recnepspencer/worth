@@ -29,7 +29,9 @@ fn checkpoint_recovery_rejects_missing_exact_branch_root_artifact() {
     let error = crate::tests::support::expect_durability_failure(error);
 
     assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
-    assert!(error.detail.contains("missing branch-root image"));
+    assert!(error
+        .detail
+        .contains("current branch has no readmitted schema carrier"));
     assert_eq!(recovered.history().immutable_commit_count(), 0);
 }
 

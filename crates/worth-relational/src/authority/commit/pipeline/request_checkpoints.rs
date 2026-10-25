@@ -15,6 +15,7 @@ pub(crate) enum CommitStage {
     Artifact,
     PublicationPreparation,
     CandidateRegistration,
+    PublicationAdmission,
     Publication,
 }
 

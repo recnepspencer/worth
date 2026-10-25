@@ -8,7 +8,7 @@ use crate::storage::data::AuthoritativeFieldComparisonKey as Key;
 use std::{mem::size_of, sync::Arc};
 use worth_execution::ExecutionRequest;
 const MEMORY: u64 = 64 * 1024 * 1024;
-const FRAMEWORK: u64 = 312;
+const FRAMEWORK: u64 = 376;
 fn height(mut n: usize) -> usize {
     let mut h = 1;
     while n > 64 {

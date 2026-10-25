@@ -90,7 +90,11 @@ fn checkpoint_rejects_same_commit_schema_root_relabeling() {
         ),
     );
 
-    assert_corrupt_recovery_leaves_no_recovered_state(execution, plan, "SchemaRootMismatch");
+    assert_corrupt_recovery_leaves_no_recovered_state(
+        execution,
+        plan,
+        "current branch schema carrier differs from its native target",
+    );
 }
 
 #[test]

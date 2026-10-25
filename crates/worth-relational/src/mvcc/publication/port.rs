@@ -104,7 +104,7 @@ impl RelationalPublicationPort {
         }
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
             execution,
-            crate::authority::commit::pipeline::CommitStage::Publication,
+            crate::authority::commit::pipeline::CommitStage::PublicationAdmission,
         ) {
             self.history.record_candidate_discard(candidate.branch());
             drop(candidate);

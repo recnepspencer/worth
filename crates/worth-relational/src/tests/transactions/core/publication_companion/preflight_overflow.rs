@@ -14,16 +14,16 @@ impl RelationalPublicationCompanion for OverflowCompanion {
         &self,
         context: &mut PublicationCompanionPreflight<'_>,
     ) -> Result<PreparedPublicationCompanionEffect, CompanionPreflightStop> {
-        match self.0 {
-            OverflowMeter::Work => {
-                context.checkpoint()?;
-                context.checkpoint()?;
-            }
+        context.checkpoint()?;
+        // 7ccc891e3d made checkpoints control-only. The companion owns its
+        // resource arithmetic and returns its original overflow by value.
+        let overflow = match self.0 {
+            OverflowMeter::Work => CompanionPreflightStop::WorkCounterOverflow,
             OverflowMeter::PreparationBytes => {
-                context.checkpoint()?;
-                context.checkpoint()?;
+                CompanionPreflightStop::PreparationMemoryCounterOverflow
             }
-        }
+        };
+        u64::MAX.checked_add(1).ok_or(overflow)?;
         panic!("an overflowing preflight charge must stop before a companion effect exists");
     }
 }
