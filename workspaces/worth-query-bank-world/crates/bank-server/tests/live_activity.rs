@@ -16,7 +16,7 @@ use bank_domain::proposals::BankIdempotencyKey;
 use bank_domain::schema::RevokeAccountAuthorization;
 use bank_server::{
     mutations, BankAccountActivityLiveOutcome, BankApplicationLiveCloseOutcome,
-    BankApplicationLiveOpenDenialKind, BankApplicationQueryDenial, BankMutationControls,
+    BankMutationControls,
 };
 
 use fixture::{ordinary_read_world, OWNER, TELLER, VIEWER};
@@ -206,46 +206,55 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
 }
 
 #[test]
-fn caller_cannot_enlarge_the_installed_live_buffer_ceiling() {
-    let fixture = ordinary_read_world("live-buffer-ceiling", 0);
+fn live_buffer_capacity_is_owned_by_the_request() {
+    let fixture = ordinary_read_world("live-buffer-capacity", 0);
     let owner = fixture.authenticate(OWNER);
-    let denial = match fixture
+    let mut live = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
         .subscribe(live_controls_for(request_scope(), 65))
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("caller buffer wider than installed queue authority must fail"),
-    };
+        .expect("the request owns its buffer capacity");
     assert!(matches!(
-        denial,
-        BankApplicationQueryDenial::LiveOpen(error)
-            if error.kind()
-                == BankApplicationLiveOpenDenialKind::BufferCapacityExceedsInstalled
+        live.poll(&owner, &request_scope()),
+        BankAccountActivityLiveOutcome::Pending
+    ));
+    assert!(matches!(
+        live.close(),
+        BankApplicationLiveCloseOutcome::Completed
     ));
 }
 
 #[test]
-fn caller_cannot_enlarge_the_installed_live_work_ceiling() {
-    let fixture = ordinary_read_world("live-work-ceiling", 0);
+fn live_delivery_needs_result_cardinality_without_a_work_estimate() {
+    let fixture = ordinary_read_world("live-result-cardinality", 0);
     let owner = fixture.authenticate(OWNER);
+    let teller = fixture.authenticate(TELLER);
     let controls = WorthQueryApplicationLiveControls::bounded(request_scope(), 16, 8).unwrap();
-    let denial = match fixture
+    let mut live = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
         .subscribe(controls)
-    {
-        Err(denial) => denial,
-        Ok(_) => panic!("caller work wider than installed delivery authority must fail"),
+        .expect("live delivery carries cardinality and request controls");
+    commit_deposit(
+        &fixture,
+        &teller,
+        fixture.personal_account,
+        "live-cardinality-deposit",
+    );
+    let BankAccountActivityLiveOutcome::Delivered(update) = live.poll(&owner, &request_scope())
+    else {
+        panic!("a matching commit delivers without a caller work estimate");
     };
+    assert_eq!(update.result().account(), fixture.personal_account);
+    assert_eq!(update.result().entries().len(), 1);
+    assert!(update.receipt().inspect().terminal_resources_released());
     assert!(matches!(
-        denial,
-        BankApplicationQueryDenial::LiveOpen(error)
-            if error.kind() == BankApplicationLiveOpenDenialKind::WorkLimitExceedsInstalled
+        live.close(),
+        BankApplicationLiveCloseOutcome::Completed
     ));
 }
 
