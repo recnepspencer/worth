@@ -11,13 +11,9 @@ mod durability;
 
 fn main() {
     let format = AdmittedPhysicalRecordFormat::admit(
-        PhysicalRecordFormatDeclaration::builder()
-            .admit()
-            .unwrap(),
+        PhysicalRecordFormatDeclaration::builder().admit().unwrap(),
     );
-    let access = PhysicalRecordAccessPolicy::builder()
-        .admit(format)
-        .unwrap();
+    let access = PhysicalRecordAccessPolicy::builder().admit(format).unwrap();
     let policy = PhysicalRecordResidencyPolicy::builder()
         .total_bytes(bytes(65_536))
         .resident_bytes(bytes(16_384))
@@ -41,7 +37,11 @@ fn main() {
         .admit(format)
         .into_result()
         .unwrap();
-    let media = durability::media("worth-store-admitted-residency-policy-supported");
+    let root = tempfile::Builder::new()
+        .prefix("worth-store-admitted-residency-policy-supported-")
+        .tempdir()
+        .unwrap();
+    let media = durability::media(root.path());
     let durability = durability::admitted(&media);
     let _request =
         PhysicalRecordOpen::new(format, access, durability).with_residency_policy(policy);
