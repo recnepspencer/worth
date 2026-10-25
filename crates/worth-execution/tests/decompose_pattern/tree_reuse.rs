@@ -70,7 +70,11 @@ fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {
     let first = retained
         .run(None, &map(&original), EDITIONS, interior, interface, back)
         .unwrap();
-    assert_eq!(first.reduction_metrics.recombined_nodes, 64);
+    let first_reduction = first
+        .reduction_metrics
+        .accounted_metrics()
+        .expect("bounded decomposition carries reduction accounting");
+    assert_eq!(first_reduction.recombined_nodes, 64);
 
     let updated = retained
         .run(
@@ -82,8 +86,12 @@ fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {
             back,
         )
         .unwrap();
-    assert!(updated.reduction_metrics.recombined_nodes > 0);
-    assert!(updated.reduction_metrics.recombined_nodes < 64);
+    let updated_reduction = updated
+        .reduction_metrics
+        .accounted_metrics()
+        .expect("bounded decomposition carries reduction accounting");
+    assert!(updated_reduction.recombined_nodes > 0);
+    assert!(updated_reduction.recombined_nodes < 64);
     assert_eq!(updated.reuse.unchanged_contributions, 63);
 
     let mut fresh_entries = original;

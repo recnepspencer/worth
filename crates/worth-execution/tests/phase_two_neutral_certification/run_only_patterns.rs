@@ -35,7 +35,14 @@ fn reduction_scan_and_rounds_preserve_canonical_values_and_cost() {
         )
     };
     let serial_reduced = reduce(None);
-    assert_eq!(serial_reduced.1, 7 + serial_reduced.3.charged_work);
+    assert_eq!(
+        serial_reduced.1,
+        7 + serial_reduced
+            .3
+            .accounted_metrics()
+            .expect("checked reduction carries accounting")
+            .charged_work
+    );
     assert!(serial_reduced.2 < serial_reduced.1);
 
     let expected_prefix: Vec<_> = (1..=17_u64).map(|n| n * (n + 1) / 2).collect();

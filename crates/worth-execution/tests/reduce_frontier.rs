@@ -254,12 +254,23 @@ fn assert_ceiling_width_invariant(input: &ExecutionMap<u64, u64>, count: u64, ce
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(
-                left.metrics.charged_work + count,
+                left.metrics
+                    .accounted_metrics()
+                    .expect("checked reduction carries accounting")
+                    .charged_work
+                    + count,
                 ceiling,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(
-                left.metrics.charged_span, left.metrics.charged_work,
+                left.metrics
+                    .accounted_metrics()
+                    .expect("checked reduction carries accounting")
+                    .charged_span,
+                left.metrics
+                    .accounted_metrics()
+                    .expect("checked reduction carries accounting")
+                    .charged_work,
                 "count {count}, ceiling {ceiling}"
             );
             assert_eq!(

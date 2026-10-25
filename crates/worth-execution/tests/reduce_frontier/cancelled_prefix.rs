@@ -91,7 +91,11 @@ fn a_wide_cancelled_frontier_settles_every_earlier_canonical_join() {
             ReductionRunStop::Hook(MapKernelStop::Cancelled)
         ));
         assert_eq!(
-            failure.metrics.combine_calls,
+            failure
+                .metrics
+                .accounted_metrics()
+                .expect("checked reduction carries accounting")
+                .combine_calls,
             2 + 2 + 1,
             "leaf 2, parent 1, then the first combine of leaf 4"
         );
