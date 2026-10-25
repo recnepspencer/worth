@@ -120,6 +120,14 @@ fn every_execution_commit_kind_survives_the_producer_boundary() {
             },
         ),
         (
+            Session::ExecutionWorkerPanicked {
+                partition_identity: None,
+            },
+            Application::ExecutionWorkerPanicked {
+                partition_identity: None,
+            },
+        ),
+        (
             Session::ExecutionUncheckedCustomKernel {
                 partition_identity: Some(7),
             },
@@ -181,6 +189,55 @@ fn pending_execution_evidence_keeps_heads_producer_category() {
         observed.commit_execution_denial(),
         Some((Stage::Idempotency, Ok(kind)))
     );
+}
+
+#[test]
+fn root_request_work_stop_is_distinct_from_attributed_producer_work() {
+    use crate::domain_computation::primary_graph::{
+        application_attempt::provider_compare_denial::provider_session_execution_denied,
+        WorthQueryAdvancementDenial as Request, WorthQueryApplicationCommitDenialStage as Stage,
+        WorthQueryManagedComputationResourceDenial as Resource,
+    };
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
+    use WorthQueryOutputDemandDenialKind as Demand;
+    for (partition_identity, policy_ancestor, expected) in [
+        (
+            None,
+            None,
+            Demand::ExecutionRequest(Request::Resource(Resource::WorkExhausted)),
+        ),
+        (Some(7), None, Demand::ProducerUnavailable),
+        (None, Some(2), Demand::ProducerUnavailable),
+    ] {
+        let kind = Session::ExecutionResource {
+            denial: Resource::WorkExhausted,
+            partition_identity,
+            policy_ancestor,
+        };
+        let commit = provider_session_execution_denied(
+            Ok(kind),
+            Stage::ProviderCommit,
+            "work stopped before publication",
+        );
+        let observed = commit_receipt(
+            "producer",
+            WorthQueryApplicationCommitOutcome::Denied(commit),
+        )
+        .unwrap_err();
+        assert_eq!(observed.kind(), expected);
+        assert_eq!(
+            observed.commit_execution_denial(),
+            Some((Stage::ProviderCommit, Ok(kind)))
+        );
+        assert_eq!(
+            observed.commit_denial_kind(),
+            Some(WorthQueryApplicationCommitDenialKind::ExecutionResource {
+                denial: Resource::WorkExhausted,
+                partition_identity,
+                policy_ancestor,
+            })
+        );
+    }
 }
 
 #[test]

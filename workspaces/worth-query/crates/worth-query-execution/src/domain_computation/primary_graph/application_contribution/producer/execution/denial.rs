@@ -292,7 +292,7 @@ pub(super) fn identity_unavailable(
     )
 }
 
-/// A commit stopped by its carried request cause preserves that typed stop.
+/// Root request resource stops stay typed; producer failures keep their category.
 pub(super) fn commit_execution_stopped(
     subject: &str,
     error: impl std::fmt::Debug,
@@ -301,13 +301,21 @@ pub(super) fn commit_execution_stopped(
         crate::domain_computation::WorthQueryProviderSessionControlStopKind,
     >,
 ) -> WorthQueryOutputDemandDenial {
-    use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
-    let kind = match cause {
-        Ok(cause) => source_readmission::request_execution_kind(cause),
-        Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
-        Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Native;
+    let request_resource = match cause {
+        Ok(
+            cause @ Native::ExecutionResource {
+                partition_identity: None,
+                policy_ancestor: None,
+                ..
+            },
+        ) => cause,
+        _ => return failed(subject, error),
     };
-    denial(kind, format!("{subject}: {error:?}"))
+    denial(
+        source_readmission::request_execution_kind(request_resource),
+        format!("{subject}: {error:?}"),
+    )
 }
 
 pub(super) fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
