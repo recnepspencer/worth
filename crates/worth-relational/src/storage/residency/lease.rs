@@ -7,6 +7,9 @@ use std::sync::Arc;
 pub(crate) enum Head {}
 #[derive(Debug)]
 pub(crate) enum Full {}
+/// Canonical full contents for encoding, without a root's serving indexes.
+#[derive(Debug)]
+pub(super) enum CheckpointContents {}
 
 /// Clones and releases are counted on the cell, including when an operation
 /// retains a view after the root that supplied it has been released.
@@ -54,6 +57,12 @@ impl RelationalResidencyLease<Full> {
 
     pub(crate) fn is_uniquely_owned(&self) -> bool {
         Arc::strong_count(&self.cell) == 1 && Arc::strong_count(&self.region) == 2
+    }
+}
+
+impl RelationalResidencyLease<CheckpointContents> {
+    pub(super) fn checkpoint_contents(&self) -> &crate::storage::overlay::PartitionState {
+        &self.region.partition
     }
 }
 

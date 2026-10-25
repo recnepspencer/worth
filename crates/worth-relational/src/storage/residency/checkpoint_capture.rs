@@ -59,9 +59,9 @@ impl RelationalRegionResidency {
             (leaf, members)
         } else {
             let lease = self
-                .lease_resident_full()?
+                .lease_checkpoint_contents()?
                 .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
-            let partition = lease.full_view().partition();
+            let partition = lease.checkpoint_contents();
             let (commitment, _) = PartitionContentCommitment::capture(partition, symbols, None)
                 .map_err(|_| self.capture_failure(Cause::IntegrityMismatch))?;
             let captured =

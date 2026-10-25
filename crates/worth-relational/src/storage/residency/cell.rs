@@ -217,6 +217,33 @@ impl RelationalRegionResidency {
         self.backing.is_some()
     }
 
+    pub(super) fn lease_checkpoint_contents(
+        self: &Arc<Self>,
+    ) -> Result<
+        Option<RelationalResidencyLease<super::lease::CheckpointContents>>,
+        RelationalStorageUnavailable,
+    > {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        match &*state {
+            ResidencyState::Full(region) => {
+                self.leases
+                    .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
+                        count.checked_add(1)
+                    })
+                    .map_err(|_| self.failure(Cause::MemoryExhausted))?;
+                Ok(Some(RelationalResidencyLease::accepted(
+                    self.clone(),
+                    region.clone(),
+                )))
+            }
+            ResidencyState::Damaged(failure) => Err(*failure),
+            _ => Ok(None),
+        }
+    }
+
     pub(crate) fn lease_resident_full(
         self: &Arc<Self>,
     ) -> Result<Option<RelationalResidencyLease<Full>>, RelationalStorageUnavailable> {

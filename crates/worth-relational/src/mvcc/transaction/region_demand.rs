@@ -66,6 +66,18 @@ impl super::BranchBoundRelationalTransaction {
     ) -> Result<(), RelationalResidencyDemandFailure> {
         let root = &self.basis.inner.root;
         let mut partitions = self.footprint.validation_partitions();
+        // A new schema carrier reframes every retained region, including
+        // unchanged records. Admit those contents during the operation;
+        // capture itself must never reconstruct a missing member.
+        if self.schema_authority_input.as_ref().is_some_and(|input| {
+            crate::schema::data::schema_authority_snapshot_digest_bytes(
+                input.target_schema_authority(),
+            ) != root.schema_authority().authority_digest()
+                || input.descriptor_semantics_version()
+                    != root.schema_authority().descriptor_semantics_version()
+        }) {
+            partitions.extend(root.partition_ids_iter());
+        }
         let mut relations = BTreeSet::new();
         for intent in self.batches().iter().flat_map(|batch| &batch.intents) {
             intent.seed_touched_partitions(&mut partitions);
