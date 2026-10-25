@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 
 use super::fixture_values::PositiveLength;
 use super::runtime_api::application_contribution::{
-    self, WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
+    self, WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider, WorthQueryUndeclaredProducerDenial,
     WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
     WorthQueryProducerOutputFamily,
@@ -71,6 +71,7 @@ impl<Schema: TopologyModelBinding, const REUSE: bool, const MODE: u8>
     WorthQueryApplicationProducerProvider<Schema, RegionOutputProducer<Schema, REUSE, MODE>>
     for RegionOutputProvider<MODE>
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.region-output-provider.v1";
     fn operation_input(&self, source: &PlanarReadResult) -> RegionOutputInput {
         let entries = if PositiveLength::get(&source.y).is_multiple_of(2) {

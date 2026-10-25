@@ -1,5 +1,5 @@
 use crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration;
-use crate::validation::data::CustomInvariantScopePlanner;
+use crate::validation::data::{CustomInvariantNonApplicability, CustomInvariantScopePlanner};
 use crate::validation::engine::InvariantExecutionRequest;
 use crate::validation::engine::InvariantRuntimeView;
 use std::mem::size_of;
@@ -94,6 +94,7 @@ pub(super) fn eligible_registrations<'state>(
                     prepared_scope,
                     retained_touched,
                     work,
+                    basis: CustomInvariantNonApplicability::CandidateOutsideClosure,
                 });
             }
             let prepared_scope =
@@ -128,6 +129,7 @@ pub(super) fn eligible_registrations<'state>(
                     prepared_scope,
                     retained_touched: planner.retained_touched(),
                     work,
+                    basis: CustomInvariantNonApplicability::NoApplicableTouch,
                 });
             }
             let prepared_execution = if !registration.supports_checked_preparation()
@@ -152,6 +154,7 @@ pub(super) fn eligible_registrations<'state>(
                             prepared_scope,
                             retained_touched: planner.retained_touched(),
                             work,
+                            basis: CustomInvariantNonApplicability::PreparationRefused,
                         });
                     }
                 }
@@ -177,3 +180,6 @@ pub(super) fn eligible_registrations<'state>(
 
 #[cfg(test)]
 mod narrowing_tests;
+
+#[cfg(test)]
+mod basis_tests;

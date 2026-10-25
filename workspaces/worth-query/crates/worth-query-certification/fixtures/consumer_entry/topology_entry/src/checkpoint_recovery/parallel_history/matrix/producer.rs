@@ -43,6 +43,7 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
         ));
 }
 impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "matrix-provider";
     fn operation_input(&self, source: &source::Result) -> operation::Input {
         let (upstream, mut partitions) = self

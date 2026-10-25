@@ -18,6 +18,7 @@ use worth_query_host::facade::{
         WorthQueryApplicationContributionSetup, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
+        WorthQueryUndeclaredProducerDenial,
     },
     application_installation,
     primary_graph::{
@@ -37,6 +38,7 @@ pub(super) fn run() {
     missing_provider_precedes_initializer();
     duplicate_provider_is_denied();
     ambiguous_applicability_precedes_callbacks();
+    unbounded_denial_value::unbounded_denial_value_is_denied_before_initial_state();
 }
 
 macro_rules! producer_schema {
@@ -66,6 +68,8 @@ macro_rules! producer_schema {
         }
     };
 }
+
+mod unbounded_denial_value;
 
 producer_schema!(MissingProducerSchema, ProducerOmissionContribution);
 producer_schema!(DuplicateProducerSchema, DuplicateProducerContribution);
@@ -212,6 +216,7 @@ struct AmbiguousProvider;
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, AmbiguousProducer<Schema>> for AmbiguousProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.ambiguous-provider.v1";
 
     fn operation_input(&self, source: &PlanarReadResult) -> PlanarMutation {

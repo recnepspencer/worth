@@ -69,6 +69,7 @@ impl WorthQueryApplicationProducerBinding<Schema> for Producer {
         ));
 }
 impl WorthQueryApplicationProducerProvider<Schema, Producer> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "courtroom-equal-output-provider";
     fn operation_input(&self, source: &source::SuccessorReadResult) -> publication::Input {
         publication::Input {

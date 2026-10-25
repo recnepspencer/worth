@@ -61,6 +61,7 @@ pub(super) fn definition<I: ApplicationInvariantMarkerIdentity<RefusalSchema>>(
 
 pub(super) struct Rule {
     pub(super) ordinal: u64,
+    /// Cancels the request on finding a violation, instead of refusing.
     pub(super) cancellation: Option<WorthQueryCancellationSource>,
     pub(super) visits: Arc<Mutex<Vec<u64>>>,
     pub(super) reads: Arc<Mutex<Vec<ReadSample>>>,

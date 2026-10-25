@@ -10,6 +10,7 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::ApplicationSchema;
 
 mod demand;
+mod denial_value;
 pub(in crate::domain_computation::primary_graph) use demand::MatchedRequiredPredecessors;
 pub(in crate::domain_computation::primary_graph) use demand::{CurrentBasis, CurrentProof};
 pub use demand::{
@@ -17,6 +18,12 @@ pub use demand::{
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial,
     WorthQuerySelectedApplicationProducer,
+};
+pub use denial_value::{
+    WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
+    WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
+    WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
+    WorthQueryUndeclaredProducerDenial,
 };
 mod execution;
 pub(in crate::domain_computation::primary_graph) use execution::prepared_plan::OwnerPlan;
@@ -183,6 +190,13 @@ where
 {
     const SEMANTIC_IDENTITY: &'static str;
 
+    /// The declared canonical binding of the operation's domain denial, or
+    /// `WorthQueryUndeclaredProducerDenial`. A rejected decision carries the
+    /// encoded value to the demand's caller, who decodes it with this binding.
+    type DenialValue: WorthQueryProducerDenialDeclaration<
+        <Binding::Operation as ApplicationMutationBinding<Schema>>::Denial,
+    >;
+
     fn operation_input(
         &self,
         source: &<<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value,
@@ -195,7 +209,7 @@ where
     ) -> <Binding::Operation as ApplicationMutationBinding<Schema>>::IdempotencyKey;
 
     /// Optional domain-owned words for a rejected producer decision. This is
-    /// diagnostic text, never an authority or a machine-readable domain value.
+    /// diagnostic text beside the declared `DenialValue`, never an authority.
     /// Static text bounds retained diagnostic storage; no Debug text is parsed.
     fn domain_denial_reason(
         &self,
@@ -235,6 +249,10 @@ where
 
     const IDENTITY: &'static str;
     const APPLICABILITY: &'static [WorthQueryProducerApplicability];
+    /// Invariants each publication must satisfy before it is admitted. A
+    /// requirement is met when its rule passes, or when Relational proves the
+    /// publication touches no kind in the rule's declared closure. A rule
+    /// scoped out for any other reason, or missing, refuses the publication.
     const REQUIRED_INVARIANTS: &'static [WorthQueryProducerInvariantRequirement];
     const REUSE_POLICY: &'static str;
     const INPUT_REUSE: Option<WorthQueryProducerInputReuseContract> = None;

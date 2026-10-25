@@ -13,12 +13,12 @@ pub use catalog::{InvariantCatalog, InvariantRegistration};
 pub use contracts::InvariantPlanContract;
 pub use custom_rule::{
     CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,
-    CustomInvariantLeaseBudget, CustomInvariantPreparationError, CustomInvariantProvenance,
-    CustomInvariantRefusal, CustomInvariantRegistration, CustomInvariantRegistrationError,
-    CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantTouchedSummary,
-    CustomInvariantTraversalSummary, CustomInvariantVerdict, PlannedRelationEndpointUpdate,
-    StructuralAspectStateView, StructuralCountView, StructuralReadError, StructuralRelationRecord,
-    StructuralRelationView,
+    CustomInvariantLeaseBudget, CustomInvariantNonApplicability, CustomInvariantPreparationError,
+    CustomInvariantProvenance, CustomInvariantRefusal, CustomInvariantRegistration,
+    CustomInvariantRegistrationError, CustomInvariantRule, CustomInvariantScopePlanner,
+    CustomInvariantTouchedSummary, CustomInvariantTraversalSummary, CustomInvariantVerdict,
+    PlannedRelationEndpointUpdate, StructuralAspectStateView, StructuralCountView,
+    StructuralReadError, StructuralRelationRecord, StructuralRelationView,
 };
 pub(crate) use custom_rule::{
     CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,

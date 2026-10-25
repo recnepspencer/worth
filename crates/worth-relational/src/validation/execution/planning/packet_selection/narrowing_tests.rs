@@ -170,8 +170,14 @@ fn an_untouched_rule_spends_zero_and_narrowing_is_paid_once_at_both_postures() {
         // footprint serves both rules, so narrowing is two units, not four.
         assert_eq!(budget.charged_work(), 2 + 2 + 2);
         for selected in selected {
-            let InvariantPacketRegistration::CustomNotApplicable { work, .. } = selected else {
-                panic!("owner must prove non-applicability")
+            let InvariantPacketRegistration::CustomNotApplicable {
+                work,
+                basis:
+                    crate::validation::data::CustomInvariantNonApplicability::CandidateOutsideClosure,
+                ..
+            } = selected
+            else {
+                panic!("owner must prove the candidate outside the closure")
             };
             assert_eq!(work.charged_work(), 0);
         }

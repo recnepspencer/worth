@@ -50,6 +50,7 @@ pub(super) fn evaluate_registered_rule<'state>(
             prepared_scope,
             retained_touched,
             work,
+            basis,
         } => {
             let provenance = CustomInvariantExecutionContext::not_applicable_provenance(
                 runtime,
@@ -61,6 +62,7 @@ pub(super) fn evaluate_registered_rule<'state>(
                 std::sync::Arc::clone(retained_touched),
                 work.clone(),
                 std::sync::Arc::new(registration.access_contract().clone()),
+                *basis,
             );
             RegisteredInvariantEvaluation {
                 reported_rule: InvariantReportedRule::Custom(registration.descriptor().identity.clone()),
