@@ -1,5 +1,6 @@
 //! Native program transition before any World or ordinary writer exists.
 mod authoring;
+mod capture_funding;
 pub(super) mod codec;
 mod output_disposition;
 mod preserved_outputs;
@@ -43,8 +44,17 @@ pub struct WorthQueryCheckpointTransitionResources {
     maximum_selection_work: usize,
     maximum_authored_units: usize,
     maximum_authored_bytes: usize,
+    maximum_capture_bytes: Option<u64>,
 }
 impl WorthQueryCheckpointTransitionResources {
+    /// Bound only checkpoint capture, within the original bootstrap request.
+    /// Preparation and publication retain their admitted funding. Zero allows
+    /// publication but refuses capture, returning the acknowledged recovery owner.
+    pub fn with_capture_memory_limit(mut self, bytes: u64) -> Self {
+        self.maximum_capture_bytes = Some(bytes);
+        self
+    }
+
     pub fn bounded(
         maximum_selection_work: usize,
         maximum_authored_units: usize,
@@ -66,6 +76,7 @@ impl WorthQueryCheckpointTransitionResources {
             maximum_selection_work,
             maximum_authored_units,
             maximum_authored_bytes,
+            maximum_capture_bytes: None,
         })
     }
 }

@@ -19,7 +19,7 @@ use worth_query_host::facade::{
     },
     runtime::{
         CancellationToken, ExecutionAllocationDenial, ExecutionAllocationDenialKind,
-        ExecutionAllocationPolicy as Policy, ExecutionResourceLease, LeaseDenial, LeaseRequest,
+        ExecutionAllocationPolicy as Policy, LeaseDenial, LeaseRequest,
     },
 };
 
@@ -65,22 +65,11 @@ fn assert_memory_refusal(cause: &ExecutionAllocationDenial) {
     assert!(quote > 0);
 }
 
-fn assert_all_budget_available(lease: &ExecutionResourceLease<'_>) {
-    drop(
-        lease
-            .reserve_memory(PAYLOAD_BUDGET)
-            .expect("all inline payload charge released"),
-    );
-}
-
 #[test]
 fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_allocation() {
     // Obtain the process authority; the lease owns this proof's payload limit.
     let authority =
         worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
-    let parent = authority
-        .request_lease(lease_request(PAYLOAD_BUDGET, CancellationToken::new()))
-        .unwrap();
     let stopped = worth_query_host::facade::runtime::CancellationSource::new();
     let zero = authority
         .request_lease(lease_request(0, stopped.token()))
@@ -109,15 +98,58 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         };
     }
 
-    let refused_key = 0xa110_0001;
-    let (refused, work) = request!(&refused_key)
-        .execute_in_program_report(&host, Policy::Execution(&zero))
-        .into_parts();
-    let denial = match refused {
-        Err(RequestDenial::Handler(MutationHandlerExecutionDenial::Projection(denial))) => denial,
-        Err(denial) => panic!("zero payload budget refused at an unexpected owner: {denial:?}"),
-        Ok(_) => panic!("zero payload budget must refuse scope predicate retention"),
+    let foreign = publish_on_first_program();
+    let foreign_key = 0xa110_0000;
+    foreign.runtime().with_host_advancement(|phase| {
+        let mut request = request!(&foreign_key);
+        let (answer, work) = request.prepare_in_program_report_in_advancement(&phase, &host, Policy::SystemAllocation).into_parts();
+        assert!(matches!(answer, Err(RequestDenial::ExecutionRequest(
+            worth_query_host::facade::application_contribution::WorthQueryAdvancementDenial::Resource(
+                worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase
+            )
+        ))));
+        assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
+    }).unwrap();
+    let mut foreign_commit_request = request!(&foreign_key);
+    let candidate = match foreign_commit_request
+        .prepare_in_program(&host, Policy::SystemAllocation)
+        .unwrap()
+    {
+        Preparation::Prepared(candidate) => candidate,
+        Preparation::Settled(_) => panic!("foreign preparation did not claim the key"),
     };
+    foreign.runtime().with_host_advancement(|phase| {
+        let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denied)) = candidate.commit_report_in_advancement(&phase, Policy::SystemAllocation).into_outcome() else {
+            panic!("foreign phase must not commit the genuine candidate");
+        };
+        assert!(matches!(denied.kind(), CommitKind::ExecutionResource {
+            denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial::ForeignAdvancementPhase, ..
+        }));
+    }).unwrap();
+
+    let refused_key = 0xa110_0001;
+    let (denial, work) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let zero = crate::test_request_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                0,
+            );
+            let mut request = request!(&refused_key);
+            let (answer, work) = request
+                .prepare_in_program_report_in_advancement(&phase, &host, Policy::Execution(&zero))
+                .into_parts();
+            let cause = answer
+                .err()
+                .expect("zero payload budget must refuse scope predicate retention");
+            let RequestDenial::Handler(MutationHandlerExecutionDenial::Projection(denial)) = cause
+            else {
+                panic!("zero payload budget refused at an unexpected owner: {cause:?}");
+            };
+            (denial, work)
+        })
+        .unwrap();
     assert_eq!(
         denial.kind(),
         ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied)
@@ -140,20 +172,38 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         observe_head(runtime, branch).selected_commit(),
         original.selected_commit()
     );
-    assert_all_budget_available(&parent);
 
     let retained_key = 0xa110_0002;
     let mut retained_request = request!(&retained_key);
-    let candidate = {
-        let child = parent.controlled_child(CancellationToken::new(), None);
-        match retained_request
-            .prepare_in_program(&host, Policy::Execution(&child))
-            .expect("leased preparation")
-        {
-            Preparation::Prepared(candidate) => candidate,
-            Preparation::Settled(_) => panic!("fresh key must prepare a candidate"),
-        }
-    }; // Both the supplied child and attempt-local request control have ended.
+    let (candidate, mut custody_probe) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let parent = crate::test_request_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                PAYLOAD_BUDGET,
+            );
+            // A nonzero reservation retains this budget's lineage after the phase ends.
+            let probe = parent.reserve_memory(1).unwrap();
+            let candidate = {
+                let child = parent.controlled_child(CancellationToken::new(), None);
+                match retained_request
+                    .prepare_in_program_report_in_advancement(
+                        &phase,
+                        &host,
+                        Policy::Execution(&child),
+                    )
+                    .into_outcome()
+                    .expect("leased preparation")
+                {
+                    Preparation::Prepared(candidate) => candidate,
+                    Preparation::Settled(_) => panic!("fresh key must prepare a candidate"),
+                }
+            };
+            (candidate, probe)
+        })
+        .unwrap();
+    // Supplied child, parent lease, and attempt-local request control have ended.
     assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
     assert_eq!(
         observe_head(runtime, branch).selected_commit(),
@@ -161,13 +211,19 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
     );
     assert!(
         matches!(
-            parent.reserve_memory(PAYLOAD_BUDGET),
-            Err(worth_query_host::facade::runtime::MemoryLimitDenial::Capacity { requested, admitted, level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 } }) if requested == PAYLOAD_BUDGET && admitted < PAYLOAD_BUDGET
+            custody_probe.resize(PAYLOAD_BUDGET),
+            Err(worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                requested, admitted,
+                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
+            }) if requested == PAYLOAD_BUDGET && admitted < PAYLOAD_BUDGET
         ),
-        "the unpublished candidate owns the backing charge after child drop"
+        "candidate owns its backing after the preparation phase ends"
     );
     drop(candidate);
-    assert_all_budget_available(&parent);
+    custody_probe
+        .resize(PAYLOAD_BUDGET)
+        .expect("all candidate backing released");
+    drop(custody_probe);
 
     let commit_key = 0xa110_0003;
     let mut system_request = request!(&commit_key);
@@ -178,9 +234,19 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         Preparation::Prepared(candidate) => candidate,
         Preparation::Settled(_) => panic!("fresh System key must prepare"),
     };
-    assert_all_budget_available(&parent);
-    let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) =
-        candidate.commit(Policy::Execution(&zero))
+    let Outcome::Commit(WorthQueryApplicationUncommitted::Denied(denial)) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let zero = crate::test_request_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                0,
+            );
+            candidate
+                .commit_report_in_advancement(&phase, Policy::Execution(&zero))
+                .into_outcome()
+        })
+        .unwrap()
     else {
         panic!("provider backing refusal must remain public Uncommitted::Denied");
     };
@@ -203,12 +269,15 @@ fn ordinary_mutation_preserves_leased_backing_typed_refusals_and_replay_before_a
         observe_head(runtime, branch).selected_commit(),
         original.selected_commit()
     );
-    assert_all_budget_available(&parent);
 
     let committed_key = 0xa110_0004;
-    let (committed, work) = request!(&committed_key)
-        .execute_in_program_report(&host, Policy::Execution(&parent))
-        .into_parts();
+    let (committed, work) = runtime
+        .with_application_advancement(&scope, |phase| {
+            request!(&committed_key)
+                .execute_in_program_report_in_advancement(&phase, &host)
+                .into_parts()
+        })
+        .unwrap();
     let Outcome::Committed { receipt, .. } = committed.expect("ordinary leased execution") else {
         panic!("fresh lawful retention must commit");
     };

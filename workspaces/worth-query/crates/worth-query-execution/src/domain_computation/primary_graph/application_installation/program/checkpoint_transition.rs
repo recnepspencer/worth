@@ -155,6 +155,23 @@ where
     capture_policy.check_live().map_err(|error| {
         WorthQueryInMemoryApplicationDenial::CheckpointTransitionPolicyStopped(error.into())
     })?;
+    if resources.capture_memory_limit_is_set() {
+        phase
+            .funded_capture_policy()
+            .map_err(WorthQueryInMemoryApplicationDenial::Graph)?;
+    }
+    let capture_lease = resources
+        .capture_lease(phase.execution_request(), capture_policy)
+        .map_err(|cause| {
+            WorthQueryInMemoryApplicationDenial::Graph(
+                super::super::super::bootstrap::request_denial(
+                    super::super::super::application_contribution::advancement_denial(cause),
+                ),
+            )
+        })?;
+    let capture_policy = capture_lease
+        .as_ref()
+        .map_or(capture_policy, WorthQueryCheckpointCapturePolicy::Execution);
     let recovery = std::rc::Rc::new(std::cell::RefCell::new(None));
     let result = super::construction::in_memory_program_in_advancement(
         phase,

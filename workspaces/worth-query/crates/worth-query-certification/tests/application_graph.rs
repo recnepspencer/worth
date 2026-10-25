@@ -107,3 +107,6 @@ mod process_deadline;
 
 #[path = "application_graph/workflow_owning.rs"]
 mod workflow_owning;
+
+#[path = "support/checkpoint_capture.rs"]
+mod checkpoint_capture;

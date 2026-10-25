@@ -1,8 +1,5 @@
 //! Same acknowledged successor and funded historical roster survive capture retry.
 use super::*;
-use worth_foundational::{
-    DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
-};
 #[test]
 fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roster() {
     let (original, settlement) = original(model::authored_value());
@@ -11,32 +8,34 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     let checkpoint = old::host::capture(&original);
     let held = checkpoint.clone();
     let bytes = checkpoint.bytes().to_vec();
-    let scope = request_scope();
-    let capture = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
-        policy: ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, Some(0), Some(1)),
-        ),
-        cancellation: scope.cancellation().execution_token(),
-        deadline: scope.deadline(),
-    })
-    .unwrap();
     successor::output::reset_decodes();
     let mut callbacks = 0;
-    let denied = transition_counted(
-        checkpoint,
-        installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
-        &mut callbacks,
-    )
-    .err()
-    .expect("native ACK precedes real capture exhaustion");
-    let installation::WorthQueryInMemoryApplicationDenial::CheckpointTransitionCaptureStopped(
-        pending,
-    ) = denied
-    else {
-        panic!("expected acknowledged custody, got {denied:?}")
-    };
+    let pending = crate::checkpoint_capture::stopped(|phase| {
+        callbacks = 0;
+        installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement(
+            phase,
+            new::host::program::<new::program::TargetProgram>(),
+            installation::WorthQueryApplicationProgramRoster::new(),
+            successor::schema::CanonicalSchema::declaration().unwrap(),
+            ((),),
+            ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
+            successor::host::limits(),
+            checkpoint.clone(),
+            installation::WorthQueryCheckpointProgramPredecessor::new(
+                &old::host::program::<old::program::SourceProgram>()
+                    .revision()
+                    .to_string(),
+            )
+            .unwrap(),
+            installation::WorthQueryCheckpointTransitionResources::bounded(65_536, 32, 65_536)
+                .unwrap()
+                .with_capture_memory_limit(0),
+            |_, _| {
+                callbacks += 1;
+                Ok(())
+            },
+        )
+    });
     let Some(installation::WorthQueryCheckpointCaptureDenial::Allocation(cause)) =
         pending.capture_denial()
     else {
@@ -58,35 +57,16 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
     );
     assert_eq!(callbacks, 1);
     assert_eq!(successor::output::decodes(), 0);
-    let repaired = worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-        ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(
-                std::num::NonZeroUsize::MIN,
-                Some(64 * 1024 * 1024),
-                Some(8_000_000),
-            ),
-        ),
-        |phase| {
-            // A second failed attempt returns the SAME capsule and roster.
-            let pending = pending
-                .repair_to_checkpoint(
-                    &phase,
-                    installation::WorthQueryCheckpointCapturePolicy::Execution(&capture),
-                )
-                .err()
-                .expect("capture still unfunded");
-            assert!(pending.capture_denial().is_some());
-            pending
-                .repair_to_checkpoint(
-                    &phase,
-                    installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-                )
-                .unwrap()
-        },
-    )
-    .unwrap();
+    // An unfunded original request returns the same acknowledged capsule again.
+    let zero = crate::checkpoint_capture::lease(0);
+    let pending = pending
+        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&zero))
+        .unwrap_err();
+    assert!(pending.capture_denial().is_some());
+    let funded = crate::checkpoint_capture::lease(64 * 1024 * 1024);
+    let repaired = pending
+        .repair_to_checkpoint_with_request(worth_execution::ExecutionRequest::leased(&funded))
+        .unwrap();
     assert_eq!(callbacks, 1, "same-capsule repair never reauthors");
     assert_eq!(held.bytes(), bytes);
     let target = new::host::restore::<new::program::TargetProgram>(
