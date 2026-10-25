@@ -1,6 +1,4 @@
-use crate::history::{
-    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
-};
+use crate::history::HistoryReclamationDenial;
 use worth_signal::facade::{SignalError, SignalTransaction};
 
 #[cfg(test)]
@@ -311,16 +309,23 @@ pub(crate) trait RuntimeWorldLifecycleService:
     fn bootstrap_root(&self, intent: RuntimeWorldBootstrapIntent) -> RuntimeWorldBootstrapOutcome;
 
     fn close(&self) -> Result<RuntimeWorldCloseReport, RuntimeWorldCloseDenial>;
-    fn reclaim_history(
-        &self,
-        request: CompositeHistoryReclamationRequest,
-    ) -> Result<HistoryReclamationOutcome, HistoryReclamationDenial>;
     /// Retire the unprotected history behind `keep` and reclaim the pins only
     /// that history held. Returns the retired commits, oldest first.
     fn retire_unprotected_history(
         &self,
         keep: &crate::identity::CompositeCommitIdentity,
     ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, HistoryReclamationDenial>;
+    /// Release the history only a closed branch needed, from `from` toward
+    /// the root, and reclaim the pins only that history held.
+    fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<crate::history::RetiredBranchHistoryRelease, HistoryReclamationDenial>;
+    /// The commits of `candidates` history still retains.
+    fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Vec<crate::identity::CompositeCommitIdentity>;
     fn reclaim_retention(
         &self,
         keys: &[crate::inspection::RuntimeWorldRetentionKey],

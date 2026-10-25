@@ -1,8 +1,6 @@
 use super::super::ports::RuntimeWorldLifecycleService;
 use super::super::RuntimeWorldOwnerUnavailable;
-use crate::history::{
-    CompositeHistoryReclamationRequest, HistoryReclamationDenial, HistoryReclamationOutcome,
-};
+use crate::history::HistoryReclamationDenial;
 use crate::lifecycle::RuntimeWorldServiceDenial;
 use std::sync::{Arc, Weak};
 
@@ -46,15 +44,6 @@ impl RuntimeWorldLifecyclePort {
             .close()
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
-    pub fn reclaim_history(
-        &self,
-        request: CompositeHistoryReclamationRequest,
-    ) -> Result<HistoryReclamationOutcome, RuntimeWorldServiceDenial<HistoryReclamationDenial>>
-    {
-        self.service()?
-            .reclaim_history(request)
-            .map_err(RuntimeWorldServiceDenial::Denied)
-    }
     /// Retires every commit behind `keep` that nothing protects: no product
     /// head, second child, observation, traversal, receipt or unconsumed
     /// delivery. The oldest kept commit becomes the history base, and a
@@ -72,6 +61,31 @@ impl RuntimeWorldLifecyclePort {
         self.service()?
             .retire_unprotected_history(keep)
             .map_err(RuntimeWorldServiceDenial::Denied)
+    }
+    /// Releases the history a closed branch alone needed, from `from` (its
+    /// retired head) toward the root, past its fork point into inherited
+    /// history nothing live reaches. A commit a live product head or a live
+    /// descendant reaches ends the release: that owner keeps the rest. A
+    /// commit only a held read, receipt, forming child or unconsumed delivery
+    /// needs is reported as the commit to resume from once it is let go.
+    pub fn release_retired_branch_history(
+        &self,
+        from: &crate::identity::CompositeCommitIdentity,
+    ) -> Result<
+        crate::history::RetiredBranchHistoryRelease,
+        RuntimeWorldServiceDenial<HistoryReclamationDenial>,
+    > {
+        self.service()?
+            .release_retired_branch_history(from)
+            .map_err(RuntimeWorldServiceDenial::Denied)
+    }
+    /// The commits of `candidates` history still retains, in their given
+    /// order. Retired and released commits never return.
+    pub fn retained_commits(
+        &self,
+        candidates: &[crate::identity::CompositeCommitIdentity],
+    ) -> Result<Vec<crate::identity::CompositeCommitIdentity>, RuntimeWorldOwnerUnavailable> {
+        Ok(self.service()?.retained_commits(candidates))
     }
     pub fn reclaim_retention(
         &self,

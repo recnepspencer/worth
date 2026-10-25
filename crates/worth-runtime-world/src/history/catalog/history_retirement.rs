@@ -14,7 +14,9 @@ use std::sync::{Arc, OnceLock};
 
 use crate::identity::CompositeCommitIdentity;
 
-use super::support::{detach_installed, effective_parent, lock_state, validate_owner};
+use super::support::{
+    detach_installed, effective_parent, lock_state, remove_installed, validate_owner,
+};
 use super::{lock_index, CompositeHistoryCatalog, CompositeHistoryCatalogDenial};
 use super::{CompositeHistoryCatalogEntry, CompositeHistoryCatalogState};
 
@@ -73,6 +75,96 @@ impl CompositeHistoryCatalog {
         }
         retired.reverse();
         Ok(retired)
+    }
+
+    /// Releases the history a closed branch alone needed, walking from
+    /// `from` toward the root. Each commit with no protection and no
+    /// descendant is removed, which ends its parent's dependency on it, so
+    /// the walk continues past the branch's fork point into inherited
+    /// history no live branch reaches any more. It stops at the first
+    /// commit something still needs: a head a live product reference carries
+    /// or an installed descendant owns that commit and everything behind it,
+    /// so the release is complete; a held read, receipt, forming child,
+    /// unconsumed delivery or a head still in publication or creation custody
+    /// owns nothing behind it, so the walk reports it as the commit to resume
+    /// from. A `from` already removed has nothing left to release. Whoever
+    /// later removes an owning descendant walks on from it the same way.
+    pub(crate) fn release_retired_branch_history(
+        &self,
+        from: &CompositeCommitIdentity,
+    ) -> Result<
+        (RetiredHistoryEntries, Option<CompositeCommitIdentity>),
+        CompositeHistoryCatalogDenial,
+    > {
+        let mut state = lock_state(&self.state);
+        validate_owner(&state, from.owner_identity())?;
+        let mut released = Vec::new();
+        let mut next = Some(from.clone());
+        while let Some(commit) = next.take() {
+            let Some(entry) = installed(&state, &commit) else {
+                break;
+            };
+            match retired_branch_need(&state, &commit) {
+                RetiredBranchNeed::Owned => break,
+                RetiredBranchNeed::Held => return Ok((released, Some(commit))),
+                RetiredBranchNeed::Unneeded => {}
+            }
+            next = effective_parent(&state, entry.commit()).map(|(parent, _)| parent);
+            released.push(remove_installed(&mut state, &commit));
+        }
+        Ok((released, None))
+    }
+
+    /// The commits of `candidates` still installed, in their given order.
+    pub(crate) fn retained_commits(
+        &self,
+        candidates: &[CompositeCommitIdentity],
+    ) -> Vec<CompositeCommitIdentity> {
+        let state = lock_state(&self.state);
+        candidates
+            .iter()
+            .filter(|commit| installed(&state, commit).is_some())
+            .cloned()
+            .collect()
+    }
+}
+
+enum RetiredBranchNeed {
+    Unneeded,
+    /// A live product head or a descendant owns this commit's ancestry.
+    Owned,
+    /// Something that owns no ancestry still needs this commit.
+    Held,
+}
+
+fn retired_branch_need(
+    state: &CompositeHistoryCatalogState,
+    commit: &CompositeCommitIdentity,
+) -> RetiredBranchNeed {
+    let reachability = lock_index(&state.reachability)
+        .lookup(commit)
+        .expect("an installed commit has a reachability row");
+    // A head a live product reference carries owns its ancestry whatever
+    // else is forming on it; one still in custody is only held.
+    if reachability.held_by_product_head() {
+        return RetiredBranchNeed::Owned;
+    }
+    if reachability.descendant_dependencies() > 0 {
+        // A child still forming may be abandoned, leaving this commit with
+        // no descendant; only an installed child owns the ancestry.
+        return if reachability.has_forming_child() {
+            RetiredBranchNeed::Held
+        } else {
+            RetiredBranchNeed::Owned
+        };
+    }
+    let awaits_delivery = installed(state, commit)
+        .and_then(|entry| entry.publication.as_ref())
+        .is_some_and(|publication| publication.awaits_delivery());
+    if awaits_delivery || reachability.direct_protections() > 0 {
+        RetiredBranchNeed::Held
+    } else {
+        RetiredBranchNeed::Unneeded
     }
 }
 

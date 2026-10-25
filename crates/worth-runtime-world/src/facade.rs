@@ -53,11 +53,11 @@ pub use crate::budget::{
 pub use crate::history::{
     CompositeAncestorSelectionDenial, CompositeCallerCorrelation, CompositeCommitParent,
     CompositeCommitProvenance, CompositeComponentChangePosture, CompositeHistoryCatalogDenial,
-    CompositeHistoryReclamationRequest, CompositeHistoryTraversal, CompositeRuntimeWorldCommit,
-    CompositeSignalPublicationIdentity, HistoryCatalogCounters, HistoryMetadataLedger,
-    HistoryReclamationDenial, HistoryReclamationOutcome, OrdinaryParent,
-    RuntimeWorldPerformedPublicationProtection, RuntimeWorldPublicationCursor,
-    RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage, RuntimeWorldPublicationRow,
+    CompositeHistoryTraversal, CompositeRuntimeWorldCommit, CompositeSignalPublicationIdentity,
+    HistoryCatalogCounters, HistoryMetadataLedger, HistoryReclamationDenial, OrdinaryParent,
+    RetiredBranchHistoryRelease, RuntimeWorldPerformedPublicationProtection,
+    RuntimeWorldPublicationCursor, RuntimeWorldPublicationFrontier, RuntimeWorldPublicationPage,
+    RuntimeWorldPublicationRow,
 };
 
 pub use crate::identity::{

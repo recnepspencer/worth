@@ -72,25 +72,21 @@ fn cold_retiring_replacement_cannot_drop_delete_unlink_or_exclusivity() {
                     && matches!(defect, "source-bound" | "target-bound") =>
                 {
                     let old = integrity.cardinality;
-                    *integrity = ApplicationRelationIntegrity::new(
-                        integrity.endpoints,
-                        ApplicationRelationCardinality::new(
-                            None,
-                            if defect == "source-bound" {
-                                None
-                            } else {
-                                old.source_max
-                            },
-                            None,
-                            if defect == "target-bound" {
-                                None
-                            } else {
-                                old.target_max
-                            },
-                            None,
-                            None,
-                        ),
-                        integrity.deletion,
+                    integrity.cardinality = ApplicationRelationCardinality::new(
+                        None,
+                        if defect == "source-bound" {
+                            None
+                        } else {
+                            old.source_max
+                        },
+                        None,
+                        if defect == "target-bound" {
+                            None
+                        } else {
+                            old.target_max
+                        },
+                        None,
+                        None,
                     );
                     changed = true;
                 }

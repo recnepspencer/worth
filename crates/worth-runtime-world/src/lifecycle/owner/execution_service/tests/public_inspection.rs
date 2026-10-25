@@ -100,13 +100,8 @@ fn public_performed_recovery_is_exclusive_and_history_has_real_pin_counts() {
         upgraded.recover_performed(&commit),
         Err(PerformedPublicationRecoveryDenial::OwnerUnavailable(_))
     ));
-    let request = crate::history::CompositeHistoryReclamationRequest::new(
-        commit.owner_identity(),
-        vec![commit],
-        1,
-    );
     assert!(matches!(
-        upgraded.reclaim_history(request),
+        upgraded.release_retired_branch_history(&commit),
         Err(crate::history::HistoryReclamationDenial::OwnerUnavailable(
             _
         ))

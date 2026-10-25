@@ -8,11 +8,17 @@ use super::denial::CompositeHistoryCatalogDenial;
 
 /// The only reachability fact the history owner stores for an installed
 /// occurrence. A dependency is acquired before a child reservation escapes;
-/// direct protection is acquired by an exact RAII obligation.
+/// direct protection is acquired by an exact RAII obligation. The share of
+/// direct protections seated in a live product reference is counted apart, so
+/// a retired branch can tell history a live branch owns from a held read or a
+/// head still in custody; so is the share of dependencies whose child is
+/// still forming.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub(in crate::history) struct HistoryReachabilityRecord {
     descendant_dependencies: usize,
+    forming_children: usize,
     direct_protections: usize,
+    product_head_protections: usize,
 }
 
 impl HistoryReachabilityRecord {
@@ -20,8 +26,16 @@ impl HistoryReachabilityRecord {
         self.descendant_dependencies
     }
 
+    pub(super) const fn has_forming_child(self) -> bool {
+        self.forming_children > 0
+    }
+
     pub(super) const fn direct_protections(self) -> usize {
         self.direct_protections
+    }
+
+    pub(super) const fn held_by_product_head(self) -> bool {
+        self.product_head_protections > 0
     }
 }
 
@@ -103,8 +117,34 @@ impl HistoryReachabilityIndex {
                 .ok_or_else(|| {
                     CompositeHistoryCatalogDenial::DependencyCountOverflow(parent.clone())
                 })?;
+        // A share of the dependencies, so it cannot overflow first.
+        record.forming_children += 1;
         lock_counters(&self.counters).record_dependency_increment();
         Ok(())
+    }
+
+    /// The reserved child of `parent` installed; its dependency stays.
+    pub(super) fn install_forming_child(&mut self, parent: &CompositeCommitIdentity) {
+        self.settle_forming_child(parent);
+    }
+
+    /// The reserved child of `parent` was abandoned with its dependency.
+    pub(super) fn abandon_forming_child(&mut self, parent: &CompositeCommitIdentity) {
+        self.settle_forming_child(parent);
+        self.decrement_descendant_dependency(parent);
+    }
+
+    fn settle_forming_child(&mut self, parent: &CompositeCommitIdentity) {
+        let slot = self
+            .records
+            .get(parent)
+            .expect("a reserved child retains an installed parent row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
+        record.forming_children = record
+            .forming_children
+            .checked_sub(1)
+            .expect("each reserved child settles once");
     }
 
     pub(super) fn decrement_descendant_dependency(&mut self, parent: &CompositeCommitIdentity) {
@@ -128,7 +168,7 @@ impl HistoryReachabilityIndex {
         let record = held
             .as_mut()
             .expect("new installation has a reachability row");
-        assert_eq!(record.direct_protections, 0);
+        assert_eq!(*record, HistoryReachabilityRecord::default());
         record.direct_protections = 1;
         lock_counters(&self.counters).record_direct_protection_acquisition();
     }
@@ -173,6 +213,34 @@ impl HistoryReachabilityIndex {
             .checked_sub(1)
             .expect("each protection obligation releases one direct protection");
         lock_counters(&self.counters).record_direct_protection_release();
+    }
+
+    /// A live product reference now carries the head protection on
+    /// `identity`; it is a share of that commit's direct protections.
+    pub(in crate::history) fn seat_product_head(&mut self, identity: &CompositeCommitIdentity) {
+        self.adjust_seated_heads(identity, |seated| seated.checked_add(1));
+    }
+
+    /// The product reference that carried a head on `identity` let it go.
+    pub(in crate::history) fn unseat_product_head(&mut self, identity: &CompositeCommitIdentity) {
+        self.adjust_seated_heads(identity, |seated| seated.checked_sub(1));
+    }
+
+    fn adjust_seated_heads(
+        &mut self,
+        identity: &CompositeCommitIdentity,
+        adjust: impl FnOnce(usize) -> Option<usize>,
+    ) {
+        let slot = self
+            .records
+            .get(identity)
+            .expect("a seated head protection retains its installed row");
+        let mut held = lock_slot(slot);
+        let record = held.as_mut().expect("installed reachability record");
+        let seated = adjust(record.product_head_protections)
+            .expect("each head is seated at most once and unseated once");
+        assert!(seated <= record.direct_protections);
+        record.product_head_protections = seated;
     }
 
     pub(super) fn remove_installed(

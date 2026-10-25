@@ -208,17 +208,14 @@ impl ModelRun {
         self.steps.push("reclaim unpublished successor".into());
         assert!(self.model.reclaim(unpublished));
         let identity = self.observer.commit(unpublished);
-        let reclaimed = self
+        let released = self
             .court
             .world
             .lifecycle_port()
-            .reclaim_history(CompositeHistoryReclamationRequest::new(
-                self.court.world.owner_identity(),
-                vec![identity.clone()],
-                1,
-            ))
+            .release_retired_branch_history(&identity)
             .unwrap();
-        assert_eq!(reclaimed.reclaimed_commits(), &[identity]);
+        assert_eq!(released.reclaimed_commits(), &[identity]);
+        assert_eq!(released.held_commit(), None);
         self.court
             .world
             .lifecycle_port()

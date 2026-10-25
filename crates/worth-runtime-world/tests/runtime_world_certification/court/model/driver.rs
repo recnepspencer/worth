@@ -193,31 +193,22 @@ impl ModelRun {
         );
         drop(head);
         self.check(request_execution);
-        for identity in chain {
-            self.steps.push(format!("reclaim {identity}"));
-            let expected = self.model.reclaim(identity);
-            let commit = self.observer.commit(identity);
-            let report = self
-                .court
-                .world
-                .lifecycle_port()
-                .reclaim_history(CompositeHistoryReclamationRequest::new(
-                    self.court.world.owner_identity(),
-                    vec![commit.clone()],
-                    1,
-                ))
-                .unwrap();
-            assert!(report.examined() <= 1);
-            assert_eq!(
-                report.reclaimed_commits(),
-                if expected {
-                    std::slice::from_ref(&commit)
-                } else {
-                    &[]
-                }
-            );
-            self.check(request_execution);
-        }
+        self.steps.push("release work history".into());
+        // The model reclaims head first; what it frees is the walk's prefix.
+        let expected: Vec<_> = chain
+            .iter()
+            .copied()
+            .filter(|&identity| self.model.reclaim(identity))
+            .map(|identity| self.observer.commit(identity))
+            .collect();
+        let released = self
+            .court
+            .world
+            .lifecycle_port()
+            .release_retired_branch_history(&self.observer.commit(chain[0]))
+            .unwrap();
+        assert_eq!(released.reclaimed_commits(), expected.as_slice());
+        self.check(request_execution);
         for keys in keys.chunks(2) {
             let report = self
                 .court

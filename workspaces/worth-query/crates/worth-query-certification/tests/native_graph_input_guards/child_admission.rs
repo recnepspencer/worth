@@ -103,7 +103,8 @@ fn transported_children_cannot_change_parent_topology_or_drop_contracts() {
                     || (relation == "RowCellArchive" && defect == "shared-secondary-owner") =>
                 {
                     *integrity =
-                        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+                        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling()
+                            .into();
                     changed = true;
                 }
                 _ => {}

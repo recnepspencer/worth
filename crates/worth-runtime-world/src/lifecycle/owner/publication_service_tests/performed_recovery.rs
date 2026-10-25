@@ -218,3 +218,92 @@ fn delivery_protects_retired_history_and_releases_its_envelope_charge_once() {
         .unwrap()
         .is_none());
 }
+
+/// A retained ProductUnpublished record's installed successor is a child of a
+/// branch head that then closes. The child owns the closed head, so the
+/// close completes; recovery cleanup releases the child by walking on from
+/// it, which takes the closed branch's history with it.
+#[test]
+fn recovery_cleanup_walks_an_unpublished_successor_through_its_closed_branch() {
+    use crate::lifecycle::RuntimeWorldBranchService;
+    let (fixture, owner, expected) = setup();
+    let cell = owner.state.branches.root_cell().unwrap();
+    let ready = ready_relational(&fixture, &owner, &expected, "closed-unwind");
+    let injection = crate::branch::publication_unwind::arm_materialized();
+    assert!(catch_unwind(AssertUnwindSafe(
+        || ready.publish(&cell, CompositeLateCancellationPosture::NotRequested)
+    ))
+    .is_err());
+    drop(injection);
+    let handle = owner.recovery_handles().pop().unwrap();
+    let record = owner.inspect_recovery(&handle).unwrap();
+    let unpublished = record.successor_commit().unwrap().clone();
+    drop(record);
+    let head = expected.selected_commit().clone();
+    drop(owner.retire_product_branch(&expected).unwrap());
+    drop((cell, expected));
+    let (released, held) = owner
+        .state
+        .history
+        .release_retired_branch_history(&head)
+        .unwrap();
+    assert_eq!((released.len(), held), (0, None), "the child owns the head");
+
+    assert!(owner.cleanup_recovery_handle(&handle).is_some());
+    let (released, held) = owner
+        .state
+        .history
+        .release_retired_branch_history(&unpublished)
+        .unwrap();
+    assert_eq!(held, None);
+    assert_eq!(released.len(), 2, "the successor and the closed head");
+    drop(released);
+    assert_eq!(
+        owner.state.history.len(),
+        0,
+        "nothing stays without an owner"
+    );
+}
+
+/// Only a head an installed reference carries owns the ancestry behind it: the
+/// registry seats the installed root, a publication passes the seat to its
+/// successor, and retiring the branch gives it up.
+#[test]
+fn an_installed_head_owns_its_ancestry_until_the_branch_retires() {
+    use crate::lifecycle::RuntimeWorldBranchService;
+    let (fixture, owner, expected) = setup();
+    let walk = |head: &crate::identity::CompositeCommitIdentity| {
+        owner
+            .state
+            .history
+            .release_retired_branch_history(head)
+            .unwrap()
+    };
+    let (released, held) = walk(expected.selected_commit());
+    assert_eq!(
+        (released.len(), held),
+        (0, None),
+        "the installed root owns its head"
+    );
+    let cell = owner.state.branches.root_cell().unwrap();
+    let ready = ready_relational(&fixture, &owner, &expected, "seated-successor");
+    let RuntimeWorldPublicationOutcome::Performed(performed) =
+        ready.publish(&cell, CompositeLateCancellationPosture::NotRequested)
+    else {
+        panic!("CAS must perform")
+    };
+    let head = performed.commit().identity().clone();
+    performed.consume();
+    let (released, held) = walk(&head);
+    assert_eq!(
+        (released.len(), held),
+        (0, None),
+        "the successor took the seat"
+    );
+    drop(owner.retire_product_branch(&expected).unwrap());
+    drop((cell, expected));
+    let (released, held) = walk(&head);
+    assert_eq!((released.len(), held), (2, None), "the head and its root");
+    drop(released);
+    assert_eq!(owner.state.history.len(), 0);
+}

@@ -131,8 +131,8 @@ fn seeded_forks_switches_and_deleted_ancestors_equal_full_computation() {
             "round {round}: both worlds received each edit"
         );
     }
-    let _child_cleanup = close_ancestor(&kept, child);
-    let _full_child_cleanup = close_ancestor(&fresh, full_child);
+    close_ancestor(&kept, child);
+    close_ancestor(&fresh, full_child);
     let step = models[2].step(Kind::Value, &mut rng);
     apply(
         &kept,
@@ -142,8 +142,8 @@ fn seeded_forks_switches_and_deleted_ancestors_equal_full_computation() {
     );
     apply(&fresh, full_nested, step.changes, &mut command[1]);
     judge(&run(&kept, nested), &run(&fresh, full_nested), None);
-    let _parent_cleanup = close_ancestor(&kept, parent);
-    let _full_parent_cleanup = close_ancestor(&fresh, full_parent);
+    close_ancestor(&kept, parent);
+    close_ancestor(&fresh, full_parent);
     let step = models[2].step(Kind::Value, &mut rng);
     apply(
         &kept,

@@ -1475,3 +1475,124 @@ with zero red rows. No test limits, matrix width or scheduling policy changed.
 All public integration execution and static gates are closed. This clears the
 public merge candidate for final reviewer commit/push review on the task branch;
 private restoration, qualification and Phase 2/default-branch closure remain open.
+
+## Phase 2 final ancestry refresh: fork-history integration
+
+A further fetch before default-branch integration finds public master at
+`399bf81e89e6664c2d9362dabc746bd378b4ce98` (eleven commits and 51 changed paths
+since d6f5fed45c) and private main at
+`1ba3774617a7274efaea7193e322105993ebea07` (three commits and six paths since
+98e3f26179). The qualified public candidate remains 5ef1004018; the current
+private patch is staged and recoverable, and its current workspace CI passes
+3,202 tests across 96 binaries with 16 existing skips. All 214 doctests pass,
+including nine CAD facade examples. Its remaining pure gates are still running.
+These results remain evidence for those exact sources, not the new merge.
+
+The new public boundary is World branch custody/history release and Query owner
+cleanup, with real correction fork-adoption courts. Topology's descendant-close
+courts now require the ancestor's close to complete while descendants keep their
+history. Private main changes SDK pins, two progress documents and its installed
+close court to that same behavior. Preserve this new ownership/close contract;
+do not restore the previous pending-cleanup expectation or replace its pin with
+an older SDK. The new gate script adds an existing UI command's compiler-wrapper
+workaround; fixture scheduling and matrix assertions are unchanged.
+
+Before further implementation, the reviewer assesses this bounded sequence:
+
+1. Finish the private pure oracle/determinism/sketch gates without changing the
+   sources they compile. Their dependency closures contain no public SDK and
+   the six new private paths do not change those owners. Keep this honest
+   reusable evidence, the accepted unchanged freshness partition and confirmed
+   HookMode baseline; preserve both original dirty checkouts.
+2. Merge the new public origin/master into the task without automatic commit.
+   Review actual World/Query retirement, correction and observation overlaps.
+   Relational and all its dependencies are unchanged by these 51 paths, so the
+   qualified Native law/prerequisite evidence remains applicable. Qualify the
+   changed World owner/certification, Query execution, Graph/correction and
+   consumer/ordinary fixture surfaces, plus constitutional/scoped static gates.
+   Use the supported canonical fixture scheduling and hold default branches.
+3. After current private jobs terminate, preserve its complete current 18-file
+   patch in a new exact recoverable stash/backup, fast-forward the clean private
+   task to the new main and restore deliberately. Keep the upstream installed
+   close court and updated capability facts. Adopt one published qualified
+   public merge revision in all seven direct pins and 17 locked packages.
+4. Run current SDK-dependent all-targets check, workspace CI and doctests on the
+   final private candidate; its CI includes the real history hostile/twin and
+   all current CAD courts. Recheck affected static source/doc constraints.
+   Reuse only unchanged pure owner evidence, without repeating already green
+   unrelated suites. Final reviewer clearance and fresh ancestry checks still
+   precede any default-branch advance. Phases 3-6 remain future work.
+
+### Archive fixture compatibility exposed by the broader build
+
+The canonical Query group build exposes two real E0308 errors in the native
+path-input certification target: child_admission and retiring_admission assign
+ApplicationRelationIntegrity into the owned ApplicationRelationIntegrityRecord.
+This is a missed test-fixture migration from this goal's Phase 2 portable archive
+DTO change. It is causal compatibility work, not unrelated incoming debt.
+
+The failed broad build's remaining native_operation_bodies portfolio compiler
+was positively traced through its sccache/Cargo parents to this task's exact
+output directory, then intentionally stopped (PID 77156 only). That unrelated
+portfolio is not passing evidence; the failed build and cancellation record
+remain preserved. Its partial compiler stream includes both real errors and
+successfully emitted current QueryExecution/Graph artifacts.
+
+Before the repair: convert the child's intentionally replaced whole declaration
+to its owned record explicitly. In the retiring fixture, mutate only the owned
+cardinality field so endpoint/deletion policy and owned law metadata survive.
+Keep all existing malformed-archive denials and lawful admission expectations.
+Run the complete native_graph_input_guards target after the fix, plus scoped
+format/size/function/whitespace checks. It is outside World's dependency closure;
+World's existing owner/certification job may finish unchanged. QueryExecution
+and Graph do not include these two fixture files, so their exact already-emitted
+current artifacts can use the original canonical execution lanes without another
+broad portfolio build. Do not call the interrupted whole-group build green.
+
+The two archive fixtures now use the owned boundary correctly, with no changed
+denial or lawful-control assertion. Their complete native_graph_input_guards
+target passes all 41 tests in 2.26 seconds. The reviewer accepts both exact hunks
+and the three additional existing court advisories. Final scoped static checks
+cover 47 Rust files: formatting, caps and whitespace pass; all 30 advisories are
+accepted, with zero scan errors. Normal boundary/context checks pass and remain
+applicable because their only subsequent changes are these fixture conversions.
+
+World passes all 279 unit courts and 42 active certification courts, with three
+existing ignores; its public compile-fail contract cases and actual publication
+example also pass. The consumer all-targets build passes with its five retained
+optional shared_execution harness warnings. Its actual inventory remains 390:
+Parameter 3, ConsumerRoot 80, Topology 302, SharedExecution 1, RequiredFeature 3,
+InvariantReads 1; the extra zero-test profile contributes no evidence. Current
+Query/Graph execution, actual changed correction/ordinary consumer journeys and
+the canonical fixture gate remain open. The complete matrix is deferred until
+all other task-heavy jobs finish.
+
+The selected current Query artifact passes its full supported chunk/probe lanes:
+1,990 passes, one existing subprocess-only ignore, zero failed tests or bad
+exits in 878 seconds. The actual authority/resource oracle passes in its
+867.66-second chunk. Graph passes all 425 active courts with five existing
+ignores in 58.77 seconds (430 names discovered), including the changed correction
+surface. Their successfully emitted artifacts remain independent of the two
+repaired archive fixtures; the interrupted expanded build is still not green.
+
+The actual changed application_correction main passes, including its intended
+injected-unwind recovery. The ordinary consumer build has no diagnostics, and
+all four actual non-harness programs pass: consumer-root, required_feature,
+shared_execution and invariant_reads. The canonical fixture gate now uses the
+current all-targets artifacts without recompiling. All other task-heavy jobs
+have finished; its complete matrix remains in the existing CPU-exclusive lane
+following shared cases. Its terminal 390-test result is the last public
+execution gate before Y2 commit/push review. Private remains clean at 1ba3774,
+with exact 18-file stash 57de2e1c01d3f0b482301d252b76252aaaf911fd and verified
+external binary backup awaiting that published qualified revision.
+
+The canonical current fixture gate terminates green: all 390 tests pass with
+zero failures and zero bad exits in 712 seconds. Its exclusive complete matrix
+passes in 303.80 seconds after every shared job, preserving all 1,032 declared
+rows (921 executed price-twin rows, 111 named inapplicable rows) and zero red
+rows through its existing assertions. No worker assertion, matrix width,
+timeout or scheduling policy changed. All Y2 public execution/static gates
+are now closed for final reviewer task-branch commit/push clearance. The failed
+expanded build and its deliberate unrelated-portfolio cancellation remain
+explicit above. Private final SDK restoration/qualification and Phase 2/default
+branch closure are still open.
