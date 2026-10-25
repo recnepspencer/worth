@@ -60,7 +60,7 @@ Each diagnostic Cargo invocation allows fifteen minutes for a cold Windows
 metadata build (five minutes elsewhere). A timeout retains Cargo's progress;
 it never supplies the expected semantic compiler denial.
 
-On Windows, the six scale and exhaustive interruption proofs named in
+On Windows, the five scale and exhaustive interruption proofs named in
 `.config/nextest.toml` reserve the entire nextest fixture pool and have a
 thirty-minute aggregate limit. Their own concurrent readers and writers still
 run, and Store operation deadlines remain enforced. The long pending-WAL
