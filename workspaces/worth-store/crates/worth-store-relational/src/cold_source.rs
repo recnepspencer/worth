@@ -12,7 +12,7 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::{
     AnchoredRecordMemberDamage, AnchoredRecordMemberLocator, AnchoredRecordMemberReadFailure,
-    AnchoredRecordName, AnchoredRecordReadFailure, OrderedJournalReadFailure,
+    AnchoredRecordName, OrderedJournalReadFailure, RecordReadDenial, RecordReadError,
     ServingPhysicalRuntime,
 };
 
@@ -127,7 +127,10 @@ impl RelationalDurableColdSource for StoreColdSource {
                     AnchoredRecordMemberDamage::DigestMismatch,
                 ) => Cause::IntegrityMismatch,
                 AnchoredRecordMemberReadFailure::Damaged(_) => Cause::Damaged,
-                AnchoredRecordMemberReadFailure::Value(failure) => anchor_failure(failure, 1 << 30),
+                // Failure to verify the selecting anchor proves nothing about
+                // this member's bytes. It must not poison every region cell.
+                AnchoredRecordMemberReadFailure::Value(_) => Cause::SourceUnavailable,
+                AnchoredRecordMemberReadFailure::Open(error) => record_failure(error),
                 _ => Cause::SourceUnavailable,
             })
     }
@@ -141,6 +144,7 @@ impl RelationalDurableColdSource for StoreColdSource {
             .map(|record| record.into_bytes())
             .map_err(|failure| match failure {
                 OrderedJournalReadFailure::NotFound { .. } => Cause::MissingMember,
+                OrderedJournalReadFailure::Open(error) => record_failure(error),
                 OrderedJournalReadFailure::Damaged => Cause::Damaged,
                 OrderedJournalReadFailure::LimitExceeded { payload_bytes } => {
                     Cause::LimitExceeded {
@@ -153,13 +157,10 @@ impl RelationalDurableColdSource for StoreColdSource {
     }
 }
 
-fn anchor_failure(failure: AnchoredRecordReadFailure, limit: u64) -> Cause {
-    match failure {
-        AnchoredRecordReadFailure::Damaged(_) => Cause::Damaged,
-        AnchoredRecordReadFailure::LimitExceeded { payload_bytes } => Cause::LimitExceeded {
-            length: payload_bytes,
-            limit,
-        },
+fn record_failure(error: RecordReadError) -> Cause {
+    match error.denial() {
+        RecordReadDenial::RecordNotFound => Cause::MissingMember,
+        RecordReadDenial::ArtifactDamaged | RecordReadDenial::FormatMismatch => Cause::Damaged,
         _ => Cause::SourceUnavailable,
     }
 }
