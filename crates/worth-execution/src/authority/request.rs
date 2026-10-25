@@ -199,6 +199,9 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         }
     }
 
+    /// The request's own policy ceiling. This does not observe active ancestors
+    /// or subtract live holds; use `ExecutionMemoryReservation::available_in_scope`
+    /// inside `in_scope` when planning admission against the complete lineage.
     pub fn memory_limit(self) -> Option<u64> {
         match self.form {
             RequestBacking::Leased(lease) => lease

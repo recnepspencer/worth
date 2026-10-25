@@ -76,7 +76,7 @@ impl DiagnosticsState {
         work.reserve_visits(std::mem::size_of::<Self>())
             .map_err(map_node_edit_accounting)?;
         if let Some(request) = request.as_deref_mut() {
-            request.claim(std::mem::size_of::<Self>() as u64)?;
+            request.claim_diagnostics(std::mem::size_of::<Self>() as u64)?;
         }
 
         // Only the selected roots are prepared and forked. History clone shares
@@ -125,7 +125,7 @@ impl DiagnosticsState {
             provenance,
         )?;
         if let Some(request) = request {
-            request.claim(
+            request.claim_diagnostics(
                 preparation_bounds::request_growth(
                     self,
                     maximum_fact_nodes,

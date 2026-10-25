@@ -21,6 +21,9 @@ pub(crate) trait SignalPrecompute: Sync {
         capacity: Option<CheckedKernelCapacity>,
     ) -> Result<PreparedEvaluation, SignalError>;
     fn allows_bounded_inputs(&self) -> bool;
+    fn maximum_result_heap_bytes(&self) -> Option<u64> {
+        None
+    }
 }
 
 pub(crate) struct LegacyPrecompute<F>(F);
@@ -99,5 +102,8 @@ where
     }
     fn allows_bounded_inputs(&self) -> bool {
         true
+    }
+    fn maximum_result_heap_bytes(&self) -> Option<u64> {
+        O::maximum_result_heap_bytes()
     }
 }

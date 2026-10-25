@@ -10,6 +10,7 @@ use worth_foundational::PartitionIdentity;
 pub(super) struct GraphWorkItem {
     pub(super) task_index: usize,
     pub(super) capacity: super::super::callback::CheckedKernelCapacity,
+    pub(super) memory: std::sync::Mutex<Option<worth_execution::ExecutionMemoryReservation>>,
 }
 impl ChargedBytes for GraphWorkItem {
     fn additional_charged_bytes(&self) -> u64 {
@@ -103,6 +104,18 @@ pub(super) fn lower_checked_map(
             identity: PartitionIdentity::new(stage.task_offset() as u64 + index as u64),
             value: GraphWorkItem {
                 task_index: index,
+                memory: std::sync::Mutex::new(Some(
+                    stage
+                        .request()
+                        .in_scope(|lease| {
+                            worth_execution::ExecutionMemoryReservation::reserve_in_scope(
+                                lease,
+                                scratch_capacity.unwrap_or(0),
+                            )
+                        })
+                        .map_err(SignalError::execution_scope_denied)?
+                        .map_err(SignalError::execution_admission_denied)?,
+                )),
                 capacity: super::super::callback::CheckedKernelCapacity {
                     scratch_bytes: scratch_capacity,
                     result_bytes,

@@ -52,16 +52,18 @@ fn run_workers(
     work: &(impl Fn() + Sync),
 ) -> usize {
     let width = count.max(1).min(lease.policy().max_workers().get());
-    let additional = (1..width)
-        .map_while(|_| {
-            if accounted {
-                lease.try_reserve(1, 0)
-            } else {
-                lease.try_reserve_workers(1)
-            }
-            .ok()
-        })
-        .collect::<Vec<_>>();
+    let mut additional = Vec::with_capacity(width - 1);
+    for _ in 1..width {
+        let admitted = if accounted {
+            lease.try_reserve(1, 0)
+        } else {
+            lease.try_reserve_workers(1)
+        };
+        let Ok(reservation) = admitted else {
+            break;
+        };
+        additional.push(reservation);
+    }
     let admitted_workers = additional.len() + 1;
     let owner = super::owner_context::CapturedOwnerContext::capture();
     // The caller's entry executes on its own thread.

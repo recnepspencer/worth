@@ -3,9 +3,10 @@ use std::ops::Bound::{Excluded, Unbounded};
 use std::sync::Arc;
 
 use crate::data::retained_storage::{
-    arc_allocation_charge, btree_structure_charge, ordered_edit_growth_charge,
-    ordered_index_charge, RetainedStorageCharge as Charge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Preparation, RetainedStoragePreparationDenial as Denial,
+    arc_allocation_charge, btree_structure_charge, ordered_batch_growth_charge,
+    ordered_edit_growth_charge, ordered_index_charge, RetainedStorageCharge as Charge,
+    RetainedStorageMeasurement, RetainedStoragePreparation as Preparation,
+    RetainedStoragePreparationDenial as Denial,
 };
 
 use super::{entry_handle, PersistentOrdMap, PersistentOrdMapStorage, SharedKey};
@@ -190,22 +191,38 @@ impl<K: Clone + Ord, V: Clone> PersistentOrdMap<K, V> {
         let future_changes = changes
             .checked_add(prospective_edits)
             .ok_or(Denial::ChargeOverflow)?;
-        let future_retired = retired
-            .checked_add(prospective_edits)
-            .and_then(|count| count.checked_add(1))
-            .ok_or(Denial::ChargeOverflow)?;
         // A readmission or retirement edits one changed-key path and at most
         // three interval paths. One overlay value and up to three key cells
         // may be new during that edit.
-        ordered_edit_growth_charge::<SharedKey<K>, Arc<V>>(future_changes)?
+        ordered_batch_growth_charge::<SharedKey<K>, Arc<V>>(future_changes, prospective_edits)?
+            .checked_add(interval_batch_growth_bound::<K>(
+                retired,
+                prospective_edits,
+            )?)?
             .checked_add(
-                ordered_edit_growth_charge::<SharedKey<K>, SharedKey<K>>(future_retired)?
-                    .checked_mul(3)?,
+                arc_allocation_charge::<K>()?
+                    .checked_mul(3)?
+                    .checked_mul(prospective_edits)?,
             )?
-            .checked_add(arc_allocation_charge::<K>()?.checked_mul(3)?)?
-            .checked_add(arc_allocation_charge::<V>()?)?
-            .checked_mul(prospective_edits)
+            .checked_add(arc_allocation_charge::<V>()?.checked_mul(prospective_edits)?)
     }
+}
+
+/// Retirement can merge two intervals and readmission can split one in two:
+/// both require at most three tree edits. Existing intervals remain live and
+/// may be copied when the overlay root is shared.
+pub(super) fn interval_batch_growth_bound<K>(
+    retired: usize,
+    prospective_edits: usize,
+) -> Result<Charge, Denial> {
+    let future_retired = retired
+        .checked_add(prospective_edits)
+        .and_then(|count| count.checked_add(1))
+        .ok_or(Denial::ChargeOverflow)?;
+    let interval_edits = prospective_edits
+        .checked_mul(3)
+        .ok_or(Denial::ChargeOverflow)?;
+    ordered_batch_growth_charge::<SharedKey<K>, SharedKey<K>>(future_retired, interval_edits)
 }
 
 /// Only intervals containing this key or its immediate base neighbors can

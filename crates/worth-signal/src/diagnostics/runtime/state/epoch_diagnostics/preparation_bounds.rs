@@ -5,9 +5,10 @@ use std::sync::Arc;
 use crate::data::error::SignalError;
 use crate::data::handle::NodeId;
 use crate::data::retained_storage::{
-    arc_allocation_charge, ordered_edit_growth_charge, ordered_index_charge,
-    RetainedStorageCharge as Charge, RetainedStorageForkCharge, RetainedStorageMeasurement,
-    RetainedStoragePreparation as Work, SignalConditionalRetentionReservation as Reservation,
+    arc_allocation_charge, ordered_batch_growth_charge, ordered_forest_growth_charge,
+    ordered_index_charge, RetainedStorageCharge as Charge, RetainedStorageForkCharge,
+    RetainedStorageMeasurement, RetainedStoragePreparation as Work,
+    SignalConditionalRetentionReservation as Reservation,
 };
 use crate::diagnostics::facts::{ExplanationFact, ProvenanceFact};
 use crate::diagnostics::lineage::LineageRecord;
@@ -47,10 +48,21 @@ pub(super) fn request_growth(
             .checked_add(history_end.saturating_sub(limit))
             .ok_or_else(|| SignalError::invalid_input("diagnostics history edits overflow"))?
     };
-    let history_paths = ordered_edit_growth_charge::<u64, Arc<LineageRecord>>(history_end)
-        .and_then(|path| path.checked_mul(history_edits))
-        .and_then(|paths| paths.checked_mul(3))
-        .map_err(map_node_edit_accounting)?;
+    // Global history is one tree; each index is a forest of histories whose
+    // total entry count cannot exceed the global history's count. Do not
+    // charge a worst-case global split for every edit to a small local history.
+    let history_paths =
+        ordered_batch_growth_charge::<u64, Arc<LineageRecord>>(history_end, history_edits)
+            .and_then(|global| {
+                global.checked_add(
+                    ordered_forest_growth_charge::<u64, Arc<LineageRecord>>(
+                        history_end,
+                        history_edits,
+                    )?
+                    .checked_mul(2)?,
+                )
+            })
+            .map_err(map_node_edit_accounting)?;
     let lineage_maps = state
         .lineage_records_by_artifact
         .batch_edit_structure_growth_bound(history_edits)
