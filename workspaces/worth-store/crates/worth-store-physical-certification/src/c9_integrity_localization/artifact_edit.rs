@@ -124,12 +124,7 @@ pub(super) fn common_render(
             frame_checksum::refresh_checksum(&mut bytes[start..end]);
         }
         ArtifactOperator::EnvelopeVersion => {
-            // Root schema 3 is the supported maintenance variant.
-            bytes[start + 9] = if granule.family == "root_manifest" {
-                4
-            } else {
-                3
-            };
+            bytes[start + 9] = u8::MAX;
             frame_checksum::refresh_checksum(&mut bytes[start..end]);
         }
         ArtifactOperator::RecordVersion => {
@@ -205,14 +200,7 @@ pub(super) fn audit(
             u32::from_le_bytes(after[start + 24..start + 28].try_into().unwrap()) as usize + 48,
             granule.length() + 1
         ),
-        EnvelopeVersion => assert_eq!(
-            after[start + 9],
-            if granule.family == "root_manifest" {
-                4
-            } else {
-                3
-            }
-        ),
+        EnvelopeVersion => assert_eq!(after[start + 9], u8::MAX),
         RecordVersion => assert_eq!(&after[start + 10..start + 12], &3_u16.to_le_bytes()),
         ScopeSubstitution => {
             for range in common_scope::substitution_fields(granule) {
