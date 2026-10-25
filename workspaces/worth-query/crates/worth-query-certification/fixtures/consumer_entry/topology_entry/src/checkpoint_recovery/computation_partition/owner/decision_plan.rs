@@ -5,7 +5,7 @@ use worth_query_host::facade::application_contribution::WorthQueryCompletedParti
 /// Installs the computation's partitioned owner and returns the demand's
 /// handler, which runs the computation over the demanded set at every
 /// decision, reading through its own reader with its request's execution.
-pub(in super::super) fn running<Computation, Owner>(
+pub(in super::super) fn running<const WORK: usize, Computation, Owner>(
     setup: &mut Setup<'_>,
     owner: Owner,
 ) -> Installed
@@ -27,7 +27,11 @@ where
     let installed =
         setup.partitioned_computation::<PlanarFinalOutputFeature, Computation, _>(owner)?;
     Ok(RegionTotalsHandler::running(move |reader, set| {
-        let prepared = installed.prepare(reader, set);
+        // Resource policy belongs to the request. This owned certification
+        // control supplies the kernel boundary these stop oracles exercise.
+        let prepared = installed
+            .prepare(reader, set)
+            .map(|prepared| prepared.with_compute_ceiling_for_test(WORK as u64));
 
         let observed = std::rc::Rc::new(std::cell::RefCell::new(None));
 

@@ -44,9 +44,6 @@ pub(super) enum RegionFault {
     Probe(ProbeFault),
 }
 
-/// The first code of a held result: the values held follow it.
-const HOLD: u64 = 5;
-
 impl RegionFault {
     /// The fact an entry's fault is: zero is no fault.
     pub(super) fn code(fault: Option<Self>) -> u64 {
@@ -56,7 +53,6 @@ impl RegionFault {
             Some(Self::Panic) => 2,
             Some(Self::Probe(ProbeFault::NoKey)) => 3,
             Some(Self::Probe(ProbeFault::PoisonReducer)) => 4,
-            Some(Self::Probe(ProbeFault::Hold(values))) => HOLD + values as u64,
         }
     }
 
@@ -67,7 +63,7 @@ impl RegionFault {
             2 => Some(Self::Panic),
             3 => Some(Self::Probe(ProbeFault::NoKey)),
             4 => Some(Self::Probe(ProbeFault::PoisonReducer)),
-            held => Some(Self::Probe(ProbeFault::Hold((held - HOLD) as usize))),
+            unknown => panic!("unknown region fixture fault code: {unknown}"),
         }
     }
 }

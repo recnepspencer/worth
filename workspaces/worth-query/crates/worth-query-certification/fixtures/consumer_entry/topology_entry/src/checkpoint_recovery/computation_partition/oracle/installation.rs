@@ -101,7 +101,12 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
                         installed.prepare(reader, set)
                     };
                     plan = plan
-                        .zip(decision_plan::prepared(prepared, |_| {}))
+                        .zip(decision_plan::prepared(
+                            prepared.map(|prepared| {
+                                prepared.with_compute_ceiling_for_test(WORK as u64)
+                            }),
+                            |_| {},
+                        ))
                         .map(|(_, value)| value);
                 }
                 if collection::declared(MODE) {
@@ -132,8 +137,10 @@ impl<const REUSE: bool, const WORK: usize, const RUNS: usize, const MODE: u8>
             )?;
             setup.conditional::<RegionOutputReadiness<CheckpointSchema, REUSE, MODE>>(())?;
         }
-        let unretained =
-            owner::running::<program::UnretainedTotals<WORK>, _>(setup, owner::RegionTotalsOwner)?;
+        let unretained = owner::running::<WORK, program::UnretainedTotals<WORK>, _>(
+            setup,
+            owner::RegionTotalsOwner,
+        )?;
         setup.handler::<RegionTotalsDemandBinding<CheckpointSchema>, _>(unretained)?;
         setup.handler::<EntryEditBinding<CheckpointSchema>, _>(EntryEditHandler)?;
         super::super::entry_correction::configure(setup)?;

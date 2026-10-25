@@ -62,19 +62,6 @@ impl Measure {
         }
     }
 }
-pub(super) fn native_allocation(
-) -> worth_query_host::facade::runtime::ExecutionResourceLease<'static> {
-    // Same finite inline Serial ledger as the ordinary path; no physical pool.
-    worth_query_host::facade::runtime::ExecutionResourceLease::serial(
-        worth_query_host::facade::runtime::LeaseRequest {
-            policy: resources::EXECUTION_POLICY,
-            deadline: None,
-            cancellation: worth_query_host::facade::runtime::CancellationToken::new(),
-        },
-    )
-    .unwrap()
-}
-
 #[derive(Debug)]
 pub(super) struct Stages {
     pub traversal: Work,
