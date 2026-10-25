@@ -1,8 +1,7 @@
 use crate::runtime::{
     WorthQueryAdmittedGraphReadAccessPlan, WorthQueryGraphReadAccessComplexityCounters,
     WorthQueryGraphReadAccessPlanConsumption, WorthQueryGraphReadAccessReceiptSummary,
-    WorthQueryIntentDecisionTraceEnvelope,
-    WorthQueryIntentExecutionProvenance,
+    WorthQueryIntentDecisionTraceEnvelope, WorthQueryIntentExecutionProvenance,
 };
 
 use super::WorthQueryReadReceipt;
@@ -32,7 +31,10 @@ pub(in crate::runtime) trait WorthQueryReadExecutionProduct {
                 &plan_consumption,
             );
         let graph_read_access_complexity_counters =
-            WorthQueryGraphReadAccessComplexityCounters::from_execution_parts(&plan, &plan_consumption);
+            WorthQueryGraphReadAccessComplexityCounters::from_execution_parts(
+                &plan,
+                &plan_consumption,
+            );
         let receipt = self.receipt_mut();
         receipt.graph_read_access_plan = Some(plan);
         receipt.graph_read_access_plan_consumption = Some(plan_consumption);

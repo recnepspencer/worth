@@ -78,12 +78,14 @@ impl<Schema, Operation, Input, Scope>
         self.append_completed_facts(facts, allocation)?;
         self.consumed_outputs
             .extend(projection.consumed_outputs.into_values());
-        let retained = retained.seal_at(None, self.lease.snapshot()).map_err(|()| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
-                self.admission.operation(),
-            )
-        })?;
+        let retained = retained
+            .seal_at(None, self.lease.snapshot())
+            .map_err(|()| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::DecisionDependencyMismatch,
+                    self.admission.operation(),
+                )
+            })?;
         self.admission.record_completed_handler_facts(
             CompletedHandlerFactBoundary::from_completed_read(self.facts.len()),
             retained,

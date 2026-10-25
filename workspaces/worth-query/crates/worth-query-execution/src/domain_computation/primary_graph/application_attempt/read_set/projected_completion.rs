@@ -258,7 +258,13 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
         ));
     }
     lease.handle().with_runtime(execution, |runtime| {
-        super::fact_observation::observe_fact(execution, runtime, lease.snapshot(), &lease.layout, key)
+        super::fact_observation::observe_fact(
+            execution,
+            runtime,
+            lease.snapshot(),
+            &lease.layout,
+            key,
+        )
     })
 }
 
