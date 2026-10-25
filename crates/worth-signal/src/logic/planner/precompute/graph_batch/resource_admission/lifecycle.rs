@@ -26,6 +26,7 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
     pub(in crate::logic::planner::precompute::graph_batch) fn new(
         budget: &SignalPreparationBudget,
         lease: worth_execution::ExecutionRequest<'lease, 'authority>,
+        result_heap_bound: Option<u64>,
     ) -> Result<Self, SignalError> {
         let candidate_lease = lease
             .in_scope(|scoped| {
@@ -42,8 +43,15 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
                     .transpose()
             })
             .map_err(SignalError::execution_scope_denied)??;
+        let physical = lease
+            .in_scope(|active| active.and_then(|lease| lease.available_memory_bytes()))
+            .map_err(SignalError::execution_scope_denied)?;
+        let available = budget
+            .remaining()
+            .or_else(|| result_heap_bound.is_none().then_some(physical).flatten());
         Ok(Self {
-            available: budget.remaining(),
+            result_bounds: super::result_bounds::ResultBounds::new(result_heap_bound),
+            available,
             fixed: 0,
             copies: 0,
             selected: BTreeSet::new(),
@@ -57,7 +65,6 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
             cause_transition_count: 0,
             width: 0,
             result_grant_bytes: None,
-            declared_result_minimum: 0,
             lease,
             candidate_lease,
             apply_bases: Vec::new(),
@@ -68,7 +75,14 @@ impl<'lease, 'authority> ResourceAdmission<'lease, 'authority> {
 
     pub(in crate::logic::planner::precompute::graph_batch) fn finish(
         self,
+        budget: &mut SignalPreparationBudget,
+        graph: &crate::data::graph::SignalGraph,
     ) -> Result<CheckedEpochAdmissionGrant, SignalError> {
+        budget.reserve_diagnostics(
+            graph
+                .diagnostics_state()
+                .epoch_preparation_capacity_bound(self.width)?,
+        )?;
         Ok(CheckedEpochAdmissionGrant::new(
             self.width,
             self.result_grant_bytes,

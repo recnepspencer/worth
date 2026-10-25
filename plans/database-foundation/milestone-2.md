@@ -199,6 +199,22 @@ Checkpoint images stay runtime-affine: they are derived, not canonical.
 Re-executing the same operations in any process, recovered or not, produces
 byte-identical artifacts.
 
+**D12. Signal admission precedes checked callbacks.** Diagnostic map structure
+and callback-result custody are reserved before dispatch. Node declarations and
+output-type bounds supply result maxima; a finite execution authority supplies
+an adaptive grant when no intrinsic maximum is declared. Captured dependencies
+have their own bound. Completed results retain their original allocation and
+ticket, measured to release unused custody. Exceeding the admitted result bound
+is a typed callback-contract violation, never a late memory-capacity refusal.
+
+Publication maps retain their pre-callback tickets. Cumulative preparation
+forecasts and simultaneously live map reservations have different lifetime
+owners; their admission must not charge all future storage as though it
+coexisted with every map. Actual worker-guard storage is bounded by the
+dispatched frontier without narrowing the worker authority available to nested
+callbacks. Existing scoped-result capacity, atomic publication and executor
+parity proofs remain binding, with their configured ceilings unchanged.
+
 ## Durable artifacts
 
 | Artifact | Classification | Owner |

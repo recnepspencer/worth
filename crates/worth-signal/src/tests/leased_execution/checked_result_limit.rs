@@ -66,7 +66,8 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
                 &[node],
                 EvaluationRequestMode::Default,
                 &(),
-                &|_| {
+                &|context| {
+                    assert_eq!(context.result_capacity_bytes(), Some(maximum));
                     calls.fetch_add(1, Ordering::SeqCst);
                     Ok(result())
                 },
@@ -106,7 +107,9 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
             EvaluationRequestMode::Default,
             &(),
             &|context| {
-                assert_eq!(context.result_capacity_bytes(), None);
+                // An omitted declaration adapts to the finite process owner.
+                // It cannot promise unbounded post-effect admission.
+                assert!(context.result_capacity_bytes().is_some());
                 calls.fetch_add(1, Ordering::SeqCst);
                 Ok(result().with_label("owned-output".repeat(8192)))
             },

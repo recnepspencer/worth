@@ -119,11 +119,24 @@ impl NodeEvaluationResult {
 
 pub trait IntoNodeEvaluationResult {
     fn into_evaluation_result(self) -> NodeEvaluationResult;
+
+    /// A declared upper bound for the converted result's additional heap.
+    /// Returning a finite bound makes exceeding it a callback-contract violation.
+    fn maximum_result_heap_bytes() -> Option<u64>
+    where
+        Self: Sized,
+    {
+        None
+    }
 }
 
 impl IntoNodeEvaluationResult for AspectVersion {
     fn into_evaluation_result(self) -> NodeEvaluationResult {
         NodeEvaluationResult::from_version(self)
+    }
+
+    fn maximum_result_heap_bytes() -> Option<u64> {
+        Some(0)
     }
 }
 
