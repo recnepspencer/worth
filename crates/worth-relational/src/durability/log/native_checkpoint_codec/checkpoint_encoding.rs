@@ -61,6 +61,45 @@ pub(crate) fn encode_captured(
 > {
     let embedded = placement == RelationalCheckpointArtifactPolicy::Embedded;
     if embedded {
+        for entry in &captured.carried_envelopes {
+            policy.check_live()?;
+            let source = captured.cold_source.as_ref().ok_or_else(|| {
+                super::manifest_capture::corrupt("inline capture lacks its journal source")
+            })?;
+            let bytes = source
+                .read_commit(entry.position, 1 << 30)
+                .map_err(|cause| {
+                    let failure = crate::storage::data::RelationalStorageUnavailable {
+                        subject: crate::storage::data::RelationalStorageSubject::Envelope(
+                            entry.position,
+                        ),
+                        cause,
+                    };
+                    let crate::durability::data::RelationalRecoveryStop::Durability(error) =
+                        crate::durability::data::RelationalRecoveryStop::from(failure)
+                    else {
+                        unreachable!()
+                    };
+                    error
+                })?;
+            let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
+                .map_err(|error| super::manifest_capture::corrupt(format!("inline journal frame: {error:?}")))?;
+            if artifact.position() != entry.position
+                || artifact.commit_id() != entry.commit.commit_id
+                || artifact.payload_digest().as_bytes() != &entry.payload_digest
+            {
+                return Err(super::manifest_capture::corrupt(
+                    "inline journal disagrees with its commit index",
+                )
+                .into());
+            }
+            captured.envelopes.push(
+                rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::Journal(
+                    ByteString(artifact.as_bytes()),
+                ))
+                .map_err(writer::encoding_failure)?,
+            );
+        }
         for member in captured.members.values_mut() {
             if let RelationalCheckpointMember::Carried { locator } = member {
                 let locator = *locator;

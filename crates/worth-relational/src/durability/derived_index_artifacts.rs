@@ -18,19 +18,11 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
-    envelopes: &[crate::history::data::PositionedCanonicalCommit],
     work: &mut crate::durability::data::CheckpointRestoreWork,
 ) -> Result<(), crate::durability::data::DurabilityError> {
     if let Some(checkpoint) = checkpoint {
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
-        }
-        let source_commits = envelopes
-            .iter()
-            .map(|envelope| (envelope.commit.commit_id, envelope))
-            .collect::<std::collections::BTreeMap<_, _>>();
-        if source_commits.len() != envelopes.len() {
-            return Err(corrupt("checkpoint index source commits are duplicated"));
         }
         for generation in checkpoint.readmit()? {
             let definition = indexes
@@ -53,11 +45,11 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                     "checkpoint index generation kind mismatches definition",
                 ));
             }
-            let source = source_commits
-                .get(&generation.source_commit_id)
+            let source = history
+                .commit_artifact(generation.source_commit_id)
                 .ok_or_else(|| corrupt("checkpoint index source commit is unavailable"))?;
-            if source.commit.version_id != generation.applicability.version_id
-                || source.envelope().schema_version != generation.applicability.schema_version
+            if source.version_id() != generation.applicability.version_id
+                || source.schema_version() != generation.applicability.schema_version
             {
                 return Err(corrupt(
                     "checkpoint index generation basis mismatches commit",

@@ -28,6 +28,8 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
+    pub(super) carried_index_image:
+        Option<crate::durability::medium::RelationalDurableMemberLocator>,
     pub(super) derived_index_checkpoint:
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts,
     pub(super) symbol_table: crate::symbols::data::SymbolTableSnapshot,
@@ -158,6 +160,7 @@ impl CapturedCheckpointBasis {
                 .clone(),
             lineage_nodes: runtime.lineage_access().nodes_snapshot(),
             index_definitions: runtime.index_access().definitions_snapshot(),
+            carried_index_image: runtime.indexes.carried_checkpoint_image(),
             derived_index_checkpoint:
                 super::super::derived_index_artifacts::checkpoint_derived_index_artifacts(
                     runtime, &retained,

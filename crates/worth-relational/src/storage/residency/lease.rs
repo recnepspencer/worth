@@ -39,6 +39,9 @@ impl<Level> RelationalResidencyLease<Level> {
 }
 
 impl RelationalResidencyLease<Full> {
+    pub(super) fn retained_region(&self) -> Arc<ResidentRegion> {
+        self.region.clone()
+    }
     pub(crate) fn residency_allocation_bytes(&self) -> u64 {
         (std::mem::size_of::<RelationalRegionResidency>()
             + std::mem::size_of::<ResidentRegion>()

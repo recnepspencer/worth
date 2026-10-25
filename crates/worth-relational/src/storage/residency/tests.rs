@@ -102,7 +102,6 @@ fn region_with_history() -> RegionFixture {
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
         source: source.clone(),
-        kind_authority: Arc::new(RelationalRegionKindAuthority::default()),
         partition_id: partition.partition_id,
         head: members.head.0,
         history: members.history.0,
@@ -286,6 +285,8 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
 
 #[path = "kind_authority_tests.rs"]
 mod kind_authority_tests;
+#[path = "root_view_tests.rs"]
+mod root_view_tests;
 
 #[test]
 fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
@@ -312,16 +313,24 @@ fn head_demand(
     limit: u64,
 ) -> Result<RelationalResidencyLease<Head>, crate::storage::data::RelationalStorageUnavailable> {
     let request = crate::test_execution_policy::serial_request();
-    cell.demand_head(&worth_execution::ExecutionRequest::serial(&request), limit)
-        .map_err(storage_failure)
+    cell.demand_head(
+        &worth_execution::ExecutionRequest::serial(&request),
+        limit,
+        None,
+    )
+    .map_err(storage_failure)
 }
 fn full_demand(
     cell: &Arc<RelationalRegionResidency>,
     limit: u64,
 ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable> {
     let request = crate::test_execution_policy::serial_request();
-    cell.demand_full(&worth_execution::ExecutionRequest::serial(&request), limit)
-        .map_err(storage_failure)
+    cell.demand_full(
+        &worth_execution::ExecutionRequest::serial(&request),
+        limit,
+        None,
+    )
+    .map_err(storage_failure)
 }
 fn storage_failure(
     failure: RelationalResidencyDemandFailure,

@@ -17,6 +17,7 @@ pub(crate) struct RelationalCommitArtifact {
     identity: RelationalCommitIdentity,
     parentage: RelationalCommitParentage,
     roots: RelationalCommitRootDescriptor,
+    schema_version: crate::schema::data::SchemaVersionId,
     envelope: Arc<super::RelationalCommitEnvelopeResidency>,
     canonical_payload: Option<Arc<[u8]>>,
 }
@@ -93,6 +94,7 @@ impl RelationalCommitArtifact {
                     &envelope.schema_authority,
                 ),
             ),
+            schema_version: envelope.schema_version,
             envelope: Arc::new(super::RelationalCommitEnvelopeResidency::resident(envelope)),
             canonical_payload: Some(canonical_payload),
         })
@@ -163,6 +165,7 @@ impl RelationalCommitArtifact {
             identity: self.identity.clone(),
             parentage: self.parentage.clone(),
             roots,
+            schema_version: self.schema_version,
             envelope: Arc::clone(&self.envelope),
             canonical_payload: self.canonical_payload.clone(),
         })
@@ -187,6 +190,7 @@ impl RelationalCommitArtifact {
             ),
             parentage,
             roots: entry.root.clone(),
+            schema_version: entry.schema_version,
             envelope: Arc::new(super::RelationalCommitEnvelopeResidency::cold(
                 entry, source, admitted,
             )),
@@ -205,6 +209,10 @@ impl RelationalCommitArtifact {
     ) -> Result<&Arc<CanonicalCommitEnvelope>, crate::durability::data::RelationalRecoveryStop>
     {
         self.envelope.demand(execution, limit)
+    }
+
+    pub(crate) fn schema_version(&self) -> crate::schema::data::SchemaVersionId {
+        self.schema_version
     }
 
     pub(crate) fn receipt(&self) -> crate::history::data::RelationalCommitReceipt {

@@ -99,7 +99,7 @@ impl RelationalRootRegion {
             creation_root_id,
             id,
             partition_id: checkpoint.partition_id,
-            partition: RelationalRegionRetention::new(checkpoint.cell),
+            partition: RelationalRegionRetention::new(checkpoint.cell, checkpoint.kind_authority),
             allocation_inventory: None,
             content_digest: checkpoint.content_digest,
             entity_slots: checkpoint.entity_slots,

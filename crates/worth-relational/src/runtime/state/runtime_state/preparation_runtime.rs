@@ -24,6 +24,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
+    mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
 }
 
 /// Narrow cloneable state used only for validation and candidate preparation.
@@ -34,6 +35,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) schema_contract_runtime: Arc<SchemaContractRuntimeSubsystem>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
+    pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) history: RelationalPreparationHistory,
     pub(crate) record_identity: RecordIdentitySubsystem,
     pub(crate) services: RuntimeServices,
@@ -60,6 +62,9 @@ impl RelationalPreparationOwnerBinding {
             lineage_identity: runtime.lineage.identity_allocator(),
             diagnostics: runtime.publication.diagnostics.clone(),
             index_definitions: runtime.indexes.definition_read_binding(),
+            mirror_residency: runtime
+                .partitions
+                .residency_demand_binding(runtime.history.main_branch.clone()),
         }
     }
 
@@ -81,6 +86,7 @@ impl RelationalPreparationOwnerBinding {
             schema_contract_runtime: Arc::clone(&configuration.schema_contract_runtime),
             diagnostics: self.diagnostics.clone(),
             index_definitions: self.index_definitions.clone(),
+            mirror_residency: self.mirror_residency.clone(),
             history: self.history.clone(),
             record_identity: self.record_identity.clone(),
             services: self.services.clone(),

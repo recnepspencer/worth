@@ -13,6 +13,8 @@ pub(crate) struct RelationalRootRegionCheckpoint {
     pub(crate) relation_slots: usize,
     pub(crate) unavailable_records: usize,
     pub(crate) cell: Arc<RelationalRegionResidency>,
+    pub(crate) kind_authority:
+        Option<Arc<crate::storage::residency::RelationalRegionKindAuthority>>,
 }
 
 /// Selection retains one immutable root; native capture walks its leaves.

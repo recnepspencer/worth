@@ -76,7 +76,6 @@ impl ReadmittedRegionDirectory {
                 .or_insert_with(|| {
                     RelationalRegionResidency::cold(RelationalColdRegion {
                         source: self.directory.source.clone(),
-                        kind_authority: authority.clone(),
                         partition_id: leaf.partition_id,
                         head: leaf.head,
                         history: leaf.history,
@@ -97,6 +96,7 @@ impl ReadmittedRegionDirectory {
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
                 cell,
+                kind_authority: Some(authority.clone()),
             });
         }
         authority

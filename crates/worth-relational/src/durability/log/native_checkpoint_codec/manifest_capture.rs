@@ -16,6 +16,7 @@ pub(crate) struct CapturedManifest {
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     pub(crate) envelopes: Vec<Vec<u8>>,
+    pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
 }
@@ -127,6 +128,7 @@ impl CapturedManifest {
             .map_err(|cause| corrupt(format!("derived index member: {cause:?}")))?,
         );
         Ok(Self {
+            carried_envelopes: Vec::new(),
             manifest: RelationalCheckpointManifest {
                 coverage: checkpoint.coverage.clone(),
                 covered_position: commits.last().map_or(

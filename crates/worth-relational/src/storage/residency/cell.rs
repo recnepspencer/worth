@@ -19,7 +19,6 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
-    pub(crate) kind_authority: Arc<super::kind_authority::RelationalRegionKindAuthority>,
     pub(crate) partition_id: PartitionId,
     pub(crate) head: RelationalDurableMemberLocator,
     pub(crate) history: RelationalDurableMemberLocator,
@@ -131,8 +130,9 @@ impl RelationalRegionResidency {
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
+        authority: Option<&super::RelationalRegionKindAuthority>,
     ) -> Result<RelationalResidencyLease<Head>, Failure> {
-        let region = self.demand(execution, ResidencyDemand::Head, limit)?;
+        let region = self.demand(execution, ResidencyDemand::Head, limit, authority)?;
         Ok(RelationalResidencyLease::accepted(self.clone(), region))
     }
 
@@ -140,8 +140,9 @@ impl RelationalRegionResidency {
         self: &Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
+        authority: Option<&super::RelationalRegionKindAuthority>,
     ) -> Result<RelationalResidencyLease<Full>, Failure> {
-        let region = self.demand(execution, ResidencyDemand::Full, limit)?;
+        let region = self.demand(execution, ResidencyDemand::Full, limit, authority)?;
         Ok(RelationalResidencyLease::accepted(self.clone(), region))
     }
 
@@ -150,6 +151,7 @@ impl RelationalRegionResidency {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: ResidencyDemand,
         limit: u64,
+        authority: Option<&super::RelationalRegionKindAuthority>,
     ) -> Result<Arc<ResidentRegion>, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         let mut state = self
@@ -162,22 +164,34 @@ impl RelationalRegionResidency {
             }
             if let ResidencyState::Cold(cold) = &*state {
                 let region = self.raw_head(execution, limit)?;
-                cold.kind_authority.verify_head(&region, execution, limit)?;
                 *state = ResidencyState::Head {
                     cold: cold.clone(),
                     region,
                 };
             }
             if matches!(demand, ResidencyDemand::Full)
-                && let ResidencyState::Head { cold, .. } = &*state
+                && let ResidencyState::Head { .. } = &*state
             {
                 let region = self.raw_full(execution, limit)?;
-                let region = cold.kind_authority.admit_full(&region, execution, limit)?;
                 *state = ResidencyState::Full(region);
             }
             match &*state {
                 ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
-                    Ok(region.clone())
+                    if self.backing.is_none() {
+                        return Ok(region.clone());
+                    }
+                    let local = super::RelationalRegionKindAuthority::default();
+                    let authority = authority.unwrap_or(&local);
+                    authority
+                        .require_cell(self)
+                        .map_err(|cause| self.failure(cause))?;
+                    match demand {
+                        ResidencyDemand::Head => {
+                            authority.verify_head(region, execution, limit)?;
+                            Ok(region.clone())
+                        }
+                        ResidencyDemand::Full => authority.admit_full(region, execution, limit),
+                    }
                 }
                 _ => unreachable!("load either publishes a region or refuses"),
             }
@@ -199,6 +213,10 @@ impl RelationalRegionResidency {
         }
     }
 
+    pub(crate) fn has_cold_backing(&self) -> bool {
+        self.backing.is_some()
+    }
+
     pub(crate) fn lease_resident_full(
         self: &Arc<Self>,
     ) -> Result<Option<RelationalResidencyLease<Full>>, RelationalStorageUnavailable> {
@@ -207,7 +225,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         match &*state {
-            ResidencyState::Full(region) => {
+            ResidencyState::Full(region) if self.backing.is_none() => {
                 self.leases
                     .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
                         count.checked_add(1)

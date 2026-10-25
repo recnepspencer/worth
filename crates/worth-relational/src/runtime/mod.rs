@@ -68,22 +68,23 @@ pub(crate) use state::{
     BranchHeadVersionIndexAuthority, BranchTransitionPublication, BranchTransitionRecordError,
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingState,
-    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem, PartitionEdition,
-    PatchPositionReservationAdmission, PendingRecordAllocations, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
-    PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
-    PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
-    RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
-    RelationalCheckpointManifestPublication, RelationalDiagnosticArtifactStore,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
-    RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
-    RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ReplayRetentionState,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,
-    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
+    MirrorResidencyDemandBinding, PartitionEdition, PatchPositionReservationAdmission,
+    PendingRecordAllocations, PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    PreparedGenerationBatch, PreparedRecoveredVersionedArtifactPublication,
+    PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
+    PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
+    PublishedSnapshotReservationDenial, PublishedSnapshotSlotReservation, ReclaimedRecordSlot,
+    RecordIdentitySubsystem, RelationalCandidateRegistrationDenial,
+    RelationalCanonicalPublicationRoutes, RelationalCheckpointManifestPublication,
+    RelationalDiagnosticArtifactStore, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
+    RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
+    RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
+    RelationalRuntimePublicationBinding, ReplayRetentionState, RuntimeInstrumentation,
+    RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem,
+    SnapshotHandleBinding, StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency,
+    VisibilitySubsystem,
 };
 pub(crate) use state::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
@@ -92,3 +93,5 @@ pub(crate) use state::{
 };
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
+
+pub(crate) use state::IndexDefinitionReadBinding;

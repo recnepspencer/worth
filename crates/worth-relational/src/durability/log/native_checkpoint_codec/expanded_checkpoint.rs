@@ -221,7 +221,6 @@ fn expand_regions(
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                 source: source.clone(),
-                kind_authority: authority.clone(),
                 partition_id: leaf.partition_id,
                 head: leaf.head,
                 history: leaf.history,
@@ -242,7 +241,7 @@ fn expand_regions(
     cells
         .iter()
         .map(|(_, _, cell)| {
-            let lease = cell.demand_full(execution, MEMBER_LIMIT)?;
+            let lease = cell.demand_full(execution, MEMBER_LIMIT, Some(&authority))?;
             partition_to_image_with_contracts(
                 lease.full_view().partition().clone(),
                 schema.aspect_plans(),

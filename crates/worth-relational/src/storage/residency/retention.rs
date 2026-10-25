@@ -9,13 +9,18 @@ use crate::storage::overlay::PartitionState;
 #[derive(Debug)]
 pub(crate) struct RelationalRegionRetention {
     cell: Arc<RelationalRegionResidency>,
+    authority: Option<Arc<super::RelationalRegionKindAuthority>>,
     full: OnceLock<RelationalResidencyLease<Full>>,
 }
 
 impl RelationalRegionRetention {
-    pub(crate) fn new(cell: Arc<RelationalRegionResidency>) -> Self {
+    pub(crate) fn new(
+        cell: Arc<RelationalRegionResidency>,
+        authority: Option<Arc<super::RelationalRegionKindAuthority>>,
+    ) -> Self {
         Self {
             cell,
+            authority,
             full: OnceLock::new(),
         }
     }
@@ -29,6 +34,7 @@ impl RelationalRegionRetention {
         let cell = lease.cell().clone();
         Self {
             cell,
+            authority: None,
             full: OnceLock::from(lease),
         }
     }
@@ -43,7 +49,9 @@ impl RelationalRegionRetention {
         limit: u64,
     ) -> Result<(), super::RelationalResidencyDemandFailure> {
         if self.full.get().is_none() {
-            let lease = self.cell.demand_full(execution, limit)?;
+            let lease = self
+                .cell
+                .demand_full(execution, limit, self.authority.as_deref())?;
             let _ = self.full.set(lease);
         }
         Ok(())
@@ -58,6 +66,19 @@ impl RelationalRegionRetention {
         })
     }
 
+    pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
+        self.authority.clone()
+    }
+    pub(crate) fn demand_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<super::RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
+    {
+        self.cell
+            .demand_head(execution, limit, self.authority.as_deref())
+    }
+
     pub(crate) fn full_view(&self) -> super::RelationalRegionFullView<'_> {
         self.lease().full_view()
     }
@@ -70,7 +91,15 @@ impl RelationalRegionRetention {
     }
 
     pub(crate) fn into_partition(self) -> PartitionState {
-        drop(self.full.into_inner());
+        let full = self.full.into_inner();
+        if self.cell.has_cold_backing() {
+            return full
+                .expect("cold publication requires its admitted root view")
+                .full_view()
+                .partition()
+                .clone();
+        }
+        drop(full);
         match Arc::try_unwrap(self.cell) {
             Ok(cell) => cell.into_partition(),
             Err(cell) => cell
@@ -85,19 +114,25 @@ impl RelationalRegionRetention {
 
     pub(crate) fn make_mut(&mut self) -> &mut PartitionState {
         // Drop our read lease before asking for exclusive cell ownership.
-        drop(self.full.take());
-        if Arc::get_mut(&mut self.cell).is_none() {
-            let lease = self
-                .cell
-                .lease_resident_full()
-                .expect("resident lease admission fits the process")
-                .expect("writer must demand its partition before editing it");
-            let copied = lease.full_view().partition().clone();
-            drop(lease);
+        let retained = self.full.take().map(|lease| lease.retained_region());
+        if self.cell.has_cold_backing() || Arc::get_mut(&mut self.cell).is_none() {
+            let copied = if let Some(region) = &retained {
+                region.partition.clone()
+            } else {
+                self.cell
+                    .lease_resident_full()
+                    .expect("resident lease admission fits the process")
+                    .expect("writer must demand its partition before editing it")
+                    .full_view()
+                    .partition()
+                    .clone()
+            };
             let lease = RelationalRegionResidency::resident_uncommitted(copied);
             self.cell = lease.cell().clone();
             drop(lease);
+            self.authority = None;
         }
+        drop(retained);
         Arc::get_mut(&mut self.cell)
             .expect("writer owns its cell")
             .partition_mut()
@@ -112,6 +147,7 @@ impl Clone for RelationalRegionRetention {
         }
         Self {
             cell: self.cell.clone(),
+            authority: self.authority.clone(),
             full,
         }
     }

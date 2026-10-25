@@ -42,7 +42,7 @@ fn cancellation_during_readmission_preserves_the_request_and_does_not_damage_the
     });
     let cell = RelationalRegionResidency::cold(cold);
     let failure = cell
-        .demand_head(&ExecutionRequest::serial(&request), 1 << 24)
+        .demand_head(&ExecutionRequest::serial(&request), 1 << 24, None)
         .unwrap_err();
     assert_eq!(
         failure,

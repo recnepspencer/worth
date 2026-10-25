@@ -5,6 +5,8 @@ use crate::transactions::data::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CommitStage {
+    /// A detached transaction read consults the same original request court.
+    TransactionRead,
     Validation,
     Admission,
     Draft,

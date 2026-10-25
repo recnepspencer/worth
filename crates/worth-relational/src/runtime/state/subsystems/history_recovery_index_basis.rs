@@ -31,7 +31,7 @@ impl HistorySubsystem {
                 commit.0
             )
         })?;
-        if artifact.version_id() != version || artifact.envelope().schema_version != schema {
+        if artifact.version_id() != version || artifact.schema_version() != schema {
             return Err("checkpoint scoped index basis mismatches admitted commit".to_owned());
         }
         let target = FoundationalBranchTarget::basis(RelationalBranchTarget::from_commit_receipt(

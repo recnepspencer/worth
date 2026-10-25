@@ -77,8 +77,11 @@ impl super::BranchBoundRelationalTransaction {
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalTransactionReadDenial::Request)?;
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::TransactionRead,
+        )
+        .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
         if !self.read_leases.contains_key(&entity_id.partition_id) {
             if let Some(lease) = root.demand_region_head(execution, entity_id.partition_id)? {
                 self.read_leases.insert(entity_id.partition_id, lease);
@@ -118,8 +121,11 @@ impl super::BranchBoundRelationalTransaction {
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        crate::execution::check_request(execution)
-            .map_err(super::RelationalTransactionReadDenial::Request)?;
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::TransactionRead,
+        )
+        .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
         if !self.read_leases.contains_key(&relation_id.partition_id) {
             if let Some(lease) = root.demand_region_head(execution, relation_id.partition_id)? {
                 self.read_leases.insert(relation_id.partition_id, lease);

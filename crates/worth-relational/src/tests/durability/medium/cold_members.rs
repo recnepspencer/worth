@@ -1,0 +1,201 @@
+//! Faults cross the production manifest recovery and transaction read doors.
+use crate::durability::data::{
+    RecoveryFailureClass, RecoveryVerificationMode, RelationalCheckpointArtifactPolicy,
+    RelationalCheckpointMember, RelationalRecoveryStop,
+};
+use crate::durability::medium::{
+    RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMemberLocator,
+    RelationalDurableRecoverySource,
+};
+use crate::publication::patch::data::PatchStreamPosition;
+use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::tests::support::*;
+use std::collections::BTreeMap;
+use std::sync::{
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+    Arc,
+};
+
+#[derive(Debug)]
+struct MemberSource {
+    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
+    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
+    damaged: AtomicBool,
+    reads: AtomicUsize,
+}
+
+impl RelationalDurableColdSource for MemberSource {
+    fn read_member(
+        &self,
+        locator: RelationalDurableMemberLocator,
+        limit: u64,
+    ) -> Result<Vec<u8>, Cause> {
+        self.reads.fetch_add(1, Ordering::Relaxed);
+        let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
+        if bytes.len() as u64 > limit {
+            return Err(Cause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        let mut bytes = bytes.to_vec();
+        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG2\n") {
+            bytes[0] ^= 1;
+        }
+        Ok(bytes)
+    }
+    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
+        let bytes = self
+            .commits
+            .get(&position)
+            .ok_or(Cause::SourceUnavailable)?;
+        if bytes.len() as u64 > limit {
+            return Err(Cause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        Ok(bytes.clone())
+    }
+}
+
+fn fixture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    with_tail: bool,
+) -> (
+    RelationalDurableRecoverySource,
+    Arc<MemberSource>,
+    crate::identity::data::EntityId,
+) {
+    let runtime = durable_runtime_with_test_schema();
+    let entity = create_entity(execution, &runtime, "member-before");
+    let native = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers,
+        )
+        .unwrap();
+    let covered = native.covered_position().unwrap();
+    let transitions = native.covered_branch_transitions().unwrap();
+    if with_tail {
+        update_entity_and_release_snapshot(execution, &runtime, entity, "member-after");
+    }
+    let artifacts = attached_test_medium(&runtime).offered();
+    let tail = artifacts
+        .iter()
+        .filter(|artifact| artifact.position() > covered)
+        .cloned()
+        .collect();
+    let source = Arc::new(MemberSource {
+        members: native
+            .members()
+            .iter()
+            .map(|member| match member {
+                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+                RelationalCheckpointMember::Carried { .. } => {
+                    panic!("first capture owns every member")
+                }
+            })
+            .collect(),
+        commits: artifacts
+            .iter()
+            .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
+            .collect(),
+        damaged: AtomicBool::new(true),
+        reads: AtomicUsize::new(0),
+    });
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            covered,
+            transitions,
+            native,
+        )),
+        tail,
+        Vec::new(),
+        source.clone(),
+    );
+    (recovery, source, entity)
+}
+
+#[test]
+fn a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (source, counter, entity) = fixture(execution, false);
+    let mut receiving = durable_runtime_with_test_schema();
+    let plan = receiving
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            source,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    receiving
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    assert_eq!(
+        counter.reads.load(Ordering::Relaxed),
+        0,
+        "reopen must not inspect the damaged member"
+    );
+    let mut transaction = test_owner_begin_transaction_for_main(&receiving);
+    let first = transaction.read_entity(execution, entity).unwrap_err();
+    let crate::mvcc::RelationalTransactionReadDenial::StorageUnavailable(failure) = first else {
+        panic!("{first:?}")
+    };
+    assert_eq!(
+        failure.subject,
+        crate::storage::data::RelationalStorageSubject::Region(entity.partition_id)
+    );
+    assert_eq!(failure.cause, Cause::IntegrityMismatch);
+    let reads = counter.reads.load(Ordering::Relaxed);
+    counter.damaged.store(false, Ordering::Relaxed);
+    let mut retry = test_owner_begin_transaction_for_main(&receiving);
+    assert_eq!(
+        retry.read_entity(execution, entity).unwrap_err(),
+        crate::mvcc::RelationalTransactionReadDenial::StorageUnavailable(failure)
+    );
+    assert_eq!(
+        counter.reads.load(Ordering::Relaxed),
+        reads,
+        "damage cannot be silently retried"
+    );
+}
+
+#[test]
+fn tail_replay_refuses_a_damaged_touched_member_as_cold_storage_unavailable() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (source, _, _) = fixture(execution, true);
+    let mut receiving = durable_runtime_with_test_schema();
+    let plan = receiving
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            source,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let RelationalRecoveryStop::Durability(error) = receiving
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err()
+    else {
+        panic!("durable storage refusal required")
+    };
+    assert_eq!(error.class, RecoveryFailureClass::ColdStorageUnavailable);
+    assert_eq!(
+        error.storage_unavailable.unwrap().cause,
+        Cause::IntegrityMismatch
+    );
+    assert!(
+        receiving
+            .history()
+            .branch_head(&crate::history::data::BranchId("main".into()))
+            .is_none(),
+        "replay refusal must leave the receiving runtime untouched"
+    );
+}

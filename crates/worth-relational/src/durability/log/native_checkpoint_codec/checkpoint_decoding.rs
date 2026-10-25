@@ -71,6 +71,11 @@ pub(crate) fn decode_checkpoint_from_source(
         inline = Some(admitted);
         Arc::new(InlineCheckpointSource { members, envelopes })
     };
-    let checkpoint = super::expanded_checkpoint::expand(execution, wire.manifest, source, inline)?;
+    let checkpoint = match inline {
+        Some(envelopes) => {
+            super::expanded_checkpoint::expand(execution, wire.manifest, source, Some(envelopes))?
+        }
+        None => super::cold_checkpoint::readmit(execution, wire.manifest, source)?,
+    };
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

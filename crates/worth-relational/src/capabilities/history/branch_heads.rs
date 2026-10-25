@@ -26,6 +26,16 @@ pub(crate) trait HistorySource: super::CommitEnvelopeSource {
 }
 
 impl HistorySource for RelationalRuntime {
+    fn has_committed_version_at_or_before_outside_closure(
+        &self,
+        version_id: VersionId,
+        closure: &BTreeSet<CommitId>,
+    ) -> bool {
+        self.history.commit_artifacts().iter().any(|artifact| {
+            artifact.version_id() <= version_id && !closure.contains(&artifact.commit_id())
+        })
+    }
+
     fn branch_head_ref(&self, branch_id: &BranchId) -> Option<RelationalCommitReceipt> {
         let cell = self.history.branch_cell(branch_id)?;
         let commit_id = match cell.observation().target() {

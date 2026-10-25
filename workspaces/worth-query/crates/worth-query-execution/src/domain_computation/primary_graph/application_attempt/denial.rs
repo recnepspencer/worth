@@ -14,6 +14,8 @@
 pub enum WorthQueryApplicationAttemptDenialKind {
     /// The original request refused an admitted field decode; completion is vetoed.
     ValueDecode(super::super::value_decode::WorthQueryValueDecodeDenial),
+    /// Required committed native storage could not be admitted.
+    StorageUnavailable,
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
     Cancelled,
@@ -186,6 +188,7 @@ enum AttemptDenialCause {
     None,
     RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
+    NativeStorage(worth_relational::facade::storage::RelationalStorageUnavailable),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
     Allocation(Box<worth_execution::ExecutionAllocationDenial>),

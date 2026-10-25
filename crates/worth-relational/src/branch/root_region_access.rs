@@ -25,7 +25,7 @@ impl RelationalBranchRoot {
     > {
         self.regions
             .get(partition)
-            .map(|region| region.partition.cell().demand_head(execution, 1 << 30))
+            .map(|region| region.partition.demand_head(execution, 1 << 30))
             .transpose()
     }
     pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
@@ -82,6 +82,7 @@ impl RelationalBranchRoot {
                     relation_slots: region.relation_slots,
                     unavailable_records: region.materialization_unavailable_records(),
                     cell: region.partition.cell().clone(),
+                    kind_authority: region.partition.kind_authority(),
                 },
             )
             .collect()

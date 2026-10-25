@@ -10,6 +10,26 @@ impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause
     }
 }
 impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation::primary_graph) fn native_storage_unavailable(
+        cause: worth_relational::facade::storage::RelationalStorageUnavailable,
+        subject: &str,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationAttemptDenialKind::StorageUnavailable,
+            subject: subject.to_owned(),
+            cause: AttemptDenialCause::NativeStorage(cause),
+        }
+    }
+
+    pub fn storage_unavailable(
+        &self,
+    ) -> Option<&worth_relational::facade::storage::RelationalStorageUnavailable> {
+        match &self.cause {
+            AttemptDenialCause::NativeStorage(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(in crate::domain_computation) fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         subject: &str,

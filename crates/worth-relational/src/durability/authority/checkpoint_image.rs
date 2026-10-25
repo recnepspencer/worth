@@ -26,6 +26,7 @@ impl CapturedCheckpointBasis {
             mirror_schema_authority,
             lineage_nodes,
             index_definitions,
+            carried_index_image: _,
             derived_index_checkpoint,
             symbol_table,
             runtime_name,

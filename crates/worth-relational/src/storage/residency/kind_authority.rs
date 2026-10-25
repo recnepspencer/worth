@@ -1,8 +1,8 @@
 //! Adjacency buckets are accelerators, not truth. Verify their complete current
 //! membership against admitted relation heads. Historical buckets are rebuilt
 //! from retained relation metadata before a full serving lease is issued.
-use std::collections::BTreeMap;
-use std::sync::{Arc, OnceLock, Weak};
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
 use super::{
     RelationalRegionResidency, RelationalResidencyDemandFailure as Failure, ResidentRegion,
@@ -16,10 +16,22 @@ use crate::storage::partition::AdjacencyKindBasis;
 
 #[derive(Debug, Default)]
 pub(crate) struct RelationalRegionKindAuthority {
+    verified_heads: Mutex<BTreeSet<PartitionId>>,
     regions: OnceLock<BTreeMap<PartitionId, (usize, Weak<RelationalRegionResidency>)>>,
 }
 
 impl RelationalRegionKindAuthority {
+    pub(super) fn require_cell(&self, cell: &RelationalRegionResidency) -> Result<(), Cause> {
+        if let Some(regions) = self.regions.get() {
+            let expected = regions
+                .get(&cell.partition_id)
+                .ok_or(Cause::IntegrityMismatch)?;
+            if !std::ptr::eq(expected.1.as_ptr(), cell) {
+                return Err(Cause::IntegrityMismatch);
+            }
+        }
+        Ok(())
+    }
     pub(crate) fn bind(
         &self,
         regions: impl IntoIterator<Item = (PartitionId, usize, Arc<RelationalRegionResidency>)>,
@@ -43,6 +55,13 @@ impl RelationalRegionKindAuthority {
         limit: u64,
     ) -> Result<(), Failure> {
         let partition = &region.partition;
+        let mut verified = self
+            .verified_heads
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if verified.contains(&partition.partition_id) {
+            return Ok(());
+        }
         let refusal = |cause| unavailable(partition.partition_id, cause);
         for table in [&partition.adjacency, &partition.reverse_adjacency] {
             for (_, adjacency) in table.iter() {
@@ -75,6 +94,7 @@ impl RelationalRegionKindAuthority {
                 }
             }
         }
+        verified.insert(partition.partition_id);
         Ok(())
     }
 

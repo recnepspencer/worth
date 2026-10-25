@@ -132,7 +132,7 @@ pub(super) fn restore(
             .map(|region| {
                 (
                     region.partition_id,
-                    RelationalRegionRetention::new(region.cell),
+                    RelationalRegionRetention::new(region.cell, region.kind_authority),
                 )
             })
             .collect(),
@@ -145,6 +145,9 @@ pub(super) fn restore(
     runtime.record_identity = record_identity;
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
+    runtime
+        .indexes
+        .install_cold_checkpoint(directory.clone(), &runtime.history);
     runtime.durability.checkpoint_selection().restore(directory);
     Ok(())
 }

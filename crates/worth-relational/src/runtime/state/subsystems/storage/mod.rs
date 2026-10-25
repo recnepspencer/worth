@@ -1,6 +1,8 @@
 mod edition_copy_lane;
 mod edition_writer;
 mod partition_edition;
+mod residency_demand;
+pub(crate) use residency_demand::MirrorResidencyDemandBinding;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
 pub(crate) use edition_writer::PartitionEditionWriter;

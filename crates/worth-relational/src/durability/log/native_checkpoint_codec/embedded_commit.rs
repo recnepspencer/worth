@@ -9,12 +9,12 @@ use crate::history::data::{
 use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Serialize)]
-pub(super) struct EmbeddedCommitRef<'a> {
+pub(super) struct NativeCommitRef<'a> {
     position: PatchStreamPosition,
     canonical: EmbeddedCheckpointEnvelopeRef<'a>,
 }
 
-impl<'a> EmbeddedCommitRef<'a> {
+impl<'a> NativeCommitRef<'a> {
     pub(super) fn new(commit: &'a PositionedCanonicalCommit) -> Self {
         Self {
             position: commit.position(),
@@ -25,13 +25,13 @@ impl<'a> EmbeddedCommitRef<'a> {
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct EmbeddedCommitWire<'a> {
+pub(super) struct NativeCommitWire<'a> {
     position: PatchStreamPosition,
     #[serde(borrow)]
     canonical: CanonicalEnvelopeWire<'a>,
 }
 
-impl EmbeddedCommitWire<'_> {
+impl NativeCommitWire<'_> {
     pub(super) fn readmit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -46,5 +46,37 @@ impl EmbeddedCommitWire<'_> {
         )
         .map(|commit| commit.into_positioned())
         .map_err(|detail| super::manifest_capture::corrupt(detail.to_string()).into())
+    }
+}
+
+#[derive(Serialize)]
+pub(super) enum EmbeddedCommitRef<'a> {
+    Native(NativeCommitRef<'a>),
+    Journal(super::checkpoint_wire::ByteString<'a>),
+}
+impl<'a> EmbeddedCommitRef<'a> {
+    pub(super) fn new(commit: &'a PositionedCanonicalCommit) -> Self {
+        Self::Native(NativeCommitRef::new(commit))
+    }
+}
+
+#[derive(Deserialize)]
+pub(super) enum EmbeddedCommitWire<'a> {
+    #[serde(borrow)]
+    Native(NativeCommitWire<'a>),
+    #[serde(borrow)]
+    Journal(super::checkpoint_wire::ByteString<'a>),
+}
+impl EmbeddedCommitWire<'_> {
+    pub(super) fn readmit(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<PositionedCanonicalCommit, crate::durability::data::RelationalRecoveryStop> {
+        match self {
+            Self::Native(wire) => wire.readmit(execution),
+            Self::Journal(bytes) => crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(bytes.0, execution)
+                .map(|admitted| admitted.into_positioned())
+                .map_err(super::cold_checkpoint::artifact_stop),
+        }
     }
 }

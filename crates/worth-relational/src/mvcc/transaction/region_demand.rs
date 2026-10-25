@@ -8,6 +8,8 @@ impl super::BranchBoundRelationalTransaction {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
+        indexes: &crate::runtime::IndexDefinitionReadBinding,
+        mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let mut raw = BTreeSet::new();
         if symbols.has_cold_pages() && self.client_key_symbol_policy.interns_requested_strings() {
@@ -29,10 +31,11 @@ impl super::BranchBoundRelationalTransaction {
                 })?;
         }
         let admitted = (|| {
+            indexes.demand_checkpoint_image(execution)?;
             for value in raw {
                 symbols.demand_text(execution, &value)?;
             }
-            self.demand_declared_regions(execution)
+            self.demand_declared_regions(execution, mirror)
         })();
         admitted.map_err(|failure| match failure {
             RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
@@ -59,6 +62,7 @@ impl super::BranchBoundRelationalTransaction {
     fn demand_declared_regions(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         let root = &self.basis.inner.root;
         let mut partitions = self.footprint.validation_partitions();
@@ -100,6 +104,11 @@ impl super::BranchBoundRelationalTransaction {
                 }
             }
         }
+        mirror.demand(
+            execution,
+            self.basis.identity().branch_id(),
+            partitions.iter().copied(),
+        )?;
         root.demand_regions_full(execution, partitions)
     }
 }

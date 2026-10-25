@@ -10,7 +10,7 @@ use worth_store_relational::RelationalStoreHome;
 
 use super::{batches, durable_run, workload};
 
-fn members(home: &RelationalStoreHome) -> Vec<AnchoredRecordMemberLocator> {
+pub(super) fn members(home: &RelationalStoreHome) -> Vec<AnchoredRecordMemberLocator> {
     home.certification_serving()
         .anchored_records()
         .unwrap()

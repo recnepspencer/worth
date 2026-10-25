@@ -14,11 +14,7 @@ impl CapturedCheckpointBasis {
     ) -> Result<CapturedManifest, RelationalNativeCheckpointCaptureDenial> {
         let mut symbols = crate::symbols::data::StringInterner::default();
         symbols.restore_snapshot(self.symbol_table.clone());
-        let prior = if placement == RelationalCheckpointArtifactPolicy::ExternalMembers {
-            self.selected_directory.take()
-        } else {
-            None
-        };
+        let prior = self.selected_directory.take();
         let mut lineage_basis = prior
             .as_ref()
             .map(|prior| prior.manifest.lineage_basis.clone());
@@ -64,6 +60,7 @@ impl CapturedCheckpointBasis {
                     commit.lineage_digest_basis().lineage_decision_count();
             }
         }
+        let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
         let mirror = std::mem::take(&mut self.partitions);
         let mirror_schema = self.mirror_schema_authority.clone();
@@ -77,6 +74,19 @@ impl CapturedCheckpointBasis {
             placement,
         )?;
         captured.cold_source = source;
+        if placement == RelationalCheckpointArtifactPolicy::Embedded {
+            captured.carried_envelopes = prior
+                .as_ref()
+                .map_or_else(Vec::new, |prior| prior.manifest.commits.clone());
+        }
+        if let Some(locator) = carried_index_image {
+            captured.members.remove(&captured.manifest.derived_indexes);
+            captured.manifest.derived_indexes = locator;
+            insert_member(
+                &mut captured,
+                RelationalCheckpointMember::Carried { locator },
+            );
+        }
         let mut schemas = BTreeMap::new();
         for root in roots {
             policy.check_live()?;
