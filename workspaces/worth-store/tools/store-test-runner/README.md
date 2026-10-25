@@ -24,6 +24,10 @@ list tests, count tests, record Git revisions, or write generated reports.
 Cargo and the selected test executables provide the verdict through their exit
 status.
 
+The structural partition requires Bash on `PATH`. On Windows, put Git Bash
+before the WSL launcher; the runner resolves that `PATH` entry explicitly so
+Windows' system-directory search does not select WSL instead.
+
 The runner's owner, scenario, UI, and formal partitions require `cargo-nextest`
 on `PATH`. The full Cargo lanes also run directly:
 
