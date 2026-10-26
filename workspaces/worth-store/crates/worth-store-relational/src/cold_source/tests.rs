@@ -83,18 +83,18 @@ fn cold_port_reads_current_members_carried_members_and_bounded_journal_payloads(
     ));
     assert_eq!(
         source.read_commit(PatchStreamPosition(2), 1 << 20),
-        Err(Cause::SourceUnavailable)
+        Err(Cause::MissingMember)
     );
     let empty = publish(2, vec![]);
     assert_eq!(
         source.read_member(locator, 1 << 20),
-        Err(Cause::SourceUnavailable),
+        Err(Cause::MissingMember),
         "a cached locator never grants membership in a replaced anchor"
     );
     source.select_members(empty.version().generation(), empty.members());
     assert_eq!(
         source.read_member(locator, 1 << 20),
-        Err(Cause::SourceUnavailable)
+        Err(Cause::MissingMember)
     );
     drop(source);
     let serving = Arc::try_unwrap(serving)

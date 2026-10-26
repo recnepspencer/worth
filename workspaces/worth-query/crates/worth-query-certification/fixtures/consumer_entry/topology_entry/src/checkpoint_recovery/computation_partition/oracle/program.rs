@@ -15,11 +15,9 @@ use worth_query_host::facade::primary_graph::{
 use super::super::output_producer::RegionOutputFamily;
 use super::*;
 
-/// The work the totals may cost: every entry of the largest set, and the
-/// input's digest.
+/// The owned certification compute allowance: every entry of the largest set
+/// and headroom for the input's digest.
 pub(super) const TOTALS_WORK: usize = WORK_PER_ENTRY * LARGEST_SET + WORK_BESIDE_ENTRIES;
-/// The bytes the totals keep.
-
 /// The region output, as the final output feature's artifact in place of
 /// the final output.
 pub(super) struct RegionArtifact;
@@ -97,7 +95,7 @@ pub(super) type OracleRoot = ApplicationOutputGraph<
     ),
 >;
 
-/// The same declared work in an operation that has no producer output slot.
+/// The same certification compute allowance without a producer output slot.
 pub(super) struct UnretainedTotals<const WORK: usize>;
 impl<const WORK: usize> ApplicationManagedComputation<CheckpointSchema, PlanarFinalOutputFeature>
     for UnretainedTotals<WORK>

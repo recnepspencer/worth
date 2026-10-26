@@ -27,7 +27,7 @@ impl RelationalRuntime {
         crate::execution::check_request(execution)
             .map_err(RelationalObservationReadDenial::Execution)?;
         let root = observation.selected_root();
-        root.demand_regions_full(execution, [entity_id.partition_id])
+        root.demand_regions_full(execution, &self.services.symbols, [entity_id.partition_id])
             .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         Ok(self
             .read_truth()
@@ -58,8 +58,12 @@ impl RelationalRuntime {
         crate::execution::check_request(execution)
             .map_err(RelationalObservationReadDenial::Execution)?;
         let root = observation.selected_root();
-        root.demand_regions_full(execution, [relation_id.partition_id])
-            .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
+        root.demand_regions_full(
+            execution,
+            &self.services.symbols,
+            [relation_id.partition_id],
+        )
+        .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         Ok(self
             .read_truth()
             .authoritative_relation_record_for_id_from_exact_state(

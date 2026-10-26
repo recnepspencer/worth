@@ -16,7 +16,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<bool, crate::history::data::RelationalReplayRetentionDenial> {
         crate::execution::check_request(execution)?;
         if self
             .runtime

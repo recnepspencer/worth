@@ -92,16 +92,16 @@ pub(super) fn decode(
         let key = input.text()?.to_owned();
         let fields = decode_sequence(input, budget, 20, |input, budget| {
             let tag = input.u16()?;
-            if !matches!(tag, 1 | 2)
-                && !(version >= 4 && tag == 3)
-                && !(version >= 9 && tag == 4)
-                && !(version >= 12 && tag == 5)
-                && !(version >= 13 && matches!(tag, 6 | 7))
-                && !(version >= 14 && tag == 8)
-                && !(version >= 20 && tag == 9)
-                && !(version >= 28 && tag == 10)
-                && !(version >= 29 && tag == 11)
-            {
+            let supported = matches!(tag, 1 | 2)
+                || (version >= 4 && tag == 3)
+                || (version >= 9 && tag == 4)
+                || (version >= 12 && tag == 5)
+                || (version >= 13 && matches!(tag, 6 | 7))
+                || (version >= 14 && tag == 8)
+                || (version >= 20 && tag == 9)
+                || (version >= 28 && tag == 10)
+                || (version >= 29 && tag == 11);
+            if !supported {
                 return Err(Denial::new(Kind::UnsupportedRecordVariant));
             }
             let field =

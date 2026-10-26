@@ -1,10 +1,7 @@
 #![allow(dead_code)]
-#[path = "../../../../tests/phase_4_literal_vectors/checkpoint_records.rs"]
-mod checkpoint_records;
+use crate::integrity_observation::checkpoint_literal_vectors::{checkpoint_records, oracle};
 #[path = "../../../../tests/support/fixtures.rs"]
 mod fixtures;
-#[path = "../../../../tests/phase_4_literal_vectors/oracle.rs"]
-mod oracle;
 #[path = "../../../../tests/support/temporary_root.rs"]
 mod temporary_root;
 

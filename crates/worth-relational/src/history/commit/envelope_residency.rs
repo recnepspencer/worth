@@ -5,7 +5,7 @@ use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableColdSource;
-use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,
@@ -14,7 +14,7 @@ use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 
 #[derive(Debug)]
 pub(crate) struct RelationalCommitEnvelopeResidency {
-    resident: OnceLock<Arc<CanonicalCommitEnvelope>>,
+    resident: OnceLock<AdmittedEnvelope>,
     cold: Option<(
         RelationalCommitIndexEntry,
         Arc<dyn RelationalDurableColdSource>,
@@ -22,10 +22,16 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
     load: Mutex<Option<RelationalStorageUnavailable>>,
 }
 
+#[derive(Debug)]
+enum AdmittedEnvelope {
+    Resident(Arc<CanonicalCommitEnvelope>),
+    Readmitted(PositionedCanonicalCommit),
+}
+
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(envelope: Arc<CanonicalCommitEnvelope>) -> Self {
         Self {
-            resident: OnceLock::from(envelope),
+            resident: OnceLock::from(AdmittedEnvelope::Resident(envelope)),
             cold: None,
             load: Mutex::new(None),
         }
@@ -38,7 +44,9 @@ impl RelationalCommitEnvelopeResidency {
     ) -> Self {
         let resident = OnceLock::new();
         if let Some(envelope) = admitted {
-            resident.set(envelope).expect("new envelope cell");
+            resident
+                .set(AdmittedEnvelope::Resident(envelope))
+                .expect("new envelope cell");
         }
         Self {
             resident,
@@ -48,7 +56,23 @@ impl RelationalCommitEnvelopeResidency {
     }
 
     pub(crate) fn get(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
-        self.resident.get()
+        self.resident.get().map(|admitted| match admitted {
+            AdmittedEnvelope::Resident(envelope) => envelope,
+            AdmittedEnvelope::Readmitted(commit) => commit.canonical_arc(),
+        })
+    }
+
+    pub(super) fn into_positioned(
+        self,
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
+        match self.resident.into_inner() {
+            Some(AdmittedEnvelope::Readmitted(commit)) => Ok(commit),
+            _ => Err(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                "head envelope has no canonical position admission",
+            )
+            .into()),
+        }
     }
 
     pub(crate) fn demand(
@@ -86,14 +110,16 @@ impl RelationalCommitEnvelopeResidency {
                     .into(),
             });
         match result {
-            Ok(envelope) => {
+            Ok(commit) => {
                 self.resident
-                    .set(envelope)
+                    .set(AdmittedEnvelope::Readmitted(commit))
                     .expect("one load owns admission");
-                Ok(self.resident.get().expect("admitted envelope"))
+                Ok(self.get().expect("admitted envelope"))
             }
             Err(stop) => {
-                if let Failure::StorageUnavailable(failure) = &stop {
+                if let Failure::StorageUnavailable(failure) = &stop
+                    && failure.cause.is_proven_damage()
+                {
                     *damage = Some(*failure);
                 }
                 Err(stop)
@@ -107,7 +133,7 @@ impl RelationalCommitEnvelopeResidency {
         source: &dyn RelationalDurableColdSource,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<Arc<CanonicalCommitEnvelope>, RelationalRecoveryStop> {
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
         let failure = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Envelope(entry.position),
             cause,
@@ -139,6 +165,6 @@ impl RelationalCommitEnvelopeResidency {
             return Err(failure(Cause::IntegrityMismatch).into());
         }
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        Ok(Arc::clone(admitted.canonical_arc()))
+        Ok(admitted)
     }
 }

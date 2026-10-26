@@ -50,7 +50,12 @@ pub(crate) fn run_signal_preparation_request<R>(
     ) -> Result<R, SignalError>,
 ) -> Result<(R, worth_foundational::ExecutionReport), SignalError> {
     request
-        .in_scope(|lease| run_signal_request_in_scope(request.memory_limit(), lease, &mut prepare))
+        .in_scope(|lease| {
+            // Preparation shares the process and every active ancestor, even
+            // when this request has a larger (or absent) ceiling of its own.
+            let memory = worth_execution::ExecutionMemoryReservation::available_in_scope(lease);
+            run_signal_request_in_scope(memory, lease, &mut prepare)
+        })
         .map_err(SignalError::execution_scope_denied)?
 }
 

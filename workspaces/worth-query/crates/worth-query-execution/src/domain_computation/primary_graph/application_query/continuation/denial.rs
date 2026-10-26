@@ -38,8 +38,6 @@ pub enum WorthQueryApplicationContinuationDenialKind {
     BasisReleaseFailed,
     /// The predicate index the query needs is unavailable.
     PredicateIndexUnavailable,
-    /// A predicate lookup exceeded its bound.
-    PredicateLookupOverflow,
     /// The page would exceed the result limit.
     ResultLimitExceeded,
     /// The read produced a result count the query shape does not allow.

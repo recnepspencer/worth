@@ -1,10 +1,7 @@
 #![allow(dead_code)]
-#[path = "../../../tests/phase_4_literal_vectors/checkpoint_records.rs"]
-mod checkpoint_records;
+use crate::integrity_observation::checkpoint_literal_vectors::{checkpoint_records, oracle};
 #[path = "../../../tests/phase_4_literal_vectors/durable_frames.rs"]
 mod durable_frames;
-#[path = "../../../tests/phase_4_literal_vectors/oracle.rs"]
-mod oracle;
 #[path = "../../../tests/phase_4_literal_vectors/physical_work_obligation.rs"]
 mod physical_work_obligation;
 #[path = "../../../tests/phase_4_literal_vectors/wal_frame.rs"]

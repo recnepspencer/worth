@@ -99,6 +99,7 @@ impl LineageAccess<'_> {
         let root = observation.selected_root();
         root.demand_regions_full(
             execution,
+            &self.runtime.services.symbols,
             nodes
                 .iter()
                 .map(|node| node.node().entity_id().partition_id),

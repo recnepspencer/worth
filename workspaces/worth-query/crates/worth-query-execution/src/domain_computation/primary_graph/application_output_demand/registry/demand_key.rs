@@ -10,10 +10,7 @@ use std::cmp::Ordering;
 // path charge. The two explicit equality gates record their comparisons too.
 #[cfg(test)]
 thread_local! { static ROW_COMPARISONS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
-#[cfg(test)]
-pub(super) fn row_key_comparisons() -> u64 {
-    ROW_COMPARISONS.with(std::cell::Cell::get)
-}
+
 #[cfg(test)]
 pub(super) fn observe_row_comparison() {
     ROW_COMPARISONS

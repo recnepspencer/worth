@@ -1,3 +1,5 @@
+mod cold_pages;
+
 use std::sync::{Arc, RwLock};
 
 use im::OrdMap;
@@ -66,96 +68,39 @@ impl PartialEq for RuntimeSymbolTable {
 impl Eq for RuntimeSymbolTable {}
 
 impl RuntimeSymbolTable {
-    pub(crate) fn has_cold_pages(&self) -> bool {
-        self.cold
-            .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .is_some()
-    }
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
-        let state = self
-            .state
+        let cold = self
+            .cold
             .read()
-            .expect("runtime symbol table lock poisoned");
-        let configuration = self
-            .configuration_snapshot
-            .read()
-            .expect("runtime symbol configuration snapshot lock poisoned");
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        let snapshot = || {
+            let state = self
+                .state
+                .read()
+                .expect("runtime symbol table lock poisoned");
+            let configuration = self
+                .configuration_snapshot
+                .read()
+                .expect("runtime symbol configuration snapshot lock poisoned");
+            (state.clone(), configuration.clone())
+        };
+        // Page admission locks pages before the owner dictionary. Fork uses
+        // that same order, so copied admission marks and text are one snapshot.
+        let (cold, (state, configuration)) = match cold {
+            Some(pages) => {
+                let (pages, snapshot) = pages.detached_with_owner(snapshot);
+                (Some(Arc::new(pages)), snapshot)
+            }
+            None => (None, snapshot()),
+        };
         Self {
-            state: Arc::new(RwLock::new(state.clone())),
-            configuration_snapshot: Arc::new(RwLock::new(configuration.clone())),
+            state: Arc::new(RwLock::new(state)),
+            configuration_snapshot: Arc::new(RwLock::new(configuration)),
             reservations: Arc::default(),
-            cold: Arc::new(RwLock::new(
-                self.cold
-                    .read()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
-                    .as_ref()
-                    .map(|pages| Arc::new(pages.detached())),
-            )),
+            cold: Arc::new(RwLock::new(cold)),
         }
     }
-    pub(crate) fn install_cold_pages(
-        &self,
-        directory: &crate::durability::data::RelationalCheckpointDirectory,
-    ) -> Result<(), &'static str> {
-        let frontier = directory
-            .manifest
-            .symbols
-            .iter()
-            .map(|page| page.last)
-            .max()
-            .unwrap_or(0);
-        let frontier = u32::try_from(frontier)
-            .ok()
-            .and_then(|last| last.checked_add(1))
-            .ok_or("checkpoint symbol frontier is exhausted")?;
-        let frontier = frontier.max(directory.manifest.symbol_identity_frontier);
-        self.with_write(|symbols| symbols.reserve_frontier(frontier))?;
-        *self
-            .cold
-            .write()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Arc::new(
-            super::symbol_residency::RuntimeSymbolResidency::new(
-                directory.manifest.symbols.clone(),
-                directory.manifest.symbol_buckets.clone(),
-                directory.source.clone(),
-            ),
-        ));
-        Ok(())
-    }
-
-    pub(crate) fn demand_symbol_ids(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        ids: impl IntoIterator<Item = Symbol>,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        let pages = self
-            .cold
-            .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone();
-        if let Some(pages) = pages {
-            pages.demand_ids(self, execution, ids)?;
-        }
-        Ok(())
-    }
-
-    pub(crate) fn demand_text(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        value: &str,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        let pages = self
-            .cold
-            .read()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clone();
-        if let Some(pages) = pages {
-            pages.demand_value(self, execution, value)?;
-        }
-        Ok(())
-    }
-
     pub(crate) fn normalize_client_keys(
         &self,
         normalize: impl FnOnce(&mut StringInterner) -> Vec<(Symbol, String)>,
@@ -295,6 +240,7 @@ impl RuntimeSymbolTable {
     }
 
     pub(crate) fn replace(&self, interner: StringInterner) {
+        *self.cold.write().unwrap_or_else(|error| error.into_inner()) = None;
         let snapshot = interner.snapshot();
         let mut state = self
             .state

@@ -79,9 +79,10 @@ impl DeferredIndexImage {
             Ok(state) => {
                 *admitted = Some(Ok(state.clone()));
             }
-            Err(Failure::StorageUnavailable(failure)) => {
+            Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
                 *admitted = Some(Err(*failure));
             }
+            Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
         }
         result
@@ -113,12 +114,6 @@ impl IndexingSubsystem {
             .cold_checkpoint
             .as_ref()
             .map(|image| image.directory.manifest.derived_indexes)
-    }
-    pub(crate) fn demand_checkpoint_image(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), Failure> {
-        demand(&self.state, execution)
     }
 }
 

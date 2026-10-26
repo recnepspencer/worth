@@ -57,7 +57,7 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
             ingest.push(&vec![ordinal + 0x31; CHUNK_BYTES]).unwrap();
         }
         let published = ingest.finish().unwrap();
-        drop(blobs);
+
         serving.close();
         (published, object)
     };
@@ -168,7 +168,7 @@ fn damaged_middle_chunk_localizes_without_poisoning_other_ranges() {
         before_rebuild,
     );
     drop(damaged);
-    drop(blobs);
+
     assert!(
         serving
             .certification_physical_residency()

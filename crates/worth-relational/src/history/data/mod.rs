@@ -1,4 +1,6 @@
 mod aspect_history;
+mod replay_retention_denial;
+pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;

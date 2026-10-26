@@ -36,7 +36,7 @@ fn blob_harness_execution_authority_is_not_public_on_default_surface() {
 
 fn run_case(suite: &str, blob_authority: bool, fixture: &str, expected: &[&str]) {
     let root = store_workspace_root();
-    let dependencies = vec![
+    let dependencies = [
         (
             "worth-store-blob-chunks",
             root.join("crates/worth-store-blob-chunks"),

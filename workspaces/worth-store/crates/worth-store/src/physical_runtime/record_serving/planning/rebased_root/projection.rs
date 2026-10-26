@@ -191,79 +191,6 @@ fn drop_keeps_invalid_directory(
             .is_some_and(|indexed| drops.contains(&indexed.record()))
 }
 
-#[cfg(test)]
-mod directory_rebase_tests {
-    use super::*;
-
-    #[test]
-    fn competing_directory_with_same_watermark_cannot_overwrite_selected_root() {
-        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
-        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
-        let originally_selected =
-            DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
-        let competing_selected = DerivedFamilyRootDirectoryBinding::new(record(3), Some(watermark));
-        assert!(directory_rebase_matches(
-            Some(watermark),
-            Some(originally_selected),
-            Some(watermark),
-            Some(originally_selected),
-            None,
-            None,
-            false,
-            &std::collections::BTreeSet::new(),
-        ));
-        assert!(!directory_rebase_matches(
-            Some(watermark),
-            Some(competing_selected),
-            Some(watermark),
-            Some(originally_selected),
-            None,
-            None,
-            false,
-            &std::collections::BTreeSet::new(),
-        ));
-        assert!(!directory_rebase_matches(
-            Some(watermark),
-            Some(originally_selected),
-            Some(watermark),
-            Some(originally_selected),
-            Some(record(4)),
-            Some(record(5)),
-            false,
-            &std::collections::BTreeSet::new(),
-        ));
-    }
-
-    #[test]
-    fn dropping_the_watermark_publication_requires_a_replacement_directory() {
-        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
-        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
-        let directory = DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
-        let drops_watermark = std::collections::BTreeSet::from([record(1), record(9)]);
-        let drops_other = std::collections::BTreeSet::from([record(9)]);
-        assert!(drop_keeps_invalid_directory(
-            Some(directory),
-            false,
-            &drops_watermark
-        ));
-        assert!(!drop_keeps_invalid_directory(
-            Some(directory),
-            true,
-            &drops_watermark
-        ));
-        assert!(!drop_keeps_invalid_directory(
-            Some(directory),
-            false,
-            &drops_other
-        ));
-        assert!(!drop_keeps_invalid_directory(
-            Some(DerivedFamilyRootDirectoryBinding::new(record(2), None)),
-            false,
-            &drops_watermark
-        ));
-    }
-}
-
 impl ProjectedSuccessorRoot {
     pub(super) fn observe_discovery(&self, observation: &mut PublicationObservation) {
         for discovery in self.discoveries {
@@ -379,5 +306,78 @@ fn successor_inline_tail(
         (prepared_record, prepared_segment)
     } else {
         (current.last_inline_record(), current_segment)
+    }
+}
+
+#[cfg(test)]
+mod directory_rebase_tests {
+    use super::*;
+
+    #[test]
+    fn competing_directory_with_same_watermark_cannot_overwrite_selected_root() {
+        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
+        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
+        let originally_selected =
+            DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
+        let competing_selected = DerivedFamilyRootDirectoryBinding::new(record(3), Some(watermark));
+        assert!(directory_rebase_matches(
+            Some(watermark),
+            Some(originally_selected),
+            Some(watermark),
+            Some(originally_selected),
+            None,
+            None,
+            false,
+            &std::collections::BTreeSet::new(),
+        ));
+        assert!(!directory_rebase_matches(
+            Some(watermark),
+            Some(competing_selected),
+            Some(watermark),
+            Some(originally_selected),
+            None,
+            None,
+            false,
+            &std::collections::BTreeSet::new(),
+        ));
+        assert!(!directory_rebase_matches(
+            Some(watermark),
+            Some(originally_selected),
+            Some(watermark),
+            Some(originally_selected),
+            Some(record(4)),
+            Some(record(5)),
+            false,
+            &std::collections::BTreeSet::new(),
+        ));
+    }
+
+    #[test]
+    fn dropping_the_watermark_publication_requires_a_replacement_directory() {
+        let record = |ordinal| PersistedRecordIdentity::new([7; 16], ordinal).unwrap();
+        let watermark = IndexedThroughBlobPublication::new(4, record(1), [8; 32]).unwrap();
+        let directory = DerivedFamilyRootDirectoryBinding::new(record(2), Some(watermark));
+        let drops_watermark = std::collections::BTreeSet::from([record(1), record(9)]);
+        let drops_other = std::collections::BTreeSet::from([record(9)]);
+        assert!(drop_keeps_invalid_directory(
+            Some(directory),
+            false,
+            &drops_watermark
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(directory),
+            true,
+            &drops_watermark
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(directory),
+            false,
+            &drops_other
+        ));
+        assert!(!drop_keeps_invalid_directory(
+            Some(DerivedFamilyRootDirectoryBinding::new(record(2), None)),
+            false,
+            &drops_watermark
+        ));
     }
 }

@@ -70,7 +70,7 @@ pub(super) fn assert_fresh_stream(
         publication.logical_digest()
     );
     drop(read);
-    drop(blobs);
+
     serving.close();
 }
 

@@ -71,8 +71,11 @@ impl<'graph, 'work, 'run, 'lease, Ctx> CheckedEvaluationContext<'graph, 'work, '
         self.scratch_capacity_bytes
     }
 
-    /// Optional maximum retained heap in the returned output, including trace metadata.
-    /// Signal's captured dependency heap is reserved separately.
+    /// Admitted maximum retained heap in the returned output, including trace metadata.
+    /// A finite request, ancestor, or process memory limit gives a finite grant
+    /// before this callback. None means the authority has no finite memory limit.
+    /// Exceeding a grant is a callback-contract violation. Signal's captured
+    /// dependency heap is reserved separately.
     pub fn result_capacity_bytes(&self) -> Option<u64> {
         self.result_capacity_bytes
     }

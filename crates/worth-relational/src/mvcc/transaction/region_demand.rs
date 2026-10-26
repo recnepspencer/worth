@@ -12,7 +12,7 @@ impl super::BranchBoundRelationalTransaction {
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         self.demand_preparation_metadata(execution, symbols, indexes)?;
-        self.demand_declared_regions(execution, mirror)
+        self.demand_declared_regions(execution, symbols, mirror)
             .map_err(|failure| {
                 crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
             })
@@ -58,6 +58,7 @@ impl super::BranchBoundRelationalTransaction {
     fn demand_declared_regions(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), RelationalResidencyDemandFailure> {
         let root = &self.basis.inner.root;
@@ -116,6 +117,6 @@ impl super::BranchBoundRelationalTransaction {
             self.basis.identity().branch_id(),
             partitions.iter().copied(),
         )?;
-        root.demand_regions_full(execution, partitions)
+        root.demand_regions_full(execution, symbols, partitions)
     }
 }

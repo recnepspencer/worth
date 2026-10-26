@@ -38,45 +38,55 @@ pub(crate) fn assert_active_attempt_slopes() {
                 .enumerate()
                 .map(|(ordinal, branch)| {
                     let world = &world;
+                    let registered = &registered;
+                    let pause = &pause;
                     scope.spawn(move || {
-                        world.change_input_on_branch_with_ordinal(
-                            branch,
-                            &format!("active-attempt-{ordinal}"),
-                            ordinal as u8 + 1,
-                        )
+                        let outcome =
+                            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                world.change_input_on_branch_with_ordinal(
+                                    branch,
+                                    &format!("active-attempt-{ordinal}"),
+                                    ordinal as u8 + 1,
+                                )
+                            }));
+                        // Any early rejection or unwind wakes the coordinator and peers.
+                        // Success returns only after both coordinator-owned releases.
+                        registered.release();
+                        pause.release();
+                        outcome.unwrap_or_else(|panic| std::panic::resume_unwind(panic))
                     })
                 })
                 .collect::<Vec<_>>();
-            assert!(registered.wait_until_reached(std::time::Duration::from_secs(10)));
-            assert_eq!(
-                world.application.active_application_attempts_for_test(),
-                size
-            );
-            assert_eq!(
-                world
+            let observed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                assert!(registered.wait_for_arrivals());
+                assert_eq!(
+                    world.application.active_application_attempts_for_test(),
+                    size
+                );
+                assert_eq!(
+                    world
+                        .application
+                        .world_active_publication_attempts_for_test(),
+                    0
+                );
+                registered.release();
+                assert!(pause.wait_for_arrivals());
+                let actual = world.application.active_application_attempts_for_test();
+                let publishing = world
                     .application
-                    .world_active_publication_attempts_for_test(),
-                0
-            );
+                    .world_active_publication_attempts_for_test();
+                eprintln!(
+                    "axis=ActiveAttempts requested={size} actual={actual} covariation={size} independent product/component branches; {publishing} concurrent World publications",
+                );
+                assert_eq!(actual, size);
+                assert_eq!(publishing, size);
+                read(&world, root).work
+            }));
+            // Release before resuming a coordinator panic: thread::scope joins
+            // its children before the outer pause guards can be dropped.
             registered.release();
-            assert!(pause.wait_until_reached(std::time::Duration::from_secs(10)));
-            let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
-            while world.application.active_application_attempts_for_test() != size
-                && std::time::Instant::now() < deadline
-            {
-                std::thread::yield_now();
-            }
-            let actual = world.application.active_application_attempts_for_test();
-            let publishing = world
-                .application
-                .world_active_publication_attempts_for_test();
-            eprintln!(
-                "axis=ActiveAttempts requested={size} actual={actual} covariation={size} independent product/component branches; {publishing} concurrent World publications",
-            );
-            assert_eq!(actual, size);
-            assert_eq!(publishing, size);
-            let work = read(&world, root).work;
             pause.release();
+            let work = observed.unwrap_or_else(|panic| std::panic::resume_unwind(panic));
             for attempt in attempts {
                 attempt
                     .join()

@@ -77,7 +77,7 @@ impl PartitionAccess for RelationalBranchRoot {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.demand_regions_full(execution, [id])
+        self.demand_full_region_cached(execution, id)
     }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.partition_state(partition_id)

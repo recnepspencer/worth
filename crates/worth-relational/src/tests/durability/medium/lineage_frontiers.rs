@@ -71,7 +71,10 @@ fn checkpoint_restore_protects_published_lineage_identities_in_each_lane() {
                 .unwrap()
         } else {
             let placement = if matches!(lane, RestoreLane::Cold) {
-                RelationalCheckpointArtifactPolicy::ExternalMembers
+                RelationalCheckpointArtifactPolicy::ExternalMembers {
+                    current_members: &[],
+                    source: None,
+                }
             } else {
                 RelationalCheckpointArtifactPolicy::Embedded
             };
@@ -149,7 +152,10 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     attached_test_medium(&producer).file_checkpoint(native);

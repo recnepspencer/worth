@@ -107,6 +107,16 @@ pub(super) fn kind_from_prefix(bytes: &[u8]) -> Option<FrameKind> {
     bytes.get(8).and_then(|code| FrameKind::declared(*code))
 }
 
+pub(super) fn hex_record(record: &[u8; 24]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut value = String::with_capacity(48);
+    for byte in record {
+        value.push(HEX[(byte >> 4) as usize] as char);
+        value.push(HEX[(byte & 15) as usize] as char);
+    }
+    value
+}
+
 #[cfg(test)]
 mod tests {
     use worth_foundational::PhysicalArtifactFamily as Family;
@@ -158,14 +168,4 @@ mod tests {
             OfflineArtifactFamily::Unrecognized
         );
     }
-}
-
-pub(super) fn hex_record(record: &[u8; 24]) -> String {
-    const HEX: &[u8; 16] = b"0123456789abcdef";
-    let mut value = String::with_capacity(48);
-    for byte in record {
-        value.push(HEX[(byte >> 4) as usize] as char);
-        value.push(HEX[(byte & 15) as usize] as char);
-    }
-    value
 }

@@ -58,7 +58,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 self.runtime,
                 &mut partition,
                 retention_fence,
-            );
+            )?;
             branch_pinned_entities += entity_counts.branch_pinned;
             replay_pinned_entities += entity_counts.replay_pinned;
             snapshot_pinned_entities += entity_counts.snapshot_pinned;
@@ -69,13 +69,14 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 self.runtime,
                 &mut partition,
                 retention_fence,
-            );
+            )?;
             branch_pinned_relations += relation_counts.branch_pinned;
             replay_pinned_relations += relation_counts.replay_pinned;
             snapshot_pinned_relations += relation_counts.snapshot_pinned;
             reclaimable_relations += relation_counts.reclaimable;
             branch_replay_overlap_relations += relation_counts.branch_replay_overlap;
-        });
+            Ok(())
+        })?;
 
         let plan = RetentionPlan {
             retention_fence_version: retention_fence,
@@ -153,7 +154,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                     counters.retention_entity_slots_scanned += 1;
                 },
                 &mut reclaimed,
-            );
+            )?;
             outcome.entity_chunks_scanned += entity_counts.chunks_scanned;
             outcome.entity_reclaimable += entity_counts.reclaimable;
             outcome.entity_reclaimed += entity_counts.reclaimed;
@@ -176,11 +177,12 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                     counters.retention_relation_slots_scanned += 1;
                 },
                 &mut reclaimed,
-            );
+            )?;
             outcome.relation_chunks_scanned += relation_counts.chunks_scanned;
             outcome.relation_reclaimable += relation_counts.reclaimable;
             outcome.relation_reclaimed += relation_counts.reclaimed;
-        });
+            Ok(())
+        })?;
 
         drop(writer);
         for slot in reclaimed {

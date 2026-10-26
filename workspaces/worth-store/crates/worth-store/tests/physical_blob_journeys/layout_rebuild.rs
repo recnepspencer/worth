@@ -37,7 +37,7 @@ fn full_selected_authority_rebuild_restores_catalog_and_dedupe_after_derived_roo
     ingest.push(&vec![0x31; CHUNK_BYTES]).unwrap();
     ingest.push(&vec![0x72; CHUNK_BYTES]).unwrap();
     let published = ingest.finish().unwrap();
-    drop(blobs);
+
     let key =
         PhysicalIndexPointKey::blob_catalog(object, published.generation().sequence()).unwrap();
     let before = serving
@@ -252,7 +252,7 @@ fn held_catalog_root_survives_ordinary_second_publication_cow_and_reopen() {
         .is_some());
     drop(current);
     drop(held);
-    drop(blobs);
+
     serving.close();
     let reopened = serving_from_open(root.path());
     assert_eq!(

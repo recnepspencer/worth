@@ -53,6 +53,7 @@ pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 pub(crate) enum RelationalBranchRootCaptureDenial {
     PublishedPartitionMissing(PartitionId),
     DuplicateRegion(PartitionId),
+    InvalidAdjacencyProjection(PartitionId),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {

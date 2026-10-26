@@ -31,7 +31,7 @@ pub(super) fn leaf_occurrence_matches(
 ) -> bool {
     let chunk_size = u64::from(chunk_size);
     chunk_size != 0
-        && start % chunk_size == 0
+        && start.is_multiple_of(chunk_size)
         && covered_bytes != 0
         && total_bytes
             .checked_sub(start)

@@ -13,6 +13,7 @@ pub(crate) struct RelationalRootRegion {
     pub(super) partition: RelationalRegionRetention,
     allocation_inventory: Option<crate::storage::overlay::RelationalPartitionAllocationInventory>,
     pub(super) content_digest: [u8; 32],
+    pub(super) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
     pub(super) entity_slots: usize,
     pub(super) relation_slots: usize,
     pub(super) content_values_hashed: u64,
@@ -27,6 +28,13 @@ impl RelationalRootRegion {
         symbols: &crate::symbols::data::StringInterner,
         previous: Option<(&Self, &crate::storage::overlay::PartitionMutationJournal)>,
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
+        crate::storage::residency::rebuild_region_history_kind_buckets(&mut partition).map_err(
+            |_| {
+                RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
+                    partition.partition_id,
+                )
+            },
+        )?;
         partition.clear_runtime_pin_counters();
         let (content_commitment, content_values_hashed) =
             crate::storage::overlay::PartitionContentCommitment::capture(
@@ -46,6 +54,13 @@ impl RelationalRootRegion {
                 ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
             })?;
         let content_digest = content_commitment.digest(partition.partition_id);
+        let kind_commitment =
+            crate::storage::residency::RelationalRegionKindCommitment::capture(&partition)
+                .map_err(|_| {
+                    RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
+                        partition.partition_id,
+                    )
+                })?;
         let (allocation_inventory, materialization_unavailable_records) =
             if let Some((previous, journal)) = previous {
                 let inventory = partition.allocation_inventory_since(
@@ -79,6 +94,7 @@ impl RelationalRootRegion {
             partition_id: partition.partition_id,
             allocation_inventory: Some(allocation_inventory),
             content_digest,
+            kind_commitment,
             entity_slots: partition.entity_arena.slot_count(),
             relation_slots: partition.relation_arena.slot_count(),
             partition: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
@@ -102,6 +118,7 @@ impl RelationalRootRegion {
             partition: RelationalRegionRetention::new(checkpoint.cell, checkpoint.kind_authority),
             allocation_inventory: None,
             content_digest: checkpoint.content_digest,
+            kind_commitment: checkpoint.kind_commitment,
             entity_slots: checkpoint.entity_slots,
             relation_slots: checkpoint.relation_slots,
             content_values_hashed: 0,

@@ -163,7 +163,10 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers,
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
         )
         .unwrap();
     #[derive(serde::Deserialize)]

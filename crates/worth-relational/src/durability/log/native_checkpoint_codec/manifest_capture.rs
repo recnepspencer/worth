@@ -27,7 +27,7 @@ impl CapturedManifest {
         checkpoint: &DurableCheckpoint,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
-        placement: RelationalCheckpointArtifactPolicy,
+        placement: &RelationalCheckpointArtifactPolicy<'_>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
         let mut commits = prior.map_or_else(Vec::new, |prior| prior.commits.clone());
@@ -53,7 +53,7 @@ impl CapturedManifest {
                 payload_digest,
                 schema_version: envelope.schema_version,
             });
-            if placement == RelationalCheckpointArtifactPolicy::Embedded {
+            if placement.is_embedded() {
                 envelopes.push(
                     rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
                         positioned,
@@ -174,7 +174,7 @@ impl CapturedManifest {
             checkpoint,
             policy,
             None,
-            RelationalCheckpointArtifactPolicy::Embedded,
+            &RelationalCheckpointArtifactPolicy::Embedded,
         )?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();
@@ -198,7 +198,14 @@ impl CapturedManifest {
             let schema = schemas
                 .get(&root.schema_carrier_digest)
                 .ok_or_else(|| corrupt("missing root schema carrier"))?;
-            let partitions = restore_images(&root.partition_images, schema)?;
+            let partitions = restore_images(
+                &root.partition_images,
+                schema,
+                checkpoint
+                    .root_kind_images
+                    .get(&root.commit_id)
+                    .ok_or_else(|| corrupt("missing root kind images"))?,
+            )?;
             let regions = capture_partitions(
                 &partitions,
                 schema,
@@ -222,7 +229,11 @@ impl CapturedManifest {
                 .get(&digest)
                 .ok_or_else(|| corrupt("missing mirror schema carrier"))?;
             capture_partitions(
-                &restore_images(&checkpoint.partition_images, schema)?,
+                &restore_images(
+                    &checkpoint.partition_images,
+                    schema,
+                    &checkpoint.mirror_kind_images,
+                )?,
                 schema,
                 digest,
                 &symbols,
@@ -240,6 +251,7 @@ impl CapturedManifest {
 fn restore_images(
     images: &[PartitionCheckpointImage],
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    kinds: &crate::storage::residency::CheckpointRegionKindImages,
 ) -> Result<BTreeMap<crate::identity::data::PartitionId, PartitionState>, DurabilityError> {
     let contracts =
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())?;
@@ -253,7 +265,9 @@ fn restore_images(
             return Err(corrupt("duplicate partition image"));
         }
     }
-    crate::storage::partition::rebuild_adjacency_kind_buckets(&mut partitions).map_err(corrupt)?;
+    kinds
+        .restore(&mut partitions)
+        .map_err(|cause| corrupt(format!("kind reconstruction: {cause:?}")))?;
     Ok(partitions)
 }
 
@@ -278,6 +292,7 @@ fn capture_partitions(
             )
             .map_err(|cause| corrupt(format!("region member: {cause:?}")))?;
             Ok(RelationalCheckpointRegion {
+                kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
                 content_digest: commitment.digest(partition.partition_id),
                 entity_slots: partition.entity_arena.slot_count(),

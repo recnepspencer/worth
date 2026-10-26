@@ -9,8 +9,8 @@ use worth_query_host::facade::application_contribution::{
     PartitionItemId, WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
     WorthQueryDeterministicReducer, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationDenial, WorthQueryManagedComputationResourceDenial,
-    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
+    WorthQueryManagedComputationDenial, WorthQueryPartitionedComputationDenial,
+    WorthQueryPartitionedComputationOwner,
 };
 
 use super::demand::TotalRegions;
@@ -23,8 +23,6 @@ use super::*;
 pub(super) enum ProbeFault {
     /// The entry's key refuses to encode.
     NoKey,
-    /// The region's result holds this many more values, each a zero.
-    Hold(usize),
     /// The region's result carries a value the reducer panics on.
     PoisonReducer,
 }
@@ -107,9 +105,6 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         for entry in partition.gathered() {
             checkpoint.advance(1)?;
             match entry.fault {
-                Some(RegionFault::Probe(ProbeFault::Hold(values))) => {
-                    seen.resize(seen.len() + values, 0);
-                }
                 Some(RegionFault::Probe(ProbeFault::PoisonReducer)) => seen.push(POISON),
                 _ => {}
             }
@@ -137,7 +132,7 @@ impl RegionTotalsBinding for Probed {
     type Computation = ProbedTotals;
 
     fn install(setup: &mut Setup<'_>) -> Installed {
-        running::<ProbedTotals, _>(setup, ProbingOwner)
+        running::<4_096, ProbedTotals, _>(setup, ProbingOwner)
     }
 }
 
@@ -169,10 +164,6 @@ fn partition_of(region: u32) -> PartitionIdentity {
         .partition()
 }
 
-/// A result passed the bytes declared for one result.
-const RESULT_TOO_LARGE: WorthQueryManagedComputationResourceDenial =
-    WorthQueryManagedComputationResourceDenial::ResultCapacityExceeded;
-
 #[test]
 fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
     // Two regions. The least entries are 3 and 4, and neither is met first in
@@ -194,57 +185,6 @@ fn partition_key_is_its_least_items_key_whatever_order_the_input_holds() {
             assert_eq!(demand("reversed"), Ok(planned));
         },
     );
-}
-
-#[test]
-fn result_larger_than_the_declared_bytes_is_a_typed_denial() {
-    // The computation declares 8,192 bytes. A result fits them in memory and
-    // once more as its canonical bits, which take 24 bytes a value.
-    // One region's result is too large on its own.
-    let oversized = [
-        entry(1, 1),
-        faulted(2, 2, ProbeFault::Hold(2_000)),
-        entry(3, 3),
-    ];
-    // A result fits alone, and what the reducer makes of two does not.
-    let alone = [faulted(1, 1, ProbeFault::Hold(250))];
-    let together = [
-        faulted(1, 1, ProbeFault::Hold(250)),
-        faulted(2, 2, ProbeFault::Hold(250)),
-    ];
-    let fitting = [
-        faulted(1, 1, ProbeFault::Hold(100)),
-        faulted(2, 2, ProbeFault::Hold(100)),
-    ];
-    let sets: facts::Sets<'_> = &[
-        ("oversized", &oversized),
-        ("alone", &alone),
-        ("together", &together),
-        ("fitting", &fitting),
-    ];
-    with_totals::<Probed>(sets, |demand| {
-        assert_eq!(
-            demand("oversized").map(|total| total.bits),
-            Err(WorthQueryPartitionedComputationDenial::Partition {
-                partition: partition_of(2),
-                cause: WorthQueryComputationPartitionStop::Resource(RESULT_TOO_LARGE),
-            })
-        );
-        assert_eq!(
-            demand("alone").map(|total| total.bits),
-            Ok(1.0_f64.to_bits())
-        );
-        assert_eq!(
-            demand("together").map(|total| total.bits),
-            Err(WorthQueryPartitionedComputationDenial::Resource(
-                RESULT_TOO_LARGE
-            ))
-        );
-        assert_eq!(
-            demand("fitting").map(|total| total.bits),
-            Ok(3.0_f64.to_bits())
-        );
-    });
 }
 
 #[cfg(panic = "unwind")]

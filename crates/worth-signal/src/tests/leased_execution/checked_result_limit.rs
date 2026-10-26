@@ -66,7 +66,8 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
                 &[node],
                 EvaluationRequestMode::Default,
                 &(),
-                &|_| {
+                &|context| {
+                    assert_eq!(context.result_capacity_bytes(), Some(maximum));
                     calls.fetch_add(1, Ordering::SeqCst);
                     Ok(result())
                 },
@@ -88,6 +89,9 @@ fn declared_checked_result_heap_is_enforced_before_publication() {
 
 #[test]
 fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets() {
+    let Some(authority) = super::support::result_grant_process::isolated_authority(
+        "tests::leased_execution::checked_result_limit::omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets",
+    ) else { return; };
     let mut graph = SignalGraph::new();
     let node = graph
         .node()
@@ -98,17 +102,29 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
         )
         .build();
     let calls = AtomicUsize::new(0);
-    let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
+    let lease = authority.request_lease(request(2, 2_000_000)).unwrap();
     assert_eq!(lease.policy().charged_memory_bytes(), None);
+    let room = lease.available_memory_bytes().unwrap();
+    let observed_grant = std::sync::atomic::AtomicU64::new(0);
     let report = graph
         .evaluate_checked(
             &[node],
             EvaluationRequestMode::Default,
             &(),
             &|context| {
-                assert_eq!(context.result_capacity_bytes(), None);
+                let output = result().with_label("owned-output".repeat(8192));
+                let heap = output
+                    .retained_heap_charge(&mut RetainedStoragePreparation::new(None))
+                    .unwrap()
+                    .bytes();
+                let grant = context
+                    .result_capacity_bytes()
+                    .expect("a finite process owner supplies a finite result grant");
+                assert!(heap <= grant, "returned heap {heap} exceeds grant {grant}");
+                assert!(grant <= room, "grant {grant} ignores process room {room}");
+                observed_grant.store(grant, Ordering::SeqCst);
                 calls.fetch_add(1, Ordering::SeqCst);
-                Ok(result().with_label("owned-output".repeat(8192)))
+                Ok(output)
             },
             worth_execution::ExecutionRequest::leased(&lease),
         )
@@ -117,4 +133,5 @@ fn omitted_result_declaration_keeps_the_original_output_and_refunds_its_tickets(
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(node).unwrap().get(VALUE), 7);
     assert_eq!(lease.charged_memory_bytes(), 0);
+    println!("RESULT_GRANT {}", observed_grant.load(Ordering::SeqCst));
 }

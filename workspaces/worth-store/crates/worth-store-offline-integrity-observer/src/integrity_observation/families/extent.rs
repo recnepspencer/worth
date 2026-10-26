@@ -85,7 +85,7 @@ pub(crate) fn read_extent_manifest(
                 .checked_mul(chunk_stride)
                 .and_then(|bytes| bytes.checked_add(manifest_stride))
                 == Some(allocated_bytes)
-            && expected.offset % alignment == 0,
+            && expected.offset.is_multiple_of(alignment),
         88,
         16,
     )?;

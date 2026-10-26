@@ -41,7 +41,7 @@ fn legacy_precompute_refuses_memory_after_request_admission() {
                         },
                     )
                     .unwrap();
-                    allocate_legacy_values(1, preparation)
+                    allocate_epoch_values(1, preparation)
                 })
                 .map_err(SignalError::execution_scope_denied)?
         },

@@ -15,9 +15,8 @@ use worth_query_installation::facade::{
 };
 
 use declaration::{
-    AftermathFixtureSchema, ApproveEmergencyAccess, AuditRetention, Charge, FixtureInput,
-    FreezeAccount, FreezeAccountFields, FreezeBalance, FreezeNote, LegalHold, NotifyDeath,
-    ReleaseEstate, Transfer, TransferLarge, TransferSmall, WireTransferFinal,
+    AftermathFixtureSchema, Charge, FixtureInput, FreezeAccount, FreezeAccountFields,
+    FreezeBalance, FreezeNote, NotifyDeath, Transfer,
 };
 
 fn op<Operation>() -> ApplicationOperationRef<AftermathFixtureSchema, Operation, FixtureInput>
@@ -67,18 +66,10 @@ where
         .clone()
 }
 
-pub(crate) fn release_estate() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<ReleaseEstate>()
-}
 pub(crate) fn transfer() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<Transfer>()
 }
-pub(crate) fn transfer_small() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<TransferSmall>()
-}
-pub(crate) fn transfer_large() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<TransferLarge>()
-}
+
 pub(crate) fn freeze_account() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeAccount>()
 }
@@ -88,18 +79,7 @@ pub(crate) fn freeze_account_fields() -> WorthQueryInstalledAftermathContract {
 pub(crate) fn notify_death() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<NotifyDeath>()
 }
-pub(crate) fn legal_hold() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<LegalHold>()
-}
-pub(crate) fn audit_retention() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<AuditRetention>()
-}
-pub(crate) fn approve_emergency_access() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<ApproveEmergencyAccess>()
-}
-pub(crate) fn wire_transfer_final() -> WorthQueryInstalledAftermathContract {
-    aftermath_of::<WireTransferFinal>()
-}
+
 pub(crate) fn freeze_note() -> WorthQueryInstalledAftermathContract {
     aftermath_of::<FreezeNote>()
 }

@@ -47,7 +47,7 @@ pub(super) fn collect(
     artifacts.extend_from_slice(&source.source_artifacts);
     artifacts.sort_unstable();
     artifacts.dedup();
-    allowance.into_box(artifacts).map_err(Into::into)
+    allowance.box_values(artifacts).map_err(Into::into)
 }
 
 pub(super) fn protected_ranges(

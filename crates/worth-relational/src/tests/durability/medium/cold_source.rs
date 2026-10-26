@@ -31,7 +31,7 @@ impl RelationalDurableColdSource for MemberSource {
         if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
             return Err(Cause::Damaged);
         }
-        let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,
@@ -49,10 +49,7 @@ impl RelationalDurableColdSource for MemberSource {
         if self.commits_damaged.load(Ordering::Relaxed) {
             return Err(Cause::Damaged);
         }
-        let bytes = self
-            .commits
-            .get(&position)
-            .ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.commits.get(&position).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,

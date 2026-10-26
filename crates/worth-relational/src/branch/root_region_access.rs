@@ -37,8 +37,9 @@ impl RelationalBranchRoot {
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.demand_regions_full(execution, self.partition_ids_iter())
+        self.demand_regions_full(execution, symbols, self.partition_ids_iter())
     }
     pub(crate) fn probe_full_region(
         &self,
@@ -53,14 +54,49 @@ impl RelationalBranchRoot {
             },
         }
     }
+    pub(crate) fn probe_full_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        use crate::storage::residency::PartitionProbe as Probe;
+        match self.probe_full_region(id) {
+            Probe::Resident(partition) => {
+                let Some(region) = self.regions.get(id) else {
+                    return Probe::Absent;
+                };
+                let lease = region.partition.lease();
+                if !lease.cell().has_cold_backing()
+                    || symbols.region_symbols_admitted(lease.symbol_admission_identity())
+                {
+                    Probe::Resident(partition)
+                } else {
+                    Probe::Cold
+                }
+            }
+            other => other,
+        }
+    }
+    pub(crate) fn demand_full_region_cached(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if let Some(region) = self.regions.get(id) {
+            region.partition.demand_full(execution, 1 << 30)?;
+        }
+        Ok(())
+    }
     pub(crate) fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
                 region.partition.demand_full(execution, 1 << 30)?;
+                region.partition.lease().admit_symbols(execution, symbols)?;
             }
         }
         Ok(())
@@ -130,6 +166,7 @@ impl RelationalBranchRoot {
                 |region| super::super::root_checkpoint::RelationalRootRegionCheckpoint {
                     partition_id: region.partition_id,
                     content_digest: region.content_digest,
+                    kind_commitment: region.kind_commitment,
                     entity_slots: region.entity_slots,
                     relation_slots: region.relation_slots,
                     unavailable_records: region.materialization_unavailable_records(),

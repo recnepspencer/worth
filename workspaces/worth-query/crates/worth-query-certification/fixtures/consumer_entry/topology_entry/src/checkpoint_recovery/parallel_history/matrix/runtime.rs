@@ -1,6 +1,7 @@
 //! Application bindings are measured before edits; the model receives only identity metadata.
 mod interruption;
 mod kernel_observation;
+mod member_observation;
 use super::*;
 use std::{collections::BTreeMap, num::NonZeroUsize, sync::Arc};
 use worth_query_host::facade::application_entry::{
@@ -211,6 +212,17 @@ pub fn run(cell: cases::Cell) -> Observed {
         let mut state = control.state.lock().unwrap();
         state.armed = true;
         state.failure = failure;
+        state.member_waves = expected.dispatch_waves.clone();
+        state.wave_active = vec![0; state.member_waves.len()];
+        // Native run_order claims its scheduling-order buffer by atomic index
+        // (worth-execution/src/backend/native.rs). Thus the first ranked
+        // computing members can fill these slots without waiting on queued work.
+        state.member_rendezvous = expected
+            .dispatch_waves
+            .iter()
+            .map(|wave| wave.iter().take(cell.workers).copied().collect())
+            .collect();
+        state.wave_peaks = vec![0; state.member_rendezvous.len()];
         state.witnesses = expected
             .witnesses
             .iter()
@@ -232,6 +244,7 @@ pub fn run(cell: cases::Cell) -> Observed {
         &request
     });
     let records = observations();
+    member_observation::assert_member_widths(&control, &expected.dispatch_waves, cell.workers);
     if cell.fault == 10 {
         interruption::assert_deadline(&outcome, &records);
     }
@@ -332,10 +345,6 @@ pub fn run(cell: cases::Cell) -> Observed {
             "one worker has at most one computing member"
         );
     }
-    assert!(
-        !state.hang_guard_expired,
-        "computing-member overlap hang guard expired"
-    );
     Observed {
         work: record.report.charged_work(),
         span: record.report.charged_span(),

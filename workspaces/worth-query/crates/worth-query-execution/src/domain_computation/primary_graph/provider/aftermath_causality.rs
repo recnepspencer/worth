@@ -109,6 +109,7 @@ pub(super) fn aftermath_causality_create_intent(
 }
 
 impl WorthQueryPrimaryGraphProvider {
+    #[cfg(test)]
     pub(in crate::domain_computation) fn resolve_aftermath_causality_at_basis(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

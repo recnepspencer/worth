@@ -89,15 +89,15 @@ fn portable_genesis_cannot_replace_its_scope_with_a_foreign_entity() {
     let mut parts =
         WorthQueryPortableApplicationSchemaRecord::project(schema.erased()).into_parts();
     for member in &mut parts.members {
-        if let ApplicationSchemaMember::OperationBody { operation, body } = member {
-            if operation == "CreateDocument" {
-                *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
-                    "Principal".to_owned(),
-                    body.scope_fields().to_vec(),
-                    body.creation().cloned(),
-                    body.requirements().to_vec(),
-                );
-            }
+        if let ApplicationSchemaMember::OperationBody { operation, body } = member
+            && operation == "CreateDocument"
+        {
+            *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                "Principal".to_owned(),
+                body.scope_fields().to_vec(),
+                body.creation().cloned(),
+                body.requirements().to_vec(),
+            );
         }
     }
     parts.members.sort();
@@ -116,24 +116,24 @@ fn explicit_scope_preserves_legacy_field_body_identity_and_cannot_be_effectless(
     let mut parts =
         WorthQueryPortableApplicationSchemaRecord::project(schema.erased()).into_parts();
     for member in &mut parts.members {
-        if let ApplicationSchemaMember::OperationBody { operation, body } = member {
-            if operation == "SetRetention" {
-                // The typed author used in_scope(Document); its redundant scope
-                // must normalize to the same value as the old field-derived form.
-                assert_eq!(body.explicit_scope_entity(), None);
-                let old = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
-                    body.scope_fields().to_vec(),
-                    body.creation().cloned(),
-                    body.requirements().to_vec(),
-                );
-                assert_eq!(*body, old);
-                *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
-                    "Document".to_owned(),
-                    old.scope_fields().to_vec(),
-                    old.creation().cloned(),
-                    old.requirements().to_vec(),
-                );
-            }
+        if let ApplicationSchemaMember::OperationBody { operation, body } = member
+            && operation == "SetRetention"
+        {
+            // The typed author used in_scope(Document); its redundant scope
+            // must normalize to the same value as the old field-derived form.
+            assert_eq!(body.explicit_scope_entity(), None);
+            let old = ApplicationOperationBodyProgram::from_untrusted_with_requirements(
+                body.scope_fields().to_vec(),
+                body.creation().cloned(),
+                body.requirements().to_vec(),
+            );
+            assert_eq!(*body, old);
+            *body = ApplicationOperationBodyProgram::from_untrusted_in_scope(
+                "Document".to_owned(),
+                old.scope_fields().to_vec(),
+                old.creation().cloned(),
+                old.requirements().to_vec(),
+            );
         }
     }
     assert_eq!(

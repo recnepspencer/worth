@@ -255,7 +255,3 @@ fn assert_fresh_pages(
 fn one() -> NonZeroUsize {
     NonZeroUsize::new(1).unwrap()
 }
-
-fn work() -> NonZeroUsize {
-    NonZeroUsize::new(10_000).unwrap()
-}

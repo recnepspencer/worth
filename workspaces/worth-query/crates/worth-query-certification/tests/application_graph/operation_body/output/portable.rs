@@ -58,14 +58,13 @@ fn portable_outputs_preserve_meaning_and_reject_mismatched_contract_or_target() 
         }
         if defect == "mandatory" {
             for member in &mut parts.members {
-                if let ApplicationSchemaMember::ApplicationMutation { description } = member {
-                    if description.operation() == "CreateDocument" {
-                        let mut binding = description.clone().into_parts();
-                        binding.output_roles[0].cardinality =
-                            ApplicationMutationOutputRoleCardinality::ExactlyOne;
-                        *description =
-                            ApplicationMutationDescription::from_untrusted_parts(binding);
-                    }
+                if let ApplicationSchemaMember::ApplicationMutation { description } = member
+                    && description.operation() == "CreateDocument"
+                {
+                    let mut binding = description.clone().into_parts();
+                    binding.output_roles[0].cardinality =
+                        ApplicationMutationOutputRoleCardinality::ExactlyOne;
+                    *description = ApplicationMutationDescription::from_untrusted_parts(binding);
                 }
             }
         }

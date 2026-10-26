@@ -81,7 +81,7 @@ fn a_damaged_member_refuses_typed_and_never_reads_as_absent() {
     let checkpoint = name(CHECKPOINT);
     // The damaged members are extent-backed, so damage to them leaves the
     // anchored record's own page intact.
-    let contents = vec![content(1, 100_000), content(2, 1 << 20), content(3, 5_000)];
+    let contents = [content(1, 100_000), content(2, 1 << 20), content(3, 5_000)];
     publish_with_members(
         world.serving(),
         world.placement(),

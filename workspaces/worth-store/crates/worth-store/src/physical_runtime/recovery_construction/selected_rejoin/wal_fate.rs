@@ -115,6 +115,29 @@ fn selected_history_fate_matches(
     }
 }
 
+pub(super) fn expected_drop_key(
+    store: [u8; 16],
+    attempt: [u8; 16],
+    policy: [u8; 32],
+    issuance: u64,
+    expiry: u64,
+) -> [u8; 32] {
+    let mut material = Sha256::new();
+    material.update(DROP_MATERIAL_DOMAIN);
+    material.update(store);
+    material.update(attempt);
+    material.update([2]);
+    let mut key = Sha256::new();
+    key.update((IDEMPOTENCY_DOMAIN.len() as u64).to_le_bytes());
+    key.update(IDEMPOTENCY_DOMAIN);
+    key.update(store);
+    key.update(policy);
+    key.update(issuance.to_le_bytes());
+    key.update(expiry.to_le_bytes());
+    key.update(material.finalize());
+    key.finalize().into()
+}
+
 #[cfg(test)]
 mod selected_history_tests {
     use super::{selected_history_fate_matches, StoreRecoveryOperationFate as Fate};
@@ -141,27 +164,4 @@ mod selected_history_tests {
             false,
         ));
     }
-}
-
-pub(super) fn expected_drop_key(
-    store: [u8; 16],
-    attempt: [u8; 16],
-    policy: [u8; 32],
-    issuance: u64,
-    expiry: u64,
-) -> [u8; 32] {
-    let mut material = Sha256::new();
-    material.update(DROP_MATERIAL_DOMAIN);
-    material.update(store);
-    material.update(attempt);
-    material.update([2]);
-    let mut key = Sha256::new();
-    key.update((IDEMPOTENCY_DOMAIN.len() as u64).to_le_bytes());
-    key.update(IDEMPOTENCY_DOMAIN);
-    key.update(store);
-    key.update(policy);
-    key.update(issuance.to_le_bytes());
-    key.update(expiry.to_le_bytes());
-    key.update(material.finalize());
-    key.finalize().into()
 }

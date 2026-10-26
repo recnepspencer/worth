@@ -8,6 +8,7 @@ use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
 
 pub(crate) struct CapturedRegionMembers {
+    pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) head: (RelationalDurableMemberLocator, Vec<u8>),
     pub(crate) history: (RelationalDurableMemberLocator, Vec<u8>),
 }
@@ -18,6 +19,9 @@ pub(crate) fn capture_region_members(
     schema: &RelationalBranchRootSchemaAuthority,
     schema_carrier_digest: [u8; 32],
 ) -> Result<CapturedRegionMembers, Cause> {
+    let mut normalized = partition.clone();
+    super::rebuild_region_history_kind_buckets(&mut normalized)?;
+    let partition = &normalized;
     let contracts =
         CheckpointAspectContractCatalog::from_contracts(schema.retained_aspect_contracts())
             .map_err(|_| Cause::Damaged)?;
@@ -27,6 +31,15 @@ pub(crate) fn capture_region_members(
         partition_to_image_with_contracts(checkpoint_partition, schema.aspect_plans(), &contracts)
             .map_err(|_| Cause::Damaged)?;
     let history = RegionHistoryImage {
+        kind_projection: super::kind_projection::capture(
+            partition,
+            AdjacencyKindBasis::Historical,
+        )?,
+        adjacency_kinds: capture_kinds(&partition.adjacency, AdjacencyKindBasis::Historical),
+        reverse_adjacency_kinds: capture_kinds(
+            &partition.reverse_adjacency,
+            AdjacencyKindBasis::Historical,
+        ),
         entities: image
             .entity_arena
             .metadata_history
@@ -51,6 +64,7 @@ pub(crate) fn capture_region_members(
             .collect(),
     };
     let head = RegionHeadImage {
+        kind_projection: super::kind_projection::capture(partition, AdjacencyKindBasis::Current)?,
         partition: image,
         history_frontiers: commitment
             .history_frontiers(partition)
@@ -62,6 +76,10 @@ pub(crate) fn capture_region_members(
         ),
     };
     Ok(CapturedRegionMembers {
+        kind_authority: super::RelationalRegionKindCommitment {
+            head: super::kind_commitment::digest(&head.kind_projection)?,
+            history: super::kind_commitment::digest(&history.kind_projection)?,
+        },
         head: RelationalRegionImage::encode(
             partition.partition_id,
             schema_carrier_digest,
@@ -77,7 +95,7 @@ pub(crate) fn capture_region_members(
     })
 }
 
-fn capture_kinds(
+pub(super) fn capture_kinds(
     table: &crate::storage::partition::SparseAdjacencyTable,
     basis: AdjacencyKindBasis,
 ) -> Vec<RegionAdjacencyKinds> {
@@ -85,7 +103,11 @@ fn capture_kinds(
         .iter()
         .map(|(&slot, adjacency)| RegionAdjacencyKinds {
             slot: slot as u64,
-            kinds: adjacency.checkpoint_kind_memberships(basis),
+            kinds: adjacency
+                .checkpoint_kind_memberships(basis)
+                .into_iter()
+                .filter(|(_, ids)| !ids.is_empty())
+                .collect(),
         })
         .collect()
 }

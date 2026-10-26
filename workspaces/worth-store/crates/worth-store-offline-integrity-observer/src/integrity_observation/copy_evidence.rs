@@ -116,9 +116,9 @@ impl CopyIntentFact {
             || payload_bytes == 0
             || alignment == 0
             || !alignment.is_power_of_two()
-            || source.1 % alignment != 0
-            || destination.1 % alignment != 0
-            || source.2 % alignment != 0
+            || !source.1.is_multiple_of(alignment)
+            || !destination.1.is_multiple_of(alignment)
+            || !source.2.is_multiple_of(alignment)
             || source.1.checked_add(source.2).is_none()
             || destination.1.checked_add(destination.2).is_none()
             || maximum_frame_bytes == 0

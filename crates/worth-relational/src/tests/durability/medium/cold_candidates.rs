@@ -63,7 +63,11 @@ fn recovered(
     basis
         .inner
         .root
-        .demand_regions_full(execution, [PartitionId::main()])
+        .demand_regions_full(
+            execution,
+            &receiving.services.symbols,
+            [PartitionId::main()],
+        )
         .unwrap();
     assert!(matches!(
         basis.inner.root.probe_full_partition(REMOTE),
@@ -176,7 +180,7 @@ fn a_region_retry_spends_the_applied_draft_identity_and_settles_one_round() {
     basis
         .inner
         .root
-        .demand_regions_full(execution, [REMOTE])
+        .demand_regions_full(execution, &warm.services.symbols, [REMOTE])
         .unwrap();
     let before_cold = cold.performance_access().counters();
     let before_warm = warm.performance_access().counters();

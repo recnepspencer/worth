@@ -43,12 +43,10 @@ impl PreparedAuthoredIdentity {
         let mut matched = None;
         for (name, posture, kind, target) in roles {
             poll(request)?;
-            if name == parts.inverse_role {
-                if matched.replace((posture, kind, target)).is_some() {
-                    return Err(Identity(
-                        "authored inverse repeated its declared output role",
-                    ));
-                }
+            if name == parts.inverse_role && matched.replace((posture, kind, target)).is_some() {
+                return Err(Identity(
+                    "authored inverse repeated its declared output role",
+                ));
             }
         }
         let (posture, kind, target) = matched.ok_or(Identity(

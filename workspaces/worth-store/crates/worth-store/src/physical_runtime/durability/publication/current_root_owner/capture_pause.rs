@@ -51,11 +51,12 @@ impl PhysicalCurrentRootOwner {
 
     pub(super) fn pause_capture_at(&self, stage: CertificationReadRootCaptureStage) {
         let pause = self.capture_pause.lock().unwrap().clone();
-        if let Some(pause) = pause {
-            if pause.stage == stage && pause.armed.swap(false, Ordering::AcqRel) {
-                let _ = pause.arrival.try_send(());
-                let _ = pause.release.lock().unwrap().recv();
-            }
+        if let Some(pause) = pause
+            && pause.stage == stage
+            && pause.armed.swap(false, Ordering::AcqRel)
+        {
+            let _ = pause.arrival.try_send(());
+            let _ = pause.release.lock().unwrap().recv();
         }
     }
 

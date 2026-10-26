@@ -8,7 +8,9 @@ fn mutation_prepare_and_one_call_refuse_before_their_admitted_reader() {
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
-    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY.accounting().expect("this fixture declares accounting");
+    let policy = support::observation::CHECKPOINT_EXECUTION_POLICY
+        .accounting()
+        .expect("this fixture declares accounting");
     let mut key = 97_600_u64;
     for placement in [Placement::Serial, Placement::Leased(NonZeroUsize::MIN)] {
         let _restore = Restore(place(placement), bound(None));

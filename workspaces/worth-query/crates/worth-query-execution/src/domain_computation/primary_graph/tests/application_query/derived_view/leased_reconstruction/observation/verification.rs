@@ -51,10 +51,16 @@ pub(super) fn verify(
         "projection must follow EntityId order"
     );
 
-    if let Some(values) = published_values {
+    if let Some(values) = &published_values {
         assert_eq!(values.len(), count);
     }
 
-    if observed.denial.is_some() && !case.warm {}
+    if observed.denial.is_some() && !case.warm {
+        assert_eq!(
+            published_values.as_deref().unwrap_or_default(),
+            prior_values,
+            "a refused cold reconstruction cannot publish partial values"
+        );
+    }
     observed
 }

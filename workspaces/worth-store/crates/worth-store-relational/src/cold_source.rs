@@ -12,7 +12,7 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
 use worth_store::physical_runtime::{
     AnchoredRecordMemberDamage, AnchoredRecordMemberLocator, AnchoredRecordMemberReadFailure,
-    AnchoredRecordName, AnchoredRecordReadFailure, OrderedJournalReadFailure,
+    AnchoredRecordName, OrderedJournalReadFailure, RecordReadDenial, RecordReadError,
     ServingPhysicalRuntime,
 };
 
@@ -79,6 +79,15 @@ impl StoreColdSource {
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
     }
+    pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
+        self.members
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .1
+            .keys()
+            .copied()
+            .collect()
+    }
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
@@ -106,10 +115,11 @@ impl RelationalDurableColdSource for StoreColdSource {
             .1
             .get(&locator)
             .copied()
-            .ok_or(Cause::SourceUnavailable)?;
+            .ok_or(Cause::MissingMember)?;
         records
             .read_member(anchor, placed, limit)
             .map_err(|failure| match failure {
+                AnchoredRecordMemberReadFailure::NotCurrentMember => Cause::MissingMember,
                 AnchoredRecordMemberReadFailure::LimitExceeded { length } => {
                     Cause::LimitExceeded { length, limit }
                 }
@@ -117,7 +127,10 @@ impl RelationalDurableColdSource for StoreColdSource {
                     AnchoredRecordMemberDamage::DigestMismatch,
                 ) => Cause::IntegrityMismatch,
                 AnchoredRecordMemberReadFailure::Damaged(_) => Cause::Damaged,
-                AnchoredRecordMemberReadFailure::Value(failure) => anchor_failure(failure, 1 << 30),
+                // Failure to verify the selecting anchor proves nothing about
+                // this member's bytes. It must not poison every region cell.
+                AnchoredRecordMemberReadFailure::Value(_) => Cause::SourceUnavailable,
+                AnchoredRecordMemberReadFailure::Open(error) => record_failure(error),
                 _ => Cause::SourceUnavailable,
             })
     }
@@ -130,6 +143,8 @@ impl RelationalDurableColdSource for StoreColdSource {
             .read(position.0, limit)
             .map(|record| record.into_bytes())
             .map_err(|failure| match failure {
+                OrderedJournalReadFailure::NotFound { .. } => Cause::MissingMember,
+                OrderedJournalReadFailure::Open(error) => record_failure(error),
                 OrderedJournalReadFailure::Damaged => Cause::Damaged,
                 OrderedJournalReadFailure::LimitExceeded { payload_bytes } => {
                     Cause::LimitExceeded {
@@ -142,13 +157,10 @@ impl RelationalDurableColdSource for StoreColdSource {
     }
 }
 
-fn anchor_failure(failure: AnchoredRecordReadFailure, limit: u64) -> Cause {
-    match failure {
-        AnchoredRecordReadFailure::Damaged(_) => Cause::Damaged,
-        AnchoredRecordReadFailure::LimitExceeded { payload_bytes } => Cause::LimitExceeded {
-            length: payload_bytes,
-            limit,
-        },
+fn record_failure(error: RecordReadError) -> Cause {
+    match error.denial() {
+        RecordReadDenial::RecordNotFound => Cause::MissingMember,
+        RecordReadDenial::ArtifactDamaged | RecordReadDenial::FormatMismatch => Cause::Damaged,
         _ => Cause::SourceUnavailable,
     }
 }

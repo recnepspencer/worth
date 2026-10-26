@@ -151,7 +151,7 @@ fn assert_file_count_and_namespace(root: &Path, count: u64, capacity: u64) {
         !root.join("families/records/extents").exists(),
         "no per-extent data or manifest family is created"
     );
-    assert_no_per_extent_artifacts(&root);
+    assert_no_per_extent_artifacts(root);
 }
 
 #[test]
@@ -173,38 +173,31 @@ fn scale_reopener_child() {
     let mut large = 0_u64;
     let mut small = 0_u64;
     let mut identities = HashSet::new();
-    loop {
-        match scan.read_next_into(&mut scratch).unwrap() {
-            RecordScanOutcome::Batch(batch) => {
-                for record in batch.records() {
-                    assert!(
-                        identities.insert(record.record_id()),
-                        "fresh-process scan repeated a physical record identity"
-                    );
-                    let (seen, expected, value) = match record.declared_payload_bytes() {
-                        n if n == LARGE as u64 => (&mut large, LARGE, 47),
-                        n if n == SMALL as u64 => (&mut small, SMALL, 48),
-                        n => panic!("unexpected reopened record length {n}"),
-                    };
-                    *seen += 1;
-                    if *seen == 1 || *seen == count / 2 || *seen == count {
-                        let reader = serving.records().unwrap();
-                        let session = reader
-                            .open(
-                                record.record_id(),
-                                RecordReadLimits::new(
-                                    RecordByteLimit::new(expected as u32).unwrap(),
-                                ),
-                            )
-                            .unwrap();
-                        assert_eq!(
-                            crate::read_record(session, expected).0,
-                            vec![value; expected]
-                        );
-                    }
-                }
+    while let RecordScanOutcome::Batch(batch) = scan.read_next_into(&mut scratch).unwrap() {
+        for record in batch.records() {
+            assert!(
+                identities.insert(record.record_id()),
+                "fresh-process scan repeated a physical record identity"
+            );
+            let (seen, expected, value) = match record.declared_payload_bytes() {
+                n if n == LARGE as u64 => (&mut large, LARGE, 47),
+                n if n == SMALL as u64 => (&mut small, SMALL, 48),
+                n => panic!("unexpected reopened record length {n}"),
+            };
+            *seen += 1;
+            if *seen == 1 || *seen == count / 2 || *seen == count {
+                let reader = serving.records().unwrap();
+                let session = reader
+                    .open(
+                        record.record_id(),
+                        RecordReadLimits::new(RecordByteLimit::new(expected as u32).unwrap()),
+                    )
+                    .unwrap();
+                assert_eq!(
+                    crate::read_record(session, expected).0,
+                    vec![value; expected]
+                );
             }
-            RecordScanOutcome::Completed(_) => break,
         }
     }
     assert_eq!((large, small), (count, count));

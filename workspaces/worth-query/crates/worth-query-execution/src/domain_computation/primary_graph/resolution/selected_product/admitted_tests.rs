@@ -28,7 +28,7 @@ fn admitted_selected_principal_matches_ordinary_and_certification() {
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )
                 .expect("legacy selected principal resolves");
-            let owner = &world
+            let _owner = &world
                 .application
                 .primary_provider
                 .graph

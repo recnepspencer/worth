@@ -9,7 +9,7 @@ pub(crate) fn ensure_historical_state(
 ) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
     crate::execution::check_request(execution)?;
     if let Some(root) = basis.root() {
-        root.demand_all_full(execution)
+        root.demand_all_full(execution, &runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);
@@ -60,7 +60,7 @@ pub(crate) fn materialize_historical_visibility(
         return Ok(None);
     };
     if let Some(root) = basis.root() {
-        root.demand_all_full(execution)
+        root.demand_all_full(execution, &runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
     }
     let key = basis_key(&basis);

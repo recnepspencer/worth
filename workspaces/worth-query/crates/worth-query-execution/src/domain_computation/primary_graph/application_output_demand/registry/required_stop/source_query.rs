@@ -79,7 +79,6 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
         | Kind::RetentionIdentityExhausted
         | Kind::SnapshotIdentityExhausted
         | Kind::PredicateIndexUnavailable
-        | Kind::PredicateLookupOverflow
         | Kind::ResultLimitExceeded
         | Kind::CardinalityMismatch
         | Kind::TraversalUnavailable

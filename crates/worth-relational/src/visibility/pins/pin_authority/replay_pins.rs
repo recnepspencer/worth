@@ -46,6 +46,28 @@ impl VisibilityPinAuthority<'_> {
                 .demand_full_partition(execution, *id)
                 .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         }
+        self.resident_replay_pins_in(state, mirror)
+            .map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)
+    }
+
+    /// Resident-only admission refuses cold pinning without performing I/O.
+    pub(crate) fn resident_replay_pins(
+        &self,
+        state: SnapshotState,
+    ) -> Result<ResidentReplayPins, crate::storage::data::RelationalStorageUnavailable> {
+        self.resident_replay_pins_in(state, self.runtime.acquire_partition_edition())
+    }
+
+    fn resident_replay_pins_in(
+        &self,
+        state: SnapshotState,
+        mirror: PartitionEdition,
+    ) -> Result<ResidentReplayPins, crate::storage::data::RelationalStorageUnavailable> {
+        for (id, _) in mirror.cells() {
+            if state.pinned_partitions.contains_key(&id) {
+                mirror.resident_pin_lease(id)?;
+            }
+        }
         Ok(ResidentReplayPins { state, mirror })
     }
 

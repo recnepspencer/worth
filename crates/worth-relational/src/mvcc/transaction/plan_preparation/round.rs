@@ -21,8 +21,10 @@ pub(super) fn prepare(
     let basis = transaction.basis.clone();
     let selected = SelectedRelationalBranchState::from_admitted_basis(&basis);
     let allocation = execution.allocation_policy();
-    let (answer, effects) =
-        crate::storage::residency::probe_full(execution, &selected, |partitions| {
+    let (answer, effects) = crate::storage::residency::probe_full(
+        execution,
+        &selected.with_symbol_admission(&preparation.services.symbols),
+        |partitions| {
             let effects = preparation.preparation_round();
             let read = SelectedRelationalBranchRead::in_round(&selected, partitions);
             let answer = crate::authority::commit::preparation::probe_symbol_rounds(
@@ -55,10 +57,11 @@ pub(super) fn prepare(
                 },
             );
             (answer, effects)
-        })
-        .map_err(|failure| {
-            crate::authority::commit::preparation::storage_read_denial(&basis, failure)
-        })?;
+        },
+    )
+    .map_err(|failure| {
+        crate::authority::commit::preparation::storage_read_denial(&basis, failure)
+    })?;
     preparation.settle_preparation_round(&effects);
     answer
 }

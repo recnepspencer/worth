@@ -100,8 +100,9 @@ pub(super) fn expand(
         }
     }
     let mut branch_roots = Vec::new();
+    let mut root_kind_images = BTreeMap::new();
     for root in &manifest.roots {
-        let partition_images = expand_regions(
+        let (partition_images, kinds) = expand_regions(
             execution,
             &root.regions,
             root.schema_carrier_digest,
@@ -109,6 +110,7 @@ pub(super) fn expand(
             &symbols,
             &source,
         )?;
+        root_kind_images.insert(root.commit_id, kinds);
         let partition_image_digest = branch_root_partition_image_digest(&partition_images)
             .map_err(|error| corrupt(error.to_string()))?;
         let format_version = DurableBranchRootImage::CURRENT_FORMAT_VERSION;
@@ -126,7 +128,7 @@ pub(super) fn expand(
             ),
         });
     }
-    let partition_images = if let Some(schema) = manifest.mirror_schema {
+    let (partition_images, mirror_kind_images) = if let Some(schema) = manifest.mirror_schema {
         expand_regions(
             execution,
             &manifest.mirror,
@@ -136,7 +138,7 @@ pub(super) fn expand(
             &source,
         )?
     } else if manifest.mirror.is_empty() {
-        Vec::new()
+        (Vec::new(), Default::default())
     } else {
         return Err(corrupt("checkpoint mirror has no schema authority").into());
     };
@@ -167,6 +169,8 @@ pub(super) fn expand(
         rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
     Ok(DurableCheckpoint {
         directory: None,
+        root_kind_images,
+        mirror_kind_images,
         coverage: manifest.coverage,
         commit_descriptors: manifest
             .commits
@@ -207,7 +211,13 @@ fn expand_regions(
     schemas: &BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     source: &Arc<dyn RelationalDurableColdSource>,
-) -> Result<Vec<PartitionCheckpointImage>, RelationalRecoveryStop> {
+) -> Result<
+    (
+        Vec<PartitionCheckpointImage>,
+        crate::storage::residency::CheckpointRegionKindImages,
+    ),
+    RelationalRecoveryStop,
+> {
     let schema = schemas
         .get(&schema_digest)
         .ok_or_else(|| corrupt("missing region schema carrier"))?;
@@ -218,6 +228,7 @@ fn expand_regions(
         .iter()
         .map(|leaf| {
             let cell = RelationalRegionResidency::cold(RelationalColdRegion {
+                kind_authority: leaf.kind_authority,
                 source: source.clone(),
                 partition_id: leaf.partition_id,
                 head: leaf.head,
@@ -230,16 +241,18 @@ fn expand_regions(
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
             });
-            (leaf.partition_id, leaf.relation_slots, cell)
+            (leaf.partition_id, cell)
         })
         .collect::<Vec<_>>();
     authority
         .bind(cells.iter().cloned())
         .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
-    cells
+    let mut admitted = Vec::new();
+    let images = cells
         .iter()
-        .map(|(_, _, cell)| {
+        .map(|(_, cell)| {
             let lease = cell.demand_full(execution, MEMBER_LIMIT, Some(&authority))?;
+            admitted.push(lease.full_view().partition().clone());
             partition_to_image_with_contracts(
                 lease.full_view().partition().clone(),
                 schema.aspect_plans(),
@@ -247,7 +260,10 @@ fn expand_regions(
             )
             .map_err(Into::into)
         })
-        .collect()
+        .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
+    let kinds = crate::storage::residency::CheckpointRegionKindImages::capture(&admitted)
+        .map_err(|cause| corrupt(format!("expanded kind projection: {cause:?}")))?;
+    Ok((images, kinds))
 }
 
 fn read(

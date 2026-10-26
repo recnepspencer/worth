@@ -24,8 +24,7 @@ use worth_query_host::facade::declaration::application_schema::{
 use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph, runtime};
 
-#[path = "host/world_resources.rs"]
-mod world_resources;
+use crate::document_world_resources as world_resources;
 use world_resources::world_resources;
 pub use world_resources::{ACTIVE_WORLD_OBSERVATIONS, WORKFLOW_DEFINITION_BYTES};
 

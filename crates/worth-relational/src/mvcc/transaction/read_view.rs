@@ -86,6 +86,7 @@ impl super::BranchBoundRelationalTransaction {
             self.read_leases.entry(entity_id.partition_id)
             && let Some(lease) = root.demand_region_head(execution, entity_id.partition_id)?
         {
+            lease.admit_symbols(execution, &self.symbols)?;
             entry.insert(lease);
         }
         let base = self
@@ -131,6 +132,7 @@ impl super::BranchBoundRelationalTransaction {
             self.read_leases.entry(relation_id.partition_id)
             && let Some(lease) = root.demand_region_head(execution, relation_id.partition_id)?
         {
+            lease.admit_symbols(execution, &self.symbols)?;
             entry.insert(lease);
         }
         let base = self

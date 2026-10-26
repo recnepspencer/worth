@@ -141,7 +141,6 @@ fn execution(kind: BankApplicationOneShotDenialKind) -> BankHttpDenial {
         Execution::ResultLimitExceeded
         | Execution::ResultBufferLimitExceeded
         | Execution::WorkLimitExceeded
-        | Execution::PredicateLookupOverflow
         | Execution::ActiveSnapshotCapacityExhausted { .. }
         | Execution::RetentionCapacityExhausted
         | Execution::RetentionIdentityExhausted

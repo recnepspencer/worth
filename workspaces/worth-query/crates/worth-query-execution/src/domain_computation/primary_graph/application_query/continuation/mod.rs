@@ -212,9 +212,6 @@ fn map_authorized_read_denial(
                 WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable => {
                     WorthQueryApplicationContinuationDenialKind::PredicateIndexUnavailable
                 }
-                WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow => {
-                    WorthQueryApplicationContinuationDenialKind::PredicateLookupOverflow
-                }
                 WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded => {
                     WorthQueryApplicationContinuationDenialKind::ResultLimitExceeded
                 }

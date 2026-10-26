@@ -10,7 +10,7 @@ fn own_write_cutoff_cannot_project_retained_facts_for_comparison() {
             .primary_graph()
             .unwrap()
             .integration_handle();
-        let owner = &handle.source_owner.invalidation_owner;
+        let _owner = &handle.source_owner.invalidation_owner;
         let candidate =
             super::super::input_cutoff::RetainedInputCutoffCandidate::from_exact_cell(cell);
         assert!(

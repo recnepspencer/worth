@@ -19,6 +19,13 @@ impl PartialEq for SelectedRelationalBranchState {
 impl Eq for SelectedRelationalBranchState {}
 
 impl SelectedRelationalBranchState {
+    pub(crate) fn with_symbol_admission<'read>(
+        &'read self,
+        symbols: &'read crate::runtime::RuntimeSymbolTable,
+    ) -> super::SymbolAdmittedBranchRead<'read> {
+        super::SymbolAdmittedBranchRead::new(self, symbols)
+    }
+
     pub(crate) fn from_admitted_basis(basis: &super::AdmittedRelationalBranchBasis) -> Self {
         let state = RelationalBranchRootState::new(basis.inner.root.clone());
         match basis.descriptor().reference().target() {

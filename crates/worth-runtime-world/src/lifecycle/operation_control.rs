@@ -34,9 +34,52 @@ enum ProductCompareControl {
 #[derive(Default)]
 struct ExactPause {
     target: usize,
-    state: Mutex<(usize, bool)>,
+    state: Mutex<(usize, bool, Option<String>)>,
+    backstop: Duration,
     changed: Condvar,
 }
+impl ExactPause {
+    fn observe_arrivals(&self, timeout: Duration) -> bool {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let (state, _) = self
+            .changed
+            .wait_timeout_while(state, timeout, |s| s.0 != self.target && !s.1)
+            .unwrap_or_else(|e| e.into_inner());
+        let failure = state.2.clone();
+        let reached = state.0 == self.target;
+        drop(state);
+        if let Some(failure) = failure {
+            panic!("{failure}");
+        }
+        reached
+    }
+
+    fn wait(&self, arrivals: bool) -> bool {
+        let state = self.state.lock().unwrap_or_else(|e| e.into_inner());
+        let (mut state, expired) = self
+            .changed
+            .wait_timeout_while(state, self.backstop, |s| {
+                !s.1 && (!arrivals || s.0 < self.target)
+            })
+            .unwrap_or_else(|e| e.into_inner());
+        if expired.timed_out() && !state.1 && (!arrivals || state.0 < self.target) {
+            state.2 = Some(format!(
+                "BeforeProductCompareAndPublish backstop expired: missing arrival slots {:?}; arrived {}/{}; owner release={}",
+                (state.0 + 1..=self.target).collect::<Vec<_>>(), state.0, self.target, state.1,
+            ));
+            state.1 = true;
+            self.changed.notify_all();
+        }
+        let failure = state.2.clone();
+        let reached = state.0 == self.target;
+        drop(state);
+        if let Some(failure) = failure {
+            panic!("{failure}");
+        }
+        reached
+    }
+}
+
 pub struct RuntimeWorldProductComparePauseForTest {
     receiver: Weak<ProductCompareSlot>,
     latch: Arc<ExactPause>,
@@ -51,7 +94,8 @@ impl RuntimeWorldOperationControlForTest {
     ) -> RuntimeWorldProductComparePauseForTest {
         let latch = Arc::new(ExactPause {
             target: attempts.get(),
-            state: Mutex::new((0, false)),
+            state: Mutex::new((0, false, None)),
+            backstop: Duration::from_secs(120),
             changed: Condvar::new(),
         });
         let mut pending = self
@@ -120,23 +164,18 @@ impl RuntimeWorldOperationControlForTest {
         }
         drop(pending);
         latch.changed.notify_all();
-        let (state, _) = latch
-            .changed
-            .wait_timeout_while(state, Duration::from_secs(30), |s| !s.1)
-            .unwrap_or_else(|e| e.into_inner());
-        assert!(state.1, "product comparison pause exceeded release budget");
+        drop(state);
+        latch.wait(false);
     }
 }
 impl RuntimeWorldProductComparePauseForTest {
+    /// Wait for arrivals or early release; a 120-second backstop releases all waiters and panics.
+    pub fn wait_for_arrivals(&self) -> bool {
+        self.latch.wait(true)
+    }
+
     pub fn wait_until_reached(&self, timeout: Duration) -> bool {
-        let state = self.latch.state.lock().unwrap_or_else(|e| e.into_inner());
-        self.latch
-            .changed
-            .wait_timeout_while(state, timeout, |s| s.0 != self.latch.target)
-            .unwrap_or_else(|e| e.into_inner())
-            .0
-             .0
-            == self.latch.target
+        self.latch.observe_arrivals(timeout)
     }
     pub fn release(&self) {
         self.latch.state.lock().unwrap_or_else(|e| e.into_inner()).1 = true;
@@ -179,6 +218,58 @@ where
 mod scope_tests {
     use super::*;
     #[test]
+    fn missing_arrival_backstop_releases_every_parked_attempt() {
+        let control = RuntimeWorldOperationControlForTest::default();
+        let mut pause =
+            control.pause_before_product_compare_for_test(NonZeroUsize::new(4).unwrap());
+        let short = Arc::new(ExactPause {
+            target: 4,
+            state: Mutex::new((0, false, None)),
+            changed: Condvar::new(),
+            backstop: Duration::from_millis(250),
+        });
+        *control.pending_product_compare.pending.lock().unwrap() =
+            Some(ProductCompareControl::Pause(short.clone()));
+        pause.latch = short;
+        std::thread::scope(|scope| {
+            let parked = (0..3)
+                .map(|_| {
+                    scope.spawn(|| {
+                        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            control.before_product_compare_for_test()
+                        }))
+                    })
+                })
+                .collect::<Vec<_>>();
+            let observer = scope.spawn(|| {
+                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    pause.wait_until_reached(Duration::from_secs(120))
+                }))
+            });
+            let stopped = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                pause.wait_for_arrivals()
+            }));
+            let message = stopped.expect_err("the fourth member never arrives");
+            let message = message.downcast_ref::<String>().unwrap();
+            assert!(
+                message.contains("backstop expired") && message.contains("4]"),
+                "{message}"
+            );
+            let observed = observer
+                .join()
+                .expect("bounded observer catches the stop")
+                .expect_err("bounded observers must receive the same fatal stop");
+            assert_eq!(observed.downcast_ref::<String>().unwrap(), message);
+            for worker in parked {
+                assert!(
+                    worker.join().expect("worker catches the timeout").is_err(),
+                    "all parked workers receive the stop"
+                );
+            }
+        });
+    }
+
+    #[test]
     fn unwinding_an_unreached_compare_pause_clears_its_receiver() {
         let control = RuntimeWorldOperationControlForTest::default();
         assert!(std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -191,5 +282,20 @@ mod scope_tests {
             .armed
             .load(Ordering::Acquire));
         let _next = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
+    }
+    #[test]
+    fn compare_arrivals_are_events_and_early_release_aborts_the_wait() {
+        let control = RuntimeWorldOperationControlForTest::default();
+        let pause = control.pause_before_product_compare_for_test(NonZeroUsize::new(2).unwrap());
+        std::thread::scope(|scope| {
+            for _ in 0..2 {
+                scope.spawn(|| control.before_product_compare_for_test());
+            }
+            assert!(pause.wait_for_arrivals());
+            pause.release();
+        });
+        let aborted = control.pause_before_product_compare_for_test(NonZeroUsize::MIN);
+        aborted.release();
+        assert!(!aborted.wait_for_arrivals());
     }
 }

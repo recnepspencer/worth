@@ -60,7 +60,7 @@ fn selected_catalog_issues_publication_before_decoding_damaged_target() {
             blobs.scrub_publication_target([9; 16], published.generation().sequence()),
             Err(BlobScrubTargetFailure::Selection(_))
         ));
-        drop(blobs);
+
         serving.close();
         (object, published.generation().sequence(), record)
     };
@@ -131,7 +131,7 @@ fn selected_publication_issues_root_tree_target_before_decoding_wrong_index() {
             blobs.scrub_tree_node_target(published, &scope, (2 * CHUNK_BYTES) as u64, 0),
             Err(BlobScrubTargetFailure::Selection(_))
         ));
-        drop(blobs);
+
         serving.close();
         (published, record)
     };

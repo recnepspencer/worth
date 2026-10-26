@@ -1,6 +1,10 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
 mod cell;
 mod kind_authority;
+mod kind_commitment;
+mod kind_projection;
+pub(crate) use kind_commitment::RelationalRegionKindCommitment;
+pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
 mod lease;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
 mod head_arena;
@@ -23,7 +27,9 @@ mod retention;
 pub(crate) use retention::RelationalRegionRetention;
 
 mod checkpoint_capture;
+mod checkpoint_kind_images;
 pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;
+pub(crate) use checkpoint_kind_images::CheckpointRegionKindImages;
 
 mod demand_failure;
 pub(crate) use demand_failure::RelationalResidencyDemandFailure;
@@ -39,3 +45,5 @@ mod required_symbols;
 #[cfg(test)]
 pub(crate) use probe::probe_full_sources;
 pub(crate) use probe::{probe_full, PartitionProbe};
+mod symbol_admission_identity;
+pub(crate) use symbol_admission_identity::RelationalRegionSymbolAdmissionIdentity;

@@ -48,16 +48,17 @@ pub(super) fn mark_missing_selector_pointers(
         .iter_mut()
         .filter(|entry| entry.canonical && !entry.semantic_duplicate)
     {
-        if let Some(facts) = &entry.facts {
-            if incomplete.is_none() && !present.contains(&facts.root_generation) {
-                entry.outcome =
-                    OfflineIntegrityOutcome::Damaged(OfflinePhysicalDamageLocalization::new(
-                        OfflinePhysicalDamageCause::Pointer,
-                        Some((65, 8)),
-                        Some(OfflinePhysicalFormatField::RootGeneration),
-                        OfflinePhysicalBlastRadius::ReachableRootSubtree,
-                    ));
-            }
+        if let Some(facts) = &entry.facts
+            && incomplete.is_none()
+            && !present.contains(&facts.root_generation)
+        {
+            entry.outcome =
+                OfflineIntegrityOutcome::Damaged(OfflinePhysicalDamageLocalization::new(
+                    OfflinePhysicalDamageCause::Pointer,
+                    Some((65, 8)),
+                    Some(OfflinePhysicalFormatField::RootGeneration),
+                    OfflinePhysicalBlastRadius::ReachableRootSubtree,
+                ));
         }
     }
     if incomplete.is_none() {

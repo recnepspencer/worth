@@ -8,6 +8,21 @@
 //! definition reuses the same component; its native publication names it, and a start
 //! from the superseded revision is refused naming the current one.
 
+#[path = "../../tests/application_graph/document_retention_model/host/world_resources.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod document_world_resources;
+#[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
+#[allow(
+    dead_code,
+    unused_imports,
+    reason = "Shared reference application ports are exercised by independent consumer courts"
+)]
+pub(crate) mod operator_identity;
+
 mod actions;
 #[allow(dead_code, unused_imports)]
 #[path = "../../tests/application_graph/document_retention_model.rs"]

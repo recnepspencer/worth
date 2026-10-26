@@ -11,7 +11,8 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
         selected_root: worth_store_physical_format::RootPublicationCell,
     ) -> Option<super::super::PhysicalRecoveredOriginalDropNoDurableEffect> {
         let owner = self.owner.upgrade()?;
-        let result = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
@@ -20,8 +21,7 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
                 reservation_sha256,
                 reservation,
                 selected_root,
-            );
-        result
+            )
     }
 
     pub(in crate::physical_runtime) fn original_drop_binding_absent(
@@ -30,12 +30,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
         attempt: [u8; 16],
     ) -> Option<bool> {
         let owner = self.owner.upgrade()?;
-        let absent = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .original_drop_binding_absent(store, attempt);
-        absent
+            .original_drop_binding_absent(store, attempt)
     }
 
     pub(in crate::physical_runtime) fn discover_original_drop_completed(
@@ -46,12 +46,12 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
         fingerprint: [u8; 32],
     ) -> Option<super::super::PhysicalOriginalDropCompleted> {
         let owner = self.owner.upgrade()?;
-        let completed = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .discover_original_drop_completed(store, attempt, idempotency, fingerprint);
-        completed
+            .discover_original_drop_completed(store, attempt, idempotency, fingerprint)
     }
 
     pub(in crate::physical_runtime) fn discover_original_drop_no_effect(
@@ -60,11 +60,11 @@ impl PhysicalMutationIdempotencyRuntimeAuthority {
         attempt: [u8; 16],
     ) -> Option<super::super::PhysicalOriginalDropNoEffect> {
         let owner = self.owner.upgrade()?;
-        let result = owner
+
+        owner
             .registry
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .discover_original_drop_no_effect(store, attempt);
-        result
+            .discover_original_drop_no_effect(store, attempt)
     }
 }

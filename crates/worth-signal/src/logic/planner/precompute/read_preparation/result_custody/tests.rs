@@ -30,6 +30,7 @@ fn handoff(limit: Option<u64>) -> (u64, u64) {
         .in_scope(|lease| {
             let mut preparation = SignalPreparationBudget::for_request(limit, lease)?;
             preparation.claim_vec::<OutputSlot>(1)?;
+            let computed = allocate_outputs(1, &mut preparation)?;
             let mut memory = parent.reserve(0).unwrap();
             let measured = request.run_measured_result(
                 worth_execution::ExecutionWorkCeiling::new(None),
@@ -41,11 +42,11 @@ fn handoff(limit: Option<u64>) -> (u64, u64) {
             let value = measured.result.expect("one real measured result fits");
             let original_backing = value.trace_data.labels[0].as_ptr();
             let heap = memory.bytes();
-            let slots = vec![Mutex::new(Some(Ok(ReservedOutput {
+            let slots = vec![Mutex::new(Some(ReservedOutput {
                 outcome: Ok(value),
                 memory,
-            })))];
-            let moved = collect_outputs(slots, 1, &mut preparation)?;
+            }))];
+            let moved = collect_outputs(slots, computed);
             assert_eq!(
                 moved.values[0].trace_data.labels[0].as_ptr(),
                 original_backing
@@ -83,4 +84,78 @@ fn finite_parent_funds_one_original_payload_through_move_handoff() {
     );
     let (_, finite_heap) = handoff(Some(limit));
     assert_eq!(finite_heap, heap);
+}
+
+struct SaturatingCallback<'a> {
+    parent: &'a SerialMemoryBudget,
+    competitor: Mutex<Option<ExecutionMemoryReservation>>,
+}
+
+impl SignalPrecompute for SaturatingCallback<'_> {
+    fn prepare(
+        &self,
+        _: crate::data::handle::NodeId,
+        _: &crate::logic::prepared::ExecutionReadView<'_>,
+        _: &mut MapKernelContext<'_, '_>,
+        _: Option<super::super::super::callback::CheckedKernelCapacity>,
+    ) -> Result<PreparedEvaluation, SignalError> {
+        let remaining = self.parent.limit().unwrap() - self.parent.charged_memory_bytes();
+        *self.competitor.lock().unwrap() = Some(self.parent.reserve(remaining).unwrap());
+        Ok(output())
+    }
+
+    fn allows_bounded_inputs(&self) -> bool {
+        true
+    }
+}
+
+#[test]
+fn result_custody_settles_without_late_admission_and_types_an_underquote() {
+    let mut graph = SignalGraph::new();
+    let node = graph.create_node();
+    let snapshot = ExecutionSnapshot::new(&graph);
+    let view = snapshot.read_view(node);
+    for bound in [1, 1 << 20] {
+        let parent = SerialMemoryBudget::new(Some(4 << 20));
+        let serial = SerialRequest::from_memory(parent.clone(), CancellationToken::new(), None);
+        let request = ExecutionRequest::serial(&serial);
+        let callback = SaturatingCallback {
+            parent: &parent,
+            competitor: Mutex::new(None),
+        };
+        let memory = parent.reserve(bound).unwrap();
+        let (captured, _) = request
+            .run_native_with_checkpoint(|work| {
+                compute_output(
+                    node,
+                    &view,
+                    &callback,
+                    super::super::super::callback::CheckedKernelCapacity {
+                        scratch_bytes: Some(bound),
+                        result_bytes: Some(bound),
+                    },
+                    work,
+                    memory,
+                )
+            })
+            .unwrap();
+        assert!(callback.competitor.lock().unwrap().is_some());
+        if bound == 1 {
+            assert!(matches!(
+                captured.outcome,
+                Err(MapKernelFailure::ResultCapacityExceeded)
+            ));
+        } else {
+            let value = captured.outcome.as_ref().unwrap();
+            let actual = value
+                .retained_heap_charge(&mut RetainedStoragePreparation::new(None))
+                .unwrap()
+                .bytes();
+            assert!(actual > 0 && actual < bound);
+            assert_eq!(captured.memory.bytes(), actual);
+        }
+        drop(captured);
+        drop(callback);
+        assert_eq!(parent.charged_memory_bytes(), 0);
+    }
 }

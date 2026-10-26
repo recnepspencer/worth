@@ -263,9 +263,7 @@ impl PhysicalMutationIdempotencyRegistry {
             let PhysicalMutationIdempotencyBindingState::Terminal { fate, .. } = state else {
                 return None;
             };
-            if fate.as_proven_no_effect().is_none() {
-                return None;
-            }
+            fate.as_proven_no_effect()?;
             candidate = Some((basis.key().identity().bytes(), basis.fingerprint().bytes()));
         }
         let (idempotency, fingerprint) = candidate?;

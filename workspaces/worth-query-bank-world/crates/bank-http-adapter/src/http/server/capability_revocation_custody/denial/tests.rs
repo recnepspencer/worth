@@ -83,3 +83,16 @@ fn command_preparation_and_recovery_keep_native_refusals() {
         BankHttpDenial::new(Kind::InternalDenied, Next::ContactOperator),
     );
 }
+
+#[test]
+fn storage_unavailability_preparation_is_unavailable_and_retryable() {
+    let denial = native_denial(NativeDenial::Preparation(
+        bank_server::BankEstateProgressionDenial::Attempt(
+            bank_server::BankCommitPreparationDenial::Application {
+                kind: bank_server::BankApplicationAttemptDenialKind::StorageUnavailable,
+                allocation: None,
+            },
+        ),
+    ));
+    assert_eq!(denial, BankHttpDenial::new(Kind::Unavailable, Next::Retry));
+}

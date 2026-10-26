@@ -51,7 +51,10 @@ impl ReadmittedRegionDirectory {
         Ok(Self {
             schemas,
             directory,
-            symbols,
+            // Cells retain an isolated readmission dictionary, never a live
+            // runtime's writable symbol authority. Serving leases readmit into
+            // the demanding runtime separately, including after a fork.
+            symbols: symbols.detached_owner_snapshot(),
             cells: BTreeMap::new(),
         })
     }
@@ -75,6 +78,7 @@ impl ReadmittedRegionDirectory {
                 .entry(key)
                 .or_insert_with(|| {
                     RelationalRegionResidency::cold(RelationalColdRegion {
+                        kind_authority: leaf.kind_authority,
                         source: self.directory.source.clone(),
                         partition_id: leaf.partition_id,
                         head: leaf.head,
@@ -92,6 +96,7 @@ impl ReadmittedRegionDirectory {
             result.push(RelationalRootRegionCheckpoint {
                 partition_id: leaf.partition_id,
                 content_digest: leaf.content_digest,
+                kind_commitment: leaf.kind_authority,
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
@@ -100,13 +105,11 @@ impl ReadmittedRegionDirectory {
             });
         }
         authority
-            .bind(result.iter().map(|region| {
-                (
-                    region.partition_id,
-                    region.relation_slots,
-                    region.cell.clone(),
-                )
-            }))
+            .bind(
+                result
+                    .iter()
+                    .map(|region| (region.partition_id, region.cell.clone())),
+            )
             .map_err(|cause| corrupt(format!("region kind authority: {cause:?}")))?;
         Ok(result)
     }

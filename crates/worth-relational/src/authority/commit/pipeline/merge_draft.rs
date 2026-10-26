@@ -22,16 +22,19 @@ pub(super) fn prepare_merge_draft(
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let basis = admitted.validation_input().basis();
     let selected = admitted.selected_branch_state();
-    let (answer, round) =
-        crate::storage::residency::probe_full(execution, selected, |partitions| {
+    let (answer, round) = crate::storage::residency::probe_full(
+        execution,
+        &selected.with_symbol_admission(&runtime.services.symbols),
+        |partitions| {
             let round = runtime.preparation_round();
             let read = SelectedRelationalBranchRead::in_round(selected, partitions);
             let answer = prepare_symbol_round(execution, &round, admitted, read);
             (answer, round)
-        })
-        .map_err(|failure| {
-            crate::authority::commit::preparation::storage_read_denial(basis, failure)
-        })?;
+        },
+    )
+    .map_err(|failure| {
+        crate::authority::commit::preparation::storage_read_denial(basis, failure)
+    })?;
     if let Ok(accepted) = &answer {
         runtime
             .mirror_residency

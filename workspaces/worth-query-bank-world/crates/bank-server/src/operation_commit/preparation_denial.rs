@@ -10,6 +10,7 @@ pub enum BankApplicationAttemptDenialKind {
     StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
     ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     ForeignPhase,
+    StorageUnavailable,
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     Cancelled,
     DeadlineExceeded,
@@ -148,6 +149,7 @@ const fn application_attempt_kind(
         }
         Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
+        Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
         Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,
         Query::DeadlineExceeded => BankApplicationAttemptDenialKind::DeadlineExceeded,
@@ -392,3 +394,7 @@ const fn application_attempt_kind(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "preparation_denial_tests.rs"]
+mod tests;

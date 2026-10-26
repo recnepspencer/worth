@@ -310,11 +310,11 @@ fn row_for_profile(
         .unwrap()
         .publish()
         .unwrap();
-    let row = *matrix
+
+    *matrix
         .rows_for_claim(profile, BackendCapabilityKind::Fsync)
         .next()
-        .unwrap();
-    row
+        .unwrap()
 }
 
 fn admitted_backend(

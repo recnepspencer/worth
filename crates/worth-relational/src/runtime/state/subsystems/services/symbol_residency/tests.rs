@@ -28,6 +28,7 @@ fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
     let meanings = candidate.interner().snapshot();
     candidate.seal_for_publication(&meanings).publish().unwrap();
 }
+mod region_admission_tests;
 
 #[derive(Debug)]
 struct PageSource {
@@ -35,6 +36,7 @@ struct PageSource {
     reads: AtomicUsize,
     corrupt: AtomicBool,
     failed_member: Mutex<Option<RelationalDurableMemberLocator>>,
+    failure: Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for PageSource {
     fn read_member(
@@ -52,10 +54,13 @@ impl RelationalDurableColdSource for PageSource {
         if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
             return Err(Cause::Damaged);
         }
+        if let Some(cause) = *self.failure.lock().unwrap() {
+            return Err(cause);
+        }
         let mut bytes = self
             .members
             .get(&locator)
-            .ok_or(Cause::SourceUnavailable)?
+            .ok_or(Cause::MissingMember)?
             .to_vec();
         if self.corrupt.load(Ordering::SeqCst) {
             bytes[0] ^= 1;
@@ -141,6 +146,7 @@ fn checkpoint_dictionary(
         reads: AtomicUsize::new(0),
         corrupt: AtomicBool::new(false),
         failed_member: Mutex::new(None),
+        failure: Mutex::new(None),
     });
     let directory = RelationalCheckpointDirectory {
         manifest: input.manifest,
@@ -214,4 +220,27 @@ fn a_damaged_symbol_page_is_a_sticky_typed_refusal() {
     );
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
     assert!(table.snapshot().entries.is_empty());
+}
+
+#[test]
+fn allocation_failure_in_a_symbol_page_is_retryable() {
+    retryable_page_failure(Cause::MemoryExhausted);
+}
+
+#[test]
+fn transient_source_failure_in_a_symbol_page_is_retryable() {
+    retryable_page_failure(Cause::SourceUnavailable);
+}
+
+fn retryable_page_failure(cause: Cause) {
+    let (table, _, source, all) = dictionary();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    let symbol = all.entries[0].0;
+    *source.failure.lock().unwrap() = Some(cause);
+    let first = table.demand_symbol_ids(&execution, [symbol]).unwrap_err();
+    assert!(matches!(first, Failure::StorageUnavailable(f) if f.cause == cause));
+    *source.failure.lock().unwrap() = None;
+    table.demand_symbol_ids(&execution, [symbol]).unwrap();
+    assert!(table.with_read(|symbols| symbols.retained_text(symbol).is_some()));
 }

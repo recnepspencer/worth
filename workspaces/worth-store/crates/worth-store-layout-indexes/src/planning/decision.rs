@@ -1,4 +1,4 @@
-use super::candidates::{EligibleStrategyOperation, PlanningAlternative, PlanningAlternativeSet};
+use super::candidates::{EligibleLsmOperation, PlanningAlternative, PlanningAlternativeSet};
 use super::selected_plan::SelectedAccessPlanBasis;
 use super::selected_plan::{admit_selected_plan_budget, PlanSelectionBasis};
 use super::{
@@ -127,16 +127,16 @@ fn classify_indexed_operation(plan: SelectedAccessPlanBasis) -> PlanSelectionDec
         .selected_operation()
         .expect("indexed candidate retains its owner-classified operation")
     {
-        EligibleStrategyOperation::LsmLookup => {
+        EligibleLsmOperation::Lookup => {
             PlanSelectionDecision::LsmLookup(plan, LsmLookupSelectionGrant::issue())
         }
-        EligibleStrategyOperation::LsmRunPublication => {
+        EligibleLsmOperation::RunPublication => {
             PlanSelectionDecision::LsmRunPublication(plan, LsmPublicationSelectionGrant::issue())
         }
-        EligibleStrategyOperation::LsmReplayRecovery => {
+        EligibleLsmOperation::ReplayRecovery => {
             PlanSelectionDecision::LsmReplayRecovery(plan, LsmReplaySelectionGrant::issue())
         }
-        EligibleStrategyOperation::LsmCompaction => {
+        EligibleLsmOperation::Compaction => {
             PlanSelectionDecision::LsmCompaction(plan, LsmCompactionSelectionGrant::issue())
         }
     }

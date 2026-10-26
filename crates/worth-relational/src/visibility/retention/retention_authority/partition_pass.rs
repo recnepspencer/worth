@@ -73,13 +73,13 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
     runtime: &RelationalRuntime,
     partition: &mut ResidentPartitionEntry<'_>,
     retention_fence: VersionId,
-) -> RetentionCounts {
+) -> Result<RetentionCounts, crate::execution::RelationalExecutionDenialCause> {
     let mut counts = RetentionCounts::default();
     for slot in K::arena(partition.read()).occupied_slots() {
         let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
         if retired_at.is_some() {
             runtime.storage_authority().refresh_retention_state::<K>(
-                partition.edit(),
+                partition.edit()?,
                 slot,
                 retired_at,
                 retention_fence,
@@ -99,7 +99,7 @@ pub(super) fn inspect_partition_retention<K: RecordKind>(
                 .is_some_and(|view| view.lifecycle() == RecordLifecycleState::Reclaimable),
         );
     }
-    counts
+    Ok(counts)
 }
 
 pub(super) fn run_partition_retention_pass<K: RecordKind>(
@@ -108,7 +108,7 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
     pass: PartitionRetentionPass,
     count_scan: impl Fn(&RelationalRuntime),
     reclaimed: &mut Vec<crate::runtime::ReclaimedRecordSlot>,
-) -> RetentionPassCounts {
+) -> Result<RetentionPassCounts, crate::execution::RelationalExecutionDenialCause> {
     let mut counts = RetentionPassCounts::default();
     let mut current_chunk = None;
     for slot in K::arena(partition.read()).occupied_slots() {
@@ -121,7 +121,7 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
         let retired_at = K::arena(partition.read()).retired_at_for_slot(slot);
         let Some(version) = retired_at else { continue };
         runtime.storage_authority().refresh_retention_state::<K>(
-            partition.edit(),
+            partition.edit()?,
             slot,
             Some(version),
             pass.retention_fence,
@@ -137,13 +137,13 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
             && counts.reclaimed < runtime.config.storage.mvcc.reclaim_batch_size
             && let Some(slot) = runtime
                 .storage_authority()
-                .reclaim_record_if_reclaimable::<K>(pass.class, partition.edit(), slot)
+                .reclaim_record_if_reclaimable::<K>(pass.class, partition.edit()?, slot)
         {
             reclaimed.push(slot);
             counts.reclaimed += 1;
         }
     }
-    counts
+    Ok(counts)
 }
 
 pub(super) fn trim_live_history<K: RecordKind>(
@@ -220,26 +220,29 @@ mod tests {
             .demand_resident_edit(&execution, &runtime.services.instrumentation)
             .unwrap();
         let scans = Cell::new(0);
-        writer.visit_partitions(|mut partition| {
-            let inspected = inspect_partition_retention::<EntityRecordKind>(
-                &runtime,
-                &mut partition,
-                VersionId(1),
-            );
-            assert_eq!(inspected.branch_pinned, 1);
-            let outcome = run_partition_retention_pass::<EntityRecordKind>(
-                &runtime,
-                &mut partition,
-                PartitionRetentionPass {
-                    class: RecordAllocationClass::Entity,
-                    chunk_size: 128,
-                    retention_fence: VersionId(1),
-                },
-                |_| scans.set(scans.get() + 1),
-                &mut Vec::new(),
-            );
-            assert_eq!(outcome.chunks_scanned, 1);
-        });
+        writer
+            .visit_partitions(|mut partition| {
+                let inspected = inspect_partition_retention::<EntityRecordKind>(
+                    &runtime,
+                    &mut partition,
+                    VersionId(1),
+                )?;
+                assert_eq!(inspected.branch_pinned, 1);
+                let outcome = run_partition_retention_pass::<EntityRecordKind>(
+                    &runtime,
+                    &mut partition,
+                    PartitionRetentionPass {
+                        class: RecordAllocationClass::Entity,
+                        chunk_size: 128,
+                        retention_fence: VersionId(1),
+                    },
+                    |_| scans.set(scans.get() + 1),
+                    &mut Vec::new(),
+                )?;
+                assert_eq!(outcome.chunks_scanned, 1);
+                Ok(())
+            })
+            .unwrap();
         assert_eq!(scans.get(), 1);
         drop(writer);
         let counts = runtime.performance_access().counters();

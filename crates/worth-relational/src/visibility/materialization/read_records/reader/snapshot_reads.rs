@@ -29,7 +29,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         if let Some(basis) = resolve_snapshot_basis(self.runtime, handle) {
             basis
                 .root()
-                .demand_all_full(execution)
+                .demand_all_full(execution, &self.runtime.services.symbols)
                 .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         }
         super::super::read_work::metered_with_memory(
@@ -146,7 +146,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }
         observation
             .selected_root()
-            .demand_all_full(execution)
+            .demand_all_full(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let state = build_visibility_state(
             self.runtime,

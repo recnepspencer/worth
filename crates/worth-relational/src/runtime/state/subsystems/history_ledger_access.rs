@@ -101,17 +101,6 @@ impl HistorySubsystem {
             .collect()
     }
 
-    pub(crate) fn recorded_commit_envelope_entries(
-        &self,
-    ) -> Vec<(CommitId, Arc<CanonicalCommitEnvelope>)> {
-        self.ledger
-            .read()
-            .commit_envelopes
-            .iter()
-            .map(|(commit_id, envelope)| (*commit_id, Arc::clone(envelope)))
-            .collect()
-    }
-
     pub(crate) fn recorded_commit_envelope_count(&self) -> usize {
         self.ledger.read().commit_envelopes.len()
     }

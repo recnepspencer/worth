@@ -131,3 +131,6 @@ mod basis_admission_tests;
 #[cfg(test)]
 #[path = "basis_registry_scale_tests.rs"]
 mod basis_registry_scale_tests;
+
+mod symbol_read;
+pub(crate) use symbol_read::SymbolAdmittedBranchRead;

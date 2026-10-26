@@ -265,33 +265,6 @@ where
             allocation_policy,
         )
     }
-
-    #[cfg(test)]
-    pub(crate) fn compare_and_commit_application_with_aftermath<Operation, Input, Scope>(
-        &self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-
-        program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-        aftermath_causality: WorthQueryPendingAftermathCausality,
-        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> WorthQueryApplicationCommitOutcome
-    where
-        Input: Clone + Send + Sync + 'static,
-    {
-        if let Some(denial) = plain_publication_posture(&program.read_set.admission) {
-            return WorthQueryApplicationCommitOutcome::Denied(denial);
-        }
-        self.compare_and_commit_application_inner_with_currentness_and_aftermath(
-            &phase.borrowed_request_for_test(),
-            phase,
-            program,
-            idempotency,
-            None,
-            Some(aftermath_causality),
-            allocation_policy,
-        )
-    }
 }
 
 fn plain_publication_posture<Schema, Operation, Input, Scope>(

@@ -44,10 +44,10 @@ impl ArenaRanges {
             while free_cursor < self.free.len() && self.free[free_cursor].1 <= start {
                 free_cursor += 1;
             }
-            if let Some(&(free_start, free_end)) = self.free.get(free_cursor) {
-                if free_start < end {
-                    return Some((start.max(free_start), end.min(free_end)));
-                }
+            if let Some(&(free_start, free_end)) = self.free.get(free_cursor)
+                && free_start < end
+            {
+                return Some((start.max(free_start), end.min(free_end)));
             }
         }
         let mut covered = self

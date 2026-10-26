@@ -81,16 +81,16 @@ pub(super) fn seal(
         )
         .map_err(candidate_denial)?
     };
-    if let Some(cleanup) = validated_manifest_cleanup {
-        if !candidate_root_matches_cleanup(
+    if let Some(cleanup) = validated_manifest_cleanup
+        && !candidate_root_matches_cleanup(
             &candidate.root,
             selection.root().selected().selector().format(),
             cleanup.intent().candidate_root_generation(),
             cleanup.intent().candidate_root_sha256(),
             allowance,
-        )? {
-            return Err(ExecutionBasisDenial::Invalid);
-        }
+        )?
+    {
+        return Err(ExecutionBasisDenial::Invalid);
     }
     let plan_identity = super::super::identity::bind_publication_candidates(
         basis_identity,
@@ -250,7 +250,7 @@ fn created_artifacts(
     artifacts.sort_unstable();
     artifacts.dedup();
     allowance
-        .into_box(artifacts)
+        .box_values(artifacts)
         .map_err(|denial| candidate_denial(denial.into()))
 }
 
@@ -280,7 +280,7 @@ fn publication_actions(
     actions.push(RecoveryPublicationAction::ReplaceRootProtocol);
     actions.push(RecoveryPublicationAction::SynchronizeStoreNamespace);
     allowance
-        .into_box(actions)
+        .box_values(actions)
         .map_err(|denial| candidate_denial(denial.into()))
 }
 

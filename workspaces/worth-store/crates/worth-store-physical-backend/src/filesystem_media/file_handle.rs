@@ -156,8 +156,8 @@ impl FilesystemMediaOwner {
                 return failed_open(self, path, NamespaceFileOpenKind::Existing, denial);
             }
         };
-        let outcome = self.open_file(path, NamespaceFileOpenKind::Existing, true);
-        outcome
+
+        self.open_file(path, NamespaceFileOpenKind::Existing, true)
     }
 
     pub fn create_new<'owner>(
@@ -170,8 +170,8 @@ impl FilesystemMediaOwner {
                 return failed_open(self, path, NamespaceFileOpenKind::CreatedNew, denial);
             }
         };
-        let outcome = self.open_file(path, NamespaceFileOpenKind::CreatedNew, true);
-        outcome
+
+        self.open_file(path, NamespaceFileOpenKind::CreatedNew, true)
     }
 
     fn open_file<'owner, Access>(

@@ -27,7 +27,7 @@ impl RelationalRuntime {
             .map_err(RelationalObservationReadDenial::Execution)?;
         observation
             .selected_root()
-            .demand_regions_full(execution, [entity_id.partition_id])
+            .demand_regions_full(execution, &self.services.symbols, [entity_id.partition_id])
             .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         Ok(self
             .lineage_access()

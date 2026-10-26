@@ -68,24 +68,23 @@ impl ArenaFreeRanges {
             .by_address
             .range(..=(arena, range.offset()))
             .next_back()
+            && id == arena
         {
-            if id == arena {
-                if offset + length > range.offset() {
-                    return Err(ArenaAllocationDenial::Overlap);
-                }
-                if offset + length == range.offset() {
-                    count -= 1;
-                }
+            if offset + length > range.offset() {
+                return Err(ArenaAllocationDenial::Overlap);
+            }
+            if offset + length == range.offset() {
+                count -= 1;
             }
         }
-        if let Some((&(id, offset), _)) = self.by_address.range((arena, range.offset())..).next() {
-            if id == arena {
-                if offset < range.end() {
-                    return Err(ArenaAllocationDenial::Overlap);
-                }
-                if offset == range.end() {
-                    count -= 1;
-                }
+        if let Some((&(id, offset), _)) = self.by_address.range((arena, range.offset())..).next()
+            && id == arena
+        {
+            if offset < range.end() {
+                return Err(ArenaAllocationDenial::Overlap);
+            }
+            if offset == range.end() {
+                count -= 1;
             }
         }
         Ok(count)
@@ -121,10 +120,10 @@ impl ArenaFreeRanges {
         let mut free = 0_u64;
         for (&(id, _), &length) in &self.by_address {
             if Some(id) != arena {
-                if let Some(previous) = arena {
-                    if threshold.requires_evacuation(capacity.saturating_sub(free), capacity) {
-                        return Some(previous);
-                    }
+                if let Some(previous) = arena
+                    && threshold.requires_evacuation(capacity.saturating_sub(free), capacity)
+                {
+                    return Some(previous);
                 }
                 if id.get().saturating_add(1) >= published_next {
                     return None;
@@ -189,27 +188,31 @@ impl ArenaFreeRanges {
             .range((arena, start)..)
             .next()
             .map(|(&(id, offset), &length)| (id, offset, length));
-        if let Some((id, offset, length)) = previous {
-            if id == arena && offset + length > start {
-                return Err(ArenaAllocationDenial::Overlap);
-            }
+        if let Some((id, offset, length)) = previous
+            && id == arena
+            && offset + length > start
+        {
+            return Err(ArenaAllocationDenial::Overlap);
         }
-        if let Some((id, offset, _)) = next {
-            if id == arena && offset < end {
-                return Err(ArenaAllocationDenial::Overlap);
-            }
+        if let Some((id, offset, _)) = next
+            && id == arena
+            && offset < end
+        {
+            return Err(ArenaAllocationDenial::Overlap);
         }
-        if let Some((id, offset, length)) = previous {
-            if id == arena && offset + length == start {
-                self.remove(id, offset, length);
-                start = offset;
-            }
+        if let Some((id, offset, length)) = previous
+            && id == arena
+            && offset + length == start
+        {
+            self.remove(id, offset, length);
+            start = offset;
         }
-        if let Some((id, offset, length)) = next {
-            if id == arena && offset == end {
-                self.remove(id, offset, length);
-                end = offset + length;
-            }
+        if let Some((id, offset, length)) = next
+            && id == arena
+            && offset == end
+        {
+            self.remove(id, offset, length);
+            end = offset + length;
         }
         self.by_address.insert((arena, start), end - start);
         if self.excluded != Some(arena) {

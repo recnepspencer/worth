@@ -139,7 +139,7 @@ impl SelectedReleaseHeadRoster {
             roster.entries.push(entry);
             prior_key = Some(entry.key());
         }
-        if roster.root.is_some() != !roster.entries.is_empty() {
+        if roster.root.is_some() == roster.entries.is_empty() {
             return Err(ReleaseCertificateCapacityDenial::SelectedFactMismatch);
         }
         roster.commitment()?;
@@ -201,7 +201,7 @@ impl SelectedReleaseHeadRoster {
         entries: &[ReleaseCustodyHeadEntryV1],
         digest: [u8; 32],
     ) -> Result<bool, ReleaseCertificateCapacityDenial> {
-        if root.is_some() != !entries.is_empty()
+        if root.is_some() == entries.is_empty()
             || root.is_some_and(|reference| {
                 entries.first().map(|entry| entry.key()) != Some(reference.first())
                     || entries.last().map(|entry| entry.key()) != Some(reference.last())
@@ -223,7 +223,7 @@ impl SelectedReleaseHeadRoster {
     }
 
     pub(super) fn commitment(&self) -> Result<(u64, [u8; 32]), ReleaseCertificateCapacityDenial> {
-        if self.root.is_some() != !self.entries.is_empty() {
+        if self.root.is_some() == self.entries.is_empty() {
             return Err(ReleaseCertificateCapacityDenial::SelectedFactMismatch);
         }
         if self.root.is_some_and(|root| {

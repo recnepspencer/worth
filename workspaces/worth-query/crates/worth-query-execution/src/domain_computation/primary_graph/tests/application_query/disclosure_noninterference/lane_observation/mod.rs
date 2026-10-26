@@ -297,7 +297,3 @@ fn assert_full_rows(rows: &[GovernedLiveAccountActivityResult]) {
 fn one() -> NonZeroUsize {
     NonZeroUsize::new(1).unwrap()
 }
-
-fn buffer_limit() -> NonZeroUsize {
-    NonZeroUsize::new(4_096).unwrap()
-}

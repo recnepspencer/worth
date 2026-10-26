@@ -1,6 +1,6 @@
 //! Paged dictionary admission. I/O occurs only in explicit demands, before
 //! taking the symbol table's mutation lock.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::{Arc, Mutex};
 
 use super::symbol_table::RuntimeSymbolTable;
@@ -21,6 +21,7 @@ mod tests;
 
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
+    regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
     source: Arc<dyn RelationalDurableColdSource>,
@@ -33,12 +34,29 @@ pub(super) struct RuntimeSymbolResidency {
 }
 
 impl RuntimeSymbolResidency {
+    pub(super) fn region_is_admitted(
+        &self,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+    ) -> bool {
+        self.regions
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .contains(&region)
+    }
+
+    pub(super) fn all_id_pages_resident(&self) -> bool {
+        let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
+        self.by_id
+            .iter()
+            .all(|page| matches!(pages.get(&page.member), Some(Ok(_))))
+    }
     pub(super) fn new(
         by_id: Vec<RelationalCheckpointPage>,
         by_value: Vec<RelationalCheckpointSymbolBucket>,
         source: Arc<dyn RelationalDurableColdSource>,
     ) -> Self {
         Self {
+            regions: Mutex::new(HashSet::new()),
             by_id,
             by_value,
             source,
@@ -46,22 +64,55 @@ impl RuntimeSymbolResidency {
         }
     }
 
-    pub(super) fn detached(&self) -> Self {
-        Self {
-            by_id: self.by_id.clone(),
-            by_value: self.by_value.clone(),
-            source: self.source.clone(),
-            pages: Mutex::new(
-                self.pages
-                    .lock()
-                    .unwrap_or_else(|poisoned| poisoned.into_inner())
-                    .clone(),
-            ),
-        }
+    pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
+        let pages = self
+            .pages
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let owner = snapshot();
+        (
+            Self {
+                regions: Mutex::new(HashSet::new()),
+                by_id: self.by_id.clone(),
+                by_value: self.by_value.clone(),
+                source: self.source.clone(),
+                pages: Mutex::new(pages.clone()),
+            },
+            owner,
+        )
     }
 
     pub(super) fn same_directory(&self, other: &Self) -> bool {
         self.by_id == other.by_id && self.by_value == other.by_value
+    }
+
+    pub(super) fn demand_region(
+        &self,
+        owner: &RuntimeSymbolTable,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+        ids: impl FnOnce() -> BTreeSet<Symbol>,
+    ) -> Result<(), Failure> {
+        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        let mut admitted = self
+            .regions
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if admitted.contains(&region) {
+            return Ok(());
+        }
+        admitted.try_reserve(1).map_err(|_| {
+            unavailable(
+                RelationalStorageSubject::Symbols {
+                    first: Symbol(0),
+                    last: Symbol(u32::MAX - 1),
+                },
+                Cause::MemoryExhausted,
+            )
+        })?;
+        self.demand_ids(owner, execution, ids())?;
+        admitted.insert(region);
+        Ok(())
     }
 
     pub(super) fn demand_ids(
@@ -213,9 +264,10 @@ impl RuntimeSymbolResidency {
             Ok(shape) => {
                 pages.insert(locator, Ok(*shape));
             }
-            Err(Failure::StorageUnavailable(failure)) => {
+            Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
                 pages.insert(locator, Err(*failure));
             }
+            Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
         }
         result.map(|_| ())

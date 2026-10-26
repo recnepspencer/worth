@@ -33,8 +33,8 @@ pub(crate) struct CheckedEpochAdmission<'a> {
     grant: CheckedEpochAdmissionGrant,
 }
 
-impl CheckedEpochAdmission<'_> {
-    pub(crate) fn tasks(&self) -> &[EligibleTask] {
+impl<'a> CheckedEpochAdmission<'a> {
+    pub(crate) fn tasks(&self) -> &'a [EligibleTask] {
         self.tasks
     }
 
@@ -64,6 +64,7 @@ pub(crate) fn epoch_width<'a>(
     tasks: &'a [EligibleTask],
     task_offset: usize,
     checked: bool,
+    result_heap_bound: Option<u64>,
     request: worth_execution::ExecutionRequest<'_, '_>,
     comparator: &impl ComparatorPolicyResolver,
     mut preparation: Option<&mut SignalPreparationBudget>,
@@ -90,7 +91,8 @@ pub(crate) fn epoch_width<'a>(
     )?;
     let budget = preparation
         .ok_or_else(|| SignalError::invalid_input("checked epoch requires request preparation"))?;
-    let mut resources = resource_admission::ResourceAdmission::new(budget, request)?;
+    let mut resources =
+        resource_admission::ResourceAdmission::new(budget, request, result_heap_bound)?;
     if !resources.consider(graph, &tasks[0], comparator, work.as_deref_mut(), budget)? {
         return Err(SignalError::internal(
             "singleton epoch admission declined its task",
@@ -100,7 +102,7 @@ pub(crate) fn epoch_width<'a>(
         return Ok(EpochAdmission::Checked(CheckedEpochAdmission {
             tasks: &tasks[..1],
             task_offset,
-            grant: resources.finish()?,
+            grant: resources.finish(budget, graph)?,
         }));
     }
     let mut width = 1;
@@ -152,7 +154,7 @@ pub(crate) fn epoch_width<'a>(
         }
         width += 1;
     }
-    let grant = resources.finish()?;
+    let grant = resources.finish(budget, graph)?;
     debug_assert_eq!(grant.width().get(), width);
     Ok(EpochAdmission::Checked(CheckedEpochAdmission {
         tasks: &tasks[..width],

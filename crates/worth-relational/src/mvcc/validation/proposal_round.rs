@@ -34,18 +34,21 @@ impl RelationalPreparationRuntime {
     ) -> Result<PreparedProposalRound, TransactionCommitError> {
         let basis = transaction.basis.clone();
         let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(&basis);
-        let (answer, round) =
-            crate::storage::residency::probe_full(execution, &selected, |partitions| {
+        let (answer, round) = crate::storage::residency::probe_full(
+            execution,
+            &selected.with_symbol_admission(&self.services.symbols),
+            |partitions| {
                 let round = self.preparation_round();
                 let read =
                     crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
                 let answer =
                     round.prepare_proposal_symbol_round(execution, transaction, lowered, read);
                 (answer, round)
-            })
-            .map_err(|failure| {
-                crate::authority::commit::preparation::storage_read_denial(&basis, failure)
-            })?;
+            },
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&basis, failure)
+        })?;
         if let Ok(prepared) = &answer {
             self.mirror_residency
                 .demand(

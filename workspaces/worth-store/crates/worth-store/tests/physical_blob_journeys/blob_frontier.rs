@@ -74,7 +74,7 @@ fn explicit_frontier_persists_only_completed_prefix_and_selected_custody() {
     assert_eq!(selected_root_generation(&serving), after_frontier);
 
     drop(ingest);
-    drop(blobs);
+
     serving.close();
 
     let reopened = serving_from_open(directory.path());
@@ -175,7 +175,7 @@ fn sixty_fourth_chunk_auto_publishes_one_frontier_not_one_per_chunk() {
     assert_eq!(ingest.frontier().next_chunk_ordinal(), 65);
     assert_eq!(ingest.frontier().bytes(), (65 * CHUNK) as u64);
     drop(ingest);
-    drop(blobs);
+
     serving.close();
 
     let reopened = serving_from_open(directory.path());

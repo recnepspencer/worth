@@ -106,7 +106,10 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture
     )
     .unwrap()
     .expect("the recovered fork retains the exact old root");
-    basis.root().demand_all_full(execution).unwrap();
+    basis
+        .root()
+        .demand_all_full(execution, &runtime.services.symbols)
+        .unwrap();
     let source_state = crate::visibility::snapshot_states::build_visibility_state(
         &runtime,
         basis,
@@ -162,7 +165,7 @@ fn replay_pinning_refuses_a_damaged_mirror_without_installing_retention() {
         .retain_version_for_replay(execution, fixture.historical_version);
     assert_eq!(
         observed,
-        Err(expected),
+        Err(expected.into()),
         "cache={:?}; reads={}",
         crate::visibility::cache_state::cached_historical_state_for_version(
             runtime,
@@ -183,7 +186,7 @@ fn replay_pinning_refuses_a_damaged_mirror_without_installing_retention() {
         runtime
             .history_authority()
             .retain_version_for_replay(execution, fixture.historical_version),
-        Err(expected)
+        Err(expected.into())
     );
     assert_eq!(
         fixture.source.reads.load(Ordering::Relaxed),
@@ -227,14 +230,14 @@ fn resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admissio
             .demand_replay_pins(execution, fixture.source_state.clone())
             .map(|_| ())
     };
-    assert_eq!(demand(), Err(expected));
+    assert_eq!(demand(), Err(expected.into()));
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     assert!(
         reads > before,
         "the fixture must actually cross the mirror's cold source"
     );
     fixture.source.damaged.store(false, Ordering::Relaxed);
-    assert_eq!(demand(), Err(expected));
+    assert_eq!(demand(), Err(expected.into()));
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
     assert!(fixture
         .runtime

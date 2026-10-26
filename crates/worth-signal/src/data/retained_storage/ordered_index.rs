@@ -64,16 +64,61 @@ pub(crate) fn ordered_index_charge<K, V>(entries: usize) -> Result<Charge, Denia
 }
 
 /// Upper bound for one copy-on-write im OrdMap key edit. An edited search
-/// path has at most bit_length(entries + 1) levels (minimum branching two);
+/// path has the installed tree's minimum-fill height (32 child edges);
 /// a split can allocate two nodes per level plus a new root. The value and
 /// selected key payload are charged by the map owner.
 pub(crate) fn ordered_edit_growth_charge<K, V>(entries: usize) -> Result<Charge, Denial> {
     let length = entries.checked_add(1).ok_or(Denial::ChargeOverflow)?;
-    let levels = (usize::BITS as usize - length.leading_zeros() as usize)
-        .checked_add(1)
+    let levels = minimum_fill_height(length, 32);
+    ordered_index_charge::<K, V>(0)?.checked_mul(
+        levels
+            .checked_mul(2)
+            .and_then(|n| n.checked_add(1))
+            .ok_or(Denial::ChargeOverflow)?,
+    )
+}
+
+/// Peak new structure during a batch, including a previous staged root and
+/// the current split/merge path. Non-root nodes contain at least 31 entries.
+/// Old immutable roots can remain shared; intermediate versions must be dropped
+/// between edits. Payloads and Arc cells are accounted separately.
+pub(crate) fn ordered_batch_growth_charge<K, V>(
+    entries: usize,
+    edits: usize,
+) -> Result<Charge, Denial> {
+    if edits == 0 {
+        return Ok(Charge::ZERO);
+    }
+    let path = ordered_edit_growth_charge::<K, V>(entries)?;
+    let paths = path.checked_mul(edits)?;
+    let nodes = entries
+        .checked_div(31)
+        .and_then(|n| n.checked_add(1))
+        .and_then(|n| n.checked_mul(2))
         .ok_or(Denial::ChargeOverflow)?;
-    ordered_index_charge::<K, V>(0)?
-        .checked_mul(levels.checked_mul(2).ok_or(Denial::ChargeOverflow)?)
+    let live = ordered_index_charge::<K, V>(0)?
+        .checked_mul(nodes)?
+        .checked_add(path)?;
+    Ok(if paths < live { paths } else { live })
+}
+
+/// A forest of nonempty histories has at most one node per entry, unlike a
+/// single B-tree's minimum-fill bound. At most two staged versions and one
+/// current edit path coexist; old immutable roots are excluded. Empty histories
+/// must be removed between edits. Each edit still supplies an independent cap.
+pub(crate) fn ordered_forest_growth_charge<K, V>(
+    entries: usize,
+    edits: usize,
+) -> Result<Charge, Denial> {
+    if edits == 0 {
+        return Ok(Charge::ZERO);
+    }
+    let path = ordered_edit_growth_charge::<K, V>(entries)?;
+    let paths = path.checked_mul(edits)?;
+    let live = ordered_index_charge::<K, V>(entries)?
+        .checked_mul(2)?
+        .checked_add(path)?;
+    Ok(if paths < live { paths } else { live })
 }
 
 /// Conservative Rust 1.94 BTreeMap structural bound. alloc/collections/btree/

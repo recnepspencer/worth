@@ -83,7 +83,8 @@ pub mod history {
         LineageAspectHistoryQueryResult, LineageAspectResolutionDigest, MergeConflictRecord,
         MergeInspection, OrderedParentList, RelationalCommitReceipt, RelationalDescriptiveTouch,
         RelationalDescriptiveTouchGraph, RelationalDescriptiveTouchPrecision,
-        RelationalMergeBranchBasisDenial, RelationalTouchAdjacencyDirection, VersionGraphPolicy,
+        RelationalMergeBranchBasisDenial, RelationalReplayRetentionDenial,
+        RelationalTouchAdjacencyDirection, VersionGraphPolicy,
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{

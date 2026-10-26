@@ -41,10 +41,10 @@ pub(super) fn projected_derived_binding(
                 binding,
                 retirement,
             } => {
-                if let Some(retirement) = retirement {
-                    if retirement.expected_previous() != directory {
-                        return Err(ExecutionBasisDenial::Invalid);
-                    }
+                if let Some(retirement) = retirement
+                    && retirement.expected_previous() != directory
+                {
+                    return Err(ExecutionBasisDenial::Invalid);
                 }
                 if binding.indexed_through() != latest
                     || binding

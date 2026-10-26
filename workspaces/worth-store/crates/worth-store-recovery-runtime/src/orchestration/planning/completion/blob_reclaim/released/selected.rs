@@ -204,40 +204,36 @@ pub(super) fn verify_initial(
             } else if expected_custody.is_none() && incoming_edge(&fact, manifest.dropped()) {
                 return Err(Invalid);
             }
-            if let BlobRecordV1::GenerationPublished(value) = &fact {
-                if placement.record() != source.publication_record()
-                    && (value.object() == source.object() || value.session() == source.session())
+            if let BlobRecordV1::GenerationPublished(value) = &fact
+                && placement.record() != source.publication_record()
+                && (value.object() == source.object() || value.session() == source.session())
+            {
+                return Err(Invalid);
+            }
+            if let BlobRecordV1::OriginalDropReserved(value) = fact
+                && (value.reclaim_attempt() == descriptor.reclaim_attempt()
+                    || value.manifest_record() == descriptor.manifest_record())
+            {
+                if reservation_seen
+                    || value.store() != descriptor.store()
+                    || value.reclaim_attempt() != descriptor.reclaim_attempt()
+                    || value.manifest_record() != descriptor.manifest_record()
+                    || value.manifest_frame_sha256() != descriptor.manifest_frame_sha256()
+                    || value.source_basis_digest() != descriptor.source_basis_digest()
+                    || value.manifest_selected_generation()
+                        != manifest.never_reserved_slot_generation()
+                    || value.reserved_selected_generation() != descriptor.source_root_generation()
+                    || value.request().idempotency() != operation_id
+                    || value.request().fingerprint() != operation.request_fingerprint()
+                    || value.request().lease_issuance_generation()
+                        != operation.lease_issuance_generation()
+                    || value.request().lease_expiry_generation()
+                        != operation.lease_expiry_generation()
+                    || expected_custody.is_some_and(|custody| value.request() != custody.request())
                 {
                     return Err(Invalid);
                 }
-            }
-            if let BlobRecordV1::OriginalDropReserved(value) = fact {
-                if value.reclaim_attempt() == descriptor.reclaim_attempt()
-                    || value.manifest_record() == descriptor.manifest_record()
-                {
-                    if reservation_seen
-                        || value.store() != descriptor.store()
-                        || value.reclaim_attempt() != descriptor.reclaim_attempt()
-                        || value.manifest_record() != descriptor.manifest_record()
-                        || value.manifest_frame_sha256() != descriptor.manifest_frame_sha256()
-                        || value.source_basis_digest() != descriptor.source_basis_digest()
-                        || value.manifest_selected_generation()
-                            != manifest.never_reserved_slot_generation()
-                        || value.reserved_selected_generation()
-                            != descriptor.source_root_generation()
-                        || value.request().idempotency() != operation_id
-                        || value.request().fingerprint() != operation.request_fingerprint()
-                        || value.request().lease_issuance_generation()
-                            != operation.lease_issuance_generation()
-                        || value.request().lease_expiry_generation()
-                            != operation.lease_expiry_generation()
-                        || expected_custody
-                            .is_some_and(|custody| value.request() != custody.request())
-                    {
-                        return Err(Invalid);
-                    }
-                    reservation_seen = true;
-                }
+                reservation_seen = true;
             }
         }
         if expected_custody.is_some_and(|expected| {

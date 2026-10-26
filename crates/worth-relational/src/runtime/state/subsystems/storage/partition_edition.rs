@@ -66,6 +66,20 @@ impl PartitionEdition {
         self.partitions.iter().map(|(id, region)| (*id, region))
     }
 
+    pub(crate) fn resident_pin_lease(
+        &self,
+        id: PartitionId,
+    ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        self.partitions
+            .get(&id)
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })?
+            .pin_lease()
+    }
+
     pub(super) fn demand_partition(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -119,14 +133,6 @@ impl PartitionEdition {
 
     pub(crate) fn partitions(&self) -> impl Iterator<Item = &PartitionState> {
         self.partitions.values().map(AsRef::as_ref)
-    }
-
-    /// An owned copy of the map spine, sharing every partition behind it.
-    ///
-    /// Theta(partitions) pointer copies and no record copies. Callers that then
-    /// mutate individual partitions pay their deep copies one at a time.
-    pub(crate) fn cloned_map(&self) -> PartitionMap {
-        (*self.partitions).clone()
     }
 
     /// Owned copies of every partition, for checkpoint capture and recovery.

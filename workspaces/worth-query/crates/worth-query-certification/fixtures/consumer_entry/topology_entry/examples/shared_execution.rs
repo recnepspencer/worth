@@ -5,10 +5,13 @@ use std::sync::{
 };
 use worth_query_decl::facade::{application_program::*, application_schema::*};
 use worth_query_host::facade::{
-    application_contribution::*, application_entry::*, application_installation as installation,
-    primary_graph,
-    runtime::{ConstructionDenial, DeterminismContract, ExecutionAllocationPolicy, ExecutionAuthority,
-        ExecutionAuthorityConfig, ExecutionPosture, ExecutionRequestPolicy},
+    application_contribution::*,
+    application_entry::*,
+    application_installation as installation, primary_graph,
+    runtime::{
+        ConstructionDenial, DeterminismContract, ExecutionAllocationPolicy, ExecutionAuthority,
+        ExecutionAuthorityConfig, ExecutionPosture, ExecutionRequestPolicy,
+    },
 };
 use worth_query_topology_entry::*;
 
@@ -30,6 +33,10 @@ fn main() {
         .unwrap();
 }
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 pub(crate) fn run() {
     // Resolve immutable build input before constructing any worker threads.
     let build =

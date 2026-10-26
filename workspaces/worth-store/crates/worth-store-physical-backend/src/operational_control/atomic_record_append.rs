@@ -126,10 +126,8 @@ impl PhysicalOperationalControlStore {
             .read(true)
             .open(location.path())?;
         journal.sync_all()?;
-        if !existed {
-            if let Some(parent) = location.path().parent() {
-                crate::directory_durability::sync_directory(parent)?;
-            }
+        if !existed && let Some(parent) = location.path().parent() {
+            crate::directory_durability::sync_directory(parent)?;
         }
         let identity = ControlMediaIdentity::open(&location, &journal)?;
         let recovery_objects = PhysicalControlRecoveryObjectStore::open(&location)?;
@@ -349,10 +347,10 @@ fn append_locked(
         });
     }
     let actual = state.last_generation;
-    if let Some(expected) = expected {
-        if actual != expected {
-            return Err(ControlMediaFault::GenerationMismatch { expected, actual });
-        }
+    if let Some(expected) = expected
+        && actual != expected
+    {
+        return Err(ControlMediaFault::GenerationMismatch { expected, actual });
     }
     let generation = match actual {
         Some(current) => current

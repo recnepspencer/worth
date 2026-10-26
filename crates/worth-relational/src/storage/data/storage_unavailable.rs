@@ -25,9 +25,24 @@ pub enum RelationalStorageSubject {
 /// Why the cold source or its authenticated contents could not be admitted.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RelationalStorageUnavailableCause {
+    /// The selected durable directory names content proven absent.
+    MissingMember,
+    /// The source refused or failed without proving durable damage. Retryable.
     SourceUnavailable,
     Damaged,
     IntegrityMismatch,
-    LimitExceeded { length: u64, limit: u64 },
+    LimitExceeded {
+        length: u64,
+        limit: u64,
+    },
     MemoryExhausted,
+}
+
+impl RelationalStorageUnavailableCause {
+    pub(crate) fn is_proven_damage(self) -> bool {
+        matches!(
+            self,
+            Self::MissingMember | Self::Damaged | Self::IntegrityMismatch
+        )
+    }
 }

@@ -11,10 +11,14 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+#[path = "cross_region_forgery_tests.rs"]
+mod cross_region_forgery;
 #[path = "head_metadata_tests.rs"]
 mod head_metadata_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
+#[path = "projection_corruption_tests.rs"]
+mod projection_corruption;
 
 #[derive(Debug)]
 struct CountedSource {
@@ -35,7 +39,7 @@ impl RelationalDurableColdSource for CountedSource {
         if locator == self.history {
             self.history_reads.fetch_add(1, Ordering::SeqCst);
         }
-        let bytes = self.members.get(&locator).ok_or(Cause::SourceUnavailable)?;
+        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
         if bytes.len() as u64 > limit {
             return Err(Cause::LimitExceeded {
                 length: bytes.len() as u64,
@@ -129,6 +133,7 @@ fn region_with_history() -> RegionFixture {
     let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
     symbol_authority.replace((*symbols).clone());
     let cold = RelationalColdRegion {
+        kind_authority: members.kind_authority,
         source: source.clone(),
         partition_id: partition.partition_id,
         head: members.head.0,
@@ -299,7 +304,7 @@ fn region_limit_refuses_before_admitting_a_lease_and_recovery_preserves_the_caus
         Cause::LimitExceeded { limit: 1, .. }
     ));
     let crate::durability::data::RelationalRecoveryStop::Durability(error) =
-        crate::durability::data::RelationalRecoveryStop::from(failure.clone())
+        crate::durability::data::RelationalRecoveryStop::from(failure)
     else {
         panic!("durability stop")
     };
@@ -325,6 +330,7 @@ fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
             &fixture.cold.schema,
             fixture.cold.schema_carrier_digest,
             &fixture.cold.symbols.interner_snapshot(),
+            None,
         )
         .unwrap();
     assert_eq!(captured.leaf.content_digest, fixture.expected_digest);

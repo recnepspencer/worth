@@ -71,7 +71,7 @@ fn write_two_byte_blob(root: &Path) {
     session.push(&[0x7e]).unwrap();
     session.push(&[0x7f]).unwrap();
     session.finish().unwrap();
-    drop(blobs);
+
     serving.close();
 }
 

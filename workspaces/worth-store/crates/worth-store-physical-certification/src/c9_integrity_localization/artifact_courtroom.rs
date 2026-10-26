@@ -113,7 +113,7 @@ fn run_selected(
         // The durability policy is bound to the real directory identity. Restore
         // each byte-isolated row into that existing root only after prior children exit.
         let row = baseline.to_owned();
-        restore_bytes(&manifest, &frozen, &row);
+        restore_bytes(manifest, &frozen, &row);
         let scenario = fresh_identity(&label, stores);
         let run = fresh_identity(&format!("{label}-runtime"), reports);
         let runtime_report = reports.join(format!("{label}-runtime.json"));
@@ -345,7 +345,7 @@ fn run_selected(
         }
         println!("C9 artifact courtroom {label} passed actual runtime/offline observations");
     }
-    restore_bytes(&manifest, &frozen, baseline);
+    restore_bytes(manifest, &frozen, baseline);
     manifest.require_unchanged(&frozen).unwrap();
     if profile == ProductionWorldProfile::Primary16KiB
         && (selection.is_none() || selection == Some("free_space_membership_block"))

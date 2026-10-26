@@ -111,7 +111,9 @@ impl NodePageCell {
             match result {
                 Ok(page) => *state = NodePageState::Resident(Arc::new(page)),
                 Err(Failure::StorageUnavailable(failure)) => {
-                    *state = NodePageState::Damaged(failure);
+                    if failure.cause.is_proven_damage() {
+                        *state = NodePageState::Damaged(failure);
+                    }
                     return Err(failure.into());
                 }
                 Err(stop) => return Err(stop),

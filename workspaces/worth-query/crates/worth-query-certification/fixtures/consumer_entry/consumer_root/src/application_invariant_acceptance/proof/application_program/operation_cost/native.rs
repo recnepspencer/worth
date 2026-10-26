@@ -14,7 +14,6 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
     let request = runtime.request(&principal, &scope);
     let population = population::retain_unrelated(&runtime, &request, unrelated);
     let before = measurement::retained(&runtime);
-    let allocation = measurement::native_allocation();
     reset_planar_source_adjustment_contacts(&input("focus-a"));
     let measuring = measurement::Measure::begin(&runtime);
     let source = request
@@ -36,7 +35,7 @@ pub(super) fn run(fanout: usize, unrelated: usize) -> Sample {
         .idempotency(&221_001)
         .execute_performed_discovered::<Program, FanoutRoot>(
             &runtime,
-            ExecutionAllocationPolicy::Execution(&allocation),
+            ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
     let WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) = outcome else {

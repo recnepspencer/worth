@@ -141,7 +141,7 @@ fn a_restored_output_registers_before_commit() {
         .expect("the fixture read owns its installed host call");
     let graph = world.application.runtime.primary_graph().unwrap();
     let handle = graph.integration_handle();
-    let owner = &handle.source_owner.invalidation_owner;
+    let _owner = &handle.source_owner.invalidation_owner;
     let (head_handle, head) = handle.with_runtime(request_execution, snapshot);
     let restored = ConsumedOutputEvidence::retained_for_test(
         identity,
@@ -171,7 +171,7 @@ pub(super) fn account_witness(
 ) -> Arc<OnceLock<SealedNativeOutputWitness>> {
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
-    let owner = &graph.integration_handle().source_owner.invalidation_owner;
+    let _owner = &graph.integration_handle().source_owner.invalidation_owner;
     let truth = runtime.read_truth();
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
         entity_id: entity,

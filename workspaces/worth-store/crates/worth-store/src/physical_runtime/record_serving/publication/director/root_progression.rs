@@ -45,21 +45,20 @@ impl RecordPublicationDirector {
             self.root_owner
                 .settle_completed_candidate_growth(completed.settled_members());
             for member in completed.settled_members() {
-                if let Some(copy) = member.source_copy_evidence() {
-                    if self
+                if let Some(copy) = member.source_copy_evidence()
+                    && self
                         .observe_published_extent_copy(
                             copy.operation(),
                             completed.current_root().generation(),
                             copy.publication_lsn(),
                         )
                         .is_err()
-                    {
-                        // The root is already durably published. Preserve that
-                        // fact while revoking further work; the copy obligation
-                        // remains held for inspection rather than disappearing.
-                        if let Some(runtime) = self.runtime.upgrade() {
-                            runtime.health.revoke();
-                        }
+                {
+                    // The root is already durably published. Preserve that
+                    // fact while revoking further work; the copy obligation
+                    // remains held for inspection rather than disappearing.
+                    if let Some(runtime) = self.runtime.upgrade() {
+                        runtime.health.revoke();
                     }
                 }
             }
@@ -67,10 +66,9 @@ impl RecordPublicationDirector {
         if matches!(
             outcome,
             PhysicalCurrentRootAdvanceOutcome::InspectionRequired(_)
-        ) {
-            if let Some(runtime) = self.runtime.upgrade() {
-                runtime.health.revoke();
-            }
+        ) && let Some(runtime) = self.runtime.upgrade()
+        {
+            runtime.health.revoke();
         }
         outcome
     }
