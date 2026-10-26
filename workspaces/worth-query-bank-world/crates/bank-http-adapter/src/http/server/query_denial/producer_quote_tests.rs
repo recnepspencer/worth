@@ -3,19 +3,33 @@ use super::*;
 
 #[test]
 fn ordinary_output_failures_preserve_recovery_actions() {
-    for (cause, expected) in [
+    for (cause, expected, status) in [
         (
             BankApplicationOutputSettlementDenialKind::RetentionBudgetExceeded,
             BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest),
+            429,
         ),
         (
             BankApplicationOutputSettlementDenialKind::Cancelled,
             BankHttpDenial::new(Kind::Cancelled, Next::Retry),
+            408,
+        ),
+        (
+            BankApplicationOutputSettlementDenialKind::RequiredSuccessorStateUnavailable,
+            BankHttpDenial::new(Kind::InternalDenied, Next::None),
+            500,
+        ),
+        (
+            BankApplicationOutputSettlementDenialKind::ForeignDemand,
+            BankHttpDenial::new(Kind::Stale, Next::Refresh),
+            409,
         ),
     ] {
+        let answer = query_denial(BankApplicationQueryDenial::OutputSettlement(cause));
+        assert_eq!(answer, expected);
         assert_eq!(
-            query_denial(BankApplicationQueryDenial::OutputSettlement(cause)),
-            expected
+            super::super::routes::response_status(answer.kind).as_u16(),
+            status
         );
     }
     assert_eq!(

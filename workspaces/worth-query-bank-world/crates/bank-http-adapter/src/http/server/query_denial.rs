@@ -273,9 +273,9 @@ fn output_settlement(kind: BankApplicationOutputSettlementDenialKind) -> BankHtt
         | Settlement::SchedulingDeferred
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
-        Settlement::DuplicatePerformedSource | Settlement::IncompleteDependencyCoverage => {
-            internal_denied()
-        }
+        Settlement::RequiredSuccessorStateUnavailable
+        | Settlement::DuplicatePerformedSource
+        | Settlement::IncompleteDependencyCoverage => internal_denied(),
     }
 }
 
