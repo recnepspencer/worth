@@ -3361,3 +3361,120 @@ No broad consumer portfolio, Native test binary or Execution test binary was
 rebuilt for this consumer-only slice. Phase 3 remains open for private history
 reader adoption and phase closeout; this slice does not merge a default branch
 or update private SDK pins.
+
+## Phase 3 closeout
+
+Accepted implementation: public
+`829091b7b28e87d1a7e52c462bfca4162032d06a`, with qualified private adoption
+`ac8481d578ac5f244a239680be8e6fc8aa414f16`. The private two-parent integration
+combines the reviewed complete-history cutover with upstream
+`4748c0fa4ab02ebb1f0df8a8f8dd97747f5b3eeb`; all seven direct pins and 17 locked
+SDK packages use the same public implementation. The incoming workspace and
+registry graph are preserved without local SDK paths or mixed revisions.
+
+### Accepted behavior and evidence
+
+Complete forward/reverse walk, reflexive reachability and multi-root closure
+are available through installed invariant views, pinned projection/operation
+readers and recorded handler/computation reads. Declared queries have complete
+closure steps and carried step/read receipts. Native owns traversal, visibility,
+cancellation, work and memory authority; Query performs no competing one-hop
+graph search. Canonical visits include roots once at zero and use minimum
+distance/native identity order. Every physical matching edge enters prepared
+or retained structural evidence, including nondiscovery edges. Typed refusal
+never masquerades as a truncated complete walk. Scope widening retains its own
+bounded policy; it is not a product traversal limit.
+
+The acceptance evidence is owner-specific:
+
+- The custom Native traversal has the accepted independent seeded differential
+  model (12 real seeded graphs, both directions and multiple roots). That owner
+  is unchanged by Slice 5b. The separate pinned executor has Slice 5b's current
+  11 Native courts: literal cycle/diamond/multi-root ordering, 1,000-hop forward
+  and reverse histories, pin visibility/retirement, original stops and memory
+  custody. It does not claim a second separate seeded-random oracle.
+- The installed invariant footprint courts exercise the actual third-hop
+  violation, unchanged committed truth and lawful twin. Both independent
+  first-hop entity/relation admission mutants fail the required domain-verdict
+  expectation; their OutsidePreparedScope execution refusal is diagnostic
+  evidence, not a passing domain-violation court. Slice 2 records restored 8+50
+  runtime evidence, the real fork refusal and seven-file byte-exact mutant
+  restoration in `phase3-slice2-batched-mutant-restoration.json`.
+- Snapshot/raw operation and recorded handler/computation adapter courts from
+  Slices 3/4a/4b prove original custody, no partial result, capability restrictions,
+  exact issued-body sealing and deep/empty-leaf/nondiscovery currentness with an
+  unrelated twin. Their unchanged adapter semantics carry explicitly. Slice 5a
+  has 35 shared-producer passes; Slice 5b's current Native/sealing/handler courts
+  qualify the changed common origin/currentness pieces. These earlier adapter
+  courts are not described as freshly rerun at 829091b7b2.
+- Declared closure, origins, receipts and RecordFrame15 have Slice 5b's 70
+  distinct Query-owner courts (69 plus the corrected currentness court), with
+  its 11 current Native courts. Evidence includes a real 1,001-entity history,
+  read locality/growth, repeated semantic interning under original work bounds,
+  source memory/cancellation, required-set deep/empty-leaf changes and typed
+  wire/support refusals. Continuation/live receipt propagation is source-verified
+  and backed by existing lane/disclosure regressions; dedicated nonempty-closure
+  runtime proofs are one-shot, not an independent proof of every lane.
+- The compiled topology example consumes one complete reverse closure and actual
+  physical records, preserving its original affected geometry windows. Slice 6
+  runtime2 proves real lawful/hostile geometry, Native-before-custom ordering,
+  scope refusals, physical ABA and equal observations beside 0/1/6 unrelated
+  rings. Its two-edge geometry window is not a traversal depth cap.
+- The private shared live-version fold now consumes an owned Native history
+  through projection, DecisionReader and candidate adapters. Six semantic,
+  two installed projection, one Native hostile/twin, two installed thread and
+  one ready-currentness court pass both the focused 12-test batch and the merged
+  workspace CI. Only PreviousFeature changes in the currentness court while
+  source values/output identity remain equal; real producer contacts are
+  0 then 1 then 0. No private dropped-tracking mutant proof is claimed.
+
+Compiled invariant callback/source evidence is recorded in Slice 2's guide
+source proof; snapshot/operation guides link actual compiled courts. The declared
+guide expression agrees with the runtime Composed declaration shape, while its
+recorded guide check is link validation rather than a byte-exact compilation
+claim. Slice 6's changed compiled excerpt does have byte-exact source parity.
+These evidence limits do not substitute a broader claim for the actual proofs.
+
+### Merged consumer qualification
+
+Private qualification ran against the current merged source and exact SDK pin:
+all-targets check passed in 1,088.87s with zero compiler diagnostics; workspace
+doctests passed all 209 examples with zero failures/ignores in 244.58s. Full CI
+ran 3,304 tests with 16 existing skips. The original invocation had 3,271 passes
+and 33 setup failures because its runner omitted the pinned oracle interpreter.
+The sole Rust environment reader was verified; all 33 exact original failures
+passed from the same emitted binary after the environment-only correction in
+76.60s, without codegen. Qualification is partitioned 3,271 plus corrected 33,
+covering 3,304 distinct executed passes, not a green single CI invocation.
+
+All 132 script cases ran: 126 passed and six HookMode failures were reproduced
+on a clean untouched current-upstream control. They remain baseline debt and
+are not counted as passing tests. The unchanged real Cargo freshness test passed.
+All 48 Python oracle tests, the intact oracle gate (five corpus checks plus eight
+Rust OCCT courts), both determinism producers/ten golden sections and all 21
+sketch policy probes passed. Formatting, all-file caps, guard diff/tree, math
+catalog, dependency checks and explicit 11/11 causal function scanning passed;
+three existing advisories remain reviewer-accepted. No golden, timeout,
+assertion, guard or exclusion was weakened.
+
+The private record is `cad/docs/plans/query-9.18.1-adoption.md`, under Phase 3
+merged qualification. External artifacts use the `query-9.18.1-phase3-slice8-`
+prefix, including integration, coverage, CI adoption12, corrected oracle33,
+baseline-control and final-documentation proofs. Prior public evidence uses
+the named phase3 slice prefixes above; earlier attempts remain diagnostic data.
+
+### Review and integration status
+
+Persistent qa-loop, qa-tests and code-quality-qa review cleared each slice and
+the qualified private merge. Public normal boundary-check/agent-context from
+Slice 6 (431.63s/1.00s) carry across this factual Markdown-only status/link
+closeout by explicit review: no module, facade, dependency, authority or compiled
+fence input changed. Local links/anchors and whitespace are checked without a
+new public build or portfolio. Private final evidence likewise carries across
+its factual qualification record.
+
+The qualified candidates are accepted for Phase 3. Default-branch integration
+is still pending final closeout review and fresh non-force fast-forward checks;
+this paragraph does not claim it has already happened. The original dirty
+checkouts and private local main are preserved. Phases 4-6 remain unfinished;
+orbits, components and derived relations keep their own later obligations.

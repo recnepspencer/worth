@@ -5746,11 +5746,13 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
 
-**Progress, 2026-10-25:** Phase 1 is complete: one actual-read observation
-surface, compiled public evidence and verified Proprietary SDK adoption.
-Phases 2–6 remain unfinished. The
-[implementation record](milestone-9.18.1-implementation.md#phase-1-closeout)
-holds Phase 1's evidence; declared relation laws are next.
+**Progress, 2026-10-26:** Phases 1–3 are accepted: actual-read observations,
+declared relation laws, complete Native walks/reachability/closure, declared
+query closure steps and qualified Proprietary history-reader adoption. The
+[Phase 3 closeout](milestone-9.18.1-implementation.md#phase-3-closeout) records
+owner-specific evidence, merged consumer qualification and integration status.
+Phases 4–6 remain unfinished; orbit relations and persistent aggregate identity
+are next.
 
 ### Goal
 
