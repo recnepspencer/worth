@@ -261,7 +261,6 @@ fn map_registry_denial(
             RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected
         }
         ProductBranchRegistryDenial::AlreadyInstalled
-        | ProductBranchRegistryDenial::AlreadyRetired
         | ProductBranchRegistryDenial::ReservationMissing
         | ProductBranchRegistryDenial::IdentityMismatch
         | ProductBranchRegistryDenial::BranchAlreadyInstalled

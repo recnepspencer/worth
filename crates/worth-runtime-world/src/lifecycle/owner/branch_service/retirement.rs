@@ -60,27 +60,15 @@ where
 }
 
 fn map_retirement_denial(
-    denial: crate::branch::registry::ProductBranchRegistryDenial,
+    denial: crate::branch::registry::ProductBranchRegistryRetirementDenial,
 ) -> RuntimeWorldBranchRetirementDenial {
-    use crate::branch::registry::ProductBranchRegistryDenial;
+    use crate::branch::registry::ProductBranchRegistryRetirementDenial;
 
     match denial {
-        ProductBranchRegistryDenial::AlreadyRetired => {
+        ProductBranchRegistryRetirementDenial::AlreadyRetired => {
             RuntimeWorldBranchRetirementDenial::AlreadyRetired
         }
-        ProductBranchRegistryDenial::CapacityExhausted { .. }
-        | ProductBranchRegistryDenial::OccupancyOverflow
-        | ProductBranchRegistryDenial::AllocationRejected => {
-            RuntimeWorldBranchRetirementDenial::CapacityExhausted
-        }
-        ProductBranchRegistryDenial::ForeignOwner
-        | ProductBranchRegistryDenial::AlreadyInstalled
-        | ProductBranchRegistryDenial::ReservationMissing
-        | ProductBranchRegistryDenial::IdentityMismatch
-        | ProductBranchRegistryDenial::NameAlreadyReserved
-        | ProductBranchRegistryDenial::NameAlreadyInstalled
-        | ProductBranchRegistryDenial::BranchAlreadyInstalled
-        | ProductBranchRegistryDenial::LifecycleAlreadyInstalled => {
+        ProductBranchRegistryRetirementDenial::ForeignOwner => {
             RuntimeWorldBranchRetirementDenial::OwnerUnavailable
         }
     }

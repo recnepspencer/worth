@@ -34,6 +34,12 @@ pub(crate) enum ProductBranchRegistryDenial {
     NameAlreadyInstalled,
     BranchAlreadyInstalled,
     LifecycleAlreadyInstalled,
+}
+
+/// Retirement releases membership; it never reserves or allocates a slot.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ProductBranchRegistryRetirementDenial {
+    ForeignOwner,
     AlreadyRetired,
 }
 
@@ -198,11 +204,11 @@ impl ProductBranchRegistry {
             ProductBranchReferenceRetirement,
             Option<crate::identity::CompositeCommitIdentity>,
         ),
-        ProductBranchRegistryDenial,
+        ProductBranchRegistryRetirementDenial,
     > {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if observed.owner_identity() != state.owner {
-            return Err(ProductBranchRegistryDenial::ForeignOwner);
+            return Err(ProductBranchRegistryRetirementDenial::ForeignOwner);
         }
         let branch = observed.branch_identity();
         // The observation proves this occurrence was installed. Only the live
@@ -212,7 +218,7 @@ impl ProductBranchRegistry {
             .get(branch)
             .is_none_or(|entry| entry.lifecycle != observed.lifecycle_incarnation())
         {
-            return Err(ProductBranchRegistryDenial::AlreadyRetired);
+            return Err(ProductBranchRegistryRetirementDenial::AlreadyRetired);
         }
         let retirement = state
             .entries
