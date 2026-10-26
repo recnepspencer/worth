@@ -1011,3 +1011,106 @@ appending again. Formatting, dirty caps and whitespace pass; boundary-check and
 agent-context completed successfully during this batch. Function review keeps
 the canonical arena update and complete producer-written proofs together; the
 prefix-basis decision is now separate from record and adjacency hashing.
+
+## Historical-kind carriage boundary and plan
+
+Mixed-history hashing is committed as 3d952e5593. The next Head-write boundary
+is historical adjacency truth. REG4 puts the root-authenticated historical
+projection only in the history member. A current-only Head consequently cannot
+preserve it while preparing a changed region. Rebuilding locally owned claims
+from its one current row would discard earlier endpoints and generations.
+Sparse mirror adoption also requires those owned claims to follow the adopted
+record, rather than trusting the destination's historical cache.
+
+Move immutable relation-projection facts to the storage partition facade while
+leaving authentication and reconstruction in residency. REG5 will put the same
+historical projection in Head and History, bound to the existing historical
+kind commitment. Head verifies it, checks that every known current owned claim
+is included, and rebuilds the historical buckets without reading old versions.
+Full still discards supplied local claims and independently rederives them from
+all decoded history. Prefixes carry shared owned projection facts for their
+record; canonical capture combines those facts with resident suffix rows and
+keeps the current peer-projection rule. No new read authority or pure accessor
+load is introduced.
+
+Tests must compare unchanged and mutated Head historical kinds with separately
+loaded Full data, including adoption from a separately captured history and generation
+reuse. Corrupting the Head historical projection must be a sticky Region failure
+without a History read. Preserve the reviewed owned-history forgery court by
+making its supplied Head and History agree on the forgery, admitting Head first,
+then proving Full independently refuses the false owned claim. Run residency
+and full lib courts, contracts, the home oracle, CI clippy and enforcement after
+the wire cut. Layered capture and typed publication custody remain required.
+
+## Layered region capture boundary
+
+The native checkpoint member list is the complete publication membership;
+Store's selection replaces that directory. Placement custody preserves live
+references, but cannot substitute for declaring a layer's dependencies in the
+native artifact (embedded transport has to carry them too). Carry eligibility
+must include every required base in the destination's current directory.
+
+The next format will carry a history row as an optional base reference
+`{member, partition, schema_digest, physical_row}` plus its resident earlier
+suffix. Head admission continues to reference the selected history member and
+its current append opening, including when that member is itself layered.
+Capture removes only the current suffix row into Head; Full demand folds the
+base's earlier rows and all resident earlier suffixes, then appends Head's
+current row and independently checks content and historical-kind commitments.
+Full materialization must not accept a carried digest as reconstructed data.
+
+Use one eager, sorted direct-dependency directory for history members, with
+entries only for layered members. Reject duplicate/unordered edges, cycles and
+unreachable entries before constructing cells. Cold cells and prefixes share
+that immutable directory by Arc; there is no recursive chain of owning runtime
+nodes and no transitive vector copied into every record. Each closure traversal
+uses an iterative work stack. The cold cell and adopted prefix retain the
+metadata custody of the required closure through the existing port. A decoded
+history member's actual direct references must exactly match its admitted
+directory entry, including the flat/no-dependencies case.
+
+Region capture returns its pruned dependency closure and explicitly carried
+base members. A checkpoint binding owns the leaf and that dependency directory
+together, so acknowledging a layered encoding cannot lose its closure on the
+next unchanged capture. Native capture merges these facts canonically and
+rejects conflicting declarations for the same content address. A foreign
+destination may encode complete resident data; an omitted foreign basis cannot
+be erased or loaded by capture.
+
+Full folding caches decoded members by locator and checks each edge's partition,
+schema and row facts even on a cache hit. It walks row bases iteratively, clones
+each emitted row once, and bounds unique input bytes and expanded output under
+the original request. A member cache must not retain a fully folded vector for
+every intermediate layer: that would make a linear history quadratic. Frame,
+digest, directory and final-content failures retain the current region subject;
+symbol admission failures retain their symbol subject. This stage must also
+cover resident Head cells with an isolated readmission dictionary; the live
+runtime's pending symbol meanings must never become published by reconstruction.
+
+Required proof includes multiple capture/reopen layers, mixed row bases,
+destination membership, malformed edges and cyclic or expanding graphs,
+original-request cancellation, sticky versus retryable refusal and retained
+Head observations promoted after later checkpoints. Head preparation stays
+disabled until the layered writer, bounded Full reader and publication custody
+are integrated together.
+
+The new cached-guard court exposed a product defect: after a valid Head was
+cached, a Full demand could prove its named History member missing, but a fresh
+Head guard returned success from the cached lease. The full lib run confirmed
+this single failure (1,933 passed; one failed; 31 unchanged ignored). Already
+borrowed immutable views must remain usable, while fresh guards must propagate
+the sticky Region refusal and probes must record a miss instead of accepting a
+new damaged view. Store the terminal failure once on the cell and retain the
+state's Damaged marker; this exposes the same failure to cached guards without
+adding a lock to every healthy warm view or creating a second failure authority.
+Keep foreign failures, cancellation and allocation failures retryable as before.
+
+REG5 and the cached-guard correction now pass all 42 residency courts and the
+full library (1,934; 31 unchanged ignored), including the retained immutable view,
+the fresh guard refusal, prefix-owned kind reconstruction and independent Full
+forgery refusal. All three CI clippy commands, formatting, dirty caps and
+whitespace pass after the correction. The earlier contracts binary passes 203
+tests (three unchanged ignored); its compile-time courts also compiled the REG5
+sources. Fresh contracts, World and the home oracle remain required for this
+format cut. Boundary and context passed before the cached-guard correction; the
+post-correction run is in progress. No outer preparation demand has changed.

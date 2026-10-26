@@ -12,6 +12,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        self.check_damage()?;
         match &*state {
             ResidencyState::Full(region) => {
                 self.leases
@@ -24,7 +25,6 @@ impl RelationalRegionResidency {
                     region.clone(),
                 )))
             }
-            ResidencyState::Damaged(failure) => Err(*failure),
             _ => Ok(None),
         }
     }
@@ -37,6 +37,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        self.check_damage()?;
         match &*state {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region)
                 if self.backing.is_none() =>
@@ -51,7 +52,6 @@ impl RelationalRegionResidency {
                     region.clone(),
                 )))
             }
-            ResidencyState::Damaged(failure) => Err(*failure),
             _ => Ok(None),
         }
     }
@@ -63,6 +63,7 @@ impl RelationalRegionResidency {
             .state
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
+        self.check_damage()?;
         match &*state {
             ResidencyState::Full(region) if self.backing.is_none() => {
                 self.leases
@@ -75,7 +76,6 @@ impl RelationalRegionResidency {
                     region.clone(),
                 )))
             }
-            ResidencyState::Damaged(failure) => Err(*failure),
             _ => Ok(None),
         }
     }

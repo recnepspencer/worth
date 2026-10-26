@@ -16,7 +16,7 @@ use crate::storage::data::{
 };
 use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalColdRegion {
@@ -51,7 +51,7 @@ enum ResidencyState {
     Cold,
     Head { region: Arc<ResidentRegion> },
     Full(Arc<ResidentRegion>),
-    Damaged(RelationalStorageUnavailable),
+    Damaged,
 }
 
 #[derive(Debug)]
@@ -61,6 +61,7 @@ pub(crate) struct RelationalRegionResidency {
         std::collections::BTreeMap<[u8; 32], crate::durability::data::RelationalCheckpointRegion>,
     >,
     state: Mutex<ResidencyState>,
+    damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
     backing_custody: Option<crate::durability::medium::RelationalDurableMemberCustody>,
     raw_head: RegionLoadCache,
@@ -99,6 +100,7 @@ impl RelationalRegionResidency {
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Cold),
+            damage: OnceLock::new(),
             leases: AtomicUsize::new(0),
         }))
     }
@@ -132,6 +134,7 @@ impl RelationalRegionResidency {
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Full(region.clone())),
+            damage: OnceLock::new(),
             leases: AtomicUsize::new(1),
         });
         RelationalResidencyLease::accepted(cell, region)
@@ -179,9 +182,7 @@ impl RelationalRegionResidency {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let loaded = (|| {
-            if let ResidencyState::Damaged(failure) = &*state {
-                return Err(Failure::StorageUnavailable(*failure));
-            }
+            self.check_damage()?;
             if let ResidencyState::Cold = &*state {
                 let region = self.raw_head(execution, limit)?;
                 *state = ResidencyState::Head { region };
@@ -212,7 +213,8 @@ impl RelationalRegionResidency {
                 if failure.cause.is_proven_damage()
                     && failure.subject == RelationalStorageSubject::Region(self.partition_id)
                 {
-                    *state = ResidencyState::Damaged(failure);
+                    let _ = self.damage.set(failure);
+                    *state = ResidencyState::Damaged;
                 }
                 Err(Failure::StorageUnavailable(failure))
             }
@@ -222,6 +224,12 @@ impl RelationalRegionResidency {
 
     pub(crate) fn has_cold_backing(&self) -> bool {
         self.backing.is_some()
+    }
+
+    /// The same terminal refusal applies to fresh guards even when their
+    /// retention already holds an older, valid immutable lease.
+    pub(crate) fn check_damage(&self) -> Result<(), RelationalStorageUnavailable> {
+        self.damage.get().copied().map_or(Ok(()), Err)
     }
 
     pub(crate) fn into_partition(self) -> PartitionState {

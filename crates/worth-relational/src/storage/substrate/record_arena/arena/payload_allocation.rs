@@ -5,8 +5,8 @@ use std::collections::BTreeMap;
 
 pub(super) fn history_prefix_bytes(prefix: &Option<super::super::RecordHistoryPrefix>) -> u64 {
     prefix.as_ref().map_or(0, |prefix| {
-        crate::storage::substrate::StorageAllocation::<super::super::HistoryAppendFrontier>::layout_bytes()
-            + prefix.history_frontier.owned_allocation_bytes()
+        crate::storage::substrate::StorageAllocation::<super::super::RecordHistoryOpening>::layout_bytes()
+            + prefix.history_opening.owned_allocation_bytes()
     })
 }
 
@@ -27,10 +27,10 @@ pub(super) fn visit_new_history_prefix(
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
     if visitor.visit(allocation)
-        && prefix.as_ref().map(|prefix| prefix.history_frontier.id())
+        && prefix.as_ref().map(|prefix| prefix.history_opening.id())
             != previous
                 .and_then(|prefix| prefix.as_ref())
-                .map(|prefix| prefix.history_frontier.id())
+                .map(|prefix| prefix.history_opening.id())
     {
         visit_prefix_opening(prefix, allocation.unique, visitor);
     }
@@ -42,8 +42,8 @@ fn visit_prefix_opening(
     visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
 ) {
     if let Some(prefix) = prefix {
-        let mut allocation = prefix.history_frontier.observation(unique);
-        allocation.bytes += prefix.history_frontier.owned_allocation_bytes();
+        let mut allocation = prefix.history_opening.observation(unique);
+        allocation.bytes += prefix.history_opening.owned_allocation_bytes();
         visitor.visit(allocation);
     }
 }

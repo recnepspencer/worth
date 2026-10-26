@@ -1,5 +1,6 @@
 mod arena;
 mod history_frontier;
+mod history_opening;
 mod history_prefix;
 mod kinds;
 mod slot_view;
@@ -9,6 +10,7 @@ mod values;
 
 pub(crate) use arena::*;
 pub(crate) use history_frontier::{HistoryAppendFrontier, HistoryFrontierSibling};
+pub(crate) use history_opening::RecordHistoryOpening;
 pub(crate) use history_prefix::RecordHistoryPrefix;
 pub(crate) use kinds::*;
 pub(crate) use slot_view::*;

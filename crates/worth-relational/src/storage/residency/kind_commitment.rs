@@ -1,7 +1,7 @@
-//! Canonical-root-bound proof of the admitted relation projections. The
-//! manifest carries these leaves; its own checksums cannot replace authority.
-use super::kind_projection::RegionRelationProjection;
+//! Relation projections bound to the selected manifest's root commitment.
+//! Member hashing alone cannot replace the leaf's admitted projection digest.
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+use crate::storage::partition::RegionRelationProjection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 

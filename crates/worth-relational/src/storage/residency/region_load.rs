@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use super::region_image::*;
@@ -18,7 +19,7 @@ pub(super) fn load_head(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
-    let (mut partition, frontiers) = (|| -> Result<_, Cause> {
+    let (mut partition, frontiers, mut historical) = (|| -> Result<_, Cause> {
         check_member_limit(cold.head.length, limit)?;
         let bytes = cold.source.read_member(cold.head, limit)?;
         let frame = RelationalRegionImage::decode(
@@ -31,6 +32,7 @@ pub(super) fn load_head(
         let head: RegionHeadImage =
             rmp_serde::from_slice(frame.payload).map_err(|_| Cause::Damaged)?;
         super::kind_commitment::verify(&head.kind_projection, cold.kind_authority.head)?;
+        super::kind_commitment::verify(&head.history_kind_projection, cold.kind_authority.history)?;
         if head.partition.partition_id != cold.partition_id {
             return Err(Cause::Damaged);
         }
@@ -49,7 +51,20 @@ pub(super) fn load_head(
             &head.reverse_adjacency_kinds,
             AdjacencyKindBasis::Current,
         )?;
-        Ok((partition, head.history_frontiers))
+        super::kind_projection::rebuild_head_history(
+            &mut partition,
+            &head.history_kind_projection,
+        )?;
+        let mut historical = BTreeMap::<usize, Vec<_>>::new();
+        for claim in head.history_kind_projection {
+            if claim.relation.partition_id == cold.partition_id {
+                historical
+                    .entry(claim.relation.slot_index())
+                    .or_default()
+                    .push(claim);
+            }
+        }
+        Ok((partition, head.history_frontiers, historical))
     })()
     .map_err(|cause| unavailable(cold, cause))?;
     cold.symbols
@@ -68,12 +83,14 @@ pub(super) fn load_head(
         cold,
         &history_custody,
         entity_openings,
+        &mut BTreeMap::new(),
     )?;
     install_history_prefixes(
         &mut partition.relation_arena,
         cold,
         &history_custody,
         relation_openings,
+        &mut historical,
     )?;
     crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
@@ -174,6 +191,7 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
     cold: &RelationalColdRegion,
     custody: &crate::durability::medium::RelationalDurableMemberCustody,
     openings: Vec<(u64, crate::storage::substrate::HistoryAppendFrontier)>,
+    historical: &mut BTreeMap<usize, Vec<crate::storage::partition::RegionRelationProjection>>,
 ) -> Result<(), Failure> {
     for (slot, opening) in openings {
         let row_index = usize::try_from(slot)
@@ -190,7 +208,14 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
                     partition_id: cold.partition_id,
                     schema_carrier_digest: cold.schema_carrier_digest,
                     row_index,
-                    history_frontier: crate::storage::substrate::StorageAllocation::new(opening),
+                    history_opening: crate::storage::substrate::StorageAllocation::new(
+                        crate::storage::substrate::RecordHistoryOpening {
+                            frontier: opening,
+                            historical_relations: historical
+                                .remove(&(slot as usize))
+                                .unwrap_or_default(),
+                        },
+                    ),
                 }),
             );
         }

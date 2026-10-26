@@ -54,6 +54,9 @@ impl RelationalRegionRetention {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<(), super::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
         if self.full.get().is_none() {
             let lease = self
                 .cell
@@ -75,6 +78,7 @@ impl RelationalRegionRetention {
     /// Lend only a previously admitted full view. A probe records `None` as a
     /// miss and discards its provisional result before any demand can run.
     pub(crate) fn admitted_partition(&self) -> Option<&PartitionState> {
+        self.cell.check_damage().ok()?;
         if self.full.get().is_none() {
             let lease = self.cell.lease_resident_full().ok().flatten()?;
             let _ = self.full.set(lease);
@@ -83,6 +87,7 @@ impl RelationalRegionRetention {
     }
 
     pub(crate) fn admitted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
+        self.cell.check_damage().ok()?;
         if let Some(full) = self.full.get() {
             return Some(full.head_view());
         }
@@ -100,6 +105,7 @@ impl RelationalRegionRetention {
     ) -> Result<(), super::RelationalResidencyDemandFailure> {
         crate::execution::check_request(execution)
             .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
         if self.full.get().is_none() && self.head.get().is_none() {
             let lease = self
                 .cell
@@ -113,6 +119,7 @@ impl RelationalRegionRetention {
         &self,
     ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
     {
+        self.cell.check_damage()?;
         if let Some(lease) = self.full.get() {
             return Ok(lease.clone());
         }
@@ -177,6 +184,7 @@ impl RelationalRegionRetention {
     /// A cold retention cannot produce mutable access. Its operation must first
     /// acquire a Full lease through the explicit, fallible demand boundary.
     pub(crate) fn make_mut(&mut self) -> Option<&mut PartitionState> {
+        self.cell.check_damage().ok()?;
         drop(self.head.take());
         let lease = self
             .full

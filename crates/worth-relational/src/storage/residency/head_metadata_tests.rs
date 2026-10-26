@@ -63,11 +63,11 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     let baseline = &head.partition.entity_arena.history_prefixes[physical]
         .as_ref()
         .unwrap()
-        .history_frontier;
+        .history_opening;
     let carried = &written_head.entity_arena.history_prefixes[physical]
         .as_ref()
         .unwrap()
-        .history_frontier;
+        .history_opening;
     assert_eq!(
         baseline.id(),
         carried.id(),
@@ -90,8 +90,7 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
         .find(|(logical, _)| *logical == slot as u64)
         .unwrap();
     assert_ne!(
-        carried.as_ref(),
-        &advanced,
+        &carried.frontier, &advanced,
         "the current commitment advances independently of its cold baseline"
     );
     assert_eq!(
@@ -174,7 +173,26 @@ fn malformed_current_metadata_and_frontier_coverage_are_sticky_typed_refusals() 
     }
 }
 
-fn decode_head(fixture: &RegionFixture) -> RegionHeadImage {
+#[test]
+fn the_head_historical_projection_is_authenticated_without_a_history_read() {
+    let fixture = region_with_history();
+    let mut head = decode_head(&fixture);
+    head.history_kind_projection[0].kind = KindId(999);
+    let (cell, source) = cell_with_head(fixture, head);
+    let failure = head_demand(&cell, 1 << 24).unwrap_err();
+    assert_eq!(failure.cause, Cause::IntegrityMismatch);
+    assert!(matches!(
+        failure.subject,
+        RelationalStorageSubject::Region(_)
+    ));
+    let reads = source.reads.load(Ordering::SeqCst);
+    assert_eq!(full_demand(&cell, 1 << 24).unwrap_err(), failure);
+    assert_eq!(source.reads.load(Ordering::SeqCst), reads);
+    assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
+    assert_eq!(cell.leases.load(Ordering::SeqCst), 0);
+}
+
+pub(super) fn decode_head(fixture: &RegionFixture) -> RegionHeadImage {
     let bytes = fixture.source.members.get(&fixture.cold.head).unwrap();
     let frame = RelationalRegionImage::decode(
         bytes,

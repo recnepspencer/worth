@@ -1,9 +1,10 @@
 //! Preserve authenticated projections across eager checkpoint image handoffs.
-use super::kind_projection::{self, RegionRelationProjection};
+use super::kind_projection;
 use crate::identity::data::PartitionId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
 use crate::storage::partition::AdjacencyKindBasis;
+use crate::storage::partition::RegionRelationProjection;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

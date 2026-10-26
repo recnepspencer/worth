@@ -223,7 +223,7 @@ fn relation_adoption_and_append_preserve_the_independent_entity_prefixes() {
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
 }
 
-fn recapture(
+pub(super) fn recapture(
     cold: &RelationalColdRegion,
     partition: &PartitionState,
 ) -> (RelationalColdRegion, Arc<CountedSource>) {

@@ -77,6 +77,7 @@ pub(crate) fn capture_region_members(
     };
     let head = RegionHeadImage {
         kind_projection: super::kind_projection::capture(partition, AdjacencyKindBasis::Current)?,
+        history_kind_projection: history.kind_projection.clone(),
         partition: image,
         history_frontiers: commitment
             .history_frontiers(partition)

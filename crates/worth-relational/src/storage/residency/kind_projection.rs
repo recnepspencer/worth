@@ -1,18 +1,9 @@
 //! Root-authenticated relation projections, independent of serving caches.
-use crate::identity::data::{KindId, RelationId};
+use crate::identity::data::RelationId;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionState;
-use crate::storage::partition::AdjacencyKindBasis;
-use serde::{Deserialize, Serialize};
+use crate::storage::partition::{AdjacencyKindBasis, RegionRelationProjection};
 use std::collections::{BTreeMap, BTreeSet};
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct RegionRelationProjection {
-    pub(super) relation: RelationId,
-    pub(super) kind: KindId,
-    pub(super) outgoing: BTreeSet<usize>,
-    pub(super) incoming: BTreeSet<usize>,
-}
 
 pub(super) fn capture(
     partition: &PartitionState,
@@ -52,6 +43,7 @@ pub(super) fn capture(
 
 mod reconstruction;
 pub(super) use reconstruction::rebuild;
+pub(super) use reconstruction::rebuild_head_history;
 
 pub(super) use reconstruction::canonical_history;
 

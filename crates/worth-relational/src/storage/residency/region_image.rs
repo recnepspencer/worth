@@ -10,8 +10,8 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-const MAGIC: &[u8] = b"WORTH-REL-REG4\n";
-const VERSION: u16 = 4;
+const MAGIC: &[u8] = b"WORTH-REL-REG5\n";
+const VERSION: u16 = 5;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RelationalRegionImageKind {
@@ -26,7 +26,8 @@ pub(crate) struct RelationalRegionImage<'bytes> {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RegionHeadImage {
-    pub(crate) kind_projection: Vec<super::kind_projection::RegionRelationProjection>,
+    pub(crate) kind_projection: Vec<crate::storage::partition::RegionRelationProjection>,
+    pub(crate) history_kind_projection: Vec<crate::storage::partition::RegionRelationProjection>,
     pub(crate) partition: PartitionCheckpointImage,
     pub(crate) history_frontiers: PartitionHistoryFrontiers,
     pub(crate) adjacency_kinds: Vec<RegionAdjacencyKinds>,
@@ -36,7 +37,7 @@ pub(crate) struct RegionHeadImage {
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RegionHistoryImage {
-    pub(crate) kind_projection: Vec<super::kind_projection::RegionRelationProjection>,
+    pub(crate) kind_projection: Vec<crate::storage::partition::RegionRelationProjection>,
     pub(crate) adjacency_kinds: Vec<RegionAdjacencyKinds>,
     pub(crate) reverse_adjacency_kinds: Vec<RegionAdjacencyKinds>,
     pub(crate) entities: Vec<Vec<VersionedEntityMetadataImage>>,

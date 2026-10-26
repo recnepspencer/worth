@@ -14,6 +14,6 @@ pub(crate) struct RecordHistoryPrefix {
     pub(crate) partition_id: PartitionId,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) row_index: usize,
-    pub(crate) history_frontier:
-        crate::storage::substrate::StorageAllocation<super::HistoryAppendFrontier>,
+    pub(crate) history_opening:
+        crate::storage::substrate::StorageAllocation<super::RecordHistoryOpening>,
 }

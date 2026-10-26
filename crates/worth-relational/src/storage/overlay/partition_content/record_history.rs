@@ -28,7 +28,7 @@ where
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
         (cached.clone(), old, offset)
     } else if let Some(prefix) = prefix {
-        let history = DigestIndex::from_append_frontier(&prefix.history_frontier)
+        let history = DigestIndex::from_append_frontier(&prefix.history_opening.frontier)
             .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
         let offset = history
             .next_history_index()
@@ -64,7 +64,8 @@ fn same_basis(current: Option<&RecordHistoryPrefix>, old: Option<&RecordHistoryP
                 && current.partition_id == old.partition_id
                 && current.schema_carrier_digest == old.schema_carrier_digest
                 && current.row_index == old.row_index
-                && current.history_frontier.as_ref() == old.history_frontier.as_ref()
+                && (current.history_opening.id() == old.history_opening.id()
+                    || current.history_opening.as_ref() == old.history_opening.as_ref())
         }
         _ => false,
     }

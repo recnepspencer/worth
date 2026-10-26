@@ -43,16 +43,32 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     )
     .unwrap();
     let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    history.kind_projection[0].kind = crate::identity::data::KindId(999);
-    for entry in history
-        .adjacency_kinds
+    let mut head = super::head_metadata_tests::decode_head(&fixture);
+    let claim = &mut history.kind_projection[0];
+    let current = head
+        .kind_projection
+        .iter()
+        .find(|current| current.relation == claim.relation)
+        .unwrap();
+    let removed = *claim.incoming.difference(&current.incoming).next().unwrap();
+    claim.incoming.remove(&removed);
+    let cache = history
+        .reverse_adjacency_kinds
         .iter_mut()
-        .chain(&mut history.reverse_adjacency_kinds)
-    {
-        for (kind, _) in &mut entry.kinds {
-            *kind = crate::identity::data::KindId(999);
-        }
+        .find(|entry| entry.slot == removed as u64)
+        .unwrap();
+    for (_, relations) in &mut cache.kinds {
+        relations.retain(|relation| *relation != claim.relation);
     }
+    cache.kinds.retain(|(_, relations)| !relations.is_empty());
+    head.history_kind_projection = history.kind_projection.clone();
+    let head_member = RelationalRegionImage::encode(
+        fixture.cold.partition_id,
+        fixture.cold.schema_carrier_digest,
+        RelationalRegionImageKind::Head,
+        &head,
+    )
+    .unwrap();
     let member = RelationalRegionImage::encode(
         fixture.cold.partition_id,
         fixture.cold.schema_carrier_digest,
@@ -66,18 +82,22 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
     // Even a rehashed projection and matching cache cannot replace owned arena
     // history. The canonical root separately prevents replacing peer authority.
     let mut members = fixture.source.members.clone();
+    members.insert(head_member.0, head_member.1);
     members.insert(member.0, member.1);
+    cold.head = head_member.0;
     cold.history = member.0;
-    cold.source = Arc::new(CountedSource {
+    let source = Arc::new(CountedSource {
         members,
         reads: AtomicUsize::new(0),
         history_reads: AtomicUsize::new(0),
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    assert_integrity_refusal(
-        full_demand(&RelationalRegionResidency::cold(cold).unwrap(), 1 << 24).unwrap_err(),
-    );
+    cold.source = source.clone();
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
+    head_demand(&cell, 1 << 24).unwrap();
+    assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
+    assert_integrity_refusal(full_demand(&cell, 1 << 24).unwrap_err());
 }
 
 fn replaced_member(
