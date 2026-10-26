@@ -1,6 +1,6 @@
 //! Paged dictionary admission. I/O occurs only in explicit demands, before
 //! taking the symbol table's mutation lock.
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::{Arc, Mutex};
 
 use super::symbol_table::RuntimeSymbolTable;
@@ -18,7 +18,7 @@ mod tests;
 
 #[derive(Debug)]
 pub(super) struct RuntimeSymbolResidency {
-    regions: Mutex<BTreeSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
+    regions: Mutex<HashSet<crate::storage::residency::RelationalRegionSymbolAdmissionIdentity>>,
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
     source: Arc<dyn RelationalDurableColdSource>,
@@ -39,7 +39,7 @@ impl RuntimeSymbolResidency {
         source: Arc<dyn RelationalDurableColdSource>,
     ) -> Self {
         Self {
-            regions: Mutex::new(BTreeSet::new()),
+            regions: Mutex::new(HashSet::new()),
             by_id,
             by_value,
             source,
@@ -55,7 +55,7 @@ impl RuntimeSymbolResidency {
         let owner = snapshot();
         (
             Self {
-                regions: Mutex::new(BTreeSet::new()),
+                regions: Mutex::new(HashSet::new()),
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
                 source: self.source.clone(),
@@ -84,6 +84,15 @@ impl RuntimeSymbolResidency {
         if admitted.contains(&region) {
             return Ok(());
         }
+        admitted.try_reserve(1).map_err(|_| {
+            unavailable(
+                RelationalStorageSubject::Symbols {
+                    first: Symbol(0),
+                    last: Symbol(u32::MAX - 1),
+                },
+                Cause::MemoryExhausted,
+            )
+        })?;
         self.demand_ids(owner, execution, ids())?;
         admitted.insert(region);
         Ok(())

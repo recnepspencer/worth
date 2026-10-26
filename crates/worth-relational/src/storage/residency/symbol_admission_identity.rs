@@ -1,6 +1,6 @@
 //! An immutable region view's identity, without access to its contents.
 use super::ResidentRegion;
-use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Weak};
 
 #[derive(Debug)]
@@ -21,13 +21,8 @@ impl PartialEq for RelationalRegionSymbolAdmissionIdentity {
     }
 }
 impl Eq for RelationalRegionSymbolAdmissionIdentity {}
-impl PartialOrd for RelationalRegionSymbolAdmissionIdentity {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl Ord for RelationalRegionSymbolAdmissionIdentity {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.address().cmp(&other.address())
+impl Hash for RelationalRegionSymbolAdmissionIdentity {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.address().hash(state);
     }
 }
