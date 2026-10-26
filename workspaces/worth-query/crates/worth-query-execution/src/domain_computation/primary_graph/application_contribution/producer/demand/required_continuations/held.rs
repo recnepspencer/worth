@@ -19,15 +19,12 @@ where
     // Declared after `progress`: the ticket refunds after its storage frees.
 }
 
-pub(super) fn held_key<Schema>(held: &HeldRequiredSuccessor) -> &WorthQueryOutputDemandKey
+pub(super) fn held_key<Schema>(held: &HeldRequiredSuccessor) -> Option<&WorthQueryOutputDemandKey>
 where
     Schema: ApplicationSchema + 'static,
 {
     held.downcast_ref::<HeldFrameSuccessor<Schema>>()
-        .expect("the registry holds only this runtime's successors")
-        .progress
-        .interest()
-        .key()
+        .map(|held| held.progress.interest().key())
 }
 
 impl<Schema> RequiredContinuations<Schema>
@@ -139,9 +136,12 @@ pub(super) fn resume_registry_successor<Schema: ApplicationSchema + 'static>(
 
     performed: &std::cell::RefCell<PerformedMembers>,
 ) -> Result<HeldUpstream, WorthQueryOutputDemandDenial> {
-    let mut held = held
-        .downcast::<HeldFrameSuccessor<Schema>>()
-        .unwrap_or_else(|_| unreachable!("the registry holds only this runtime's successors"));
+    let mut held = held.downcast::<HeldFrameSuccessor<Schema>>().map_err(|_| {
+        WorthQueryOutputDemandDenial::new(
+            super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+            "held successor belongs to another schema",
+        )
+    })?;
 
     let result = held
         .progress
@@ -257,15 +257,22 @@ where
 
         performed: &std::cell::RefCell<PerformedMembers>,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
-        let demand = self
-            .demand
-            .as_mut()
-            .expect("installed successor retains its typed demand");
+        let demand = self.demand.as_mut().ok_or_else(|| {
+            WorthQueryOutputDemandDenial::new(
+                super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "required successor has no admitted demand",
+            )
+        })?;
 
         let authority = demand
             .progression_provenance
             .required()
-            .expect("installed required successor retains its executed mode")
+            .ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                    "required successor has no execution provenance",
+                )
+            })?
             .commit_authority()
             .clone();
         runtime.advance_retained_with_commit_authority(

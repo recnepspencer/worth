@@ -47,10 +47,9 @@ fn last_claim_closes(held_successor: bool) {
         publish(&registry, &newest, receipt);
         if held_successor {
             assert!(registry
-                .hold_required_successor(Box::new(newest), |held| &held
+                .hold_required_successor(Box::new(newest), |held| held
                     .downcast_ref::<WorthQueryOutputDemandInterest>()
-                    .unwrap()
-                    .key)
+                    .map(|interest| &interest.key))
                 .is_none());
         } else {
             drop(newest);
