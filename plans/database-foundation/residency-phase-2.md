@@ -1245,3 +1245,18 @@ same accepted Full lease directly, preserving every assertion. Native execution
 for the new courts is queued after the already running serial workspace lanes.
 The format contracts run passes 203 tests with three existing ignores; World
 is progressing through its UI court. These runs do not close phase 2.
+
+Root completeness inspection still skipped Head payloads because it asked only
+for an optional Full lease. A newly owned Head is resident content too: inspect
+its current/suffix rows under its authenticated prefix openings without loading
+a base, while cold cells continue to contribute their admitted leaf facts.
+Unify content-capture denials under the storage owner and propagate known cell
+damage rather than panicking or skipping it. Reclaimable resident allocation
+estimates likewise must include Head arenas. Test against separately completed
+history after a Head append, and preserve the damaged-cell refusal.
+
+Content inspection uses the cell's existing isolated readmission dictionary
+when it has one; that checks storage meaning without requiring an unrelated
+runtime's dictionary to have admitted the shared cell. It grants no serving
+authority and publishes no symbols. The owner compile check and three CI clippy
+commands pass; native execution remains in the serial queue.

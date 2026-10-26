@@ -2,6 +2,16 @@
 use super::{RelationalRegionResidency, ResidencyState, ResidentRegion};
 
 impl RelationalRegionResidency {
+    pub(crate) fn reclaimable_unique_resident_payload_bytes(self: &std::sync::Arc<Self>) -> u64 {
+        self.lease_checkpoint_contents()
+            .ok()
+            .flatten()
+            .map_or(0, |lease| {
+                lease
+                    .checkpoint_contents()
+                    .reclaimable_unique_authoritative_bytes()
+            })
+    }
     /// Slot directory cardinalities are eager manifest facts, including while
     /// member payloads are cold or damaged. Counting slots never reads storage.
     pub(crate) fn slot_counts(&self) -> (usize, usize) {

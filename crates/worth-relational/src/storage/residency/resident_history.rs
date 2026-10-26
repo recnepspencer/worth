@@ -24,6 +24,9 @@ pub(super) struct ResidentHistoryReadmission {
 }
 
 impl ResidentHistoryReadmission {
+    pub(super) fn symbols(&self) -> &RuntimeSymbolTable {
+        &self.symbols
+    }
     pub(super) fn new(
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &RuntimeSymbolTable,

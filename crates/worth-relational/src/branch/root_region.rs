@@ -1,5 +1,5 @@
 use crate::storage::residency::{
-    PreparedResidentRegion, RegionPublicationFailure, RelationalRegionRetention,
+    PreparedResidentRegion, RegionContentFailure, RelationalRegionRetention,
 };
 
 use crate::identity::data::PartitionId;
@@ -107,14 +107,11 @@ impl RelationalRootRegion {
         let mut bytes = std::mem::size_of::<Self>() as u64;
         if self.partition.is_uniquely_owned() {
             bytes = bytes.saturating_add(self.partition.cell().residency_allocation_bytes());
-            if let Ok(Some(lease)) = self.partition.cell().lease_resident_full() {
-                bytes = bytes.saturating_add(
-                    lease
-                        .full_view()
-                        .partition()
-                        .reclaimable_unique_authoritative_bytes(),
-                );
-            }
+            bytes = bytes.saturating_add(
+                self.partition
+                    .cell()
+                    .reclaimable_unique_resident_payload_bytes(),
+            );
         }
         bytes
     }
@@ -122,19 +119,19 @@ impl RelationalRootRegion {
 
 pub(super) fn capture_failure(
     partition: PartitionId,
-    failure: RegionPublicationFailure,
+    failure: RegionContentFailure,
 ) -> RelationalBranchRootCaptureDenial {
     match failure {
-        RegionPublicationFailure::Storage(failure) => {
+        RegionContentFailure::Storage(failure) => {
             RelationalBranchRootCaptureDenial::StorageUnavailable(failure)
         }
-        RegionPublicationFailure::Adjacency => {
+        RegionContentFailure::Adjacency => {
             RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(partition)
         }
-        RegionPublicationFailure::Content(
+        RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(symbol),
         ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
-        RegionPublicationFailure::Content(
+        RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage,
         ) => RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(partition),
     }

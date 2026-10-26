@@ -1,13 +1,16 @@
 //! Assemble immutable root regions without promoting Head contents to Full.
-use super::{RelationalRegionKindCommitment, RelationalRegionResidency, RelationalRegionRetention};
+use super::{
+    RegionContentFailure, RelationalRegionKindCommitment, RelationalRegionResidency,
+    RelationalRegionRetention,
+};
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::runtime::RuntimeSymbolTable;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
 use crate::storage::overlay::{
-    PartitionContentCommitment, PartitionContentDigestError, PartitionMutationJournal,
-    PartitionState, RelationalPartitionAllocationInventory,
+    PartitionContentCommitment, PartitionMutationJournal, PartitionState,
+    RelationalPartitionAllocationInventory,
 };
 use crate::storage::substrate::{RecordArena, RecordKind};
 use crate::symbols::data::StringInterner;
@@ -18,13 +21,6 @@ pub(crate) struct RegionCaptureBasis<'region> {
     pub(crate) retention: &'region RelationalRegionRetention,
     pub(crate) inventory: RelationalPartitionAllocationInventory,
     pub(crate) unavailable_records: usize,
-}
-
-#[derive(Debug)]
-pub(crate) enum RegionPublicationFailure {
-    Content(PartitionContentDigestError),
-    Adjacency,
-    Storage(RelationalStorageUnavailable),
 }
 
 pub(crate) struct PreparedResidentRegion {
@@ -45,15 +41,15 @@ impl PreparedResidentRegion {
     pub(crate) fn initial(
         mut partition: PartitionState,
         symbols: &StringInterner,
-    ) -> Result<Self, RegionPublicationFailure> {
+    ) -> Result<Self, RegionContentFailure> {
         normalize(&mut partition)?;
         let (commitment, hashed) = PartitionContentCommitment::capture(&partition, symbols, None)
-            .map_err(RegionPublicationFailure::Content)?;
+            .map_err(RegionContentFailure::Content)?;
         let inventory = partition.allocation_inventory();
         let unavailable_records = partition.entity_arena.lifecycle_counts().unavailable
             + partition.relation_arena.lifecycle_counts().unavailable;
         let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
-            .map_err(|_| RegionPublicationFailure::Adjacency)?;
+            .map_err(|_| RegionContentFailure::Adjacency)?;
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
         let content_digest = commitment.digest(partition.partition_id);
@@ -80,9 +76,9 @@ impl PreparedResidentRegion {
         journal: &PartitionMutationJournal,
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &RuntimeSymbolTable,
-    ) -> Result<Self, RegionPublicationFailure> {
+    ) -> Result<Self, RegionContentFailure> {
         let absent = || {
-            RegionPublicationFailure::Storage(RelationalStorageUnavailable {
+            RegionContentFailure::Storage(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Region(overlay.partition_id),
                 cause: RelationalStorageUnavailableCause::SourceUnavailable,
             })
@@ -90,7 +86,7 @@ impl PreparedResidentRegion {
         let previous = basis
             .retention
             .capture_region()
-            .map_err(RegionPublicationFailure::Storage)?
+            .map_err(RegionContentFailure::Storage)?
             .ok_or_else(absent)?;
         let prior_commitment = previous.commitment.as_ref().ok_or_else(absent)?;
         let mut partition = previous.partition.clone();
@@ -101,7 +97,7 @@ impl PreparedResidentRegion {
             &symbols.interner_snapshot(),
             Some((prior_commitment, &previous.partition, journal)),
         )
-        .map_err(RegionPublicationFailure::Content)?;
+        .map_err(RegionContentFailure::Content)?;
         let inventory = partition.allocation_inventory_since(&previous.partition, basis.inventory);
         let new_payload_bytes =
             partition.new_authoritative_allocation_bytes_since(&previous.partition);
@@ -119,7 +115,7 @@ impl PreparedResidentRegion {
             .checked_add_signed(delta)
             .expect("journal lifecycle delta must fit its previous region");
         let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
-            .map_err(|_| RegionPublicationFailure::Adjacency)?;
+            .map_err(|_| RegionContentFailure::Adjacency)?;
         let entity_slots = partition.entity_arena.slot_count();
         let relation_slots = partition.relation_arena.slot_count();
         let content_digest = commitment.digest(partition.partition_id);
@@ -155,9 +151,9 @@ impl PreparedResidentRegion {
     }
 }
 
-fn normalize(partition: &mut PartitionState) -> Result<(), RegionPublicationFailure> {
+fn normalize(partition: &mut PartitionState) -> Result<(), RegionContentFailure> {
     super::rebuild_region_history_kind_buckets(partition)
-        .map_err(|_| RegionPublicationFailure::Adjacency)?;
+        .map_err(|_| RegionContentFailure::Adjacency)?;
     partition.clear_runtime_pin_counters();
     Ok(())
 }

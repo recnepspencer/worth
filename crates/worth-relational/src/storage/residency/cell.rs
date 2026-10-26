@@ -251,6 +251,19 @@ impl RelationalRegionResidency {
         self.backing.is_some() || self.head_readmission.is_some()
     }
 
+    pub(super) fn content_symbols(
+        &self,
+        fallback: &crate::symbols::data::StringInterner,
+    ) -> crate::symbols::data::StringInterner {
+        if let Some(cold) = &self.backing {
+            cold.symbols.interner_snapshot()
+        } else if let Some(readmission) = &self.head_readmission {
+            readmission.symbols().interner_snapshot()
+        } else {
+            fallback.clone()
+        }
+    }
+
     /// The same terminal refusal applies to fresh guards even when their
     /// retention already holds an older, valid immutable lease.
     pub(crate) fn check_damage(&self) -> Result<(), RelationalStorageUnavailable> {

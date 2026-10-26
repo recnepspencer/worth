@@ -18,28 +18,16 @@ pub(super) fn storage_root_from_authoritative_regions(
     symbols: &crate::symbols::data::StringInterner,
 ) -> Result<([u8; 32], [u8; 32]), super::RelationalBranchRootCaptureDenial> {
     for region in regions.values() {
-        let Some(lease) = region
+        let Some(content_digest) = region
             .partition
             .cell()
-            .lease_resident_full()
-            .expect("content inspection retains resident data")
+            .capture_resident_content(symbols)
+            .map_err(|failure| {
+                super::super::root_region::capture_failure(region.partition_id, failure)
+            })?
         else {
             continue;
         };
-        let content_digest = lease
-            .full_view()
-            .partition()
-            .authoritative_content_digest(symbols)
-            .map_err(|error| match error {
-                crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(
-                    symbol,
-                ) => super::RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
-                crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage => {
-                    super::RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(
-                        region.partition_id,
-                    )
-                }
-            })?;
         if content_digest != region.content_digest {
             return Err(
                 super::RelationalBranchRootCaptureDenial::StorageContentMismatch {

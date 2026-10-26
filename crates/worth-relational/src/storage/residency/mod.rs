@@ -1,5 +1,7 @@
 //! Shared region residency. Only an accepted, counted lease lends read views.
 mod cell;
+mod content_capture;
+pub(crate) use content_capture::RegionContentFailure;
 mod kind_authority;
 mod kind_commitment;
 mod kind_projection;
@@ -16,9 +18,7 @@ mod region_image;
 mod region_load;
 mod region_publication;
 mod resident_history;
-pub(crate) use region_publication::{
-    PreparedResidentRegion, RegionCaptureBasis, RegionPublicationFailure,
-};
+pub(crate) use region_publication::{PreparedResidentRegion, RegionCaptureBasis};
 #[cfg(test)]
 mod tests;
 mod views;

@@ -30,7 +30,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     let symbols = candidate_symbols.interner_snapshot();
     assert!(matches!(
         PreparedResidentRegion::initial(partial.clone(), &symbols),
-        Err(RegionPublicationFailure::Content(
+        Err(RegionContentFailure::Content(
             crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage
         ))
     ));
@@ -153,5 +153,59 @@ fn owned_head_base_damage_is_sticky_and_never_invalidates_an_accepted_view() {
     let reads = fixture.source.reads.load(Ordering::SeqCst);
     assert_eq!(full_demand(head.cell(), 1 << 24).unwrap_err(), failure);
     assert_eq!(head_demand(head.cell(), 1 << 24).unwrap_err(), failure);
+    assert!(
+        matches!(head.cell().capture_resident_content(&fixture.cold.symbols.interner_snapshot()),
+        Err(RegionContentFailure::Storage(refused)) if refused == failure)
+    );
     assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
+}
+
+#[test]
+fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trusting_a_cached_digest()
+{
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let original = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let mut partial = original.partition.clone();
+    let extra = partial
+        .entity_arena
+        .get_slot(fixture.entity.slot_index())
+        .unwrap()
+        .extra()
+        .clone();
+    partial.entity_arena.apply_extra_update(
+        fixture.entity.slot_index(),
+        extra.clone(),
+        VersionId(1_000),
+    );
+    // Deliberately retain the old cached digest: inspection must hash the rows.
+    let owned = RelationalRegionResidency::resident_head(
+        partial,
+        original.commitment.clone().unwrap(),
+        fixture.cold.schema.clone(),
+        &fixture.cold.symbols,
+    );
+    let reads = fixture.source.reads.load(Ordering::SeqCst);
+    let digest = owned
+        .cell()
+        .capture_resident_content(&crate::symbols::data::StringInterner::default())
+        .unwrap()
+        .unwrap();
+    assert_eq!(fixture.source.reads.load(Ordering::SeqCst), reads);
+    assert_ne!(digest, fixture.expected_digest);
+    let mut complete = region_load::load_full(&fixture.cold, &original, execution, 1 << 24)
+        .unwrap()
+        .partition
+        .clone();
+    complete
+        .entity_arena
+        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000));
+    assert_eq!(
+        digest,
+        complete
+            .authoritative_content_digest(&fixture.cold.symbols.interner_snapshot())
+            .unwrap()
+    );
+    assert!(owned.cell().reclaimable_unique_resident_payload_bytes() > 0);
 }

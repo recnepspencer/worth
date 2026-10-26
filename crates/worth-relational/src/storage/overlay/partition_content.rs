@@ -168,6 +168,7 @@ impl PartitionContentCommitment {
     }
 }
 
+#[cfg(test)]
 impl PartitionState {
     /// Cold reconstruction from authoritative content, never from carried hashes.
     pub(crate) fn authoritative_content_digest(
