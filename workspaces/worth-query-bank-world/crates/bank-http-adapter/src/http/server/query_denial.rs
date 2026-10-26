@@ -52,8 +52,6 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
         | Selection::IncarnationChanged
         | Selection::ObservationRejected
         | Selection::ObservationStaleSourceHead => stale(),
-        Selection::ObservationCancelled => cancelled(),
-        Selection::ObservationDeadlineExceeded => deadline(),
         Selection::ObservationStatePoisoned => internal_denied(),
         Selection::OwnerUnavailable
         | Selection::ProductActivationUnavailable
@@ -67,7 +65,6 @@ fn product_selection(kind: BankProductSelectionDenialKind) -> BankHttpDenial {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::Retry)
         }
         Selection::ObservationIdentityExhausted
-        | Selection::ObservationAccountingOverflow
         | Selection::RetentionIdentityExhausted
         | Selection::SnapshotIdentityExhausted => {
             BankHttpDenial::new(Kind::ResourceExhausted, Next::ContactOperator)
