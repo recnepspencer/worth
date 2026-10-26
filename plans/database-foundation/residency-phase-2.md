@@ -1490,3 +1490,44 @@ hoists the guarded edition outside the touched-set loop and checks the original
 request even for an empty publication. Native library and all three clippy lanes
 pass again after that cleanup. These results establish the Full target protocol;
 they do not claim Head preparation or the remaining history/lineage work.
+
+The Full retention pass now trims live history under its accepted whole-mirror
+Full entries and the existing visibility/branch fence, then performs record
+reclamation. Commit settlement reconciles only current lifecycle. Split those
+mutation responsibilities under storage/authority/retention. The publication
+timing field is renamed from history trimming to retention reconciliation so
+it describes the work still performed; no old alias remains.
+
+D9 deliberately retires the automatic touched-record history-trimming claim.
+The existing complexity court keeps its final history and trimming assertions,
+asserts publication leaves older versions present, then invokes the explicit
+Full pass. The two real producer-continuity courts that previously called the
+raw trim method now invoke that same public pass. Their assertions that native
+birth metadata is actually gone are unchanged and pass, preserving their
+canonical creation-evidence claim. No test is deleted or ignored.
+
+The initial check found two missing imports after responsibility splitting and
+two stale direct trim callers. Correct the imports and move those callers to
+the real Full pass rather than restoring a raw compatibility method. The full
+native suite passes 1,953 tests (31 existing ignores), all three CI clippy lanes
+pass, and formatting/dirty caps pass. Boundary/context verification is running.
+
+### Snapshot inspection demand boundary
+
+The public inspect_snapshot operation calls resolve_snapshot_inspection, which
+builds snapshot state and traverses exact Full partitions behind Option. Its
+inspection facade wrapper inspect_snapshot_pinning has the same hidden work.
+The binding and read-path diagnostic functions inspect only registry/cache
+facts; they do not materialize record truth and remain metadata-only.
+
+Make snapshot content inspection take the original execution request, resolve
+its owner binding, demand the exact root at Full with the demanding dictionary,
+and return Result<Option<_>, RelationalExecutionDenialCause>. Preserve None for
+an unknown/released/foreign handle and preserve authoritative binding selection
+when the caller's descriptive version is stale. Update the inspection wrapper
+and all real callers. Searches find only Relational callers; World, Bridge,
+Server, Query and the bank world do not call either inspection operation.
+Extend the existing public read-door matrix with snapshot reads, snapshot
+inspection and snapshot-pinning inspection using actual owner-issued handles;
+check both region failures and per-runtime historical-symbol page failures,
+sticky refusal, no journal effect and Head availability where appropriate.

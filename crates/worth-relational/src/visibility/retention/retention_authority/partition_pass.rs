@@ -3,9 +3,7 @@ use crate::identity::data::{PartitionId, VersionId};
 use crate::runtime::RelationalRuntime;
 use crate::runtime::ResidentPartitionEntry;
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::substrate::{
-    EntityRecordKind, HistoricalMetadata, RecordKind, RelationRecordKind,
-};
+use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind};
 
 #[derive(Default)]
 pub(super) struct RetentionCounts {
@@ -144,20 +142,6 @@ pub(super) fn run_partition_retention_pass<K: RecordKind>(
         }
     }
     counts
-}
-
-pub(super) fn trim_live_history<K: RecordKind>(
-    runtime: &RelationalRuntime,
-    slots_by_partition: std::collections::BTreeMap<PartitionId, std::collections::BTreeSet<usize>>,
-    oldest_pinned_version: VersionId,
-    count_trimmed: impl Fn(&RelationalRuntime, usize),
-) where
-    K::Meta: HistoricalMetadata,
-{
-    let total_trimmed = runtime
-        .storage_authority()
-        .trim_live_history::<K>(slots_by_partition, oldest_pinned_version);
-    count_trimmed(runtime, total_trimmed);
 }
 
 #[cfg(test)]

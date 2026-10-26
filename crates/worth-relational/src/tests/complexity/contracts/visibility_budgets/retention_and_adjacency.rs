@@ -1,7 +1,7 @@
 use crate::tests::support::*;
 
 #[test]
-fn complexity_budget_live_history_trimming_is_touched_record_bounded() {
+fn live_history_trimming_runs_only_in_the_declared_full_retention_pass() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -26,6 +26,11 @@ fn complexity_budget_live_history_trimming_is_touched_record_bounded() {
         .release_snapshot(&update_a1.snapshot)
         .is_ok());
     let _ = update_entity(execution, &runtime, entity_a, "a-2");
+    assert!(
+        runtime.entity_history_len_for_test(entity_a) > 1,
+        "D9 Head publication must not perform implicit Full history maintenance"
+    );
+    runtime.retention().run_pass(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(runtime.entity_history_len_for_test(entity_a), 1);

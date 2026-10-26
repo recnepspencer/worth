@@ -58,7 +58,7 @@ pub(super) fn finalize_published_commit(
     // Only main publishes into the mirror. A sibling's changed identities
     // carry no authority to trim or reconcile the mirror's record versions.
     if branch_id == &runtime.history.main_branch {
-        run_retention(runtime, changed_records, version_id, phase_timing);
+        reconcile_published_retention(runtime, changed_records, version_id, phase_timing);
     }
     compact_durability(runtime, phase_timing);
     let snapshot_id = publish_artifacts(
@@ -131,7 +131,7 @@ fn advance_visibility(
     timing.visibility_pin_micros = started.elapsed().as_micros() as u64;
 }
 
-fn run_retention(
+fn reconcile_published_retention(
     runtime: &crate::runtime::RelationalRuntime,
     changed_records: &[crate::transactions::data::RecordRef],
     version_id: crate::identity::data::VersionId,
@@ -140,8 +140,7 @@ fn run_retention(
     let started = std::time::Instant::now();
     let retention = runtime.retention();
     retention.reconcile_changed_record_states(changed_records, version_id);
-    retention.trim_live_history_for_records(changed_records, version_id);
-    timing.retention_trim_micros = started.elapsed().as_micros() as u64;
+    timing.retention_reconcile_micros = started.elapsed().as_micros() as u64;
 }
 
 fn compact_durability(

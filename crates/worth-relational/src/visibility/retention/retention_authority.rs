@@ -1,6 +1,7 @@
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsEntry,
 };
+use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{RetentionPassOutcome, RetentionPlan};
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind};
@@ -11,7 +12,7 @@ mod partition_pass;
 
 use partition_pass::{
     inspect_partition_retention, refresh_entity_retention_state, refresh_relation_retention_state,
-    run_partition_retention_pass, trim_live_history, PartitionRetentionPass,
+    run_partition_retention_pass, PartitionRetentionPass,
 };
 
 pub struct VisibilityRetentionAuthority<'runtime> {
@@ -121,6 +122,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             .runtime
             .visibility
             .retention_fence_version(self.runtime.current_version_id());
+        let history_fence = self.history_retention_fence();
         let mut writer = self
             .runtime
             .partitions
@@ -143,7 +145,17 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         let entity_chunk_size = self.runtime.storage_access().entity_chunk_size();
         let relation_chunk_size = self.runtime.storage_access().relation_chunk_size();
 
+        let mut entity_history_trimmed = 0;
+        let mut relation_history_trimmed = 0;
         writer.visit_partitions(|mut partition| {
+            entity_history_trimmed += self
+                .runtime
+                .storage_authority()
+                .trim_full_live_history::<EntityRecordKind>(&mut partition, history_fence);
+            relation_history_trimmed += self
+                .runtime
+                .storage_authority()
+                .trim_full_live_history::<RelationRecordKind>(&mut partition, history_fence);
             let entity_counts = run_partition_retention_pass::<EntityRecordKind>(
                 self.runtime,
                 &mut partition,
@@ -193,77 +205,28 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         })?;
 
         drop(writer);
+        self.runtime.services.instrumentation.count(|counters| {
+            counters.live_entity_history_entries_trimmed += entity_history_trimmed;
+            counters.live_relation_history_entries_trimmed += relation_history_trimmed;
+        });
         for slot in reclaimed {
             self.runtime.record_identity.admit_reclaimed(slot);
         }
         Ok(outcome)
     }
 
-    pub(crate) fn trim_live_history_for_records(
-        &self,
-        changed_records: &[crate::transactions::data::RecordRef],
-        published_version: crate::identity::data::VersionId,
-    ) {
-        let oldest_visibility_retained_version = self
+    fn history_retention_fence(&self) -> VersionId {
+        let current = self.runtime.current_version_id();
+        let visibility = self
             .runtime
             .visibility
-            .historical_reconstruction_fence_version(published_version);
-        let oldest_branch_head_version = self
+            .historical_reconstruction_fence_version(current);
+        let branch = self
             .runtime
             .history
             .oldest_branch_head_version()
-            .unwrap_or(published_version);
-        let oldest_pinned_version =
-            oldest_visibility_retained_version.min(oldest_branch_head_version);
-
-        let mut entity_slots = std::collections::BTreeMap::new();
-        let mut relation_slots = std::collections::BTreeMap::new();
-        for record in changed_records {
-            match record {
-                crate::transactions::data::RecordRef::Entity(entity_id) => {
-                    entity_slots
-                        .entry(entity_id.partition_id)
-                        .or_insert_with(std::collections::BTreeSet::new)
-                        .insert(entity_id.slot_index());
-                }
-                crate::transactions::data::RecordRef::Relation(relation_id) => {
-                    relation_slots
-                        .entry(relation_id.partition_id)
-                        .or_insert_with(std::collections::BTreeSet::new)
-                        .insert(relation_id.slot_index());
-                }
-            }
-        }
-
-        trim_live_history::<EntityRecordKind>(
-            self.runtime,
-            entity_slots,
-            oldest_pinned_version,
-            |runtime, trimmed| {
-                runtime
-                    .services
-                    .instrumentation
-                    .complexity_counters
-                    .lock()
-                    .expect("complexity counter lock poisoned")
-                    .live_entity_history_entries_trimmed += trimmed;
-            },
-        );
-
-        trim_live_history::<RelationRecordKind>(
-            self.runtime,
-            relation_slots,
-            oldest_pinned_version,
-            |runtime, trimmed| {
-                runtime
-                    .services
-                    .instrumentation
-                    .complexity_counters
-                    .lock()
-                    .expect("complexity counter lock poisoned")
-                    .live_relation_history_entries_trimmed += trimmed;
-            },
-        );
+            .unwrap_or(current);
+        visibility.min(branch)
     }
 
     pub(crate) fn reconcile_changed_record_states(
