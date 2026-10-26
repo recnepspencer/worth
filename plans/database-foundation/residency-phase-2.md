@@ -409,3 +409,27 @@ Relational lib passes (1,885; 31 existing ignored), as do Relational lib clippy,
 formatting, dirty line caps and agent-context. Scoped function review keeps the
 merge round's one draft and its three coupled judgments together; the other
 reported functions retain their existing authority/fixture responsibilities.
+
+
+## Cached negative symbol lookup review
+
+Following the routing change in `7f738629f5`, the no-I/O interning probe still
+accepted any cached page outcome as proof that its hash bucket was resident.
+A page first admitted by id range must also satisfy the bucket descriptor
+before that probe can authorize a fresh spelling. Validate the cached shape in
+`value_bucket_is_resident`, store a sticky typed damage outcome on mismatch,
+and prove that a genuine authenticated page routed to the wrong bucket cannot
+advance the live symbol issuance frontier. This closes a second context of the
+same page-admission boundary; it adds no source reads or control door.
+
+
+The no-I/O negative lookup now validates and, on mismatch, poisons its cached
+bucket outcome. A genuine captured page is first admitted by id, then routed
+under an adversarial bucket descriptor. The live pending-symbol operation
+returns the typed damage without issuing an identity or importing a new
+meaning, without a read, and with the same sticky failure on explicit demand.
+Relational lib passes (1,886; 31 existing ignored), all three CI owner/service
+clippy commands pass, and formatting, dirty caps, agent-context and scoped
+function review pass. The sole function advisory is this complete adversarial
+page-to-negative-probe proof, kept together so its authority and oracle remain
+visible.

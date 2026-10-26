@@ -193,3 +193,72 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
         Err(failure)
     );
 }
+
+#[test]
+fn an_id_admitted_page_cannot_authorize_a_misrouted_negative_intern_probe() {
+    use super::super::super::symbol_table::SymbolReservationDenial;
+    let (_, mut directory, source, _) = collision_dictionary();
+    let locator = directory
+        .manifest
+        .symbol_buckets
+        .iter()
+        .find(|entry| entry.bucket == 0)
+        .unwrap()
+        .pages[0];
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&backing);
+    let page = crate::durability::checkpoints::symbol_pages::readmit(
+        &execution,
+        &source.members[&locator],
+        locator,
+        SymbolPageSelection::HashBucket(0).subject(),
+    )
+    .unwrap();
+    let first = page.entries.first().unwrap().0;
+    directory.manifest.symbols = vec![RelationalCheckpointPage {
+        first: first.0 as u64,
+        last: page.entries.last().unwrap().0 .0 as u64,
+        member: locator,
+    }];
+    // Keep the producer's authentic bytes and deliberately misroute their
+    // bucket descriptor. Range admission alone must prove no negative lookup.
+    directory.manifest.symbol_buckets = vec![RelationalCheckpointSymbolBucket {
+        bucket: 1,
+        pages: vec![locator],
+    }];
+    let table = RuntimeSymbolTable::default();
+    table.install_cold_pages(&directory).unwrap();
+    table.demand_symbol_ids(&execution, [first]).unwrap();
+    let new_text = (0..)
+        .map(|id| format!("misrouted-new-spelling-{id}"))
+        .find(|text| Sha256::digest(text.as_bytes())[0] == 1)
+        .unwrap();
+    let before = table.interner_snapshot();
+    let reads = source.reads.load(Ordering::SeqCst);
+    let mut pending = table.begin_pending_meanings();
+    let SymbolReservationDenial::StorageUnavailable(failure) =
+        pending.reserve(&new_text).unwrap_err()
+    else {
+        panic!("misrouted cached bucket must refuse before issuance");
+    };
+    assert_eq!(failure.cause, Cause::Damaged);
+    assert_eq!(
+        table.interner_snapshot(),
+        before,
+        "a refused probe issues no identity or meaning"
+    );
+    assert_eq!(
+        source.reads.load(Ordering::SeqCst),
+        reads,
+        "negative probe performs no I/O"
+    );
+    assert_eq!(
+        table.demand_text(&execution, &new_text),
+        Err(Failure::StorageUnavailable(failure))
+    );
+    assert!(
+        matches!(pending.reserve(&new_text), Err(SymbolReservationDenial::StorageUnavailable(observed)) if observed == failure)
+    );
+    assert_eq!(table.interner_snapshot(), before);
+    assert_eq!(source.reads.load(Ordering::SeqCst), reads);
+}

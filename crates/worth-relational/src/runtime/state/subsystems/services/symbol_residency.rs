@@ -150,11 +150,18 @@ impl RuntimeSymbolResidency {
         let Some(bucket) = self.by_value.iter().find(|entry| entry.bucket == bucket) else {
             return Ok(true);
         };
-        let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
+        let mut pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
         for locator in &bucket.pages {
-            match pages.get(locator) {
-                Some(Ok(_)) => {}
-                Some(Err(failure)) => return Err(*failure),
+            match pages.get(locator).copied() {
+                Some(Ok(shape)) => {
+                    let selection = SymbolPageSelection::HashBucket(bucket.bucket);
+                    if let Err(cause) = shape.validate(selection) {
+                        let failure = unavailable(selection.subject(), cause);
+                        pages.insert(*locator, Err(failure));
+                        return Err(failure);
+                    }
+                }
+                Some(Err(failure)) => return Err(failure),
                 None => return Ok(false),
             }
         }
