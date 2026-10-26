@@ -71,6 +71,14 @@ pub struct NodeEvaluationResult {
 }
 
 impl NodeEvaluationResult {
+    /// Smallest useful exact-aspect change: one region and a nonempty scope.
+    /// Empty reports remain valid; this is the admission floor for an
+    /// undeclared heap-capable callback, not a lower bound on every report.
+    pub(crate) const fn minimum_useful_heap_bytes() -> u64 {
+        (std::mem::size_of::<(Aspect, ChangedRegion)>() + super::ScopePath::minimum_heap_bytes())
+            as u64
+    }
+
     pub fn from_version(aspect_version: AspectVersion) -> Self {
         Self {
             aspect_version,

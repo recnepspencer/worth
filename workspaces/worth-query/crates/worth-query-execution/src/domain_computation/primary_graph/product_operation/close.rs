@@ -19,7 +19,6 @@ pub enum WorthQueryApplicationProductBranchCloseDenial {
     /// The application's pending publication on the branch could not be
     /// settled first. The close did not begin.
     ApplicationSettlementPending,
-    BranchCoordinationCapacityExhausted,
     /// An inbound-capable dispatch still owns completion/recovery custody.
     OutstandingExternalEffect,
     /// The product runtime refused to begin the close. Nothing was closed.

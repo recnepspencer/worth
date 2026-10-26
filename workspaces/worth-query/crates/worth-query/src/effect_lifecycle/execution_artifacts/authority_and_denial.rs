@@ -43,7 +43,6 @@ pub enum EffectExecutionDenialKind {
     RelationalStrategyCanonicalizationFailed,
     RelationalStrategyExecutionFailed,
     RelationalStrategyAuthorityLoweringFailed,
-    RelationalStrategyAuthorityValidationFailed,
     RelationalCommitFailed,
     /// A pre-effect execution refusal retains the shared Query cause.
     RelationalExecutionDenied(
@@ -113,9 +112,6 @@ impl EffectExecutionDenialKind {
             Self::RelationalStrategyExecutionFailed => "relational_strategy_execution_failed",
             Self::RelationalStrategyAuthorityLoweringFailed => {
                 "relational_strategy_authority_lowering_failed"
-            }
-            Self::RelationalStrategyAuthorityValidationFailed => {
-                "relational_strategy_authority_validation_failed"
             }
             Self::RelationalCommitFailed => "relational_commit_failed",
             Self::RelationalExecutionDenied(_) => "relational_execution_denied",

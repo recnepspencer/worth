@@ -86,13 +86,14 @@ where
         None
     };
     let mut source_footprints = std::mem::take(&mut kernel.raw.source_footprints);
-    let result_set_selection = std::sync::Arc::clone(
-        kernel
-            .raw
-            .result_set_source
-            .as_ref()
-            .expect("one-shot root selection must retain result-set evidence"),
-    );
+    let result_set_selection =
+        std::sync::Arc::clone(kernel.raw.result_set_source.as_ref().ok_or_else(|| {
+            denial(
+                WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable,
+                plan.query.name(),
+                plan.query.name(),
+            )
+        })?);
     // A single row can feed an output demand. Its output depends on the
     // complete query selection as well as the row: a newly matching root must
     // invalidate reuse even when this row's local path remains unchanged.

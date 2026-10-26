@@ -348,6 +348,10 @@ impl LoweredEffectBatchExecutionPlan {
     }
 }
 
+// AdmittedEffectBatch has private fields; its sole constructor is reached via
+// admit_effect_batch_components, which checks every operation's Mutation family.
+// Mutation eligibility seals the original runtime binding before admission; both
+// discriminant and binding remain immutable through this borrowed lowering.
 fn lower_batch_mutation_component(
     admitted: &super::AdmittedEffectIntent,
 ) -> Result<LoweredMutationIntentDeclaration, EffectLoweringDenial> {

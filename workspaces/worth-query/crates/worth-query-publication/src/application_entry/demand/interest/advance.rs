@@ -136,6 +136,7 @@ where
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::PublicationCapacityExceeded
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignDemand
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ForeignSettlement
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable

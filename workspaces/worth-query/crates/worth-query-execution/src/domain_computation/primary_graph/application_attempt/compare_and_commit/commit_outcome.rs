@@ -16,6 +16,7 @@ pub enum WorthQueryApplicationNoEffectCause {
 
 pub struct WorthQueryApplicationNoEffect {
     terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+    cause: WorthQueryApplicationNoEffectCause,
 }
 
 impl std::fmt::Debug for WorthQueryApplicationNoEffect {
@@ -32,37 +33,13 @@ impl std::fmt::Debug for WorthQueryApplicationNoEffect {
 impl WorthQueryApplicationNoEffect {
     pub(in crate::domain_computation::primary_graph) fn from_world(
         terminal: worth_runtime_world::facade::NoEffectCompositePublication,
+        cause: WorthQueryApplicationNoEffectCause,
     ) -> Self {
-        Self { terminal }
+        Self { terminal, cause }
     }
 
     pub fn cause(&self) -> WorthQueryApplicationNoEffectCause {
-        use worth_runtime_world::facade::NoEffectCause as Cause;
-        match self.terminal.cause() {
-            Cause::ExecutionRequest(cause) => {
-                WorthQueryApplicationNoEffectCause::ExecutionRequest(cause)
-            }
-            Cause::OwnerDeniedBeforeEffect => {
-                WorthQueryApplicationNoEffectCause::OwnerDeniedBeforeEffect
-            }
-            Cause::CorrespondenceRebindRequired => {
-                WorthQueryApplicationNoEffectCause::CorrespondenceRebindRequired
-            }
-            Cause::ReferenceGenerationExhausted => {
-                WorthQueryApplicationNoEffectCause::ReferenceGenerationExhausted
-            }
-            Cause::CapacityExhausted => WorthQueryApplicationNoEffectCause::CapacityExhausted,
-            Cause::OwnerUnavailable => WorthQueryApplicationNoEffectCause::OwnerUnavailable,
-            Cause::RelationalDeferred(reason) => {
-                WorthQueryApplicationNoEffectCause::RelationalDeferred(reason)
-            }
-            Cause::PreEffectFailure => WorthQueryApplicationNoEffectCause::PreEffectFailure,
-            Cause::StaleExpectedProductHead
-            | Cause::CancelledBeforeEffect
-            | Cause::DeadlineBeforeEffect => {
-                unreachable!("stale, cancellation, and deadline have dedicated Query outcomes")
-            }
-        }
+        self.cause
     }
 }
 

@@ -34,3 +34,8 @@ required-features = ["certification-test-authority"]
 
 [lints]
 workspace = true
+
+[[test]]
+name = "relational_home"
+path = "tests/relational_home.rs"
+required-features = ["certification-test-authority"]

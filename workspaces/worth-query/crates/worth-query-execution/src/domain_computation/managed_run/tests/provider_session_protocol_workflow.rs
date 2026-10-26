@@ -6,7 +6,7 @@ use crate::domain_computation::{
     WorthQueryProviderExecutionPlanView, WorthQueryProviderSessionDenialKind,
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionLifecycle,
     WorthQueryProviderSessionToken, WorthQueryProviderSessionTokenAdmission,
-    WorthQueryProviderSessionView, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionView, WorthQuerySessionAbortOutcome,
 };
 
 struct WorkflowSessionProvider;
@@ -128,10 +128,7 @@ fn workflow_stage_uses_stage_resources_and_scope_in_the_same_protocol() {
                 .expect("workflow session should prepare")
                 .bind_reads_and_effects()
                 .abort();
-            assert!(matches!(
-                outcome,
-                WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
-            ));
+            assert!(matches!(outcome, WorthQuerySessionAbortOutcome::Aborted(_)));
         }
         cleanup_workflow(running);
     });

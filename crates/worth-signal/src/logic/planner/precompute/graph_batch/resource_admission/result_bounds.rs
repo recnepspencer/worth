@@ -25,7 +25,16 @@ impl ResultBounds {
     }
 
     pub(super) fn minimum(self) -> u64 {
+        // A heap-capable undeclared callback must have room for one useful
+        // native scoped result before it can produce effects. Intrinsically
+        // inline outputs and explicit zero declarations keep their zero bound.
+        let useful = if self.all_declared {
+            0
+        } else {
+            crate::data::output::NodeEvaluationResult::minimum_useful_heap_bytes()
+        };
         self.declared_minimum
+            .max(useful)
             .min(self.output_type.unwrap_or(u64::MAX))
     }
 

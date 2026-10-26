@@ -26,44 +26,8 @@ mod delegation;
 mod revocation;
 pub use completion::{WorthQueryCompletedCapabilityCommand, WorthQueryTerminalCapabilityCommand};
 
-pub(super) enum NativeCommandAction<'a> {
-    Validate,
-    Execute,
-    Resolve,
-    Recover(&'a WorthQueryProductUnpublishedRecovery),
-}
-pub(super) enum NativeCommandResult {
-    Validated,
-    Commit(WorthQueryApplicationCommitOutcome),
-    Resolved(WorthQueryAdmittedIdempotencyRead),
-    Recovered(WorthQueryManagedApplicationRecoveryOutcome),
-}
-// This contract and every implementer are private to Publication.
-pub(super) trait NativeCommandBackend<S: ApplicationSchema, D> {
-    fn run(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        action: NativeCommandAction<'_>,
-    ) -> Result<NativeCommandResult, D>;
-}
-impl<S: ApplicationSchema, D, F> NativeCommandBackend<S, D> for F
-where
-    F: for<'p, 'e, 'q, 'a, 'b, 'c, 'x> FnMut(
-        &'p WorthQueryAdvancementPhase<'e>,
-        &'q WorthQueryApplicationRequest<'a, 'b, 'c, S>,
-        NativeCommandAction<'x>,
-    ) -> Result<NativeCommandResult, D>,
-{
-    fn run(
-        &mut self,
-        phase: &WorthQueryAdvancementPhase<'_>,
-        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
-        action: NativeCommandAction<'_>,
-    ) -> Result<NativeCommandResult, D> {
-        self(phase, request, action)
-    }
-}
+mod backend;
+use backend::{NativeCommandAction, NativeCommandBackend, NativeCommandResult};
 
 /// A kernel command owns original intent, never a request, admission or actor grant.
 #[must_use = "advance or lawfully close the retained native command"]
@@ -99,7 +63,7 @@ impl<'r, S: ApplicationSchema, P: ApplicationProgramDefinition<S>, D>
         }
     }
 
-    pub(super) fn new(
+    fn new(
         runtime: WorthQueryProgramApplicationRuntime<S, P>,
         branch: WorthQueryProductBranch,
         backend: impl NativeCommandBackend<S, D> + 'r,

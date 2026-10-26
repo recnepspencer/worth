@@ -33,11 +33,14 @@ pub fn admit_effect_batch_components(
     }
 
     validate_batch_component_lane_coherence(&admitted, admitted.len(), |item| item.normalized())?;
-    let first = admitted[0].normalized();
-    if first.family() != EffectFamily::Mutation {
+    if let Some((index, component)) = admitted
+        .iter()
+        .enumerate()
+        .find(|(_, component)| component.normalized().family() != EffectFamily::Mutation)
+    {
         return Err(EffectBatchAdmissionDenial::new(
-            EffectBatchAdmissionDenialKind::UnsupportedBatchFamily(first.family()),
-            None,
+            EffectBatchAdmissionDenialKind::UnsupportedBatchFamily(component.normalized().family()),
+            Some(index),
             "phase 4 batch-native execution currently admits only ordered relational mutation effects",
             EffectLifecycleCounters::batch_admission_denied(admitted.len()),
             None,

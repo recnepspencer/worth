@@ -47,7 +47,6 @@ pub enum ApplicationQueryDefinitionDenial {
     LiveCauseRequiresContinuation,
     LiveCauseScopeSelectorMismatch,
     LiveCauseTargetSelectorMismatch,
-    InvalidLiveResourceContract,
 }
 
 pub(crate) fn validate_portable_application_query_freshly(

@@ -19,7 +19,7 @@ pub(super) fn select<'a>(
     predecessors: &mut Vec<Arc<WorthQueryOutputDemandKey>>,
 ) -> Result<Option<CheckpointPrerequisiteClaims>, WorthQueryOutputDemandDenial> {
     let maximum = inputs.len();
-    let mut checkpoint_predecessors = None;
+    let mut checkpoint_predecessors: Option<CheckpointPrerequisiteClaims> = None;
     for consumed in inputs {
         let upstream = state
             .settlement_keys
@@ -41,13 +41,12 @@ pub(super) fn select<'a>(
             if !verified {
                 return Err(prerequisite_denials::stale_upstream_denial());
             }
-            if checkpoint_predecessors.is_none() {
-                checkpoint_predecessors = Some(CheckpointPrerequisiteClaims::prepare(maximum)?);
-            }
-            checkpoint_predecessors
-                .as_mut()
-                .unwrap()
-                .retain_verified(consumed.identity());
+            let claims = if let Some(claims) = &mut checkpoint_predecessors {
+                claims
+            } else {
+                checkpoint_predecessors.insert(CheckpointPrerequisiteClaims::prepare(maximum)?)
+            };
+            claims.retain_verified(consumed.identity());
             continue;
         };
         if upstream.as_ref() == downstream {

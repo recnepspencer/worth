@@ -7,7 +7,7 @@ use super::super::super::{
     WorthQueryProviderSessionAffinityView, WorthQueryProviderSessionDenialKind,
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
     WorthQueryProviderSessionProtocolStage, WorthQueryProviderSessionRecoveryPosture,
-    WorthQueryProviderSessionView, WorthQuerySessionBinding, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionView, WorthQuerySessionAbortOutcome, WorthQuerySessionBinding,
 };
 use super::WorthQueryPreparedProviderSession;
 
@@ -141,28 +141,28 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.affinity.view()
     }
 
-    pub fn abort(mut self) -> WorthQuerySessionCommitOrAbortOutcome {
+    pub fn abort(mut self) -> WorthQuerySessionAbortOutcome {
         let terminal_binding = self.affinity.terminal_binding();
         self.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             self.affinity.session_mut().abort()
         }));
         match invocation {
-            Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOrAbortOutcome::Aborted(
+            Ok(Ok(provider_receipt)) => WorthQuerySessionAbortOutcome::Aborted(
                 WorthQueryClosedProviderSessionDisposition::close(
                     provider_receipt,
                     self.counters,
                     terminal_binding,
                 ),
             ),
-            Ok(Err(failure)) => WorthQuerySessionCommitOrAbortOutcome::AbortRecoveryRequired(
+            Ok(Err(failure)) => WorthQuerySessionAbortOutcome::AbortRecoveryRequired(
                 failure
                     .at_stage(WorthQueryProviderSessionProtocolStage::Abort, self.counters)
                     .with_recovery_posture(
                         WorthQueryProviderSessionRecoveryPosture::RecoveryRequired,
                     ),
             ),
-            Err(_) => WorthQuerySessionCommitOrAbortOutcome::AbortRecoveryRequired(
+            Err(_) => WorthQuerySessionAbortOutcome::AbortRecoveryRequired(
                 WorthQueryProviderSessionFailure::new(
                     WorthQueryProviderSessionDenialKind::ProviderPanicked,
                     WorthQueryProviderSessionProtocolStage::Abort,

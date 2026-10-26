@@ -186,15 +186,13 @@ impl WorthQueryRuntime {
             .backend
             .execute_query_merge(execution, merge_authority, &declaration)
             .map_err(WorthQueryOrdinaryMergeExecutionError::from_relational)?;
+        // The native merge result carries its required snapshot directly.
+        // Receipt assembly below reads only the owned performed artifact.
+        self.backend
+            .release_query_merge_snapshot(execution, &outcome.commit.snapshot);
         let executed =
             ExecutedEffectPlan::new(lowered, ExecutedEffectAuthorityArtifact::Merge(outcome), 1);
         let receipt = executed.receipt();
-        self.backend.release_query_merge_snapshot(
-            execution,
-            executed
-                .published_snapshot()
-                .expect("ordinary relational merge publishes one exact snapshot"),
-        );
         let diagnostics = materialize_inspection
             .then(|| receipt.materialize_diagnostics(EffectDiagnosticsRequest::forensic()));
         Ok(WorthQueryLowerRuntimeMergeExecution {

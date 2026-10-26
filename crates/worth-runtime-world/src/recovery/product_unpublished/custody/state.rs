@@ -4,7 +4,7 @@ pub(crate) struct RelationalRecoveryRecordState {
     pub(super) commit_identity: worth_relational::facade::history::RelationalCommitIdentity,
     pub(super) successor_basis: worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     pub(super) route: Option<RelationalRecoveryRecordRoute>,
-    pub(super) component_results: Option<CompositeOwnerExecutionResults>,
+    pub(super) component_results: CompositeOwnerExecutionResults,
     pub(super) signal_posture: crate::publication::SignalAttemptProgressPosture,
 }
 
@@ -41,7 +41,7 @@ impl RelationalRecoveryRecordState {
             commit_identity,
             successor_basis,
             route: Some(route),
-            component_results: Some(component_results),
+            component_results,
             signal_posture,
         }
     }
@@ -88,30 +88,38 @@ impl RelationalRecoveryRecordState {
         });
     }
 
-    pub(super) fn into_progress(mut self) -> CompositeAttemptProgress {
+    pub(super) fn into_restored_parts(
+        self,
+    ) -> (CompositeAttemptProgress, CompositeOwnerExecutionResults) {
         let signal_posture = self.signal_posture;
-        match self
-            .route
-            .take()
-            .expect("a recoverable route is restored exactly once")
-        {
-            RelationalRecoveryRecordRoute::Performed { performed, .. } => {
+        let progress = match self.route {
+            Some(RelationalRecoveryRecordRoute::Performed { performed, .. }) => {
                 CompositeAttemptProgress::new(
                     crate::publication::RelationalAttemptProgress::performed(performed),
                     crate::publication::SignalAttemptProgress::summary(signal_posture),
                 )
             }
-            RelationalRecoveryRecordRoute::IdentityRequired {
+            Some(RelationalRecoveryRecordRoute::IdentityRequired {
                 commit_identity,
                 successor_basis,
-            } => CompositeAttemptProgress::new(
+            }) => CompositeAttemptProgress::new(
                 crate::publication::RelationalAttemptProgress::settlement_required(
                     commit_identity,
                     successor_basis,
                 ),
                 crate::publication::SignalAttemptProgress::summary(signal_posture),
             ),
-        }
+            // Taking the non-cloneable owner witness can survive an unwind.
+            // Its required identity and successor basis retain the repair route.
+            None => CompositeAttemptProgress::new(
+                crate::publication::RelationalAttemptProgress::settlement_required(
+                    self.commit_identity,
+                    self.successor_basis,
+                ),
+                crate::publication::SignalAttemptProgress::summary(signal_posture),
+            ),
+        };
+        (progress, self.component_results)
     }
 
     pub(super) fn settled_progress(

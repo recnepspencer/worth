@@ -70,7 +70,7 @@ where
             // The collector owns one managed run. No new native progression may
             // create another until release_cleanup discharges this original run.
             self.backend
-                .run(phase, request, NativeCommandAction::Validate)
+                .validate(phase, request)
                 .map_err(WorthQueryCapabilityCommandDenial::Native)?;
             return Err(WorthQueryCapabilityCommandDenial::Cleanup(
                 WorthQueryOperationCloseDenial::ManagedCleanup(kind),
@@ -118,7 +118,6 @@ where
                     Ok(Step::Terminal)
                 }
             },
-            NativeCommandResult::Validated => unreachable!("validation does not execute a command"),
         }
     }
     fn accept_commit(
@@ -145,19 +144,13 @@ where
                     },
                 ))
             }
-            Ok((receipt, true)) => match self
+            Ok((receipt, true)) => self
                 .state
-                .accept_keyed(
-                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt),
-                    &self.cleanup,
-                )
-                .map_err(WorthQueryCapabilityCommandDenial::Cleanup)?
-            {
-                NativeKeyedProgress::Completed(evidence) => Ok(Step::Completed(
-                    WorthQueryCapabilityCommandCompletion::recovered(evidence),
-                )),
-                _ => unreachable!("a genuine committed receipt completes keyed settlement"),
-            },
+                .complete_keyed(receipt)
+                .map(|evidence| {
+                    Step::Completed(WorthQueryCapabilityCommandCompletion::recovered(evidence))
+                })
+                .map_err(WorthQueryCapabilityCommandDenial::Cleanup),
             // These native command outcomes prove publication did not occur. A fresh
             // attempt rebuilds only the command projection, never a performed effect.
             Err(

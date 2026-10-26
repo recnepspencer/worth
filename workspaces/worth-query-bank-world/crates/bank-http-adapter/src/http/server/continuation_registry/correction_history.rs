@@ -112,8 +112,11 @@ impl BankHttpContinuationRegistry {
         {
             return HistoryResumeAdmission::Denied(denial(BankHttpDenialKind::Stale));
         }
+        let Some(page) = record.page.take() else {
+            return HistoryResumeAdmission::Denied(denial(BankHttpDenialKind::Stale));
+        };
         record.pending = Some(request_id.to_owned());
-        HistoryResumeAdmission::Execute(record.page.take().expect("ready page"))
+        HistoryResumeAdmission::Execute(page)
     }
     pub(in crate::http::server) fn complete_correction_resume(
         &mut self,

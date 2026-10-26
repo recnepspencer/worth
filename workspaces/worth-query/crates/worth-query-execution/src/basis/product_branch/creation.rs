@@ -41,7 +41,6 @@ pub enum WorthQueryProductBranchCreateError {
     IdentityExhausted,
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
     Creation(WorthQueryProductBranchCreationDenial),
-    BranchCoordinationCapacityExhausted,
     ProductUnpublished(super::WorthQueryProductBranchCreationRecovery),
 }
 
@@ -115,6 +114,8 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         let ordinal = runtime
             .reserve_public_branch_ordinal()
             .ok_or(WorthQueryProductBranchCreateError::IdentityExhausted)?;
+        // ordinal is u64: this fixed ASCII prefix, at most 20 decimal digits,
+        // and the fixed component suffixes fit both native name grammars/bounds.
         let product_name = format!("query-product-{ordinal}");
         let relational = match relational {
             WorthQueryProductBranchComponentPosture::ReuseExact => {

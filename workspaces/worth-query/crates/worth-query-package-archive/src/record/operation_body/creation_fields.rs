@@ -155,7 +155,7 @@ pub(super) fn decode(
                     binding,
                     value: input.text()?.to_owned(),
                 },
-                _ => unreachable!("creation opcode admitted before operands"),
+                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             })
         })?;
         Ok(Some(ApplicationOperationBodyCreation::from_untrusted(

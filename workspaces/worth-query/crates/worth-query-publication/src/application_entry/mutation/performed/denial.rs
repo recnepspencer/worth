@@ -4,7 +4,6 @@ pub enum WorthQueryPerformedMutationExecutionDenial {
     Action(worth_query_installation::facade::WorthQueryActionResolutionDenial),
     ForeignProgram,
     UndeclaredOutputRoot,
-    MissingConnection,
     Connection(
         worth_query_execution::facade::primary_graph::WorthQueryRequiredOutputConnectionDenial,
     ),
@@ -17,7 +16,6 @@ pub enum WorthQueryPerformedMutationExecutionDenial {
 pub enum WorthQueryRequiredOutputPreparationDenial {
     ForeignProgram,
     UndeclaredOutputRoot,
-    MissingConnection,
     MissingPerformedDelivery,
     MissingSource,
     /// Complete original discovery could not be retained or combined.

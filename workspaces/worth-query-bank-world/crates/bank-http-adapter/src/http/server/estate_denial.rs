@@ -50,12 +50,6 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         D::CommandInput(_)
         | D::Projection(_)
         | D::DecisionProjection(_)
-        | D::FreezeProjection(_)
-        | D::DeathNotificationProjection(_)
-        | D::CaseOpeningProjection(_)
-        | D::ExecutorRecognitionProjection(_)
-        | D::EstateReleaseProjection(_)
-        | D::EstateDisbursementProjection(_)
         | D::Proposal(_)
         | D::CapabilityDelegationProjection(_)
         | D::CapabilityRevocationProjection(_) => BankHttpDenial::new(
@@ -73,7 +67,6 @@ pub(super) fn estate_denial(denial: BankEstateProgressionDenial) -> BankHttpDeni
         }
         D::CapabilityInstallation(_)
         | D::OperationInstallation(_)
-        | D::CommitPreparation(_)
         | D::Attempt(_) => {
             BankHttpDenial::new(BankHttpDenialKind::Unavailable, BankHttpNextAction::Retry)
         }

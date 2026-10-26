@@ -1,15 +1,10 @@
 //! Reuse one already issued Query basis only while its World head is current.
 
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
-use worth_runtime_world::facade::RuntimeWorldBranchAdmissionDenial;
-use worth_runtime_world::facade::RuntimeWorldServiceDenial;
 
 use super::*;
 
-pub(in crate::domain_computation::primary_graph) enum SelectedPermissionSecurityStop {
-    World,
-    AccountingOverflow,
-}
+pub(in crate::domain_computation::primary_graph) struct SelectedPermissionSecurityStop;
 
 /// A current-head seal whose exact selected field indexes were prepared for
 /// the same Native basis. This is the graph-read authority, separate from the
@@ -105,11 +100,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let graph = self
             .runtime
             .primary_graph()
-            .ok_or(SelectedPermissionSecurityStop::World)?;
+            .ok_or(SelectedPermissionSecurityStop)?;
         let reusable = native.with_runtime_mut(
             graph,
             execution,
-            || SelectedPermissionSecurityStop::World,
+            || SelectedPermissionSecurityStop,
             |runtime| Ok(query_basis.can_reuse_security_snapshot_at_native(expected, runtime)),
         )?;
         if !reusable {
@@ -135,12 +130,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(None)
             }
 
-            Err(ProductBranchCurrentnessFailure::AdmissionDenied { denial, .. }) => match denial {
-                RuntimeWorldServiceDenial::Denied(
-                    RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
-                ) => Err(SelectedPermissionSecurityStop::AccountingOverflow),
-                _ => Err(SelectedPermissionSecurityStop::World),
-            },
+            Err(ProductBranchCurrentnessFailure::AdmissionDenied { .. }) => {
+                Err(SelectedPermissionSecurityStop)
+            }
         }
     }
 }

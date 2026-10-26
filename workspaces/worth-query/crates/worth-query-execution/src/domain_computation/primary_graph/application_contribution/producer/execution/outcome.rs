@@ -6,8 +6,7 @@ use super::denial::{
 use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
 use crate::domain_computation::primary_graph as graph;
 use graph::{
-    HandlerResult, WorthQueryApplicationCommitDeferredKind as DeferredKind,
-    WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
+    HandlerResult, WorthQueryApplicationCommitDenialKind, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationNoEffectCause,
 };
 
@@ -158,15 +157,14 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 publication: CommitPublication::PreviouslyPublished,
             })
         }
-        WorthQueryApplicationCommitOutcome::Deferred(deferred)
-            if matches!(
-                deferred.kind(),
-                DeferredKind::RequiredPrerequisitePending(_)
-            ) =>
-        {
-            Err(deferred
-                .into_prerequisite_denial()
-                .expect("required prerequisite deferral retains its actual denial"))
+        WorthQueryApplicationCommitOutcome::Deferred(deferred) => {
+            match deferred.into_prerequisite_denial() {
+                Ok(denial) => Err(denial),
+                Err(deferred) => Err(failed(
+                    identity,
+                    WorthQueryApplicationCommitOutcome::Deferred(deferred),
+                )),
+            }
         }
         WorthQueryApplicationCommitOutcome::Stale(stale) => Err(denial(
             WorthQueryOutputDemandDenialKind::PublicationStale,
@@ -220,8 +218,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         .with_uncommitted(graph::WorthQueryApplicationUncommitted::Indeterminate(
             outcome,
         ))),
-        outcome @ (WorthQueryApplicationCommitOutcome::Deferred(_)
-        | WorthQueryApplicationCommitOutcome::NoEffect(_)
+        outcome @ (WorthQueryApplicationCommitOutcome::NoEffect(_)
         | WorthQueryApplicationCommitOutcome::Aborted) => Err(failed(identity, outcome)),
     }
 }

@@ -28,13 +28,15 @@ impl WorthQueryOutputDemandRegistry {
     pub(in crate::domain_computation::primary_graph) fn hold_required_successor(
         &self,
         successor: HeldRequiredSuccessor,
-        key_of: impl FnOnce(&HeldRequiredSuccessor) -> &WorthQueryOutputDemandKey,
+        key_of: impl FnOnce(&HeldRequiredSuccessor) -> Option<&WorthQueryOutputDemandKey>,
     ) -> Option<HeldRequiredSuccessor> {
         let mut state = self
             .state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let key = key_of(&successor);
+        let Some(key) = key_of(&successor) else {
+            return Some(successor);
+        };
         let awaited = awaited_by_stale_owner(&state.records, key);
 
         match state.records.get_mut(key) {

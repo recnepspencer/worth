@@ -3,14 +3,11 @@
 
 use serde::ser::Error as _;
 use serde::{Serialize, Serializer};
-use worth_foundational::facade::PartitionIdentity;
-use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
     PartitionItemId, WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
-    WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
-    WorthQueryDeterministicReducer, WorthQueryManagedComputationCheckpoint,
-    WorthQueryManagedComputationDenial, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner,
+    WorthQueryComputationPartitionView, WorthQueryDeterministicReducer,
+    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationDenial,
+    WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 
 use super::demand::TotalRegions;
@@ -151,17 +148,6 @@ fn faulted(id: u64, region: u32, fault: ProbeFault) -> RegionEntry {
         fault: Some(RegionFault::Probe(fault)),
         ..entry(id, region)
     }
-}
-
-fn partition_of(region: u32) -> PartitionIdentity {
-    let key = ProbeKey {
-        region,
-        entry: 0,
-        encodable: true,
-    };
-    application_computation_partition_identity(&key, &mut |_| Ok::<(), ()>(()))
-        .expect("a region key encodes")
-        .partition()
 }
 
 #[test]

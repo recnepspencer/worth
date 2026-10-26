@@ -146,8 +146,7 @@ fn a_registry_successor_is_moved_to_exactly_one_taker() {
         let successor: super::super::HeldRequiredSuccessor = Box::new(row_key.clone());
         assert!(registry
             .hold_required_successor(successor, |held| held
-                .downcast_ref::<WorthQueryOutputDemandKey>()
-                .unwrap())
+                .downcast_ref::<WorthQueryOutputDemandKey>())
             .is_none());
         let moved = registry
             .take_published_held_successor(&row_key)

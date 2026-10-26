@@ -2,7 +2,7 @@ use super::super::super::super::{
     WorthQueryClosedProviderSessionDisposition, WorthQueryProviderSessionAffinity,
     WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionFailure,
     WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionProtocolStage,
-    WorthQueryProviderSessionRecoveryPosture, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionRecoveryPosture, WorthQuerySessionCommitOutcome,
 };
 use super::WorthQuerySessionBoundReadsAndEffects;
 
@@ -77,7 +77,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
     pub(crate) fn commit(
         mut self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> WorthQuerySessionCommitOrAbortOutcome {
+    ) -> WorthQuerySessionCommitOutcome {
         let terminal_binding = self.affinity.terminal_binding();
         self.counters.called_provider();
         let invocation = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -90,17 +90,17 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                 ),
             )) => {
                 let _ = self.affinity.session_mut().abort();
-                WorthQuerySessionCommitOrAbortOutcome::ProductStale(stale)
+                WorthQuerySessionCommitOutcome::ProductStale(stale)
             }
             Ok(Err(
                 super::super::super::super::WorthQueryProviderSessionCommitStop::ProductUnpublished(
                     unpublished,
                 ),
-            )) => WorthQuerySessionCommitOrAbortOutcome::ProductUnpublished(unpublished),
+            )) => WorthQuerySessionCommitOutcome::ProductUnpublished(unpublished),
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::NoEffect(
                 no_effect,
-            ))) => WorthQuerySessionCommitOrAbortOutcome::NoEffect(no_effect),
-            Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOrAbortOutcome::Committed(
+            ))) => WorthQuerySessionCommitOutcome::NoEffect(no_effect),
+            Ok(Ok(provider_receipt)) => WorthQuerySessionCommitOutcome::Committed(
                 WorthQueryClosedProviderSessionDisposition::close(
                     provider_receipt,
                     self.counters,
@@ -111,13 +111,13 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                 super::super::super::super::WorthQueryProviderSessionCommitStop::PreEffectDenied(
                     failure,
                 ),
-            )) => WorthQuerySessionCommitOrAbortOutcome::CommitDenied(failure.at_stage(
+            )) => WorthQuerySessionCommitOutcome::CommitDenied(failure.at_stage(
                 WorthQueryProviderSessionProtocolStage::Commit,
                 self.counters,
             )),
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::Denied(
                 failure,
-            ))) => WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(
+            ))) => WorthQuerySessionCommitOutcome::CommitRecoveryRequired(
                 failure
                     .at_stage(
                         WorthQueryProviderSessionProtocolStage::Commit,
@@ -129,7 +129,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
             ),
             Ok(Err(super::super::super::super::WorthQueryProviderSessionCommitStop::Deferred(
                 deferred,
-            ))) => WorthQuerySessionCommitOrAbortOutcome::CommitDeferred(deferred.at_stage(
+            ))) => WorthQuerySessionCommitOutcome::CommitDeferred(deferred.at_stage(
                 WorthQueryProviderSessionProtocolStage::Commit,
                 self.counters,
             )),
@@ -137,11 +137,11 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                 super::super::super::super::WorthQueryProviderSessionCommitStop::ControlStopped(
                     stopped,
                 ),
-            )) => WorthQuerySessionCommitOrAbortOutcome::CommitControlStopped(stopped.at_stage(
+            )) => WorthQuerySessionCommitOutcome::CommitControlStopped(stopped.at_stage(
                 WorthQueryProviderSessionProtocolStage::Commit,
                 self.counters,
             )),
-            Err(_) => WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(
+            Err(_) => WorthQuerySessionCommitOutcome::CommitRecoveryRequired(
                 WorthQueryProviderSessionFailure::new(
                     WorthQueryProviderSessionDenialKind::ProviderPanicked,
                     WorthQueryProviderSessionProtocolStage::Commit,

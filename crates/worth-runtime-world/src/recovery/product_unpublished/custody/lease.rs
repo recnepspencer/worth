@@ -2,6 +2,9 @@ use super::{ProductUnpublishedOwnerEffectsRecord, RelationalRecoveryRecordState}
 
 /// Exclusive borrowed custody while a retained record crosses owner settlement.
 /// Unwind restores the route before the catalog update can reinstall the record.
+// The private constructor installs Some(state). finish consumes self and takes
+// it exactly once, after the final dereference; Drop alone may take it on unwind.
+// Neither Deref nor DerefMut exposes the enclosing Option to a caller.
 pub(crate) struct RelationalRecoveryLease<'a> {
     record: &'a mut ProductUnpublishedOwnerEffectsRecord,
     state: Option<RelationalRecoveryRecordState>,

@@ -8,7 +8,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionLifecycle, WorthQueryProviderSessionProtocolCounters,
     WorthQueryProviderSessionProtocolStage, WorthQueryProviderSessionRecoveryPosture,
     WorthQueryProviderSessionToken, WorthQueryProviderSessionTokenAdmission,
-    WorthQueryProviderSessionView, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionView, WorthQuerySessionAbortOutcome,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -247,10 +247,7 @@ fn sealed_plan_prepares_session_binds_work_and_aborts() {
                 outcome.recovery_posture(),
                 WorthQueryProviderSessionRecoveryPosture::Closed
             );
-            assert!(matches!(
-                outcome,
-                WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
-            ));
+            assert!(matches!(outcome, WorthQuerySessionAbortOutcome::Aborted(_)));
         }
         assert_eq!(calls.readmissions.load(Ordering::Acquire), 1);
         assert_eq!(calls.preparations.load(Ordering::Acquire), 1);
@@ -291,7 +288,7 @@ fn closed_session_affinity(
     let identity = affinity.identity();
     assert!(matches!(
         staged.abort(),
-        WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
+        WorthQuerySessionAbortOutcome::Aborted(_)
     ));
     cleanup(running);
     identity

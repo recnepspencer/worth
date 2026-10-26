@@ -116,12 +116,7 @@ where
             })
             .unwrap_or_else(|cause| {
                 super::WorthQueryApplicationMutationAttemptReport::new(
-                    WorthQueryApplicationMutationOutcome::Commit(
-                        cause
-                            .into_commit_outcome()
-                            .landed()
-                            .expect_err("request admission cannot commit"),
-                    ),
+                    WorthQueryApplicationMutationOutcome::Commit(cause.into_uncommitted()),
                     work,
                 )
             })
@@ -140,12 +135,7 @@ where
             phase.checked_execution_request_for(self.application.runtime().product_runtime())
         {
             return super::WorthQueryApplicationMutationAttemptReport::new(
-                WorthQueryApplicationMutationOutcome::Commit(
-                    cause
-                        .into_commit_outcome()
-                        .landed()
-                        .expect_err("foreign phase cannot commit"),
-                ),
+                WorthQueryApplicationMutationOutcome::Commit(cause.into_uncommitted()),
                 self.candidate.decision_work,
             );
         }

@@ -38,7 +38,10 @@ macro_rules! observed_advance {
     ($court:expr, $demand:expr, $at:expr) => {{
         native_marking();
         fact_verification();
-        let before = $court.application.whole_registry_rows_visited_for_test();
+        let before = $court
+            .application
+            .whole_registry_rows_visited_for_test()
+            .expect("bounded registry observation");
         let (settlement, cost) = $demand.reading.measure(|| {
             let WorthQueryApplicationOutputDemandProgress::Settled(settlement) =
                 $demand.demand.advance($court.request).unwrap()
@@ -48,7 +51,11 @@ macro_rules! observed_advance {
             let lifetime = settlement.producer_contacts_in_this_demand();
             (settlement, lifetime)
         });
-        let visits = $court.application.whole_registry_rows_visited_for_test() - before;
+        let visits = $court
+            .application
+            .whole_registry_rows_visited_for_test()
+            .expect("bounded registry observation")
+            - before;
         let marking = native_marking();
         let verification = fact_verification();
         $court.judge_settlement(&$demand.body, settlement.observation(), &$at);

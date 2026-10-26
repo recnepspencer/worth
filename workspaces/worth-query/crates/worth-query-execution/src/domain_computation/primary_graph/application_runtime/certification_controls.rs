@@ -1,3 +1,6 @@
+// Certification-only faults/backstops: only the sealed *_for_test doors arm
+// these controls. The boundary guard closes ordinary callers; their intentional
+// panic reports a violated test scenario, never an ordinary product refusal.
 mod actor_retention;
 mod correction_history_indexes;
 mod managed_cleanup;

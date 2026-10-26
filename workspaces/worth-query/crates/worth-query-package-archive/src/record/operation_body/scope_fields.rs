@@ -142,7 +142,7 @@ pub(super) fn decode(
                 binding,
                 value,
             },
-            _ => unreachable!("tag admitted before operands"),
+            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
         })
     })
 }

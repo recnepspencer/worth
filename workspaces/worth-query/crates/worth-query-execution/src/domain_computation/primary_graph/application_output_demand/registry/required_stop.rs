@@ -111,6 +111,7 @@ pub(super) fn intrinsic_to_row(kind: WorthQueryOutputDemandDenialKind) -> bool {
         | Kind::NoEffect
         | Kind::Superseded
         | Kind::ForeignDemand
+        | Kind::RequiredSuccessorStateUnavailable
         | Kind::ForeignSettlement
         | Kind::IncompleteDependencyCoverage
         | Kind::RetainedBasisUnavailable

@@ -15,6 +15,9 @@ pub(in super::super) fn retire_stale_records(
     // Custody retirement is source-wide: a changed query source invalidates
     // every producer record that was computed from its older epoch.
 
+    // Keys come from this exclusively borrowed registry's own source index.
+    // The first pass changes row state and releases claims, queuing cleanup;
+    // physical removal occurs only in the second pass, once for each unique key.
     let keys = super::super::refreshed_rejoin::source_rows(&state.records, successor)
         .filter(|(key, record)| {
             record.product_occurrence == occurrence

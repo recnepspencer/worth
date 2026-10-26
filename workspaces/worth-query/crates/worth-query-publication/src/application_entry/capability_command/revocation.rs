@@ -172,10 +172,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
         };
         let runtime = program.clone();
         let program = program.clone();
-        let backend = move |phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>, request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>, action: NativeCommandAction<'_>| {
-
-
-                if !std::ptr::eq(program.runtime(), request.application) {
+        let authentication_program = program.clone();
+        let authentication_publication = program_publication_access();
+        let backend = super::backend::authenticated_backend(
+            move |phase, request| {
+                if !std::ptr::eq(authentication_program.runtime(), request.application) {
                     return Err(Denial::ProgramMismatch);
                 }
                 let capability = request
@@ -202,8 +203,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                         WorthQueryPrincipalResolutionMode::Ordinary,
                     )
                     .map_err(Denial::PrincipalResolution)?;
-                if !principal.matches_command_principal(&publication, &original_principal) { return Err(Denial::PrincipalMismatch); }
-                if matches!(action, NativeCommandAction::Validate) { return Ok(NativeCommandResult::Validated); }
+                if !principal
+                    .matches_command_principal(&authentication_publication, &original_principal)
+                {
+                    return Err(Denial::PrincipalMismatch);
+                }
+                Ok((selected, (capability, principal)))
+            },
+            move |phase, request, selected, (capability, principal), action| {
                 let program_action = program
                     .admit_program_operation::<Operation>()
                     .map_err(Denial::Program)?;
@@ -214,7 +221,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     Key,
                     PrincipalIdentity,
                     PrincipalIdentityBinding,
-                > (&key, &input, principal.principal_identity())
+                >(&key, &input, principal.principal_identity())
                 .map_err(Denial::IdentityEncoding)?;
                 let idempotency = workflow.binding();
 
@@ -247,20 +254,46 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationRequest<'_, '_, '_, Schema>
                     )
                     .map_err(Denial::Authorization)?;
                 if let NativeCommandAction::Recover(recovery) = action {
-                    return request.application.recover_admitted_unpublished_source_operation(phase, &publication, recovery, &admission, idempotency)
-                        .map(NativeCommandResult::Recovered).map_err(Denial::Recovery);
+                    return request
+                        .application
+                        .recover_admitted_unpublished_source_operation(
+                            phase,
+                            &publication,
+                            recovery,
+                            &admission,
+                            idempotency,
+                        )
+                        .map(NativeCommandResult::Recovered)
+                        .map_err(Denial::Recovery);
                 }
-                let read = request.application.resolve_admitted_application_idempotency(phase, &admission, idempotency).map_err(Denial::Idempotency)?;
-                if !matches!(action, NativeCommandAction::Execute) { return Ok(NativeCommandResult::Resolved(read)); }
+                let read = request
+                    .application
+                    .resolve_admitted_application_idempotency(phase, &admission, idempotency)
+                    .map_err(Denial::Idempotency)?;
+                if !matches!(action, NativeCommandAction::Execute) {
+                    return Ok(NativeCommandResult::Resolved(read));
+                }
                 match read.into_resolution() {
-                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => return Ok(NativeCommandResult::Commit(WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt))),
-                    WorthQueryApplicationIdempotencyResolution::IntentDrift => return Err(Denial::IdempotencyIntentDrift),
+                    WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => {
+                        return Ok(NativeCommandResult::Commit(
+                            WorthQueryApplicationCommitOutcome::AlreadyCommitted(receipt),
+                        ))
+                    }
+                    WorthQueryApplicationIdempotencyResolution::IntentDrift => {
+                        return Err(Denial::IdempotencyIntentDrift)
+                    }
                     WorthQueryApplicationIdempotencyResolution::Unseen => {}
                 }
                 let prepared = prepare(phase, admission).map_err(Denial::Preparation)?;
-                Ok(NativeCommandResult::Commit(program_action.compare_and_commit_capability_revocation_in_advancement(phase, prepared, idempotency)))
-
-        };
+                Ok(NativeCommandResult::Commit(
+                    program_action.compare_and_commit_capability_revocation_in_advancement(
+                        phase,
+                        prepared,
+                        idempotency,
+                    ),
+                ))
+            },
+        );
         Ok(super::WorthQueryCapabilityCommand::new(
             runtime,
             self.branch,

@@ -16,7 +16,6 @@ pub(crate) fn classify_merge_validation_kind(kind: Kind) -> Denial {
         Kind::Unclassified
         | Kind::UnsupportedCollection
         | Kind::UnsupportedWriteFamily
-        | Kind::EmptySchema
         | Kind::BatchAtomicityUnsupported
         | Kind::SavepointCapacityExhausted { .. }
         | Kind::SavepointIdentityExhausted

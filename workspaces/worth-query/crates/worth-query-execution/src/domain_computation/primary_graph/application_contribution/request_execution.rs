@@ -161,15 +161,12 @@ impl<'a> QueryRequestExecution<'a> {
                 lease.as_ref().map_err(|denial| lease_denial(*denial))?
             }
         };
-        let held = worth_execution::ExecutionRequest::leased(lease)
-            .in_scope(|active| {
-                active
-                    .expect("leased projection retains its backing")
-                    .reserve_memory(bytes)
-                    .map(Some)
+        lease
+            .reserve_memory(bytes)
+            .map(|held| QueryMemoryReservation {
+                held: Some(held),
+                bytes,
             })
-            .expect("leased projection reborrows without opening a scope");
-        held.map(|held| QueryMemoryReservation { held, bytes })
             .map_err(memory_denial)
     }
 

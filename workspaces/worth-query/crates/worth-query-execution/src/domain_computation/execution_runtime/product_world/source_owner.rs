@@ -11,7 +11,6 @@ use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
 pub enum WorthQueryRelationalSourceInstallationDenial {
     BridgeConfiguration(RelationalBridgeSourceConfigurationError),
     CompanionRegistration(worth_relational::facade::mvcc::PublicationCompanionRegistrationStop),
-    CompanionPreparation(worth_relational::facade::mvcc::CompanionPreflightStop),
 }
 
 /// Shared custody of one installed Relational owner and its exact Bridge registry.

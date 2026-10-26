@@ -13,13 +13,11 @@ use super::taxonomy::EffectAuthorityLane;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EffectBatchExecutionDenialKind {
-    ComponentExecutionDenied(EffectExecutionDenialKind),
     AggregateExecutionDenied(EffectExecutionDenialKind),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EffectBatchExecutionDenial {
-    component_index: Option<usize>,
     kind: EffectBatchExecutionDenialKind,
     message: String,
 }
@@ -27,14 +25,9 @@ pub struct EffectBatchExecutionDenial {
 impl EffectBatchExecutionDenial {
     pub(crate) fn aggregate(kind: EffectExecutionDenialKind, message: impl Into<String>) -> Self {
         Self {
-            component_index: None,
             kind: EffectBatchExecutionDenialKind::AggregateExecutionDenied(kind),
             message: message.into(),
         }
-    }
-
-    pub fn component_index(&self) -> Option<usize> {
-        self.component_index
     }
 
     pub fn kind(&self) -> &EffectBatchExecutionDenialKind {

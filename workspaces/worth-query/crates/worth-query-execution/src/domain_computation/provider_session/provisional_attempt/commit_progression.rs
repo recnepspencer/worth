@@ -4,7 +4,7 @@ use super::{
 };
 use crate::domain_computation::provider_session::{
     WorthQueryDecisionReadSetFailure, WorthQueryDecisionReadSetFreshnessOutcome,
-    WorthQueryProviderSessionFailure, WorthQuerySessionCommitOrAbortOutcome,
+    WorthQueryProviderSessionFailure, WorthQuerySessionCommitOutcome,
     WorthQueryStaleDecisionReadSet,
 };
 
@@ -184,22 +184,22 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
             }
         };
         match prepared.commit(allocation_policy) {
-            WorthQuerySessionCommitOrAbortOutcome::ProductStale(stale) => {
+            WorthQuerySessionCommitOutcome::ProductStale(stale) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale)
             }
-            WorthQuerySessionCommitOrAbortOutcome::ProductUnpublished(unpublished) => {
+            WorthQuerySessionCommitOutcome::ProductUnpublished(unpublished) => {
                 self.proposed
                     .attempt
                     .overlay
                     .release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::ProductUnpublished(unpublished)
             }
-            WorthQuerySessionCommitOrAbortOutcome::NoEffect(no_effect) => {
+            WorthQuerySessionCommitOutcome::NoEffect(no_effect) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect)
             }
-            WorthQuerySessionCommitOrAbortOutcome::Committed(disposition) => {
+            WorthQuerySessionCommitOutcome::Committed(disposition) => {
                 self.proposed
                     .attempt
                     .overlay
@@ -208,30 +208,26 @@ impl WorthQueryInvariantApprovedProposedState<'_> {
                     WorthQueryCommittedProviderSession::from_disposition(disposition),
                 )
             }
-            WorthQuerySessionCommitOrAbortOutcome::CommitDenied(failure) => {
+            WorthQuerySessionCommitOutcome::CommitDenied(failure) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::Denied(
                     WorthQueryProviderCompareAndCommitDenial::ProviderSession(failure),
                 )
             }
-            WorthQuerySessionCommitOrAbortOutcome::CommitRecoveryRequired(failure) => {
+            WorthQuerySessionCommitOutcome::CommitRecoveryRequired(failure) => {
                 self.proposed
                     .attempt
                     .overlay
                     .release_to_provider_resolution();
                 WorthQueryProviderCompareAndCommitOutcome::Indeterminate(failure)
             }
-            WorthQuerySessionCommitOrAbortOutcome::CommitDeferred(deferred) => {
+            WorthQuerySessionCommitOutcome::CommitDeferred(deferred) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::Deferred(deferred)
             }
-            WorthQuerySessionCommitOrAbortOutcome::CommitControlStopped(stopped) => {
+            WorthQuerySessionCommitOutcome::CommitControlStopped(stopped) => {
                 let _ = self.proposed.attempt.overlay.discard();
                 WorthQueryProviderCompareAndCommitOutcome::ControlStopped(stopped)
-            }
-            WorthQuerySessionCommitOrAbortOutcome::Aborted(_)
-            | WorthQuerySessionCommitOrAbortOutcome::AbortRecoveryRequired(_) => {
-                unreachable!("commit transition cannot produce an abort outcome")
             }
         }
     }

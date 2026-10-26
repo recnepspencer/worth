@@ -76,23 +76,21 @@ pub(crate) fn execute_lowered_effect_plan_with_authority(
                     "lowered relational merge execution rejected bridge host override; the admitted lowered plan requires relational authority",
                 )));
             }
-            if !authority.has_relational_authority() {
-                return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
+            let merge_authority = authority.merge_authority();
+            let runtime = authority.relational_runtime().ok_or_else(|| {
+                EffectExecutionStop::Denied(EffectExecutionDenial::new(
                     &lowered,
                     EffectExecutionDenialKind::MissingRelationalAuthority,
                     "lowered relational merge execution requires a relational runtime authority",
-                )));
-            }
-            if authority.merge_authority() == EffectMergeAuthority::RuntimeOwnerRequired {
+                ))
+            })?;
+            if merge_authority == EffectMergeAuthority::RuntimeOwnerRequired {
                 return Err(EffectExecutionStop::Denied(EffectExecutionDenial::new(
                     &lowered,
                     EffectExecutionDenialKind::MergeRequiresRuntimeOwner,
                     "a lent runtime may hold an application schema; run the merge through the backend that owns it",
                 )));
             }
-            let runtime = authority
-                .relational_runtime()
-                .expect("relational authority was checked above");
             let outcome = execute_lowered_merge(
                 execution,
                 runtime,

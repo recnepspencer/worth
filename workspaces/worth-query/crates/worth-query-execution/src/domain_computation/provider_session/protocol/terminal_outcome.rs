@@ -1,7 +1,4 @@
-use super::{
-    WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolCounters,
-    WorthQueryProviderSessionRecoveryPosture,
-};
+use super::WorthQueryProviderSessionProtocolCounters;
 
 /// Provider-authored text describing a completed physical transition.
 ///
@@ -29,61 +26,6 @@ pub struct WorthQueryClosedProviderSessionDisposition {
     provider_description: WorthQueryProviderTerminalDescription,
     counters: WorthQueryProviderSessionProtocolCounters,
     terminal_binding: super::WorthQueryProviderSessionTerminalBinding,
-}
-
-#[derive(Debug)]
-pub enum WorthQuerySessionCommitOrAbortOutcome {
-    ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
-    ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
-    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
-    Committed(WorthQueryClosedProviderSessionDisposition),
-    Aborted(WorthQueryClosedProviderSessionDisposition),
-    CommitDenied(WorthQueryProviderSessionFailure),
-    CommitDeferred(super::WorthQueryProviderSessionCommitDeferred),
-    CommitControlStopped(super::WorthQueryProviderSessionCommitControlStopped),
-    CommitRecoveryRequired(WorthQueryProviderSessionFailure),
-    AbortRecoveryRequired(WorthQueryProviderSessionFailure),
-}
-
-impl WorthQuerySessionCommitOrAbortOutcome {
-    pub fn recovery_posture(&self) -> WorthQueryProviderSessionRecoveryPosture {
-        match self {
-            Self::Committed(_)
-            | Self::ProductStale(_)
-            | Self::NoEffect(_)
-            | Self::Aborted(_)
-            | Self::CommitDenied(_)
-            | Self::CommitDeferred(_)
-            | Self::CommitControlStopped(_) => WorthQueryProviderSessionRecoveryPosture::Closed,
-            Self::ProductUnpublished(_)
-            | Self::CommitRecoveryRequired(_)
-            | Self::AbortRecoveryRequired(_) => {
-                WorthQueryProviderSessionRecoveryPosture::RecoveryRequired
-            }
-        }
-    }
-
-    pub fn failure(&self) -> Option<&WorthQueryProviderSessionFailure> {
-        match self {
-            Self::CommitDenied(failure)
-            | Self::CommitRecoveryRequired(failure)
-            | Self::AbortRecoveryRequired(failure) => Some(failure),
-            Self::Committed(_)
-            | Self::ProductStale(_)
-            | Self::NoEffect(_)
-            | Self::ProductUnpublished(_)
-            | Self::Aborted(_)
-            | Self::CommitDeferred(_)
-            | Self::CommitControlStopped(_) => None,
-        }
-    }
-
-    pub fn control_stopped(&self) -> Option<&super::WorthQueryProviderSessionCommitControlStopped> {
-        match self {
-            Self::CommitControlStopped(stopped) => Some(stopped),
-            _ => None,
-        }
-    }
 }
 
 impl WorthQueryClosedProviderSessionDisposition {
