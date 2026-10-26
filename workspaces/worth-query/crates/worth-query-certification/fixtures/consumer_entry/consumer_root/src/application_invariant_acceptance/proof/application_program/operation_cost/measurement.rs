@@ -33,12 +33,12 @@ impl Measure {
         signal_request_charges_on_this_thread_for_test();
         Self {
             _observation: observation,
-            whole_rows: runtime.runtime().whole_registry_rows_visited_for_test(),
+            whole_rows: runtime.runtime().whole_registry_rows_visited_for_test().expect("bounded registry observation"),
         }
     }
     pub fn finish(self, runtime: &Runtime) -> Work {
         // Capture before inspecting the receiver's registry population.
-        let whole_rows = runtime.runtime().whole_registry_rows_visited_for_test() - self.whole_rows;
+        let whole_rows = runtime.runtime().whole_registry_rows_visited_for_test().expect("bounded registry observation") - self.whole_rows;
         let reports = advancement_observations_on_this_thread_for_test();
         assert!(
             reports.iter().all(|report| report.refusal.is_none()),
