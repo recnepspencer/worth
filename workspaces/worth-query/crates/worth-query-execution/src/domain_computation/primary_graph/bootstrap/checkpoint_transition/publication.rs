@@ -224,13 +224,15 @@ pub(in crate::domain_computation::primary_graph) fn transition_checkpoint<
         .recovered_relational_authority
         .as_ref()
         .is_some_and(|authority| authority.codec_transition_pending());
+    let publication = graph.recovered_publication.clone().ok_or_else(|| {
+        WorthQueryInMemoryApplicationDenial::Graph(denial(
+            "checkpoint transition has no original native bootstrap publication",
+        ))
+    })?;
     let (successor, preserved_outputs) = prepare_transition(
         execution, phase, graph, checkpoint, &target, cell, transition,
     )?;
-    let publication = graph
-        .recovered_publication
-        .clone()
-        .expect("transition holds its original native bootstrap publication");
+
     if codec_pending && let Err(cause) = super::codec::finish(execution, graph) {
         return Err(
             WorthQueryInMemoryApplicationDenial::CheckpointTransitionFinalizationStopped(Box::new(

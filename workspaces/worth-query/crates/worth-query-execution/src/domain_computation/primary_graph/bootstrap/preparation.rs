@@ -160,18 +160,13 @@ impl WorthQueryExecutionInstallationAuthority {
             }
             None => (None, None),
         };
-        let codec_pending = recovered_relational_authority
+        let source_publisher = if let Some(authority) = recovered_relational_authority
             .as_ref()
-            .is_some_and(|authority| authority.codec_transition_pending());
-        let source_publisher = if codec_pending {
+            .filter(|authority| authority.codec_transition_pending())
+        {
             let (owner, native) = relational_runtime
                 .durability_recovery()
-                .issue_recovered_codec_source_publication_owner(
-                    &execution,
-                    recovered_relational_authority
-                        .as_ref()
-                        .expect("pending recovery owns its source"),
-                )
+                .issue_recovered_codec_source_publication_owner(&execution, authority)
                 .map_err(super::checkpoint_transition::codec::map_admission)?;
             Some(
                 super::super::root::application_publication::ApplicationPublication::recovered(

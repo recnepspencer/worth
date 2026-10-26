@@ -77,9 +77,8 @@ pub(super) fn transaction_commit_stop(
 ) -> crate::domain_computation::WorthQueryProviderSessionCommitStop {
     use crate::domain_computation::WorthQueryProviderSessionCommitStop as Stop;
     use worth_relational::facade::mvcc::TransactionCommitError as Error;
-    let native_execution_error = matches!(&error, Error::Execution { .. }).then(|| error.clone());
     match error {
-        Error::Execution { denial, .. } => match denial.kind {
+        Error::Execution { ref denial, .. } => match denial.kind {
             worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(cause) => {
                 match relational_execution_stop(cause, denial.partition_identity) {
                     Stop::PreEffectDenied(failure) => Stop::PreEffectDenied(
@@ -88,7 +87,7 @@ pub(super) fn transaction_commit_stop(
                             WorthQueryProviderSessionProtocolStage::Commit,
                             failure.detail(),
                             Default::default(),
-                        ).with_native_preparation_error(native_execution_error.expect("native execution error retained")),
+                        ).with_native_preparation_error(error),
                     ),
                     stopped => stopped,
                 }

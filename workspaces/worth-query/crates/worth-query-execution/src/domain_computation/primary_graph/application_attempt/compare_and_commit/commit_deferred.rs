@@ -81,9 +81,9 @@ impl WorthQueryApplicationCommitDeferred {
     }
 
     pub(in crate::domain_computation::primary_graph) fn into_prerequisite_denial(
-        self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial> {
-        self.prerequisite_denial
+        mut self,
+    ) -> Result<crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial, Self> {
+        self.prerequisite_denial.take().ok_or(self)
     }
 
     pub fn kind(&self) -> WorthQueryApplicationCommitDeferredKind {

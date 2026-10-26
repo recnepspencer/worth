@@ -167,8 +167,10 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
             ),
         ) => WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
         SelectedAuthorizedReadStop::Session => WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-        SelectedAuthorizedReadStop::Read { .. } => {
-            unreachable!("the read-denial branch settles its reservation before mapping")
+        SelectedAuthorizedReadStop::Read(denial) => {
+            return WorthQueryAdmittedOneShotStop::Execution(map_authorized_read_denial(
+                WorthQueryAuthorizedApplicationReadDenial::Read(denial), query,
+            ));
         }
     };
     WorthQueryAdmittedOneShotStop::Execution(denial(kind, query, query))
