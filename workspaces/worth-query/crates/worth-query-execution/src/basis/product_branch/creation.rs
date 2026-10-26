@@ -82,6 +82,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         self
     }
 
+    /// Source and activation refusals precede destination-name issuance. Once
+    /// submitted to World, the intent consumes its public ordinal even when
+    /// World denies it or retains unpublished effects; ordinals are never reused.
     pub fn create(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,

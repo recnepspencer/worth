@@ -461,7 +461,7 @@ explicit bootstrap request and capture policy. See [original-request transitions
 
 Host branch creation returns `WorthQueryProductBranchCreateError::Creation`.
 The World denial types are public through `host::primary_graph`.
-Its `WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
+`WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
 limit, occupancy }` reports the failed atomic activation reservation: the root,
 installed branches, in-flight reservations and still-retained retired gates,
 counted once per gate. The attempted fork is excluded. World membership refusal
@@ -469,6 +469,12 @@ is preserved through `Creation(World(Denied(BranchCapacityExhausted { limit,
 occupancy })))`; it counts the root, installed heads and reserved creations,
 excluding retired occurrences. Both report the enforcing owner's policy, rather
 than a later accessor read. Allocation and arithmetic failures remain distinct.
+Returned unpublished recovery retains component custody but has released both
+branch-slot reservations. A holder using the World port below Query can fill
+World membership without holding a Query activation gate.
+Source and coordination refusals precede public-name issuance. A World refusal
+consumes its `query-product-N` ordinal, already named by the submitted intent;
+the ordinal is not reused, including when World retains unpublished effects.
 
 No per-holder certificate or complete selector listing is available: reservations
 can precede selector issuance and retired gates can outlive membership. A consumer
