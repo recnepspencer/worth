@@ -79,7 +79,6 @@ impl WorthQueryProductActivationRegistry {
         &self,
         program: Option<&ApplicationProgramRevision>,
     ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
-        let capacity = self.capacity.reserve()?;
         let mut state = self
             .state
             .lock()
@@ -90,6 +89,7 @@ impl WorthQueryProductActivationRegistry {
         if program.is_some_and(|revision| state.unavailable_programs.contains(revision)) {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
+        let capacity = self.capacity.reserve()?;
         let next_active = program
             .map(|revision| {
                 state
