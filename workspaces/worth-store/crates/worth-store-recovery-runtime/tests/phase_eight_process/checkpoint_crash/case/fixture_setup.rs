@@ -49,7 +49,11 @@ pub(super) fn prepare(
         &start_marker,
         &reached_marker,
     );
-    wait_for_writer_ready(&mut child, &start_marker);
+    wait_for_writer_ready(
+        &mut child,
+        &start_marker,
+        operation_program.expected.payloads().len(),
+    );
     let mut operation_program = operation_program;
     operation_program
         .expected

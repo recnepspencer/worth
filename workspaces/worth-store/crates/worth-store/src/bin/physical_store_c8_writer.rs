@@ -150,7 +150,13 @@ impl CheckpointStageWithSeed {
 fn run(invocation: Result<Invocation, String>) -> Result<(), String> {
     let invocation = invocation?;
     let writer = initialization::initialize(&invocation)?;
-    history::seed_initial_history(&writer, &invocation.stage)?;
+    history::seed_initial_history(&writer, &invocation)?;
+    markers::write_setup_progress(
+        &invocation.start_marker,
+        "no-effect and final checkpoint",
+        0,
+        1,
+    )?;
     no_effect::cancel_before_effect(
         &writer.serving,
         writer.placement,

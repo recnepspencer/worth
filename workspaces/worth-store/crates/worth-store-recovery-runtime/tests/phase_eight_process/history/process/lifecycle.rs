@@ -101,10 +101,10 @@ fn drive(mut declaration: WriterLaunch, bind_history: bool) -> Result<DrivenWrit
             .map_err(|error| format!("spawn {}: {error}", declaration.stage))?,
     );
     let process_id = child.id();
-    wait_for_marker(
+    super::super::super::writer_readiness::wait(
         &mut child,
-        &declaration.start.with_extension("ready"),
-        "writer ready",
+        &declaration.start,
+        declaration.operation_program.expected.payloads().len(),
     )?;
     let runtime_identity = read_runtime_identity(&declaration.start)?;
     if bind_history {

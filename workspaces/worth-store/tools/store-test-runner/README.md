@@ -93,6 +93,13 @@ independently of the test image:
 cargo run -q -p store-test-runner -- ci --partition process-scenario
 ```
 
+C8 writer setup reports its phase and completed durable operations to the
+parent. Setup includes all 96 operations and three checkpoints, not merely
+process creation. A 60-second inactivity guard diagnoses stalled work; an
+aggregate ceiling allows 120 seconds of fixed setup plus five seconds per
+submitted operation. The history, exact crash seams, and recovery comparisons
+are unchanged.
+
 The same suite runs under plain `cargo test`; the runner only bounds it. The
 suite's builds use their own target directory beside the test's, so repeated
 runs keep the normal compilation cache. There is no source inventory,
