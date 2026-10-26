@@ -24,7 +24,9 @@ pub(crate) use reservation::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ProductBranchRegistryDenial {
     ForeignOwner,
-    CapacityExhausted,
+    CapacityExhausted { limit: usize, occupancy: usize },
+    OccupancyOverflow,
+    AllocationRejected,
     AlreadyInstalled,
     ReservationMissing,
     IdentityMismatch,

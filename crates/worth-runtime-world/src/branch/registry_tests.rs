@@ -53,7 +53,10 @@ fn named_reservations_are_bounded_and_drop_restores_the_slot_and_name() {
     assert_eq!(registry.reserved_branch_count(), 1);
     assert!(matches!(
         registry.reserve_branch(owner, ProductBranchName::try_new("other").unwrap()),
-        Err(ProductBranchRegistryDenial::CapacityExhausted)
+        Err(ProductBranchRegistryDenial::CapacityExhausted {
+            limit: 1,
+            occupancy: 1
+        })
     ));
     assert!(matches!(
         registry.reserve_branch(owner, name.clone()),

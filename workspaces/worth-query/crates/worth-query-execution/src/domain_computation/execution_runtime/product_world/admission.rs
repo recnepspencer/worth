@@ -140,7 +140,13 @@ pub(super) fn map_world_denial(
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationStaleSourceHead)
         }
         RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchAdmissionDenial::DuplicateName
+            // Observation reserves no branch slot. These creation-only service
+            // denials cannot be produced by this port; creation preserves them
+            // in WorthQueryProductBranchCreationDenial::World instead.
+            RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted { .. }
+            | RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow
+            | RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected
+            | RuntimeWorldBranchAdmissionDenial::DuplicateName
             | RuntimeWorldBranchAdmissionDenial::PlansOmitted
             | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
             | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,

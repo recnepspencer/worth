@@ -273,7 +273,10 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
                 &cancellation.token(),
             ),
         ),
-        Err(RuntimeWorldBranchAdmissionDenial::CapacityExhausted)
+        Err(RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted {
+            limit: 1,
+            occupancy: 1
+        })
     ));
     assert_eq!(owner.state.branches.branch_count(), 1);
     assert_eq!(owner.state.branches.reserved_branch_count(), 0);
@@ -298,7 +301,10 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
                 &cancellation.token(),
             ),
         ),
-        Err(RuntimeWorldBranchAdmissionDenial::CapacityExhausted)
+        Err(RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted {
+            limit: 1,
+            occupancy: 1
+        })
     ));
     assert_eq!(owner.state.branches.branch_count(), 1);
     assert_eq!(owner.state.retention.cost_snapshot(), before);
@@ -377,3 +383,6 @@ mod creation_cancellation;
 
 #[path = "retirement_tests/observation_budget.rs"]
 mod observation_budget;
+
+#[path = "retirement_tests/capacity_evidence.rs"]
+mod capacity_evidence;

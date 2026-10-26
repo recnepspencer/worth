@@ -68,7 +68,9 @@ fn map_retirement_denial(
         ProductBranchRegistryDenial::AlreadyRetired => {
             RuntimeWorldBranchRetirementDenial::AlreadyRetired
         }
-        ProductBranchRegistryDenial::CapacityExhausted => {
+        ProductBranchRegistryDenial::CapacityExhausted { .. }
+        | ProductBranchRegistryDenial::OccupancyOverflow
+        | ProductBranchRegistryDenial::AllocationRejected => {
             RuntimeWorldBranchRetirementDenial::CapacityExhausted
         }
         ProductBranchRegistryDenial::ForeignOwner

@@ -251,8 +251,14 @@ fn map_registry_denial(
         ProductBranchRegistryDenial::ForeignOwner => {
             RuntimeWorldBranchAdmissionDenial::ForeignOwner
         }
-        ProductBranchRegistryDenial::CapacityExhausted => {
-            RuntimeWorldBranchAdmissionDenial::CapacityExhausted
+        ProductBranchRegistryDenial::CapacityExhausted { limit, occupancy } => {
+            RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted { limit, occupancy }
+        }
+        ProductBranchRegistryDenial::OccupancyOverflow => {
+            RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow
+        }
+        ProductBranchRegistryDenial::AllocationRejected => {
+            RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected
         }
         ProductBranchRegistryDenial::AlreadyInstalled
         | ProductBranchRegistryDenial::AlreadyRetired
