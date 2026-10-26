@@ -1,7 +1,8 @@
-use crate::identity::data::{RecordId, VersionId};
+use crate::identity::data::VersionId;
+use crate::storage::residency::{Full, RelationalResidencyLease};
 use crate::storage::substrate::{PinClass, RecordKind};
 
-use super::{partition_of, slot_of, StorageAuthority};
+use super::StorageAuthority;
 
 impl StorageAuthority<'_> {
     #[cfg(test)]
@@ -15,13 +16,13 @@ impl StorageAuthority<'_> {
 
     pub(crate) fn adjust_named_pin<K: RecordKind>(
         &self,
-        record_id: RecordId<K::Domain>,
+        resident: &RelationalResidencyLease<Full>,
+        slot: usize,
         class: PinClass,
         delta: i32,
         retention_fence: VersionId,
     ) {
-        let slot = slot_of::<K>(&record_id);
-        let partition_id = partition_of::<K>(&record_id);
+        let partition_id = resident.full_view().partition().partition_id;
         let mut writer = self.runtime.edit_partitions();
         let Some(partition) = writer.partition_mut(partition_id) else {
             return;

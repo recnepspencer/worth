@@ -58,6 +58,6 @@ pub(crate) use storage::{
 };
 pub(crate) use visibility::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, ReplayRetentionState, SnapshotHandleBinding,
-    VisibilityResidency, VisibilitySubsystem,
+    PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilityResidency,
+    VisibilitySubsystem,
 };

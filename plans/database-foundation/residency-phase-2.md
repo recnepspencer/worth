@@ -304,3 +304,41 @@ preview meaning without global publication after real normalization.
 The hostile naming-admission fixture now prepares through that owner and proves
 its initial naming is admitted before replacing the symbol with raw text;
 otherwise its old replacement would be a no-op rather than a hostile input.
+
+## Replay pin boundary review
+
+Replay retention currently materializes the historical selected root, then edits
+the mirror by bare record id. Those regions can have different cells after
+reopen, so the historical read is not a mirror residency witness. Release also
+rediscovers its pin set through an evictable cache. The runtime pin owner will
+instead demand the selected mirror partitions before any pin effect and retain
+that exact resident edition together with the derived pin state. Storage pin
+edits will require a counted Full lease and a slot in that resident partition;
+they will have no bare partition-id entry point. The move-only replay retention
+entry owns this custody through release, so unpinning performs no loads and
+does not depend on cache survival. These are runtime lifecycle types, not
+cross-runtime meaning or a new platform authority lane.
+
+
+The pin proofs also exposed a concurrency defect in the prior reference
+protocol: eight simultaneous first retains each applied a physical pin set,
+then overwrote one index entry. Removing an entry to decrement it similarly
+opened an ownership gap. Resident registration now rechecks and installs under
+the replay index lock; release decrements or unpins and removes under that same
+lock. Cold demand, diagnostic emission and cache work remain outside it.
+Retention fences are computed before this transition and before mirror writer
+acquisition, preserving the index-before-mirror lock order. No fallible loading
+occurs during pin effects.
+
+
+Replay pin custody is implemented. Production recovery proofs retain an exact
+fork source independently of the serving mirror, inject unread mirror damage,
+and verify the typed sticky failure without retention installation or journal
+advance. A successful retain survives visibility-cache eviction; final release
+uses its owned pin set without reads. Eight concurrent retainers and releasers
+share exactly one physical pin set. The failing concurrency proof observed
+eight sets before the index transition fix; the product protocol was wrong.
+Relational lib (1,879 passing, 31 existing ignored), Bridge (1,102), World (263)
+and Server (12) pass. Scoped function review found only cohesive operation,
+fixture and typed pin-coordinate advisories; no extra responsibility is hidden
+in the resident custody or index transitions.

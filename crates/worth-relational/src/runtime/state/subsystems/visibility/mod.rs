@@ -4,7 +4,7 @@ mod snapshot_handle_binding;
 mod snapshot_handles;
 
 pub(crate) use cache::{VisibilityCache, VisibilityResidency};
-pub(crate) use replay_retention::{ReplayRetentionIndex, ReplayRetentionState};
+use replay_retention::ReplayRetentionIndex;
 pub(crate) use snapshot_handle_binding::SnapshotHandleBinding;
 pub(crate) use snapshot_handles::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
@@ -263,32 +263,5 @@ impl VisibilitySubsystem {
         let retained = retention.retained_mut(version_id)?;
         retained.ref_count += 1;
         Some(retained.ref_count)
-    }
-
-    pub(crate) fn insert_replay_retention(
-        &self,
-        version_id: crate::identity::data::VersionId,
-        state: ReplayRetentionState,
-    ) {
-        self.replay_retention
-            .write()
-            .insert_retained(version_id, state);
-    }
-
-    pub(crate) fn take_replay_retention(
-        &self,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<ReplayRetentionState> {
-        self.replay_retention.write().take_retained(version_id)
-    }
-
-    pub(crate) fn restore_replay_retention(
-        &self,
-        version_id: crate::identity::data::VersionId,
-        state: ReplayRetentionState,
-    ) {
-        self.replay_retention
-            .write()
-            .insert_retained(version_id, state);
     }
 }

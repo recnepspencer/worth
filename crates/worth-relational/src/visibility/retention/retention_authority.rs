@@ -33,15 +33,15 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RetentionPlan, crate::execution::RelationalExecutionDenialCause> {
+        let retention_fence = self
+            .runtime
+            .visibility
+            .retention_fence_version(self.runtime.current_version_id());
         let mut writer = self
             .runtime
             .partitions
             .demand_resident_edit(execution, &self.runtime.services.instrumentation)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
-        let retention_fence = self
-            .runtime
-            .visibility
-            .retention_fence_version(self.runtime.current_version_id());
         let mut branch_pinned_entities = 0;
         let mut replay_pinned_entities = 0;
         let mut snapshot_pinned_entities = 0;
@@ -112,6 +112,10 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RetentionPassOutcome, crate::execution::RelationalExecutionDenialCause> {
+        let retention_fence = self
+            .runtime
+            .visibility
+            .retention_fence_version(self.runtime.current_version_id());
         let mut writer = self
             .runtime
             .partitions
@@ -129,10 +133,6 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
 
         let entity_chunk_size = self.runtime.storage_access().entity_chunk_size();
         let relation_chunk_size = self.runtime.storage_access().relation_chunk_size();
-        let retention_fence = self
-            .runtime
-            .visibility
-            .retention_fence_version(self.runtime.current_version_id());
 
         writer.visit_partitions(|mut partition| {
             let entity_counts = run_partition_retention_pass::<EntityRecordKind>(

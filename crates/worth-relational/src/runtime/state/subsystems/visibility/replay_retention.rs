@@ -36,7 +36,48 @@ impl ReplayRetentionIndex {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct ReplayRetentionState {
     pub(crate) ref_count: usize,
+    pub(crate) pins: crate::visibility::pins::ResidentReplayPins,
+}
+
+impl super::VisibilitySubsystem {
+    /// Cold admission precedes this transition. Serialize only resident pin
+    /// effects and reference ownership, including the slow-path recheck.
+    pub(crate) fn retain_resident_replay(
+        &self,
+        version_id: VersionId,
+        pins: crate::visibility::pins::ResidentReplayPins,
+        pin: impl FnOnce(&crate::visibility::pins::ResidentReplayPins),
+    ) -> bool {
+        let mut retention = self.replay_retention.write();
+        if let Some(retained) = retention.retained_mut(version_id) {
+            retained.ref_count += 1;
+            return false;
+        }
+        pin(&pins);
+        retention.insert_retained(version_id, ReplayRetentionState { ref_count: 1, pins });
+        true
+    }
+
+    pub(crate) fn release_resident_replay(
+        &self,
+        version_id: VersionId,
+        unpin: impl FnOnce(&crate::visibility::pins::ResidentReplayPins),
+    ) -> bool {
+        let mut retention = self.replay_retention.write();
+        let Some(retained) = retention.retained_mut(version_id) else {
+            return false;
+        };
+        if retained.ref_count > 1 {
+            retained.ref_count -= 1;
+        } else {
+            // Release before removing the entry so a new first retain cannot
+            // overlap physical effects for the previous reference set.
+            unpin(&retained.pins);
+            retention.take_retained(version_id);
+        }
+        true
+    }
 }
