@@ -2820,7 +2820,7 @@ Workflow: the runnable authored example obtains the actual awaited slot, capture
         .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .retain_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(application.program_runtime())
         .unwrap_or_else(|_|panic!("installed approved effect action"));
     let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
         worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
@@ -3236,10 +3236,11 @@ cancellation and precommit atomicity are unchanged; real allocator refusals rema
 owned by their allocating operation. This installation does not bound aggregate
 process RSS or guarantee available RAM.
 
-`RetentionCounterOverflow` and `RetainedCompanionCounterOverflow` report an
-unrepresentable retained total with its original requested/retained operands.
-They are distinct from finite `RetentionCapacityExhausted` and
-`RetainedCompanionCapacityExhausted`, and do not trigger finite-capacity eviction.
+`RetentionCounterOverflow` reports an unrepresentable retained total with its
+original requested/retained operands. It is distinct from finite
+`RetentionCapacityExhausted` and does not trigger finite-capacity eviction.
+Companion admission reports a finite retained ceiling through
+`RetainedCompanionCapacityExhausted`.
 Preparation counter overflow likewise remains distinct from a supplied ceiling.
 Keep the returned original owner and its policy values on refusal; retry that
 owner with a fresh authorized request.

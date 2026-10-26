@@ -30,8 +30,13 @@ impl std::fmt::Debug for RelationalStoreHomeClosed {
 impl RelationalStoreHome {
     /// Stop serving and close the Store. Durability never depends on close.
     pub fn close(self) -> RelationalStoreHomeClosed {
-        let Self { runtime, serving } = self;
+        let Self {
+            runtime,
+            cold_source,
+            serving,
+        } = self;
         drop(runtime);
+        drop(cold_source);
         match Arc::try_unwrap(serving) {
             Ok(serving) => RelationalStoreHomeClosed::Closed(serving.close()),
             Err(_) => RelationalStoreHomeClosed::StillShared,

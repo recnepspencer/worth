@@ -39,5 +39,4 @@ pub mod source_output_model;
 pub mod tree_controls;
 pub mod tree_reapplication;
 
-#[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
-pub mod authentication;
+pub(crate) use crate::operator_identity as authentication;

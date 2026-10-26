@@ -175,7 +175,6 @@ where
                         WorthQueryApplicationLiveCauseDenialKind::ResultShapeUnavailable,
                     ),
                 WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable
-                | WorthQueryApplicationReadExecutionDenialKind::PredicateLookupOverflow
                 | WorthQueryApplicationReadExecutionDenialKind::TargetIdentityIndexUnavailable
                 | WorthQueryApplicationReadExecutionDenialKind::ResultLimitExceeded
                 | WorthQueryApplicationReadExecutionDenialKind::ContinuationIndexUnavailable

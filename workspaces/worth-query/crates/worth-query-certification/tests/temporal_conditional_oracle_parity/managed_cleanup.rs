@@ -88,6 +88,3 @@ fn conditional_reinstallation_retains_failed_cleanup_without_repeating_business(
         "payload".to_string(),
     );
 }
-
-#[path = "managed_cleanup/lag.rs"]
-mod lag;

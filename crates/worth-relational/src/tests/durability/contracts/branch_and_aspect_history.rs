@@ -187,6 +187,7 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

@@ -47,10 +47,6 @@ impl DemandRecords {
     pub(super) fn note_cleanup_entry(&self) {
         self.5.set(self.5.get() + 1);
     }
-    #[cfg(test)]
-    pub(super) fn cleanup_entries_for_test(&self) -> u64 {
-        self.5.get()
-    }
 
     pub(super) fn retain(
         &mut self,

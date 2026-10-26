@@ -25,6 +25,10 @@ pub(crate) fn replay_commit_stop(
             ),
             None => DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into(),
         },
+        TransactionCommitError::Preparation { error, .. } if matches!(error.reason(), crate::transactions::data::CommitPreparationReason::StorageUnavailable(_)) => {
+            let crate::transactions::data::CommitPreparationReason::StorageUnavailable(failure) = error.reason() else { unreachable!() };
+            failure.into()
+        }
         TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }

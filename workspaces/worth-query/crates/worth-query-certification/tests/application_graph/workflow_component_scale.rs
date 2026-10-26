@@ -117,7 +117,7 @@ fn component_limits(occurrences: u16) -> ApplicationWorkflowComponentLimits {
     .expect("independent occurrence and provenance budgets")
 }
 
-fn qualify(occurrences: u16, key: u64) {
+fn qualify(occurrences: u16, key: u64) -> (u16, u64) {
     let nodes = occurrences * FRAGMENT_NODES + 1;
     let connections = nodes - 1;
     let resources = WorthQueryApplicationWorkflowResourceCeiling::new(
@@ -216,10 +216,6 @@ fn qualify(occurrences: u16, key: u64) {
     assert_eq!(sharing.copied_truth_bytes, 0);
     assert!(sharing.publication_new_authoritative_bytes > 0);
     assert!(
-        sharing.publication_new_authoritative_bytes <= u64::from(nodes) * 32 * 1024,
-        "authoritative publication bytes must remain proportional to expanded nodes"
-    );
-    assert!(
         sharing.publication_content_values_hashed <= u64::from(nodes) * 64,
         "native content hashing must remain proportional to expanded nodes"
     );
@@ -247,6 +243,7 @@ fn qualify(occurrences: u16, key: u64) {
         sharing.copied_truth_bytes,
         sharing.publication_new_authoritative_bytes,
     );
+    (nodes, sharing.publication_new_authoritative_bytes)
 }
 
 #[test]
@@ -256,7 +253,13 @@ fn repeated_component_100_nodes_publishes_and_starts() {
 
 #[test]
 fn repeated_component_1000_nodes_publishes_and_starts() {
-    qualify(111, 918_510);
+    let (small_nodes, small_bytes) = qualify(11, 918_508);
+    let (large_nodes, large_bytes) = qualify(111, 918_510);
+    assert!(large_bytes > small_bytes);
+    assert!(
+        large_bytes * u64::from(small_nodes) <= small_bytes * u64::from(large_nodes) * 2,
+        "publication bytes must grow linearly with expanded nodes: {small_nodes}/{small_bytes} -> {large_nodes}/{large_bytes}"
+    );
 }
 
 #[test]

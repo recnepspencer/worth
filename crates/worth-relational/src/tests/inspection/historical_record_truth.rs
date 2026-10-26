@@ -61,6 +61,7 @@ fn historical_record_inspection_preserves_requested_branch_context() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

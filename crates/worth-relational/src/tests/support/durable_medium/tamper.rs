@@ -37,6 +37,7 @@ impl TestDurableMedium {
         journal.checkpoint = Some(
             crate::durability::medium::RelationalDurableCheckpointSource::new(
                 filed.covered(),
+                filed.covered_transitions(),
                 RelationalNativeCheckpoint::from_untrusted_bytes(bytes),
             ),
         );

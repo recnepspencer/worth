@@ -32,6 +32,7 @@ fn mutation_batch_lowers_once_into_a_batch_native_relational_artifact() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

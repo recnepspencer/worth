@@ -26,7 +26,7 @@ fn deleted_branch_reader_retains_only_its_exact_scoped_generation() {
     assert!(built.failed_indexes.is_empty());
     let generation = built.generations[0].generation_id;
     assert!(runtime
-        .delete_branch(&identity)
+        .delete_branch(execution, &identity)
         .unwrap()
         .deleted()
         .is_some());

@@ -37,13 +37,4 @@ impl WorthQueryOutputDemandRegistry {
 }
 
 #[cfg(test)]
-impl DemandRegistryState {
-    pub(in crate::domain_computation::primary_graph::application_output_demand::registry) fn drain_terminal_cleanup(
-        &mut self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
-        while let Some(retired) = self.take_terminal_cleanup_step()? {
-            drop(retired);
-        }
-        Ok(())
-    }
-}
+impl DemandRegistryState {}

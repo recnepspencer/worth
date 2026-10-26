@@ -102,16 +102,16 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
         },
     };
     if let Some((token, outcome)) = replay {
-        if matches!(outcome, BankHttpCorrectionHistoryOutcome::Delivered { .. }) {
-            if let Err(cause) = disclose(application, &principal, &scope, request) {
-                if revokes_cached_access(cause) {
-                    access(registry, |registry| {
-                        registry.deny_correction_replay(&token, cause)
-                    })
-                    .await;
-                }
-                return refused(&request.request_id, cause);
+        if matches!(outcome, BankHttpCorrectionHistoryOutcome::Delivered { .. })
+            && let Err(cause) = disclose(application, &principal, &scope, request)
+        {
+            if revokes_cached_access(cause) {
+                access(registry, |registry| {
+                    registry.deny_correction_replay(&token, cause)
+                })
+                .await;
             }
+            return refused(&request.request_id, cause);
         }
         return outcome;
     }

@@ -26,6 +26,18 @@ fn returned_findings(
 #[test]
 fn returned_findings_retain_native_request_memory_until_the_result_drops() {
     let world = installed_authorization_world(true);
+    let _observation =
+        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    crate::facade::primary_graph::place_managed_computations_on_this_thread_for_test(
+        crate::facade::primary_graph::WorthQueryExecutionPlacementForTest::Serial,
+    );
+    crate::facade::primary_graph::bound_advancement_requests_on_this_thread_for_test(Some(
+        worth_foundational::ExecutionBudget::new(
+            std::num::NonZeroUsize::MIN,
+            Some(64 * 1024),
+            None,
+        ),
+    ));
     world
         .application
         .with_host_advancement(|phase| {

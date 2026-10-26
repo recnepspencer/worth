@@ -31,7 +31,8 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
         .tail_log
         .iter()
         .map(|entry| {
-            crate::durability::log::PersistedCanonicalCommit::from_positioned(entry.positioned())
+            crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_positioned(
+                entry.positioned(), worth_execution::ExecutionAllocationPolicy::SystemAllocation).unwrap().as_bytes().to_vec()
         })
         .collect();
     let bytes = rmp_serde::to_vec_named(&persisted).unwrap();
@@ -41,17 +42,16 @@ fn fixture() -> (RelationalRuntime, Vec<u8>) {
 fn plan_from_bytes(source: &RelationalRuntime, bytes: &[u8]) -> RecoveryPlan {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
-    let persisted: Vec<crate::durability::log::PersistedCanonicalCommit> =
-        rmp_serde::from_slice(bytes).unwrap();
+    let persisted: Vec<Vec<u8>> = rmp_serde::from_slice(bytes).unwrap();
     let mut plan = crate::tests::support::recovery_plan_for(
         execution,
-        &source,
+        source,
         RecoveryVerificationMode::NormalRecoveryVerification,
     )
     .unwrap();
     plan.tail_log = persisted
         .into_iter()
-        .map(|record| record.readmit().unwrap())
+        .map(|record| crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(&record, execution).unwrap())
         .collect();
     plan
 }

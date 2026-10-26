@@ -27,10 +27,10 @@ pub(crate) fn lower_compat_http_request_input(
     let mut builder = WorthServerOperationRequestInput::builder()
         .with_operation_family(operation_family)
         .with_operation_name(operation_name);
-    if operation_family != WorthServerOperationFamily::QueryDirectRead {
-        if let Some(basis_digest) = lower_basis_digest(prepared_request, diagnostics_profile)? {
-            builder = builder.with_basis_digest(basis_digest);
-        }
+    if operation_family != WorthServerOperationFamily::QueryDirectRead
+        && let Some(basis_digest) = lower_basis_digest(prepared_request, diagnostics_profile)?
+    {
+        builder = builder.with_basis_digest(basis_digest);
     }
     if let Some(idempotency_key) = lower_idempotency_key(prepared_request, diagnostics_profile)? {
         builder = builder.with_idempotency_key(idempotency_key);

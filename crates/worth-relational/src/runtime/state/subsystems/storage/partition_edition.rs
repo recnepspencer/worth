@@ -3,12 +3,13 @@ use std::sync::Arc;
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 /// The authoritative record substrate keyed by partition.
 ///
 /// The map is the spine only: every partition behind it is structurally shared,
 /// so copying the map copies pointers, never records.
-pub(crate) type PartitionMap = BTreeMap<PartitionId, Arc<PartitionState>>;
+pub(crate) type PartitionMap = BTreeMap<PartitionId, RelationalRegionRetention>;
 
 /// One immutable, structurally shared edition of the authoritative record
 /// substrate.
@@ -44,7 +45,7 @@ impl PartitionEdition {
     /// The borrow is tied to the edition handle, not to a lock, so callers keep
     /// the handle alive for the whole traversal rather than copying out of it.
     pub(crate) fn partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.partitions.get(&partition_id).map(Arc::as_ref)
+        self.partitions.get(&partition_id).map(AsRef::as_ref)
     }
 
     /// A counted handle onto one partition, for callers that must outlive the
@@ -52,8 +53,39 @@ impl PartitionEdition {
     pub(crate) fn shared_partition(
         &self,
         partition_id: PartitionId,
-    ) -> Option<Arc<PartitionState>> {
-        self.partitions.get(&partition_id).map(Arc::clone)
+    ) -> Option<RelationalResidencyLease<Full>> {
+        self.partitions
+            .get(&partition_id)
+            .map(|region| region.lease().clone())
+    }
+
+    pub(crate) fn cells(&self) -> impl Iterator<Item = (PartitionId, &RelationalRegionRetention)> {
+        self.partitions.iter().map(|(id, region)| (*id, region))
+    }
+
+    pub(crate) fn resident_pin_lease(
+        &self,
+        id: PartitionId,
+    ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        self.partitions
+            .get(&id)
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })?
+            .pin_lease()
+    }
+
+    pub(super) fn demand_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if let Some(region) = self.partitions.get(&id) {
+            region.demand_full(execution, 1 << 30)?;
+        }
+        Ok(())
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -67,15 +99,7 @@ impl PartitionEdition {
     }
 
     pub(crate) fn partitions(&self) -> impl Iterator<Item = &PartitionState> {
-        self.partitions.values().map(Arc::as_ref)
-    }
-
-    /// An owned copy of the map spine, sharing every partition behind it.
-    ///
-    /// Theta(partitions) pointer copies and no record copies. Callers that then
-    /// mutate individual partitions pay their deep copies one at a time.
-    pub(crate) fn cloned_map(&self) -> PartitionMap {
-        (*self.partitions).clone()
+        self.partitions.values().map(AsRef::as_ref)
     }
 
     /// Owned copies of every partition, for checkpoint capture and recovery.

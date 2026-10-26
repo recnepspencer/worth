@@ -4,83 +4,17 @@
 //! land, in arrival order, at contiguous positions; a waiter whose request is
 //! cancelled stops before any effect.
 
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
-use crate::durability::medium::{RelationalDurableMedium, RelationalDurablePublication};
 use crate::facade::history::BranchId;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
 
-/// Failure budget for a gate or observation nobody completes; it is not the
-/// ordering mechanism.
+use super::slow_publication::{PublicationGate, SlowFirstPublication};
 const STALL_BUDGET: Duration = Duration::from_secs(30);
-
-/// A medium whose first publication after the test arms it holds until the
-/// test opens its gate, so that publisher holds the reservation for as long as
-/// the test needs.
-#[derive(Debug)]
-struct SlowFirstPublication {
-    contents: Box<dyn RelationalDurableMedium>,
-    gate: Arc<PublicationGate>,
-}
-
-#[derive(Debug, Default)]
-struct PublicationGate {
-    state: Mutex<GateState>,
-    changed: Condvar,
-}
-
-#[derive(Debug, Default)]
-struct GateState {
-    armed: bool,
-    publishing: bool,
-    open: bool,
-}
-
-impl PublicationGate {
-    fn arm(&self) {
-        self.state.lock().unwrap().armed = true;
-    }
-
-    fn open(&self) {
-        self.state.lock().unwrap().open = true;
-        self.changed.notify_all();
-    }
-
-    fn wait_until(&self, reached: impl Fn(&GateState) -> bool) {
-        let deadline = Instant::now() + STALL_BUDGET;
-        let mut state = self.state.lock().unwrap();
-        while !reached(&state) {
-            let remaining = deadline
-                .checked_duration_since(Instant::now())
-                .expect("the publication gate stalled");
-            state = self.changed.wait_timeout(state, remaining).unwrap().0;
-        }
-    }
-}
-
-impl RelationalDurableMedium for SlowFirstPublication {
-    fn publish(
-        &self,
-        artifact: &RelationalCanonicalCommitArtifact,
-    ) -> RelationalDurablePublication {
-        let first = {
-            let mut state = self.gate.state.lock().unwrap();
-            let first = state.armed && !state.publishing;
-            state.publishing |= state.armed;
-            first
-        };
-        if first {
-            self.gate.changed.notify_all();
-            self.gate.wait_until(|state| state.open);
-        }
-        self.contents.publish(artifact)
-    }
-}
 
 /// A durable runtime with a committed main, a `feature` fork of it and an
 /// armed gate, and the reservation contacts its setup made.
@@ -132,7 +66,7 @@ fn a_durable_publisher_waits_for_the_reservation_instead_of_deferring() {
             let execution = worth_execution::ExecutionRequest::serial(&request);
             create_entity_outcome(&execution, runtime, "main-first")
         });
-        gate.wait_until(|state| state.publishing);
+        gate.await_publication();
         let second = scope.spawn(|| {
             let request = crate::test_execution_policy::serial_request();
             let execution = worth_execution::ExecutionRequest::serial(&request);
@@ -179,7 +113,7 @@ fn a_cancelled_waiter_stops_before_any_effect() {
             let execution = worth_execution::ExecutionRequest::serial(&request);
             create_entity_outcome(&execution, runtime, "main-first")
         });
-        gate.wait_until(|state| state.publishing);
+        gate.await_publication();
         let token = cancellation.token();
         let cancelled = scope.spawn(move || {
             let request = worth_execution::SerialRequest::from_memory(

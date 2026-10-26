@@ -25,7 +25,7 @@ fn inbound_completion_preserves_real_execution_refusals_at_each_phase() {
             let error = work_refusal(execution);
             let expected = Kind::ExecutionResource {
                 denial: Resource::WorkExhausted,
-                partition_identity: Some(1),
+                partition_identity: None,
                 policy_ancestor: None,
             };
             assert_eq!(

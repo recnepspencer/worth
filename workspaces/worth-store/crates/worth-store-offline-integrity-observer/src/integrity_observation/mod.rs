@@ -70,3 +70,6 @@ pub use root_protocol_declarations::{
     OfflineIntegrityRootProtocolDeclarations, OFFLINE_INTEGRITY_ROOT_PROTOCOL_DECLARATIONS,
 };
 pub(crate) use untrusted_media::BoundedMediaWalk;
+
+#[cfg(test)]
+mod checkpoint_literal_vectors;

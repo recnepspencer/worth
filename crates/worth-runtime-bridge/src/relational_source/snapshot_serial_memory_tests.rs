@@ -32,7 +32,7 @@ fn snapshot_serial_memory_is_refused_after_scope_admission() {
             let worth_execution::LeaseDenial::MemoryExhausted(refusal) =
                 ExecutionMemoryReservation::reserve_in_scope(
                     lease,
-                    policy.budget().charged_memory_bytes().unwrap(),
+                    policy.charged_memory_bytes().unwrap(),
                 )
                 .unwrap_err()
             else {

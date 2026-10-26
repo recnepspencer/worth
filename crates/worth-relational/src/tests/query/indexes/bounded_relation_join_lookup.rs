@@ -222,6 +222,7 @@ fn exact_relation_join_uses_one_branch_root_after_both_heads_diverge() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("join-sibling".to_owned()),
             &BranchId("main".to_owned()),
         )

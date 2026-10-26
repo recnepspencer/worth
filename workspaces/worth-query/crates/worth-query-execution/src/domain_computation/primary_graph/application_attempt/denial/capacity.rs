@@ -3,12 +3,16 @@ use super::{AttemptDenialCause, WorthQueryApplicationAttemptDenial};
 use worth_execution::ChargedBytes;
 impl ChargedBytes for WorthQueryApplicationAttemptDenial {
     fn additional_charged_bytes(&self) -> u64 {
-        let Self {
-            kind: _kind,
-            subject,
-            cause,
-        } = self;
-        let nested = match cause {
+        (self.subject.capacity() as u64).saturating_add(
+            self.cause()
+                .map_or(0, ChargedBytes::additional_charged_bytes),
+        )
+    }
+}
+
+impl ChargedBytes for AttemptDenialCause {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
             AttemptDenialCause::IndexedLookup(_) => std::mem::size_of::<
                 worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
             >() as u64,
@@ -50,7 +54,6 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
                 (std::mem::size_of::<worth_foundational::expression_api::ExpressionDenial>() as u64)
                     .saturating_add(text)
             }
-        };
-        (subject.capacity() as u64).saturating_add(nested)
+        }
     }
 }

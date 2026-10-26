@@ -94,6 +94,14 @@ impl EvaluationOutput {
 
 pub trait IntoEvaluationOutput {
     fn into_evaluation_output(self) -> EvaluationOutput;
+
+    /// A declared upper bound for output and trace heap, excluding input capture.
+    fn maximum_result_heap_bytes() -> Option<u64>
+    where
+        Self: Sized,
+    {
+        None
+    }
 }
 
 impl IntoEvaluationOutput for EvaluationOutput {
@@ -108,5 +116,9 @@ where
 {
     fn into_evaluation_output(self) -> EvaluationOutput {
         EvaluationOutput::from_result(self)
+    }
+
+    fn maximum_result_heap_bytes() -> Option<u64> {
+        T::maximum_result_heap_bytes()
     }
 }

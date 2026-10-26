@@ -14,8 +14,8 @@ fn branch_transactions_are_detached_and_overlays_do_not_cross() {
 
     let mut runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "fork-source");
-    fork_from_main(&mut runtime, "storm");
-    fork_from_main(&mut runtime, "maintenance");
+    fork_from_main(execution, &mut runtime, "storm");
+    fork_from_main(execution, &mut runtime, "maintenance");
 
     let (storm_basis, mut storm) = begin_on(&runtime, "storm");
     let (maintenance_basis, mut maintenance) = begin_on(&runtime, "maintenance");
@@ -93,8 +93,8 @@ fn validated_proposal_complexity_excludes_intervening_sibling_commit_work() {
     let mut runtime = runtime_with_test_schema();
     let source = create_entity(execution, &runtime, "relation-source");
     let target = create_entity(execution, &runtime, "relation-target");
-    fork_from_main(&mut runtime, "candidate");
-    fork_from_main(&mut runtime, "sibling");
+    fork_from_main(execution, &mut runtime, "candidate");
+    fork_from_main(execution, &mut runtime, "sibling");
 
     let (_, mut candidate) = begin_on(&runtime, "candidate");
     candidate
@@ -169,7 +169,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     let (_, mut transaction) = begin_on(&runtime, "main");
 
     let before = transaction
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("basis read projects");
     assert_eq!(
         before.base().and_then(read_entity_name),
@@ -177,7 +177,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
     );
     update_entity(execution, &runtime, entity, "current-value");
     let after_movement = transaction
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("detached basis read projects");
     assert_eq!(
         after_movement.base().and_then(read_entity_name),
@@ -192,7 +192,7 @@ fn stale_transaction_reads_remain_on_the_admitted_root_and_commit_has_no_effect(
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
         transaction
-            .read_entity(entity)
+            .read_entity(execution, entity)
             .expect("staged field update projects")
             .effective()
             .and_then(read_entity_name),
@@ -303,12 +303,16 @@ fn stale_transaction_denies_before_interning_new_client_keys() {
     );
 }
 
-fn fork_from_main(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.into()), source)
+        .fork_branch(execution, BranchId(branch.into()), source)
         .expect("branch fork succeeds");
 }
 

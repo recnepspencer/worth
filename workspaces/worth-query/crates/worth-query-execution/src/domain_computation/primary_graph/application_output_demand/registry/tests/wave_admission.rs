@@ -6,7 +6,7 @@ fn uncommitted_upstream_never_admits_a_prepared_member() {
     use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
     use crate::domain_computation::primary_graph::output_lineage::SourceInvalidationOwner;
     let registry = WorthQueryOutputDemandRegistry::default();
-    let owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
+    let _owner = SourceInvalidationOwner::new(WorthQueryInvalidationResources::new(), 1);
     let world =
         crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world(
             true,

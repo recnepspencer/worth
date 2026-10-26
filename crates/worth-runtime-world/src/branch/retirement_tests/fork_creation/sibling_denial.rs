@@ -9,10 +9,17 @@ fn create_partial_effects(
     source: &ProductBranchObservation,
     intent: ProductBranchCreationIntent,
 ) -> crate::recovery::ProductUnpublishedOwnerEffects {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let cancellation = RuntimeWorldCancellationSource::new();
     let outcome = RuntimeWorldBranchService::create_product_branch(
         owner,
-        RuntimeWorldBranchCreationRequest::new(source.clone(), intent, &cancellation.token()),
+        RuntimeWorldBranchCreationRequest::new(
+            execution,
+            source.clone(),
+            intent,
+            &cancellation.token(),
+        ),
     )
     .expect("the later sibling denial is a product-unpublished outcome");
     match outcome {

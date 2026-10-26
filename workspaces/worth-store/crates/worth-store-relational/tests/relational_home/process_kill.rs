@@ -1,7 +1,7 @@
 //! Real processes: a child opens a home, runs a script prefix and is killed
-//! idle on either side of the first checkpoint, or while a commit or a
-//! checkpoint is parked at a Store mutation seam. The parent recovers through
-//! the production `open` and holds the home to the crash oracle.
+//! idle on either side of the first checkpoint, or while a commit, branch
+//! transition, or checkpoint is parked at a Store mutation seam. The parent
+//! recovers through production `open` and holds the home to the crash oracle.
 //!
 //! A commit parked before its WAL append recovers without it. One parked at
 //! any later seam recovers with it, although the dead process never
@@ -41,8 +41,14 @@ pub(crate) enum Stop {
     AboveCheckpoint,
     /// The schema-transition commit parked at a seam.
     Commit(Seam),
+    BranchTransition(Seam),
+    Archive(Seam),
+    RequestDeletion(Seam),
+    Delete(Seam),
     /// The checkpoint replacing the first one, parked at a seam.
     Checkpoint(Seam),
+    /// An unanchored member batch, before the manifest selection.
+    CheckpointMembers(Seam),
 }
 
 const SEAMS: [Seam; 5] = [
@@ -62,7 +68,12 @@ impl Stop {
         [Self::BeforeFirstCheckpoint, Self::AboveCheckpoint]
             .into_iter()
             .chain(SEAMS.into_iter().map(Self::Commit))
+            .chain(SEAMS.into_iter().map(Self::BranchTransition))
+            .chain(SEAMS.into_iter().map(Self::Archive))
+            .chain(SEAMS.into_iter().map(Self::RequestDeletion))
+            .chain(SEAMS.into_iter().map(Self::Delete))
             .chain(SEAMS.into_iter().map(Self::Checkpoint))
+            .chain(SEAMS.into_iter().map(Self::CheckpointMembers))
     }
 
     /// The script steps the child completes before it parks, and the step it
@@ -85,8 +96,21 @@ impl Stop {
                 let target = position(|step| matches!(step, Step::Transition { .. }), 0);
                 (target, Some(target))
             }
-            Self::Checkpoint(_) => {
+            Self::Checkpoint(_) | Self::CheckpointMembers(_) => {
                 let target = position(|step| matches!(step, Step::Checkpoint), 1);
+                (target, Some(target))
+            }
+            Self::BranchTransition(_)
+            | Self::Archive(_)
+            | Self::RequestDeletion(_)
+            | Self::Delete(_) => {
+                let select: fn(&Step) -> bool = match self {
+                    Self::Archive(_) => |step| matches!(step, Step::Archive { .. }),
+                    Self::RequestDeletion(_) => |step| matches!(step, Step::RequestDeletion { .. }),
+                    Self::Delete(_) => |step| matches!(step, Step::Delete { .. }),
+                    _ => |step| matches!(step, Step::Fork { .. }),
+                };
+                let target = position(select, 0);
                 (target, Some(target))
             }
         }
@@ -100,6 +124,8 @@ pub(crate) struct Killed {
     pub(crate) acknowledged: Vec<Vec<u8>>,
     /// How many commits the child's live runtime held while parked.
     pub(crate) live: usize,
+    transitions: Vec<Vec<u8>>,
+    transition_live: usize,
     _directory: tempfile::TempDir,
 }
 
@@ -124,10 +150,17 @@ pub(crate) fn launch(stop: Stop) -> Killed {
     assert_eq!(end, ChildEnd::KilledAtPark, "{stop:?}");
     let live = fs::read_to_string(&ready).unwrap().parse().unwrap();
     let acknowledged = decode(&fs::read(markers.join("acknowledged")).unwrap());
+    let transitions = decode(&fs::read(markers.join("transitions")).unwrap());
+    let transition_live = fs::read_to_string(markers.join("transition-live"))
+        .unwrap()
+        .parse()
+        .unwrap();
     Killed {
         location,
         acknowledged,
         live,
+        transitions,
+        transition_live,
         _directory: directory,
     }
 }
@@ -146,8 +179,20 @@ fn assert_killed_home_recovers(stop: Stop) {
         Stop::AboveCheckpoint => (InFlight::Nothing, 1),
         Stop::Commit(Seam::BeforeWalAppend) => (InFlight::NotDurable, 2),
         Stop::Commit(_) => (InFlight::Durable, 2),
+        Stop::CheckpointMembers(_) => (InFlight::Nothing, 1),
         Stop::Checkpoint(Seam::BeforeWalAppend) => (InFlight::Nothing, 1),
         Stop::Checkpoint(_) => (InFlight::Nothing, 2),
+        Stop::BranchTransition(_)
+        | Stop::Archive(_)
+        | Stop::RequestDeletion(_)
+        | Stop::Delete(_) => {
+            let (prefix, _) = stop.plan(&script);
+            let checkpoints = script.steps[..prefix]
+                .iter()
+                .filter(|step| matches!(step, Step::Checkpoint))
+                .count() as u64;
+            (InFlight::Nothing, checkpoints)
+        }
     };
     assert_eq!(killed.live, held, "{case}: the parked commit was live");
     assert_eq!(
@@ -156,6 +201,28 @@ fn assert_killed_home_recovers(stop: Stop) {
         "{case}: selected checkpoint"
     );
     let commits = assert_recovered(&home, &script, &killed.acknowledged, &in_flight, &case);
+    let transition_flight = match stop {
+        Stop::BranchTransition(Seam::BeforeWalAppend)
+        | Stop::Archive(Seam::BeforeWalAppend)
+        | Stop::RequestDeletion(Seam::BeforeWalAppend)
+        | Stop::Delete(Seam::BeforeWalAppend) => InFlight::NotDurable,
+        Stop::BranchTransition(_)
+        | Stop::Archive(_)
+        | Stop::RequestDeletion(_)
+        | Stop::Delete(_) => InFlight::Durable,
+        _ => InFlight::Nothing,
+    };
+    assert_eq!(
+        killed.transition_live,
+        killed.transitions.len(),
+        "{case}: transition live before durable handoff"
+    );
+    super::transition_oracle::assert_recovered(
+        &home,
+        &killed.transitions,
+        &transition_flight,
+        &case,
+    );
     assert_continues(&killed.location, home, &script, commits, &execution, &case);
 }
 
@@ -175,7 +242,22 @@ fn a_commit_killed_at_each_mutation_seam_recovers_durable_before_live() {
 #[test]
 fn a_checkpoint_killed_at_each_mutation_seam_keeps_one_selected() {
     for seam in SEAMS {
+        assert_killed_home_recovers(Stop::CheckpointMembers(seam));
         assert_killed_home_recovers(Stop::Checkpoint(seam));
+    }
+}
+
+#[test]
+fn a_branch_transition_killed_at_each_mutation_seam_recovers() {
+    for seam in SEAMS {
+        for stop in [
+            Stop::BranchTransition(seam),
+            Stop::Archive(seam),
+            Stop::RequestDeletion(seam),
+            Stop::Delete(seam),
+        ] {
+            assert_killed_home_recovers(stop);
+        }
     }
 }
 
@@ -208,33 +290,90 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     apply(&home, &execution, &script.steps[..completed]);
     let acknowledged = workload::artifacts_of(home.runtime());
     killed_child::announce(&markers.join("acknowledged"), &encode(&acknowledged));
+    let transitions = super::branch_lifecycle::artifacts_of_home(&home);
+    killed_child::announce(&markers.join("transitions"), &encode(&transitions));
     let seam = match stop {
-        Stop::Commit(seam) | Stop::Checkpoint(seam) => seam,
+        Stop::Commit(seam)
+        | Stop::BranchTransition(seam)
+        | Stop::Archive(seam)
+        | Stop::RequestDeletion(seam)
+        | Stop::Delete(seam)
+        | Stop::Checkpoint(seam)
+        | Stop::CheckpointMembers(seam) => seam,
         Stop::BeforeFirstCheckpoint | Stop::AboveCheckpoint => {
             let live = acknowledged.len().to_string();
+            killed_child::announce(
+                &markers.join("transition-live"),
+                transitions.len().to_string().as_bytes(),
+            );
             killed_child::announce(&markers.join("ready"), live.as_bytes());
             killed_child::park();
         }
     };
     let target = &script.steps[parked.expect("a parked step")];
     std::thread::scope(|scope| {
-        let gate = home
+        let mut gate = home
             .certification_serving()
             .certification_pause_physical_mutation_at(seam);
-        scope.spawn(|| {
+        let worker = scope.spawn(|| {
             let request = workload::serial_request();
             let execution = ExecutionRequest::serial(&request);
             match target {
-                Step::Checkpoint => {
-                    let _ = home.checkpoint(ExecutionAllocationPolicy::SystemAllocation);
-                }
-                _ => {
-                    let _ = target.commit(home.runtime(), &execution);
-                }
+                Step::Checkpoint => home
+                    .checkpoint(ExecutionAllocationPolicy::SystemAllocation)
+                    .map(|_| ())
+                    .map_err(|stop| format!("{stop:?}")),
+                step if step.is_lifecycle() => step
+                    .lifecycle(home.runtime(), &execution)
+                    .map_err(|stop| format!("{stop:?}")),
+                _ => target
+                    .commit(home.runtime(), &execution)
+                    .map(|_| ())
+                    .map_err(|stop| format!("{stop:?}")),
             }
         });
-        assert!(gate.await_arrival(), "{stop:?}: the target did not park");
-        let live = workload::artifacts_of(home.runtime()).len().to_string();
+        if !gate.await_arrival() {
+            // A late arrival must not deadlock scope teardown after a failed
+            // assertion. Preserve the actual attempt's result in the failure.
+            gate.release();
+            panic!("{stop:?}: target did not park: {:?}", worker.join());
+        }
+        if matches!(stop, Stop::Checkpoint(_)) {
+            // This small fixture's new members form one batch. Its durable
+            // root does not select the checkpoint; the following anchored
+            // append is the decision the existing checkpoint court judges.
+            // The paused worker owns a clone of the arrived gate. Replacing
+            // the registry entry arms its next visit; releasing the old gate
+            // cannot release this new one (neither gate unregisters on Drop).
+            let anchor = home
+                .certification_serving()
+                .certification_pause_physical_mutation_at(seam);
+            gate.release();
+            gate = anchor;
+            if !gate.await_arrival() {
+                gate.release();
+                panic!("{stop:?}: anchor did not park: {:?}", worker.join());
+            }
+        }
+        if let Step::Fork { target } = target {
+            assert!(
+                home.runtime().branch_identity(target).is_err(),
+                "{stop:?}: fork installed before durable publication returned"
+            );
+        }
+        // The Store seam may hold its publication locks. Inspect the live
+        // catalog here; exporting old artifacts can perform cold Store reads.
+        let live = home
+            .runtime()
+            .history()
+            .immutable_commit_count()
+            .to_string();
+        killed_child::announce(
+            &markers.join("transition-live"),
+            super::branch_lifecycle::live_count(home.runtime())
+                .to_string()
+                .as_bytes(),
+        );
         killed_child::announce(&markers.join("ready"), live.as_bytes());
         killed_child::park();
     })

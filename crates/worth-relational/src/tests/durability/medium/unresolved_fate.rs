@@ -1,6 +1,7 @@
 //! A publication whose durable fate the medium cannot tell installs nothing,
 //! blocks the runtime, and is resolved by reopening from the medium.
 
+use crate::durability::medium::RelationalDurabilityUnresolvedSubject;
 use crate::facade::history::BranchId;
 use crate::facade::transactions::{CommitResult, TransactionCommitError};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -43,10 +44,18 @@ fn an_unresolved_publication_installs_nothing_and_refuses_every_later_commit_ali
         .expect("the error names the unresolved publication")
         .clone();
     let offered = medium.offered().pop().expect("the medium was asked");
-    assert_eq!(fate.position(), PatchStreamPosition(2));
-    assert_eq!(fate.position(), offered.position());
-    assert_eq!(fate.commit_id(), offered.commit_id());
-    assert_eq!(fate.digest(), offered.payload_digest());
+    let RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position,
+        commit_id,
+        digest,
+    } = fate.subject()
+    else {
+        panic!("a commit's unresolved fate names the commit")
+    };
+    assert_eq!(position, PatchStreamPosition(2));
+    assert_eq!(position, offered.position());
+    assert_eq!(commit_id, offered.commit_id());
+    assert_eq!(digest, offered.payload_digest());
     assert_eq!(main_head(&runtime), Some(anchor.commit.clone()));
     assert_eq!(runtime.durability().durable_commit_count(), 1);
     assert_eq!(
@@ -83,16 +92,20 @@ fn reopening_resolves_an_absent_unresolved_commit_as_never_committed() {
         .durability_unresolved_fate()
         .expect("unresolved")
         .clone();
-    assert!(medium.artifact_bytes(fate.position()).is_none());
+    let RelationalDurabilityUnresolvedSubject::CanonicalCommit { position, .. } = fate.subject()
+    else {
+        panic!("a commit's unresolved fate names the commit")
+    };
+    assert!(medium.artifact_bytes(position).is_none());
 
     let (recovery, reopened) = recover_with(execution, &runtime, durable_runtime_with_test_schema);
 
     assert_eq!(recovery.recovered_commits, 1);
     assert_eq!(main_head(&reopened), Some(anchor.commit.clone()));
     let resumed = commit_one(execution, &reopened, "resumed").expect("a reopened home commits");
-    assert_eq!(resumed.patch_position(), fate.position());
+    assert_eq!(resumed.patch_position(), position);
     assert_eq!(resumed.commit.parents, vec![anchor.commit.commit_id]);
-    assert_eq!(medium.head(), fate.position());
+    assert_eq!(medium.head(), position);
     release_test_commit_snapshot(&reopened, &resumed);
 }
 
@@ -110,29 +123,34 @@ fn reopening_resolves_a_present_unresolved_commit_as_committed_exactly_once() {
         .durability_unresolved_fate()
         .expect("unresolved")
         .clone();
-    assert_eq!(medium.head(), fate.position());
+    let RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position,
+        commit_id,
+        ..
+    } = fate.subject()
+    else {
+        panic!("a commit's unresolved fate names the commit")
+    };
+    assert_eq!(medium.head(), position);
     assert_eq!(main_head(&runtime), Some(anchor.commit.clone()));
 
     let (recovery, reopened) = recover_with(execution, &runtime, durable_runtime_with_test_schema);
 
     assert_eq!(recovery.recovered_commits, 2);
     let head = main_head(&reopened).expect("the durable commit is current");
-    assert_eq!(head.commit_id, fate.commit_id());
+    assert_eq!(head.commit_id, commit_id);
     assert_eq!(
         reopened
             .durability()
             .durable_log()
             .iter()
-            .filter(|entry| entry.envelope().commit.commit_id == fate.commit_id())
+            .filter(|entry| entry.envelope().commit.commit_id == commit_id)
             .count(),
         1
     );
     let next = commit_one(execution, &reopened, "after-resolution").expect("commits resume");
-    assert_eq!(
-        next.patch_position(),
-        PatchStreamPosition(fate.position().0 + 1)
-    );
-    assert_eq!(next.commit.parents, vec![fate.commit_id()]);
-    assert_ne!(next.commit.commit_id, fate.commit_id());
+    assert_eq!(next.patch_position(), PatchStreamPosition(position.0 + 1));
+    assert_eq!(next.commit.parents, vec![commit_id]);
+    assert_ne!(next.commit.commit_id, commit_id);
     release_test_commit_snapshot(&reopened, &next);
 }

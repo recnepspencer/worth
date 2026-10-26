@@ -3,9 +3,11 @@ use super::{
     Invocation,
 };
 use worth_proof::TransitionOutcome;
+use worth_store::physical_runtime::production::PhysicalCheckpointPauseGate;
 use worth_store::physical_runtime::{
-    PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest, ServingPhysicalRuntime,
+    PhysicalCheckpointDeadline, PhysicalCheckpointHandle, PhysicalCheckpointIdempotencyKey,
+    PhysicalCheckpointOutcome, PhysicalCheckpointPoll, PhysicalCheckpointRequest,
+    ServingPhysicalRuntime,
 };
 
 pub(super) fn complete(serving: &ServingPhysicalRuntime, seed: u64) -> Result<(), String> {
@@ -34,18 +36,13 @@ pub(super) fn hold_at_stage(
         PhysicalCheckpointIdempotencyKey::new(checkpoint_idempotency_material(
             invocation.stage.perturbation_seed,
         )),
-        PhysicalCheckpointDeadline::after_milliseconds(5_000)
+        PhysicalCheckpointDeadline::after_milliseconds(30_000)
             .expect("C8 checkpoint deadline is nonzero"),
     );
     let TransitionOutcome::Success(handle) = serving.checkpoints().start(request).into_raw() else {
         return Err("ordinary C8 checkpoint admission was denied".to_owned());
     };
-    if !gate.await_arrival() {
-        return Err(format!(
-            "ordinary C8 checkpoint did not reach its production seam: {:?}",
-            handle.poll()
-        ));
-    }
+    await_checkpoint_seam(&gate, &handle)?;
     if invocation.stage.completes_after_arrival() {
         gate.release();
         if !matches!(handle.wait(), PhysicalCheckpointOutcome::Completed(_)) {
@@ -63,4 +60,29 @@ pub(super) fn hold_at_stage(
         "write C8 checkpoint reached marker",
     )?;
     markers::park_forever();
+}
+
+fn await_checkpoint_seam(
+    gate: &PhysicalCheckpointPauseGate,
+    handle: &PhysicalCheckpointHandle,
+) -> Result<(), String> {
+    // A five-second pause probe is not the checkpoint's liveness budget.
+    // Observe the same thirty-second operation envelope as complete(), without
+    // restarting capture or accepting a different crash seam under build load.
+    for _ in 0..6 {
+        if gate.await_arrival() {
+            return Ok(());
+        }
+        if let PhysicalCheckpointPoll::Terminal(outcome) = handle.poll() {
+            return Err(format!(
+                "ordinary C8 checkpoint terminated before {:?}: {outcome:?}",
+                gate.step()
+            ));
+        }
+    }
+    Err(format!(
+        "ordinary C8 checkpoint stalled before {:?} after thirty seconds: {:?}",
+        gate.step(),
+        handle.poll()
+    ))
 }

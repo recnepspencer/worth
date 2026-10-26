@@ -140,7 +140,7 @@ fn fintech_snapshot_release_preserves_historical_visibility_and_invalidates_hand
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world = setup_world_for(execution, FintechScenario::HistoricalVisibility);
-    let analysis = open_analysis_branch(&mut world);
+    let analysis = open_analysis_branch(execution, &mut world);
     let baseline_snapshot = capture_world_snapshot(&mut world);
     let baseline_probe = read_snapshot_probe(
         execution,
@@ -220,7 +220,7 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world = setup_smoke_world(execution);
-    let analysis = open_analysis_branch(&mut world);
+    let analysis = open_analysis_branch(execution, &mut world);
     let baseline_snapshot = world.runtime.visibility_authority().snapshot();
     let baseline_probe = read_snapshot_probe(
         execution,
@@ -272,7 +272,7 @@ fn fintech_intraday_risk_workflow_exposes_open_breach_on_analysis_branch() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world = setup_smoke_world(execution);
-    let analysis = open_analysis_branch(&mut world);
+    let analysis = open_analysis_branch(execution, &mut world);
     let baseline_probe = capture_case_truth_probe(
         execution,
         &world,
@@ -319,7 +319,7 @@ fn fintech_settlement_repair_workflow_exposes_repaired_settlement_on_analysis_br
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut world = setup_smoke_world(execution);
-    let analysis = open_analysis_branch(&mut world);
+    let analysis = open_analysis_branch(execution, &mut world);
     let baseline_probe = capture_case_truth_probe(
         execution,
         &world,

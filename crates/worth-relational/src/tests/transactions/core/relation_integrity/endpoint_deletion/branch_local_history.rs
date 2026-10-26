@@ -15,6 +15,7 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

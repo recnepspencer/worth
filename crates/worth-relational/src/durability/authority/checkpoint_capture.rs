@@ -10,18 +10,30 @@ use crate::runtime::RelationalRuntime;
 
 pub(super) struct CapturedCheckpointBasis {
     pub(super) latest_commit: Option<RelationalCommitReceipt>,
+    pub(super) selected_directory:
+        Option<std::sync::Arc<crate::durability::data::RelationalCheckpointDirectory>>,
     pub(super) branch_cells: Vec<crate::branch::RelationalBranchCellCheckpoint>,
+    pub(super) branch_lifecycle: Vec<crate::durability::data::DurableBranchLifecycleImage>,
+    pub(super) retired_branch_names: Vec<crate::history::data::BranchId>,
+    pub(super) covered_transitions: crate::branch::RelationalBranchTransitionSequence,
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
-    pub(super) partitions: Vec<crate::storage::overlay::PartitionState>,
+    pub(super) commit_descriptors: std::collections::BTreeMap<
+        crate::history::data::CommitId,
+        crate::branch::RelationalBranchRootDescriptor,
+    >,
+    pub(super) partitions: crate::runtime::PartitionEdition,
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
+    pub(super) carried_index_image:
+        Option<crate::durability::medium::RelationalDurableMemberLocator>,
     pub(super) derived_index_checkpoint:
         crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts,
     pub(super) symbol_table: crate::symbols::data::SymbolTableSnapshot,
+    pub(super) symbol_pages_resident: bool,
     pub(super) runtime_name: String,
 }
 
@@ -51,6 +63,7 @@ impl CapturedCheckpointBasis {
         // derived generations before selecting bounded payloads.
         runtime.run_index_generation_reclamation_pass();
         let envelopes = selection.positioned_snapshot();
+        let covered_transitions = selection.covered_transitions();
         let branch_roots = runtime
             .history
             .branch_root_checkpoints()
@@ -118,10 +131,14 @@ impl CapturedCheckpointBasis {
             })
             .map(|root| root.schema_authority().clone());
         let captured = Self {
+            selected_directory: runtime.durability.checkpoint_selection().snapshot(),
             latest_commit: envelopes
                 .last()
                 .map(|positioned| positioned.envelope().commit.clone()),
             branch_cells,
+            branch_lifecycle: runtime.history.branch_lifecycle_snapshot(),
+            retired_branch_names: runtime.history.retired_branch_names(),
+            covered_transitions,
             branch_roots,
             record_identity: CapturedRecordIdentity {
                 generation_high_water: runtime.record_identity.generation_snapshot(),
@@ -129,8 +146,14 @@ impl CapturedCheckpointBasis {
                 append_frontiers: runtime.record_identity.frontier_snapshot(),
                 pending_reservations: runtime.record_identity.pending_snapshot(),
             },
+            commit_descriptors: runtime
+                .history
+                .commit_artifacts()
+                .iter()
+                .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
+                .collect(),
             envelopes,
-            partitions: runtime.materialize_partitions(),
+            partitions: runtime.acquire_partition_edition(),
             mirror_schema_authority,
             aspect_contracts: runtime
                 .schema_contract_runtime
@@ -138,11 +161,13 @@ impl CapturedCheckpointBasis {
                 .clone(),
             lineage_nodes: runtime.lineage_access().nodes_snapshot(),
             index_definitions: runtime.index_access().definitions_snapshot(),
+            carried_index_image: runtime.indexes.carried_checkpoint_image(),
             derived_index_checkpoint:
                 super::super::derived_index_artifacts::checkpoint_derived_index_artifacts(
                     runtime, &retained,
                 )?,
             symbol_table: runtime.services.symbols.snapshot(),
+            symbol_pages_resident: runtime.services.symbols.checkpoint_contents_resident(),
             runtime_name: runtime.runtime_name().to_string(),
         };
         routes

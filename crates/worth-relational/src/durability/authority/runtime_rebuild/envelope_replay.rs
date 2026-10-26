@@ -30,6 +30,12 @@ pub(super) fn replay_readmitted_envelope(
     recovered_roots: &mut RecoveredRootInventory,
 ) -> Result<crate::history::data::PositionedCanonicalCommit, RelationalRecoveryStop> {
     let envelope = readmitted.envelope();
+    for (_, text) in &envelope.symbol_texts.entries {
+        restored
+            .services
+            .symbols
+            .demand_text(execution, text.as_str())?;
+    }
     restored
         .services
         .symbols

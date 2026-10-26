@@ -6,7 +6,7 @@ impl super::RelationalBranchRoot {
         let mut unavailable = 0;
         for region in self.regions.values() {
             assert_eq!(
-                region.allocation_inventory,
+                region.allocation_inventory(),
                 region.partition.allocation_inventory(),
                 "partition {:?}: incremental allocation inventory",
                 region.partition_id

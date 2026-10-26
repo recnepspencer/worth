@@ -10,9 +10,11 @@ use super::super::super::derived_index_artifacts::restore_checkpoint_derived_ind
 use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 
 mod branch_root_images;
+mod cold_directory;
 mod partition_images;
 mod record_identity;
 mod recovered_codec_meaning;
+mod root_readmission;
 mod root_schema_readmission;
 
 #[cfg(test)]
@@ -40,6 +42,13 @@ pub(super) fn restore_checkpoint_state(
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
+    if checkpoint.directory.is_some() {
+        cold_directory::restore(execution, restored, &checkpoint, work)?;
+        super::unshared_state(restored)?
+            .durability
+            .push_checkpoint(checkpoint);
+        return Ok(());
+    }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
@@ -162,13 +171,19 @@ fn prepare_history(
         })
         .collect();
     history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
+    let roots = root_readmission::readmit_selected_images(
+        &history,
+        checkpoint,
+        &mut branch_roots,
+        symbols,
+    )?;
     history
         .restore_branch_cells(
             &checkpoint.branch_cells,
-            &mut branch_roots.partitions,
-            &branch_roots.schema_authorities,
+            &checkpoint.branch_lifecycle,
+            &checkpoint.retired_branch_names,
+            &roots,
             &restored.config.schema.registry,
-            symbols,
         )
         .map_err(|detail| {
             DurabilityError::new(
@@ -177,6 +192,7 @@ fn prepare_history(
             )
         })?;
     work.branch_cells_readmitted += checkpoint.branch_cells.len();
+    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
     Ok(history)
 }
 
@@ -233,7 +249,6 @@ fn prepare_indexes(
         history,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
-        &checkpoint.envelopes,
         work,
     )?;
     Ok(indexes)
@@ -252,8 +267,18 @@ fn install_checkpoint_state(
 }
 
 pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
+    // Native members carry zero runtime pins. The cold directory has admitted
+    // no region yet; clearing it must not materialize or mutate its leaves.
+    if restored
+        .durability
+        .checkpoint_selection()
+        .snapshot()
+        .is_some()
+    {
+        return;
+    }
     let mut writer = restored.rebuild_partitions();
-    for partition in writer.partitions_mut() {
+    for partition in writer.resident_partitions_mut() {
         partition.entity_arena.clear_all_pins();
         partition.relation_arena.clear_all_pins();
     }
@@ -263,34 +288,44 @@ pub(super) fn finalize_restored_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-    restored
-        .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes(execution)
-        .map_err(|denial| {
-            use crate::durability::data::RelationalRecoveryStop as Stop;
-            use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-            match denial {
-                Denial::Execution(cause) => Stop::Request(cause),
-                Denial::Basis(basis) => restored_index_stop(basis),
-                Denial::SnapshotUnavailable
-                | Denial::CommitMismatch
-                | Denial::BeforeRootMismatch
-                | Denial::IndexUnavailable(_)
-                | Denial::GenerationKindMismatch(_)
-                | Denial::PriorEntryMismatch
-                | Denial::ColdReconstructionRequired
-                | Denial::WorkBudgetExceeded
-                | Denial::ForeignCandidate
-                | Denial::CandidateLifetimeExpired { .. }
-                | Denial::CandidateUnavailable
-                | Denial::CandidateIndexesAlreadyPrepared
-                | Denial::GenerationIdentityExhausted => DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                    format!("recovered unique-index admission failed: {denial:?}"),
-                )
-                .into(),
-            }
-        })?;
+    // The eager image lane rebuilds this optional inspection cache. In the
+    // native member lane, selected-state invariant scans remain authoritative;
+    // index generations retain their explicit deferred readmission cell.
+    if restored
+        .durability
+        .checkpoint_selection()
+        .snapshot()
+        .is_none()
+    {
+        restored
+            .index_authority()
+            .rebuild_unique_entity_aspect_field_indexes(execution)
+            .map_err(|denial| {
+                use crate::durability::data::RelationalRecoveryStop as Stop;
+                use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
+                match denial {
+                    Denial::Execution(cause) => Stop::Request(cause),
+                    Denial::Basis(basis) => restored_index_stop(basis),
+                    Denial::SnapshotUnavailable
+                    | Denial::CommitMismatch
+                    | Denial::BeforeRootMismatch
+                    | Denial::IndexUnavailable(_)
+                    | Denial::GenerationKindMismatch(_)
+                    | Denial::PriorEntryMismatch
+                    | Denial::ColdReconstructionRequired
+                    | Denial::WorkBudgetExceeded
+                    | Denial::ForeignCandidate
+                    | Denial::CandidateLifetimeExpired { .. }
+                    | Denial::CandidateUnavailable
+                    | Denial::CandidateIndexesAlreadyPrepared
+                    | Denial::GenerationIdentityExhausted => DurabilityError::new(
+                        crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                        format!("recovered unique-index admission failed: {denial:?}"),
+                    )
+                    .into(),
+                }
+            })?;
+    }
     restored.history.rebuild_branch_head_version_index();
     restored.visibility.cache.clear();
     restored

@@ -22,6 +22,14 @@ impl Default for StringInterner {
 }
 
 impl StringInterner {
+    pub(crate) fn reserve_frontier(&mut self, frontier: u32) -> Result<(), &'static str> {
+        if frontier == u32::MAX || frontier == 0 {
+            return Err("symbol frontier is exhausted or empty");
+        }
+        self.next_symbol = self.next_symbol.max(frontier);
+        Ok(())
+    }
+
     pub fn symbol(&self, value: &str) -> Option<Symbol> {
         self.by_value.get(value).copied()
     }

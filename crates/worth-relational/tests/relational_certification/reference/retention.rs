@@ -17,7 +17,7 @@ fn supply_chain_fork_acquires_one_target_head_obligation() {
         .expect("main has a retained source artifact");
     let fork = world
         .runtime
-        .fork_branch(target.clone(), basis)
+        .fork_branch(execution, target.clone(), basis)
         .expect("fork creates a retained target reference");
 
     assert_eq!(

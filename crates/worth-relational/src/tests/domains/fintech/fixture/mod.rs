@@ -271,8 +271,11 @@ impl FintechWorld {
         }
     }
 
-    pub(super) fn create_analysis_branch(&mut self) -> BranchId {
-        create_analysis_branch(&self.runtime)
+    pub(super) fn create_analysis_branch(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> BranchId {
+        create_analysis_branch(execution, &self.runtime)
     }
 
     fn build(
@@ -321,11 +324,14 @@ impl FintechWorld {
     }
 }
 
-pub(super) fn create_analysis_branch(runtime: &RelationalRuntime) -> BranchId {
+pub(super) fn create_analysis_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> BranchId {
     let branch = BranchId("analysis".to_string());
     runtime
         .history_authority()
-        .fork_branch_from(branch.clone(), &BranchId("main".to_string()))
+        .fork_branch_from(execution, branch.clone(), &BranchId("main".to_string()))
         .unwrap();
     branch
 }

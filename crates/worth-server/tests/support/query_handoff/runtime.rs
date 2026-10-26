@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 #[path = "runtime_aspect_contracts.rs"]
 pub(crate) mod runtime_aspect_contracts;
 #[path = "runtime_mutation_support.rs"]

@@ -218,8 +218,10 @@ impl WorthQueryBranchMergeDurabilityUnresolved {
         WorthQueryBranchMergeNextAction::ReopenRelationalOwner
     }
 
-    pub fn commit_id(&self) -> worth_relational::facade::history::CommitId {
-        self.unresolved.commit_id()
+    /// The unresolved commit, or `None` when the publication blocking the
+    /// merge is an unresolved branch transition.
+    pub fn commit_id(&self) -> Option<worth_relational::facade::history::CommitId> {
+        crate::effect_lifecycle::unresolved_commit_id(&self.unresolved)
     }
 }
 

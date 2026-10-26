@@ -30,6 +30,7 @@ fn mutation_execution_mints_receipt_first_envelope_and_diagnostics() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -140,6 +141,7 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("receipt-capacity".to_string()),
         &BranchId("main".to_string()),
@@ -252,6 +254,7 @@ fn batch_execution_mints_batch_write_receipt_family() {
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        request_execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

@@ -21,11 +21,12 @@ pub(crate) trait RuntimeSubsystem: Sized {
 }
 
 pub(crate) use commit_strategies::CommitStrategiesSubsystem;
-pub(crate) use durability::DurabilitySubsystem;
+pub(crate) use durability::{DurabilitySubsystem, RelationalCheckpointManifestPublication};
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
-    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
-    HistorySubsystem, PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, HistorySubsystem,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
@@ -47,9 +48,10 @@ pub(crate) use record_identity::{
     PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
-pub(crate) use services::{RuntimeInstrumentation, RuntimeServices};
+pub(crate) use services::{RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable};
 pub(crate) use storage::{
-    PartitionEdition, PartitionEditionCopyLane, PartitionEditionWriter, StorageSubsystem,
+    MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,
+    PartitionEditionWriter, StorageSubsystem,
 };
 pub(crate) use visibility::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,

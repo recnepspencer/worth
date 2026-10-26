@@ -17,6 +17,7 @@ pub(super) use recovery_planning::{
     recovery_planning_configuration,
     recovery_planning_configuration_with_format_and_manifest_capacity,
     recovery_planning_configuration_with_maintenance_scope,
+    recovery_planning_configuration_with_operation_budget,
     recovery_planning_configuration_with_recovery_scope, span_rewrite_configuration,
 };
 #[cfg(test)]

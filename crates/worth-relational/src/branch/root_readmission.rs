@@ -15,6 +15,14 @@ use super::{
 #[path = "root_readmission/required_text.rs"]
 mod required_text;
 
+struct ReadmittedRegionSet {
+    root_id: u64,
+    regions: Arc<super::RelationalPersistentRegionSet>,
+    entity_slot_count: usize,
+    relation_slot_count: usize,
+    publication_cost: super::RelationalBranchRootPublicationCost,
+}
+
 impl RelationalBranchRoot {
     pub(crate) fn readmit(
         issuer: &RelationalBranchRootIdentityIssuer,
@@ -35,8 +43,79 @@ impl RelationalBranchRoot {
             .values()
             .map(|partition| partition.relation_arena.slot_count())
             .sum();
-        let (regions, mut publication_cost) =
+        let (regions, publication_cost) =
             capture::build_initial_regions_owned(issuer, root_id, partitions, symbols)?;
+        Self::bind_readmitted_regions(
+            ReadmittedRegionSet {
+                root_id,
+                regions,
+                entity_slot_count,
+                relation_slot_count,
+                publication_cost,
+            },
+            envelope,
+            descriptor,
+            schema_authority,
+        )
+    }
+
+    pub(crate) fn readmit_region_directory(
+        issuer: &RelationalBranchRootIdentityIssuer,
+        directory: Vec<super::super::root_checkpoint::RelationalRootRegionCheckpoint>,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        descriptor: RelationalBranchRootDescriptor,
+        schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let root_id = issuer.issue_root_id()?;
+        let mut regions = BTreeMap::new();
+        let mut entity_slot_count = 0_usize;
+        let mut relation_slot_count = 0_usize;
+        for region in directory {
+            entity_slot_count = entity_slot_count
+                .checked_add(region.entity_slots)
+                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+            relation_slot_count = relation_slot_count
+                .checked_add(region.relation_slots)
+                .ok_or(RelationalBranchRootCaptureDenial::SlotCountOverflow)?;
+            let id = region.partition_id;
+            let region = super::RelationalRootRegion::from_checkpoint(
+                root_id,
+                issuer.issue_region_id()?,
+                region,
+            );
+            if regions.insert(id, Arc::new(region)).is_some() {
+                return Err(RelationalBranchRootCaptureDenial::DuplicateRegion(id));
+            }
+        }
+        let regions = super::RelationalPersistentRegionSet::initial(root_id, regions, issuer)?;
+        Self::bind_readmitted_regions(
+            ReadmittedRegionSet {
+                root_id,
+                regions,
+                entity_slot_count,
+                relation_slot_count,
+                publication_cost: Default::default(),
+            },
+            envelope,
+            descriptor,
+            schema_authority,
+        )
+    }
+
+    fn bind_readmitted_regions(
+        prepared: ReadmittedRegionSet,
+        envelope: Arc<CanonicalCommitEnvelope>,
+        descriptor: RelationalBranchRootDescriptor,
+        schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let ReadmittedRegionSet {
+            root_id,
+            regions,
+            entity_slot_count,
+            relation_slot_count,
+            mut publication_cost,
+        } = prepared;
+        validate_schema_root(&envelope, &descriptor)?;
         let (storage_root, content_accumulator) = axes::storage_root_for(&regions);
         require_descriptor_content(&descriptor, storage_root)?;
         let schema_root = *descriptor.schema_root();

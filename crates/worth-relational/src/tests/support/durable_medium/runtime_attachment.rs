@@ -23,11 +23,33 @@ impl TestDurableMediumAttachment {
 }
 
 impl RelationalDurableMedium for TestDurableMediumAttachment {
+    fn read_transition(
+        &self,
+        sequence: crate::branch::RelationalBranchTransitionSequence,
+    ) -> Result<
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+        crate::durability::medium::RelationalDurableTransitionReadFailure,
+    > {
+        use crate::durability::medium::RelationalDurableTransitionReadFailure as Failure;
+        let bytes = self
+            .contents
+            .transition_bytes(sequence)
+            .ok_or(Failure::Missing(sequence))?;
+        crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact::from_untrusted_bytes(bytes.into_vec()).map_err(Failure::Frame)
+    }
+
     fn publish(
         &self,
         artifact: &RelationalCanonicalCommitArtifact,
     ) -> RelationalDurablePublication {
         self.contents.publish(artifact)
+    }
+
+    fn publish_transition(
+        &self,
+        artifact: &crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact,
+    ) -> RelationalDurablePublication {
+        self.contents.publish_transition(artifact)
     }
 
     fn in_crate_test_medium(&self) -> Option<Arc<TestDurableMedium>> {
@@ -40,6 +62,15 @@ impl RelationalDurableMedium for TestDurableMediumAttachment {
 pub(crate) struct AttachedTestMedium(Arc<TestDurableMedium>);
 
 impl AttachedTestMedium {
+    pub(crate) fn recovery_source(
+        &self,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableRecoverySource,
+        super::TestRecoverySourceRefusal,
+    > {
+        self.0.recovery_source()
+    }
+
     /// A fresh medium over the same contents, for another runtime to own, as
     /// a reopened home builds its own journal medium over the same Store.
     pub(crate) fn attachment(&self) -> Box<dyn RelationalDurableMedium> {

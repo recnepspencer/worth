@@ -137,10 +137,9 @@ impl WorthQueryPendingApplicationPublicationRegistry {
             if let Some(binding) = slot
                 .binding
                 .filter(|binding| binding.correction_identity().is_some())
+                && self.corrections.get(binding.key_identity()) == Some(&occurrence)
             {
-                if self.corrections.get(binding.key_identity()) == Some(&occurrence) {
-                    self.corrections.remove(binding.key_identity());
-                }
+                self.corrections.remove(binding.key_identity());
             }
         }
     }

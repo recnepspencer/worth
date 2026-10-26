@@ -22,10 +22,17 @@ pub enum RecoveryFailureClass {
     CorruptCanonicalArtifact,
     /// A medium's tail skipped or repeated a position after the checkpoint.
     NonContiguousCanonicalTail,
+    /// A branch transition artifact a medium returned did not readmit.
+    CorruptBranchTransitionArtifact,
+    /// A medium's branch transition tail skipped or repeated a sequence after
+    /// the checkpoint, or a transition follows a position out of order or
+    /// beyond the recovered commit head.
+    NonContiguousBranchTransitionTail,
     UnsupportedLegacySemantics,
     MissingAuthoritativeParentClosure,
     ReplayFailure,
     DurableIoFailure,
+    ColdStorageUnavailable,
     CheckpointPublicationInFlight,
     PerformedPublicationRequiresSettlement,
     CheckpointSizeOverflow,
@@ -205,6 +212,7 @@ pub struct DurabilityError {
     pub detail: String,
     pub history_drift_class: Option<HistoryDriftClass>,
     pub authority_continuity_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
+    pub storage_unavailable: Option<crate::storage::data::RelationalStorageUnavailable>,
     pub context: ErrorContext,
 }
 
@@ -217,7 +225,8 @@ impl DurabilityError {
             _ => Some(SuggestedFix::RepairDurableStore),
         };
         let operation = match class {
-            RecoveryFailureClass::DurableIoFailure => ErrorOperation::ReadDurableStore,
+            RecoveryFailureClass::DurableIoFailure
+            | RecoveryFailureClass::ColdStorageUnavailable => ErrorOperation::ReadDurableStore,
             RecoveryFailureClass::CheckpointPublicationInFlight
             | RecoveryFailureClass::PerformedPublicationRequiresSettlement
             | RecoveryFailureClass::CheckpointSizeOverflow
@@ -228,6 +237,8 @@ impl DurabilityError {
             RecoveryFailureClass::CorruptCheckpoint
             | RecoveryFailureClass::CorruptCanonicalArtifact
             | RecoveryFailureClass::NonContiguousCanonicalTail
+            | RecoveryFailureClass::CorruptBranchTransitionArtifact
+            | RecoveryFailureClass::NonContiguousBranchTransitionTail
             | RecoveryFailureClass::UnsupportedLegacySemantics
             | RecoveryFailureClass::MissingAuthoritativeParentClosure
             | RecoveryFailureClass::ReplayFailure
@@ -243,6 +254,7 @@ impl DurabilityError {
             detail: detail.into(),
             history_drift_class: None,
             authority_continuity_mismatch: None,
+            storage_unavailable: None,
             context,
         }
     }

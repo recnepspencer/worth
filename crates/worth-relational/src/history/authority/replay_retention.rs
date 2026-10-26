@@ -4,8 +4,8 @@ use crate::diagnostics::data::{
 };
 use crate::identity::data::VersionId;
 use crate::visibility::cache_state::{
-    bump_replay_ref, cached_historical_state_for_version, ensure_historical_state,
-    evict_cache_if_needed, historical_basis_for_retained_version,
+    bump_replay_ref, ensure_historical_state, evict_cache_if_needed,
+    historical_basis_for_retained_version,
 };
 use crate::visibility::snapshot_states::SnapshotState;
 
@@ -16,7 +16,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<bool, crate::history::data::RelationalReplayRetentionDenial> {
         crate::execution::check_request(execution)?;
         if self
             .runtime
@@ -43,7 +43,7 @@ impl<'runtime> HistoryAuthority<'runtime> {
             return Ok(false);
         };
         let state = ensure_historical_state(execution, self.runtime, basis, false)?;
-        self.runtime.visibility_pins().pin_replay_state(&state);
+        let pin_leases = self.runtime.visibility_pins().pin_replay_state(&state)?;
         if self
             .runtime
             .config
@@ -66,7 +66,11 @@ impl<'runtime> HistoryAuthority<'runtime> {
             .emit();
         self.runtime.visibility.insert_replay_retention(
             version_id,
-            crate::runtime::ReplayRetentionState { ref_count: 1 },
+            crate::runtime::ReplayRetentionState {
+                ref_count: 1,
+                pin_leases,
+                pinned_state: state,
+            },
         );
         Ok(true)
     }
@@ -94,10 +98,18 @@ impl<'runtime> HistoryAuthority<'runtime> {
             }
             return true;
         }
-        let Some(state) = cached_historical_state_for_version(self.runtime, version_id) else {
+        let state = retained.pinned_state.clone();
+        if self
+            .runtime
+            .visibility_pins()
+            .unpin_replay_state(&state, &retained.pin_leases)
+            .is_err()
+        {
+            self.runtime
+                .visibility
+                .restore_replay_retention(version_id, retained);
             return false;
-        };
-        self.runtime.visibility_pins().unpin_replay_state(&state);
+        }
         if self
             .runtime
             .config

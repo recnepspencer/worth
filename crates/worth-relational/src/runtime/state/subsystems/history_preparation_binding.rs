@@ -175,8 +175,8 @@ impl RelationalPreparationHistory {
             if !found.insert(commit) {
                 continue;
             }
-            if let Some(envelope) = self.canonical_routes.by_commit(commit) {
-                pending.extend(envelope.commit.parents.iter().copied());
+            if let Some(receipt) = self.canonical_routes.indexed_receipt(commit) {
+                pending.extend(receipt.parents.iter().copied());
             }
         }
         found

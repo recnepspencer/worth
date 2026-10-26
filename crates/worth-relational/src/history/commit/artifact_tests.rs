@@ -123,8 +123,8 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .relink_preencoded_recovery(&envelope, Some(&root), None)
         .unwrap();
     assert!(Arc::ptr_eq(
-        &preencoded.canonical_payload,
-        &relinked.canonical_payload
+        preencoded.canonical_payload.as_ref().unwrap(),
+        relinked.canonical_payload.as_ref().unwrap()
     ));
     assert_eq!(relinked.identity(), legacy.identity());
     assert_eq!(relinked.parentage(), legacy.parentage());

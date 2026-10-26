@@ -123,8 +123,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
         }
         CompanionPreflightStop::WorkExhausted { .. }
         | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => RetainedFactStop::Work,
-        CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } => {
+        CompanionPreflightStop::PreparationMemoryCounterOverflow => {
             RetainedFactStop::Execution(NativeReadStop::ChargedBytesOverflow)
         }
         CompanionPreflightStop::WorkCounterOverflow => {

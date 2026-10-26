@@ -286,6 +286,17 @@ mod tests {
         )]
     }
 
+    /// The admission declaration reads every key's clone size once, unmetered,
+    /// before the merge; only reads beyond these are merge progress.
+    const DECLARATION_KEY_READS: usize = 1_000;
+
+    fn merge_key_reads(reads: &AtomicUsize) -> usize {
+        reads
+            .load(Ordering::SeqCst)
+            .checked_sub(DECLARATION_KEY_READS)
+            .expect("the declaration reads every key before the merge")
+    }
+
     #[test]
     fn checked_merge_preserves_order_and_stops_inside_one_large_stream() {
         let expected = super::super::canonical_merge_streams(streams());
@@ -326,8 +337,9 @@ mod tests {
             },
         )
         .unwrap_err();
-        assert!(visited.load(Ordering::SeqCst) > 1);
-        assert!(visited.load(Ordering::SeqCst) < 1_000);
+        let merged = merge_key_reads(&visited);
+        assert!(merged > 1);
+        assert!(merged < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {
@@ -347,14 +359,14 @@ mod tests {
             None,
             |_, _| 0,
             |_| {
-                if visits.fetch_add(1, Ordering::SeqCst) == 40 {
+                if visits.fetch_add(1, Ordering::SeqCst) == DECLARATION_KEY_READS + 40 {
                     cancellation.cancel();
                 }
                 0
             },
         )
         .unwrap_err();
-        assert!(visits.load(Ordering::SeqCst) < 1_000);
+        assert!(merge_key_reads(&visits) < 1_000);
         assert!(matches!(
             stop,
             PacketExecutionStop::Execution {

@@ -14,7 +14,7 @@ fn fork_checkpoint_plan(
         .observe_fork_source(&source)
         .expect("committed main is forkable");
     runtime
-        .fork_branch(BranchId("storm".to_owned()), basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), basis)
         .expect("fork checkpoint fixture");
     crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     let mut plan = crate::tests::support::recovery_plan_for(
@@ -44,7 +44,7 @@ fn fork_tail_plan(
         .observe_fork_source(&source)
         .expect("committed main is forkable");
     runtime
-        .fork_branch(BranchId("storm".to_owned()), basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), basis)
         .expect("fork tail fixture");
     crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     create_entity_outcome_on_branch(

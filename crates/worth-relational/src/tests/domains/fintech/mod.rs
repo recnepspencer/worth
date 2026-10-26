@@ -29,8 +29,11 @@ pub(crate) fn setup_trade_correction_perf_world(
     scenarios::setup_world_for(execution, scenarios::FintechScenario::LateTradeCorrection)
 }
 
-pub(crate) fn perf_open_analysis_branch(world: &mut FintechWorld) -> BranchId {
-    actions::open_analysis_branch(world)
+pub(crate) fn perf_open_analysis_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    world: &mut FintechWorld,
+) -> BranchId {
+    actions::open_analysis_branch(execution, world)
 }
 
 pub(crate) fn perf_stress_intraday_risk(

@@ -91,17 +91,13 @@ pub(crate) fn apply(
                     .unwrap_or_else(|error| panic!("durable commit {acknowledged}: {error:?}"));
                 acknowledged += 1;
             }
-            Step::Fork { target } => {
-                workload::fork_branch(
-                    home.runtime(),
-                    &worth_relational::facade::history::BranchId("main".to_owned()),
-                    target,
-                );
-            }
             Step::Checkpoint => {
                 home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
                     .expect("home checkpoint");
             }
+            _ => step
+                .lifecycle(home.runtime(), execution)
+                .expect("durable lifecycle"),
         }
     }
     acknowledged
@@ -122,10 +118,34 @@ pub(crate) fn assert_holds(home: &RelationalStoreHome, script: &Script, acknowle
         );
     }
     assert_reference_artifacts(&artifacts, script, "held");
+    assert_lifecycle_prefix(home, script, commits, "held");
+}
+
+pub(crate) fn assert_lifecycle_prefix(
+    home: &RelationalStoreHome,
+    script: &Script,
+    commits: usize,
+    case: &str,
+) {
+    let transitions = super::branch_lifecycle::artifacts_of_home(home);
     assert_eq!(
-        workload::states_of(home.runtime(), &script.records),
-        script.states[commits],
-        "branch states after {commits} commits"
+        transitions,
+        script.transitions[..transitions.len()],
+        "{case}: transition artifacts"
+    );
+    let expected = script
+        .prefixes
+        .get(&(commits, transitions.len()))
+        .expect("a legal reference prefix");
+    assert_eq!(
+        &super::branch_lifecycle::state_of(home.runtime(), &script.records),
+        expected,
+        "{case}: records, branch existence and lifecycle"
+    );
+    assert_eq!(
+        &super::branch_lifecycle::state_of(home.runtime(), &script.records),
+        expected,
+        "{case}: warm records, branch existence and lifecycle"
     );
 }
 

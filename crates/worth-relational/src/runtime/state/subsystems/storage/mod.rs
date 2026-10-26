@@ -1,6 +1,8 @@
 mod edition_copy_lane;
 mod edition_writer;
 mod partition_edition;
+mod residency_demand;
+pub(crate) use residency_demand::MirrorResidencyDemandBinding;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
 pub(crate) use edition_writer::PartitionEditionWriter;
@@ -11,7 +13,7 @@ use crate::runtime::state::subsystems::{
     RuntimeInstrumentation, RuntimeOwnedState, RuntimeSubsystem,
 };
 use crate::storage::overlay::PartitionState;
-use std::sync::Arc;
+use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 /// The runtime's record substrate, owned behind its own lock.
 ///
@@ -29,6 +31,9 @@ pub(crate) struct StorageSubsystem {
 }
 
 impl StorageSubsystem {
+    pub(crate) fn install_cells(&self, cells: PartitionMap) {
+        *self.partitions.write() = PartitionEdition::new(cells);
+    }
     /// One structurally shared edition of the substrate. O(1): one atomic
     /// increment, no allocation, no retained lock.
     pub(crate) fn acquire(&self) -> PartitionEdition {
@@ -49,26 +54,11 @@ impl StorageSubsystem {
         self.partitions.read().partition_ids()
     }
 
-    pub(crate) fn partition(&self, partition_id: PartitionId) -> Option<Arc<PartitionState>> {
-        self.partitions.read().shared_partition(partition_id)
-    }
-
-    pub(crate) fn partition_count(&self) -> usize {
-        self.partitions.read().len()
-    }
-
-    /// Owned copies of every partition, for checkpoint capture and recovery.
-    ///
-    /// Reconstructive-lane work; the caller supplies the accounting sink.
-    pub(crate) fn materialize_owned_partitions(
+    pub(crate) fn partition(
         &self,
-        instrumentation: &RuntimeInstrumentation,
-    ) -> Vec<PartitionState> {
-        let edition = self.acquire();
-        let partitions = edition.materialize_owned_partitions();
-        PartitionEditionCopyLane::Reconstructive
-            .charge_partition_materialization(instrumentation, partitions.len());
-        partitions
+        partition_id: PartitionId,
+    ) -> Option<RelationalResidencyLease<Full>> {
+        self.partitions.read().shared_partition(partition_id)
     }
 
     pub(crate) fn install_owned(
@@ -79,7 +69,9 @@ impl StorageSubsystem {
     ) {
         let installed: PartitionMap = partitions
             .into_iter()
-            .map(|(partition_id, partition)| (partition_id, Arc::new(partition)))
+            .map(|(partition_id, partition)| {
+                (partition_id, RelationalRegionRetention::resident(partition))
+            })
             .collect();
         self.edit(instrumentation, lane).install(installed);
     }
@@ -92,15 +84,14 @@ impl RuntimeSubsystem for StorageSubsystem {
         Self::default()
     }
 
-    /// A detached deep copy that shares no authority with its origin.
-    ///
-    /// Every partition is materialized so the fork's pin counters start clean,
-    /// which is whole-state reconstructive work; the fork site charges it.
+    /// Share immutable cells; runtime pin counters detach at the first write.
+    /// Cold cells remain cold and copy-on-write requires an admitted Full lease.
     fn fork(&self) -> Self {
-        let mut partitions = self.acquire().cloned_map();
-        for partition in partitions.values_mut() {
-            Arc::make_mut(partition).clear_runtime_pin_counters();
-        }
+        let partitions = self
+            .acquire()
+            .cells()
+            .map(|(id, region)| (id, region.fork()))
+            .collect();
         Self {
             partitions: RuntimeOwnedState::new(PartitionEdition::new(partitions)),
         }

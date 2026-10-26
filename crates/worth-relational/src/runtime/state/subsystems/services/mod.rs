@@ -1,6 +1,7 @@
 mod compiled_artifacts;
 mod instrumentation;
 mod sequence;
+mod symbol_residency;
 mod symbol_table;
 #[cfg(test)]
 mod tests;

@@ -25,7 +25,10 @@ fn production_write_footprints_report_exact_records_and_local_publication_cost()
             .runtime
             .observe_fork_source(&BranchId("main".to_owned()))
             .unwrap();
-        world.runtime.fork_branch(branch.clone(), source).unwrap();
+        world
+            .runtime
+            .fork_branch(execution, branch.clone(), source)
+            .unwrap();
         let identity = world.runtime.branch_identity(&branch).unwrap();
         let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity.clone()]);
         let before = world
@@ -112,7 +115,10 @@ fn single_record_copy_cost(
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
-    world.runtime.fork_branch(branch.clone(), source).unwrap();
+    world
+        .runtime
+        .fork_branch(execution, branch.clone(), source)
+        .unwrap();
     let identity = world.runtime.branch_identity(&branch).unwrap();
     let scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
     let batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
@@ -172,7 +178,10 @@ fn assert_flat_history_samples(
             .runtime
             .observe_fork_source(&BranchId("main".to_owned()))
             .unwrap();
-        world.runtime.fork_branch(branch.clone(), source).unwrap();
+        world
+            .runtime
+            .fork_branch(execution, branch.clone(), source)
+            .unwrap();
         let first_batch = lower_cargo_footprint_batch(&world.handles, scale, 1);
         let first =
             commit_branch_batch_with_result(execution, &world.runtime, branch.clone(), first_batch);

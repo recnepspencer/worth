@@ -117,7 +117,7 @@ fn journey(case: Case) {
         ).unwrap();
         let membership = world.application.execute_application_query_one_shot(&phase,
             selected.retain_selection(&issued).unwrap().admit_application_query(&phase,
-                &membership_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&membership_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
+                &membership_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(membership_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
             ).unwrap(),
         ).unwrap();
         let nz = |value| NonZeroUsize::new(value).unwrap();
@@ -127,7 +127,7 @@ fn journey(case: Case) {
         let read_work = Cell::new(0);
         let run = |failure: bool| {
             let issue_batch = || world.application.application_query_batch_from_installed_reads(&[
-                world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()
+                world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()
             ]).unwrap();
             let batch = issue_batch();
             let foreign_batch = issue_batch();
@@ -155,14 +155,14 @@ fn journey(case: Case) {
                         &scope, WorthQueryPrincipalResolutionMode::Ordinary).unwrap();
                     let access = WorthQueryApplicationQueryAccessContext::new(&principal, &local);
                     let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
-                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
+                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                     ).unwrap();
                     let result = read.execute(plan)?;
                     read_work.set(result.receipt().work().total_work_units());
                     assert_eq!(result.rows()[0].label(), "unrelated");
                     if failure && case == Case::RepeatedRead {
                         let plan = selected.retain_selection(&issued).unwrap().admit_application_query(
-                            &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
+                            &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &scope),
                         ).unwrap();
                         assert_eq!(read.execute(plan).err(), Some(Denial::IncompleteDependencies));
                         // Intentionally ignore the returned refusal: the owner must still deny the image.
@@ -183,12 +183,12 @@ fn journey(case: Case) {
                         let mut retained = selected.retain_selection(&issued).unwrap();
                         selected.admit_retained_application_query_from_selection(
                             &phase, &mut retained, &entry_query, &access,
-                            ApplicationQueryParameterSet::new(), current_controls(local_scope), &foreign_batch,
+                            ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).unwrap(), local_scope), &foreign_batch,
                         ).unwrap()
                     } else {
 
                         selected.retain_selection(&issued).unwrap().admit_application_query(
-                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), local_scope),
+                        &phase, &entry_query, &access, ApplicationQueryParameterSet::new(), crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), local_scope),
                     ).unwrap()
                     };
                     if failure && case == Case::Cancelled { cancellation.cancel(); }
@@ -233,10 +233,7 @@ fn journey(case: Case) {
             if failure && matches!(case, Case::Deadline | Case::Memory | Case::Work) {
                 assert_eq!(second_calls.get(), second_before);
             }
-            if failure && case == Case::ForeignBasis {
-            }
-            if result.is_ok() {
-            }
+
             result
         };
         let keys = run(false).unwrap();

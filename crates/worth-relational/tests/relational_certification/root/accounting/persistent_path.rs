@@ -31,7 +31,7 @@ fn phase5_persistent_radix_paths_retain_untouched_owner_allocations() {
         .expect("main is an admitted fork source");
     world
         .runtime
-        .fork_branch(branch_id.clone(), source)
+        .fork_branch(execution, branch_id.clone(), source)
         .expect("branch retains the baseline persistent root");
     let identity = world
         .runtime

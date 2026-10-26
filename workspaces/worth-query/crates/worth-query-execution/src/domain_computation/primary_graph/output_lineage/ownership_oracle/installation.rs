@@ -25,7 +25,7 @@ worth_query_decl::facade::worth_query_application_contribution! {
     }
 }
 impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
-    type Configuration = ();
+    type Configuration = super::commit_interruption::Interruption;
     fn contracts(
         contracts: &mut WorthQueryApplicationContributionContracts<OwnerSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -34,18 +34,19 @@ impl WorthQueryApplicationContribution<OwnerSchema> for OwnerMembers {
         Ok(())
     }
     fn configure(
-        _: (),
+        interruption: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, OwnerSchema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         setup.invariant(
             PositivePlanarTurn::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
-            |resolver| {
+            move |resolver| {
                 planar_invariant::resolve_rule(
                     resolver,
                     Arc::new(AtomicUsize::new(0)),
                     Arc::new(AtomicUsize::new(0)),
                 )
+                .map(|rule| super::commit_interruption::InterruptingRule { rule, interruption })
             },
         )?;
         let handler = RegionOutputHandler::running(|reader, set| {
@@ -90,9 +91,14 @@ impl ApplicationProgramDefinition<OwnerSchema> for OwnerProgram {
 pub(super) type Application = WorthQueryProgramApplicationRuntime<OwnerSchema, OwnerProgram>;
 pub(super) const ANCHOR: &str = "owner-source:a";
 pub(super) fn install() -> Application {
+    install_with_interruption(Default::default())
+}
+pub(super) fn install_with_interruption(
+    interruption: super::commit_interruption::Interruption,
+) -> Application {
     in_memory_program(
         ApplicationProgramAuthoring::<OwnerSchema, OwnerProgram>::begin().validated_program().unwrap(),
-        OwnerSchema::declaration().unwrap(), ((),),
+        OwnerSchema::declaration().unwrap(), (interruption,),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),

@@ -17,7 +17,7 @@ use crate::physical_runtime::record_serving::{RecordAppendDenial, RecordAppendEr
 /// neither frame position nor file length says which frames are live. Only
 /// the current membership entries that name the generation do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum RewriteSourceLiveness {
+pub(super) enum RewriteSpanLiveness {
     /// Every frame in the span is live and the root reads other frames of the
     /// generation too; the file must stay after the rewrite.
     LiveWithRetainedFrames,
@@ -28,7 +28,7 @@ pub(super) enum RewriteSourceLiveness {
     NotLive,
 }
 
-impl RewriteSourceLiveness {
+impl RewriteSpanLiveness {
     pub(super) fn classify(
         entries: &[RecordSegmentPageManifestEntry],
         generation: u64,
@@ -72,7 +72,7 @@ impl RecordPublicationDirector {
         segment: PhysicalSegmentId,
         generation: u64,
         span: Range<u32>,
-    ) -> Result<RewriteSourceLiveness, RecordAppendError> {
+    ) -> Result<RewriteSpanLiveness, RecordAppendError> {
         let mut discovery = ManifestDiscoveryCounterSnapshot::default();
         let entries = SegmentMembershipReader::serving(
             self.residency.clone(),
@@ -82,6 +82,6 @@ impl RecordPublicationDirector {
         )
         .segment_entries(allocation, segment, &mut discovery)
         .map_err(manifest_lookup_failure)?;
-        Ok(RewriteSourceLiveness::classify(&entries, generation, span))
+        Ok(RewriteSpanLiveness::classify(&entries, generation, span))
     }
 }

@@ -8,6 +8,7 @@ use worth_store::physical_runtime::{
 };
 use worth_store_physical_format::{
     ReleaseCustodyHeadEntryV1, ReleaseCustodyHeadKeyV1, BLOB_CONTROL_FRAME_MAX_BYTES,
+    CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES, MAX_CHECKPOINT_BINDING_RECORD_BYTES,
 };
 
 #[path = "release_capacity_budget/checkpoint_funding.rs"]
@@ -130,6 +131,16 @@ fn numeric_one_head_closure() -> u64 {
         + 18 * page
         + 2 * 52 * page
         + ReleaseCustodyHeadEntryV1::ENCODED_BYTES as u64
+}
+
+fn funded_one_head_limit() -> u64 {
+    // Capture may retain two framed binding commands. Residency phase 1 raised
+    // their wire maximum to cover every returned identity in a u16-sized batch.
+    // Keep 4 MiB separately for the policy's roughly 2.3 MiB pin scan and capture
+    // metadata/headroom; this is an ample fixture, not an exact admission quote.
+    let command =
+        MAX_CHECKPOINT_BINDING_RECORD_BYTES + CHECKPOINT_CERTIFICATE_RECORD_OVERHEAD_BYTES;
+    numeric_one_head_closure() + 2 * command as u64 + (4 << 20)
 }
 
 fn release_request(

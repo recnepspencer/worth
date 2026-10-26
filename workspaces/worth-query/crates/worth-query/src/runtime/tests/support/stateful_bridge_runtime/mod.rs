@@ -62,7 +62,7 @@ pub(crate) fn stateful_bridge_task_runtime_with_merge(
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("main branch should expose an exact fork source");
     relational
-        .fork_branch(BranchId("candidate".to_string()), basis)
+        .fork_branch(request_execution, BranchId("candidate".to_string()), basis)
         .expect("candidate branch should be created");
     crate::harness::fixtures::effect_authorities::create_entity(
         request_execution,

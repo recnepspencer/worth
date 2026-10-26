@@ -1,13 +1,20 @@
+use worth_relational::facade::branch::RelationalBranchTransitionSequence;
 use worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial;
 use worth_relational::facade::publication::PatchStreamPosition;
 
 use super::RelationalStoreHome;
 use crate::checkpoint_record::{self, RelationalStoreCheckpointRecordRefusal};
 
+#[cfg(test)]
+mod scope_tests;
+#[cfg(test)]
+mod tests;
+
 /// A checkpoint the home made the selected recovery basis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelationalStoreCheckpoint {
     covered: PatchStreamPosition,
+    covered_transitions: RelationalBranchTransitionSequence,
     generation: u64,
     bytes: usize,
 }
@@ -17,6 +24,12 @@ impl RelationalStoreCheckpoint {
     /// only the journal after it.
     pub fn covered(&self) -> PatchStreamPosition {
         self.covered
+    }
+
+    /// The last branch transition the checkpoint includes. Recovery replays
+    /// only the transitions after it.
+    pub fn covered_transitions(&self) -> RelationalBranchTransitionSequence {
+        self.covered_transitions
     }
 
     /// How many checkpoints this home has selected, including this one.
@@ -55,19 +68,31 @@ impl RelationalStoreHome {
         &self,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<RelationalStoreCheckpoint, RelationalStoreCheckpointFailure> {
+        let members = self.cold_source.member_locators();
         let checkpoint = self
             .runtime
             .durability_authority()
-            .native_checkpoint(policy)
+            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &members, source: Some(self.cold_source.clone()) })
             .map_err(RelationalStoreCheckpointFailure::Capture)?;
         let covered = checkpoint
             .covered_position()
             .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
-        let generation = checkpoint_record::publish(&self.serving, covered, &checkpoint)
-            .map_err(RelationalStoreCheckpointFailure::Record)?;
+        let covered_transitions = checkpoint
+            .covered_branch_transitions()
+            .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
+        let generation = checkpoint_record::publish(
+            &self.serving,
+            &self.cold_source,
+            covered,
+            covered_transitions,
+            &checkpoint,
+        )
+        .map_err(RelationalStoreCheckpointFailure::Record)?;
+        checkpoint.acknowledge_publication();
         complete_physical_checkpoint(&self.serving, generation)?;
         Ok(RelationalStoreCheckpoint {
             covered,
+            covered_transitions,
             generation,
             bytes: checkpoint.bytes().len(),
         })

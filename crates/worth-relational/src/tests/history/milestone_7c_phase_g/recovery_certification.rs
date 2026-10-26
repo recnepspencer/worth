@@ -21,7 +21,7 @@ where
     let truth_bundle = capture_aspect_truth_bundle(execution, runtime, &[], &[], &[]);
     let direct_rebuild_plan = crate::tests::support::recovery_plan_for(
         execution,
-        &runtime,
+        runtime,
         RecoveryMode::AuditRecoveryVerification,
     )
     .unwrap();

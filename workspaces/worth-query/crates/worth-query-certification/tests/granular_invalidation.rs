@@ -13,10 +13,10 @@ mod test_request_policy;
 mod delivery_convergence;
 #[path = "granular_invalidation/financial_runtime_world.rs"]
 mod financial_runtime_world;
-#[path = "granular_invalidation/heal_refresh.rs"]
-mod heal_refresh;
 #[path = "granular_invalidation/query_runtime_world.rs"]
 mod query_runtime_world;
+#[path = "granular_invalidation/retained_delivery.rs"]
+mod retained_delivery;
 #[path = "granular_invalidation/runtime_composition.rs"]
 mod runtime_composition;
 #[path = "granular_invalidation/shared_lifecycle.rs"]
@@ -73,11 +73,13 @@ fn primary_runtime_stamps_granular_receipts_from_the_execution_basis() {
 }
 
 #[test]
-fn healed_conditional_observation_refreshes_live_projection() {
+fn retained_conditional_observation_delivers_exact_live_projection() {
     let host_request = crate::test_request_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    heal_refresh::assert_healed_observation_refreshes_live_projection(request_execution);
+    retained_delivery::assert_retained_observation_delivers_exact_live_projection(
+        request_execution,
+    );
 }
 
 #[test]

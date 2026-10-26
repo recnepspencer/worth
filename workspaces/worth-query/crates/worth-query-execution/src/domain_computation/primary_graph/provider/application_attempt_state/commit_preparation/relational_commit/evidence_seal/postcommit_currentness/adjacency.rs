@@ -131,7 +131,7 @@ mod tests {
     use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
     #[test]
-    fn pair_rebase_requires_admitted_native_work_and_never_retains_partial_facts() {
+    fn pair_rebase_uses_native_revision_and_never_retains_partial_facts() {
         let host_request = crate::test_request_policy::serial_request();
         let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
@@ -172,7 +172,7 @@ mod tests {
             assert!(matches!(
                 rebase_decision_adjacency(&host_custody.borrowed_request_for_test(), runtime, snapshot, fact.clone()),
                 Fact::SourceAdjacencyRevision {
-                    comparison_work_limit: 64,
+                    comparison_work_limit: 1,
                     native_revision: Some(_),
                     ..
                 }
@@ -180,9 +180,9 @@ mod tests {
             assert!(
                 matches!(
                     super::super::rebase(&host_custody.borrowed_request_for_test(), runtime, snapshot, super::super::PreparedSourceFactRebase::admit(vec![fact], [].into(), crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(worth_execution::ExecutionAllocationPolicy::SystemAllocation, None)).unwrap(), &std::collections::BTreeSet::new(), true),
-                    super::super::RebasedSourceFacts::VerificationRequired { .. }
+                    super::super::RebasedSourceFacts::Exact(_)
                 ),
-                "failed relation revision acquisition marks the entire output non-reusable"
+                "a complete pair fact rebases through its native structural revision"
             );
             let stale_revision = Fact::SourceAdjacencyRevision {
                 relation_kind,

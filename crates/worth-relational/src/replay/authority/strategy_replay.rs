@@ -168,10 +168,11 @@ fn rebuild_strategy_basis_runtime(
     mismatches: &mut Vec<ReplayMismatch>,
 ) -> Result<Option<RelationalRuntime>, RelationalRecoveryStop> {
     let basis_plan = super::super::planning::replay_recovery_plan_for_chain(
+        execution,
         runtime,
         basis_commits,
         verification_mode,
-    );
+    )?;
     let basis_runtime = match runtime.rebuild_runtime_from_plan(execution, basis_plan) {
         Ok(runtime) => runtime,
         Err(RelationalRecoveryStop::Request(cause)) => {
@@ -194,7 +195,7 @@ fn rebuild_strategy_basis_runtime(
         }
     };
     if let Err(detail) =
-        ensure_strategy_replay_basis_branch(&basis_runtime, envelope, expected_artifacts)
+        ensure_strategy_replay_basis_branch(execution, &basis_runtime, envelope, expected_artifacts)
     {
         mismatches.push(strategy_mismatch(
             ReplayMismatchClass::StrategyExecutorUnavailable,
@@ -359,6 +360,7 @@ fn lower_strategy_replay(
 }
 
 fn ensure_strategy_replay_basis_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis_runtime: &RelationalRuntime,
     envelope: &CanonicalCommitEnvelope,
     expected_artifacts: &StrategyCommitArtifactBundle,
@@ -384,7 +386,7 @@ fn ensure_strategy_replay_basis_branch(
 
     basis_runtime
         .history_authority()
-        .fork_branch_from(envelope.branch_context.clone(), &source_branch)
+        .fork_branch_from(execution, envelope.branch_context.clone(), &source_branch)
         .map_err(|error| {
             format!(
                 "failed to reconstruct strategy replay basis branch {:?} from {:?}: {error:?}",

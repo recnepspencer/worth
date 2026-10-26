@@ -9,6 +9,7 @@ use worth_query_host::facade::runtime::ExecutionAllocationDenial;
 pub enum BankApplicationAttemptDenialKind {
     ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     ForeignPhase,
+    StorageUnavailable,
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
     Cancelled,
     DeadlineExceeded,
@@ -144,6 +145,7 @@ const fn application_attempt_kind(
     match kind {
         Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
+        Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
         Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,
         Query::DeadlineExceeded => BankApplicationAttemptDenialKind::DeadlineExceeded,
@@ -388,3 +390,7 @@ const fn application_attempt_kind(
         }
     }
 }
+
+#[cfg(test)]
+#[path = "preparation_denial_tests.rs"]
+mod tests;

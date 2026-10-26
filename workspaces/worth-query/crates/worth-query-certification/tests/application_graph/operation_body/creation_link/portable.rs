@@ -36,16 +36,15 @@ fn portable_creation_links_refuse_wrong_direction_endpoint_and_membership() {
                     body.requirements().to_vec(),
                 );
             }
-            if defect == "membership" {
-                if let ApplicationSchemaMember::OperationProgram {
+            if defect == "membership"
+                && let ApplicationSchemaMember::OperationProgram {
                     operation,
                     target: ApplicationOperationProgramTarget::Link { relation, .. },
                 } = member
-                {
-                    if operation == "CreateDocument" && relation == "TenantDocuments" {
-                        *relation = "DocumentTenant".to_owned();
-                    }
-                }
+                && operation == "CreateDocument"
+                && relation == "TenantDocuments"
+            {
+                *relation = "DocumentTenant".to_owned();
             }
         }
         parts.members.sort();

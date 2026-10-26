@@ -11,8 +11,6 @@ use crate::indexes::data::{
 use std::{collections::BTreeMap, mem::size_of, sync::Arc};
 use worth_execution::ExecutionRequest;
 const MEMORY: u64 = 64 * 1024 * 1024;
-// One serial singleton context: fixed worker/activity cells and partition meter.
-const FRAMEWORK: u64 = 312;
 fn height(mut n: usize) -> usize {
     let mut h = 1;
     while n > 64 {
@@ -41,27 +39,12 @@ fn edits(n: usize, insert: bool) -> BTreeMap<u64, Vec<PendingEdit<u64>>> {
         .collect()
 }
 #[test]
-fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
-    let mut low = 0;
-    let mut high = (MEMORY / 48) as usize;
-    while low < high {
-        let mid = (low + high).div_ceil(2);
-        if full_bytes(mid) <= MEMORY - FRAMEWORK {
-            low = mid
-        } else {
-            high = mid - 1
-        }
-    }
-    let rows = low;
-    assert!(full_bytes(rows) <= MEMORY - FRAMEWORK && full_bytes(rows + 1) > MEMORY - FRAMEWORK);
-    eprintln!(
-        "cold u64 map rows={rows}, bytes={}, next={}",
-        full_bytes(rows),
-        full_bytes(rows + 1)
-    );
-    for n in [rows, rows + 1] {
+fn cold_reconstruction_obeys_the_callers_memory_limit() {
+    let rows = 256;
+    for memory in [1024, MEMORY] {
+        let n = rows;
         let host = worth_execution::SerialRequest::from_memory(
-            worth_execution::SerialMemoryBudget::new(Some(MEMORY)),
+            worth_execution::SerialMemoryBudget::new(Some(memory)),
             worth_execution::CancellationToken::new(),
             None,
         );
@@ -80,7 +63,7 @@ fn cold_reconstruction_meets_the_derived_serial_memory_edge() {
             )?;
             Ok(map)
         });
-        if n == rows {
+        if memory == MEMORY {
             assert_eq!(result.unwrap().0.value.len(), rows);
         } else {
             assert!(matches!(

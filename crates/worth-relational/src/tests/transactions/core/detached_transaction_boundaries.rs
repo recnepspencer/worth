@@ -17,19 +17,23 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
     let target = create_entity(execution, &runtime, "relation-target");
     let alternate_target = create_entity(execution, &runtime, "alternate-relation-target");
     let relation = create_relation(execution, &runtime, source, target, "root-edge");
-    fork_from_main(&mut runtime, "storm");
-    fork_from_main(&mut runtime, "maintenance");
+    fork_from_main(execution, &mut runtime, "storm");
+    fork_from_main(execution, &mut runtime, "maintenance");
 
     let (storm_basis, mut storm) = begin_on(&runtime, "storm");
     let (maintenance_basis, mut maintenance) = begin_on(&runtime, "maintenance");
-    let storm_root_read = storm.read_relation(relation).expect("root read projects");
+    let storm_root_read = storm
+        .read_relation(execution, relation)
+        .expect("root read projects");
     assert_eq!(
         storm_root_read.base().map(|record| record.relation_id),
         Some(relation)
     );
     assert!(storm_root_read.staged_mutations().is_empty());
     assert_eq!(
-        storm.read_relation(relation).expect("repeat read projects"),
+        storm
+            .read_relation(execution, relation)
+            .expect("repeat read projects"),
         storm_root_read
     );
 
@@ -49,7 +53,7 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
         storm
-            .read_relation(relation)
+            .read_relation(execution, relation)
             .expect("staged relation read projects")
             .effective()
             .map(|record| record.target.clone()),
@@ -57,13 +61,13 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
     );
     assert_eq!(
         storm
-            .read_relation(relation)
+            .read_relation(execution, relation)
             .expect("staged relation read projects")
             .staged_mutations(),
         &[storm_relation_mutation]
     );
     let maintenance_read = maintenance
-        .read_relation(relation)
+        .read_relation(execution, relation)
         .expect("maintenance relation read projects");
     assert!(maintenance_read.staged_mutations().is_empty());
     assert_eq!(
@@ -280,12 +284,16 @@ fn bulk_created_reads_share_one_staged_intent_allocation() {
     );
 }
 
-fn fork_from_main(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.into()), source)
+        .fork_branch(execution, BranchId(branch.into()), source)
         .expect("branch fork succeeds");
 }
 

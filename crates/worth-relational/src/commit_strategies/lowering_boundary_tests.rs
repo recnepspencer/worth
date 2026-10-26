@@ -121,8 +121,8 @@ fn sibling_strategy_target_denies_before_normalization_with_zero_residue() {
 
     let runtime = require_interned_runtime();
     crate::tests::support::create_entity_outcome(execution, &runtime, "shared-strategy-root");
-    fork_from_main(&runtime, "strategy-storm");
-    fork_from_main(&runtime, "strategy-maintenance");
+    fork_from_main(execution, &runtime, "strategy-storm");
+    fork_from_main(execution, &runtime, "strategy-maintenance");
     let mut storm = begin_on(&runtime, "strategy-storm");
     storm
         .push_batch(
@@ -230,12 +230,16 @@ fn create_batch(client_key: &str) -> WorkerIntentBatch {
     )))
 }
 
-fn fork_from_main(runtime: &crate::runtime::RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has a committed fork source");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), basis)
+        .fork_branch(execution, BranchId(branch.to_owned()), basis)
         .expect("branch fork succeeds");
 }
 

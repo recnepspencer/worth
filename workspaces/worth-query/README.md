@@ -107,8 +107,33 @@ this disclosure nor the scheduling handoff certifies an output Current. This
 proof covers native read refusals; it does not establish recovery when native
 publication is Current but managed readiness delivery is still deferred.
 
-Use the smallest package that owns the change. Declaration work does not build
-installation, execution, publication, replay, or certification:
+Use the smallest package that owns the change for focused development.
+
+For the complete library, example and documentation lanes, run from the repository
+root. The build wrapper supplies a fresh `WORTH_IMPLEMENTATION_BUILD_ID`, which
+examples embed as their application build identity; it is required build input,
+not runtime authority. The Query test profile disables debug tables because the
+execution test binary otherwise exceeds the Windows PDB format's 4 GiB limit.
+No `CARGO_PROFILE_TEST_DEBUG` override is needed for these Query-workspace
+commands. The doc and fixture gates also build the separate consumer-entry
+workspace, which does not inherit Query's test profile. On Windows, set
+`CARGO_PROFILE_TEST_DEBUG=0` before running those gates to keep the owning-fixture
+test binaries below the PDB limit:
+
+```powershell
+$env:CARGO_PROFILE_TEST_DEBUG = "0"
+python scripts/ci/query_gate.py doc
+python scripts/ci/query_gate.py fixture
+```
+
+```text
+python scripts/application_build.py cargo test --manifest-path workspaces/worth-query/Cargo.toml --workspace --lib --no-fail-fast
+python scripts/application_build.py cargo test --manifest-path workspaces/worth-query/Cargo.toml --workspace --examples --no-fail-fast
+python scripts/application_build.py cargo test --manifest-path workspaces/worth-query/Cargo.toml --workspace --doc --no-fail-fast
+```
+
+Declaration work does not build installation, execution, publication, replay,
+or certification:
 
 ```text
 cargo check --manifest-path workspaces/worth-query/Cargo.toml -p worth-query-declaration

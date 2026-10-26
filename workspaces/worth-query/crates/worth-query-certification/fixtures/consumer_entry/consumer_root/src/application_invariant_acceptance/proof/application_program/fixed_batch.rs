@@ -4,11 +4,7 @@ use crate::application_program::fixed_batch::{
     BatchAction, BatchDelivery, BatchProgram, CounterfeitBatchAction, CounterfeitBatchDelivery,
 };
 use worth_query_decl::facade::application_program::ApplicationProgramAuthoring;
-use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationQueryBatchDenial, WorthQueryOperationAdvance as Advance,
-    WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy,
-};
-use worth_query_host::facade::primary_graph::WorthQueryApplicationQueryBatchResourceDenial;
+use worth_query_host::facade::application_entry::WorthQueryOperationAdvance as Advance;
 use worth_query_topology_entry::{
     planar_source_adjustment_contacts, reset_planar_source_adjustment_contacts, PlanarOutputRead,
 };

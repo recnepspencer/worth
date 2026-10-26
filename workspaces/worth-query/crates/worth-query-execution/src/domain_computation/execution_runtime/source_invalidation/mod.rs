@@ -7,15 +7,17 @@ pub(in crate::domain_computation) struct InvalidationOracleReceiver {
     pub(in crate::domain_computation) oracle_guards: AtomicU64,
     pub(in crate::domain_computation) oracle_checks: AtomicU64,
 }
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct WorthQueryInvalidationResources {
     oracle: Arc<InvalidationOracleReceiver>,
 }
 impl WorthQueryInvalidationResources {
     pub fn new() -> Self {
-        Self {
+        let resources = Self {
             oracle: Arc::default(),
-        }
+        };
+        resources.attach_runtime_observations();
+        resources
     }
     pub(in crate::domain_computation) fn attach_runtime_observations(&self) {
         crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
@@ -37,5 +39,11 @@ impl WorthQueryInvalidationResources {
         self.oracle
             .oracle_checks
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+impl Default for WorthQueryInvalidationResources {
+    fn default() -> Self {
+        Self::new()
     }
 }

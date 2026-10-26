@@ -24,8 +24,6 @@ mod logical_work_scale;
 mod posting_continuation;
 #[path = "native_journey_tests/scope_hierarchy.rs"]
 mod scope_hierarchy;
-#[path = "native_journey_tests/unwatched.rs"]
-mod unwatched;
 // Fixture evidence carries no performed output projection, so the
 // equivalence oracle correctly refuses it; this proof is about metering.
 #[path = "native_journey_tests/pending_own_evidence.rs"]

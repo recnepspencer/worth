@@ -1,4 +1,4 @@
-use crate::branch::RelationalForkDenial;
+use crate::branch::{RelationalBranchTransitionStop, RelationalForkDenial};
 use crate::facade::history::BranchId;
 use crate::tests::support::{create_entity_outcome, runtime_with_test_schema};
 use worth_foundational::FoundationalBranchTarget;
@@ -36,8 +36,14 @@ fn metadata_only_generation_advance_stales_a_prior_fork_token() {
 
     let catalog_before = runtime.history().immutable_commit_count();
     assert!(matches!(
-        runtime.fork_branch(BranchId("stale-generation".to_owned()), stale_basis),
-        Err(RelationalForkDenial::StaleSource)
+        runtime.fork_branch(
+            execution,
+            BranchId("stale-generation".to_owned()),
+            stale_basis
+        ),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalForkDenial::StaleSource
+        ))
     ));
     assert_eq!(runtime.history().immutable_commit_count(), catalog_before);
     assert!(runtime

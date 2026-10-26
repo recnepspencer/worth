@@ -4,7 +4,7 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
-use super::{HistorySubsystem, RelationalCanonicalPublicationRoutes};
+use super::HistorySubsystem;
 
 impl HistorySubsystem {
     pub(crate) fn canonical_envelope(
@@ -100,12 +100,41 @@ impl HistorySubsystem {
         &mut self,
         commits: impl IntoIterator<Item = Arc<crate::history::data::PositionedCanonicalCommit>>,
     ) -> Result<(), &'static str> {
-        let routes = Arc::new(RelationalCanonicalPublicationRoutes::default());
+        let routes = Arc::new(
+            self.canonical_publication_routes
+                .continuing_branch_transitions(),
+        );
         for commit in commits {
             routes.install_recovered(commit)?;
         }
         self.canonical_publication_routes = routes;
         Ok(())
+    }
+
+    pub(crate) fn restore_branch_transition_coverage(
+        &self,
+        covered: crate::branch::RelationalBranchTransitionSequence,
+    ) {
+        self.canonical_publication_routes
+            .restore_branch_transition_coverage(covered);
+    }
+
+    pub(crate) fn compact_branch_transitions_through(
+        &self,
+        covered: crate::branch::RelationalBranchTransitionSequence,
+    ) {
+        self.canonical_publication_routes
+            .compact_branch_transitions_through(covered);
+    }
+
+    pub(crate) fn retained_branch_transitions(
+        &self,
+    ) -> (
+        crate::branch::RelationalBranchTransitionSequence,
+        Vec<Arc<crate::branch::PositionedBranchTransition>>,
+    ) {
+        self.canonical_publication_routes
+            .retained_branch_transitions()
     }
 
     pub(crate) fn mark_publication_settled(&self, commit_id: CommitId) -> bool {

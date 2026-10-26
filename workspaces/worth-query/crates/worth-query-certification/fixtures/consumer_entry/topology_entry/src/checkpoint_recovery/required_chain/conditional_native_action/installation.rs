@@ -6,6 +6,10 @@ use std::sync::{
 };
 use worth_query_host::facade::application_installation::ApplicationBuildIdentity;
 
+#[expect(
+    clippy::result_large_err,
+    reason = "Keep complete typed Query refusal evidence, following the Query workspace policy"
+)]
 pub(super) fn install<const MODE: u8>() -> Result<
     application_installation::WorthQueryProgramApplicationRuntime<JointSchema, JointProgram<MODE>>,
     WorthQueryInMemoryApplicationDenial,

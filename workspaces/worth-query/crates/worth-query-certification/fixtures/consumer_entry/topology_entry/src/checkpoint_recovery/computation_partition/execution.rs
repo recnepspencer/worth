@@ -227,9 +227,8 @@ fn kernel_panic_is_a_typed_stop_and_the_next_demand_runs() {
     });
 }
 
-/// Three regions of 1,500 units of work each, and where the computation's
-/// declared 4,096 stop them: two regions fit and the third does not,
-/// whichever region the input meets first.
+/// Three regions of 1,500 work units each. An owned certification ceiling of
+/// 4,096 admits two regions and stops the third, irrespective of input order.
 pub(super) fn heavy_regions() -> (Vec<RegionEntry>, RegionOutcome) {
     let regions = in_partition_order(1..=3);
     let heavy = regions

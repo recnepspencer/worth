@@ -128,6 +128,7 @@ mod tests {
                 let mut admission = ResourceAdmission::new(
                     &budget,
                     worth_execution::ExecutionRequest::leased(lease),
+                    None,
                 )
                 .unwrap();
                 let comparator = DefaultComparatorPolicyResolver::default();

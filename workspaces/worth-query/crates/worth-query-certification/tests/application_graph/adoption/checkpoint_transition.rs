@@ -47,7 +47,7 @@ fn checkpoint_transition_target_rule_rejects_retained_predecessor_only_value() {
         host_limits(),
         source.clone(),
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 8192).unwrap(),
         CapturePolicy::SystemAllocation,
         |writer, _| {
             authored = true;
@@ -112,7 +112,7 @@ fn checkpoint_transition_target_rule_accepts_complete_retained_and_created_state
         host_limits(),
         source,
         predecessor,
-        installation::WorthQueryCheckpointTransitionResources::bounded(512, 32, 8192).unwrap(),
+        installation::WorthQueryCheckpointTransitionResources::bounded(8192, 32, 8192).unwrap(),
         CapturePolicy::SystemAllocation,
         |writer, _| {
             writer.bind_entity(

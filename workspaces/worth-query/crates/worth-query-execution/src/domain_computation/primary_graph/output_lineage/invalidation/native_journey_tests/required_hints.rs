@@ -39,7 +39,7 @@ use gate::TwoPrepareGate;
 struct TwoCellHints {
     cells: BTreeMap<BranchId, CompanionBranchCell<u64>>,
     member: Arc<RequiredWorkMembership>,
-    resources: WorthQueryInvalidationResources,
+    _resources: WorthQueryInvalidationResources,
     observers: Arc<Mutex<Vec<CompanionPublicationCompletionObserver>>>,
     saw_two_prepared: Arc<AtomicBool>,
     gate: Arc<TwoPrepareGate>,
@@ -64,7 +64,7 @@ impl RelationalPublicationCompanion for TwoCellHints {
             .expect("both real branch cells are registered");
         let reserved = cell.reserve_preflight(context)?;
         let mut effect = context.seal_replacement(reserved, Arc::new(index as u64 + 1))?;
-        let retained: Arc<dyn Send + Sync> = self.retained.clone();
+        let _retained: Arc<dyn Send + Sync> = self.retained.clone();
         let observer = effect.attach_completion_observer(context)?;
         {
             let mut observers = self.observers.lock().unwrap();
@@ -109,7 +109,8 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     {
-        for allowed_hints in [2_u64] {
+        {
+            let allowed_hints = 2_u64;
             let world = installed_authorization_world(true);
             let (entity, product) = world
                 .application
@@ -158,7 +159,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 let main = BranchId("main".to_owned());
                 let fork = BranchId("hint-fork".to_owned());
                 let (_, source) = runtime.observe_fork_source(&main).unwrap();
-                runtime.fork_branch(fork.clone(), source).unwrap();
+                runtime.fork_branch(execution, fork.clone(), source).unwrap();
                 let (_main_handle, main_root) = snapshot(runtime);
                 let fork_identity = runtime.branch_identity(&fork).unwrap();
                 let fork_basis = runtime.admit_branch_basis(&fork_identity).unwrap();
@@ -182,7 +183,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 let participant = Arc::new(TwoCellHints {
                     cells: BTreeMap::from([(main.clone(), main_cell), (fork.clone(), fork_cell)]),
                     member: Arc::clone(&member),
-                    resources: resources.clone(),
+                    _resources: resources.clone(),
                     observers: Arc::clone(&observers),
                     saw_two_prepared: Arc::clone(&saw_two_prepared),
                     gate: Arc::clone(&gate),

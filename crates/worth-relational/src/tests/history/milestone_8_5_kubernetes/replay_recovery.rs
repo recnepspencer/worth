@@ -152,6 +152,37 @@ pub(super) fn recover_stage_from_final_history(
         .last()
         .map(|envelope| envelope.descriptor_semantics_version)
         .unwrap_or_default();
+    // The staged chain replays only some commits, so it carries the forks of
+    // the branches those commits are on, as a partial replay chain does.
+    let covered_transitions = checkpoint.as_ref().map_or(0, |checkpoint| {
+        checkpoint.coverage.up_to_branch_transition.0
+    });
+    let mut chain_branches = tail_log
+        .iter()
+        .map(|envelope| envelope.branch_context.clone())
+        .collect::<BTreeSet<_>>();
+    let mut forks = source
+        .durability()
+        .reconstruct_branch_transition_history(
+            execution,
+            crate::branch::RelationalBranchTransitionSequence(covered_transitions),
+        )
+        .unwrap()
+        .into_iter()
+        .rev()
+        .filter_map(|transition| {
+            if let crate::branch::RelationalBranchTransition::Fork { target, source, .. } =
+                transition.transition()
+                && chain_branches.contains(target)
+            {
+                chain_branches.insert(source.clone());
+                Some(transition)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+    forks.reverse();
     let plan = crate::durability::data::RecoveryPlan::new(
         source.config().clone(),
         checkpoint,
@@ -159,12 +190,14 @@ pub(super) fn recover_stage_from_final_history(
             .into_iter()
             .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
             .collect(),
+        crate::durability::data::RecoveryBranchTransitions::Selected(forks),
         crate::durability::data::RecoveryAuthorityContinuityCheck::verified_at(
             crate::replay::data::ReplayVerificationLayer::DigestParity,
         ),
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
+        source.durability.cold_source(),
     )
     .with_commit_strategy_executors(source.commit_strategy_executor_registry().clone());
     let mut recovered = persisted_strategy_runtime(root_path);

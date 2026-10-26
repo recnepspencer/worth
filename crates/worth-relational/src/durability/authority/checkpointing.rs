@@ -14,17 +14,63 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::durability::data::RelationalNativeCheckpoint,
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
-        policy.check_live()?;
-        let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
-        let coverage = crate::durability::access::checkpoint_coverage(&checkpoint);
-        let (bytes, sections) = crate::durability::log::native_checkpoint_codec::encode_checkpoint(
-            &checkpoint,
+        self.native_checkpoint_with_policy(
             policy,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+        )
+    }
+
+    pub fn native_checkpoint_with_policy(
+        &self,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
+    ) -> Result<
+        crate::durability::data::RelationalNativeCheckpoint,
+        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
+    > {
+        policy.check_live()?;
+        let captured = self.capture_checkpoint_basis()?.build_native_capture(
+            policy,
+            self.runtime.durability.cold_source(),
+            &artifact_policy,
         )?;
+        let manifest_publication = if !artifact_policy.is_embedded() {
+            artifact_policy.publication_source().map(|source| {
+                self.runtime
+                    .durability
+                    .checkpoint_selection()
+                    .prepare(captured.manifest.clone(), source)
+            })
+        } else {
+            None
+        };
+        let coverage = captured.manifest.covered_position;
+        let transitions = captured.manifest.coverage.up_to_branch_transition;
+        let (bytes, sections, members, publications) =
+            crate::durability::log::native_checkpoint_codec::encode_captured(
+                captured,
+                policy,
+                &artifact_policy,
+            )?;
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(transitions);
+        }
         Ok(
             crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
-                bytes, sections, coverage,
-            ),
+                bytes,
+                sections,
+                coverage,
+                transitions,
+            )
+            .with_captured_members(members)
+            .with_region_publications(if manifest_publication.is_some() {
+                publications
+            } else {
+                Vec::new()
+            })
+            .with_manifest_publication(manifest_publication),
         )
     }
 
@@ -66,6 +112,13 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 vec![checkpoint_created(&checkpoint)],
             );
         self.runtime.durability.push_checkpoint(checkpoint.clone());
+        // Memory-only history has no external copy, including forks needed
+        // by replay chains older than any retained checkpoint.
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);
+        }
         Ok(checkpoint)
     }
 

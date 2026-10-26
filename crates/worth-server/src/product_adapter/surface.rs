@@ -274,17 +274,15 @@ impl WorthServerProductOperationSurfaceDenial {
             .with_execution_boundary(
                 WorthServerProductOperationExecutionBoundary::RejectedBeforeAdapterExecution,
             );
-        if let Some(facts) = facts {
-            if let (Some(expected_basis_digest), Some(observed_basis_digest)) =
+        if let Some(facts) = facts
+            && let (Some(expected_basis_digest), Some(observed_basis_digest)) =
                 (facts.expected_basis_digest(), facts.observed_basis_digest())
-            {
-                surface_facts = surface_facts.with_basis_mismatch(
-                    crate::WorthServerProductStaleBasisDenial::new(
-                        expected_basis_digest,
-                        observed_basis_digest,
-                    ),
-                );
-            }
+        {
+            surface_facts =
+                surface_facts.with_basis_mismatch(crate::WorthServerProductStaleBasisDenial::new(
+                    expected_basis_digest,
+                    observed_basis_digest,
+                ));
         }
         Self::new(
             WorthServerProductOperationSurfaceDenialCode::ReadinessDenied,

@@ -40,21 +40,19 @@ pub(super) fn substitute(
     }
     frame_checksum::refresh_checksum(frame);
 }
-#[expect(
-    clippy::single_range_in_vec_init,
-    reason = "each family substitutes a list of field ranges; one range is a one-field list"
-)]
 pub(super) fn substitution_fields(target: &ArtifactGranule) -> Vec<Range<usize>> {
     match target.family {
-        "bootstrap_catalog" | "current_root_selector" | "previous_root_selector" => vec![48..64],
+        "bootstrap_catalog" | "current_root_selector" | "previous_root_selector" => {
+            std::iter::once(48..64).collect()
+        }
         "root_manifest" => vec![28..36, 48..56],
         "root_routing_block" | "segment_membership_block" | "free_space_membership_block" => {
-            vec![72..80]
+            std::iter::once(72..80).collect()
         }
         "free_space_header" => vec![28..36, 48..56],
-        "extent_manifest" => vec![28..36],
-        "extent_chunk" => vec![80..88],
-        "inline_page" => vec![0..target.length()],
+        "extent_manifest" => std::iter::once(28..36).collect(),
+        "extent_chunk" => std::iter::once(80..88).collect(),
+        "inline_page" => std::iter::once(0..target.length()).collect(),
         other => panic!("missing concrete substitution for {other}"),
     }
 }

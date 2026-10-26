@@ -2,12 +2,36 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
 use super::frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
-use super::payload_emission::{count_payload, emit_payload};
 use super::payload_wire::ArtifactPayloadRef;
 use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
+use crate::durability::artifact_payload_emission::{count_payload, emit_payload};
 use crate::history::data::PositionedCanonicalCommit;
 
 impl RelationalCanonicalCommitArtifact {
+    /// The manifest index uses the journal's exact payload grammar. Hashing
+    /// borrows the admitted envelope and allocates no intermediate artifact.
+    pub(crate) fn positioned_payload_digest(
+        commit: &PositionedCanonicalCommit,
+    ) -> Result<[u8; 32], rmp_serde::encode::Error> {
+        use sha2::{Digest, Sha256};
+        struct HashWriter(Sha256);
+        impl std::io::Write for HashWriter {
+            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+                self.0.update(bytes);
+                Ok(bytes.len())
+            }
+            fn flush(&mut self) -> std::io::Result<()> {
+                Ok(())
+            }
+        }
+        let mut writer = HashWriter(Sha256::new());
+        rmp_serde::encode::write_named(
+            &mut writer,
+            &ArtifactPayloadRef::new(commit.position(), commit.envelope()),
+        )?;
+        Ok(writer.0.finalize().into())
+    }
+
     /// Frame one admitted positioned commit. Only Relational holds a
     /// `PositionedCanonicalCommit`, so only the owner issues artifacts.
     ///

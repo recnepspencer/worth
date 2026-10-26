@@ -79,7 +79,7 @@ fn fixed_delivery_result_contract_retry_unrelated_progress_and_consumed_fact_his
         .unwrap()
         .selected_commit()
         .clone();
-    let one = NonZeroUsize::new(1).unwrap();
+    let _one = NonZeroUsize::new(1).unwrap();
     let policy = WorthQueryOperationDeliveryPolicy::default();
 
     assert!(matches!(settled.read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap())), Err(WorthQueryOperationDeliveryDenial::Query(worth_query_host::facade::application_entry::WorthQueryApplicationRequestQueryDenial::Limit(_)))));

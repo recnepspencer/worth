@@ -311,19 +311,8 @@ impl HistorySubsystem {
             roots.insert(commit_id, Arc::clone(&root));
         }
         Ok(roots
-            .into_iter()
-            .map(|(commit_id, root)| {
-                let partitions = root
-                    .partition_ids()
-                    .into_iter()
-                    .filter_map(|partition_id| root.partition_state(partition_id).cloned())
-                    .collect();
-                crate::branch::RelationalBranchRootCheckpoint::new(
-                    commit_id,
-                    partitions,
-                    root.retained_schema_authority(),
-                )
-            })
+            .into_values()
+            .map(crate::branch::RelationalBranchRootCheckpoint::new)
             .collect())
     }
 

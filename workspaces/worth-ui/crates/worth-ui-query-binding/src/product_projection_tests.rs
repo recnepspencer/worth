@@ -7,7 +7,7 @@ fn authored_action_changes_status_without_consuming_the_next_source_revision() {
         .publish_source(
             crate::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("first external source revision"),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("first source edit commits");
     let source_version = source.query_receipt().inspect().basis().version();
@@ -15,7 +15,7 @@ fn authored_action_changes_status_without_consuming_the_next_source_revision() {
         .execute_action(
             crate::WorthUiStatusActionRequest::new(1, "Deployed", 7, 1)
                 .expect("real product action request"),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("action commits through the same authored program");
     let crate::WorthUiStatusActionOutcome::Committed(action) = action else {
@@ -38,7 +38,7 @@ fn authored_action_changes_status_without_consuming_the_next_source_revision() {
         .publish_source(
             crate::WorthUiScalarProjectionSourceRecord::new("SYNCHRONIZED", 2)
                 .expect("second external source revision"),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the next file revision remains admissible after the action");
     assert_eq!(next.value().status, "SYNCHRONIZED");
@@ -52,7 +52,7 @@ fn authored_stale_action_is_denied_by_query_without_changing_status() {
         .publish_source(
             crate::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("the first source revision is valid"),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the first source revision commits");
     let before = owner
@@ -63,7 +63,7 @@ fn authored_stale_action_is_denied_by_query_without_changing_status() {
     let outcome = owner
         .execute_action(
             action,
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the stale action reaches Query through the ordinary path");
     let crate::WorthUiStatusActionOutcome::DeniedRevisionMismatch {
@@ -105,7 +105,7 @@ fn authored_status_source_updates_the_real_application_root() {
     let online = owner
         .publish_source(
             WorthUiScalarProjectionSourceRecord::new("ONLINE", 1).unwrap(),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the first source edit publishes through Query");
     assert!(matches!(
@@ -131,7 +131,7 @@ fn authored_status_source_updates_the_real_application_root() {
     let updated = owner
         .publish_source(
             WorthUiScalarProjectionSourceRecord::new("UPDATED-LONG", 2).unwrap(),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the second source edit replaces the same Query record");
     assert_eq!(updated.value().status, "UPDATED-LONG");

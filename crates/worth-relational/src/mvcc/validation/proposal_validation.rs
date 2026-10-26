@@ -84,6 +84,15 @@ impl RelationalPreparationRuntime {
                 "transaction basis is no longer current",
             ));
         }
+        self.durability_admission
+            .require_open()
+            .map_err(TransactionCommitError::durability_unresolved)?;
+        transaction.demand_preparation_regions(
+            execution,
+            &self.services.symbols,
+            &self.index_definitions,
+            &self.mirror_residency,
+        )?;
         let validated_against_version = basis.observation().version_id();
         let validated_against_commit = basis.observation().commit_id();
         let prepared: PreparedWorkingStateScope = match lowered {

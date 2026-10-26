@@ -14,6 +14,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

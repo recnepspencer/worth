@@ -4,7 +4,11 @@ pub const PHYSICAL_MUTATION_BINDING_COMPACTION_RECORD_DOMAIN: &[u8] =
     b"store.physical.mutation-binding-compaction-record.v1";
 
 pub(super) const BINDING_COMPACTION_HEADER_PAYLOAD_BYTES: usize = 16;
-pub const MAX_CHECKPOINT_BINDING_RECORD_BYTES: usize = 4 * 1024;
+/// A completed batch carries every returned record identity in its terminal
+/// fate. A batch admits at most `u16::MAX` records; each identity occupies a
+/// length-tagged 16-byte epoch and an 8-byte ordinal (32 bytes). Reserve the
+/// fixed binding, group, breadth and observation fields separately.
+pub const MAX_CHECKPOINT_BINDING_RECORD_BYTES: usize = 4 * 1024 + u16::MAX as usize * 32;
 pub const CHECKPOINT_BINDING_COMPACTION_HEADER_RECORD_BYTES: usize = 36;
 pub const CHECKPOINT_BINDING_RECORD_PREFIX_BYTES: usize = 16;
 

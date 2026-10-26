@@ -1,10 +1,12 @@
 mod authority_continuity;
 mod continuity_issue_mapping;
 mod envelope_version_selection;
-mod in_memory_recovery_plan;
 mod medium_recovery_plan;
+mod medium_transition_tail;
 mod native_checkpoint_recovery_plan;
 mod recovery_plan_entrypoint;
+mod retained_recovery_plan;
+mod transition_history;
 
 pub use recovery_plan_entrypoint::DurabilityAccess;
 

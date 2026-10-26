@@ -1,40 +1,51 @@
 use crate::history::data::CommitId;
+use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
+use crate::storage::residency::RelationalRegionResidency;
 use std::sync::Arc;
 
-/// Recovery-lane image source for one exact immutable branch root.
-///
-/// The durability owner performs wire conversion. This owner-side carrier
-/// keeps branch truth distinct from the runtime's main-derived storage mirror.
+/// Owner-side leaf facts and residency, independent of durable placement.
+#[derive(Debug, Clone)]
+pub(crate) struct RelationalRootRegionCheckpoint {
+    pub(crate) partition_id: PartitionId,
+    pub(crate) content_digest: [u8; 32],
+    pub(crate) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
+    pub(crate) entity_slots: usize,
+    pub(crate) relation_slots: usize,
+    pub(crate) unavailable_records: usize,
+    pub(crate) cell: Arc<RelationalRegionResidency>,
+    pub(crate) kind_authority:
+        Option<Arc<crate::storage::residency::RelationalRegionKindAuthority>>,
+}
+
+/// Selection retains one immutable root; native capture walks its leaves.
 #[derive(Debug, Clone)]
 pub(crate) struct RelationalBranchRootCheckpoint {
-    commit_id: CommitId,
-    partitions: Vec<PartitionState>,
-    schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
+    root: Arc<super::RelationalBranchRoot>,
 }
 
 impl RelationalBranchRootCheckpoint {
-    pub(crate) fn new(
-        commit_id: CommitId,
-        partitions: Vec<PartitionState>,
-        schema_authority: Arc<super::RelationalBranchRootSchemaAuthority>,
-    ) -> Self {
-        Self {
-            commit_id,
-            partitions,
-            schema_authority,
-        }
+    pub(crate) fn new(root: Arc<super::RelationalBranchRoot>) -> Self {
+        Self { root }
     }
-
-    pub(crate) const fn commit_id(&self) -> CommitId {
-        self.commit_id
+    pub(crate) fn commit_id(&self) -> CommitId {
+        self.root.commit_id().expect("checkpoint root is committed")
     }
-
-    pub(crate) fn partitions(&self) -> &[PartitionState] {
-        &self.partitions
+    pub(crate) fn regions(&self) -> Vec<RelationalRootRegionCheckpoint> {
+        self.root.checkpoint_regions()
     }
-
+    pub(crate) fn partitions(&self) -> Vec<PartitionState> {
+        self.root
+            .partition_ids_iter()
+            .map(|id| {
+                self.root
+                    .partition_state(id)
+                    .expect("reconstructive checkpoint requires admitted regions")
+                    .clone()
+            })
+            .collect()
+    }
     pub(crate) fn schema_authority(&self) -> &super::RelationalBranchRootSchemaAuthority {
-        &self.schema_authority
+        self.root.schema_authority()
     }
 }

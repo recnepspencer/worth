@@ -39,8 +39,8 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         })
         .build();
     create_entity(execution, &runtime, "patch-position-contention-anchor");
-    fork_contention_branch(&runtime, "winner");
-    fork_contention_branch(&runtime, "loser");
+    fork_contention_branch(execution, &runtime, "winner");
+    fork_contention_branch(execution, &runtime, "loser");
 
     let loser_identity = runtime
         .branch_identity(&BranchId("loser".to_owned()))
@@ -289,12 +289,16 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
     release_test_commit_snapshot(&runtime, &settled);
 }
 
-fn fork_contention_branch(runtime: &RelationalRuntime, branch: &str) {
+fn fork_contention_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("contention branch fork succeeds");
 }
 

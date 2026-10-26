@@ -70,8 +70,9 @@ progress fails fixture setup.
 `relational_home` requires the certification feature because its crash oracle
 uses the compiled media and interruption controls. The scenario CI partition
 selects it and enables `worth-store-relational/certification-test-authority`.
-The four home media sweeps each reserve the entire eight-slot nextest pool and
-run eight independent cases internally. Each case rebuilds its own Store
+The six home media sweep tests cover eight target matrices, reserve the entire
+eight-slot nextest pool and run eight independent cases internally. Libtest
+also serializes these sweeps within its process. Each case rebuilds its own Store
 because physical file identities forbid directory cloning; it then opens,
 injects one cut, recovers, compares the acknowledged/in-flight prefix, finishes
 the script, reopens and checks history, branch state and fresh identities.
@@ -79,15 +80,15 @@ Schedules that reject a directive are now admitted before building that home.
 The final reopen declares the completed script's known schema, avoiding an
 unnecessary old-schema recovery/refusal.
 
-The three 176-case commit matrices retain the ordinary 300-second/default and
-600-second/CI guards. Checkpoint replacement has 337 admitted cases (two
-seeds), so its allowance scales by 337/176: 574 seconds locally and 1,149 in
-CI, rounded to 600 and 1,200 seconds. Each seed discovers its actual
+Before the residency integration, the three 176-case commit matrices retained
+the ordinary 300-second/default and 600-second/CI guards. Checkpoint replacement
+had 337 admitted cases (two seeds), so its allowance scaled by 337/176:
+574 seconds locally and 1,149 in CI, rounded to 600 and 1,200 seconds. Each seed discovers its actual
 media-operation count, and each sweep prints its counts and elapsed time.
 The budget funds the same per-cut workload allowance, rather than assuming
 that the fastest focused measurement predicts a full lane under build load.
 No cuts, continuation steps or oracle checks are removed.
-Measurements use Windows 11, Rust 1.94.0 and unoptimized `ci-test` on a
+These historical measurements used Windows 11, Rust 1.94.0 and unoptimized `ci-test` on a
 32-logical-processor, 128-GiB host during continuous boundary-check rebuilds
 with `CARGO_BUILD_JOBS=8`.
 
@@ -143,6 +144,70 @@ reopens and verifies all history, branch states and fresh identities.
 Phase profiling is temporary; remove it and invalidate the compiled package
 before qualifying complete CI runs, then check the executed artifact for residue.
 
+After integrating residency phase 1, all 33 home tests remain in the scenario
+selection. The nine-commit, three-checkpoint script now includes all six
+archive/deletion lifecycle steps as well as the feature fork. The eight
+matrices admit 1,822 fault cases and reject 406 unsupported schedules before
+world construction. Checkpoint member publication expands its matrix from
+337 to 590 admitted cuts. The archive/deletion test runs three 176-cut
+matrices under one test timer; none of their cases or assertions is removed.
+
+The merged diagnostic passed all six tests during continuous eight-job
+boundary-check rebuilds and a concurrent full Store workspace run, alongside
+other builds on the shared host. It used the same Windows host and Rust
+1.94.0, with `CARGO_PROFILE_DEV_DEBUG=0`, `CARGO_PROFILE_TEST_DEBUG=0` and
+`CARGO_PROFILE_CI_TEST_DEBUG=0`. Every case builds its own home; the two seeded
+memory-only reference scripts are shared immutably within each matrix.
+
+Mean seconds per admitted case after integration (recovery includes aborting
+the faulted home; continuation includes the remaining script, final reopen and
+fresh-identity probes):
+
+| Matrix | Cuts | Prepare | Open | Inject | Recover | Compare | Continue/reopen | Wall seconds |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| First commit | 176 | 0.344 | 0.183 | 0.123 | 0.273 | 0.001 | 7.376 | 189.76 |
+| Fork publication | 176 | 3.265 | 0.335 | 0.252 | 0.575 | 0.005 | 13.142 | 400.88 |
+| First fork commit | 176 | 3.091 | 0.289 | 0.187 | 0.414 | 0.004 | 8.670 | 289.85 |
+| Archive | 176 | 5.412 | 0.485 | 0.264 | 0.623 | 0.005 | 12.316 | 435.38 |
+| Deletion request | 176 | 1.945 | 0.220 | 0.100 | 0.286 | 0.007 | 3.644 | 141.91 |
+| Deletion | 176 | 2.011 | 0.230 | 0.095 | 0.292 | 0.009 | 3.039 | 131.83 |
+| Checkpoint replacement | 590 | 5.738 | 0.410 | 0.466 | 0.494 | 0.012 | 4.621 | 894.77 |
+| Schema transition | 176 | 5.533 | 0.289 | 0.126 | 0.623 | 0.014 | 3.313 | 235.43 |
+
+Preparation and continuation dominate; recovery remains below 0.63 seconds
+per case on average, and mean comparison is at most 14 milliseconds. For example,
+checkpoint work is 590 * 11.741 / 8 = 866 seconds, plus setup/teardown, against
+894.77 seconds observed. These are loaded fixture measurements, not an
+ordinary-operation latency contract or an isolated product speedup.
+
+Keep the ordinary reference allowance of 300 seconds locally and 600 seconds
+in CI per 176 admitted cuts. Round each aggregate to the next whole minute:
+
+| Test | Admitted cuts | Default seconds | CI seconds | Diagnostic seconds | Final CI seconds |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| First commit | 176 | 300 | 600 | 189.76 | 88.24 |
+| First fork commit | 176 | 300 | 600 | 289.85 | 104.64 |
+| Schema transition | 176 | 300 | 600 | 235.43 | 145.31 |
+| Fork publication | 176 | 300 | 600 | 400.88 | 279.97 |
+| Archive/deletion request/deletion | 528 | 900 | 1800 | 709.13 | 472.59 |
+| Checkpoint replacement | 590 | 1020 | 2040 | 894.77 | 465.46 |
+
+Only the two larger aggregate tests need overrides. Checkpoint replacement
+gets ceil(300 * 590 / 176) and ceil(600 * 590 / 176), rounded to 1,020 and
+2,040 seconds; the loaded diagnostic left 56% of its CI guard unused. The
+three lifecycle matrices get 900 and 1,800 seconds, with 61% unused in the
+diagnostic. The four 176-cut tests retain the ordinary limits; the slowest
+measured one left 33% of the CI limit unused. The full-pool reservation stays
+in force for every sweep. Temporary profiling must be removed and its package
+fingerprint invalidated before final CI qualification and artifact inspection.
+
+Final qualification used the same zero-debug profiles and eight case workers,
+with the full workspace lane and continuous eight-job builds running alongside.
+All 943 scenario tests passed, including all 33 home tests. Every media sweep
+left at least 53% of its CI guard unused; checkpoint replacement left 77% and
+the lifecycle matrices left 74%. The actual CI home executable was scanned after
+execution and contained no temporary profiling token.
+
 The weekly `Store certificate roster scale` workflow runs the explicitly
 ignored `maximum_certificate_roster_checkpoints_recovers_and_rejoins` test.
 It ingests 64 chunks at the production minimum of 64 KiB each (4 MiB total).
@@ -188,10 +253,24 @@ aggregate ceiling allows 120 seconds of fixed setup plus five seconds per
 submitted operation. The history, exact crash seams, and recovery comparisons
 are unchanged.
 
-Under continuous eight-job boundary-check rebuilds, the complete C8 process
-target passed 40 tests in 495.53 seconds; its largest recorded writer setup
-was 39.38 seconds. The aggregate target includes all sixteen checkpoint crash
+The checkpoint crash writer uses the same thirty-second checkpoint deadline
+as its ordinary setup checkpoints. A loaded qualification found capture still
+pending when one five-second pause probe expired. The writer now observes the
+full operation envelope in bounded probe windows, fails early on a terminal
+outcome, and reports the requested seam and stalled progress. It still pauses
+at that exact seam; the parent marker guard and recovery assertions are unchanged.
+
+Before milestone integration, under continuous eight-job boundary-check rebuilds,
+the complete C8 process target passed 40 tests in 495.53 seconds; its largest
+recorded writer setup was 39.38 seconds. The aggregate target includes all sixteen checkpoint crash
 scenarios and the independent writer, observer and recovery builds.
+
+After integration, the complete C8 process target passed all 40 tests in
+760.98 seconds (1,118.56 seconds including the runner and builds) while
+workspace and tooling verification ran alongside. The size-independence
+reproducer also passed twenty consecutive loaded runs after correcting its
+checkpoint-seam wait. The one
+ignored focused diagnostic remains covered by the required sixteen-case matrix.
 
 The same suite runs under plain `cargo test`; the runner only bounds it. The
 suite's builds use their own target directory beside the test's, so repeated

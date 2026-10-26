@@ -28,7 +28,7 @@ fn republication_cannot_certify_output_computed_before_its_own_write() {
 }
 
 fn suspend_restore_and_read() {
-    with_generated_own_write(|world, receipt, _, resources| {
+    with_generated_own_write(|world, receipt, _, _resources| {
         let application = &world.application;
         let request = live_scope();
         let graph = application.runtime.primary_graph().unwrap();

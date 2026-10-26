@@ -124,7 +124,7 @@ impl DuplicateWorld {
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes a fork source");
             relational
-                .fork_branch(BranchId("candidate".to_owned()), basis)
+                .fork_branch(request_execution, BranchId("candidate".to_owned()), basis)
                 .expect("the candidate branch forks");
         });
         world.lend(request_execution, |relational| {

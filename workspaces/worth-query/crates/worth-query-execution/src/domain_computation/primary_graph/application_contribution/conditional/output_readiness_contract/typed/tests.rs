@@ -10,9 +10,9 @@ use worth_query_declaration::facade::{
 trait Fixture: ApplicationSchema {}
 worth_query_declaration::worth_query_entity!(Entity for S: Fixture);
 worth_query_declaration::worth_query_aspect!(Publication for S: Fixture, Entity;
-    identity = AspectIdentity(0x7193_01), revision = AspectContractRevision(1));
+    identity = AspectIdentity(0x0071_9301), revision = AspectContractRevision(1));
 worth_query_declaration::worth_query_aspect!(Identity for S: Fixture, Entity;
-    identity = AspectIdentity(0x7193_02), revision = AspectContractRevision(1));
+    identity = AspectIdentity(0x0071_9302), revision = AspectContractRevision(1));
 #[derive(WorthValue)]
 struct Payload {
     nested: Vec<Choice>,

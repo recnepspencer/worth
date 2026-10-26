@@ -20,7 +20,8 @@ pub(super) fn validate_signed_creations(members: &[Member]) -> Result<(), Denial
             .into_iter()
             .flat_map(|c| c.initialization_sites())
         {
-            super::classified_capture::validate_creation(creation).map_err(|_| denied(operation))?;
+            super::classified_capture::validate_creation(creation)
+                .map_err(|_| denied(operation))?;
             let provenance_count = creation
                 .fields()
                 .iter()

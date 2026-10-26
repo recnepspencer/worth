@@ -52,10 +52,17 @@ fn forked_finalization_recovery_denies_close_until_its_record_is_installed() {
     let (finished_tx, finished_rx) = mpsc::sync_channel(1);
     let worker_owner = Arc::clone(&owner);
     let worker = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let cancellation = RuntimeWorldCancellationSource::new();
         let outcome = RuntimeWorldBranchService::create_product_branch(
             worker_owner.as_ref(),
-            RuntimeWorldBranchCreationRequest::new(source, intent, &cancellation.token()),
+            RuntimeWorldBranchCreationRequest::new(
+                execution,
+                source,
+                intent,
+                &cancellation.token(),
+            ),
         );
         finished_tx
             .send(outcome)

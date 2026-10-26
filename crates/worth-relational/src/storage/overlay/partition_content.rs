@@ -1,9 +1,11 @@
 mod adjacency;
 mod digest_index;
+mod head_commitment;
 #[cfg(test)]
 #[path = "partition_content/tests.rs"]
 mod incremental_tests;
 mod records;
+pub(crate) use head_commitment::PartitionHistoryFrontiers;
 
 use super::{PartitionMutationJournal, PartitionState};
 use crate::storage::substrate::StorageAllocationVisitor;
@@ -32,9 +34,16 @@ impl PartitionContentCommitment {
         symbols: &StringInterner,
         previous: Option<(&Self, &PartitionState, &PartitionMutationJournal)>,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
-        let mut commitment = previous
-            .map(|(cache, _, _)| cache.clone())
-            .unwrap_or_default();
+        Self::capture_seeded(partition, symbols, previous, Self::default())
+    }
+
+    fn capture_seeded(
+        partition: &PartitionState,
+        symbols: &StringInterner,
+        previous: Option<(&Self, &PartitionState, &PartitionMutationJournal)>,
+        seed: Self,
+    ) -> Result<(Self, u64), PartitionContentDigestError> {
+        let mut commitment = previous.map(|(cache, _, _)| cache.clone()).unwrap_or(seed);
         let old = previous.map(|(_, partition, _)| partition);
         let entity_slots = previous.map_or_else(
             || partition.entity_arena.occupied_slots(),

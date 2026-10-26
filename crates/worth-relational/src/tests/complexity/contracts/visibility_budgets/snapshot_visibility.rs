@@ -252,6 +252,7 @@ fn complexity_budget_branch_creation_reuses_cached_visibility_state() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

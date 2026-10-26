@@ -15,7 +15,6 @@ fn select(court: &Court) -> Result<Vec<NativePriorCheckpointOutput<'_>>, Denial>
 }
 
 #[test]
-#[test]
 fn checkpoint_selection_reports_actual_ambiguous_head_without_relaxing_selection() {
     let mut court = Court::new();
     court.publish::<Initial>(

@@ -26,7 +26,7 @@ fn phase5_checkpoint_preserves_shared_and_rewired_root_shape() {
             .expect("main branch is a live fork source");
         world
             .runtime
-            .fork_branch(BranchId(branch.to_owned()), source)
+            .fork_branch(execution, BranchId(branch.to_owned()), source)
             .expect("branch fork shares the immutable baseline root");
     }
 

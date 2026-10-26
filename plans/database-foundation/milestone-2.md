@@ -48,6 +48,10 @@ runtime it builds. Recovery moves it out of the recovering runtime into the
 rebuilt one; the attachment it left refuses every later publication with the
 pre-effect `MediumMoved`.
 
+A speculative runtime fork may carry a read-only transition-history reader
+for gaps its source compacted. That reader cannot publish, and refuses if the
+source medium has moved or closed; the fork never receives a publication binding.
+
 **D2. Durable before live.** With a medium attached, publication runs in this
 order: preparation and validation against the exact admitted basis;
 reservation of the next patch position; publication of the positioned commit's
@@ -69,7 +73,8 @@ Live state never selects a commit the medium has not made durable.
   any effect, holding no position. The wait cannot deadlock: a publisher takes
   its own branch's critical section before the reservation, and the holder
   takes no other branch's while holding it. Memory-only runtimes keep their
-  existing reservation behavior.
+  existing reservation behavior against other commits, but wait within the
+  request behind a branch transition rather than consume a candidate by deferral.
 - The settlement-time append and its "performed but durability deferred"
   repair path are deleted: durability can no longer fail after the cutover.
   Settlement that fails for another reason keeps the durable commit under its
@@ -145,13 +150,38 @@ The design keeps transitions apart from commits:
   commit must not overtake an unresolved delete.
 - **Typed stop.** Fork, archive and delete return
   `RelationalBranchTransitionStop<Denial>`, either `Denied` (including
-  `DurablePublicationRefused`) or `DurabilityUnresolved`.
+  `DurablePublicationRefused`), `RequestStopped` (cancellation, deadline or
+  request admission while waiting, before any effect), or `DurabilityUnresolved`.
+  World retains an unresolved fork as `ProductUnpublished` with its native fate
+  and destination attempt until reopen; it must never report definite no-effect.
 - **Resolution.** The home resolves a transition's fate by sequence and digest.
 
-Checkpoints record the transitions they cover, every branch's lifecycle
-posture and the retired branch names. Recovery restores all three and no
-longer clears retired names, so an archive, a deletion or a retired name
-survives a crash.
+Checkpoints record the last covered transition sequence T, every branch's
+lifecycle posture and the retired branch names, never the covered transition
+artifacts. A deleting cell must have its name retired. A durable capture releases
+its covered in-memory transition log without retaining a second checkpoint
+image; the medium remains the history authority even if manifest filing fails.
+Memory-only runtimes retain transition history: no medium can reconstruct
+forks required by a replay chain older than a checkpoint. Retained transition
+export exposes its coverage and subsequent tail. Replay reads only the gap
+between its selected checkpoint's T and the retained transition tail through
+`read_transition`; it never rereads transitions already covered by its basis.
+The public retained recovery plan uses the same fallible gap reconstruction,
+so native capture need not retain a duplicate checkpoint image. The home
+oracle compares the durable journal directly.
+Reopen restores manifest state and replays only transitions above T, so archive,
+deletion and retired names survive a crash without rereading covered history.
+
+The nested lock order is routes lifecycle admission, branch coordination,
+branch state, the patch-position reservation, then registry membership/name
+locks. Registry locks are leaves: snapshots copy cell handles and release the
+registry before reading state. Every transition acquires lifecycle admission
+before coordination/state, as commits do. Fork rechecks through its source
+state guard inside the reservation, then releases state before durable I/O
+and target insertion; coordination excludes source writers until installation.
+Archive/delete carry their previously acquired state through cutover. A holder
+never acquires another live branch's locks. Partial replay selects forks
+transitively through their source forks, including branches with no own commit.
 
 Recovery merges the transition tail into the commit tail: before replaying
 commit q it applies every transition that follows a position below q. Each
@@ -199,6 +229,22 @@ Checkpoint images stay runtime-affine: they are derived, not canonical.
 Re-executing the same operations in any process, recovered or not, produces
 byte-identical artifacts.
 
+**D12. Signal admission precedes checked callbacks.** Diagnostic map structure
+and callback-result custody are reserved before dispatch. Node declarations and
+output-type bounds supply result maxima; a finite execution authority supplies
+an adaptive grant when no intrinsic maximum is declared. Captured dependencies
+have their own bound. Completed results retain their original allocation and
+ticket, measured to release unused custody. Exceeding the admitted result bound
+is a typed callback-contract violation, never a late memory-capacity refusal.
+
+Publication maps retain their pre-callback tickets. Cumulative preparation
+forecasts and simultaneously live map reservations have different lifetime
+owners; their admission must not charge all future storage as though it
+coexisted with every map. Actual worker-guard storage is bounded by the
+dispatched frontier without narrowing the worker authority available to nested
+callbacks. Existing scoped-result capacity, atomic publication and executor
+parity proofs remain binding, with their configured ceilings unchanged.
+
 ## Durable artifacts
 
 | Artifact | Classification | Owner |
@@ -236,6 +282,23 @@ not rewritten, while their content is unchanged.
 - **Verification without loading.** Reopen recomputes each root's region
   commitment from its leaves and compares it with the root descriptor. Each
   member is verified against its leaf when it loads.
+  Leaves also carry separate head and history adjacency-kind commitments,
+  captured from the admitted region projection and folded into the region
+  Merkle commitment checked against the root descriptor in the manifest's commit
+  index. Admission reconstructs current buckets from authenticated current
+  adjacency and relation metadata, and historical buckets from the authenticated
+  history projection. Locally owned relation claims are checked against the
+  region's record history; peer relation claims are bound by that root
+  commitment. Neither verification requires loading a peer region.
+  The anchor is the manifest itself, protected by Store's record checksum and
+  each member's SHA-256 locator. That defends against the adversarial constraint
+  above, which is crashes and media faults. It does not resist a deliberately
+  forged manifest, because no journaled canonical artifact records the truth
+  root. Binding truth roots into the canonical journal is not in scope for this
+  milestone. Supplied cache buckets must agree
+  with the reconstruction. Leaves
+  naming the same member pair must agree on every fact, including counts and
+  content and kind commitments; an inconsistent manifest is corrupt.
 - **Embedded checkpoints** used by the Query host carry the same members
   inline. Placement is an artifact-policy parameter of one format.
 
@@ -253,6 +316,16 @@ source carries it, because recovery needs it before the medium is bound.
   readmits required text, rebuilds kind buckets and verifies the content
   digest.
 - Residency never relocates an identity or changes a slot directory.
+- Only proven damage to a cell's own content is sticky: a missing named
+  member, digest mismatch, invalid frame or invalid decoded content. Allocation,
+  cancellation, limits and transient or unknown source errors remain retryable.
+  Another subject's failure never damages this cell. Runtime fork shares cold
+  cells, and a full residency witness is required before copy-on-write editing.
+  The cell's dictionary is an isolated readmission dictionary. Each demanding
+  runtime admits the region's required text into its own symbol authority,
+  including when a fork shares an already loaded cell.
+  Successful symbol admission is reused per runtime and immutable region view;
+  warm reads never rescan the region's records or history for that admission.
 
 **Guards.** Loads happen only in operation orchestrators, never behind a
 pure-looking accessor:
@@ -337,6 +410,11 @@ unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
 that has a locator and is unchanged, encodes a resident region that changed,
 and records new locators once publication completes. A one-partition commit
 followed by a checkpoint writes O(1) new members.
+Carry eligibility is checked against the destination home's current verified
+member directory, not against a binding shared with another runtime. A resident
+region whose binding is absent there is encoded again. Publication records the
+destination's read source for its acknowledged directory; new bytes take
+precedence when deduplication sees both new and carried forms of one member.
 
 **Placed by the roadmap in Milestone 4, not deferred from this one:**
 
@@ -397,12 +475,13 @@ Location: `worth-store-relational` tests.
   only the manifest and the partitions an operation touches (measured through
   the read port with headroom, not exact counts). A region or history read that
   fails refuses the operation with its typed outcome. Cold and warm reads agree.
-- **Media sweep.** Every media operation of a commit, a branch transition, the
+- **Media sweep.** Every media operation of a commit, fork, archive,
+  deletion-requested and delete, the
   first checkpoint and a later checkpoint, and a region load, with
   `FailBefore` and `IndeterminateAfterEffect`.
 - **Real processes.** A child is killed at every Store mutation seam of a
   commit (before the WAL append through durable-not-yet-live), during a branch
-  transition, during a checkpoint including Store's physical checkpoint, and
+  fork, archive, deletion-requested and delete, during a checkpoint including Store's physical checkpoint, and
   idle on both sides of the first checkpoint.
 - **Recovery interruption.** Recovery is killed at each Store recovery stage
   and during Relational readmission. Repeated recoveries reach the same state.

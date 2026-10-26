@@ -100,24 +100,30 @@ fn account_discovery_result_limit_denies_before_projecting_an_oversized_union() 
 }
 
 #[test]
-fn account_discovery_root_union_stops_when_dynamic_frontier_work_exhausts() {
-    let fixture = over_budget_discovery_world("read-root-union-work-budget", 250);
-    let actor = fixture.authenticate();
-    let controls = BankReadControls::current(request_scope(), 250)
-        .expect("the exact installed estimate should be a lawful control");
-    let outcome = fixture
-        .world
-        .runtime
-        .query(queries::accounts())
-        .as_principal(&actor)
-        .controls(controls)
-        .execute();
-
-    assert!(matches!(
-        outcome,
-        Err(BankApplicationQueryDenial::Execution(denial))
-            if denial.kind() == BankApplicationOneShotDenialKind::WorkLimitExceeded
-    ));
+fn account_discovery_root_union_work_grows_at_most_linearly() {
+    let mut baseline = None;
+    for count in [16, 64, 250] {
+        let fixture = over_budget_discovery_world("read-root-union-scale", count);
+        let actor = fixture.authenticate();
+        let result = fixture
+            .world
+            .runtime
+            .query(queries::accounts())
+            .as_principal(&actor)
+            .controls(controls(count))
+            .execute()
+            .expect("result-bounded discovery needs no caller work estimate");
+        assert_eq!(result.rows().len(), count);
+        let inspection = result.receipt().inspect();
+        let work = inspection.ordinary_work_units();
+        assert!(work > 0);
+        assert!(inspection.terminal_resources_released());
+        let (base_count, base_work) = *baseline.get_or_insert((count, work));
+        assert!(
+            work * base_count <= base_work * count * 4,
+            "root-union work must remain linear with headroom: {count} rows cost {work}, baseline {base_count} cost {base_work}"
+        );
+    }
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {

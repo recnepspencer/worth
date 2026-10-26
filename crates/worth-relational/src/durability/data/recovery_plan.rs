@@ -73,8 +73,11 @@ pub enum RecoveryAuthorityParity {
 #[derive(Debug, Clone)]
 pub struct RecoveryPlan {
     pub config: crate::runtime::RelationalRuntimeConfig,
+    pub(crate) cold_source:
+        Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
     pub checkpoint: Option<DurableCheckpoint>,
     pub(crate) tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
+    pub(crate) branch_transitions: super::RecoveryBranchTransitions,
     pub authority_continuity: RecoveryAuthorityContinuityCheck,
     pub verification_plan: RecoveryVerificationPlan,
     pub descriptor_semantics_version: DescriptorSemanticsVersion,
@@ -148,10 +151,14 @@ impl RecoveryPlan {
         config: crate::runtime::RelationalRuntimeConfig,
         checkpoint: Option<DurableCheckpoint>,
         tail_log: Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
+        branch_transitions: super::RecoveryBranchTransitions,
         authority_continuity: RecoveryAuthorityContinuityCheck,
         verification_mode: RecoveryVerificationMode,
         descriptor_semantics_version: DescriptorSemanticsVersion,
         mut restore_authoritative_envelope_commit_ids: Vec<CommitId>,
+        cold_source: Option<
+            std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        >,
     ) -> Self {
         restore_authoritative_envelope_commit_ids.sort_unstable();
         restore_authoritative_envelope_commit_ids.dedup();
@@ -160,8 +167,10 @@ impl RecoveryPlan {
             .map(crate::durability::access::checkpoint_coverage);
         Self {
             config,
+            cold_source,
             checkpoint,
             tail_log,
+            branch_transitions,
             authority_continuity,
             verification_plan: RecoveryVerificationPlan::from_mode(verification_mode),
             descriptor_semantics_version,

@@ -99,7 +99,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
             let second_access = WorthQueryApplicationQueryAccessContext::new(&principal, &roots[1]);
             let mut first = Some(first);
             let request = execution;
-            let (answer, work) = request
+            let (answer, _work) = request
                 .run(ExecutionWorkCeiling::new(None), |_| {
                     world
                         .application

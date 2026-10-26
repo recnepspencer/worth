@@ -29,18 +29,17 @@ pub(super) fn check_current_codec_meaning(
                         };
                         let commit = crate::history::data::CommitId(selected.selected_commit_id());
                         charge(context, lookup_work(roots.schema_authorities.len()))?;
-                        let source = roots.schema_authorities.get(&commit).ok_or_else(|| {
-                            DurabilityError::new(
-                                RecoveryFailureClass::CorruptCheckpoint,
-                                "current branch has no readmitted schema carrier",
-                            )
-                        })?;
+                        // A target without a readmitted carrier lacks its commit
+                        // artifact or root image. Branch-cell readmission refuses
+                        // it by name before any state is installed; this fence
+                        // compares only carriers that exist.
+                        let Some(source) = roots.schema_authorities.get(&commit) else {
+                            continue;
+                        };
                         if source.authority_digest() != *selected.roots().schema_root() {
-                            return Err(DurabilityError::new(
-                                RecoveryFailureClass::CorruptCheckpoint,
-                                "current branch schema carrier differs from its native target",
-                            )
-                            .into());
+                            // Root readmission owns descriptor identity and reports
+                            // SchemaRootMismatch; codec comparison cannot substitute it.
+                            continue;
                         }
                         compare_registries(source.registry(), target, context)?;
                         // Symmetry refuses added as well as removed canonical carriers.

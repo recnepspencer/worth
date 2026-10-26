@@ -48,17 +48,19 @@ fn admit_carried_branch_checkpoint(
     envelope: &CanonicalCommitEnvelope,
     recovered_roots: &RecoveredRootInventory,
 ) -> Result<(), DurabilityError> {
-    let Some(checkpoint) = envelope.branch_cell_checkpoint.clone() else {
-        if restored.history.has_branch(&envelope.branch_context) {
-            return Ok(());
-        }
+    // A fork is the only source of a branch's existence (D8): a commit may
+    // carry its branch's prior cell, but never create the branch.
+    if !restored.history.has_branch(&envelope.branch_context) {
         return Err(DurabilityError::new(
             RecoveryFailureClass::CorruptCheckpoint,
             format!(
-                "recovery checkpoint omitted branch cell `{}` and its commit envelope carried no exact admission",
-                envelope.branch_context.0
+                "commit {} is on branch `{}`, which no checkpoint or durable branch transition created",
+                envelope.commit.commit_id.0, envelope.branch_context.0
             ),
         ));
+    }
+    let Some(checkpoint) = envelope.branch_cell_checkpoint.clone() else {
+        return Ok(());
     };
     let recovered_root = match checkpoint.observation.target() {
         worth_foundational::FoundationalBranchTarget::Empty => None,

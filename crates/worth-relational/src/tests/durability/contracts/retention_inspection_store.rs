@@ -16,6 +16,7 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -65,6 +66,7 @@ fn durability_contract_recovery_preserves_inspection_truth_bundle() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -143,6 +145,7 @@ fn durability_contract_branch_heads_do_not_mutate_legacy_record_pins() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

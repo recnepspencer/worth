@@ -17,7 +17,7 @@ fn a_fork_commits_after_a_checkpoint_taken_once_its_source_moved_on() {
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("committed main is forkable");
     runtime
-        .fork_branch(storm.clone(), basis)
+        .fork_branch(execution, storm.clone(), basis)
         .expect("the fork is admitted");
     create_entity_outcome_on_branch(execution, &runtime, "storm-a", storm.clone());
     create_entity_outcome(execution, &runtime, "source-b");

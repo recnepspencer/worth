@@ -162,7 +162,7 @@ fn unrelated_partition_selection(population: u64) {
         generation: revised_generation,
     };
 
-    let (prior, work) = lineage
+    let (prior, _work) = lineage
         .matching_output_in_partition_budgeted(
             &source,
             revised_coordinate,
@@ -246,6 +246,7 @@ fn fork_selection_uses_ancestor_partition_and_retirement_prunes_its_locator() {
         .application
         .product_runtime()
         .create_product_branch(
+            execution,
             &product,
             None,
             intent,

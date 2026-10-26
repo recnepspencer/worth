@@ -124,6 +124,9 @@ PROCESS_WIDE_PROBES = (
     "managed_run::tests::yield_cost_bound::",
     "read_set::source_facts::merging::",
     "tests::application_attempt::predecode_admission::",
+    # The terminal-refusal fixture must use zero days, a process-wide counter
+    # key also used by other document-retention scenarios.
+    "producer_predicate_checkpoint::ordinary_source::terminal_unavailable::",
 )
 
 FIXTURE_CPU_EXCLUSIVE = (

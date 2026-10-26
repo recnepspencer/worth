@@ -5,7 +5,9 @@ use super::world::supply_chain::{
     assert_oracle_matches, canonical_empty_supply_chain_runtime, certified_supply_chain_world,
     SupplyChainScale,
 };
-use worth_relational::facade::branch::{RelationalBranchIdentityDenial, RelationalForkDenial};
+use worth_relational::facade::branch::{
+    RelationalBranchIdentityDenial, RelationalBranchTransitionStop, RelationalForkDenial,
+};
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::transactions::WorkerIntentBatch;
 #[test]
@@ -31,7 +33,7 @@ fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line(
     assert_eq!(descriptor.source_branch(), &BranchId("main".to_owned()));
     let outcome = world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
         .expect("fork source is consumed by the owner fork transition");
     assert_oracle_matches(execution, &world, &expected);
 
@@ -96,7 +98,11 @@ fn supply_chain_fork_shares_one_source_artifact_and_starts_a_new_reference_line(
         .expect("the source remains an exact live basis for a sibling fork");
     let maintenance = world
         .runtime
-        .fork_branch(BranchId("maintenance".to_owned()), maintenance_basis)
+        .fork_branch(
+            execution,
+            BranchId("maintenance".to_owned()),
+            maintenance_basis,
+        )
         .expect("a second sibling fork reuses the same immutable source artifact");
     assert_eq!(maintenance.shared_commit_id(), Some(world.commit.commit_id));
     assert_eq!(
@@ -163,8 +169,10 @@ fn source_observation_is_foreign_after_runtime_clone() {
     );
 
     assert!(matches!(
-        clone.fork_branch(BranchId("clone-storm".to_owned()), source_basis),
-        Err(RelationalForkDenial::ForeignRuntime)
+        clone.fork_branch(execution, BranchId("clone-storm".to_owned()), source_basis),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalForkDenial::ForeignRuntime
+        ))
     ));
     let clone_after = capture_reference_evidence(
         &clone,
@@ -178,7 +186,7 @@ fn source_observation_is_foreign_after_runtime_clone() {
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("the rebound clone keeps its own live fork source");
     let outcome = clone
-        .fork_branch(BranchId("clone-storm".to_owned()), clone_basis)
+        .fork_branch(execution, BranchId("clone-storm".to_owned()), clone_basis)
         .expect("the clone can fork from its rebound source");
     assert_eq!(outcome.fork_provenance(), outcome.source_observation());
     assert_oracle_matches(execution, &world, &expected);
@@ -204,8 +212,8 @@ fn malformed_fork_target_denies_before_reference_installation() {
     );
 
     assert!(matches!(
-        world.runtime.fork_branch(BranchId(String::new()), basis),
-        Err(RelationalForkDenial::InvalidTarget(error))
+        world.runtime.fork_branch(execution, BranchId(String::new()), basis),
+        Err(RelationalBranchTransitionStop::Denied(RelationalForkDenial::InvalidTarget(error)))
             if error.class == worth_relational::facade::history::BranchCreateErrorClass::InvalidTarget
     ));
     assert!(matches!(
@@ -265,7 +273,7 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
     let catalog_before = world.runtime.history().immutable_commit_count();
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_basis)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_basis)
         .expect("first target fork succeeds");
     let before = capture_reference_evidence(
         &world.runtime,
@@ -285,8 +293,10 @@ fn empty_and_duplicate_fork_denials_preserve_catalog_and_existing_reference() {
     assert!(matches!(
         world
             .runtime
-            .fork_branch(BranchId("storm".to_owned()), duplicate_basis),
-        Err(RelationalForkDenial::DuplicateTarget)
+            .fork_branch(execution, BranchId("storm".to_owned()), duplicate_basis),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalForkDenial::DuplicateTarget
+        ))
     ));
     assert_eq!(
         world.runtime.history().immutable_commit_count(),
@@ -359,8 +369,10 @@ fn stale_fork_source_denial_does_not_install_a_target_reference() {
     assert!(matches!(
         world
             .runtime
-            .fork_branch(BranchId("stale".to_owned()), stale_basis),
-        Err(RelationalForkDenial::StaleSource)
+            .fork_branch(execution, BranchId("stale".to_owned()), stale_basis),
+        Err(RelationalBranchTransitionStop::Denied(
+            RelationalForkDenial::StaleSource
+        ))
     ));
     assert_eq!(
         world.runtime.history().immutable_commit_count(),

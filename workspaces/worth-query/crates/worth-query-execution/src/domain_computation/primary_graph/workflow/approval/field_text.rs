@@ -43,6 +43,8 @@ impl WorkflowApprovalFieldText {
 pub(super) fn denial(cause: Native) -> Denial {
     let subject = "workflow approval native field text";
     match cause {
+        Native::StorageUnavailable(cause) => Denial::native_storage_unavailable(cause, subject),
+        Native::Request(cause) => Denial::relational_read_stopped(cause, subject),
         Native::Allocation(cause) => super::super::actor::storage_denial(cause, subject),
         Native::Stopped(cause) => Denial::relational_read_stopped(cause.into(), subject),
         Native::ForeignBasis => Denial::new(Kind::ForeignApplication, subject),

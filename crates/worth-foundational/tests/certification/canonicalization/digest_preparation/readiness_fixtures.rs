@@ -11,11 +11,10 @@ use crate::certification::foundational_vocabulary::{field, identity, key, revisi
 pub(super) fn ready_contract(
     contract: AspectContract,
 ) -> worth_foundational::DigestPreparationReadyAspectContractArtifact {
-    let ready = match prepare_aspect_contract_for_digest(contract) {
+    match prepare_aspect_contract_for_digest(contract) {
         TransitionOutcome::Success(ready) => ready,
         _ => unreachable!("digest preparation uses only success"),
-    };
-    ready
+    }
 }
 
 pub(super) fn ready_mask<Mode>(
@@ -25,21 +24,19 @@ pub(super) fn ready_mask<Mode>(
 where
     Mode: worth_foundational::DigestPreparationMaskMode,
 {
-    let ready = match prepare_aspect_mask_for_digest(aspect_key, mask) {
+    match prepare_aspect_mask_for_digest(aspect_key, mask) {
         TransitionOutcome::Success(ready) => ready,
         _ => unreachable!("digest preparation uses only success"),
-    };
-    ready
+    }
 }
 
 pub(super) fn ready_patch(
     patch: &worth_foundational::AuthoritativeRecordAspectPatch,
 ) -> worth_foundational::DigestPreparationReadyAspectPatchArtifact {
-    let ready = match prepare_aspect_patch_for_digest(patch) {
+    match prepare_aspect_patch_for_digest(patch) {
         TransitionOutcome::Success(ready) => ready,
         _ => unreachable!("digest preparation uses only success"),
-    };
-    ready
+    }
 }
 
 pub(super) fn admitted_state<const N: usize>(
@@ -54,11 +51,10 @@ pub(super) fn admitted_state<const N: usize>(
 pub(super) fn ready_state(
     state: worth_foundational::AuthoritativeRecordAspectStateArtifact,
 ) -> worth_foundational::DigestPreparationReadyAspectStateArtifact {
-    let ready = match prepare_aspect_state_for_digest(state) {
+    match prepare_aspect_state_for_digest(state) {
         TransitionOutcome::Success(ready) => ready,
         _ => unreachable!("digest preparation uses only success"),
-    };
-    ready
+    }
 }
 
 pub(super) fn task_summary_contract() -> AspectContract {

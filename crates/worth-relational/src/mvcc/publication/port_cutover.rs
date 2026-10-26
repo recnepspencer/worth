@@ -123,7 +123,7 @@ impl PreparedBranchPublicationPreflight {
         // a separate operation-control token cannot replace its first cause.
         if let Err(stop) = crate::authority::commit::pipeline::consult_stage_control(
             execution,
-            crate::authority::commit::pipeline::CommitStage::Publication,
+            crate::authority::commit::pipeline::CommitStage::PublicationCutover,
         ) {
             return RelationalPublicationOutcome::RequestStopped(stop);
         }
@@ -140,10 +140,10 @@ impl PreparedBranchPublicationPreflight {
         let medium = self.medium.clone();
         let durable_policy = execution.allocation_policy();
         // A durable publisher waits for a publisher whose durable I/O holds
-        // the reservation; a memory-only one defers (D2).
+        // the reservation. Memory-only commits defer only behind other commits.
         let admission = match &medium {
             Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
-            None => crate::runtime::PatchPositionReservationAdmission::DeferWhenHeld,
+            None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
         let positioned_commit = match self
             .movement

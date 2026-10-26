@@ -81,10 +81,7 @@ fn created_endpoint_lookups_fit_the_declared_subquadratic_work() {
                 identity: PartitionIdentity::new(1),
                 value: (),
                 input_bytes: 0,
-                memory: crate::execution::PacketMemory::Declared {
-                    scratch: scratch,
-                    result: 0,
-                },
+                memory: crate::execution::PacketMemory::Declared { scratch, result: 0 },
             }],
             &lease,
             |_, packet_context| {

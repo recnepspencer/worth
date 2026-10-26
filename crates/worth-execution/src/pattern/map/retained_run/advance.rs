@@ -115,12 +115,13 @@ impl<R: Send + Sync> ExecutionRetainedRun<R> {
             // Re-admit cached incoming backing under the fresh request;
             // original node/result grants remain alive independently.
             let accounted = !native || crate::backend::RunLimits::native_accounting(lease);
-            if accounted && !self.accounted {
-                if let Some(id) = self.tree.summary().first {
-                    return Err(RetainedRunDenial::Native(
-                        RetainedMapDenial::RequiresExecution(id),
-                    ));
-                }
+            if accounted
+                && !self.accounted
+                && let Some(id) = self.tree.summary().first
+            {
+                return Err(RetainedRunDenial::Native(
+                    RetainedMapDenial::RequiresExecution(id),
+                ));
             }
             let _prior_hold = if accounted {
                 Some(crate::ExecutionMemoryReservation::reserve_in_scope(

@@ -30,7 +30,7 @@ fn observe(owner: &WorthUiStatusSourceOwner) -> Live<'_> {
         .application
         .request(&principal, &scope)
         .query(WorthUiStatusQueryRequest::new("platform.pulse.status"))
-        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1, Some(64)))
+        .subscribe(WorthQueryApplicationLiveLimits::bounded(4, 1))
         .unwrap()
 }
 #[test]

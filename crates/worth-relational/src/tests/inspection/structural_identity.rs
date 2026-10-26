@@ -261,16 +261,20 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = durable_runtime_with_test_schema();
+    let family = runtime
+        .services
+        .symbols
+        .with_write(|symbols| symbols.intern("inspection.structural.family"));
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
-        Some(StructuralFingerprint::new(Symbol(51), 1001)),
+        Some(StructuralFingerprint::new(family, 1001)),
         Some(LineageId(501)),
     ));
     assert!(runtime.set_entity_structural_identity_for_test(
         right,
-        Some(StructuralFingerprint::new(Symbol(51), 1002)),
+        Some(StructuralFingerprint::new(family, 1002)),
         Some(LineageId(502)),
     ));
     crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
@@ -290,7 +294,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             &StructuralIdentityQueryRequest {
                 scope: InspectionScope::Current,
                 partition_scope: None,
-                fingerprint_family: Symbol(51),
+                fingerprint_family: family,
             },
         )
         .expect("read request remains live");
@@ -323,7 +327,7 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
             &StructuralIdentityQueryRequest {
                 scope: InspectionScope::Current,
                 partition_scope: None,
-                fingerprint_family: Symbol(51),
+                fingerprint_family: family,
             },
         )
         .expect("read request remains live");

@@ -52,6 +52,7 @@ fn fork_checkpoint(
 }
 
 fn name_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &BranchId,
     entity: EntityId,
@@ -61,7 +62,7 @@ fn name_on_branch(
     let read = runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap()
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .unwrap();
     read.base().and_then(read_entity_name)
 }
@@ -123,7 +124,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
         .unwrap();
     assert_eq!(parity.candidate_entity_ids(), &[entity]);
     assert_eq!(
-        name_on_branch(&restored, &branch, entity),
+        name_on_branch(execution, &restored, &branch, entity),
         Some(NAME.into())
     );
     restored.snapshots().release_snapshot(&snapshot).unwrap();
@@ -173,7 +174,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     let definitions = target.index_access().definitions_snapshot();
     let generations = target.index_access().generations_snapshot();
     assert_eq!(
-        name_on_branch(&target, &BranchId("main".into()), entity),
+        name_on_branch(execution, &target, &BranchId("main".into()), entity),
         Some("target-must-remain".into())
     );
     let error = target
@@ -186,7 +187,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     assert_eq!(target.index_access().definitions_snapshot(), definitions);
     assert_eq!(target.index_access().generations_snapshot(), generations);
     assert_eq!(
-        name_on_branch(&target, &BranchId("main".into()), entity),
+        name_on_branch(execution, &target, &BranchId("main".into()), entity),
         Some("target-must-remain".into())
     );
     assert!(target.branch_identity(&foreign).is_err());

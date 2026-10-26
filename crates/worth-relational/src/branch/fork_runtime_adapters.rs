@@ -1,11 +1,12 @@
+use crate::branch::{
+    AdmittedRelationalForkSourceBasis, RelationalBranchTransitionStop,
+    RelationalForkSourceDescriptor,
+};
 use crate::history::data::{BranchCreateError, BranchId};
 use crate::history::HistoryAuthority;
 use crate::runtime::RelationalRuntime;
 
-use super::{
-    AdmittedRelationalForkSourceBasis, RelationalForkDenial, RelationalForkOutcome,
-    RelationalForkSourceDescriptor,
-};
+use super::{RelationalForkDenial, RelationalForkOutcome};
 
 impl RelationalRuntime {
     /// The independently borrowable fork service for this runtime.
@@ -18,6 +19,7 @@ impl RelationalRuntime {
     /// which consumes that token exactly once to create a fresh reference cell
     /// sharing the exact immutable source root. An empty branch produces no
     /// fork source, so a branch must have committed before it can be forked.
+    /// With a durable medium, the fork is durable before the target exists.
     ///
     /// Like
     /// [`RelationalRuntime::preparation_port`](crate::runtime::RelationalRuntime::preparation_port),
@@ -34,6 +36,7 @@ impl RelationalRuntime {
                 self.protect_branch_heads(),
                 self.services.instrumentation.clone(),
             ),
+            self.durability.medium(),
         )
     }
 
@@ -52,10 +55,12 @@ impl RelationalRuntime {
 
     pub fn fork_branch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         target_branch: BranchId,
         source: AdmittedRelationalForkSourceBasis,
-    ) -> Result<RelationalForkOutcome, RelationalForkDenial> {
-        self.fork_port().fork_branch(target_branch, source)
+    ) -> Result<RelationalForkOutcome, RelationalBranchTransitionStop<RelationalForkDenial>> {
+        self.fork_port()
+            .fork_branch(execution, target_branch, source)
     }
 }
 
@@ -65,6 +70,7 @@ impl HistoryAuthority<'_> {
     /// not a public currentness door and is not a second fork authority.
     pub(crate) fn fork_branch_from(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         new_branch: BranchId,
         from_branch: &BranchId,
     ) -> Result<(), BranchCreateError> {
@@ -73,10 +79,12 @@ impl HistoryAuthority<'_> {
             .observe_fork_source(from_branch)
             .map_err(|_| BranchCreateError::source_branch_missing())?;
         runtime
-            .fork_branch(new_branch, basis)
+            .fork_branch(execution, new_branch, basis)
             .map(|_| ())
-            .map_err(|denial| match denial {
-                RelationalForkDenial::DuplicateTarget => BranchCreateError::branch_already_exists(),
+            .map_err(|stop| match stop {
+                RelationalBranchTransitionStop::Denied(RelationalForkDenial::DuplicateTarget) => {
+                    BranchCreateError::branch_already_exists()
+                }
                 _ => BranchCreateError::source_branch_missing(),
             })
     }

@@ -18,10 +18,7 @@ fn competing_recovery_owner_denies_before_effects_then_partial_drop_reopens() {
 }
 
 fn run() {
-    // One head closure for the release certificate, plus the drop's capture
-    // custody (its envelope carries the policy's pin-scan bound, about 2.3 MB
-    // here) and headroom.
-    let limit = numeric_one_head_closure() + (4 << 20);
+    let limit = funded_one_head_limit();
     let (world, proof, publication_record) =
         release_reopen::published_world::create(false, None, NonZeroU64::new(limit));
     let serving = world.serving();

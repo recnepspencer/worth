@@ -196,7 +196,14 @@ fn publish_recovered_runtime(
         .durability
         .latest_checkpoint()
         .as_ref()
-        .map(|checkpoint| checkpoint.envelopes.len())
+        .map(|checkpoint| {
+            checkpoint
+                .directory
+                .as_ref()
+                .map_or(checkpoint.envelopes.len(), |directory| {
+                    directory.manifest.commits.len()
+                })
+        })
         .unwrap_or(0);
     let checkpoint_covered_position = plan.checkpoint_covered_position();
     record_recovery_verification_counters(&restored, &plan.authority_continuity);
@@ -214,7 +221,7 @@ fn publish_recovered_runtime(
         ],
     );
     let outcome = RuntimeRecoveryOutcome {
-        recovered_commits: restored.history.recorded_commit_envelope_count(),
+        recovered_commits: restored.history.catalog_len(),
         latest_commit: restored.history().latest_commit(),
         restored_branches: restored.history.branch_count(),
         coverage: RecoveryCoverage {

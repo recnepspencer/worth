@@ -28,7 +28,6 @@ impl VerificationCapacityStop {
         match stop {
             CompanionPreflightStop::PreparationMemoryExhausted { .. }
             | CompanionPreflightStop::PreparationMemoryCounterOverflow
-            | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
             | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
                 Some(Self::Meter(stop))
             }

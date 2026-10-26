@@ -113,10 +113,17 @@ pub(super) fn create_reused_branch(
     source: &ProductBranchObservation,
     intent: ProductBranchCreationIntent,
 ) -> ProductBranchObservation {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let cancellation = RuntimeWorldCancellationSource::new();
     match RuntimeWorldBranchService::create_product_branch(
         owner,
-        RuntimeWorldBranchCreationRequest::new(source.clone(), intent, &cancellation.token()),
+        RuntimeWorldBranchCreationRequest::new(
+            execution,
+            source.clone(),
+            intent,
+            &cancellation.token(),
+        ),
     )
     .expect("exact reuse is admitted")
     {
@@ -261,6 +268,8 @@ fn an_observed_retired_occurrence_needs_no_historical_name_index() {
 
 #[test]
 fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, root) = setup(1);
     let cancellation = RuntimeWorldCancellationSource::new();
     let before = owner.state.retention.cost_snapshot();
@@ -268,6 +277,7 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
         RuntimeWorldBranchService::create_product_branch(
             &owner,
             RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root.clone(),
                 reuse_intent("full"),
                 &cancellation.token(),
@@ -293,6 +303,7 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
         RuntimeWorldBranchService::create_product_branch(
             &owner,
             RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root.clone(),
                 relational_fork_intent("capacity-fork", "capacity-fork-target"),
                 &cancellation.token(),
@@ -322,6 +333,8 @@ fn branch_capacity_denies_before_identity_or_retention_work_for_fork_input() {
 
 #[test]
 fn foreign_basis_is_rejected_before_branch_reservation() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (_fixture, owner, _root) = setup(3);
     let cancellation = RuntimeWorldCancellationSource::new();
     let mut foreign_fixture = crate::branch::reference_test_fixture::real_fixture(8, 8);
@@ -342,6 +355,7 @@ fn foreign_basis_is_rejected_before_branch_reservation() {
         RuntimeWorldBranchService::create_product_branch(
             &owner,
             RuntimeWorldBranchCreationRequest::new(
+                execution,
                 foreign_root.clone(),
                 reuse_intent("foreign"),
                 &cancellation.token(),

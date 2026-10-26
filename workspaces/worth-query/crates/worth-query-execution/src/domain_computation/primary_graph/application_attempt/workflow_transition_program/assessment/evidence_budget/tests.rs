@@ -68,7 +68,7 @@ fn inclusive_evidence_admission_charges_the_decimal_publication_width() {
                 Ok(())
             });
             if allowance < charge {
-                let denial = result.err().expect("one missing byte refuses evidence");
+                let denial = result.expect_err("one missing byte refuses evidence");
                 assert_eq!(
                     denial.kind(),
                     WorthQueryApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable,

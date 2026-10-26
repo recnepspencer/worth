@@ -355,7 +355,7 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
             built.generations[0].generation_id
         };
         assert!(runtime
-            .delete_branch(&identity)
+            .delete_branch(execution, &identity)
             .unwrap()
             .deleted()
             .is_some());

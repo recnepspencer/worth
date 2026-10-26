@@ -62,7 +62,11 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes an exact fork source");
             runtime
-                .fork_branch(BranchId("index-refresh-feature".to_owned()), source)
+                .fork_branch(
+                    execution,
+                    BranchId("index-refresh-feature".to_owned()),
+                    source,
+                )
                 .expect("feature branch forks from main");
             let feature = commit_empty(execution, runtime, "index-refresh-feature");
             let main = commit_empty(execution, runtime, "main");

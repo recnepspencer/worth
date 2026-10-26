@@ -15,7 +15,7 @@ fn admitted_supply_chain_observation_is_repeatable_after_branch_moves() {
 
     let (world, _) = certified_supply_chain_world(execution, SupplyChainScale::court());
     let branch_id = BranchId("storm".to_owned());
-    fork_supply_chain_branch_from_main(&world.runtime, branch_id.clone());
+    fork_supply_chain_branch_from_main(execution, &world.runtime, branch_id.clone());
     let identity = world.runtime.branch_identity(&branch_id).unwrap();
     let (_, basis) = world.runtime.observe_branch(&identity).unwrap();
     let observation = basis.observation();

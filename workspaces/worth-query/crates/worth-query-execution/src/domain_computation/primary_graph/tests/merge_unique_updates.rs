@@ -47,7 +47,7 @@ fn a_merge_that_updates_to_a_value_the_target_holds_is_denied() {
     let mut world = UpdateWorld::new();
     world.create(execution, "ada", "taken");
     let bob = world.create(execution, "bob", "bob-label");
-    world.fork();
+    world.fork(execution);
     world.update(execution, bob, "bob", "taken");
     assert_eq!(world.admit(execution,), Err(Kind::ValueTaken));
 }
@@ -60,7 +60,7 @@ fn a_merge_that_updates_to_a_free_value_is_admitted() {
     let mut world = UpdateWorld::new();
     world.create(execution, "ada", "taken");
     let bob = world.create(execution, "bob", "bob-label");
-    world.fork();
+    world.fork(execution);
     world.update(execution, bob, "bob", "free");
     assert_eq!(world.admit(execution,), Ok(()));
 }
@@ -75,7 +75,7 @@ fn a_merge_that_keeps_the_updated_entitys_own_value_is_admitted() {
     let mut world = UpdateWorld::new();
     world.create(execution, "ada", "taken");
     let bob = world.create(execution, "bob", "bob-label");
-    world.fork();
+    world.fork(execution);
     world.update_note(execution, bob, "bob", "bob-label", "edited");
     let prepared = world.prepared_merge(execution);
     assert!(
@@ -175,13 +175,13 @@ impl UpdateWorld {
         self.close(execution, committed);
     }
 
-    fn fork(&mut self) {
+    fn fork(&mut self, execution: &worth_execution::ExecutionRequest<'_, '_>) {
         let (_, source) = self
             .runtime
             .observe_fork_source(&BranchId("main".to_owned()))
             .expect("main exposes a fork source");
         self.runtime
-            .fork_branch(BranchId(FEATURE.to_owned()), source)
+            .fork_branch(execution, BranchId(FEATURE.to_owned()), source)
             .expect("the feature branch forks");
     }
 

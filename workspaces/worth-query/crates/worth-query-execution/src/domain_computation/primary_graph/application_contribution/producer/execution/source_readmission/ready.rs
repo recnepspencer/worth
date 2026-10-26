@@ -33,7 +33,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
             | Stop::RegistrationChanged
             | Stop::PreparationMemoryExhausted { .. }
             | Stop::PreparationMemoryCounterOverflow
-            | Stop::RetainedCompanionCounterOverflow { .. }
             | Stop::RetainedCompanionCapacityExhausted { .. } => {
                 WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
             }

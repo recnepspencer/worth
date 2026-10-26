@@ -8,7 +8,7 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::publication::patch::data::PatchStreamPosition;
 
 use super::patch_position_reservation::{
-    PatchPositionReservation, PatchPositionReservationAdmission,
+    PatchPositionReservation, PatchPositionReservationAdmission, PatchPositionReservationGuard,
     RelationalPatchPositionReservationCounters,
 };
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
@@ -31,6 +31,8 @@ pub(super) struct PerformedPublicationNode {
 #[derive(Clone)]
 pub(crate) struct PerformedCheckpointSelection {
     head: Option<Arc<PerformedPublicationNode>>,
+    /// The last branch transition the selection covers (D8).
+    covered_transitions: crate::branch::RelationalBranchTransitionSequence,
 }
 
 #[derive(Default)]
@@ -41,9 +43,13 @@ struct PerformedPublicationIndex {
 }
 
 impl PerformedPublicationStream {
-    pub(super) fn checkpoint_selection(&self) -> PerformedCheckpointSelection {
+    pub(super) fn checkpoint_selection(
+        &self,
+        covered_transitions: crate::branch::RelationalBranchTransitionSequence,
+    ) -> PerformedCheckpointSelection {
         PerformedCheckpointSelection {
             head: self.head.load_full(),
+            covered_transitions,
         }
     }
 
@@ -64,6 +70,30 @@ impl PerformedPublicationStream {
         same_head(&self.head.load_full(), &selection.head)
     }
 
+    /// Hold the reservation within `execution`, with the performed commit
+    /// head a branch transition follows: fixed until the guard drops.
+    pub(super) fn hold_reservation_within(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (PatchPositionReservationGuard<'_>, PatchStreamPosition),
+        worth_execution::WorkCeilingDenial,
+    > {
+        let reservation = self.reservation.wait_within(execution)?;
+        let head = self.performed_head_position(&self.head.load_full());
+        Ok((reservation, PatchStreamPosition(head)))
+    }
+
+    /// The last assigned position: the performed head or the recovered floor,
+    /// whichever is later.
+    fn performed_head_position(&self, current: &Option<Arc<PerformedPublicationNode>>) -> u64 {
+        current
+            .as_ref()
+            .map(|head| head.positioned.position().0)
+            .unwrap_or(0)
+            .max(self.recovered_position_floor.load(Ordering::Acquire))
+    }
+
     pub(super) fn advance_position_floor(&self, floor: PatchStreamPosition) {
         self.recovered_position_floor
             .fetch_max(floor.0, Ordering::AcqRel);
@@ -78,11 +108,7 @@ impl PerformedPublicationStream {
     ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
         let current = self.head.load_full();
-        let prior_position = current
-            .as_ref()
-            .map(|head| head.positioned.position().0)
-            .unwrap_or(0)
-            .max(self.recovered_position_floor.load(Ordering::Acquire));
+        let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
             return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
@@ -247,6 +273,11 @@ impl PerformedPublicationStream {
 }
 
 impl PerformedCheckpointSelection {
+    /// The last branch transition sequence the checkpoint covers.
+    pub(crate) fn covered_transitions(&self) -> crate::branch::RelationalBranchTransitionSequence {
+        self.covered_transitions
+    }
+
     pub(crate) fn positioned_snapshot(&self) -> Vec<PositionedCanonicalCommit> {
         let mut positioned = Vec::new();
         let mut cursor = self.head.clone();

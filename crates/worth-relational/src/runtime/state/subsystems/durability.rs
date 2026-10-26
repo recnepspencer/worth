@@ -1,12 +1,17 @@
 use std::sync::Arc;
 
 use crate::durability::data::DurableCheckpoint;
+use crate::durability::medium::RelationalTransitionHistoryReader;
 use crate::durability::medium::{RelationalDurableMedium, RelationalDurableMediumBinding};
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
+mod checkpoint_selection;
 mod state;
+pub(crate) use checkpoint_selection::{
+    RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
+};
 
 use state::DurabilityState;
 
@@ -18,9 +23,30 @@ pub(crate) struct DurabilitySubsystem {
     /// The durable medium every commit is published to before it becomes
     /// live. A forked runtime is a speculative copy and never inherits it.
     medium: Option<Arc<RelationalDurableMediumBinding>>,
+    /// Speculative copies retain historical reads, never publication access.
+    transition_history: Option<RelationalTransitionHistoryReader>,
+    cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+    checkpoint_selection: RelationalCheckpointManifestSelection,
 }
 
 impl DurabilitySubsystem {
+    pub(crate) fn checkpoint_selection(&self) -> &RelationalCheckpointManifestSelection {
+        &self.checkpoint_selection
+    }
+
+    pub(crate) fn cold_source(
+        &self,
+    ) -> Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>> {
+        self.cold_source.clone()
+    }
+
+    pub(crate) fn attach_cold_source(
+        &mut self,
+        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) {
+        self.cold_source = Some(source);
+    }
+
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
         self.medium = Some(Arc::new(RelationalDurableMediumBinding::new(medium)));
     }
@@ -34,6 +60,13 @@ impl DurabilitySubsystem {
 
     pub(crate) fn medium(&self) -> Option<Arc<RelationalDurableMediumBinding>> {
         self.medium.clone()
+    }
+
+    pub(crate) fn transition_history(&self) -> Option<RelationalTransitionHistoryReader> {
+        self.medium
+            .as_ref()
+            .map(|medium| medium.transition_history())
+            .or_else(|| self.transition_history.clone())
     }
 
     pub(crate) fn push_log_envelope(&self, commit: PositionedCanonicalCommit) {
@@ -101,6 +134,9 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: RuntimeOwnedState::new(DurabilityState::default()),
             medium: None,
+            transition_history: None,
+            cold_source: None,
+            checkpoint_selection: Default::default(),
         }
     }
 
@@ -108,6 +144,9 @@ impl RuntimeSubsystem for DurabilitySubsystem {
         Self {
             state: self.state.detached(),
             medium: None,
+            transition_history: self.transition_history(),
+            cold_source: self.cold_source.clone(),
+            checkpoint_selection: self.checkpoint_selection.detached(),
         }
     }
 }

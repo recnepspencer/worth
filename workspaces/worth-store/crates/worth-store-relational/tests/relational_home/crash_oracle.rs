@@ -1,10 +1,10 @@
 //! What a recovered home must hold after its previous incarnation stopped
-//! with at most one commit in flight, and what it must do next.
+//! with at most one commit or branch transition in flight, and what it must do next.
 //!
 //! The recovered artifacts are the stopped run's acknowledged artifacts plus
 //! at most the one in-flight commit, each byte-identical to the reference's
 //! at its position (D11); the journal's `resolve` agrees with that; record
-//! states equal the reference after the recovered count; the rest of the
+//! states and branch postures equal the two-stream reference prefix; the rest of the
 //! script then runs to completion on the reference states; and a fresh
 //! recovery reaches the same history.
 
@@ -12,14 +12,17 @@ use std::path::Path;
 
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::durability::{
-    RelationalCanonicalCommitArtifact, RelationalDurabilityUnresolved,
+    RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactDigest,
+    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
 };
+use worth_relational::facade::history::CommitId;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_store_relational::RelationalStoreCommitFate;
 use worth_store_relational::RelationalStoreHome;
 
 use super::durable_run::{
-    apply, assert_holds, assert_reference_artifacts, open_declaring, served_schema, steps_after,
+    apply, assert_holds, assert_lifecycle_prefix, assert_reference_artifacts, open_declaring,
+    served_schema,
 };
 use super::identity_safety;
 use super::workload::{self, Script};
@@ -40,6 +43,24 @@ pub(crate) enum InFlight {
     /// The fate was unresolved; it is recovered exactly when the journal says
     /// it committed, and then it is the artifact the fate names.
     Unresolved(RelationalDurabilityUnresolved),
+}
+
+pub(crate) fn commit_subject(
+    fate: &RelationalDurabilityUnresolved,
+) -> (
+    PatchStreamPosition,
+    CommitId,
+    RelationalCanonicalCommitArtifactDigest,
+) {
+    let RelationalDurabilityUnresolvedSubject::CanonicalCommit {
+        position,
+        commit_id,
+        digest,
+    } = fate.subject()
+    else {
+        panic!("expected a canonical commit fate")
+    };
+    (position, commit_id, digest)
 }
 
 /// Check the recovered home against the stopped run. Returns how many commits
@@ -78,7 +99,7 @@ pub(crate) fn assert_recovered(
         .get(held)
         .map(digest_of)
         .or(match &in_flight {
-            InFlight::Unresolved(fate) => Some(fate.digest()),
+            InFlight::Unresolved(fate) => Some(commit_subject(fate).2),
             _ => None,
         })
         .or_else(|| acknowledged.last().map(digest_of));
@@ -98,22 +119,19 @@ pub(crate) fn assert_recovered(
         }
         InFlight::Durable => assert_eq!(extra, 1, "{case}: a durable commit was lost"),
         InFlight::Unresolved(fate) => {
-            assert_eq!(fate.position().0, next, "{case}: the fate's position");
+            let (position, commit_id, digest) = commit_subject(fate);
+            assert_eq!(position.0, next, "{case}: the fate's position");
             if let Some(bytes) = recovered.get(held) {
                 let artifact =
                     RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone())
                         .expect("a recovered artifact frame");
-                assert_eq!(artifact.commit_id(), fate.commit_id(), "{case}");
-                assert_eq!(artifact.payload_digest(), fate.digest(), "{case}");
+                assert_eq!(artifact.commit_id(), commit_id, "{case}");
+                assert_eq!(artifact.payload_digest(), digest, "{case}");
             }
         }
     }
     let commits = recovered.len();
-    assert_eq!(
-        workload::states_of(home.runtime(), &script.records),
-        script.states[commits],
-        "{case}: branch states after {commits} commits"
-    );
+    assert_lifecycle_prefix(home, script, commits, case);
     commits
 }
 
@@ -129,7 +147,12 @@ pub(crate) fn assert_continues(
     case: &str,
 ) {
     let before = workload::artifacts_of(home.runtime());
-    apply(&home, execution, steps_after(script, recovered));
+    let transitions = super::branch_lifecycle::artifacts_of_home(&home).len();
+    apply(
+        &home,
+        execution,
+        super::branch_lifecycle::steps_after(script, recovered, transitions),
+    );
     let everything = workload::artifacts_of(home.runtime());
     assert!(
         everything[..recovered] == before[..],

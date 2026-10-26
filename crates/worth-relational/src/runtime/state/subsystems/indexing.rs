@@ -4,6 +4,7 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_selection;
+mod cold_checkpoint;
 mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
@@ -35,6 +36,7 @@ pub(crate) type UniqueEntityAspectFieldIndex = BTreeMap<
 /// the guard.
 #[derive(Debug, Clone)]
 pub(crate) struct IndexingState {
+    cold_checkpoint: Option<Arc<cold_checkpoint::DeferredIndexImage>>,
     pub(crate) definitions: BTreeMap<DerivedIndexId, Arc<DerivedIndexDefinition>>,
     field_definitions: BTreeMap<AspectKey, BTreeMap<FieldKey, Vec<Arc<DerivedIndexDefinition>>>>,
     generations: GenerationCatalog,
@@ -46,6 +48,7 @@ pub(crate) struct IndexingState {
 impl IndexingState {
     fn empty() -> Self {
         Self {
+            cold_checkpoint: None,
             definitions: BTreeMap::new(),
             field_definitions: BTreeMap::new(),
             generations: GenerationCatalog::default(),

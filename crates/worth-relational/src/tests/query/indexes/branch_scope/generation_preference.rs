@@ -28,6 +28,7 @@ fn derived_index_contract_prefers_older_supported_generation_over_newer_unsuppor
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

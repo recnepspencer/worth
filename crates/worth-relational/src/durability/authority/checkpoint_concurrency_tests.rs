@@ -6,6 +6,40 @@ use crate::facade::history::BranchId;
 use crate::tests::support::*;
 
 #[test]
+fn completing_an_older_capture_cannot_replace_the_compacted_transition_basis() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let runtime = durable_runtime_with_test_schema();
+    create_entity(execution, &runtime, "source");
+    let old = runtime
+        .durability_authority()
+        .capture_checkpoint_basis()
+        .unwrap();
+    let (_, source) = runtime
+        .observe_fork_source(&BranchId("main".into()))
+        .unwrap();
+    runtime
+        .fork_branch(execution, BranchId("target".into()), source)
+        .unwrap();
+    let new = runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    assert_eq!(new.coverage.up_to_branch_transition.0, 1);
+    runtime
+        .durability_authority()
+        .finalize_captured_checkpoint(old)
+        .unwrap();
+    let selected = runtime.durability.latest_checkpoint().unwrap();
+    assert_eq!(selected.coverage.up_to_branch_transition.0, 1);
+    assert!(runtime
+        .durability()
+        .branch_transition_artifacts(execution.allocation_policy())
+        .next()
+        .is_none());
+}
+
+#[test]
 fn checkpoint_reconstruction_does_not_exclude_publication_after_capture() {
     let host_request = std::sync::Arc::new(crate::test_execution_policy::serial_request());
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);

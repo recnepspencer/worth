@@ -28,6 +28,7 @@ impl RuntimeWorldBranchPort {
     }
     pub fn create_product_branch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: crate::branch::ProductBranchObservation,
         intent: crate::branch::ProductBranchCreationIntent,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
@@ -37,6 +38,7 @@ impl RuntimeWorldBranchPort {
     > {
         self.service()?
             .create_product_branch(super::super::ports::RuntimeWorldBranchCreationRequest::new(
+                execution,
                 source,
                 intent,
                 cancellation,

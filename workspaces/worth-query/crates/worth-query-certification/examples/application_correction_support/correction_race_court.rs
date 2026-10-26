@@ -26,7 +26,7 @@ pub fn run() {
             let principal = authenticate_operator(application.installed_schema(), &scope);
             let request = application.runtime().request(&principal, &scope);
             let limits = super::required_output_courts::limits();
-            let selected = request.corrections().select(&source, limits).unwrap();
+            let selected = request.corrections().select(source, limits).unwrap();
             let preparation = request
                 .corrections()
                 .reverse(&selected)
@@ -68,7 +68,7 @@ pub fn run() {
             let principal = authenticate_operator(application.installed_schema(), &scope);
             let request = application.runtime().request(&principal, &scope);
             let limits = super::required_output_courts::limits();
-            let selected = request.corrections().select(&source, limits).unwrap();
+            let selected = request.corrections().select(source, limits).unwrap();
             let preparation = request.corrections().reverse(&selected)
                 .idempotency("race-second-correction").limits(limits).prepare().unwrap();
             let WorthQueryApplicationCorrectionPreparation::Prepared(candidate) = preparation else { panic!("second correction must prepare before first publication") };
@@ -105,13 +105,13 @@ pub fn run() {
         });
         prepared.recv_timeout(Duration::from_secs(10)).unwrap();
         prepared.recv_timeout(Duration::from_secs(10)).unwrap();
-        assert_eq!(super::required_output_courts::head(&application), target);
+        assert_eq!(super::required_output_courts::head(application), target);
         first_start.send(()).unwrap();
         if !pause.wait_until_reached(Duration::from_secs(10)) {
             pause.release();
             panic!("first corrective owner must reach the actual World CAS");
         }
-        assert_eq!(super::required_output_courts::head(&application), target);
+        assert_eq!(super::required_output_courts::head(application), target);
         let contention = application
             .runtime()
             .observe_application_branch_commit_contention_for_test();
@@ -121,7 +121,7 @@ pub fn run() {
             cleanup_start.send(()).unwrap();
             panic!("second correction must reach actual native branch-lane contention");
         }
-        assert_eq!(super::required_output_courts::head(&application), target);
+        assert_eq!(super::required_output_courts::head(application), target);
         pause.release();
         let published = first.join().unwrap();
         cleanup_start.send(()).unwrap();

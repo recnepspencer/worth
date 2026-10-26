@@ -140,6 +140,7 @@ pub(super) fn choose_grant(
     copies: u64,
     width: usize,
     declared_result_minimum: u64,
+    result_heap_bound: Option<u64>,
     lease: worth_execution::ExecutionRequest<'_, '_>,
     candidate_lease: Option<&ExecutionResourceLease<'_>>,
     bases: &[ApplyMemberBasis],
@@ -148,10 +149,13 @@ pub(super) fn choose_grant(
     candidate_basis: &CandidateEpochBasis,
     precompute_bases: &[PrecomputeMapBasis],
     precompute_basis: &PrecomputeMapBasis,
-    mut request: Option<&mut MapKernelContext<'_, '_>>,
+    request: Option<&mut MapKernelContext<'_, '_>>,
 ) -> Result<Result<Option<u64>, CapacityDenial>, SignalError> {
+    // A u64 bisection takes at most 64 steps. Reserve the same work in every
+    // placement, including an unbounded serial authority.
+    super::super::super::work::checkpoint(request, 64)?;
     let Some(available) = available else {
-        return Ok(Ok(None));
+        return Ok(Ok(result_heap_bound));
     };
     let minimum = combined_map_requirement(
         bases,
@@ -165,11 +169,14 @@ pub(super) fn choose_grant(
         candidate_lease,
     )
     .ok_or_else(overflow)?;
-    let lease_bytes = lease.memory_limit();
-    if lease_bytes.is_some_and(|bytes| minimum > bytes) {
+    // This is the per-operation policy cap, not an observation of ancestor
+    // room. `available` constrains the grant against the enclosing lineage;
+    // the actual map tickets still check every ledger before dispatch.
+    let lease_bytes = lease.memory_limit().unwrap_or(available);
+    if minimum > lease_bytes {
         return Ok(Err(CapacityDenial {
             required: minimum,
-            reserved: lease_bytes,
+            reserved: Some(lease_bytes),
         }));
     }
     if fixed > available {
@@ -179,9 +186,8 @@ pub(super) fn choose_grant(
         }));
     }
     let mut lower = 0_u64;
-    let mut upper = (available - fixed) / copies;
+    let mut upper = ((available - fixed) / copies).min(result_heap_bound.unwrap_or(u64::MAX));
     while lower < upper {
-        super::super::super::work::checkpoint(request.as_deref_mut(), 1)?;
         let middle = lower + (upper - lower) / 2 + (upper - lower) % 2;
         let fits = PartitionVersionOverrides::evaluation_growth_ceiling(middle)
             .ok()
@@ -206,7 +212,7 @@ pub(super) fn choose_grant(
                         lease,
                         candidate_lease,
                     )
-                    .is_some_and(|bytes| lease_bytes.is_none_or(|limit| bytes <= limit))
+                    .is_some_and(|bytes| bytes <= lease_bytes)
             });
         if fits {
             lower = middle;
@@ -245,7 +251,7 @@ pub(super) fn choose_grant(
         let (required, reserved) = if preparation_required > available {
             (preparation_required, Some(available))
         } else {
-            (map_required, lease_bytes)
+            (map_required, Some(lease_bytes))
         };
         return Ok(Err(CapacityDenial { required, reserved }));
     }

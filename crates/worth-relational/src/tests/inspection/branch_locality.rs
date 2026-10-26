@@ -20,6 +20,7 @@ fn historical_inspection_stays_branch_local_under_divergence_and_reclaim_pressur
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -150,6 +151,7 @@ fn recent_commit_inspection_and_branch_head_reads_stay_branch_local() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

@@ -8,8 +8,8 @@ fn branch_head_index_moves_at_cutover_before_reverse_settlement() {
 
     let mut runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "head-index-anchor");
-    fork_publication_branch(&mut runtime, "head-index-a");
-    fork_publication_branch(&mut runtime, "head-index-b");
+    fork_publication_branch(execution, &mut runtime, "head-index-a");
+    fork_publication_branch(execution, &mut runtime, "head-index-b");
 
     let mut first_transaction = test_owner_begin_transaction_for_main(&runtime);
     first_transaction
@@ -85,8 +85,8 @@ fn preparation_order_does_not_reserve_a_subscriber_stream_gap() {
 
     let mut runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "stream-order-anchor");
-    fork_publication_branch(&mut runtime, "prepared-first");
-    fork_publication_branch(&mut runtime, "published-first");
+    fork_publication_branch(execution, &mut runtime, "prepared-first");
+    fork_publication_branch(execution, &mut runtime, "published-first");
 
     let prepared_first = prepare_publication(execution, &mut runtime, "prepared-first", "write-a");
     let published_first =
@@ -151,8 +151,8 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
 
     let mut runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "recovery-order-anchor");
-    fork_publication_branch(&mut runtime, "prepared-first");
-    fork_publication_branch(&mut runtime, "published-first");
+    fork_publication_branch(execution, &mut runtime, "prepared-first");
+    fork_publication_branch(execution, &mut runtime, "published-first");
 
     let prepared_first = prepare_publication(execution, &mut runtime, "prepared-first", "write-a");
     let published_first =
@@ -226,27 +226,47 @@ fn checkpoint_tail_recovery_follows_publication_order_with_exact_reserved_identi
         prepared_first_id
     );
     assert_eq!(
-        observed_entity_name(&recovered, "prepared-first", prepared_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "prepared-first",
+            prepared_first_entity
+        ),
         Some("write-a".to_owned())
     );
     assert_eq!(
-        observed_entity_name(&recovered, "prepared-first", published_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "prepared-first",
+            published_first_entity
+        ),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "published-first", published_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "published-first",
+            published_first_entity
+        ),
         Some("write-b".to_owned())
     );
     assert_eq!(
-        observed_entity_name(&recovered, "published-first", prepared_first_entity),
+        observed_entity_name(
+            execution,
+            &recovered,
+            "published-first",
+            prepared_first_entity
+        ),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "main", prepared_first_entity),
+        observed_entity_name(execution, &recovered, "main", prepared_first_entity),
         None
     );
     assert_eq!(
-        observed_entity_name(&recovered, "main", published_first_entity),
+        observed_entity_name(execution, &recovered, "main", published_first_entity),
         None
     );
     let continued = create_entity_outcome(execution, &recovered, "recovery-order-continued");
@@ -271,6 +291,7 @@ fn created_entity_from_performed(
 }
 
 fn observed_entity_name(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::facade::runtime::RelationalRuntime,
     branch: &str,
     entity: crate::facade::identity::EntityId,
@@ -287,7 +308,7 @@ fn observed_entity_name(
             crate::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
         .expect("observation transaction binds to the admitted root")
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .expect("entity read is admitted on the observed root");
     read.base().and_then(read_entity_name)
 }
@@ -310,12 +331,16 @@ fn prepare_publication(
         .expect("publication candidate prepares")
 }
 
-fn fork_publication_branch(runtime: &mut crate::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork_publication_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut crate::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main has an exact fork source");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("publication branch fork succeeds");
 }
 

@@ -43,32 +43,43 @@ fn complexity_budget_write_under_an_outstanding_reader_copies_the_spine_once() {
 }
 
 #[test]
-fn complexity_budget_forking_a_runtime_charges_the_reconstructive_lane() {
+fn complexity_budget_forking_defers_copy_cost_until_a_partition_is_written() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_test_schema();
-    let _ = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
-    let _ = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
-
+    let entity = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
+    create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
+    let expected = test_owner_begin_transaction_for_main(&runtime)
+        .read_entity(execution, entity)
+        .unwrap()
+        .effective()
+        .cloned();
     runtime.performance_access().reset_counters();
     let forked = runtime.fork().expect("a test runtime can fork");
     let counters = runtime.performance_access().counters();
-    drop(forked);
-
-    // Whole-state materialization is legitimate here and must land in its own
-    // lane, so the ordinary-lane zero above stays interpretable.
     assert_eq!(counters.full_state_clones, 0);
-    assert_eq!(counters.reconstructive_state_clones, 1);
-    assert!(
-        counters.reconstructive_partitions_materialized >= 2,
-        "a fork materializes every partition it detaches: {counters:?}"
-    );
-    // The partition copies a fork performs belong to its own lane. If they
-    // leaked into the ordinary counters, an ordinary-lane zero elsewhere would
-    // stop meaning anything.
+    assert_eq!(counters.reconstructive_state_clones, 0);
+    assert_eq!(counters.reconstructive_partitions_materialized, 0);
     assert_eq!(counters.ordinary_partitions_copied_on_write, 0);
     assert_eq!(counters.ordinary_partition_slots_copied_on_write, 0);
+
+    forked.performance_access().reset_counters();
+    update_entity_and_release_snapshot(execution, &forked, entity, "child");
+    let copies = forked.performance_access().counters();
+    assert!(
+        copies.ordinary_partitions_copied_on_write > 0
+            && copies.ordinary_partitions_copied_on_write < 8,
+        "the first write, rather than fork, pays for its touched partition: {copies:?}"
+    );
+    assert_eq!(copies.reconstructive_partitions_materialized, 0);
+    assert_eq!(
+        test_owner_begin_transaction_for_main(&runtime)
+            .read_entity(execution, entity)
+            .unwrap()
+            .effective()
+            .cloned(),
+        expected
+    );
 }
 
 #[test]

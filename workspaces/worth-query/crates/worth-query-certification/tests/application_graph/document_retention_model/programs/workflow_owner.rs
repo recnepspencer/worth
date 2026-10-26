@@ -77,6 +77,8 @@ impl ApplicationProgramDefinition<DocumentRetentionSchema> for WorkflowOwnerProg
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![
             ApplicationFeatureSpec::root::<DocumentRetentionSchema, DocumentRetentionFeature>()
+                .action::<super::super::correctable_retention::CorrectableRetentionBinding, RetentionCompletion>()
+                .finish_action()
                 .action::<OccurrenceSetRetentionBinding, WorkflowEffectDelivery>()
                 .finish_action()
                 .action::<ReviewedSetRetentionBinding, ReviewedEffectDelivery>()

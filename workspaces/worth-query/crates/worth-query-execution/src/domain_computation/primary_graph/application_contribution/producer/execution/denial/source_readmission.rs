@@ -1,5 +1,6 @@
 //! Request rejection remains local to the caller through both query phases.
 
+use super::request_execution::kind as request_execution_kind;
 use super::WorthQueryOutputDemandDenialKind as DemandKind;
 use super::{
     denial, failed, request_admission_denied, request_admission_rejected, request_authority_stop,
@@ -72,28 +73,6 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
     }
 }
 
-/// A stop of the carried request is not absence of the installed producer.
-/// Keep native attribution when it cannot be represented by an advancement stop.
-pub(super) fn request_execution_kind(
-    cause: crate::domain_computation::WorthQueryProviderSessionDenialKind,
-) -> DemandKind {
-    use crate::domain_computation::primary_graph::WorthQueryAdvancementDenial as Stop;
-    use crate::domain_computation::WorthQueryProviderSessionDenialKind as Native;
-    match cause {
-        Native::ExecutionResource {
-            denial,
-            partition_identity: None,
-            policy_ancestor: None,
-        } => DemandKind::ExecutionRequest(Stop::Resource(denial)),
-        Native::ExecutionNestedPatternStopped {
-            partition_identity: None,
-        } => DemandKind::ExecutionRequest(Stop::NestedStopped),
-        Native::ExecutionWorkerPanicked {
-            partition_identity: None,
-        } => DemandKind::ExecutionRequest(Stop::Panicked),
-        other => DemandKind::SourceQueryExecution(ExecutionKind::ExecutionRequest(other)),
-    }
-}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -173,5 +152,48 @@ mod tests {
             panic!("an actually absent handler remains a producer failure");
         };
         assert_eq!(stopped.kind(), DemandKind::ProducerUnavailable);
+    }
+    #[test]
+    fn unpartitioned_kernel_stops_stay_request_local_across_source_and_commit() {
+        use crate::domain_computation::primary_graph::{
+            application_attempt::provider_compare_denial::provider_session_execution_denied,
+            WorthQueryApplicationCommitDenialStage as Stage,
+            WorthQueryApplicationCommitOutcome as Outcome,
+        };
+        for (native, expected) in [
+            (
+                Native::ExecutionNestedPatternStopped {
+                    partition_identity: None,
+                },
+                DemandKind::ExecutionRequest(Stop::NestedStopped),
+            ),
+            (
+                Native::ExecutionWorkerPanicked {
+                    partition_identity: None,
+                },
+                DemandKind::ExecutionRequest(Stop::Panicked),
+            ),
+        ] {
+            let source = query_admission_denied(
+                "producer",
+                WorthQueryApplicationQueryAdmissionDenial::new(
+                    AdmissionKind::ExecutionRequest(native),
+                    "source request executor stopped",
+                ),
+            )
+            .into_output_denial();
+            let commit = provider_session_execution_denied(
+                Ok(native),
+                Stage::ProviderCommit,
+                "commit request executor stopped",
+            );
+            let commit = crate::domain_computation::primary_graph::application_contribution::producer::execution::commit_receipt("producer", Outcome::Denied(commit)).err().expect("native commit stopped");
+            assert_eq!(source.kind(), expected);
+            assert_eq!(commit.kind(), expected);
+            assert_eq!(
+                commit.commit_execution_denial(),
+                Some((Stage::ProviderCommit, Ok(native)))
+            );
+        }
     }
 }

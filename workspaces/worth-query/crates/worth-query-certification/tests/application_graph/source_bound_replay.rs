@@ -99,22 +99,33 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let source = observed.observed_sources()[0].clone();
     let initial = observe_head(runtime, branch);
     let fresh_key = 0xb0ad_0001;
-    let (refused, fresh_work) = runtime
-        .request(&principal, &scope)
-        .on_branch(branch)
-        .advanced()
-        .mutate(input.clone())
-        .expect_source(source.clone())
-        .idempotency(&fresh_key)
-        .execute_in_program_report(&host, Policy::Execution(&zero))
-        .into_parts();
-    let denial = match refused {
-        Err(Denial::Handler(MutationHandlerExecutionDenial::Projection(denial))) => denial,
-        Err(denial) => {
-            panic!("fresh source-bound execution refused at an unexpected owner: {denial:?}")
-        }
-        Ok(_) => panic!("fresh source-bound execution must refuse real payload admission"),
-    };
+    let (denial, fresh_work) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let zero = crate::test_request_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                0,
+            );
+            let mut request = runtime
+                .request(&principal, &scope)
+                .on_branch(branch)
+                .advanced()
+                .mutate(input.clone())
+                .expect_source(source.clone())
+                .idempotency(&fresh_key);
+            let (answer, work) = request
+                .prepare_in_program_report_in_advancement(&phase, &host, Policy::Execution(&zero))
+                .into_parts();
+            let cause = answer
+                .err()
+                .expect("fresh source-bound payload admission must refuse");
+            let Denial::Handler(MutationHandlerExecutionDenial::Projection(denial)) = cause else {
+                panic!("unexpected source-bound owner: {cause:?}");
+            };
+            (denial, work)
+        })
+        .unwrap();
     assert_eq!(
         denial.kind(),
         ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied)

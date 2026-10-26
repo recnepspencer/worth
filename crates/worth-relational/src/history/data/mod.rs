@@ -1,4 +1,6 @@
 mod aspect_history;
+mod replay_retention_denial;
+pub use replay_retention_denial::RelationalReplayRetentionDenial;
 mod branch_creation;
 mod canonical_commit_allocation;
 mod canonical_commit_envelope;
@@ -38,7 +40,7 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 #[cfg(test)]
 pub(crate) use canonical_commit_envelope::CanonicalOutputPublication;
 pub(crate) use canonical_commit_envelope::{
-    AuthoritativeArtifactEnvelopeRef, CheckpointCanonicalEnvelopeRef, CommittedRecordChange,
+    AuthoritativeArtifactEnvelopeRef, CommittedRecordChange, EmbeddedCheckpointEnvelopeRef,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalCodecRetirementKind, CanonicalRequiredOutputCodecRetirement,

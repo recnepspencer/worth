@@ -24,7 +24,7 @@ fn a_consumer_handoff_ends_at_real_row_reclamation() {
     let handoff = registry.retain_consumer_handoff(&identity).unwrap();
     assert!(handoff.matches(&identity));
     {
-        let mut state = registry.state.lock().unwrap();
+        let state = registry.state.lock().unwrap();
         assert_eq!(state.records[consumer.as_ref()].interests, 1);
         assert_eq!(state.records[consumer.as_ref()].framework_required_count, 0);
     }

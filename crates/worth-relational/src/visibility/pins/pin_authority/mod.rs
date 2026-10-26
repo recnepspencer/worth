@@ -16,36 +16,25 @@ impl<'runtime> VisibilityPinAuthority<'runtime> {
     }
 }
 
-fn adjust_entity_pin(
-    runtime: &RelationalRuntime,
-    entity_id: crate::identity::data::EntityId,
-    class: SubstratePinClass,
-    delta: i32,
-) {
-    adjust_record_pin::<EntityRecordKind>(runtime, entity_id, class, delta);
-}
-
-fn adjust_relation_pin(
-    runtime: &RelationalRuntime,
-    relation_id: crate::identity::data::RelationId,
-    class: SubstratePinClass,
-    delta: i32,
-) {
-    adjust_record_pin::<RelationRecordKind>(runtime, relation_id, class, delta);
-}
-
 fn adjust_record_pin<K: RecordKind>(
     runtime: &RelationalRuntime,
+    residency: &crate::storage::residency::RelationalResidencyLease<
+        crate::storage::residency::Full,
+    >,
     record_id: crate::identity::data::RecordId<K::Domain>,
     class: SubstratePinClass,
     delta: i32,
-) {
+) -> Result<(), crate::storage::data::RelationalStorageUnavailable> {
     let retention_fence = runtime
         .visibility
         .retention_fence_version(runtime.current_version_id());
-    runtime
-        .storage_authority()
-        .adjust_named_pin::<K>(record_id, class, delta, retention_fence);
+    runtime.storage_authority().adjust_named_pin::<K>(
+        residency,
+        record_id,
+        class,
+        delta,
+        retention_fence,
+    )
 }
 
 impl RelationalRuntime {

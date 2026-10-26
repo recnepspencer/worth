@@ -30,7 +30,6 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         }
         stop @ (CompanionPreflightStop::PreparationMemoryExhausted { .. }
         | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. }
         | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
             ConsumedOutputVerificationStop::CapacityExhausted(VerificationCapacityStop::Meter(stop))
         }
@@ -139,10 +138,6 @@ mod tests {
                 maximum: 1,
             },
             CompanionPreflightStop::PreparationMemoryCounterOverflow,
-            CompanionPreflightStop::RetainedCompanionCounterOverflow {
-                requested: 1,
-                retained: u64::MAX,
-            },
             CompanionPreflightStop::RetainedCompanionCapacityExhausted {
                 requested: 1,
                 retained: 1,

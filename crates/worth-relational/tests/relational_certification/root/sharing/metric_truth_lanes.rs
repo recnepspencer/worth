@@ -64,7 +64,7 @@ fn phase6_recorded_cost_lane_is_not_substitutable_for_the_live_lane() {
     let main = world.runtime.main_branch_identity();
     let main_before_fork = observe(&world.runtime, std::slice::from_ref(&main));
 
-    fork_from_main(&mut world.runtime, "metric-truth-lane-fork");
+    fork_from_main(execution, &mut world.runtime, "metric-truth-lane-fork");
     let fork = branch_identity(&world.runtime, "metric-truth-lane-fork");
     let main_after_fork = observe(&world.runtime, &[main]);
     let fork_only = observe(&world.runtime, &[fork]);
@@ -127,7 +127,7 @@ fn phase6_coordination_lane_stays_branch_local_under_a_shared_root() {
     let (mut world, expected) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &expected);
     let main = world.runtime.main_branch_identity();
-    fork_from_main(&mut world.runtime, "metric-truth-lane-cell");
+    fork_from_main(execution, &mut world.runtime, "metric-truth-lane-cell");
     let fork = branch_identity(&world.runtime, "metric-truth-lane-cell");
 
     let main_only = observe(&world.runtime, std::slice::from_ref(&main));
@@ -206,12 +206,16 @@ fn live_byte_lanes(observation: &RelationalBranchSharingObservation) -> [(&'stat
     ]
 }
 
-fn fork_from_main(runtime: &mut RelationalRuntime, name: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &mut RelationalRuntime,
+    name: &str,
+) {
     let (_, source_basis) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId(name.to_owned()), source_basis)
+        .fork_branch(execution, BranchId(name.to_owned()), source_basis)
         .expect("fork remains metadata-only");
 }
 
