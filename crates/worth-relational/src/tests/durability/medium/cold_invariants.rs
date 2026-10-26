@@ -159,13 +159,14 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (runtime, counter, entity) = recovered(execution, false);
+    let current_members = counter.members.keys().copied().collect::<Vec<_>>();
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
+                current_members: &current_members,
+                source: Some(counter.clone()),
             },
         )
         .unwrap();
