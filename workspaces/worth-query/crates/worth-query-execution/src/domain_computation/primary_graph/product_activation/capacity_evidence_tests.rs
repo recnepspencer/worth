@@ -18,7 +18,7 @@ fn evidence(error: WorthQueryProductBranchCreateError) -> (usize, usize) {
 
 #[test]
 fn capacity_refusal_evidence_distinguishes_own_heads_outside_and_retired_holders() {
-    let world = installed_authorization_world_with_product_resources(capacity_resources());
+    let world = installed_authorization_world_with_product_resources(capacity_resources(5));
     let root = world.application.product_runtime().root_product_branch();
     let fork = || {
         world
@@ -101,7 +101,7 @@ fn capacity_refusal_evidence_distinguishes_own_heads_outside_and_retired_holders
 
 #[test]
 fn retained_cleanup_capacity_evidence_counts_gates_but_not_blocked_component_work() {
-    let world = installed_authorization_world_with_product_resources(capacity_resources());
+    let world = installed_authorization_world_with_product_resources(capacity_resources(5));
     let runtime = world.application.product_runtime();
     let root = runtime.root_product_branch();
     let spare = world
@@ -189,7 +189,7 @@ fn retained_cleanup_capacity_evidence_counts_gates_but_not_blocked_component_wor
 
 /// Install a distinct branch ceiling through the ordinary composition input;
 /// retain the fixture's unrelated policies from their actual owner.
-fn capacity_resources() -> WorthQueryProductWorldResources {
+pub(super) fn capacity_resources(maximum: u64) -> WorthQueryProductWorldResources {
     use worth_runtime_world::facade::{
         RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetInstallation,
         RuntimeWorldBudgetLimit, RuntimeWorldCustodyBudgetInstallation,
@@ -204,7 +204,7 @@ fn capacity_resources() -> WorthQueryProductWorldResources {
     WorthQueryProductWorldResources::install(
         RuntimeWorldBudgetInstallation {
             branches: RuntimeWorldBranchBudgetInstallation {
-                live_product_branches: 5,
+                live_product_branches: maximum,
             },
             history: RuntimeWorldHistoryBudgetInstallation {
                 retained_composite_commits: installed(budgets.retained_composite_commits()),
