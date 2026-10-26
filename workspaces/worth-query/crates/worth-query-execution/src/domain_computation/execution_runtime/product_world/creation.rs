@@ -16,7 +16,6 @@ pub enum WorthQueryProductBranchCreationDenial {
     /// last gate holder drops, even if component cleanup is still outstanding.
     /// Multiple holders of one gate count once. Unpublished World forks whose
     /// Query reservation was dropped are excluded. The refused fork is excluded.
-    /// With no installed policy, the effective limit is usize::MAX.
     CoordinationCapacityExhausted {
         limit: usize,
         occupancy: usize,

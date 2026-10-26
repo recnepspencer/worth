@@ -31,12 +31,13 @@ impl ActivationCapacity {
             })
             // fetch_update returns the value at the failed atomic reservation,
             // rather than a later load that could race with a release.
-            .map_err(
-                |occupancy| WorthQueryProductActivationDenial::CapacityExhausted {
-                    limit: self.maximum.unwrap_or(usize::MAX),
-                    occupancy,
-                },
-            )?;
+            .map_err(|occupancy| {
+                if let Some(limit) = self.maximum.filter(|maximum| occupancy >= *maximum) {
+                    WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy }
+                } else {
+                    WorthQueryProductActivationDenial::OccupancyOverflow
+                }
+            })?;
         Ok(ActivationCapacityReservation(Arc::clone(self)))
     }
 }
@@ -62,13 +63,10 @@ mod tests {
         drop(held);
         assert_eq!(owner.live.load(Ordering::Acquire), 0);
         owner.live.store(usize::MAX, Ordering::Release);
-        assert!(matches!(
-            owner.reserve(),
-            Err(WorthQueryProductActivationDenial::CapacityExhausted {
-                limit: usize::MAX,
-                occupancy: usize::MAX,
-            })
-        ));
+        assert_eq!(
+            owner.reserve().err(),
+            Some(WorthQueryProductActivationDenial::OccupancyOverflow)
+        );
         assert_eq!(owner.live.load(Ordering::Acquire), usize::MAX);
         owner.live.store(0, Ordering::Release);
     }
