@@ -108,8 +108,11 @@ impl WorthQueryProductBranchCreationReservation<'_> {
             .branch_port()
             .create_product_branch(self.source.observation().clone(), intent, cancellation)
             .map_err(WorthQueryProductBranchCreationDenial::World)?;
-        if let RuntimeWorldBranchCreationOutcome::Performed(observation) = &outcome {
-            self.activation.commit(observation);
+        match &outcome {
+            RuntimeWorldBranchCreationOutcome::Performed(observation) => {
+                self.activation.commit(observation);
+            }
+            RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => drop(self.activation),
         }
         Ok(outcome)
     }
