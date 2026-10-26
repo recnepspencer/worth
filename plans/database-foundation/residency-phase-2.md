@@ -2099,3 +2099,60 @@ checkpoint/recovery orchestrators and producer-backed matrix courts. World
 lib/integration tests have reported no failures and are still running their
 compile-fail contract test at this commit boundary. The coverage ledger is
 residency-phase-2-matrix.md; pending cells are explicitly named there.
+
+
+## Next matrix slice: nonhead merge history
+
+Boundary review: independent merge planning already explicitly demands every
+metadata-selected delta commit in merge/planning.rs::branch_commit_delta. The
+ordinary transaction merge-parent path is different: preparation history's
+inspect_merge_from_bindings and commit_record_set read resident routes and
+filter missing bodies away. After the live custody cutover a committed cold
+intermediate source change can therefore disappear from conflict detection.
+This is a product gap; current branch-head bodies are insufficient evidence.
+The preparation binding owns route/index custody and candidate identity
+reservation, while the commit phase owns failure attachment and diagnostics.
+An unknown structural head still maps to MissingMergeBase, but an indexed cold
+body must either readmit successfully or return the exact storage refusal.
+
+Plan: first produce two entities, a shared fork base, a source update to the
+first entity followed by a source-head update to the second, and a conflicting
+target update to the first. Reopen the real checkpoint/journal through the
+fault-selectable cold source. Compare against producer-derived conflict facts,
+then inject all six independently classified failure cases into the intermediate
+source envelope through both doors. Preserve the position-reservation/journal
+frontiers, retry only unproven damage, and prove accepted retries retain the
+real overlap. Add an explicit execution-taking demand to the route/index owner;
+move preparation merge inspection into its own named child module and thread
+that request through authoritative history resolution. Keep one route/cell
+mechanism. No resident-only compatibility path remains. Run the focused matrix,
+transaction/merge history courts, owner clippy, fmt, caps, boundary and context;
+the final full lanes still run after the remaining matrix slices close.
+
+
+World completed green after d2bec84327: 265 unit plus 41 integration tests
+passed; three integration tests were ignored. The compile-fail contract court
+passed. The nonhead merge reproducer then failed for the intended product
+reason: transaction merge-parent validation published commit 6 with parents 5
+and 4 and no changed records, although intermediate source commit 3 overlapped
+target entity A. It had silently filtered the cold intermediate body away.
+The corrected preparation operation explicitly demands its indexed delta cells
+and carries the request through the commit history phase. Metadata-only head
+receipts remain available independently of body warmth. Source/storage failure
+uses the existing pre-effect preparation denial; structural conflicts retain
+their existing diagnostics. The named child module needs an explicit #[path]
+because this owner itself is loaded by a path attribute; the first corrected
+build exposed and repaired that module-location mistake. The focused reproducer
+and all 18 nonhead envelope refusal cells passed. The matrix now also checks
+that the patch-position reservation counters remain unchanged on every refusal
+and semantic overlap retry.
+
+
+Nonhead merge closure verification: full Relational lib passed 1980, failed
+zero, ignored 31; the focused two courts passed, including all 18 refusal cells.
+The reservation-counter assertions passed in the full owner run. Owner clippy,
+formatting, dirty line caps and agent-context passed. No tests were removed or
+weakened; the original conflict diagnostics and missing-parent semantics remain.
+The matrix ledger now inventories 996 refusal cells plus 54 explicit
+unavailable-history success cells. Boundary-check will run again as part of the
+remaining milestone gates; no new public type or alternative route was added.

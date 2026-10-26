@@ -22,6 +22,8 @@ mod cold_lineage_fixture;
 mod cold_lineage_matrix;
 #[path = "cold_lineage_nodes.rs"]
 mod cold_lineage_nodes;
+#[path = "cold_merge_history_matrix.rs"]
+mod cold_merge_history_matrix;
 #[path = "cold_merges.rs"]
 mod cold_merges;
 #[path = "cold_observation_reads.rs"]

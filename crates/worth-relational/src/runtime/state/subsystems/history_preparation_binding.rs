@@ -1,3 +1,6 @@
+#[path = "history_preparation_binding/merge_inspection.rs"]
+mod merge_inspection;
+
 use std::sync::atomic::AtomicU64;
 #[cfg(test)]
 use std::sync::atomic::Ordering;
@@ -121,84 +124,6 @@ impl RelationalPreparationHistory {
         root: Arc<RelationalBranchRoot>,
     ) -> Result<super::PreparedCanonicalPublicationRoute, &'static str> {
         RelationalCanonicalPublicationRoutes::reserve(&self.canonical_routes, envelope, root)
-    }
-
-    pub(crate) fn inspect_merge_from_bindings(
-        &self,
-        source: &crate::branch::AdmittedRelationalBranchBasis,
-        target: &crate::branch::AdmittedRelationalBranchBasis,
-    ) -> Option<crate::history::data::MergeInspection> {
-        let source_head = source.observation().commit_id()?;
-        let target_head = target.observation().commit_id()?;
-        let source_envelope = self.canonical_routes.by_commit(source_head)?;
-        let target_envelope = self.canonical_routes.by_commit(target_head)?;
-        let source_ancestors = self.ancestor_set(source_head);
-        let target_ancestors = self.ancestor_set(target_head);
-        let merge_base = source_ancestors
-            .intersection(&target_ancestors)
-            .copied()
-            .max_by_key(|commit| commit.0);
-        let base_ancestors = merge_base
-            .map(|base| self.ancestor_set(base))
-            .unwrap_or_default();
-        let source_only = source_ancestors
-            .difference(&base_ancestors)
-            .copied()
-            .collect::<Vec<_>>();
-        let target_only = target_ancestors
-            .difference(&base_ancestors)
-            .copied()
-            .collect::<Vec<_>>();
-        let source_records = self.commit_record_set(&source_only);
-        let target_records = self.commit_record_set(&target_only);
-        let conflicting_records = source_records
-            .intersection(&target_records)
-            .cloned()
-            .collect::<Vec<_>>();
-        Some(crate::history::data::MergeInspection {
-            source_branch: source.identity().branch_id().clone(),
-            target_branch: target.identity().branch_id().clone(),
-            source_head: Some(source_envelope.commit.clone()),
-            target_head: Some(target_envelope.commit.clone()),
-            merge_base,
-            source_only_commits: source_only,
-            target_only_commits: target_only,
-            can_merge: merge_base.is_some() && conflicting_records.is_empty(),
-            conflicting_records,
-        })
-    }
-
-    fn ancestor_set(&self, start: CommitId) -> std::collections::BTreeSet<CommitId> {
-        let mut found = std::collections::BTreeSet::new();
-        let mut pending = vec![start];
-        while let Some(commit) = pending.pop() {
-            if !found.insert(commit) {
-                continue;
-            }
-            if let Some(receipt) = self.canonical_routes.indexed_receipt(commit) {
-                pending.extend(receipt.parents.iter().copied());
-            }
-        }
-        found
-    }
-
-    fn commit_record_set(
-        &self,
-        commits: &[CommitId],
-    ) -> std::collections::BTreeSet<crate::history::data::MergeConflictRecord> {
-        commits
-            .iter()
-            .filter_map(|commit| self.canonical_routes.by_commit(*commit))
-            .flat_map(|envelope| envelope.touched_record_refs().into_iter())
-            .map(|record| match record {
-                crate::transactions::data::RecordRef::Entity(id) => {
-                    crate::history::data::MergeConflictRecord::Entity(id)
-                }
-                crate::transactions::data::RecordRef::Relation(id) => {
-                    crate::history::data::MergeConflictRecord::Relation(id)
-                }
-            })
-            .collect()
     }
 
     pub(crate) fn record_transaction_validation_attempt(&self, branch: &BranchId) {

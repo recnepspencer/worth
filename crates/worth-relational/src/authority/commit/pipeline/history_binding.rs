@@ -56,6 +56,7 @@ pub(super) fn bind_commit_history(
     let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
         admitted.phase_view().into_parts();
     let history = resolve_authoritative_history_phase(
+        execution,
         runtime,
         commit_log,
         phase_timing,

@@ -31,6 +31,23 @@ impl RelationalCanonicalPublicationRoutes {
             .filter(|route| route.is_visible())
             .map(|route| route.envelope.clone())
     }
+    pub(crate) fn demand_envelope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        let cell = self.performed_envelope_residency(id).or_else(|| {
+            self.checkpoint_catalog
+                .read()
+                .unwrap_or_else(|error| error.into_inner())
+                .get(&id)
+                .map(|artifact| artifact.envelope_residency())
+        });
+        cell.map(|cell| cell.demand(execution, 1 << 30)).transpose()
+    }
     pub(crate) fn indexed_receipt(&self, id: CommitId) -> Option<RelationalCommitReceipt> {
         if let Some(route) = self.by_commit.get(&id)
             && route.is_visible()
