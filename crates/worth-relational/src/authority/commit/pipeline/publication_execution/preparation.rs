@@ -1,3 +1,4 @@
+mod preparation_denial;
 use std::sync::Arc;
 
 use super::super::artifact_execution::preparation::PublicationPreparation;
@@ -246,12 +247,8 @@ pub(super) fn prepare_publication_phase(
             publication_schema_registry.as_ref(),
             output_positions,
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-            .with_commit_log(commit_log.clone())
+        .map_err(|denial| {
+            preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())

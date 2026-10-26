@@ -33,6 +33,7 @@ pub use publication::{
 pub(crate) use publication::{
     PreparedIndexRefreshBasis, PreparedRelationalCandidateAdmissionStop,
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,
+    PublicationPreparationDenial,
 };
 pub use publication::{
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
