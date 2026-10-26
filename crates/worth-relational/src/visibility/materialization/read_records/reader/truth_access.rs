@@ -9,28 +9,35 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            crate::visibility::materialization::read_records::read_work::point_with_quote(
-                execution,
-                || {
-                    super::super::read_work::record_quote::entity_for_id(
-                        state,
-                        &self.runtime.config.schema.registry,
-                        entity_id,
-                        KindScanVisibility::for_version(self.runtime, version_id),
-                    )
-                },
-                || {
-                    self.authoritative_entity_record_for_id_at_version(state, entity_id, version_id)
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                crate::visibility::materialization::read_records::read_work::point_with_quote(
+                    execution,
+                    || {
+                        super::super::read_work::record_quote::entity_for_id(
+                            state,
+                            &self.runtime.config.schema.registry,
+                            entity_id,
+                            KindScanVisibility::for_version(self.runtime, version_id),
+                        )
+                    },
+                    || {
+                        self.authoritative_entity_record_for_id_at_version(
+                            state, entity_id, version_id,
+                        )
                         .filter(|record| record.lifecycle == RecordLifecycleState::Live)
-                },
-                |record| {
-                    record
-                        .as_ref()
-                        .map_or(0, super::super::read_footprint::entity)
-                },
-            )
-        })
+                    },
+                    |record| {
+                        record
+                            .as_ref()
+                            .map_or(0, super::super::read_footprint::entity)
+                    },
+                )
+            },
+        )
     }
 
     pub fn visible_relation_at_version(
@@ -40,32 +47,37 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            crate::visibility::materialization::read_records::read_work::point_with_quote(
-                execution,
-                || {
-                    super::super::read_work::record_quote::relation_for_id(
-                        state,
-                        &self.runtime.config.schema.registry,
-                        relation_id,
-                        KindScanVisibility::for_version(self.runtime, version_id),
-                    )
-                },
-                || {
-                    self.authoritative_relation_record_for_id_at_version(
-                        state,
-                        relation_id,
-                        version_id,
-                    )
-                    .filter(|record| record.lifecycle == RecordLifecycleState::Live)
-                },
-                |record| {
-                    record
-                        .as_ref()
-                        .map_or(0, super::super::read_footprint::relation)
-                },
-            )
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                crate::visibility::materialization::read_records::read_work::point_with_quote(
+                    execution,
+                    || {
+                        super::super::read_work::record_quote::relation_for_id(
+                            state,
+                            &self.runtime.config.schema.registry,
+                            relation_id,
+                            KindScanVisibility::for_version(self.runtime, version_id),
+                        )
+                    },
+                    || {
+                        self.authoritative_relation_record_for_id_at_version(
+                            state,
+                            relation_id,
+                            version_id,
+                        )
+                        .filter(|record| record.lifecycle == RecordLifecycleState::Live)
+                    },
+                    |record| {
+                        record
+                            .as_ref()
+                            .map_or(0, super::super::read_footprint::relation)
+                    },
+                )
+            },
+        )
     }
 
     pub fn visible_entities_of_kind(
@@ -76,7 +88,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
         edition
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
@@ -116,12 +128,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        crate::storage::overlay::PartitionAccess::demand_full_partition(
-            &edition,
-            execution,
-            partition_id,
-        )
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        edition
+            .demand_partition_with_symbols(execution, &self.runtime.services.symbols, partition_id)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
@@ -152,7 +161,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
         edition
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
@@ -193,12 +202,9 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        crate::storage::overlay::PartitionAccess::demand_full_partition(
-            &edition,
-            execution,
-            partition_id,
-        )
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        edition
+            .demand_partition_with_symbols(execution, &self.runtime.services.symbols, partition_id)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
@@ -229,12 +235,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<Vec<AspectKey>>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        crate::storage::overlay::PartitionAccess::demand_full_partition(
-            &edition,
-            execution,
-            entity_id.partition_id,
-        )
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        edition
+            .demand_partition_with_symbols(
+                execution,
+                &self.runtime.services.symbols,
+                entity_id.partition_id,
+            )
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {
@@ -294,12 +301,13 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Option<Vec<AspectKey>>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.storage_access().current_edition();
-        crate::storage::overlay::PartitionAccess::demand_full_partition(
-            &edition,
-            execution,
-            relation_id.partition_id,
-        )
-        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        edition
+            .demand_partition_with_symbols(
+                execution,
+                &self.runtime.services.symbols,
+                relation_id.partition_id,
+            )
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| {

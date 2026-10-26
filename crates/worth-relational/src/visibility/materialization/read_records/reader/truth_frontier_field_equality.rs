@@ -39,7 +39,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .collect::<BTreeSet<_>>()
         {
             edition
-                .demand_full_partition(execution, partition)
+                .demand_partition_with_symbols(execution, &self.runtime.services.symbols, partition)
                 .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         }
         crate::visibility::materialization::read_records::read_request::checked(execution, || {

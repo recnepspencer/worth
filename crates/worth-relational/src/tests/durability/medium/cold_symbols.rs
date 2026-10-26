@@ -287,3 +287,6 @@ fn a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touch
     );
     release_test_commit_snapshot(&fixture.runtime, &committed);
 }
+
+#[path = "cold_symbol_read_doors.rs"]
+mod cold_symbol_read_doors;

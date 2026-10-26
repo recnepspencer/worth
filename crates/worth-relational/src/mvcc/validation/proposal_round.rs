@@ -53,6 +53,7 @@ impl RelationalPreparationRuntime {
             self.mirror_residency
                 .demand(
                     execution,
+                    &self.services.symbols,
                     basis.identity().branch_id(),
                     prepared
                         .prepared

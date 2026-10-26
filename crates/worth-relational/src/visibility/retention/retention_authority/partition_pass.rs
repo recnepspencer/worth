@@ -217,7 +217,11 @@ mod tests {
         let execution = worth_execution::ExecutionRequest::serial(&request);
         let mut writer = runtime
             .partitions
-            .demand_resident_edit(&execution, &runtime.services.instrumentation)
+            .demand_resident_edit(
+                &execution,
+                &runtime.services.instrumentation,
+                &runtime.services.symbols,
+            )
             .unwrap();
         let scans = Cell::new(0);
         writer

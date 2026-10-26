@@ -32,21 +32,26 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         crate::execution::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            crate::visibility::materialization::read_records::read_request::checked(
-                execution,
-                || {
-                    self.bounded_relations_for_frontier_at_version(
-                        state,
-                        entity_ids,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Outgoing,
-                        maximum_work_units,
-                    )
-                },
-            )
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                crate::visibility::materialization::read_records::read_request::checked(
+                    execution,
+                    || {
+                        self.bounded_relations_for_frontier_at_version(
+                            state,
+                            entity_ids,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Outgoing,
+                            maximum_work_units,
+                        )
+                    },
+                )
+            },
+        )
     }
 
     pub fn bounded_incoming_relations_for_frontier_at_version(
@@ -61,21 +66,26 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         crate::execution::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            crate::visibility::materialization::read_records::read_request::checked(
-                execution,
-                || {
-                    self.bounded_relations_for_frontier_at_version(
-                        state,
-                        entity_ids,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Incoming,
-                        maximum_work_units,
-                    )
-                },
-            )
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                crate::visibility::materialization::read_records::read_request::checked(
+                    execution,
+                    || {
+                        self.bounded_relations_for_frontier_at_version(
+                            state,
+                            entity_ids,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Incoming,
+                            maximum_work_units,
+                        )
+                    },
+                )
+            },
+        )
     }
 
     fn bounded_relations_for_frontier_at_version(

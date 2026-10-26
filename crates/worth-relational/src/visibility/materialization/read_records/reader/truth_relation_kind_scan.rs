@@ -40,7 +40,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
     > {
         let edition = self.runtime.storage_access().current_edition();
         edition
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,

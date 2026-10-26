@@ -31,7 +31,7 @@ impl<'runtime> InspectionAccess<'runtime> {
     > {
         self.runtime
             .acquire_partition_edition()
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(Into::into)
     }
 

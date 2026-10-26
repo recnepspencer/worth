@@ -40,7 +40,11 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         let mut writer = self
             .runtime
             .partitions
-            .demand_resident_edit(execution, &self.runtime.services.instrumentation)
+            .demand_resident_edit(
+                execution,
+                &self.runtime.services.instrumentation,
+                &self.runtime.services.symbols,
+            )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let mut branch_pinned_entities = 0;
         let mut replay_pinned_entities = 0;
@@ -120,7 +124,11 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
         let mut writer = self
             .runtime
             .partitions
-            .demand_resident_edit(execution, &self.runtime.services.instrumentation)
+            .demand_resident_edit(
+                execution,
+                &self.runtime.services.instrumentation,
+                &self.runtime.services.symbols,
+            )
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let mut reclaimed = Vec::new();
         let mut outcome = RetentionPassOutcome {

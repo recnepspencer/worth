@@ -3,7 +3,7 @@ use super::*;
 use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
-enum ReadDoor {
+pub(super) enum ReadDoor {
     GraphInspection,
     ConnectivityInspection,
     NeighborInspection,
@@ -34,7 +34,37 @@ enum ReadDoor {
 }
 
 impl ReadDoor {
-    fn run(
+    pub(super) const ALL: [Self; 27] = [
+        Self::GraphInspection,
+        Self::ConnectivityInspection,
+        Self::NeighborInspection,
+        Self::StructuralInspection,
+        Self::RetentionSummary,
+        Self::RecordRetention,
+        Self::RetentionInspection,
+        Self::RetentionPass,
+        Self::StorageStatistics,
+        Self::PartitionStatistics,
+        Self::ChunkSummary,
+        Self::ChunkDiagnostics,
+        Self::Entity,
+        Self::EntityAspects,
+        Self::KindScan,
+        Self::PartitionKindScan,
+        Self::BoundedKindScan,
+        Self::RelationKindScan,
+        Self::BoundedRelationKindScan,
+        Self::Outgoing,
+        Self::Incoming,
+        Self::BoundedOutgoing,
+        Self::BoundedIncoming,
+        Self::OutgoingFrontier,
+        Self::IncomingFrontier,
+        Self::Observation,
+        Self::Version,
+    ];
+
+    pub(super) fn run(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalRuntime,
@@ -220,35 +250,7 @@ impl ReadDoor {
 fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    for door in [
-        ReadDoor::GraphInspection,
-        ReadDoor::ConnectivityInspection,
-        ReadDoor::NeighborInspection,
-        ReadDoor::StructuralInspection,
-        ReadDoor::RetentionSummary,
-        ReadDoor::RecordRetention,
-        ReadDoor::RetentionInspection,
-        ReadDoor::RetentionPass,
-        ReadDoor::StorageStatistics,
-        ReadDoor::PartitionStatistics,
-        ReadDoor::ChunkSummary,
-        ReadDoor::ChunkDiagnostics,
-        ReadDoor::Entity,
-        ReadDoor::EntityAspects,
-        ReadDoor::KindScan,
-        ReadDoor::PartitionKindScan,
-        ReadDoor::BoundedKindScan,
-        ReadDoor::RelationKindScan,
-        ReadDoor::BoundedRelationKindScan,
-        ReadDoor::Outgoing,
-        ReadDoor::Incoming,
-        ReadDoor::BoundedOutgoing,
-        ReadDoor::BoundedIncoming,
-        ReadDoor::OutgoingFrontier,
-        ReadDoor::IncomingFrontier,
-        ReadDoor::Observation,
-        ReadDoor::Version,
-    ] {
+    for door in ReadDoor::ALL {
         let (source, counter, entity) = fixture(execution, false);
         let mut runtime = durable_runtime_with_test_schema();
         let plan = runtime

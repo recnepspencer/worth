@@ -6,6 +6,7 @@ use crate::storage::overlay::{PartitionAccess, PartitionState};
 use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
 
 mod resident;
+mod symbol_read;
 pub(crate) use resident::ResidentPartitionEdition;
 
 /// The authoritative record substrate keyed by partition.
@@ -37,6 +38,29 @@ pub(crate) struct PartitionEdition {
 }
 
 impl PartitionEdition {
+    pub(crate) fn with_symbol_admission<'read>(
+        &'read self,
+        symbols: &'read crate::runtime::RuntimeSymbolTable,
+    ) -> impl PartitionAccess + 'read {
+        symbol_read::SymbolAdmittedEdition {
+            edition: self,
+            symbols,
+        }
+    }
+
+    pub(crate) fn demand_partition_with_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.demand_partition(execution, id)?;
+        if let Some(region) = self.partitions.get(&id) {
+            region.lease().admit_symbols(execution, symbols)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn new(partitions: PartitionMap) -> Self {
         Self {
             partitions: Arc::new(partitions),
@@ -111,12 +135,14 @@ impl PartitionEdition {
     pub(crate) fn demand_all(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<ResidentPartitionEdition, crate::storage::residency::RelationalResidencyDemandFailure>
     {
         crate::execution::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for region in self.partitions.values() {
             region.demand_full(execution, 1 << 30)?;
+            region.lease().admit_symbols(execution, symbols)?;
         }
         Ok(ResidentPartitionEdition::new(self.clone()))
     }

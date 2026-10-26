@@ -1357,3 +1357,20 @@ Full region and a damaged history-only symbol page, retaining sticky refusal,
 Head availability and unchanged journal checks. Memory-only execution remains
 the existing no-cold-source fast path. Candidate publication and lineage/event
 paging remain subsequent work, not claims of this slice.
+
+The mirror dictionary cutover passes the four cold-symbol courts (including
+all 27 healthy/damaged public read doors), the full native library (1,951
+passed, 31 existing ignores), all three CI clippy commands, formatting and
+dirty line caps. Boundary-check and agent-context also return zero. Function
+QA found no scan errors: the read-door adapter is a closed typed operation
+table, existing read/retention algorithms keep their named responsibilities,
+and the fixture follows real admission, publication, capture and reopen.
+
+Two new-test failures were corrected honestly. The first compile used the
+fixture filename rather than its declared `view_levels` module name; fixing
+the explicit import removed the cascading wrong-fixture field errors. The
+first executed matrix expected the mirror to retain a history-only value after
+the producer had released its earlier snapshot. That fixture was wrong: retain
+the real produced snapshot across the update and assert that mirror metadata
+history actually contains multiple versions before checkpointing. Every
+original failure assertion is retained and the corrected matrix passes.

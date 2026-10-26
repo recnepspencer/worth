@@ -121,6 +121,7 @@ impl super::BranchBoundRelationalTransaction {
         }
         mirror.demand(
             execution,
+            symbols,
             self.basis.identity().branch_id(),
             partitions.iter().copied(),
         )?;

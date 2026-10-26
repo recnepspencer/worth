@@ -57,12 +57,13 @@ impl StorageSubsystem {
         &'subsystem self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         instrumentation: &'subsystem RuntimeInstrumentation,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<
         ResidentPartitionEditionWriter<'subsystem>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
         loop {
-            self.acquire().demand_all(execution)?;
+            self.acquire().demand_all(execution, symbols)?;
             match self
                 .edit(instrumentation, PartitionEditionCopyLane::Ordinary)
                 .accept_resident()

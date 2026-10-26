@@ -6,13 +6,13 @@ use crate::transactions::data::{EntityMutationIntent, UpdateEntityFieldsIntent};
 use worth_execution::ExecutionImmutableBytes;
 use worth_foundational::facade::{AspectValue, InternedString};
 
-struct ViewFixture {
-    runtime: crate::runtime::RelationalRuntime,
-    source: Arc<MemberSource>,
-    entity: crate::identity::data::EntityId,
-    historical: Symbol,
-    current: Symbol,
-    historical_page: RelationalDurableMemberLocator,
+pub(super) struct ViewFixture {
+    pub(super) runtime: crate::runtime::RelationalRuntime,
+    pub(super) source: Arc<MemberSource>,
+    pub(super) entity: crate::identity::data::EntityId,
+    pub(super) historical: Symbol,
+    pub(super) current: Symbol,
+    pub(super) historical_page: RelationalDurableMemberLocator,
 }
 
 #[test]
@@ -137,7 +137,7 @@ fn head_symbols_never_cover_full_history_or_inherit_its_page_damage() {
     }
 }
 
-fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ViewFixture {
+pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ViewFixture {
     let producer = durable_runtime_with_test_schema();
     let (_, basis) = producer
         .observe_branch(&producer.main_branch_identity())
@@ -150,13 +150,13 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ViewFixtur
             .unwrap();
     }
     drop(basis);
-    let entity = publish_text(
+    let (entity, _retained_before_update) = publish_text(
         execution,
         &producer,
         TextMutation::Create,
         "paged-view-value-0300",
     );
-    publish_text(
+    let (_, _retained_after_update) = publish_text(
         execution,
         &producer,
         TextMutation::Update(entity),
@@ -165,6 +165,19 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ViewFixtur
     let symbols = producer.services.symbols.interner_snapshot();
     let historical = symbols.symbol("paged-view-value-0300").unwrap();
     let current = symbols.symbol("paged-view-value-0600").unwrap();
+    let mirror = producer.acquire_partition_edition();
+    assert!(
+        mirror
+            .partition(entity.partition_id)
+            .unwrap()
+            .entity_arena
+            .metadata_history_at(entity.slot_index())
+            .unwrap()
+            .len()
+            > 1,
+        "the retained producer snapshot must keep real historical mirror content"
+    );
+    drop(mirror);
     let (recovery, source, _) = fixture_from_runtime(execution, producer, false, 0);
     #[derive(serde::Deserialize)]
     struct Input {
@@ -248,7 +261,10 @@ fn publish_text(
     runtime: &crate::runtime::RelationalRuntime,
     mutation: TextMutation,
     text: &str,
-) -> crate::identity::data::EntityId {
+) -> (
+    crate::identity::data::EntityId,
+    crate::snapshots::data::SnapshotHandle,
+) {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -284,6 +300,5 @@ fn publish_text(
         .unwrap();
     let outcome = transaction.commit(execution, runtime).unwrap();
     let entity = changed_entities(&outcome)[0];
-    release_test_commit_snapshot(runtime, &outcome);
-    entity
+    (entity, outcome.snapshot.clone())
 }

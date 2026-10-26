@@ -47,6 +47,7 @@ pub(super) fn prepare_merge_draft(
             .mirror_residency
             .demand(
                 execution,
+                &runtime.services.symbols,
                 basis.identity().branch_id(),
                 accepted
                     .scope

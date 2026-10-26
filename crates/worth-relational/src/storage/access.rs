@@ -70,7 +70,7 @@ impl<'runtime> StorageAccess<'runtime> {
     ) -> Result<Vec<PartitionStorageStats>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self
             .current_edition()
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let answer = crate::storage::partition::storage_stats::partition_storage_stats(
             self.runtime,
@@ -87,7 +87,7 @@ impl<'runtime> StorageAccess<'runtime> {
     ) -> Result<StorageStats, crate::execution::RelationalExecutionDenialCause> {
         let edition = self
             .current_edition()
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let answer =
             crate::storage::partition::storage_stats::storage_stats(self.runtime, &edition);
@@ -102,7 +102,7 @@ impl<'runtime> StorageAccess<'runtime> {
     ) -> Result<ChunkedStorageSummary, crate::execution::RelationalExecutionDenialCause> {
         let edition = self
             .current_edition()
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let answer = crate::storage::partition::chunks::chunked_storage_summary(
             self.runtime,
@@ -120,7 +120,7 @@ impl<'runtime> StorageAccess<'runtime> {
     ) -> Result<ChunkDiagnostics, crate::execution::RelationalExecutionDenialCause> {
         let edition = self
             .current_edition()
-            .demand_all(execution)
+            .demand_all(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         let answer = crate::storage::partition::chunks::chunk_diagnostics(
             self.runtime,

@@ -9,10 +9,12 @@ use worth_foundational::PartitionIdentity;
 /// discovered footprint. All loads run under the original request.
 pub(crate) fn with_full_residency<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    source: &dyn crate::storage::overlay::PartitionAccess,
+    source: &crate::runtime::PartitionEdition,
+    symbols: &crate::runtime::RuntimeSymbolTable,
     read: impl FnMut(&dyn crate::storage::overlay::PartitionAccess) -> Result<T, Cause>,
 ) -> Result<T, Cause> {
-    crate::storage::residency::probe_full(execution, source, read).map_err(Cause::from)?
+    crate::storage::residency::probe_full(execution, &source.with_symbol_admission(symbols), read)
+        .map_err(Cause::from)?
 }
 
 struct MaterializedRead<T> {

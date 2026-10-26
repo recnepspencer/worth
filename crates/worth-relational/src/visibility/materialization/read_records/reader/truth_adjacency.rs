@@ -24,33 +24,38 @@ impl VisibilityReadContext<'_> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            super::super::read_work::metered_with_memory(
-                execution,
-                |context, memory| {
-                    self.relations_of_kind_at_version(
-                        state,
-                        entity_id,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Outgoing,
-                        &mut |units, _, _| {
-                            context
-                                .checkpoint(units)
-                                .map_err(crate::execution::denial::kernel_stop)
-                        },
-                        memory,
-                        &std::convert::identity,
-                    )
-                    .map(BoundedAdjacencyTruthRead::into_records)
-                },
-                |answer| {
-                    answer.as_ref().map_or(0, |records| {
-                        super::super::read_footprint::relations(records)
-                    })
-                },
-            )?
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                super::super::read_work::metered_with_memory(
+                    execution,
+                    |context, memory| {
+                        self.relations_of_kind_at_version(
+                            state,
+                            entity_id,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Outgoing,
+                            &mut |units, _, _| {
+                                context
+                                    .checkpoint(units)
+                                    .map_err(crate::execution::denial::kernel_stop)
+                            },
+                            memory,
+                            &std::convert::identity,
+                        )
+                        .map(BoundedAdjacencyTruthRead::into_records)
+                    },
+                    |answer| {
+                        answer.as_ref().map_or(0, |records| {
+                            super::super::read_footprint::relations(records)
+                        })
+                    },
+                )?
+            },
+        )
     }
     pub fn bounded_outgoing_relations_of_kind_at_version(
         &self,
@@ -64,33 +69,42 @@ impl VisibilityReadContext<'_> {
         crate::execution::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            super::super::read_work::scan_with_memory(
-                execution,
-                |context, memory| {
-                    self.relations_of_kind_at_version(
-                        state,
-                        entity_id,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Outgoing,
-                        &mut |units, examined, reserved| {
-                            if examined + reserved == maximum_work_units {
-                                return Err(super::super::native_scan_stop::NativeScanStop::Limit(
-                                    AdjacencyTruthReadLimitExceeded::new(examined, reserved),
-                                ));
-                            }
-                            context
-                                .checkpoint(units)
-                                .map_err(super::super::native_scan_stop::NativeScanStop::request)
-                        },
-                        memory,
-                        &super::super::native_scan_stop::NativeScanStop::Request,
-                    )
-                },
-                |read| super::super::read_footprint::relations(&read.records),
-            )
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                super::super::read_work::scan_with_memory(
+                    execution,
+                    |context, memory| {
+                        self.relations_of_kind_at_version(
+                            state,
+                            entity_id,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Outgoing,
+                            &mut |units, examined, reserved| {
+                                if examined + reserved == maximum_work_units {
+                                    return Err(
+                                        super::super::native_scan_stop::NativeScanStop::Limit(
+                                            AdjacencyTruthReadLimitExceeded::new(
+                                                examined, reserved,
+                                            ),
+                                        ),
+                                    );
+                                }
+                                context.checkpoint(units).map_err(
+                                    super::super::native_scan_stop::NativeScanStop::request,
+                                )
+                            },
+                            memory,
+                            &super::super::native_scan_stop::NativeScanStop::Request,
+                        )
+                    },
+                    |read| super::super::read_footprint::relations(&read.records),
+                )
+            },
+        )
     }
     pub fn incoming_relations_of_kind_at_version(
         &self,
@@ -100,33 +114,38 @@ impl VisibilityReadContext<'_> {
         version_id: crate::identity::data::VersionId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            super::super::read_work::metered_with_memory(
-                execution,
-                |context, memory| {
-                    self.relations_of_kind_at_version(
-                        state,
-                        entity_id,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Incoming,
-                        &mut |units, _, _| {
-                            context
-                                .checkpoint(units)
-                                .map_err(crate::execution::denial::kernel_stop)
-                        },
-                        memory,
-                        &std::convert::identity,
-                    )
-                    .map(BoundedAdjacencyTruthRead::into_records)
-                },
-                |answer| {
-                    answer.as_ref().map_or(0, |records| {
-                        super::super::read_footprint::relations(records)
-                    })
-                },
-            )?
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                super::super::read_work::metered_with_memory(
+                    execution,
+                    |context, memory| {
+                        self.relations_of_kind_at_version(
+                            state,
+                            entity_id,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Incoming,
+                            &mut |units, _, _| {
+                                context
+                                    .checkpoint(units)
+                                    .map_err(crate::execution::denial::kernel_stop)
+                            },
+                            memory,
+                            &std::convert::identity,
+                        )
+                        .map(BoundedAdjacencyTruthRead::into_records)
+                    },
+                    |answer| {
+                        answer.as_ref().map_or(0, |records| {
+                            super::super::read_footprint::relations(records)
+                        })
+                    },
+                )?
+            },
+        )
     }
     pub fn bounded_incoming_relations_of_kind_at_version(
         &self,
@@ -140,33 +159,42 @@ impl VisibilityReadContext<'_> {
         crate::execution::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
-        super::super::read_work::with_full_residency(execution, &edition, |state| {
-            super::super::read_work::scan_with_memory(
-                execution,
-                |context, memory| {
-                    self.relations_of_kind_at_version(
-                        state,
-                        entity_id,
-                        kind_id,
-                        version_id,
-                        AdjacencyDirection::Incoming,
-                        &mut |units, examined, reserved| {
-                            if examined + reserved == maximum_work_units {
-                                return Err(super::super::native_scan_stop::NativeScanStop::Limit(
-                                    AdjacencyTruthReadLimitExceeded::new(examined, reserved),
-                                ));
-                            }
-                            context
-                                .checkpoint(units)
-                                .map_err(super::super::native_scan_stop::NativeScanStop::request)
-                        },
-                        memory,
-                        &super::super::native_scan_stop::NativeScanStop::Request,
-                    )
-                },
-                |read| super::super::read_footprint::relations(&read.records),
-            )
-        })
+        super::super::read_work::with_full_residency(
+            execution,
+            &edition,
+            &self.runtime.services.symbols,
+            |state| {
+                super::super::read_work::scan_with_memory(
+                    execution,
+                    |context, memory| {
+                        self.relations_of_kind_at_version(
+                            state,
+                            entity_id,
+                            kind_id,
+                            version_id,
+                            AdjacencyDirection::Incoming,
+                            &mut |units, examined, reserved| {
+                                if examined + reserved == maximum_work_units {
+                                    return Err(
+                                        super::super::native_scan_stop::NativeScanStop::Limit(
+                                            AdjacencyTruthReadLimitExceeded::new(
+                                                examined, reserved,
+                                            ),
+                                        ),
+                                    );
+                                }
+                                context.checkpoint(units).map_err(
+                                    super::super::native_scan_stop::NativeScanStop::request,
+                                )
+                            },
+                            memory,
+                            &super::super::native_scan_stop::NativeScanStop::Request,
+                        )
+                    },
+                    |read| super::super::read_footprint::relations(&read.records),
+                )
+            },
+        )
     }
     fn relations_of_kind_at_version<E>(
         &self,
