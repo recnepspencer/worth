@@ -116,7 +116,7 @@ impl RelationalPreparationRuntime {
             &prepared.working_state,
             &prepared.merged_plan,
             prepared.schema_authority.as_ref(),
-            proposed_version,
+            &proposal_identity,
             execution,
             validation_input.intent().materialization_mode(),
         )?;
@@ -128,6 +128,7 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
+                proposed_invariant_state.aggregate_source(),
                 execution,
                 &scope_control,
             )?;

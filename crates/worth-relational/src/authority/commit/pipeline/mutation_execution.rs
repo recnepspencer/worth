@@ -76,7 +76,7 @@ pub(super) fn mutate_commit_execution(
         .prepared_mut()
         .admitted_mut()
         .take_prevalidated_mutation_sensitive();
-    let (admitted, working_state) = validated.prepared_mut().mutation_parts();
+    let (admitted, working_state, aggregate_source) = validated.prepared_mut().mutation_parts();
     let (transaction_id, validation_input, merged_plan, _, commit_log, phase_timing) =
         admitted.phase_view().into_parts();
     let mutation = run_authoritative_mutation_phase(
@@ -93,6 +93,7 @@ pub(super) fn mutate_commit_execution(
             proposal_identity: &proposal_identity,
             prevalidated_mutation_sensitive,
             record_allocations,
+            aggregate_source,
             execution,
         },
         control,

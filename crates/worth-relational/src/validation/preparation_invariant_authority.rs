@@ -26,6 +26,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+        aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
@@ -37,6 +38,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
+            aggregate,
             execution,
             control,
         )?;
@@ -72,6 +74,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+        aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
@@ -83,6 +86,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
+            aggregate,
             execution,
             control,
         )?;
@@ -119,6 +123,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+        aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
@@ -130,6 +135,7 @@ impl PreparationInvariantAuthority<'_> {
             version,
             plan,
             proposal,
+            aggregate,
             execution,
             control,
         )?;
@@ -169,6 +175,7 @@ impl PreparationInvariantAuthority<'_> {
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
         proposal: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+        aggregate: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
@@ -203,6 +210,8 @@ impl PreparationInvariantAuthority<'_> {
                 proposal.cloned(),
             ),
         };
+        let aggregate = aggregate.map(|source| source.invocation(plan));
+        let observation = observation.with_aggregate(aggregate);
         let observation_kind = observation.kind();
         let view = InvariantRuntimeView::from_preparation_for_state(self.runtime, selected.state());
         let plan_contract = Some(InvariantPlanContract::from_merged_plan(plan));
@@ -243,7 +252,11 @@ impl PreparationInvariantAuthority<'_> {
                 request.proposal_identity(),
             )));
         }
-        InvariantEngine::from_view(&view).execute(execution, request)
+        let result = InvariantEngine::from_view(&view).execute(execution, request);
+        match aggregate {
+            Some(source) => source.settle(result, execution, control),
+            None => result,
+        }
     }
 
     fn metadata(

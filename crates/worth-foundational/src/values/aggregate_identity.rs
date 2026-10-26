@@ -1,6 +1,13 @@
 //! Portable graph aggregate names; these values grant no write authority.
 use serde::{Deserialize, Serialize};
 
+/// Meaning of one occurrence-qualified graph aggregate lineage event.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub enum AggregateLineageKind {
+    SplitFrom,
+    MergedInto,
+}
+
 /// Stable namespace of one declared aggregate definition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct AggregateDefinitionIdentity([u8; 32]);

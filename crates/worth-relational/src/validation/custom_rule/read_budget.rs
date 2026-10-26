@@ -11,6 +11,29 @@ pub struct CustomInvariantReadBudget<'borrow> {
 }
 
 impl<'borrow> CustomInvariantReadBudget<'borrow> {
+    pub(crate) fn debit_native_rule_work(
+        &self,
+        units: u64,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        use crate::execution::RelationalExecutionDenialCause as Cause;
+        self.execution.check_live().map_err(Cause::from)?;
+        if self.work.try_debit_native_work(units) {
+            return Ok(());
+        }
+        Err(match self.work.leased_stop() {
+            Some(CustomPreparationStop::Cancelled) => Cause::Cancelled,
+            Some(CustomPreparationStop::DeadlineElapsed) => Cause::DeadlineElapsed,
+            Some(CustomPreparationStop::MemoryAdmission(denial)) => {
+                crate::execution::denial::lease_denial(
+                    worth_execution::LeaseDenial::MemoryExhausted(denial),
+                )
+            }
+            Some(CustomPreparationStop::MemoryExhausted) => Cause::ScratchCapacityExceeded,
+            Some(CustomPreparationStop::UncheckedCustomKernel) => Cause::UncheckedCustomKernel,
+            _ => Cause::WorkExhausted,
+        })
+    }
+
     pub(super) fn new(
         execution: worth_execution::ExecutionRequest<'borrow, 'borrow>,
         work: &'borrow CustomInvariantWorkMeter,
@@ -41,7 +64,7 @@ impl<'borrow> CustomInvariantReadBudget<'borrow> {
             .ok_or_else(|| self.refusal(StructuralReadError::WorkBudgetExceeded))
     }
 
-    pub(super) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
+    pub(crate) fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenialKind {
         use super::CustomInvariantInterruption;
         match self.work.leased_stop() {
             Some(CustomPreparationStop::Cancelled) => {

@@ -3,6 +3,7 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use worth_execution::ExecutionLeaseStatus;
 mod memory;
+mod native_allowance;
 use memory::PreparationMemory;
 
 // Fixed-size ID, BTree node, and wrapper retention for materializing

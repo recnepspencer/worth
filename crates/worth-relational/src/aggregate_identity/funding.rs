@@ -34,6 +34,8 @@ pub(super) struct AggregateWork<'a, 'scope, 'authority, 'memory> {
     context: &'a mut worth_execution::MapKernelContext<'scope, 'authority>,
     memory: Option<&'a mut worth_execution::ExecutionResultMemory<'memory>>,
     claimed: u64,
+    rule_allowance:
+        &'a mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
 }
 impl AggregateWork<'_, '_, '_, '_> {
     pub(super) fn checkpoint(&mut self, units: u64) -> BuildResult<()> {
@@ -42,7 +44,9 @@ impl AggregateWork<'_, '_, '_, '_> {
         } else {
             self.context.poll()
         }
-        .map_err(MapKernelFailure::Stop)
+        .map_err(MapKernelFailure::Stop)?;
+        (self.rule_allowance)(units)
+            .map_err(|cause| MapKernelFailure::Domain(PlanDenial::Execution(cause)))
     }
     pub(super) fn retain(&mut self, bytes: u64) -> BuildResult<()> {
         self.checkpoint(1)?;
@@ -73,6 +77,23 @@ pub(super) fn run<T: ChargedBytes>(
     budget: Option<&crate::execution::RequestWorkBudget>,
     build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
 ) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
+    run_with_allowance(execution, budget, &mut |_| Ok(()), build)
+}
+
+pub(super) fn run_in_custom_read<T: ChargedBytes>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
+) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
+    run_with_allowance(execution, None, allowance, build)
+}
+
+fn run_with_allowance<T: ChargedBytes>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
+) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
     let mut build = Some(build);
     enum NativeStage<T> {
         Accounted,
@@ -90,6 +111,7 @@ pub(super) fn run<T: ChargedBytes>(
                 context,
                 memory: None,
                 claimed: 0,
+                rule_allowance: &mut *allowance,
             };
             build.take().expect("one aggregate preparation")(&mut work)
                 .map(NativeStage::Unaccounted)
@@ -114,6 +136,7 @@ pub(super) fn run<T: ChargedBytes>(
                             context,
                             memory: Some(memory),
                             claimed: 0,
+                            rule_allowance: &mut *allowance,
                         };
                         build.take().expect("one aggregate preparation")(&mut work)
                     },

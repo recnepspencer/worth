@@ -10,8 +10,17 @@ pub(crate) struct AppliedInvariantState {
     working_state: WorkingState,
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
     record_allocations: Option<crate::runtime::PendingRecordAllocations>,
+    aggregate: Option<crate::aggregate_identity::AggregateProposal>,
 }
 impl AppliedInvariantState {
+    pub(crate) fn aggregate_source(
+        &self,
+    ) -> Option<crate::aggregate_identity::AggregateProposalBorrow<'_>> {
+        self.aggregate
+            .as_ref()
+            .map(|owner| owner.borrow(&self.working_state))
+    }
+
     pub(crate) fn take_record_allocations(&mut self) -> crate::runtime::PendingRecordAllocations {
         self.record_allocations
             .take()
@@ -40,10 +49,11 @@ pub(crate) fn prepare_proposed_invariant_state(
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
     schema_authority: &crate::branch::RelationalBranchRootSchemaAuthority,
-    version_id: crate::identity::data::VersionId,
+    proposal: &crate::mvcc::RelationalMutationProposalIdentity,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     materialization_mode: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
 ) -> Result<AppliedInvariantState, TransactionCommitError> {
+    let version_id = proposal.proposed_version_id();
     let lease = crate::authority::commit::pipeline::request_lease(execution);
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
@@ -94,9 +104,17 @@ pub(crate) fn prepare_proposed_invariant_state(
         &applied.effect.adjacency.deltas,
         version_id,
     );
+    let aggregate = crate::aggregate_identity::AggregateProposal::capture(
+        schema_authority,
+        selected_state,
+        proposal,
+        applied.effect,
+        materialization_mode,
+    );
     Ok(AppliedInvariantState {
         working_state: proposed,
         created_entities: applied.created_entities,
         record_allocations: Some(record_allocations),
+        aggregate,
     })
 }

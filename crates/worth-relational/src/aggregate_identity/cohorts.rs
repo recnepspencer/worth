@@ -1,7 +1,8 @@
 //! Complete affected permutation cohorts using Native frontier mechanics.
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::authority::mutation::{AdjacencyDeltaKind, MutationEffect};
+use super::changes::AggregateChanges;
+use crate::authority::mutation::AdjacencyDeltaKind;
 use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::structural_traversal::{walk as walk_native_breadth_first, BreadthFirstRead};
@@ -29,12 +30,12 @@ pub(super) fn collect(
     contract: AggregateIdentityContractDeclaration,
     before: &InvariantStateView<'_>,
     after: &InvariantStateView<'_>,
-    effect: &MutationEffect,
+    effect: &AggregateChanges,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Option<CollectedCohorts>> {
     let mut seeds = BTreeSet::new();
     let mut additions: BTreeMap<EntityId, BTreeSet<RelationId>> = BTreeMap::new();
-    for delta in &effect.adjacency.deltas {
+    for delta in &effect.adjacency {
         work.checkpoint(1)?;
         if delta.kind_id != contract.source_relation {
             continue;
@@ -52,7 +53,7 @@ pub(super) fn collect(
                 .insert(delta.relation_id);
         }
     }
-    for record in &effect.publication.changed_records {
+    for record in &effect.records {
         work.checkpoint(1)?;
         let RecordRef::Entity(entity) = record else {
             continue;
@@ -88,46 +89,58 @@ pub(super) fn collect(
         memberships: BTreeMap::new(),
     };
     for members in prior_groups {
-        let first = *members.first().expect("complete nonempty cohort");
-        let (_, entity) = membership(before, first, contract.membership_kind, work)?;
-        work.retain(extent::stored_row())?;
-        let Some(row) = read_record(before, entity) else {
+        let stored =
+            read_stored_group(before, &members, contract, &mut collected.memberships, work)?;
+        if collected.rows.contains_key(&stored.record.identity) {
             return work.invalid(PlanDenial::InvalidStoredIdentity);
-        };
-        if before
-            .entity_metadata(entity)
-            .is_none_or(|meta| meta.kind_id != contract.storage.aggregate_kind)
-            || row.definition != contract.definition
-            || row.current_anchor != Some(first)
-            || row.retired.is_some()
-            || row.identity != transition::mint(row.definition, row.born, row.seed)
-            || collected.rows.contains_key(&row.identity)
-        {
-            return work.invalid(PlanDenial::InvalidStoredIdentity);
-        }
-        for &member in &members {
-            let (relation, owner) = membership(before, member, contract.membership_kind, work)?;
-            if owner != entity {
-                return work.invalid(PlanDenial::IncompleteStoredMembership);
-            }
-            work.retain(extent::membership())?;
-            collected
-                .memberships
-                .insert(member, (relation, row.identity));
         }
         collected.prior.push(PriorAggregate {
-            identity: row.identity,
+            identity: stored.record.identity,
             members,
         });
-        collected.rows.insert(
-            row.identity,
-            StoredAggregate {
-                entity,
-                record: row,
-            },
-        );
+        collected.rows.insert(stored.record.identity, stored);
     }
     Ok(Some(collected))
+}
+
+/// One strict committed membership/row decoder, shared by collection and reads.
+pub(super) fn read_stored_group(
+    view: &InvariantStateView<'_>,
+    members: &BTreeSet<EntityId>,
+    contract: AggregateIdentityContractDeclaration,
+    memberships: &mut BTreeMap<EntityId, (RelationId, AggregateIdentity)>,
+    work: &mut AggregateWork<'_, '_, '_, '_>,
+) -> BuildResult<StoredAggregate> {
+    let Some(&first) = members.first() else {
+        return work.invalid(PlanDenial::InvalidPermutation);
+    };
+    let (_, entity) = membership(view, first, contract.membership_kind, work)?;
+    work.retain(extent::stored_row())?;
+    let Some(row) = read_record(view, entity) else {
+        return work.invalid(PlanDenial::InvalidStoredIdentity);
+    };
+    if view
+        .entity_metadata(entity)
+        .is_none_or(|meta| meta.kind_id != contract.storage.aggregate_kind)
+        || row.definition != contract.definition
+        || row.current_anchor != Some(first)
+        || row.retired.is_some()
+        || row.identity != transition::mint(row.definition, row.born, row.seed)
+    {
+        return work.invalid(PlanDenial::InvalidStoredIdentity);
+    }
+    for &member in members {
+        let (relation, owner) = membership(view, member, contract.membership_kind, work)?;
+        if owner != entity {
+            return work.invalid(PlanDenial::IncompleteStoredMembership);
+        }
+        work.retain(extent::membership())?;
+        memberships.insert(member, (relation, row.identity));
+    }
+    Ok(StoredAggregate {
+        entity,
+        record: row,
+    })
 }
 
 fn membership(
@@ -164,7 +177,7 @@ fn read_record(view: &InvariantStateView<'_>, entity: EntityId) -> Option<Aggreg
     AggregateRecord::decode(|locator| fields.get(locator.field_path().fields().first()?))
 }
 
-fn groups(
+pub(super) fn groups(
     seeds: &BTreeSet<EntityId>,
     view: &InvariantStateView<'_>,
     contract: AggregateIdentityContractDeclaration,

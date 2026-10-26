@@ -4159,3 +4159,206 @@ Remote topic is at the Slice 2 parent, and remote master remains
 `a7c68255a96569df5d8df2c6f778ad3dfd133653`. The persistent reviewer granted
 final qa-loop, qa-tests and code-quality-qa clearance for the exact 17-path topic
 commit/push. No further build is due; Phase 4 default integration remains closed.
+
+## Phase 4 Slice 4 — Native prepared aggregate handoff
+
+Slice 3 is committed/published as
+`100dcd1eeee5122bfc32ab712928079643dc7aeb`. Canonical occurrence and real
+business-record custody are now available before custom preparation. The next
+coherent prerequisite is one proposal-owned aggregate artifact, read through an
+actual Native custom rule and consumed by final consequence application. Public
+Query orbit/lineage readers, issued dependency facts and declared shapes remain
+a separate integration slice.
+
+### Boundary review
+
+`AppliedInvariantState` is proposal-lived and moves through validated/prepared
+custody. `SharedCandidateInputs` is optional and engine-execution-local;
+`PreparedCustomInvariantScope` and Query's frozen admission contain touched or
+entity/relation sets. None can own the aggregate artifact through final seal.
+Keep ownership with the applied proposal and let `InvariantObservation` and the
+Native custom read port borrow that exact owner. Do not retain an execution
+request or use a runtime-global/definition-only cache.
+
+The business interpreter already produces the authoritative adjacency deltas and
+changed-record vectors needed by cohort collection. Move those existing vectors
+into proposal custody only when aggregate definitions are enabled; drop the
+unneeded effect payload. Do not clone or rediscover them by another policy
+interpretation. Their lifetime extension remains under the existing Native
+producer/proposal allocation policy, as are working state and created bindings;
+do not call the move itself newly lease-funded. Include their actual retained
+capacities in the later preparation grant before exposing a funded read result.
+
+The Native/custom barrier is unchanged. `eligible_registrations` constructs
+custom planners only in the Custom stage after the reduced Native prefix admits
+it. The first aggregate read through that planner/context may initialize the
+proposal artifact. Native evaluators cannot obtain that port. An unread candidate
+initializes through the same owner at the existing final consequence phase.
+Malformed permutations must retain the exact Native law refusal with zero custom
+contacts. That court plus the closed initialization call graph proves ordering;
+no new counter or test door is needed.
+
+`consequence_plan::append` currently consumes the transition and discards it after
+encoding intents. Retain that same transition as immutable read data while the
+encoder builds move-only consequences. Reuse the member-to-assignment index
+rather than create another membership authority or decode the planned intents.
+Keep the prior-member/source proof: an affected member missing its proposed
+assignment refuses. A committed lookup is valid only when the owner proves the
+member unaffected. Never substitute an old identity for a proposed split/merge.
+Final history binding consumes this same prepared consequence plan rather than
+calling the transition owner again. No early allocation of private graph rows is
+needed; actual business-member identities and the occurrence already determine
+the logical output.
+
+Separate shared immutable read custody from move-only write custody. A retained
+read may outlive preparation, evaluation and final seal; final consumption must
+not require `Arc::try_unwrap`. Share the same original memory reservation through
+a private Arc, keeping one original ledger charge/activity guard. This is one
+conservative plan/projection/source retention group until its last dependent
+owner drops, not an exact live/RSS claim. Prequote new Arc/control backing and
+include it in the measured handoff. Do not resize it downward while dependent
+reads survive, reserve twice or release before transfer. Unaccounted Native work
+retains no invented payer. Late storage-materialization payment remains separate.
+
+There are two private funding entries. A custom read runs aggregate preparation
+with no forwarded `RequestWorkBudget`: the enclosing planning/worker frame owns
+that locked account, and the nested Native report charges its active original
+context once. Passing the account into this kernel would deadlock or double
+settle it. The final unread fallback keeps the existing top-level account entry.
+Both borrow the caller's original execution request and preserve its actual
+descendant, controls, memory policy and remaining work.
+
+The artifact latches its first actual typed preparation failure. The preparation
+invariant coordinator checks that failure immediately after engine execution,
+before translating a successful result's custom verdict. Restore it over success
+or its promoted `NestedStopped` wrapper, including a rule that swallowed the read
+error. Preserve other concrete engine errors and original cancellation/deadline
+precedence. Final fallback/consumption refuses the same latched failure. Do not
+reconstruct a Native cause from the custom rule's string error.
+
+The Native read port comes from the existing structural planner/context view.
+It selects an actual installed source-relation kind and actual member, checks the
+rule's business relation/member access before touching the artifact, and returns
+an opaque retained result with definition, identity, canonical members/anchor and
+this proposal's transition lineage. Canonical membership is not successor order.
+Keep proposed and committed/before-image resolution distinct, including sealed
+suspension's existing logical before-image posture. No other definition, private
+record identity, metadata write grant or global historical/latest API is exposed.
+If the result exposes `AggregateLineageKind`, move that single portable value to
+foundational and remove the old definition; preserve explicit storage tags 1/2.
+
+The persistent reviewer reviewed these boundaries under all three required QA
+skills with no remaining blocker before this written plan. Query's existing
+walk observation cannot stand in for aggregate identity/lineage evidence; future
+decision readers need an actual issued aggregate observation/currentness fact.
+
+### Implementation plan
+
+1. Add the proposal-owned aggregate source/artifact in the Native aggregate
+   owner. Capture actual cohort-relevant effect vectors without cloning, exact
+   schema/basis/proposal/occurrence, and a synchronized uninitialized/ready/
+   consumed-or-failed lifecycle. Borrow the immutable applied working state and
+   actual business plan at invocation; keep no request/runtime handle in results.
+2. Refactor consequence preparation to retain its actual transition and reuse
+   member indexing while producing the same private intents. Separate immutable
+   read data from write application custody, with the admitted shared reservation
+   and honest actual backing extents. Preserve the no-effect path without
+   inventing metadata writes or cloning the business plan unnecessarily.
+3. Carry the exact proposal borrow through observation and custom planner/context
+   construction. Add the opaque Native aggregate read port on those structural
+   views, with business access, posture and affinity checks. Implement strict
+   stored/before-image resolution through existing Native traversal/record owners
+   and explicit unaffected proof. Expose only this transition's lineage; move the
+   portable kind to foundational if required by that public value boundary.
+4. Integrate sticky typed failure checks in the preparation invariant coordinator
+   and consume prepared consequences at final history binding. Use the two
+   original funding entries described above. Remove the competing late
+   recomputation path; no-read candidates prepare through the same owner once.
+   Preserve direct-draft, physical maintenance, final admission and replay paths.
+5. Install real Native custom rules whose preparation and evaluation read and
+   retain the result. Prove original Native refusal/zero custom contacts, lawful
+   new member/split/merge agreement with complete committed row/member/event
+   tuples, shared initialization across rules/prepare/evaluate, surviving read
+   custody through seal, swallowed typed refusal, cancellation/discard, original
+   cumulative work and final ticket release. Reuse existing custody, aggregate,
+   allocation recovery and publication-order courts where they already protect
+   the downstream seams; do not add a parallel test portfolio.
+6. Obtain persistent source review, freeze source and batch the necessary Native
+   owner artifact once. Run focused new/custom-prerequisite and existing affected
+   custody/replay/aggregate filters, required normal boundary/context checks and
+   scoped static gates. Query reader integration remains unclaimed and receives
+   its own build. Record exact results, final all-three-skill clearance and topic
+   commit/push. Phase 4 default integration stays closed.
+
+Expected module responsibilities: aggregate proposal lifecycle/borrow, shared
+logical projection, stored resolution and public read result each keep one owner;
+the existing consequence encoder remains the only private-intent encoder.
+Observation and structural-view code carry loans, not aggregate policy. The
+invariant coordinator preserves handoff failure, and the commit pipeline moves
+and consumes the artifact. Split touched files only when responsibility or the
+400-line cap requires it. No Slice 4 implementation preceded this plan.
+
+The stored/before-image read deliberately traverses one group through the same
+Native cohort BFS and strict record decoder. Each checkpoint also debits the
+existing rule's `maximum_work_units`, using a local-only debit on that rule's
+meter. It must not increment the leased custom request counter: the Native
+funding context already bills that work to the active original frame. Shared
+proposal-transition initialization remains platform preparation, rather than
+spending the first rule's entire allowance. Legacy custom checkpoints retain
+their existing accounting. The qualification includes an installed insufficient
+rule allowance/funded twin under both accounted and unaccounted requests, plus
+an exact cumulative parent-account court that would fail if nested work were
+charged twice or the enclosing locked account were forwarded into the kernel.
+
+### Slice 4 qualification
+
+The persistent reviewer cleared the production ownership, accounting and read
+boundaries under `qa-loop`, `qa-tests` and `code-quality-qa`, then reviewed the
+installed courts and all 38 function advisories (40 scoped Rust files, zero scan
+errors). The real installed rules retain actual `AggregateRead` values in their
+prepared scope and later observations. New courts compare birth/split/merge
+members and incident transition event tuples against published private rows,
+membership edges and lineage records; committed reads use full before-image
+member sets. They also cover the same grant surviving two rules and final seal,
+exact Native cardinality refusal before custom contact, swallowed original
+memory refusal/funded retry, insufficient/funded stored-read rule allowance on
+leased Serial and unaccounted Serial, and cancellation/discard cleanup. The
+existing maintenance court now proves sealed suspension's logical before-image
+custom read posture and unchanged restored metadata. Its custom reader is
+explicitly disabled during physical unavailability/rematerialization; no
+rematerialization-reader qualification is claimed.
+
+The exact nested-account court spends 7 + 60 + 11 then the remaining 22 units
+from one 100-unit parent account, and refuses the next unit. An owner-local meter
+court separately proves debit 60/refuse 61 without incrementing the leased custom
+request counter. This keeps the private custom module/budget closed.
+
+Evidence prefix: `targets/query-9.18.1-phase4-slice4-*`, build identity
+`4a863b65-ad14-4e40-9dba-e8ad348fb6fc`. Native build 1 failed after 216.34 seconds
+with eleven diagnostics: private-module imports, an incorrect selected-root
+schema accessor, typed aspect-field indexing, and dependent inference errors.
+The corrections use existing exports, the actual retained root accessor and
+typed field `get`; no visibility was widened. The raw failed build is retained.
+The preliminary normal boundary scan was deliberately stopped after 593.92
+seconds because that source needed correction; it is not a pass. Its context
+check passed in 3.52 seconds. Corrected static checks passed: formatting 2.39s,
+line caps 30.30s, function scan 18.54s and whitespace 2.10s. Corrected Native
+build 2 passed in 188.74 seconds with zero diagnostics. All 77 distinct tests
+passed across eleven nonempty filters, with zero failures/ignored cases:
+Native allowance 1, Native prerequisites 10, structural custom reads 8, proposal
+custody 3, allocation owner 10, publication order 3, allocation recovery 8,
+aggregate owner 27, proposal affinity 2, prepared discard 1, and created endpoints
+4. Source freeze 2 matched all 40 Rust inputs throughout compilation/runtime;
+the reviewer independently rehashed them and audited distinct raw test names.
+
+The reviewer accepted that runtime evidence under all three QA skills. No further
+Native runtime run or Query/certification rebuild is required for this additive
+Native-only slice with existing public signatures unchanged and no Query reader
+integration claimed. Query's actual aggregate readers/facts/shapes still need
+their own integration qualification. Final NORMAL boundary checking passed in
+582.29 seconds; final agent-context checking passed in 1.27 seconds. The
+reviewer cleared the exact 41-path staging scope (40 Rust inputs plus this
+ledger) under all three QA skills, with commit eligibility contingent on those
+terminal gates and this factual record. Both conditions are now satisfied. No
+source changed after freeze 2. The concurrent specification/roadmap extension is
+excluded from this slice, and Phase 4 default integration remains closed.

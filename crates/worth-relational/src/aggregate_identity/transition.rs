@@ -2,6 +2,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
+pub(crate) use worth_foundational::facade::AggregateLineageKind;
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};
 
 use crate::history::data::CommitId;
@@ -20,12 +21,6 @@ pub(crate) struct AggregateAssignment {
     pub(crate) identity: AggregateIdentity,
     pub(crate) members: BTreeSet<EntityId>,
     pub(crate) born: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) enum AggregateLineageKind {
-    SplitFrom,
-    MergedInto,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

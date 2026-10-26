@@ -9,6 +9,7 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 
+#[derive(Debug)]
 struct Payload(Vec<u8>);
 impl ChargedBytes for Payload {
     fn additional_charged_bytes(&self) -> u64 {
@@ -145,4 +146,51 @@ fn unaccounted_serial_backing_cannot_hide_its_real_accounted_ancestor() {
     );
     assert!(seen.get());
     assert_eq!(original.memory().unwrap().charged_memory_bytes(), 0);
+}
+
+#[test]
+fn native_custom_read_debits_rule_once_and_original_enclosing_report_once() {
+    use crate::validation::CustomInvariantWorkMeter;
+    let lease = crate::tests::support::test_execution_authority()
+        .request_lease(LeaseRequest {
+            policy: policy(256 * 1024, 100),
+            deadline: None,
+            cancellation: CancellationToken::new(),
+        })
+        .unwrap();
+    let execution = ExecutionRequest::leased(&lease);
+    let account = crate::execution::RequestWorkBudget::new();
+    let rule = CustomInvariantWorkMeter::new(std::num::NonZeroU64::new(60));
+    let outer = run(&execution, Some(&account), |work| {
+        work.checkpoint(7)?;
+        let mut allowance = |units| {
+            rule.try_debit_native_work(units)
+                .then_some(())
+                .ok_or(Cause::WorkExhausted)
+        };
+        let (_, retention) = run_in_custom_read(&execution, &mut allowance, |nested| {
+            nested.checkpoint(60)?;
+            Ok(Payload(Vec::new()))
+        })
+        .expect("nested read borrows the active original frame, never its locked account");
+        drop(retention);
+        work.checkpoint(11)?;
+        Ok(Payload(Vec::new()))
+    })
+    .unwrap();
+    drop(outer);
+    assert_eq!(rule.charged_work(), 60);
+    drop(rule);
+    let remainder = run(&execution, Some(&account), |work| {
+        work.checkpoint(22)?;
+        Ok(Payload(Vec::new()))
+    })
+    .expect("78 original units leave exactly22, not a twice-billed read");
+    drop(remainder);
+    let exhausted = run(&execution, Some(&account), |work| {
+        work.checkpoint(1)?;
+        Ok(Payload(Vec::new()))
+    });
+    assert_eq!(cause(exhausted.unwrap_err()), Cause::WorkExhausted);
+    assert_eq!(lease.charged_memory_bytes(), 0);
 }

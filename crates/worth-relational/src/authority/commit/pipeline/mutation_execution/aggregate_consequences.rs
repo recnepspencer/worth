@@ -15,21 +15,20 @@ impl MutatedCommitExecution {
             .prepared_mut()
             .selected_branch_state()
             .clone();
-        let (admitted, working) = self.validated.prepared_mut().mutation_parts();
+        let (admitted, working, aggregate_source) = self.validated.prepared_mut().mutation_parts();
         let (_, validation, business, _, _, _) = admitted.phase_view().into_parts();
         let authority = validation.schema_authority();
         if validation.intent().materialization_mode().is_none() {
-            if let Some(prepared) = crate::aggregate_identity::prepare(
-                execution,
-                runtime,
-                authority,
-                &selected,
-                working,
-                business,
-                &self.effect,
-                self.version_id,
-                occurrence,
-            )? {
+            let prepared = match aggregate_source {
+                Some(source) => source.take_for_commit(
+                    execution,
+                    runtime.commit_work_budget.as_ref(),
+                    business,
+                    occurrence,
+                )?,
+                None => None,
+            };
+            if let Some(prepared) = prepared {
                 let mut prepared = prepared;
                 prepared.materialize(
                     execution,

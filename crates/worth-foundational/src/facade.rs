@@ -685,10 +685,10 @@ pub use crate::transitions::{
 };
 pub use crate::values::{
     decode_canonical_text_hex, encode_canonical_text_hex, AggregateDefinitionIdentity,
-    AggregateIdentity, AspectValue, CanonicalBigInt, CanonicalDate, CanonicalDecimal, CanonicalF32,
-    CanonicalF64, CanonicalRational, CanonicalString, CanonicalTime, CanonicalTimestamp,
-    CanonicalTimestampTz, ContentRefId, EntityId, Generation, InternedString, LocalSlot,
-    PartitionId, ScalarAspectType, Symbol,
+    AggregateIdentity, AggregateLineageKind, AspectValue, CanonicalBigInt, CanonicalDate,
+    CanonicalDecimal, CanonicalF32, CanonicalF64, CanonicalRational, CanonicalString,
+    CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz, ContentRefId, EntityId, Generation,
+    InternedString, LocalSlot, PartitionId, ScalarAspectType, Symbol,
 };
 
 pub use crate::budget_limits::{BudgetRefused, ExhaustedLimit, LimitCounts, LimitDimension};

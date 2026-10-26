@@ -42,8 +42,13 @@ impl PreparedCommitExecution {
     ) -> (
         &mut AdmittedCommitExecution,
         &mut crate::storage::overlay::WorkingState,
+        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
-        (&mut self.admitted, &mut self.working_state)
+        (
+            &mut self.admitted,
+            &mut self.working_state,
+            self.proposed_invariant_state.aggregate_source(),
+        )
     }
 
     pub(super) fn boundary_parts(
@@ -53,12 +58,14 @@ impl PreparedCommitExecution {
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
         &crate::mvcc::RelationalMutationProposalIdentity,
+        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
             &mut self.admitted,
             self.proposed_invariant_state.working_state(),
             self.proposed_version_id,
             &self.proposal_identity,
+            self.proposed_invariant_state.aggregate_source(),
         )
     }
 
@@ -134,7 +141,7 @@ pub(super) fn prepare_commit_execution(
             &working_state,
             admitted.merged_plan(),
             admitted.validation_input().schema_authority(),
-            proposed_version_id,
+            &proposal_identity,
             execution,
             admitted.validation_input().intent().materialization_mode(),
         )?,

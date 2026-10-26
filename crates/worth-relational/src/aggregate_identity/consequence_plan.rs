@@ -1,6 +1,7 @@
 //! Translate one identity transition into ordinary private graph mutations.
 use super::cohorts::CollectedCohorts;
 use super::preparation::{AggregateWork, BuildResult};
+use super::projection::ChangedProjection;
 use super::record::{lineage_fields, AggregateRecord};
 use super::retention_extent as extent;
 use crate::history::data::CommitId;
@@ -58,7 +59,7 @@ pub(super) fn append(
     cohorts: CollectedCohorts,
     after: &InvariantStateView<'_>,
     work: &mut AggregateWork<'_, '_, '_, '_>,
-) -> BuildResult<()> {
+) -> BuildResult<ChangedProjection> {
     let members = cohorts
         .prior
         .iter()
@@ -104,7 +105,7 @@ pub(super) fn append(
         targets.insert(identity, EntityReference::Existing(old.entity));
     }
     let mut new_membership = BTreeMap::new();
-    for assignment in &result.assignments {
+    for (assignment_index, assignment) in result.assignments.iter().enumerate() {
         let anchor = *assignment
             .members
             .first()
@@ -133,7 +134,7 @@ pub(super) fn append(
         }
         for &member in &assignment.members {
             work.retain(extent::assignment_member())?;
-            new_membership.insert(member, assignment.identity);
+            new_membership.insert(member, assignment_index);
         }
     }
     for identity in &result.retired {
@@ -146,7 +147,11 @@ pub(super) fn append(
     }
     for (&member, &(relation, old)) in &cohorts.memberships {
         work.checkpoint(1)?;
-        if new_membership.get(&member) == Some(&old) {
+        if new_membership
+            .get(&member)
+            .map(|&index| result.assignments[index].identity)
+            == Some(old)
+        {
             continue;
         }
         // Member deletion may already have retired this private edge for audit.
@@ -165,7 +170,8 @@ pub(super) fn append(
             )?;
         }
     }
-    for (&member, &identity) in &new_membership {
+    for (&member, &assignment_index) in &new_membership {
+        let identity = result.assignments[assignment_index].identity;
         work.checkpoint(1)?;
         if cohorts
             .memberships
@@ -197,7 +203,7 @@ pub(super) fn append(
             work,
         )?;
     }
-    for event in result.lineage {
+    for event in &result.lineage {
         work.retain(extent::lineage_mutation())?;
         let source = targets[&event.from].clone();
         let target = targets[&event.to].clone();
@@ -221,7 +227,11 @@ pub(super) fn append(
             work,
         )?;
     }
-    Ok(())
+    Ok(ChangedProjection {
+        transition: result,
+        member_assignments: new_membership,
+        prior_memberships: cohorts.memberships,
+    })
 }
 
 fn create_row(

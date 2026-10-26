@@ -25,6 +25,7 @@ pub(crate) struct CommittedInvariantView<'runtime> {
     enforcement: Option<OverlayStateView<'runtime, WorkingState>>,
     enforcement_version_id: Option<crate::identity::data::VersionId>,
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
 #[derive(Clone)]
@@ -40,6 +41,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
             enforcement: None,
             enforcement_version_id: None,
             proposal_identity: None,
+            aggregate: None,
         }
     }
 
@@ -54,6 +56,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
             enforcement: Some(OverlayStateView::new(state, proposed_working_state)),
             enforcement_version_id: Some(proposed_version_id),
             proposal_identity,
+            aggregate: None,
         }
     }
 
@@ -63,6 +66,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
             enforcement: None,
             enforcement_version_id: None,
             proposal_identity: None,
+            aggregate: None,
         }
     }
 
@@ -107,6 +111,7 @@ pub(crate) struct SpeculativeInvariantView<'runtime> {
     proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     applied_created_entities:
         Option<&'runtime crate::transactions::data::CommitCreatedEntityBindings>,
+    aggregate: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
 }
 
 impl<'runtime> SpeculativeInvariantView<'runtime> {
@@ -120,6 +125,7 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
             before_image_version_id,
             proposal_identity,
             applied_created_entities: None,
+            aggregate: None,
         }
     }
 
@@ -139,6 +145,26 @@ pub(crate) enum InvariantObservation<'runtime> {
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
+    pub(crate) fn with_aggregate(
+        mut self,
+        source: Option<crate::aggregate_identity::AggregateInvocation<'runtime>>,
+    ) -> Self {
+        match &mut self {
+            Self::Committed(view) => view.aggregate = source,
+            Self::Speculative(view) => view.aggregate = source,
+        }
+        self
+    }
+
+    pub(crate) fn aggregate_invocation(
+        &self,
+    ) -> Option<crate::aggregate_identity::AggregateInvocation<'runtime>> {
+        match self {
+            Self::Committed(view) => view.aggregate,
+            Self::Speculative(view) => view.aggregate,
+        }
+    }
+
     pub(crate) fn committed(state: PartitionEdition) -> Self {
         Self::Committed(CommittedInvariantView::new(state))
     }

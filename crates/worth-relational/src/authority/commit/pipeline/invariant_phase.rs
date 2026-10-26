@@ -13,6 +13,7 @@ pub(super) fn enforce_commit_boundary_phase(
     proposed_version_id: crate::identity::data::VersionId,
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_commit_boundary: Option<InvariantExecutionResult>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
@@ -29,6 +30,7 @@ pub(super) fn enforce_commit_boundary_phase(
                 proposed_version_id,
                 merged_plan,
                 proposal_identity,
+                aggregate_source,
                 execution,
                 control,
             )
@@ -50,6 +52,7 @@ pub(super) fn enforce_snapshot_publication_phase(
     version_id: VersionId,
     merged_plan: &MergedCommitPlan,
     proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+    aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     prevalidated_snapshot_publication: Option<InvariantExecutionResult>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
@@ -67,6 +70,7 @@ pub(super) fn enforce_snapshot_publication_phase(
                 version_id,
                 merged_plan,
                 proposal_identity,
+                aggregate_source,
                 execution,
                 control,
             )

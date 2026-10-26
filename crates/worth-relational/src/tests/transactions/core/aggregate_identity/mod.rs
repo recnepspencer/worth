@@ -3,4 +3,7 @@ mod fixtures;
 mod lifecycle;
 mod maintenance;
 mod merge_gap;
+mod read_handoff;
+mod read_handoff_rule;
+mod read_handoff_truth;
 mod recovery;

@@ -14,6 +14,12 @@ pub(super) fn tree_entry<K, V>() -> u64 {
 pub(super) fn vector_entry<T>() -> u64 {
     (4 * size_of::<T>()) as u64
 }
+pub(super) fn arc_backing<T>() -> u64 {
+    let header = 2 * size_of::<usize>();
+    let alignment = std::mem::align_of::<T>();
+    let padding = (alignment - header % alignment) % alignment;
+    (header + padding + size_of::<T>()) as u64
+}
 pub(super) fn seed() -> u64 {
     tree_entry::<EntityId, ()>()
 }

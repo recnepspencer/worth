@@ -55,6 +55,7 @@ pub(super) struct MutationPhaseInput<'a, 'request, 'authority> {
     pub(super) prevalidated_mutation_sensitive:
         Option<crate::validation::engine::InvariantExecutionResult>,
     pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'a>>,
     pub(super) execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
 }
 
@@ -75,6 +76,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposal_identity,
         prevalidated_mutation_sensitive,
         record_allocations,
+        aggregate_source,
         execution,
     } = input;
     commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
@@ -90,6 +92,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposal_identity,
         prevalidated_mutation_sensitive,
         record_allocations,
+        aggregate_source,
         execution,
         control,
     )
@@ -111,6 +114,7 @@ fn run_authoritative_mutation_for_runtime(
     proposal_identity: &crate::mvcc::RelationalMutationProposalIdentity,
     prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
     mut record_allocations: crate::runtime::PendingRecordAllocations,
+    aggregate_source: Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
@@ -169,6 +173,7 @@ fn run_authoritative_mutation_for_runtime(
                 version_id,
                 merged_plan,
                 Some(proposal_identity),
+                aggregate_source,
                 execution,
                 control,
             )?,
