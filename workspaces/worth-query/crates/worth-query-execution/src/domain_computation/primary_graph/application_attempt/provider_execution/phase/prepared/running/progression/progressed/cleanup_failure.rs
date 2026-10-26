@@ -15,11 +15,7 @@ pub(super) fn cleanup_failed_outcome(outcome: Progression) -> Outcome {
     match outcome {
         Progression::ProductUnpublished(unpublished) => Outcome::ProductUnpublished(unpublished),
         Progression::ProductStale(stale) => Outcome::ProductStale(stale),
-        Progression::NoEffect(no_effect) => Outcome::NoEffect(
-            crate::domain_computation::primary_graph::WorthQueryApplicationNoEffect::from_world(
-                no_effect,
-            ),
-        ),
+        Progression::NoEffect(no_effect) => Outcome::NoEffect(no_effect),
         Progression::Denied(denial) => match denial.kind() {
             Kind::ExecutionResource {
                 denial,

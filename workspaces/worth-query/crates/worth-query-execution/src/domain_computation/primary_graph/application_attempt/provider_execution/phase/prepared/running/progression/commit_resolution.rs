@@ -1,5 +1,7 @@
 //! Resolving one authorized compare-and-commit into a progression outcome.
 
+mod world_no_effect;
+
 use crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord;
 use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolution;
 use crate::domain_computation::WorthQueryProviderCompareAndCommitOutcome;
@@ -143,7 +145,7 @@ pub(super) fn finish_authorized_compare(
             WorthQueryProviderProgressionOutcome::ProductUnpublished(unpublished)
         }
         WorthQueryProviderCompareAndCommitOutcome::NoEffect(no_effect) => {
-            WorthQueryProviderProgressionOutcome::NoEffect(no_effect)
+            world_no_effect::classify(no_effect)
         }
         WorthQueryProviderCompareAndCommitOutcome::ProductStale(stale) => {
             WorthQueryProviderProgressionOutcome::ProductStale(stale)
