@@ -90,6 +90,10 @@ impl ErasedApplicationQueryDefinition {
         &self.parts.result_shape
     }
 
+    pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
+        self.parts.orbit.as_ref()
+    }
+
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {
         &self.parts.root_paths
     }

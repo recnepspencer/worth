@@ -27,6 +27,7 @@ pub(super) struct RootPathSourceBuilder {
     aspects: BTreeMap<(EntityId, AspectKey, FieldKey), WorthQueryObservedFieldRevision>,
     adjacencies: BTreeMap<(EntityId, KindId, u8), WorthQueryObservedAdjacencyRevision>,
     walks: Option<Arc<StructuralWalkDependencies>>,
+    orbit: Option<super::super::super::observed_source::DeclaredOrbitSelection>,
     allocation: Option<Arc<crate::domain_computation::primary_graph::application_query::observed_source::RootPathAllocation>>,
 }
 
@@ -113,6 +114,7 @@ impl RootPathSourceBuilder {
             + self.aspects.len()
             + self.adjacencies.len()
             + usize::from(self.walks.is_some())
+            + usize::from(self.orbit.is_some())
     }
 
     pub(super) fn walks(&self) -> Option<&Arc<StructuralWalkDependencies>> {
@@ -121,6 +123,13 @@ impl RootPathSourceBuilder {
 
     pub(super) fn set_walks(&mut self, walks: Arc<StructuralWalkDependencies>) {
         self.walks = Some(walks);
+    }
+
+    pub(super) fn set_orbit(
+        &mut self,
+        orbit: super::super::super::observed_source::DeclaredOrbitSelection,
+    ) {
+        self.orbit = Some(orbit);
     }
 
     pub(super) fn record_walk(
@@ -311,6 +320,7 @@ impl RootPathSourceBuilder {
             aspects,
             adjacencies,
             self.walks,
+            self.orbit,
             self.allocation,
         );
         Ok(Arc::new(source))

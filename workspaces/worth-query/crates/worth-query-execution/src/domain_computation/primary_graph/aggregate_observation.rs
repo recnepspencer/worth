@@ -22,25 +22,31 @@ pub(in crate::domain_computation) struct AggregateObservation {
     native: PinnedAggregateRead,
     source: SnapshotHandle,
 }
+pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+    pub relation: &'a str,
+    pub entity_kind: KindId,
+    pub relation_kind: KindId,
+    pub member: EntityId,
+    pub maximum_work: Option<u64>,
+    pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
+}
 impl AggregateObservation {
     pub(in crate::domain_computation::primary_graph) fn read(
         pin: &RelationalPinnedRead,
         execution: &ExecutionRequest<'_, '_>,
-        relation: &str,
-        entity_kind: KindId,
-        relation_kind: KindId,
-        member: EntityId,
-        maximum_work: Option<u64>,
+        query: AggregateQuery<'_>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
-        let native = pin.read_aggregate(
-            execution,
-            PinnedAggregateReadScope::new(relation_kind, member).with_work_limit(maximum_work),
-        )?;
+        let mut scope = PinnedAggregateReadScope::new(query.relation_kind, query.member)
+            .with_work_limit(query.maximum_work);
+        if let Some(control) = query.control {
+            scope = scope.with_control(control);
+        }
+        let native = pin.read_aggregate(execution, scope)?;
         let key = AggregateKey::new(
-            relation,
-            entity_kind,
-            relation_kind,
-            member,
+            query.relation,
+            query.entity_kind,
+            query.relation_kind,
+            query.member,
             native.definition(),
         );
         Ok(Arc::new(Self {

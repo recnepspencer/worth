@@ -149,8 +149,25 @@ and [currentness court](../../../worth-query-execution/src/domain_computation/pr
 exercise this path. Aggregate inputs currently require full verification and a
 fresh computation; live fact bodies cannot be reconstructed from checkpoints.
 
-Declared orbit-query shapes, lineage reads and Proprietary
-adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
+A declared `Many` query can select one complete orbit with
+`builder.orbit(ApplicationQueryOrbitRef::new("loop", NextFin::reference()))`.
+The query's root and scope must be the same entity kind. Its returned rows stay
+in successor order from the Native anchor. `result.orbit(loop_slot())` returns
+the exact declared slot's `identity()`, `len()` and borrowed `members()`; the
+getter performs no graph read and survives conversion into a disclosed result
+or output-demand source. The selector has schema, query, slot, relation and
+entity marker types; see the compiled [query declaration and result court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries.rs).
+
+Whole-orbit metadata is one disclosure slot. A governed contract must provide
+`orbit_by(slot, disclosure_value, influence)` for identity, length, membership
+and order together; member fields keep their own disclosure rules. An omitted
+orbit slot refuses before group selection. Filtering, root-path unions,
+explicit ordering, continuation and live lanes cannot turn a complete orbit
+into a partial answer. Row and result-set sources retain the original Native
+aggregate and complete walk; portable record grammar 17 preserves this meaning
+and refuses older record grammars.
+
+Lineage reads and Proprietary adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
 separate existing execution limitations and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
 exercises native refusals and atomic lawful mutations through the ordinary

@@ -8,6 +8,8 @@ use worth_query_installation::facade::WorthQueryInstalledGraphReadContract;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 
 pub(in crate::domain_computation::primary_graph::application_query) struct ReadPlan<'a> {
+    pub(in crate::domain_computation::primary_graph::application_query) binding:
+        &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(in crate::domain_computation::primary_graph::application_query) name: &'a str,
     pub(in crate::domain_computation::primary_graph::application_query) contract:
         &'a WorthQueryInstalledGraphReadContract,
@@ -35,6 +37,7 @@ impl<'a> ReadPlan<'a> {
         plan: &'a WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     ) -> Self {
         Self {
+            binding: plan.query.binding_identity(),
             name: plan.query.name(),
             contract: plan.query.read_family_binding().planning_contract(),
             root: plan.scope.entity_id(),
@@ -67,6 +70,7 @@ impl worth_execution::ChargedBytes for ReadPlan<'_> {
     fn additional_charged_bytes(&self) -> u64 {
         // Borrowed installed/pinned values and inline limits allocate nothing.
         let Self {
+            binding: _binding,
             name: _name,
             contract: _contract,
             root: _root,
@@ -89,6 +93,7 @@ impl ReadPlan<'_> {
         snapshot: &'b SnapshotHandle,
     ) -> ReadPlan<'b> {
         ReadPlan {
+            binding: self.binding,
             name: self.name,
             contract: self.contract,
             root: self.root,
@@ -105,7 +110,7 @@ impl ReadPlan<'_> {
     pub(in crate::domain_computation::primary_graph::application_query) fn snapshot_unavailable_denial(
         &self,
     ) -> super::WorthQueryApplicationReadExecutionDenial {
-        if !self.contract.root_paths().is_empty() {
+        if self.contract.orbit().is_some() || !self.contract.root_paths().is_empty() {
             super::read_execution_denial(
                 super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
                 self.name,

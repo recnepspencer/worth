@@ -30,8 +30,10 @@ const RETAINED_RECORD_THIRTEEN_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v13.hex");
 const RETAINED_RECORD_FOURTEEN_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v14.hex");
-const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+const RETAINED_RECORD_SIXTEEN_MINIMAL_ARCHIVE_HEX: &str =
     include_str!("archive_stream/archive_v2_record_v16.hex");
+const VERSION_TWO_MINIMAL_ARCHIVE_HEX: &str =
+    include_str!("archive_stream/archive_v2_record_v17.hex");
 
 #[test]
 fn version_two_minimal_archive_is_deterministic_and_frozen() {
@@ -44,6 +46,7 @@ fn version_two_minimal_archive_is_deterministic_and_frozen() {
         (12_u16, RETAINED_RECORD_TWELVE_MINIMAL_ARCHIVE_HEX),
         (13_u16, RETAINED_RECORD_THIRTEEN_MINIMAL_ARCHIVE_HEX),
         (14_u16, RETAINED_RECORD_FOURTEEN_MINIMAL_ARCHIVE_HEX),
+        (16_u16, RETAINED_RECORD_SIXTEEN_MINIMAL_ARCHIVE_HEX),
     ] {
         let original = decode_hex(vector.trim());
         let denial =
@@ -64,7 +67,7 @@ fn version_two_minimal_archive_is_deterministic_and_frozen() {
     assert_eq!(encode_hex(&first), VERSION_TWO_MINIMAL_ARCHIVE_HEX.trim());
     let frozen = decode_hex(VERSION_TWO_MINIMAL_ARCHIVE_HEX.trim());
     assert_eq!(u16_at(&frozen, 8), 2, "outer archive version stays2");
-    assert_eq!(u16_at(&frozen, MANIFEST_FRAME_BYTES), 16);
+    assert_eq!(u16_at(&frozen, MANIFEST_FRAME_BYTES), 17);
     let decoded = decode_package_archive(&frozen, limits).unwrap();
     assert_eq!(decoded.manifest(), export.manifest());
     assert_eq!(decoded.frames().len(), 1);

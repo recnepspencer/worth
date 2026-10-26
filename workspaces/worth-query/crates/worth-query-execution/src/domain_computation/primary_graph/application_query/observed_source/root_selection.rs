@@ -5,10 +5,12 @@ use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkDependencies;
 use std::sync::Arc;
 mod allocation;
+mod orbit;
 mod walks;
 pub(in crate::domain_computation::primary_graph::application_query) use allocation::{
     tree_clone_bytes, RootPathAllocation,
 };
+pub(in crate::domain_computation::primary_graph::application_query) use orbit::DeclaredOrbitSelection;
 
 /// One immutable root-path witness for a returned row.
 /// Native revisions, not the selected ID alone, prove its currentness.
@@ -19,6 +21,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSe
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
     pub(in crate::domain_computation::primary_graph) walks: Option<Arc<StructuralWalkDependencies>>,
+    pub(in crate::domain_computation::primary_graph::application_query) orbit:
+        Option<DeclaredOrbitSelection>,
     identity: [u8; 32],
     _allocation: Option<Arc<RootPathAllocation>>,
 }
@@ -29,14 +33,17 @@ impl WorthQueryObservedRootSelection {
         aspects: Vec<WorthQueryObservedFieldRevision>,
         adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
         walks: Option<Arc<StructuralWalkDependencies>>,
+        orbit: Option<DeclaredOrbitSelection>,
         allocation: Option<Arc<RootPathAllocation>>,
     ) -> Self {
-        let identity = canonical_identity(&entities, &aspects, &adjacencies, &walks);
+        let identity =
+            canonical_identity(&entities, &aspects, &adjacencies, &walks, orbit.as_ref());
         Self {
             entities,
             aspects,
             adjacencies,
             walks,
+            orbit,
             identity,
             _allocation: allocation,
         }
@@ -59,6 +66,7 @@ impl WorthQueryObservedRootSelection {
             aspects,
             adjacencies,
             walks: _walks,
+            orbit: _orbit,
             identity: _identity,
             _allocation,
         } = self;
@@ -94,6 +102,7 @@ impl PartialEq for WorthQueryObservedRootSelection {
             && self.aspects == other.aspects
             && self.adjacencies == other.adjacencies
             && self.walks == other.walks
+            && self.orbit == other.orbit
     }
 }
 impl Eq for WorthQueryObservedRootSelection {}
@@ -103,6 +112,7 @@ fn canonical_identity(
     aspects: &[WorthQueryObservedFieldRevision],
     adjacencies: &[WorthQueryObservedAdjacencyRevision],
     walks: &Option<Arc<StructuralWalkDependencies>>,
+    orbit: Option<&DeclaredOrbitSelection>,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth-query:root-selection-source:v2");
@@ -145,6 +155,9 @@ fn canonical_identity(
         for walk in walks.values() {
             digest.update(walk.commitment());
         }
+    }
+    if let Some(orbit) = orbit {
+        orbit.append_descriptor(&mut digest);
     }
     digest.finalize().into()
 }

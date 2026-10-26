@@ -180,6 +180,7 @@ fn planning_relation<'a>(
     Some(WorthQueryReadGraphRelationView {
         relation: traversal.relation_name().as_str(),
         complete_closure: false,
+        aggregate_selection: false,
         direction: relation_direction(operators),
         cardinality: ApplicationQueryCardinality::Many,
         depth: usize::from(traversal.depth()),

@@ -43,6 +43,8 @@ pub struct WorthQueryReadGraphRelationView<'a> {
     /// Repeats the endorelation until its frontier is exhausted. `depth`
     /// remains authored/planning metadata and never bounds this closure.
     pub complete_closure: bool,
+    /// Selects a complete Native aggregate by the admitted scope member.
+    pub aggregate_selection: bool,
     pub cardinality: ApplicationQueryCardinality,
     pub depth: usize,
 }

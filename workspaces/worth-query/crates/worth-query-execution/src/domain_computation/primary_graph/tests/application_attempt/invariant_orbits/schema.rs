@@ -23,7 +23,7 @@ impl<const O: bool> ApplicationSchema for OrbitSchema<O> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        super::decision::binding::declare(
+        super::declared_queries::declarations::declare(super::decision::binding::declare(
             ApplicationSchemaDeclarationBuilder::for_schema()
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())
@@ -63,7 +63,7 @@ impl<const O: bool> ApplicationSchema for OrbitSchema<O> {
                 .operation_link(ReplaceNext::reference(), Next::reference())
                 .operation_unlink(ReplaceNext::reference(), Next::reference())
                 .invariant(super::probe::definition::<O>()),
-        )
+        ))
         .build()
     }
 }

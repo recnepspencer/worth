@@ -16,6 +16,10 @@ fn runtime_supports(
     requirement: &WorthQueryGraphReadAccessRequirementRow,
 ) -> bool {
     match requirement.kind() {
+        WorthQueryGraphReadAccessRequirementKind::AggregateSelection => requirement
+            .relation_name()
+            .and_then(|name| layout.relation(name))
+            .is_some_and(|relation| relation.orbit && relation.from == relation.to),
         WorthQueryGraphReadAccessRequirementKind::DirectionalAdjacency
         | WorthQueryGraphReadAccessRequirementKind::ReverseAdjacency => {
             let Some(relation) = requirement.relation_name() else {

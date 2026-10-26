@@ -43,9 +43,30 @@ fn validate_query(
     validate_authorization_requirement(definition, members)?;
     disclosure::validate_dependencies(definition, members)?;
     validate_root_selection(definition, members)?;
+    validate_orbit(definition, members)?;
     validate_result_shape(definition, members)?;
     validate_predicates(definition, members)?;
     validate_ordering(definition, members)
+}
+
+fn validate_orbit(
+    definition: &ErasedApplicationQueryDefinition,
+    members: &[ApplicationSchemaMember],
+) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    let Some(orbit) = definition.orbit() else {
+        return Ok(());
+    };
+    if members.iter().any(|member| {
+        matches!(member,
+            ApplicationSchemaMember::Relation { relation, from, to, integrity }
+                if relation == orbit.relation() && from == orbit.from()
+                    && to == orbit.to() && integrity.orbit
+        )
+    }) {
+        Ok(())
+    } else {
+        Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery)
+    }
 }
 
 fn validate_root_selection(

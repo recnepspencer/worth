@@ -13,14 +13,10 @@ impl AggregateObservation {
         control: Option<&dyn Fn() -> Result<(), Cause>>,
     ) -> Result<bool, Failure> {
         let result = execution.run_native_with_checkpoint(|context| {
-            let mut poll = || {
-                Self::checkpoint(context).map_err(Failure::Execution)?;
-                if let Some(control) = control {
-                    control().map_err(Failure::Execution)?;
-                }
-                Ok::<(), Failure>(())
-            };
-            poll()?;
+            Self::checkpoint(context).map_err(Failure::Execution)?;
+            if let Some(control) = control {
+                control().map_err(Failure::Execution)?;
+            }
             let pin = runtime
                 .read_truth()
                 .pin_read_capability(snapshot, &[], execution)
@@ -30,47 +26,63 @@ impl AggregateObservation {
                     }
                     _ => Failure::Unavailable,
                 })?;
-            if self.source() == pin.snapshot() {
-                poll()?;
-                return Ok(true);
-            }
-            let mut scope =
-                PinnedAggregateReadScope::new(self.key.relation_kind(), self.key.member());
-            if let Some(control) = control {
-                scope = scope.with_control(control);
-            }
-            let current = match pin.read_aggregate(execution, scope) {
-                Ok(value) => value,
-                Err(stop) => {
-                    return match stop.kind {
-                        Denial::Read(cause) => Err(Failure::Execution(cause)),
-                        Denial::MemberUnavailable
-                        | Denial::WrongMemberKind
-                        | Denial::NotAggregateRelation
-                        | Denial::DefinitionUnavailable => Ok(false),
-                        _ => Err(Failure::Unavailable),
-                    }
-                }
-            };
-            poll()?;
-            if current.definition() != self.native.definition()
-                || current.identity() != self.native.identity()
-                || current.len() != self.native.len()
-            {
-                return Ok(false);
-            }
-            for (old, now) in self.native.members().zip(current.members()) {
-                poll()?;
-                if old != now {
-                    return Ok(false);
-                }
-            }
-            poll()?;
-            Ok(true)
+            self.remains_equal_at(&pin, execution, context, control)
         });
         match result {
             Ok((value, _)) => value,
             Err(stop) => Err(Failure::Execution(stop.into())),
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn remains_equal_at(
+        &self,
+        pin: &RelationalPinnedRead,
+        execution: &ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+        control: Option<&dyn Fn() -> Result<(), Cause>>,
+    ) -> Result<bool, Failure> {
+        let mut poll = || {
+            Self::checkpoint(context).map_err(Failure::Execution)?;
+            if let Some(control) = control {
+                control().map_err(Failure::Execution)?;
+            }
+            Ok::<(), Failure>(())
+        };
+        poll()?;
+        if self.source() == pin.snapshot() {
+            poll()?;
+            return Ok(true);
+        }
+        let mut scope = PinnedAggregateReadScope::new(self.key.relation_kind(), self.key.member());
+        if let Some(control) = control {
+            scope = scope.with_control(control);
+        }
+        let current = match pin.read_aggregate(execution, scope) {
+            Ok(value) => value,
+            Err(stop) => {
+                return match stop.kind {
+                    Denial::Read(cause) => Err(Failure::Execution(cause)),
+                    Denial::MemberUnavailable
+                    | Denial::WrongMemberKind
+                    | Denial::NotAggregateRelation
+                    | Denial::DefinitionUnavailable => Ok(false),
+                    _ => Err(Failure::Unavailable),
+                }
+            }
+        };
+        poll()?;
+        if current.definition() != self.native.definition()
+            || current.identity() != self.native.identity()
+            || current.len() != self.native.len()
+        {
+            return Ok(false);
+        }
+        for (old, now) in self.native.members().zip(current.members()) {
+            poll()?;
+            if old != now {
+                return Ok(false);
+            }
+        }
+        poll()?;
+        Ok(true)
     }
 }

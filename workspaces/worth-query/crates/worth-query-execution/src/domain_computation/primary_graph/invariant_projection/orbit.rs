@@ -5,7 +5,9 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
-use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
+use crate::domain_computation::primary_graph::aggregate_observation::{
+    AggregateObservation, AggregateQuery,
+};
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::RelationDirection;
@@ -117,11 +119,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         let result = AggregateObservation::read(
             &pin,
             self.execution,
-            subject,
-            entity_kind,
-            relation,
-            member,
-            self.work_budget.remaining().map(|n| n as u64),
+            AggregateQuery {
+                relation: subject,
+                entity_kind,
+                relation_kind: relation,
+                member,
+                maximum_work: self.work_budget.remaining().map(|n| n as u64),
+                control: None,
+            },
         );
         let work = match &result {
             Ok(value) => value.native().work_units(),

@@ -32,8 +32,11 @@ pub(super) fn relations<Stop>(
     {
         admit(2, 0).map_err(WorthQueryCanonicalIdentityStop::Admission)?;
         let name_bytes = copied_bytes::<Stop>(&[relation.relation.len()])?;
-        let operator_bytes = u64::try_from(size_of::<WorthQueryGraphReadTraversalOperator>())
-            .map_err(|_| WorthQueryCanonicalIdentityStop::AccountingOverflow)?;
+        let operator_bytes = u64::try_from(
+            size_of::<WorthQueryGraphReadTraversalOperator>()
+                * (1 + usize::from(relation.aggregate_selection)),
+        )
+        .map_err(|_| WorthQueryCanonicalIdentityStop::AccountingOverflow)?;
         let scratch = name_bytes
             .checked_add(operator_bytes)
             .ok_or(WorthQueryCanonicalIdentityStop::AccountingOverflow)?;
@@ -42,6 +45,14 @@ pub(super) fn relations<Stop>(
             .ok_or(WorthQueryCanonicalIdentityStop::AccountingOverflow)?;
         admit(work, scratch).map_err(WorthQueryCanonicalIdentityStop::Admission)?;
         has_many |= relation.cardinality == ApplicationQueryCardinality::Many;
+        let mut operators = vec![if relation.complete_closure {
+            WorthQueryGraphReadTraversalOperator::CompleteClosure
+        } else {
+            WorthQueryGraphReadTraversalOperator::DirectEdge
+        }];
+        if relation.aggregate_selection {
+            operators.push(WorthQueryGraphReadTraversalOperator::AggregateSelection);
+        }
         rows.push(
             WorthQueryGraphReadPlanningRelation::from_admitted_reference(
                 relation.relation,
@@ -54,11 +65,7 @@ pub(super) fn relations<Stop>(
                     }
                 },
                 relation.depth,
-                vec![if relation.complete_closure {
-                    WorthQueryGraphReadTraversalOperator::CompleteClosure
-                } else {
-                    WorthQueryGraphReadTraversalOperator::DirectEdge
-                }],
+                operators,
             ),
         );
     }

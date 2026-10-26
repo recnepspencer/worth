@@ -4,6 +4,7 @@ use super::{ApplicationQueryResultShape, WorthQueryPortableApplicationQueryParts
 
 mod canonical_ordering;
 mod disclosure;
+mod orbit;
 mod result_shape;
 use result_shape::{
     contains_entity as shape_contains_entity, continuation_parent_path_is_exact,
@@ -41,6 +42,7 @@ pub enum ApplicationQueryDefinitionDenial {
     ContinuationRequiresSingleRoot,
     ContinuationRequiresSingleManyCollection,
     InvalidRootPath,
+    InvalidOrbitShape,
     PreviewLaneWithoutBasisSupport,
     LiveLaneWithoutCauseContract,
     LiveCauseContractWithoutLane,
@@ -58,6 +60,7 @@ pub(crate) fn validate_portable_application_query_freshly(
     }
     validate_portable_identities(definition)?;
     validate_result_and_root_selection(definition)?;
+    orbit::validate(definition)?;
     validate_parameter_names(definition)?;
     if !canonical_ordering::is_canonical(definition) {
         return Err(ApplicationQueryDefinitionDenial::InvalidCanonicalOrdering);
@@ -153,6 +156,9 @@ fn validate_result_and_root_selection(
         return Err(ApplicationQueryDefinitionDenial::ResultQueryMismatch);
     }
     let mut slots = BTreeSet::new();
+    if let Some(orbit) = definition.orbit() {
+        slots.insert(orbit.slot_type());
+    }
     if !shape_slots_are_unique(definition.result_shape(), &mut slots) {
         return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
     }

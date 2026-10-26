@@ -118,6 +118,7 @@ fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
                 },
             ),
             root_paths: Vec::new(),
+            orbit: None,
             cardinality: ApplicationQueryCardinality::ExactlyOne,
             predicates: Vec::new(),
             ordering: Vec::new(),

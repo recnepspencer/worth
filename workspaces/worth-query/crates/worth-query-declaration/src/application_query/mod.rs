@@ -12,7 +12,12 @@ mod expression_snapshot;
 mod lane_eligibility;
 mod live_cause;
 mod marker_identity;
+mod orbit;
 mod ordering;
+pub use orbit::{
+    ApplicationQueryOrbitMeaning, ApplicationQueryOrbitRef,
+    WorthQueryPortableApplicationQueryOrbitParts,
+};
 mod parameters;
 mod reference;
 mod result_field_selector;

@@ -1,6 +1,7 @@
 //! Installed orbit APIs on static schema profiles, through ordinary commits.
 mod api;
 pub(in crate::domain_computation::primary_graph) mod decision;
+pub(in crate::domain_computation::primary_graph) mod declared_queries;
 mod probe;
 pub(in crate::domain_computation::primary_graph) mod program;
 mod projection;

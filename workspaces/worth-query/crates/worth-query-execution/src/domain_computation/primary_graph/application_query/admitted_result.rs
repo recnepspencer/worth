@@ -132,6 +132,20 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
         }
     }
 
+    /// Inspect the exact whole-orbit slot already disclosed by this result.
+    pub fn orbit<Schema, Slot, Relation, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryOrbitRef<
+            Schema,
+            Query,
+            Slot,
+            Relation,
+            Entity,
+        >,
+    ) -> Option<super::WorthQueryApplicationQueryOrbit<'_, Schema, Relation, QueryResult>> {
+        super::orbit_result::inspect(&self.rows, self.result_set_observation.as_ref()?, reference)
+    }
+
     pub fn rows(&self) -> &[QueryResult] {
         &self.rows
     }
@@ -172,6 +186,24 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 }
 
 impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+    /// Inspect the exact whole-orbit slot already disclosed by this result.
+    pub fn orbit<Schema, Slot, Relation, Entity>(
+        &self,
+        reference: worth_query_declaration::facade::application_query::ApplicationQueryOrbitRef<
+            Schema,
+            Query,
+            Slot,
+            Relation,
+            Entity,
+        >,
+    ) -> Option<super::WorthQueryApplicationQueryOrbit<'_, Schema, Relation, QueryResult>> {
+        super::orbit_result::inspect(
+            &self.rows,
+            self.disclosure.result_set_observation.as_ref()?,
+            reference,
+        )
+    }
+
     pub fn rows(&self) -> &[QueryResult] {
         &self.rows
     }

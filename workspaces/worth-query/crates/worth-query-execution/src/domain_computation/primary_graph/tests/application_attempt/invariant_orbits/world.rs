@@ -119,6 +119,7 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
                 ))
                 .unwrap();
         }
+        super::declared_queries::capability::seed(&mut bootstrap);
         super::decision::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap

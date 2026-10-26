@@ -85,6 +85,28 @@ impl ApplicationQueryDisclosureContract {
         }
     }
 
+    /// Govern the whole orbit's identity, length, membership and successor order.
+    pub fn orbit_by<
+        Schema,
+        Query,
+        Slot,
+        Relation,
+        Entity,
+        DisclosureBinding: ApplicationScalarValueBinding,
+    >(
+        mut self,
+        orbit: super::ApplicationQueryOrbitRef<Schema, Query, Slot, Relation, Entity>,
+        disclosure_value: ApplicationEncodedScalarValue<DisclosureBinding>,
+        influence: ApplicationQueryInfluenceContract,
+    ) -> Self {
+        self.rules.push(ApplicationQueryDisclosureRule {
+            selector: ApplicationQueryDisclosureSelector::Orbit(orbit.into_meaning()),
+            disclosure_value: disclosure_value.into_foundational_value(),
+            influence,
+        });
+        self.rules.sort();
+        self
+    }
     pub fn public() -> Self {
         Self {
             posture: ApplicationQueryDisclosurePosture::Public,

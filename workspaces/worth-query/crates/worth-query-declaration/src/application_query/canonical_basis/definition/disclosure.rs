@@ -72,6 +72,15 @@ fn append_rule(
             text(format!("{path}.cardinality"), cardinality_name(cardinality)),
         ]);
     }
+    if let crate::application_query::ApplicationQueryDisclosureSelector::Orbit(orbit) = selector {
+        entries.extend([
+            text(format!("{path}.kind"), "orbit"),
+            text(format!("{path}.relation"), orbit.relation()),
+            text(format!("{path}.from"), orbit.from()),
+            text(format!("{path}.to"), orbit.to()),
+            text(format!("{path}.order"), "anchor-forward-v1"),
+        ]);
+    }
     for (index, surface) in rule.influence().permitted().enumerate() {
         entries.push(text(
             format!("{path}.influence[{index}]"),

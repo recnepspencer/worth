@@ -41,7 +41,10 @@ pub(super) fn validate(
             .is_some_and(|field| field.slot_key() == expected);
         let matches_relation = relation_by_slot(definition.result_shape(), selector.slot_type())
             .is_some_and(|relation| relation.slot_key() == expected);
-        if !matches_field && !matches_relation {
+        let matches_orbit = definition
+            .orbit()
+            .is_some_and(|orbit| orbit.slot_key() == expected);
+        if !matches_field && !matches_relation && !matches_orbit {
             return Err(ApplicationQueryDefinitionDenial::DisclosureSelectorMismatch);
         }
     }
