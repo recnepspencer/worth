@@ -34,14 +34,14 @@ where
         .state
         .branches
         .reserve_branch(owner.owner_identity(), name.clone())
-        .map_err(super::map_registry_denial)?;
+        .map_err(RuntimeWorldBranchAdmissionDenial::from)?;
     let (branch, incarnation) = owner
         .issue_branch_identities(name)
         .map_err(|()| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)?;
     let destination = CreationDestination {
         witness: reservation
             .bind_creation_destination(branch.clone(), incarnation)
-            .map_err(super::map_registry_denial)?,
+            .map_err(RuntimeWorldBranchAdmissionDenial::from)?,
         branch: branch.clone(),
         incarnation,
     };

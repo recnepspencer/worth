@@ -16,11 +16,16 @@ pub enum WorthQueryProductBranchCreationDenial {
     /// last gate holder drops, even if component cleanup is still outstanding.
     /// Multiple holders of one gate count once. Unpublished World forks whose
     /// Query reservation was dropped are excluded. The refused fork is excluded.
+    /// Occupancy equals the immutable installed limit at refusal; exceeding it
+    /// is an internal counter invariant failure, asserted in debug builds.
     CoordinationCapacityExhausted {
         limit: usize,
         occupancy: usize,
     },
+    /// Defensive arithmetic failure, not a policy ceiling. Secondary map and
+    /// program-use counts are bounded by live reservations while consistent.
     CoordinationOccupancyOverflow,
+    /// Physical allocation for coordination backing was rejected.
     CoordinationAllocationRejected,
     CoordinationUnavailable,
     ProgramSupportUnavailable,
@@ -45,29 +50,7 @@ impl WorthQueryProductRuntime {
         let reservation = self
             .activations
             .reserve_for_source_program(source_program)
-            .map_err(|denial| match denial {
-                WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy } => {
-                    WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
-                        limit,
-                        occupancy,
-                    }
-                }
-                WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
-                    WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable
-                }
-                WorthQueryProductActivationDenial::OccupancyOverflow => {
-                    WorthQueryProductBranchCreationDenial::CoordinationOccupancyOverflow
-                }
-                WorthQueryProductActivationDenial::AllocationRejected => {
-                    WorthQueryProductBranchCreationDenial::CoordinationAllocationRejected
-                }
-                WorthQueryProductActivationDenial::UnknownProductBranch
-                | WorthQueryProductActivationDenial::RegistryUnavailable
-                | WorthQueryProductActivationDenial::GateUnavailable
-                | WorthQueryProductActivationDenial::PublicationInProgress => {
-                    WorthQueryProductBranchCreationDenial::CoordinationUnavailable
-                }
-            })?;
+            .map_err(WorthQueryProductBranchCreationDenial::from)?;
         Ok(WorthQueryProductBranchCreationReservation {
             runtime: self,
             source,
@@ -114,5 +97,33 @@ impl WorthQueryProductBranchCreationReservation<'_> {
             RuntimeWorldBranchCreationOutcome::ProductUnpublished(_) => drop(self.activation),
         }
         Ok(outcome)
+    }
+}
+
+impl From<WorthQueryProductActivationDenial> for WorthQueryProductBranchCreationDenial {
+    fn from(denial: WorthQueryProductActivationDenial) -> Self {
+        match denial {
+            WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy } => {
+                WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
+                    limit,
+                    occupancy,
+                }
+            }
+            WorthQueryProductActivationDenial::ProgramSupportUnavailable => {
+                WorthQueryProductBranchCreationDenial::ProgramSupportUnavailable
+            }
+            WorthQueryProductActivationDenial::OccupancyOverflow => {
+                WorthQueryProductBranchCreationDenial::CoordinationOccupancyOverflow
+            }
+            WorthQueryProductActivationDenial::AllocationRejected => {
+                WorthQueryProductBranchCreationDenial::CoordinationAllocationRejected
+            }
+            WorthQueryProductActivationDenial::UnknownProductBranch
+            | WorthQueryProductActivationDenial::RegistryUnavailable
+            | WorthQueryProductActivationDenial::GateUnavailable
+            | WorthQueryProductActivationDenial::PublicationInProgress => {
+                WorthQueryProductBranchCreationDenial::CoordinationUnavailable
+            }
+        }
     }
 }

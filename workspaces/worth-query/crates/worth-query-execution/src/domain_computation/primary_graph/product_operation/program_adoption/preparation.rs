@@ -28,8 +28,10 @@ use super::super::WorthQuerySelectedProductOperation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBranchAdoptionActivationDenial {
     /// The runtime's activation capacity is full. Retry later.
+    /// Atomic policy-refusal evidence: occupancy equals the installed limit.
     CapacityExhausted { limit: usize, occupancy: usize },
     /// Activation coordination arithmetic could not represent another holder.
+    /// This is a defensive arithmetic failure, not an installed policy ceiling.
     OccupancyOverflow,
     /// The activation registry could not allocate what the branch needs.
     AllocationRejected,

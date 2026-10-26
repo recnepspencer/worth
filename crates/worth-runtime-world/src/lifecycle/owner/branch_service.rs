@@ -119,7 +119,7 @@ where
             .state
             .branches
             .reserve_branch(self.owner_identity(), name.clone())
-            .map_err(map_registry_denial)?;
+            .map_err(RuntimeWorldBranchAdmissionDenial::from)?;
         let (branch, lifecycle) = self
             .issue_branch_identities(name)
             .map_err(|_| RuntimeWorldBranchAdmissionDenial::IdentityExhausted)?;
@@ -242,34 +242,36 @@ where
     }
 }
 
-fn map_registry_denial(
-    denial: crate::branch::registry::ProductBranchRegistryDenial,
-) -> RuntimeWorldBranchAdmissionDenial {
-    use crate::branch::registry::ProductBranchRegistryDenial;
+impl From<crate::branch::registry::ProductBranchRegistryDenial>
+    for RuntimeWorldBranchAdmissionDenial
+{
+    fn from(denial: crate::branch::registry::ProductBranchRegistryDenial) -> Self {
+        use crate::branch::registry::ProductBranchRegistryDenial;
 
-    match denial {
-        ProductBranchRegistryDenial::ForeignOwner => {
-            RuntimeWorldBranchAdmissionDenial::ForeignOwner
-        }
-        ProductBranchRegistryDenial::CapacityExhausted { limit, occupancy } => {
-            RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted { limit, occupancy }
-        }
-        ProductBranchRegistryDenial::OccupancyOverflow => {
-            RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow
-        }
-        ProductBranchRegistryDenial::AllocationRejected => {
-            RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected
-        }
-        ProductBranchRegistryDenial::AlreadyInstalled
-        | ProductBranchRegistryDenial::ReservationMissing
-        | ProductBranchRegistryDenial::IdentityMismatch
-        | ProductBranchRegistryDenial::BranchAlreadyInstalled
-        | ProductBranchRegistryDenial::LifecycleAlreadyInstalled => {
-            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
-        }
-        ProductBranchRegistryDenial::NameAlreadyReserved
-        | ProductBranchRegistryDenial::NameAlreadyInstalled => {
-            RuntimeWorldBranchAdmissionDenial::DuplicateName
+        match denial {
+            ProductBranchRegistryDenial::ForeignOwner => {
+                RuntimeWorldBranchAdmissionDenial::ForeignOwner
+            }
+            ProductBranchRegistryDenial::CapacityExhausted { limit, occupancy } => {
+                RuntimeWorldBranchAdmissionDenial::BranchCapacityExhausted { limit, occupancy }
+            }
+            ProductBranchRegistryDenial::OccupancyOverflow => {
+                RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow
+            }
+            ProductBranchRegistryDenial::AllocationRejected => {
+                RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected
+            }
+            ProductBranchRegistryDenial::AlreadyInstalled
+            | ProductBranchRegistryDenial::ReservationMissing
+            | ProductBranchRegistryDenial::IdentityMismatch
+            | ProductBranchRegistryDenial::BranchAlreadyInstalled
+            | ProductBranchRegistryDenial::LifecycleAlreadyInstalled => {
+                RuntimeWorldBranchAdmissionDenial::OwnerUnavailable
+            }
+            ProductBranchRegistryDenial::NameAlreadyReserved
+            | ProductBranchRegistryDenial::NameAlreadyInstalled => {
+                RuntimeWorldBranchAdmissionDenial::DuplicateName
+            }
         }
     }
 }
@@ -283,7 +285,9 @@ fn map_source_install_denial(
         ProductBranchSourceInstallDenial::Cancelled => {
             RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect
         }
-        ProductBranchSourceInstallDenial::Registry(denial) => map_registry_denial(denial),
+        ProductBranchSourceInstallDenial::Registry(denial) => {
+            RuntimeWorldBranchAdmissionDenial::from(denial)
+        }
         ProductBranchSourceInstallDenial::SourceRetired => {
             RuntimeWorldBranchAdmissionDenial::RetiredBranch
         }

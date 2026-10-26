@@ -342,3 +342,6 @@ impl Drop for WorthQueryProgramRetirementBarrier {
             .remove(&self.revision);
     }
 }
+
+#[cfg(test)]
+mod defensive_tests;

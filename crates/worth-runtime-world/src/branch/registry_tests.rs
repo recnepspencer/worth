@@ -86,3 +86,46 @@ fn foreign_owner_cannot_consume_branch_capacity() {
     ));
     assert_eq!(registry.reserved_branch_count(), 0);
 }
+
+#[test]
+fn defensive_branch_counter_overflow_and_allocation_have_distinct_producers() {
+    use crate::branch::RuntimeWorldBranchAdmissionDenial;
+    // A consistent live registry cannot reach these representational sizes.
+    // Inject only its bookkeeping counter; no authority or branch is fabricated.
+    for (reserved, expected) in [
+        (
+            usize::MAX,
+            RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow,
+        ),
+        (
+            usize::MAX - 1,
+            RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected,
+        ),
+    ] {
+        let construction = RuntimeWorldOwnerConstructionContract::new().unwrap();
+        let owner = construction.owner_identity();
+        let registry = ProductBranchRegistry::new(
+            owner,
+            RuntimeWorldBudgets::without_policy_limits().live_product_branches(),
+        );
+        registry.state.lock().unwrap().reserved_branches = reserved;
+        let name = ProductBranchName::try_new("defensive-reservation").unwrap();
+        assert_eq!(
+            registry
+                .reserve_branch(owner, name.clone())
+                .map_err(RuntimeWorldBranchAdmissionDenial::from)
+                .err(),
+            Some(expected)
+        );
+        {
+            let state = registry.state.lock().unwrap();
+            assert_eq!(state.reserved_branches, reserved);
+            assert!(state.reserved_names.is_empty());
+            assert_eq!(state.entries.len(), 0);
+        }
+        registry.state.lock().unwrap().reserved_branches = 0;
+        drop(registry.reserve_branch(owner, name).unwrap());
+        assert_eq!(registry.reserved_branch_count(), 0);
+    }
+}
+
