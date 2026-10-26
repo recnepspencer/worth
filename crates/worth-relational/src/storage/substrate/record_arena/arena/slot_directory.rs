@@ -7,6 +7,12 @@ pub(crate) struct RecordSlotDirectory {
 }
 
 impl RecordSlotDirectory {
+    pub(super) fn try_occupied_entries<Stop>(
+        &self,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+    ) -> Result<crate::storage::substrate::SharedMapIter<'_, u64, usize>, Stop> {
+        self.physical_by_logical.try_iter(prepare)
+    }
     pub(super) fn visit_new_allocations(
         &self,
         previous: &Self,

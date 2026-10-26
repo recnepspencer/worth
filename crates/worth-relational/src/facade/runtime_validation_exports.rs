@@ -1,7 +1,8 @@
 pub use crate::aggregate_identity::{
     AggregateRead, AggregateReadDenial, AggregateReadLineageEvent, AggregateReadObservations,
-    AggregateReadPort, PinnedAggregateRead, PinnedAggregateReadDenial,
-    PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
+    AggregateReadPort, PinnedAggregateLineageRead, PinnedAggregateLineageScope,
+    PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
+    PinnedAggregateReadScope,
 };
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,

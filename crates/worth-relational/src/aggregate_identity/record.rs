@@ -33,7 +33,7 @@ pub(crate) const LINEAGE_FIELDS: &[(&str, ScalarAspectType)] = &[
     ("kind", ScalarAspectType::UInt8),
 ];
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct AggregateRecord {
     pub(crate) identity: AggregateIdentity,
     pub(crate) definition: AggregateDefinitionIdentity,

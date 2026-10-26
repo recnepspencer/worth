@@ -16,6 +16,7 @@ use super::record::AggregateRecord;
 use super::retention_extent as extent;
 use super::PriorAggregate;
 
+#[derive(Clone, Copy)]
 pub(super) struct StoredAggregate {
     pub(super) entity: EntityId,
     pub(super) record: AggregateRecord,

@@ -17,8 +17,8 @@ mod stored_record;
 mod transition;
 pub use observations::AggregateReadObservations;
 pub use pinned::{
-    PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
-    PinnedAggregateReadScope,
+    PinnedAggregateLineageRead, PinnedAggregateLineageScope, PinnedAggregateRead,
+    PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
 };
 pub(crate) use preparation::AggregateAdmission;
 pub(crate) use proposal::{AggregateInvocation, AggregateProposal, AggregateProposalBorrow};

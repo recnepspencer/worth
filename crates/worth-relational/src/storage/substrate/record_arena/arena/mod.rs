@@ -8,10 +8,12 @@ mod pin_counts;
 mod pinning;
 mod slot_directory;
 mod slot_lifecycle;
+mod slot_visitation;
 mod sparse_clone;
 
 use pin_counts::RecordPinCounts;
 pub(crate) use slot_directory::RecordSlotDirectory;
+pub(crate) use slot_visitation::RecordSlotVisit;
 
 use crate::storage::substrate::SharedColumn;
 use std::collections::BTreeMap;

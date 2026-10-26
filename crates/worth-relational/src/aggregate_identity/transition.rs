@@ -23,7 +23,7 @@ pub(crate) struct AggregateAssignment {
     pub(crate) born: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) struct AggregateLineageEvent {
     pub(crate) occurrence: CommitId,
     pub(crate) kind: AggregateLineageKind,

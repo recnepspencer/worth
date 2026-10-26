@@ -17,13 +17,31 @@ pub(super) fn read(
     contract: AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<BTreeSet<AggregateLineageEvent>> {
+    let mut events = BTreeSet::new();
+    visit(view, aggregate, contract, work, |event, work| {
+        work.retain(extent::tree_entry::<AggregateLineageEvent, ()>())?;
+        events.insert(event);
+        Ok(())
+    })?;
+    Ok(events)
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct MergeContinuation {
+    pub(super) target: StoredAggregate,
+    pub(super) event: AggregateLineageEvent,
+}
+
+pub(super) fn visit(
+    view: &InvariantStateView<'_>,
+    aggregate: &StoredAggregate,
+    contract: AggregateIdentityContractDeclaration,
+    work: &mut AggregateWork<'_, '_, '_, '_>,
+    mut emit: impl FnMut(AggregateLineageEvent, &mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<()>,
+) -> BuildResult<Option<MergeContinuation>> {
     let mut ids = BTreeSet::new();
     for outgoing in [true, false] {
         let candidates = view.relation_candidate_count(aggregate.entity, outgoing) as u64;
-        let bytes = candidates
-            .checked_mul(extent::relation_candidate() + extent::tree_entry::<RelationId, ()>())
-            .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
-        work.retain(bytes.saturating_add(extent::empty_candidate()))?;
         work.checkpoint(
             candidates
                 .checked_mul(8)
@@ -40,6 +58,7 @@ pub(super) fn read(
         ids.extend(selected);
     }
     let mut events = BTreeSet::new();
+    let mut continuation = None;
     for id in ids {
         work.checkpoint(1)?;
         let Some(edge) = view.relation_metadata(id) else {
@@ -50,8 +69,8 @@ pub(super) fn read(
             continue;
         }
         let record = lineage_record(view, id, work)?;
-        let from = super::stored_record::read(view, edge.source, contract, work)?;
-        let to = super::stored_record::read(view, edge.target, contract, work)?;
+        let from = super::stored_record::read_scalar(view, edge.source, contract, work)?;
+        let to = super::stored_record::read_scalar(view, edge.target, contract, work)?;
         if from.identity == to.identity
             || (from.identity != aggregate.record.identity
                 && to.identity != aggregate.record.identity)
@@ -60,17 +79,30 @@ pub(super) fn read(
         {
             return work.invalid(PlanDenial::InvalidStoredLineage);
         }
-        work.retain(extent::tree_entry::<AggregateLineageEvent, ()>())?;
-        if !events.insert(AggregateLineageEvent {
+        let event = AggregateLineageEvent {
             occurrence: record.occurrence,
             kind: record.kind,
             from: from.identity,
             to: to.identity,
-        }) {
+        };
+        if !events.insert(event) {
             return work.invalid(PlanDenial::InvalidStoredLineage);
         }
+        if event.kind == AggregateLineageKind::MergedInto && edge.source == aggregate.entity {
+            if continuation.is_some() {
+                return work.invalid(PlanDenial::InvalidStoredLineage);
+            }
+            continuation = Some(MergeContinuation {
+                target: StoredAggregate {
+                    entity: edge.target,
+                    record: to,
+                },
+                event,
+            });
+        }
+        emit(event, work)?;
     }
-    Ok(events)
+    Ok(continuation)
 }
 
 fn lineage_record(
@@ -78,9 +110,6 @@ fn lineage_record(
     relation: RelationId,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<LineageRecord> {
-    // The fixed thirteen-field aggregate grammar is a conservative bound for
-    // the two lineage locators/decoded scalars that coexist here.
-    work.retain(extent::record_fields())?;
     let Some(state) = view.relation_aspect_state(relation) else {
         return work.invalid(PlanDenial::InvalidStoredLineage);
     };
