@@ -13,6 +13,8 @@ mod blob_claim;
 #[cfg(feature = "certification-test-authority")]
 #[path = "serving_runtime/certification/mod.rs"]
 mod certification;
+#[cfg(feature = "certification-test-authority")]
+pub use certification::CertificationRetirementPause;
 mod ordered_journals;
 mod physical_work;
 mod record_reader;

@@ -70,6 +70,21 @@ progress fails fixture setup.
 `relational_home` requires the certification feature because its crash oracle
 uses the compiled media and interruption controls. The scenario CI partition
 selects it and enables `worth-store-relational/certification-test-authority`.
+The weekly `Store certificate roster scale` workflow runs the explicitly
+ignored `maximum_certificate_roster_checkpoints_recovers_and_rejoins` test.
+It ingests 64 chunks at the production minimum of 64 KiB each (4 MiB total).
+A receiver-owned retirement pause keeps all 63 real partial V3 drops pending
+until the fixture checkpoints the full
+63-Batch-plus-Accumulator roster, recovers through C8 and rejoins Serving,
+then checks every certificate before a further checkpoint folds the Batches
+into the same cumulative custody. Its separate
+30-minute guard funds that complete scale world; it is excluded from ordinary
+scenario runs. Under continuous builds it passed in 732.58 seconds: 195.99
+for ingest, 525.67 for 63 drops (8.34 per drop), 1.75 for checkpoint,
+0.76 for C8, and 6.77 for rejoin/carry. The 1,800-second guard left 59% unused.
+Run the scheduled selection locally with the exact nextest
+command in `.github/workflows/store-certificate-roster-scale.yml`.
+
 Windows confinement tests create real file and directory symlinks. Run with
 Windows Developer Mode enabled
 or an account holding the symbolic-link creation privilege; fixture creation

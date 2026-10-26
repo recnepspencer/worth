@@ -29,6 +29,13 @@ use crate::physical_runtime::{
 };
 
 impl RecordPublicationDirector {
+    #[cfg(feature = "certification-test-authority")]
+    pub(in crate::physical_runtime) fn certification_try_hold_retirement_owner(
+        &self,
+    ) -> Option<std::sync::MutexGuard<'_, ()>> {
+        self.try_begin_retirement()
+    }
+
     pub(in crate::physical_runtime) fn completed_displaced_exact(
         &self,
         expected: DisplacedArtifact,

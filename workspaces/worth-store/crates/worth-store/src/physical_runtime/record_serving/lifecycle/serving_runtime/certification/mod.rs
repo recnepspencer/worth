@@ -4,6 +4,7 @@ mod durable_publication;
 mod rebuild;
 mod release_head;
 mod retirement;
+pub use retirement::CertificationRetirementPause;
 mod root_completion;
 mod tier_epoch;
 mod wal_durable;

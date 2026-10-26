@@ -45,3 +45,12 @@ test(pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_term
 '''
 threads-required = "num-test-threads"
 slow-timeout = { period = "60s", terminate-after = 30 }
+
+# Scheduled maximum-roster proof: 64 chunks, 63 partial drops, one checkpoint,
+# one C8 recovery and a Serving rejoin/checkpoint (not an ordinary scenario).
+# Under continuous builds it passed in 732.6 s (8.34 s/drop, 196 s ingest),
+# leaving 59% of this dedicated 1,800 s guard unused.
+[[profile.default.overrides]]
+filter = 'test(=certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'
+threads-required = "num-test-threads"
+slow-timeout = { period = "60s", terminate-after = 30 }
