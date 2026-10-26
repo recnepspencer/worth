@@ -141,7 +141,7 @@ impl RelationalCommitArtifact {
         root: Option<&Arc<crate::branch::RelationalBranchRoot>>,
         descriptor: Option<&RelationalCommitRootDescriptor>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if !Arc::ptr_eq(self.envelope(), envelope) {
+        if !Arc::ptr_eq(&self.envelope(), envelope) {
             return Err(RelationalCommitArtifactDenial::RootLinkage);
         }
         let roots = if let Some(root) = root {
@@ -200,7 +200,7 @@ impl RelationalCommitArtifact {
         })
     }
 
-    pub(crate) fn resident_envelope(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
+    pub(crate) fn resident_envelope(&self) -> Option<Arc<CanonicalCommitEnvelope>> {
         self.envelope.get()
     }
 
@@ -209,7 +209,7 @@ impl RelationalCommitArtifact {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<
-        &Arc<CanonicalCommitEnvelope>,
+        Arc<CanonicalCommitEnvelope>,
         crate::storage::residency::RelationalResidencyDemandFailure,
     > {
         self.envelope.demand(execution, limit)
@@ -240,7 +240,7 @@ impl RelationalCommitArtifact {
         &self.roots
     }
 
-    pub(crate) fn envelope(&self) -> &Arc<CanonicalCommitEnvelope> {
+    pub(crate) fn envelope(&self) -> Arc<CanonicalCommitEnvelope> {
         self.envelope
             .get()
             .expect("envelope body requires an accepted demand")
@@ -310,7 +310,7 @@ impl RelationalCommitArtifact {
             && self
                 .envelope
                 .get()
-                .is_some_and(|envelope| root.links_envelope(envelope))
+                .is_some_and(|envelope| root.links_envelope(&envelope))
     }
 
     pub(crate) fn commit_id(&self) -> CommitId {

@@ -113,7 +113,7 @@ impl HistoricalVisibilityBasis {
             let metadata_aliases_root = runtime
                 .history
                 .commit_artifact_for_version(version_id)
-                .is_some_and(|artifact| envelope_selects_root(artifact.envelope(), &root));
+                .is_some_and(|artifact| root.descriptor() == Some(artifact.roots()));
             if !metadata_aliases_root {
                 return Err(HistoricalVisibilityDenial::MvccIntervalUnavailable);
             }
@@ -192,18 +192,4 @@ fn historical_retention_denial(
             HistoricalVisibilityDenial::RetentionUnavailable
         }
     }
-}
-
-fn envelope_selects_root(
-    envelope: &crate::history::data::CanonicalCommitEnvelope,
-    root: &RelationalBranchRoot,
-) -> bool {
-    let Some(descriptor) = root.descriptor() else {
-        return false;
-    };
-    envelope
-        .branch_cell_checkpoint
-        .as_ref()
-        .and_then(|checkpoint| checkpoint.observation.target().as_basis())
-        .is_some_and(|target| target.roots() == descriptor)
 }

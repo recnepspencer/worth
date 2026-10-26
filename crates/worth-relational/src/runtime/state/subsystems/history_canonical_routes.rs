@@ -11,10 +11,9 @@ impl HistorySubsystem {
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        if let Some(artifact) = self.commit_artifact(commit_id) {
-            return Some(Arc::clone(artifact.envelope()));
-        }
-        self.canonical_publication_routes.by_commit(commit_id)
+        self.commit_artifact(commit_id)
+            .and_then(|artifact| artifact.resident_envelope())
+            .or_else(|| self.canonical_publication_routes.by_commit(commit_id))
     }
 
     pub(crate) fn canonical_envelope_for_version(

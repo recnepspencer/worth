@@ -40,7 +40,7 @@ impl RelationalCanonicalPublicationRoutes {
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
                 .get(&commit_id)
-                .and_then(|artifact| artifact.resident_envelope().cloned())
+                .and_then(|artifact| artifact.resident_envelope())
         })
     }
 

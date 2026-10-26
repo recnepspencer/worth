@@ -1853,3 +1853,65 @@ buckets, 18 remote Heads, 72 declared Head/id pages), plus 54 history-independen
 current success cells across this and the preceding slice. Every table checks
 its typed native boundary before extracting the payload. Formatting, dirty
 caps, context and whitespace pass; the corrected all-test clippy run is active.
+
+### Envelope flight custody boundary
+
+Boundary review: indexed recovery admits bodies through envelope cells, but
+those cells use OnceLock and retain a queried body permanently. Recovered
+nonheads have no other required owner. The catalog artifact also retains
+canonical bytes for admitted heads. Separately, live publication still retains
+whole envelopes in the ledger, performed stream and durability log, and a
+new medium does not currently expose its cold source. These are distinct
+retention owners that must ultimately cut over together; fixing only a cache
+would not prove the full history-on-demand obligation.
+
+Plan: first expose the minimal lifetime violation with a real recovered
+nonhead query: hold two simultaneous returned envelope Arcs, prove they share
+one admitted body, drop both, then inject a transient journal failure and demand
+again. No branch head, unsettled route or external observation names that old
+commit. The next query must read through the cold source and return its native
+Envelope failure, then recover after the source returns. Keep memory-only
+resident cells and positioned head readmission proof intact. From this failing
+court, replace permanent cold-body ownership with flight custody and carry
+owned answers through body consumers. Then add live-publication growth and
+settlement courts before changing the ledger/route/log retention owners and
+the medium-to-cold-source handoff. The existing selective history and all six
+failure-class courts remain mandatory evidence throughout the cutover.
+
+The flight court fails on the original OnceLock: its Weak observer remains
+upgradeable after both genuine query readers are dropped. Cold cells now keep
+only a weak body reference plus per-cell proven damage; demand returns an owned
+Arc to its caller. The memory-only backing owns a strong Arc. Head readmission
+uses the same journal/digest/readmission routine while returning its positioned
+commit directly, so a borrowed body never substitutes for a position proof.
+
+The owned handoff exposes four mechanical borrow callers, now corrected. It
+also reveals that recovery's retained_cold_entries classified catalog identity
+by current body residency. Rebuilding unrelated heads could therefore drop an
+index just because a reader held its body. Recovery now names the exact IDs it
+will replace and retains every other entry independently of cache state; a
+producer-backed unit court covers an in-flight body across that projection.
+Metadata-alias visibility compares the artifact's sealed root descriptor with
+the selected root directly instead of opening a body through a pure accessor.
+This uses the indexed root fact already validated at admission and preserves
+metadata-only version aliases without a cold-source operation behind an accessor.
+
+The first owned-envelope caller check identified three production borrows and
+one pointer-equality test that still expected borrowed Arcs; the corrected
+caller check passes. All 45 envelope-focused courts pass, including the new
+flight-lifetime court and catalog projection court. The complete library is
+green with 1,972 passed and 31 existing ignores. Formatting, dirty caps,
+agent-context and whitespace pass. Composition scans 14 files, zero hard
+violations and seven advisories: existing catalog/recovery orchestration remains
+one recovery responsibility, and demand retains its single serialized admission
+boundary. The corrected all-test clippy from the preceding preparation slice
+also completed green. Envelope clippy and boundary are running for this slice.
+
+This does not claim live history release: publication's in-memory ledger,
+performed nodes and durability log still retain bodies, and new durable medium
+attachments do not yet supply their cold read source. Those owners remain an
+explicit next matrix target, alongside lineage-event payloads and final oracle
+coverage. The weak cold cell fixes recovered query lifetime rather than masking
+those separate live retention owners.
+
+Envelope all-test clippy completes green (-D warnings -A dead-code).

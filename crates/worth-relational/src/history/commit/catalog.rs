@@ -89,7 +89,7 @@ impl RelationalCommitCatalog {
         if self
             .entries
             .get(&commit_id)
-            .is_some_and(|existing| existing.resident_envelope() == Some(&envelope))
+            .is_some_and(|existing| existing.resident_envelope().as_ref() == Some(&envelope))
         {
             return Ok(());
         }
@@ -150,13 +150,16 @@ impl RelationalCommitCatalog {
             .map_err(|_| RelationalCommitCatalogEnvelopeAppendDenial::DuplicateCommit)
     }
 
-    /// Preserve index-only facts while recovery relinks the resident heads.
-    pub(crate) fn retained_cold_entries(&self) -> Self {
+    /// Relink named recovered envelopes without using residency as an index filter.
+    pub(crate) fn retained_entries_except(
+        &self,
+        replaced: &std::collections::BTreeSet<CommitId>,
+    ) -> Self {
         Self {
             entries: self
                 .entries
                 .iter()
-                .filter(|(_, artifact)| artifact.resident_envelope().is_none())
+                .filter(|(id, _)| !replaced.contains(id))
                 .map(|(id, artifact)| (*id, Arc::clone(artifact)))
                 .collect(),
             materializations: Arc::new(AtomicU64::new(0)),

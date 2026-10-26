@@ -15,7 +15,7 @@ impl HistoryAccess<'_> {
         match self.runtime.history.commit_artifact(commit_id) {
             Some(artifact) => artifact
                 .demand_envelope(execution, 1 << 30)
-                .map(|envelope| Some(envelope.clone()))
+                .map(Some)
                 .map_err(Into::into),
             None => Ok(self.runtime.history.canonical_envelope(commit_id)),
         }

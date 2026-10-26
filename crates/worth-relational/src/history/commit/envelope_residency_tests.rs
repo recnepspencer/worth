@@ -87,8 +87,8 @@ fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() 
     let first = cell.demand(&execution, 1 << 30).unwrap();
     assert_eq!(first.commit, expected);
     assert!(Arc::ptr_eq(
-        first,
-        cell.demand(&execution, 1 << 30).unwrap()
+        &first,
+        &cell.demand(&execution, 1 << 30).unwrap()
     ));
     assert_eq!(source.reads.load(Ordering::Relaxed), 1);
 }
@@ -117,4 +117,34 @@ fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
         );
     }
     assert_eq!(source.reads.load(Ordering::Relaxed), 1);
+}
+
+#[test]
+fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let (entry, source) = selected(&execution, None);
+    let id = entry.commit.commit_id;
+    let mut catalog = super::RelationalCommitCatalog::default();
+    catalog
+        .append_indexed_recovery(entry, source, None)
+        .unwrap();
+    let body = catalog
+        .get(id)
+        .unwrap()
+        .demand_envelope(&execution, 1 << 30)
+        .unwrap();
+    let retained = catalog.retained_entries_except(&std::collections::BTreeSet::new());
+    assert_eq!(retained.get(id).unwrap().receipt(), body.commit);
+    let weak = Arc::downgrade(&body);
+    drop(body);
+    assert!(weak.upgrade().is_none());
+    assert!(retained.get(id).unwrap().resident_envelope().is_none());
+    assert!(
+        catalog
+            .retained_entries_except(&std::collections::BTreeSet::from([id]))
+            .get(id)
+            .is_none(),
+        "only explicitly replaced identities leave the projection"
+    );
 }

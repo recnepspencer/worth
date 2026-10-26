@@ -147,8 +147,17 @@ impl HistorySubsystem {
             reservation.replace_head(previous_root);
         }
         self.branch_cells.restore_all(cells);
-        let mut catalog = self.ledger.read().commit_catalog.retained_cold_entries();
-        for envelope in self.recorded_commit_envelopes() {
+        let envelopes = self.recorded_commit_envelopes();
+        let replaced = envelopes
+            .iter()
+            .map(|envelope| envelope.commit.commit_id)
+            .collect();
+        let mut catalog = self
+            .ledger
+            .read()
+            .commit_catalog
+            .retained_entries_except(&replaced);
+        for envelope in envelopes {
             let commit_id = envelope.commit.commit_id;
             let preencoded = self.commit_artifact(commit_id).ok_or_else(|| {
                 format!(

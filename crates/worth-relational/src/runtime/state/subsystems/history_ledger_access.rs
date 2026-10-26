@@ -53,7 +53,7 @@ impl HistorySubsystem {
             .commit_catalog
             .snapshot()
             .into_iter()
-            .map(|artifact| Arc::clone(artifact.envelope()))
+            .map(|artifact| artifact.envelope())
             .collect()
     }
 

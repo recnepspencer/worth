@@ -1,6 +1,4 @@
-//! Readmission of an indexed canonical envelope under the caller's request.
-use std::sync::{Arc, Mutex, OnceLock};
-
+//! Indexed envelopes keep only weak flight custody; readers own admitted bodies.
 use super::RelationalCommitIndexEntry;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::durability::data::RelationalRecoveryStop;
@@ -11,124 +9,112 @@ use crate::storage::data::{
     RelationalStorageUnavailableCause as Cause,
 };
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+use std::sync::{Arc, Mutex, Weak};
 
 #[derive(Debug)]
 pub(crate) struct RelationalCommitEnvelopeResidency {
-    resident: OnceLock<AdmittedEnvelope>,
-    cold: Option<(
-        RelationalCommitIndexEntry,
-        Arc<dyn RelationalDurableColdSource>,
-    )>,
-    load: Mutex<Option<RelationalStorageUnavailable>>,
+    backing: EnvelopeBacking,
+    flight: Mutex<EnvelopeFlight>,
 }
-
 #[derive(Debug)]
-enum AdmittedEnvelope {
-    Resident(Arc<CanonicalCommitEnvelope>),
-    Readmitted(PositionedCanonicalCommit),
+enum EnvelopeBacking {
+    Memory(Arc<CanonicalCommitEnvelope>),
+    Journal {
+        entry: RelationalCommitIndexEntry,
+        source: Arc<dyn RelationalDurableColdSource>,
+    },
 }
-
+#[derive(Debug, Default)]
+struct EnvelopeFlight {
+    envelope: Weak<CanonicalCommitEnvelope>,
+    damage: Option<RelationalStorageUnavailable>,
+}
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(envelope: Arc<CanonicalCommitEnvelope>) -> Self {
         Self {
-            resident: OnceLock::from(AdmittedEnvelope::Resident(envelope)),
-            cold: None,
-            load: Mutex::new(None),
+            backing: EnvelopeBacking::Memory(envelope),
+            flight: Mutex::default(),
         }
     }
-
     pub(crate) fn cold(
         entry: RelationalCommitIndexEntry,
         source: Arc<dyn RelationalDurableColdSource>,
         admitted: Option<Arc<CanonicalCommitEnvelope>>,
     ) -> Self {
-        let resident = OnceLock::new();
-        if let Some(envelope) = admitted {
-            resident
-                .set(AdmittedEnvelope::Resident(envelope))
-                .expect("new envelope cell");
-        }
         Self {
-            resident,
-            cold: Some((entry, source)),
-            load: Mutex::new(None),
+            backing: EnvelopeBacking::Journal { entry, source },
+            flight: Mutex::new(EnvelopeFlight {
+                envelope: admitted.as_ref().map_or_else(Weak::new, Arc::downgrade),
+                damage: None,
+            }),
         }
     }
-
-    pub(crate) fn get(&self) -> Option<&Arc<CanonicalCommitEnvelope>> {
-        self.resident.get().map(|admitted| match admitted {
-            AdmittedEnvelope::Resident(envelope) => envelope,
-            AdmittedEnvelope::Readmitted(commit) => commit.canonical_arc(),
-        })
-    }
-
-    pub(super) fn into_positioned(
-        self,
-    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
-        match self.resident.into_inner() {
-            Some(AdmittedEnvelope::Readmitted(commit)) => Ok(commit),
-            _ => Err(crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                "head envelope has no canonical position admission",
-            )
-            .into()),
+    pub(crate) fn get(&self) -> Option<Arc<CanonicalCommitEnvelope>> {
+        match &self.backing {
+            EnvelopeBacking::Memory(envelope) => Some(envelope.clone()),
+            EnvelopeBacking::Journal { .. } => self
+                .flight
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .envelope
+                .upgrade(),
         }
     }
-
     pub(crate) fn demand(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<&Arc<CanonicalCommitEnvelope>, Failure> {
+    ) -> Result<Arc<CanonicalCommitEnvelope>, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
-        if let Some(envelope) = self.get() {
+        let (entry, source) = match &self.backing {
+            EnvelopeBacking::Memory(envelope) => return Ok(envelope.clone()),
+            EnvelopeBacking::Journal { entry, source } => (entry, source),
+        };
+        let mut flight = self
+            .flight
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        if let Some(failure) = flight.damage {
+            return Err(failure.into());
+        }
+        if let Some(envelope) = flight.envelope.upgrade() {
             return Ok(envelope);
         }
-        let mut damage = self.load.lock().unwrap_or_else(|error| error.into_inner());
-        if let Some(envelope) = self.get() {
-            return Ok(envelope);
-        }
-        if let Some(failure) = &*damage {
-            return Err((*failure).into());
-        }
-        let (entry, source) = self.cold.as_ref().expect("unloaded cell has a source");
-        let result = self
-            .readmit(entry, source.as_ref(), execution, limit)
-            .map_err(|stop| match stop {
-                RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
-                RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
-                    subject: RelationalStorageSubject::Envelope(entry.position),
-                    cause: Cause::MemoryExhausted,
-                }
-                .into(),
-                RelationalRecoveryStop::Durability(error) => error
-                    .storage_unavailable
-                    .unwrap_or(RelationalStorageUnavailable {
+        let result =
+            Self::readmit_positioned(entry, source.as_ref(), execution, limit).map_err(|stop| {
+                match stop {
+                    RelationalRecoveryStop::Request(cause) => Failure::Request(cause),
+                    RelationalRecoveryStop::Allocation(_) => RelationalStorageUnavailable {
                         subject: RelationalStorageSubject::Envelope(entry.position),
-                        cause: Cause::Damaged,
-                    })
+                        cause: Cause::MemoryExhausted,
+                    }
                     .into(),
+                    RelationalRecoveryStop::Durability(error) => error
+                        .storage_unavailable
+                        .unwrap_or(RelationalStorageUnavailable {
+                            subject: RelationalStorageSubject::Envelope(entry.position),
+                            cause: Cause::Damaged,
+                        })
+                        .into(),
+                }
             });
         match result {
             Ok(commit) => {
-                self.resident
-                    .set(AdmittedEnvelope::Readmitted(commit))
-                    .expect("one load owns admission");
-                Ok(self.get().expect("admitted envelope"))
+                let envelope = commit.canonical_arc().clone();
+                flight.envelope = Arc::downgrade(&envelope);
+                Ok(envelope)
             }
             Err(stop) => {
                 if let Failure::StorageUnavailable(failure) = &stop
                     && failure.cause.is_proven_damage()
                 {
-                    *damage = Some(*failure);
+                    flight.damage = Some(*failure);
                 }
                 Err(stop)
             }
         }
     }
-
-    fn readmit(
-        &self,
+    pub(super) fn readmit_positioned(
         entry: &RelationalCommitIndexEntry,
         source: &dyn RelationalDurableColdSource,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
