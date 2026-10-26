@@ -4,7 +4,6 @@ use std::collections::BTreeSet;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::identity::data::PartitionId;
 use crate::runtime::RuntimeSymbolTable;
-use crate::storage::residency::RelationalResidencyDemandFailure;
 use crate::transactions::data::{MutationIntent, TransactionCommitError};
 
 /// An input partition is known independently of provisional mutation results.
@@ -17,9 +16,9 @@ pub(crate) fn demand_mutation_inputs<'intent>(
     intents: impl IntoIterator<Item = &'intent MutationIntent>,
     mut partitions: BTreeSet<PartitionId>,
 ) -> Result<(), TransactionCommitError> {
-    crate::execution::check_request(execution).map_err(|cause| {
-        super::storage_read_denial(basis, RelationalResidencyDemandFailure::Request(cause))
-    })?;
+    // Preview, validation or draft admission already consulted its named stage.
+    // This declared demand is not another candidate round. Every actual load
+    // consults the original request at the residency boundary.
     for intent in intents {
         intent.seed_touched_partitions(&mut partitions);
     }
