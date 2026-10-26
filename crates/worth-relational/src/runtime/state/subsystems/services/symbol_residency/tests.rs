@@ -1,4 +1,6 @@
 use super::*;
+#[path = "routing_tests.rs"]
+mod routing_tests;
 use crate::durability::data::{
     RelationalCheckpointDirectory, RelationalCheckpointManifest, RelationalCheckpointMember,
 };
@@ -32,6 +34,7 @@ struct PageSource {
     members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
     reads: AtomicUsize,
     corrupt: AtomicBool,
+    failed_member: Mutex<Option<RelationalDurableMemberLocator>>,
 }
 impl RelationalDurableColdSource for PageSource {
     fn read_member(
@@ -46,6 +49,9 @@ impl RelationalDurableColdSource for PageSource {
             });
         }
         self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
+            return Err(Cause::Damaged);
+        }
         let mut bytes = self
             .members
             .get(&locator)
@@ -95,6 +101,17 @@ fn dictionary() -> (
         .unwrap();
     let outcome = transaction.commit(&execution, &runtime).unwrap();
     release_test_commit_snapshot(&runtime, &outcome);
+    checkpoint_dictionary(&runtime)
+}
+
+fn checkpoint_dictionary(
+    runtime: &crate::runtime::RelationalRuntime,
+) -> (
+    RuntimeSymbolTable,
+    RelationalCheckpointDirectory,
+    Arc<PageSource>,
+    crate::symbols::data::SymbolTableSnapshot,
+) {
     let native = runtime
         .durability_authority()
         .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
@@ -123,6 +140,7 @@ fn dictionary() -> (
             .collect(),
         reads: AtomicUsize::new(0),
         corrupt: AtomicBool::new(false),
+        failed_member: Mutex::new(None),
     });
     let directory = RelationalCheckpointDirectory {
         manifest: input.manifest,

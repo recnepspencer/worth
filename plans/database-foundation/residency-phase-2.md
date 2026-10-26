@@ -342,3 +342,37 @@ Relational lib (1,879 passing, 31 existing ignored), Bridge (1,102), World (263)
 and Server (12) pass. Scoped function review found only cohesive operation,
 fixture and typed pin-coordinate advisories; no extra responsibility is hidden
 in the resident custody or index transitions.
+
+
+## Symbol page shape and routing review
+
+Initial symbol capture bounds id pages but emits an entire hash bucket as one
+member. Its later captures carry prior pages and append new pages, so bounding
+the initial writer also bounds every new bucket member without reading any old
+member. Runtime admission authenticates the frame and canonical dictionary but
+does not compare decoded ids or hash membership with the selected directory.
+A misplaced authenticated page could therefore corrupt negative lookup proof.
+
+Bound every new symbol member to 256 entries. On explicit demand, validate
+strict id order, nonempty bounded shape and the selected range or bucket before
+importing any text. Cache compact decoded shape facts with the existing sticky
+page outcome so a page shared by range and bucket directories is validated in
+each context without another source read. Exercise a real producer checkpoint
+with more than two pages of colliding texts, including late-page deduplication,
+late-page faults and wrong authenticated routing descriptors. This changes
+artifact admission and capture, not interning authority or issuance ownership.
+
+
+The bounded symbol writer and routing validation are implemented. Seven focused
+residency proofs pass, including 601 colliding spellings across bounded pages,
+late-page reuse of the original id, and a sticky late-page refusal without
+issuance. An authenticated wrong id range is rejected before import; a cached
+body is revalidated under another directory selection without rereading bytes.
+The complete Relational lib passes (1,883 tests; 31 existing ignored), as do
+Relational lib clippy, formatting, dirty line caps and agent-context. The
+initial routing test tried to read another owner's private `cold` field; it was
+corrected to observe admitted vocabulary and construct the existing production
+page owner directly for its cache-shape unit proof. No visibility was widened.
+Scoped review keeps capture's metadata orchestration and its three existing
+function advisories together; the new shape facts and cache transitions carry
+one page-admission responsibility.

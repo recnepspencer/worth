@@ -7,6 +7,7 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 #[cfg(test)]
 use crate::durability::checkpoints::images::partition_from_image;
+use crate::durability::checkpoints::symbol_pages::SYMBOL_PAGE_CAPACITY;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 #[cfg(test)]
@@ -64,7 +65,8 @@ impl CapturedManifest {
         let mut entries = checkpoint.symbol_table.entries.clone();
         entries.sort_by_key(|(symbol, _)| *symbol);
         let mut symbol_pages = Vec::new();
-        for page in entries.chunks(256) {
+        for page in entries.chunks(SYMBOL_PAGE_CAPACITY) {
+            policy.check_live()?;
             let value = crate::symbols::data::SymbolTableSnapshot {
                 entries: page.to_vec(),
             };
@@ -91,16 +93,19 @@ impl CapturedManifest {
         let mut symbol_buckets = Vec::new();
         for (bucket, mut entries) in buckets {
             entries.sort_by_key(|(symbol, _)| *symbol);
-            let page = crate::symbols::data::SymbolTableSnapshot { entries };
-            let member = add(
-                &mut members,
-                member_frame::encode(MemberKind::Symbols, &page)
-                    .map_err(|cause| corrupt(format!("symbol bucket member: {cause:?}")))?,
-            );
-            symbol_buckets.push(RelationalCheckpointSymbolBucket {
-                bucket,
-                pages: vec![member],
-            });
+            let mut pages = Vec::new();
+            for entries in entries.chunks(SYMBOL_PAGE_CAPACITY) {
+                policy.check_live()?;
+                let page = crate::symbols::data::SymbolTableSnapshot {
+                    entries: entries.to_vec(),
+                };
+                pages.push(add(
+                    &mut members,
+                    member_frame::encode(MemberKind::Symbols, &page)
+                        .map_err(|cause| corrupt(format!("symbol bucket member: {cause:?}")))?,
+                ));
+            }
+            symbol_buckets.push(RelationalCheckpointSymbolBucket { bucket, pages });
         }
         let mut lineage_pages = Vec::new();
         for page in checkpoint.lineage.nodes().chunks(256) {
