@@ -26,11 +26,16 @@ impl ExpectedFactKeys {
         }
     }
     pub(in crate::domain_computation::primary_graph) fn structural_walk(
-        &self, key:&crate::domain_computation::primary_graph::invariant_projection::StructuralWalkKey,
-        admission:crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-        contracts:&Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>,
-        snapshot:&worth_relational::facade::snapshots::SnapshotHandle,
-    ) -> Option<&Arc<crate::domain_computation::primary_graph::invariant_projection::StructuralWalkObservation>>{
+        &self,
+        key: &crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation>,
+    > {
         self.walks.get(key, admission, contracts, snapshot)
     }
     pub(in crate::domain_computation::primary_graph) fn source_publication(&self,key:&crate::domain_computation::primary_graph::application_attempt::SourcePublicationRead)->Option<&Arc<crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication>>{

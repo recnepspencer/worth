@@ -1,7 +1,7 @@
 //! Issued values are consumed only by their original admitted projection.
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity as Admission;
-use crate::domain_computation::primary_graph::invariant_projection::{
+use crate::domain_computation::primary_graph::structural_walk::{
     StructuralWalkKey, StructuralWalkObservation,
 };
 use std::{collections::BTreeMap, sync::Arc};
@@ -48,8 +48,8 @@ impl IssuedWalkValues {
         let issued = self.values.get(key)?;
         (issued.admission == admission
             && Arc::ptr_eq(&issued.contracts, contracts)
-            && issued.body.issued_at(snapshot, issued.cookie))
-        .then_some(&issued.body)
+            && issued.body.source() == snapshot)
+            .then_some(&issued.body)
     }
 }
 fn insertion_bytes<T>(len: usize) -> Option<u64> {
@@ -67,14 +67,19 @@ impl DecisionReads {
     ) {
         self.failed_walk = true;
     }
-    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn record_walk(
+    pub(in crate::domain_computation::primary_graph::invariant_projection::operation_reader) fn record_walk<
+        Schema,
+        Relation,
+        Entity,
+    >(
         &mut self,
-        body: Arc<StructuralWalkObservation>,
+        walk: &crate::domain_computation::primary_graph::invariant_projection::WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>,
         admission: Admission,
         contracts: Arc<Contracts>,
         execution: &ExecutionRequest<'_, '_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<(), WalkRecordDenial> {
+        let body = walk.observation();
         // Bound the new variable-width key comparisons before the map descent.
         let levels =
             (usize::BITS - self.walks.values.len().saturating_add(1).leading_zeros()) as usize + 1;
@@ -97,7 +102,7 @@ impl DecisionReads {
         if let Some(prior) = prior {
             if prior.admission != admission
                 || !Arc::ptr_eq(&prior.contracts, &contracts)
-                || !body.issued_at(prior.body.source(), prior.cookie)
+                || !walk.issued_at(prior.body.source(), prior.cookie)
             {
                 return Err(WalkRecordDenial::Conflict);
             }
@@ -154,13 +159,17 @@ impl DecisionReads {
             .ok_or(Cause::ChargedBytesOverflow)?;
         if bytes != self.walks.bytes {
             if self.walks.memory.is_none() {
-                self.walks.memory = super::super::super::walk::memory::reserve(
-                    execution,
-                    context.has_accounting(),
+                self.walks.memory =
+                    crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+                        execution,
+                        context.has_accounting(),
+                        bytes,
+                    )?;
+            } else {
+                crate::domain_computation::primary_graph::structural_walk::memory::resize(
+                    &mut self.walks.memory,
                     bytes,
                 )?;
-            } else {
-                super::super::super::walk::memory::resize(&mut self.walks.memory, bytes)?;
             }
         }
         if prior.is_none() {
@@ -168,8 +177,8 @@ impl DecisionReads {
             self.walks.values.insert(
                 body.key().clone(),
                 Issued {
-                    cookie: body.cookie(),
-                    body,
+                    cookie: walk.cookie(),
+                    body: Arc::clone(body),
                     admission,
                     contracts,
                 },

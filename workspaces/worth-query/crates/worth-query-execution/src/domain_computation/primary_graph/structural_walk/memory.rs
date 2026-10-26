@@ -4,7 +4,7 @@ use worth_execution::{
 };
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub(in crate::domain_computation::primary_graph::invariant_projection) fn reserve(
+pub(in crate::domain_computation::primary_graph) fn reserve(
     execution: &ExecutionRequest<'_, '_>,
     accounted: bool,
     bytes: u64,
@@ -21,7 +21,7 @@ pub(in crate::domain_computation::primary_graph::invariant_projection) fn reserv
     }
 }
 
-pub(in crate::domain_computation::primary_graph::invariant_projection) fn resize(
+pub(in crate::domain_computation::primary_graph) fn resize(
     reservation: &mut Option<ExecutionMemoryReservation>,
     bytes: u64,
 ) -> Result<(), Cause> {

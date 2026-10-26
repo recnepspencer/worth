@@ -4,10 +4,7 @@ use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
 use worth_relational::facade::{
     identity::EntityId,
-    runtime::{
-        PinnedStructuralWalk, PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads,
-        PinnedStructuralWalkScope,
-    },
+    runtime::{PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads},
     transactions::RelationalExecutionDenialCause as Cause,
 };
 
@@ -17,11 +14,9 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
 
-pub(super) mod memory;
-mod observation;
 mod result;
-pub(in crate::domain_computation::primary_graph) use observation::{
-    StructuralWalkKey, StructuralWalkObservation,
+use crate::domain_computation::primary_graph::structural_walk::{
+    memory, StructuralWalkObservation, StructuralWalkQuery,
 };
 #[cfg(test)]
 mod tests;
@@ -50,16 +45,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
     ) -> Result<WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>, Denial> {
         let execution = *self.execution;
         let result = execution.run_native_with_checkpoint(|context| {
-            let native = self.read_complete_walk(&relation, direction, roots, context)?;
+            let observation = self.read_complete_walk(&relation, direction, roots, context)?;
             self.realized_scope
-                .admit_walk(native.visits(), &execution, context)
+                .admit_walk(observation.native().visits(), &execution, context)
                 .map_err(|cause| self.walk_stop(cause, relation.name()))?;
-            let observation =
-                StructuralWalkObservation::issue(native, relation.name(), direction, self, context)
-                    .map_err(|cause| self.walk_stop(cause, relation.name()))?;
             Ok(WorthQueryInvariantProjectionWalk::new(
                 observation,
                 roots.first(),
+                self.authority_identity,
             ))
         });
         match result {
@@ -82,7 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         let subject = relation.name();
         let result = execution.run_native_with_checkpoint(|context| {
             let walk = self.walk(relation, RelationDirection::Forward, from)?;
-            for visit in walk.observation.native().visits() {
+            for visit in walk.observation().native().visits() {
                 self.walk_checkpoint(context, subject)?;
                 if visit.entity.entity_id == to.entity_id {
                     return Ok(true);
@@ -102,7 +95,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         direction: RelationDirection,
         roots: &[WorthQueryInvariantEntityIdentity<Schema, Entity>],
         context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<PinnedStructuralWalk, Denial> {
+    ) -> Result<std::sync::Arc<StructuralWalkObservation>, Denial> {
         let layout = self
             .layout
             .relation(relation.name())
@@ -146,20 +139,28 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
                 _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
             })?;
-        let native = pin.complete_relation_walk(
+        let observed = StructuralWalkObservation::read(
+            &pin,
             self.execution,
-            PinnedStructuralWalkScope::new(&seeds, layout.from, layout.kind, direction)
-                .with_work_limit(self.work_budget.remaining()),
+            StructuralWalkQuery {
+                relation: relation.name(),
+                roots: &seeds,
+                entity_kind: layout.from,
+                relation_kind: layout.kind,
+                direction,
+                maximum_work: self.work_budget.remaining(),
+            },
+            context,
         );
-        let (reads, work) = match &native {
-            Ok(walk) => (walk.reads(), walk.work_units()),
+        let (reads, work) = match &observed {
+            Ok(walk) => (walk.native().reads(), walk.native().work_units()),
             Err(denial) => (denial.reads, denial.work),
         };
         self.record_walk_reads(reads);
         if !self.work_budget.consume(work) {
             return Err(Denial::new(Kind::WorkBudgetExceeded, relation.name()));
         }
-        native.map_err(|denial| match denial.kind {
+        observed.map_err(|denial| match denial.kind {
             PinnedStructuralWalkDenialKind::Read(cause) => self.walk_stop(cause, relation.name()),
             PinnedStructuralWalkDenialKind::WorkLimitExceeded => {
                 self.work_budget.mark_exceeded();

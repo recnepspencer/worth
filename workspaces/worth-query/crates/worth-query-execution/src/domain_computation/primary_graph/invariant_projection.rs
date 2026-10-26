@@ -24,9 +24,6 @@ mod realized_scope;
 mod relation_identity;
 mod traversal;
 mod walk;
-pub(in crate::domain_computation::primary_graph) use walk::{
-    StructuralWalkKey, StructuralWalkObservation,
-};
 mod work;
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
 pub use walk::{

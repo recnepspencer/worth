@@ -1,5 +1,6 @@
 //! Owned Native facts; typed iteration acquires no more graph metadata.
 use super::super::{WorthQueryInvariantEntityIdentity, WorthQueryInvariantRelation};
+use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use std::{marker::PhantomData, sync::Arc};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
@@ -9,8 +10,7 @@ use worth_relational::facade::{
 /// Complete reachability on one pinned projection, with its original result payer.
 /// Borrowed iteration mints local typed identities without additional graph reads.
 pub struct WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
-    pub(in crate::domain_computation::primary_graph::invariant_projection) observation:
-        Arc<super::StructuralWalkObservation>,
+    observation: Arc<StructuralWalkObservation>,
     entity: Option<Arc<str>>,
     authority_identity: u64,
     kind: Option<KindId>,
@@ -31,16 +31,35 @@ pub struct WorthQueryInvariantProjectionWalkIter<'walk, Schema, Relation, Entity
 
 impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
     pub(super) fn new(
-        observation: Arc<super::StructuralWalkObservation>,
+        observation: Arc<StructuralWalkObservation>,
         root: Option<&WorthQueryInvariantEntityIdentity<Schema, Entity>>,
+        authority_identity: u64,
     ) -> Self {
         Self {
             observation,
             entity: root.map(|r| Arc::clone(&r.entity)),
-            authority_identity: root.map_or(0, |r| r.authority_identity),
+            authority_identity,
             kind: root.map(|r| r.kind),
             _marker: PhantomData,
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn issued_at(
+        &self,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+        cookie: u64,
+    ) -> bool {
+        self.observation.source() == snapshot && self.authority_identity == cookie
+    }
+
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn cookie(&self) -> u64 {
+        self.authority_identity
+    }
+
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn observation(
+        &self,
+    ) -> &Arc<StructuralWalkObservation> {
+        &self.observation
     }
 
     pub fn len(&self) -> usize {

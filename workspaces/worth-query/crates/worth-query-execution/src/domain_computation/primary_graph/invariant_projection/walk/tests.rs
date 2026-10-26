@@ -64,6 +64,12 @@ fn snapshot_walks_mint_local_identities_without_rereading_metadata() {
                             .closure(Next::reference(), RelationDirection::Forward, &[])
                             .unwrap();
                         assert!(empty.is_empty());
+                        assert!(empty.issued_at(reader.snapshot, reader.authority_identity));
+                        assert!(!empty
+                            .issued_at(reader.snapshot, reader.authority_identity.wrapping_add(1)));
+                        assert!(walk.issued_at(reader.snapshot, reader.authority_identity));
+                        assert!(!walk
+                            .issued_at(reader.snapshot, reader.authority_identity.wrapping_add(1)));
                         let closure = reader
                             .closure(
                                 Next::reference(),

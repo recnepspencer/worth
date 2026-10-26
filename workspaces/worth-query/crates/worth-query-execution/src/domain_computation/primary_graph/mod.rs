@@ -47,6 +47,7 @@ mod live_delivery;
 mod managed_bridge;
 mod merge_unique_values;
 mod read_observation;
+mod structural_walk;
 pub(crate) use managed_bridge::build_primary_graph_product_bridge;
 mod fact_verification_observation;
 mod observations;

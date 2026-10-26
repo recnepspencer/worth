@@ -1,6 +1,6 @@
 //! Full graph truth; live issuance provenance and payment are deliberately absent.
 use super::*;
-use crate::domain_computation::primary_graph::invariant_projection::StructuralWalkObservation;
+use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 pub(super) fn append_values(
     entries: &mut Vec<CanonicalBasisEntry>,
     prefix: &str,

@@ -2867,3 +2867,112 @@ Phase3 still requires declared-query `forward_closure` / `reverse_closure` with
 step/read receipts, the topology_entry hand-hop cutover, private history-reader
 adoption and phase closeout. Continue with the declared-query closure boundary;
 do not merge this incomplete phase or mark the six-phase goal complete.
+### Phase 3 Slice 5a — shared complete-walk truth owner
+
+Boundary brief (2026-10-25, before implementation):
+
+- Native's pinned `complete_relation_walk` is the sole traversal authority. Its
+  move-only result owns complete visits, physical edges, actual reads/work, and
+  the original retention payment. Query must preserve that result directly.
+- The current reusable fact body and currentness implementation live beneath
+  `invariant_projection/walk/observation`, although operation facts, canonical
+  identity, output reuse and computation already consume them. Declared closure
+  will need that same semantic truth under its own source proof.
+- `read_observation` is explicitly diagnostic and cannot own this proof.
+  Introduce `primary_graph/structural_walk` as the actual-read owner instead.
+- The shared owner must execute the Native read itself and privately retain the
+  successful payload. It must have no constructor accepting supplied Native
+  payloads, visits, revisions, digests, or reconstructed metadata. Its source
+  comes from the exact pinned receiver, not a separately supplied snapshot.
+- Projection retains typed-root locality, installed relation validation,
+  realized-scope admission and its typed result. Projection identity cookies
+  belong to that result and the issued decision registry, not shared truth.
+  The registry continues to require the real operation admission/contracts and
+  exact original result provenance before sealing its original Arc.
+- Native stops, header funding/allocation failure and final cancellation must
+  preserve acquired reads/work even when no observation escapes. Original
+  backing and header payment remain with the retained body until it drops.
+- Cut over all existing fact, canonical, registry and computation consumers to
+  the new owner directly; leave no forwarding implementation under projection.
+- The following slice must integrate declared closure through portable meaning,
+  archive/signing, installation/planning, governed execution, receipts and row/
+  set source proofs. Root paths are also consumed by operation bodies, so those
+  consumers cannot silently interpret closure as a single hop. Guard step
+  ordinals cannot become a traversal-depth cap.
+
+Persistent reviewer boundary ruling: extraction is justified; keep cookies out
+of the shared signature, retain failed-read metrics, and expose no closure API
+until complete execution/evidence is integrated. No unresolved material facts
+remain for this prerequisite.
+
+Implementation plan (after boundary ruling):
+
+1. Move complete observation/key/currentness to `primary_graph/structural_walk`.
+   A private retention function receives only its own successful actual Native
+   invocation. An internal query value supplies the exact relation, kinds,
+   roots, direction and optional work ceiling used by that invocation.
+2. Move the existing optional execution-memory helper into that owner; retain
+   original request accounting/control and drop order. No new runtime lane.
+3. Have snapshot projection validate/lower roots, obtain its original pin and
+   invoke the shared producer. Record actual reads/work from success or denial
+   before realized-scope admission and outer final handoff.
+4. Move cookie checks to the privately constructed projection result. The
+   decision registry records that actual typed result, retains its cookie next
+   to admission/contracts, and preserves duplicate/conflict and failure-latch
+   behavior. Fact sealing still retains the exact original body Arc.
+5. Migrate all current consumers directly and remove old exports/files. Public
+   API behavior, canonical fact contents and Native implementation stay the
+   same. Declared closure, wire changes and consumer cutovers are next-slice
+   work; no partial closure API is introduced here.
+6. Before the single owner build, review the coherent diff and run scoped
+   formatting, dirty line caps, function advisories and whitespace checks.
+   Build Query execution once through `application_build.py`, incremental=false,
+   then reuse the emitted test executable for the existing focused snapshot,
+   raw/recorded decision, currentness, canonical and computation courts. Reuse
+   existing Native evidence; do not rerun the unrelated 4,097-key court.
+7. Run normal boundary-check and agent-context check, obtain persistent
+   qa-loop/qa-tests/code-quality-qa clearance, record exact evidence and commit.
+   Phase 3 remains open and is not merged by this prerequisite.
+
+Slice 5a qualification:
+
+- Complete observations, logical keys, exact currentness and original payer
+  custody now belong to `primary_graph/structural_walk`. Its read producer
+  invokes Native and its only retention constructor is private. All existing
+  consumers import that owner directly. Native itself is unchanged.
+- A final source review found that moving the cookie out of shared truth also
+  requires permanent pairing inside the typed projection result. The result's
+  body is now private and only an immutable `&Arc` accessor is exposed internally.
+  The actual walk producer remains its only constructor. Three read sites were
+  migrated; no setter or reconstruction constructor exists. Empty and nonempty
+  result cookie checks were added to the existing snapshot court.
+- Historical build 1 passed in 550.14 seconds with zero compiler errors before
+  this encapsulation correction. It is not the final-source test evidence.
+- Corrected Query execution build 2 passed in 549.39 seconds with zero compiler
+  errors. The build used the original guarded application-build entry point,
+  Rust 1.94, the existing Query target and incremental=false.
+- Its emitted executable passed all 35 selected courts, zero failed or ignored,
+  in 13.03 seconds. These cover snapshot traversal/locality/retention/stops,
+  raw and recorded operation reads, exact original Arc sealing, real handler
+  deep/empty/nondiscovery currentness, managed computation fresh issuance,
+  canonical/source merge and postcommit currentness. No new fixture or test
+  function was added; the unrelated 4,097-key court was not rerun.
+- Normal boundary-check passed in 481.78 seconds and agent-context check in
+  0.63 seconds. Both completed before the private body/accessor correction.
+  The persistent reviewer explicitly accepted carrying these checks: the
+  correction narrows an internal field and adds immutable borrowing, with no
+  module, dependency, facade or authority-topology change after the green scan.
+- Final scoped formatting, dirty Rust line caps and whitespace checks passed.
+  The full explicit-file function scan covered all 18 scoped Rust files:
+  10 advisories, zero scan errors; all advisories were reviewed and accepted.
+- Evidence prefix outside the checkout:
+  `C:/programming/worth worktees/targets/query-9.18.1-phase3-slice5a-`.
+  Current results are `query-build2-result.json`, `query-courts2.json`,
+  `structural-gates.json` and `static.json`. Existing Native qualification is
+  carried because no Native source or dependency changed.
+
+Phase 3 remains open. The next boundary is the complete declared-query closure
+vertical slice: typed steps and portable validation, canonical/archive/signing
+and planning semantics, governed pinned execution, receipt reads and retained
+row/set source currentness. No closure declaration API was introduced by this
+prerequisite. Topology/private consumer cutovers and phase closeout follow it.

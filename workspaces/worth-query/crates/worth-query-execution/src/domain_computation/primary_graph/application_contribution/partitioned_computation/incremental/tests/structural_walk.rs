@@ -12,8 +12,7 @@ use model::*;
 use std::sync::{atomic::Ordering, Arc};
 fn body(
     run: &SealedComputationRun,
-) -> Arc<crate::domain_computation::primary_graph::invariant_projection::StructuralWalkObservation>
-{
+) -> Arc<crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation> {
     let bodies: Vec<_> = run
         .state
         .facts

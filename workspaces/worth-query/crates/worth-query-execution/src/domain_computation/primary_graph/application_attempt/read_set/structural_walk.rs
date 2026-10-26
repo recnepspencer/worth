@@ -6,8 +6,9 @@ use super::super::{
 use super::*;
 #[cfg(test)]
 mod tests;
-use crate::domain_computation::primary_graph::invariant_projection::{
-    ExpectedFactKeys, StructuralWalkKey, StructuralWalkObservation,
+use crate::domain_computation::primary_graph::{
+    invariant_projection::ExpectedFactKeys,
+    structural_walk::{StructuralWalkKey, StructuralWalkObservation},
 };
 
 pub(super) fn observe<Schema, Operation, Input, Scope>(

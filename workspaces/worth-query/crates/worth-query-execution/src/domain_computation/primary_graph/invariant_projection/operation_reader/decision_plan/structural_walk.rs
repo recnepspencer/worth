@@ -1,9 +1,9 @@
 //! Record the actual complete Native value, including empty frontier boundaries.
 use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::{
-    StructuralWalkObservation, WorthQueryInvariantProjectionTraversalDenialKind as Kind,
-    WorthQueryInvariantProjectionWalk,
+    WorthQueryInvariantProjectionTraversalDenialKind as Kind, WorthQueryInvariantProjectionWalk,
 };
+use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
@@ -56,32 +56,24 @@ impl<Schema: ApplicationSchema, Operation>
                     self.reader
                         .walk_stop(Cause::ChargedBytesOverflow, relation.name())
                 })?;
-            let _target_memory = super::super::super::walk::memory::reserve(
-                &execution,
-                context.has_accounting(),
-                bytes,
-            )
-            .map_err(|cause| self.reader.walk_stop(cause, relation.name()))?;
+            let _target_memory =
+                crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+                    &execution,
+                    context.has_accounting(),
+                    bytes,
+                )
+                .map_err(|cause| self.reader.walk_stop(cause, relation.name()))?;
             self.admit_decision_target(&relation_target(&relation))
                 .map_err(|denial| decision_traversal_denial(&denial))?;
             let walk = self.reader.closure(relation, direction, roots)?;
-            if !walk
-                .observation
-                .issued_at(self.reader.snapshot, self.reader.authority_identity)
-            {
+            if !walk.issued_at(self.reader.snapshot, self.reader.authority_identity) {
                 return Err(WorthQueryInvariantProjectionTraversalDenial::new(
                     Kind::ForeignIdentity,
                     relation.name(),
                 ));
             }
             self.decision_facts
-                .record_walk(
-                    std::sync::Arc::clone(&walk.observation),
-                    admission,
-                    contracts,
-                    &execution,
-                    context,
-                )
+                .record_walk(&walk, admission, contracts, &execution, context)
                 .map_err(|cause| match cause {
                     super::super::decision_reads::structural_walks::WalkRecordDenial::Execution(
                         cause,
@@ -121,7 +113,7 @@ impl<Schema: ApplicationSchema, Operation>
         let execution = *self.reader.execution;
         let result = execution.run_native_with_checkpoint(|context| {
             let walk = self.decision_walk(relation, RelationDirection::Forward, from)?;
-            for visit in walk.observation.native().visits() {
+            for visit in walk.observation().native().visits() {
                 StructuralWalkObservation::checkpoint(context)
                     .map_err(|cause| self.reader.walk_stop(cause, relation.name()))?;
                 if visit.entity.entity_id == to.entity_id {

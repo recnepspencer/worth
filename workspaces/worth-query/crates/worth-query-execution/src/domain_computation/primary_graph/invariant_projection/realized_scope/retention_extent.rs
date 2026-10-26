@@ -36,13 +36,17 @@ impl WorthQueryRealizedProjectionScope {
             .ok_or(Cause::ChargedBytesOverflow)?;
         if bytes != self.walk_scope_bytes {
             if self.walk_scope_memory.is_none() {
-                self.walk_scope_memory = super::super::walk::memory::reserve(
-                    execution,
-                    context.has_accounting(),
+                self.walk_scope_memory =
+                    crate::domain_computation::primary_graph::structural_walk::memory::reserve(
+                        execution,
+                        context.has_accounting(),
+                        bytes,
+                    )?;
+            } else {
+                crate::domain_computation::primary_graph::structural_walk::memory::resize(
+                    &mut self.walk_scope_memory,
                     bytes,
                 )?;
-            } else {
-                super::super::walk::memory::resize(&mut self.walk_scope_memory, bytes)?;
             }
             self.walk_scope_bytes = bytes;
         }
