@@ -705,17 +705,22 @@ cut must carry counted read custody and genuine cold prefixes, rather than add
 an eviction policy or a new authority lane.
 
 
-The proposed concrete prefix representation is an optional history-prefix column
-on each RecordArena, following metadata_history through its existing persistent
-column cloning/adoption. A prefix owns the original ColdRegion read port/schema/
-symbol authority, selected history-member slot and checked append frontier.
-At head admission, install it only for nonempty histories after the current row
-and frontier have authenticated each other. Reset, suspension and replacement
-must clear it with their history; slot adoption must adopt both together.
-The frontier includes the baseline current row, while the cold member contains
-only its earlier rows. Rehashing a changed resident suffix retires/rewrites the
-baseline row at its carried offset, then appends subsequent rows. Generation
-reuse must never retain the prior generation's prefix.
+The concrete prefix representation is an optional column on each RecordArena,
+following metadata_history through persistent column cloning/adoption. A prefix
+owns the original read-only cold-source port and the selected history member,
+partition, schema carrier and physical source row. The checked append frontier
+remains in the region's content commitment rather than importing that owner
+into the arena substrate. At Head admission, install the prefix only after
+current rows and frontiers authenticate against the original leaf.
+
+Prefix custody follows the actual metadata rows: reset and generation reuse
+preserve those rows and therefore preserve their prefix; materialization
+suspension clears both. Slot adoption adopts both together, preserving the
+source member's physical row even if the destination row differs. The frontier
+includes the baseline current row, while the cold member contains only its
+earlier rows. Rehashing a changed resident suffix retires/rewrites the baseline
+row at its carried offset, then appends subsequent rows, including rows from a
+reused generation.
 
 Use per-slot wire prefix references plus resident earlier rows in the changed
 history grammar, with a clean format cut. Different slots in the mirror may
@@ -809,6 +814,79 @@ the original failure and passes all three oracle seeds with the guard, including
 script continuation. The full Relational lib passes 1,920 tests (31 unchanged
 ignored), including the post-apply miss court's spent-identity and single-round
 telemetry assertions. The original fork process-kill court passes. Fresh
-contracts, World and the complete home oracle follow this correction before
-phase-2 implementation continues. Preparation still demands Full pending the
+contracts (203 passed, three unchanged ignored), World (265 unit and 41
+integration passed, three unchanged ignored, plus its example and doc court)
+and the complete home oracle (35 passed, no ignored, 2,251.57 seconds) now pass
+this correction. The required reviewed-phase-1 integration gate is green. Preparation still demands Full pending the
 cold-prefix cut; this correction does not claim that remaining work complete.
+
+
+### Cold-prefix construction boundary
+
+The arena owns row selection, metadata suffixes, generation reuse and sparse
+adoption. It should carry a fixed-size history-prefix reference alongside each
+metadata history column. That reference identifies the source member and its
+physical history row, partition and schema carrier, and retains the existing
+read-only cold-source port. It contains no residency cell, runtime symbol owner
+or schema execution authority; lower storage therefore does not import those
+runtime mechanisms. Full readmission owns schema decoding, request limits and
+symbol admission. Checkpoint encoding owns the persisted reference and explicit
+member closure.
+
+First install references only after Head's current rows and append frontiers
+have passed the original leaf verification. Carry references through sparse
+cloning and slot adoption, retain them through reset/reuse, clear them together
+with suspended history, and initialize new/full-decoded histories without a
+prefix. Include the fixed-size column in physical allocation accounting. A
+partial history must refuse ordinary flat region capture until layered encoding
+can preserve its base, rather than silently emit its resident suffix as Full.
+Producer-written region tests must prove the reference survives row lifecycle
+and that Full readmission removes it only after reconstructing complete history.
+The outer preparation probes remain Full until layered capture, root construction
+and publication all consume this representation. This construction step alone
+cannot claim Head writes are complete.
+
+
+The construction cut installs the fixed-size prefix column after Head leaf
+verification. Its three producer-written courts pass: reset/reuse followed by
+suspension; sparse adoption into a different physical row; and flat capture
+refusal followed by complete Full readmission. The full lib passes 1,923 tests
+with 31 unchanged ignored. Head writes are still gated on layered encoding and
+materialization; no partial partition is published as Full by this cut.
+
+The integration boundary check found BC7014 in the earlier known-input guard:
+a direct check_request bypassed the named commit consult. A first correction
+incorrectly added another PreparationRound consult and failed all four exact
+stage-count courts. The final correction in ad604a965c removes the redundant
+helper check: preview, validation and draft entry already consult their stages,
+and every actual residency load still consults the original request. All four
+courts pass unchanged in the full lib rerun. The product-side fix preserves the
+existing phase contract rather than weakening its tests.
+
+### Retained prefix placement boundary
+
+StoreColdSource.select_members replaces its shared map after publication, and
+its physical reader accepts only currently selected anchor members. Keeping an
+Arc to that source does not preserve an older member's selected membership.
+Current Full preparation happens to warm the prior root before replacing it;
+Head writes must carry the older history basis explicitly instead. A retained
+Head observation must remain promotable after a newer root has warmed to Full
+and checkpointed a flat history image.
+
+Before switching preparation to Head, establish owned placement custody for
+live cold regions/prefixes (including forked readers) and preserve their needed
+members at checkpoint publication. This is read-side placement retention, not
+record pin authority or a second Store truth lane. Capture and publication must
+retain destination-scoped verification and avoid payload loads. Review the
+recovery-carrier-to-cell handoff and concurrent checkpoint selection so custody
+has no acquisition gap. Do not assume a frozen source map or retain every past
+member without a live custody basis. Layer dependency metadata should be shared
+rather than copying a transitive list into every historical leaf; Full demand
+must validate the actual reference edges and bound its cumulative work.
+
+
+Construction verification also passes all three CI owner/service clippy commands,
+owner formatting, dirty Rust line caps, whitespace, agent-context and a fresh
+plain boundary-check. Function review retains each existing complete codec,
+adoption/accounting orchestration and producer fixture in its responsibility;
+the prefix adds no separate authority or allocation counter.

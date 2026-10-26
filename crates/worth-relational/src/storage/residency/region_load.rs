@@ -18,7 +18,7 @@ pub(super) fn load_head(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limit: u64,
 ) -> Result<Arc<ResidentRegion>, Failure> {
-    let (partition, frontiers) = (|| -> Result<_, Cause> {
+    let (mut partition, frontiers) = (|| -> Result<_, Cause> {
         check_member_limit(cold.head.length, limit)?;
         let bytes = cold.source.read_member(cold.head, limit)?;
         let frame = RelationalRegionImage::decode(
@@ -58,6 +58,8 @@ pub(super) fn load_head(
     let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
         .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
+    install_history_prefixes(&mut partition.entity_arena, cold);
+    install_history_prefixes(&mut partition.relation_arena, cold);
     crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
@@ -149,6 +151,26 @@ fn unavailable(cold: &RelationalColdRegion, cause: Cause) -> RelationalStorageUn
     RelationalStorageUnavailable {
         subject: RelationalStorageSubject::Region(cold.partition_id),
         cause,
+    }
+}
+
+fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
+    arena: &mut crate::storage::substrate::RecordArena<K>,
+    cold: &RelationalColdRegion,
+) {
+    for row_index in 0..arena.slot_count() {
+        if !arena.metadata_history[row_index].is_empty() {
+            arena.history_prefixes.set(
+                row_index,
+                Some(crate::storage::substrate::RecordHistoryPrefix {
+                    source: cold.source.clone(),
+                    member: cold.history,
+                    partition_id: cold.partition_id,
+                    schema_carrier_digest: cold.schema_carrier_digest,
+                    row_index,
+                }),
+            );
+        }
     }
 }
 

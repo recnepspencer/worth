@@ -82,6 +82,7 @@ impl<K: RecordKind> RecordArena<K> {
             lifecycle,
             kind_ids,
             metadata_history,
+            history_prefixes,
             created_at,
             retired_at,
             extra,

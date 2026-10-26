@@ -20,6 +20,8 @@ impl<K: RecordKind> RecordArena<K> {
             .visit_allocations(unique, visitor, &mut visit_inline_value);
         self.kind_ids
             .visit_allocations(unique, visitor, &mut visit_inline_value);
+        self.history_prefixes
+            .visit_allocations(unique, visitor, &mut visit_inline_value);
         self.created_at
             .visit_allocations(unique, visitor, &mut visit_inline_value);
         self.retired_at

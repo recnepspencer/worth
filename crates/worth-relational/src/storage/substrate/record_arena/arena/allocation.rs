@@ -37,6 +37,7 @@ impl<K: RecordKind> RecordArena<K> {
             self.lifecycle.allocation_bytes(),
             self.kind_ids.allocation_bytes(),
             self.metadata_history.allocation_bytes(),
+            self.history_prefixes.allocation_bytes(),
             self.created_at.allocation_bytes(),
             self.retired_at.allocation_bytes(),
             self.extra.allocation_bytes(),

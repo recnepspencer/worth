@@ -47,6 +47,11 @@ impl<K: RecordKind> RecordArena<K> {
             visitor,
             &mut visit_new_inline_value,
         );
+        self.history_prefixes.visit_new_allocations(
+            &previous.history_prefixes,
+            visitor,
+            &mut visit_new_inline_value,
+        );
         self.created_at.visit_new_allocations(
             &previous.created_at,
             visitor,

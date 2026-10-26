@@ -15,6 +15,8 @@ use std::sync::Arc;
 mod cross_region_forgery;
 #[path = "head_metadata_tests.rs"]
 mod head_metadata_tests;
+#[path = "history_prefix_tests.rs"]
+mod history_prefix_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
 #[path = "projection_corruption_tests.rs"]

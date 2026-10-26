@@ -22,6 +22,9 @@ impl<K: RecordKind> RecordArena<K> {
             clone
                 .metadata_history
                 .copy_value_from(physical, &self.metadata_history, physical);
+            clone
+                .history_prefixes
+                .copy_value_from(physical, &self.history_prefixes, physical);
             clone.extra.copy_value_from(physical, &self.extra, physical);
             clone
                 .aspect_versions
@@ -67,6 +70,7 @@ impl<K: RecordKind> RecordArena<K> {
         clone.reclaimable_bitset = self.reclaimable_bitset.clone();
 
         clone.metadata_history = SharedColumn::with_default(slot_count, SharedColumn::default());
+        clone.history_prefixes = SharedColumn::with_default(slot_count, None);
         clone.extra = SharedColumn::with_default(slot_count, K::empty_extra());
         clone.aspect_versions = SharedColumn::with_default(slot_count, BTreeMap::new());
         clone.field_revisions = SharedColumn::with_default(slot_count, None);

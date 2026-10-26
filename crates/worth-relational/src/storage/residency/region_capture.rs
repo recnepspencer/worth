@@ -19,6 +19,18 @@ pub(crate) fn capture_region_members(
     schema: &RelationalBranchRootSchemaAuthority,
     schema_carrier_digest: [u8; 32],
 ) -> Result<CapturedRegionMembers, Cause> {
+    if partition
+        .entity_arena
+        .history_prefixes
+        .iter()
+        .chain(partition.relation_arena.history_prefixes.iter())
+        .any(Option::is_some)
+    {
+        // Flat encoding cannot erase the cold basis of a resident suffix.
+        // Layered capture must carry that basis explicitly before Head writes
+        // can be published through this encoding boundary.
+        return Err(Cause::SourceUnavailable);
+    }
     let mut normalized = partition.clone();
     super::rebuild_region_history_kind_buckets(&mut normalized)?;
     let partition = &normalized;
