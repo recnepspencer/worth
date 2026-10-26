@@ -118,14 +118,8 @@ fn recovery_result(
 ) -> Option<crate::publication::CompositeRelationalOwnerResult> {
     if progress.is_fork_only() {
         return Some(crate::publication::CompositeRelationalOwnerResult::forked(
-            progress
-                .fork
-                .clone()
-                .expect("fork-only progress carries fork evidence"),
-            progress
-                .fork_successor_basis
-                .clone()
-                .expect("fork-only progress carries its successor basis"),
+            progress.fork.clone()?,
+            progress.fork_successor_basis.clone()?,
         ));
     }
     match progress.evidence.as_ref() {

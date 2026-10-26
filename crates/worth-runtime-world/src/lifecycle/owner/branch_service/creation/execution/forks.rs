@@ -204,6 +204,9 @@ where
     let fork = mutation_port
         .fork_reserved_exact(reservation, cancellation.signal_token())
         .map_err(|denial| signal_fork_failure(&denial))?;
+    // SignalBranchForkReservation::consume_for returns only owner_issued
+    // outcomes, whose required retirement reference it obtains before return.
+    // This owner-service path never uses Signal's unowned fork constructor.
     let retirement_reference = fork
         .retirement_reference()
         .expect("Runtime World forks through the owner service that issues cleanup authority")
