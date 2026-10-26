@@ -5,7 +5,10 @@ use std::{
 };
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::{identity::KindId, runtime::AggregateRead};
+use worth_relational::facade::{
+    identity::KindId,
+    runtime::{AggregateRead, PinnedAggregateRead},
+};
 
 /// Persistent aggregate name within an installed relation binding. This value
 /// grants no observation, write authority, or permission to disclose history.
@@ -22,9 +25,24 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
         binding: ApplicationSchemaBindingIdentity,
         relation: KindId,
     ) -> Self {
+        Self::new(native.definition(), native.identity(), binding, relation)
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_pinned_read(
+        native: &PinnedAggregateRead,
+        binding: ApplicationSchemaBindingIdentity,
+        relation: KindId,
+    ) -> Self {
+        Self::new(native.definition(), native.identity(), binding, relation)
+    }
+    fn new(
+        definition: AggregateDefinitionIdentity,
+        identity: AggregateIdentity,
+        binding: ApplicationSchemaBindingIdentity,
+        relation: KindId,
+    ) -> Self {
         Self {
-            definition: native.definition(),
-            identity: native.identity(),
+            definition,
+            identity,
             binding,
             relation,
             _marker: PhantomData,

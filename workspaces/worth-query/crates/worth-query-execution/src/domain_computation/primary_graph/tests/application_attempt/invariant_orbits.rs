@@ -2,6 +2,7 @@
 mod api;
 mod probe;
 mod program;
+mod projection;
 mod schema;
 mod world;
 use crate::domain_computation::primary_graph::*;

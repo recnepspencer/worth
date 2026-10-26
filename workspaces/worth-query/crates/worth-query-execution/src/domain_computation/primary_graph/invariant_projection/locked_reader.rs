@@ -51,6 +51,7 @@ pub struct WorthQueryApplicationInvariantProjectionReader<'runtime, Schema> {
     entity_resolution: &'runtime super::super::WorthQueryInstalledEntityResolutionContext,
     pub(super) observation: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub(super) authority_identity: u64,
+    pub(super) binding_identity: &'runtime worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(super) program_activation:
         Option<&'runtime super::super::program_occurrence::WorthQueryProgramActivationCell>,
     pub(super) work: WorthQueryInvariantProjectionWork,

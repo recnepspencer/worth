@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "read_access/orbit.rs"]
+mod orbit;
 #[path = "read_access/walk.rs"]
 mod walk;
 

@@ -74,6 +74,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     observation: basis.observation(),
                     entity_resolution: &self.entity_resolution,
                     authority_identity: self.authority_identity,
+                    binding_identity: &self.binding_identity,
                     program_activation: self.program_activation.as_ref(),
                     work: WorthQueryInvariantProjectionWork::default(),
                     work_budget,

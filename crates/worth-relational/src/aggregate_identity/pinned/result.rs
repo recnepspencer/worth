@@ -79,6 +79,10 @@ impl PinnedAggregateRead {
     pub fn members(&self) -> impl ExactSizeIterator<Item = EntityId> + '_ {
         self.0.value.members.iter().copied()
     }
+    /// Membership in this complete owned group, without another graph read.
+    pub fn contains(&self, member: EntityId) -> bool {
+        self.0.value.members.contains(&member)
+    }
     /// All actual stored events incident to this aggregate, in canonical tuple
     /// order. This is neither publication order nor a latest-identity answer.
     pub fn lineage(

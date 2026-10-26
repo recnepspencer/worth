@@ -12,6 +12,10 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     ExecutionRequest(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     /// The relation is not installed.
     RelationNotInstalled,
+    /// The actual installed relation does not declare the orbit law.
+    NotOrbitRelation,
+    /// Stored aggregate membership and complete successor topology disagree.
+    InvalidOrbit,
     /// The operation does not declare this target as a decision read.
     UndeclaredDecisionTarget,
     /// The entity identity came from a different projection authority.

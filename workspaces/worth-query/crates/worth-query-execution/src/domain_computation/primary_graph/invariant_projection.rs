@@ -12,6 +12,8 @@ mod identity_encoding;
 mod pending_output_read;
 pub(in crate::domain_computation::primary_graph) use pending_output_read::RequestedOutputRead;
 mod inventory;
+mod orbit;
+pub use orbit::WorthQueryInvariantProjectionOrbit;
 mod locked_reader;
 mod operation_projection_denial;
 mod operation_reader;

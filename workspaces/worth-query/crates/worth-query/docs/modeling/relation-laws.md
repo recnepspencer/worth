@@ -127,7 +127,16 @@ The compiled [topology invariant](../../../worth-query-certification/fixtures/co
 uses ordered orbit windows and processes each affected orbit once. Its former
 successor lookup is deleted. Application read observations describe business
 walk/field acquisitions; private Native identity preparation is outside them.
-Ordinary readers, declared orbit-query shapes, lineage reads and Proprietary
+Ordinary projection readers also expose `reader.orbit(Next::reference(), &member)`
+and `orbit_of(..)`. The result retains actual Native aggregate and complete walk
+owners from the selected snapshot. `members()`, `member(index)`, `relations()`,
+`identity()` and `len()` borrow that materialized result without graph reads.
+Operation readers require `OperationReads` for the relation and admit every
+returned member through the original projection's realized scope. These are
+inspection reads; they do not record publication decision dependencies. The
+compiled [projection examples](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection.rs)
+exercise ordinary and operation readers, including a retained basis after an edit.
+Declared orbit-query shapes, decision dependencies, lineage reads and Proprietary
 adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
 separate existing execution limitations and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
@@ -351,7 +360,8 @@ The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
 Other native symmetry modes are not exposed by these builders. They do not
-provide general traversal, orbit or component query operations.
+provide component query operations. Use projection readers for complete walks
+and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains
 subject to the original execution request's resource and interruption policy.

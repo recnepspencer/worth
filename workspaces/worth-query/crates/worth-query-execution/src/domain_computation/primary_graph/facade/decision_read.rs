@@ -1,4 +1,5 @@
 //! Public decision-reader and native observation contracts.
+pub use super::super::aggregate_identity::WorthQueryAggregateIdentity;
 pub use super::super::invariant_projection::{
     VerificationCapacityStop, WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
@@ -12,13 +13,13 @@ pub use super::super::invariant_projection::{
     WorthQueryInvariantAggregateDenialKind, WorthQueryInvariantDecisionPlanDenial,
     WorthQueryInvariantDecisionPlanDenialKind, WorthQueryInvariantEntityIdentity,
     WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionDenial,
-    WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
-    WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
-    WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
-    WorthQueryOperationProjectionDenial, WorthQueryOperationProjectionDenialKind,
-    WorthQueryPreparedEntitySelection, WorthQueryPriorOutputFamilyMember,
-    WorthQueryRetainedSnapshotRead, WorthQueryValueDecodeDenial,
+    WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionOrbit,
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
+    WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
+    WorthQueryInvariantProjectionWalkStep, WorthQueryInvariantProjectionWork,
+    WorthQueryInvariantRelation, WorthQueryOperationProjectionDenial,
+    WorthQueryOperationProjectionDenialKind, WorthQueryPreparedEntitySelection,
+    WorthQueryPriorOutputFamilyMember, WorthQueryRetainedSnapshotRead, WorthQueryValueDecodeDenial,
 };
 pub use super::super::invariant_projection::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
