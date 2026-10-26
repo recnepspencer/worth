@@ -115,9 +115,21 @@ the result gets a newly minted final identity; it cannot take the keeper part's
 identity. Split and merge events name the actual final identities and commit
 occurrence. Applications cannot write these private records.
 
-Public orbit and lineage reads, declared orbit-query shapes, consumer cutovers
-and ordinary branch-merge integration remain unfinished in milestone 9.18.1
-Phase 4. The committed records do not yet expose a public reader API.
+Installed invariant planner/context views expose `orbit(&binding, &member)` and
+`orbit_of(&binding, &member)` for the actual declared orbit relation. The orbit
+retains Native identity truth and complete business topology; `members()` yields
+successor order from its current least member, `len()` reports its size, and
+`identity()` returns its persistent typed name. Both methods admit every member
+and physical successor edge through the ordinary prepared scope. A name's bytes
+grant no read or write access.
+
+The compiled [topology invariant](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
+uses ordered orbit windows and processes each affected orbit once. Its former
+successor lookup is deleted. Application read observations describe business
+walk/field acquisitions; private Native identity preparation is outside them.
+Ordinary readers, declared orbit-query shapes, lineage reads and Proprietary
+adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
+separate existing execution limitations and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.

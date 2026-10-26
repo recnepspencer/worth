@@ -60,7 +60,7 @@ pub(super) fn verify(
         assert!(
             !events
                 .iter()
-                .any(|event| matches!(event, PlanarInvariantReadEvent::CompleteWalk { .. })),
+                .any(|event| matches!(event, PlanarInvariantReadEvent::CompleteOrbit { .. })),
             "negative mode prepares no relation scope"
         );
         assert!(events
@@ -150,7 +150,7 @@ pub(super) fn verify(
         .lock()
         .unwrap()
         .iter()
-        .any(|event| matches!(event, PlanarInvariantReadEvent::CompleteWalk { .. })));
+        .any(|event| matches!(event, PlanarInvariantReadEvent::CompleteOrbit { .. })));
     assert_eq!(
         request
             .query(PlanarRead {

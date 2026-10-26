@@ -1,6 +1,6 @@
-//! Prepare affected geometry triples from one complete Native component read.
+//! Prepare geometry windows from complete Native orbits, once per affected orbit.
 use super::*;
-use worth_query_decl::facade::application_schema::RelationDirection;
+use std::collections::BTreeSet;
 
 impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
     pub(super) fn prepare_with_budget(
@@ -59,42 +59,50 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         if touched.is_empty() {
             return Ok(Vec::new());
         }
-        let before = planner.reads();
-        let walk = view
-            .closure(&self.successor, RelationDirection::Reverse, &touched)
-            .map_err(preparation_error)?;
-        self.observe(PlanarInvariantReadEvent::CompleteWalk {
-            before,
-            after: planner.reads(),
-            visited: walk.len(),
-            physical_relations: walk.relations().len(),
-        });
-        // Native commit-boundary degree laws run before this custom rule. Its
-        // ordinary reached component is a ring. Keep explicit missing/duplicate
-        // lookup refusals for callers that do not inherit that ordering.
-        let successors = successors::Successors::from_walk(&walk, budget)?;
-        let mut root_count = 0usize;
-        for step in &walk {
+        let touched_ids = touched
+            .iter()
+            .map(|entity| entity.entity_id())
+            .collect::<BTreeSet<_>>();
+        let mut covered = BTreeSet::new();
+        let mut triples = Vec::new();
+        for member in &touched {
             preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-            if step.distance() <= 2 {
-                root_count = root_count.checked_add(1).ok_or_else(|| {
-                    WorthQueryApplicationInvariantPreparationError::new(
-                        "planar root count overflow",
-                    )
-                })?;
-            }
-        }
-        let mut triples = triples_storage::<Schema>(root_count, budget)?;
-        for step in &walk {
-            preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-            // Two is the geometric window, never a Native traversal limit.
-            if step.distance() > 2 {
+            if covered.contains(&member.entity_id()) {
                 continue;
             }
-            let root = step.entity();
-            let middle = successors.next(root, budget)?;
-            let next = successors.next(&middle, budget)?;
-            triples.push([root.clone(), middle, next]);
+            let before = planner.reads();
+            let orbit = view
+                .orbit(&self.successor, member)
+                .map_err(preparation_error)?;
+            self.observe(PlanarInvariantReadEvent::CompleteOrbit {
+                before,
+                after: planner.reads(),
+                visited: orbit.len(),
+                physical_relations: orbit.relations().len(),
+                identity: *orbit.identity().bytes(),
+            });
+            for (index, root) in orbit.members().enumerate() {
+                preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
+                covered.insert(root.entity_id());
+                let middle = orbit
+                    .member((index + 1) % orbit.len())
+                    .expect("complete orbit");
+                let next = orbit
+                    .member((index + 2) % orbit.len())
+                    .expect("complete orbit");
+                // A geometric triple changes iff one of its vertices changed.
+                if [&root, &middle, &next]
+                    .iter()
+                    .any(|entity| touched_ids.contains(&entity.entity_id()))
+                {
+                    triples.try_reserve(1).map_err(|_| {
+                        WorthQueryApplicationInvariantPreparationError::new(
+                            "planar triangle allocation refused",
+                        )
+                    })?;
+                    triples.push([root, middle, next]);
+                }
+            }
         }
         preparation_checkpoint(budget, 0)?;
         Ok(triples)
@@ -108,19 +116,7 @@ fn triples_storage<Schema: TopologyModelBinding>(
     Vec<[WorthQueryApplicationInvariantEntity<Schema, Body>; 3]>,
     WorthQueryApplicationInvariantPreparationError,
 > {
-    let bytes = count
-        .checked_mul(std::mem::size_of::<
-            [WorthQueryApplicationInvariantEntity<Schema, Body>; 3],
-        >())
-        .and_then(|bytes| u64::try_from(bytes).ok())
-        .ok_or_else(|| {
-            WorthQueryApplicationInvariantPreparationError::new("planar triangle storage overflow")
-        })?;
-    if budget.is_some_and(|budget| !budget.claim_result(bytes)) {
-        return Err(WorthQueryApplicationInvariantPreparationError::new(
-            "planar triangle storage refused",
-        ));
-    }
+    preparation_checkpoint(budget, 0)?;
     let mut triples = Vec::new();
     triples.try_reserve_exact(count).map_err(|_| {
         WorthQueryApplicationInvariantPreparationError::new("planar triangle allocation refused")

@@ -143,12 +143,11 @@ pub(super) fn node_key(key: u64) -> WorthQueryApplicationEntityKey<WalkSchema, N
 }
 
 impl World {
-    pub(super) fn checkpoint(&self) -> Vec<u8> {
-        self.application.with_host_advancement(|phase| {
-            self.application.capture_application_checkpoint(&phase,
-                crate::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            ).unwrap()
-        }).unwrap().decode().unwrap().native.bytes().to_vec()
+    // Rejected reservations burn identities; publication is the committed version.
+    pub(super) fn committed_version(&self) -> worth_relational::facade::identity::VersionId {
+        self.application
+            .with_host_advancement(|phase| self.invariant.snapshot(&phase).unwrap().version())
+            .unwrap()
     }
 
     pub(super) fn edges(&self) -> Vec<(u64, u64)> {

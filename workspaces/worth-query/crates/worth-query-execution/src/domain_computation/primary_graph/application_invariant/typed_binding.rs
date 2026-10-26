@@ -32,6 +32,7 @@ pub struct WorthQueryApplicationInvariantRelationBinding<Schema, Relation, From,
     pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
     pub(in crate::domain_computation::primary_graph) from_kind: KindId,
     pub(in crate::domain_computation::primary_graph) to_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) orbit: bool,
     pub(in crate::domain_computation::primary_graph) _marker:
         PhantomData<fn() -> (Schema, Relation, From, To)>,
 }

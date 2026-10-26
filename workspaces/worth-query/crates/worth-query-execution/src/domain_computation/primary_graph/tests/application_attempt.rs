@@ -38,6 +38,7 @@ mod host_commit_identity;
 mod idempotency_behavior;
 #[path = "application_attempt/index_budget.rs"]
 mod index_budget;
+mod invariant_orbits;
 pub(in crate::domain_computation::primary_graph) mod invariant_walks;
 #[path = "application_attempt/live_delivery_capacity.rs"]
 mod live_delivery_capacity;

@@ -1,5 +1,6 @@
 mod facade;
 pub use facade::*;
+mod aggregate_identity;
 mod aggregate_projection;
 pub(crate) mod application_attempt;
 mod application_branch;

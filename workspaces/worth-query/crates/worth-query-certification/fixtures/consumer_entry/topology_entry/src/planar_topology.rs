@@ -53,7 +53,8 @@ impl PlanarSuccessor {
                 ),
                 ApplicationRelationDeletionPolicy::RejectDeleteWithLiveRelations,
             )
-            .reaches_at_least(2, const { &[Body::reference::<Schema>().name()] }),
+            .reaches_at_least(2, const { &[Body::reference::<Schema>().name()] })
+            .orbit(),
         )
     }
 }

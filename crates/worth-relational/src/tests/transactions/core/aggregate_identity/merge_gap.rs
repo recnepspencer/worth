@@ -1,10 +1,10 @@
-//! Deliberate task-only fence until Native branch merge consumes this owner.
+//! Independent Native branch reconciliation limitations preserve private ownership.
 use super::fixtures::*;
 use crate::facade::merge::{MergeExecutionPreparationError, MergeExecutionRequest, MergeIntent};
 use crate::tests::support::*;
 
 #[test]
-fn native_branch_merge_readiness_still_blocks_private_membership_changes() {
+fn native_branch_merge_readiness_blocks_unsupported_private_membership_changes() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime();
@@ -32,7 +32,7 @@ fn native_branch_merge_readiness_still_blocks_private_membership_changes() {
         },
     );
     let Err(MergeExecutionPreparationError::NotExecutionReady(readiness)) = attempt else {
-        panic!("task-only aggregate merge readiness limitation must remain explicit")
+        panic!("unsupported Native aggregate branch reconciliation remains a typed refusal")
     };
     let target_read = runtime
         .read_truth()

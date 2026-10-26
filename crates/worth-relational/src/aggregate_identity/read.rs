@@ -210,6 +210,11 @@ impl AggregateRead {
         self.member_set().iter().copied()
     }
 
+    /// Membership in this complete owned group, without another graph read.
+    pub fn contains(&self, member: EntityId) -> bool {
+        self.member_set().contains(&member)
+    }
+
     /// Only events incident to this identity in the actual proposed transition.
     /// Committed/before-image reads contribute no new transition events.
     pub fn transition_lineage(&self) -> impl Iterator<Item = AggregateReadLineageEvent<'_>> {

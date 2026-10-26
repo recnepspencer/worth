@@ -100,6 +100,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryRelationLayout {
     pub(in crate::domain_computation) from: KindId,
     pub(in crate::domain_computation) to: KindId,
     pub(in crate::domain_computation) source_max: Option<u64>,
+    pub(in crate::domain_computation) orbit: bool,
 }
 
 #[derive(Clone, Debug)]
