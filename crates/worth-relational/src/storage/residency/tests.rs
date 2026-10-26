@@ -32,6 +32,8 @@ mod projection_corruption;
 
 #[path = "region_fixture.rs"]
 mod region_fixture;
+#[path = "resident_history_tests.rs"]
+mod resident_history_tests;
 use region_fixture::{region_with_history, CountedSource, RegionFixture};
 
 #[test]

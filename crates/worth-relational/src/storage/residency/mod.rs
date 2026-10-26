@@ -14,6 +14,11 @@ mod history_kind_cache;
 mod region_capture;
 mod region_image;
 mod region_load;
+mod region_publication;
+mod resident_history;
+pub(crate) use region_publication::{
+    PreparedResidentRegion, RegionCaptureBasis, RegionPublicationFailure,
+};
 #[cfg(test)]
 mod tests;
 mod views;

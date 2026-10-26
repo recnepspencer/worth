@@ -4,7 +4,7 @@ use crate::identity::data::PartitionId;
 use crate::runtime::RuntimeSymbolTable;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess, PartitionState};
 use crate::storage::residency::{
-    PartitionProbe, RelationalRegionHeadView, RelationalResidencyDemandFailure,
+    PartitionHeadProbe, PartitionProbe, RelationalRegionHeadView, RelationalResidencyDemandFailure,
 };
 
 pub(crate) struct SymbolAdmittedBranchRead<'read> {
@@ -48,8 +48,26 @@ impl PartitionAccess for SymbolAdmittedBranchRead<'_> {
 
 impl CurrentPartitionAccess for SymbolAdmittedBranchRead<'_> {
     fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
-        self.get_partition(id)
-            .map(RelationalRegionHeadView::from_owned_partition)
+        match self.probe_head_partition(id) {
+            PartitionHeadProbe::Resident(view) => Some(view),
+            _ => None,
+        }
+    }
+    fn probe_head_partition(&self, id: PartitionId) -> PartitionHeadProbe<'_> {
+        self.selected
+            .state()
+            .root()
+            .probe_head_region_with_symbols(id, self.symbols)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        self.selected
+            .state()
+            .root()
+            .demand_region_head_with_symbols(execution, id, self.symbols)
     }
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.selected.partition_ids()

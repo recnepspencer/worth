@@ -1,5 +1,7 @@
 #[path = "cell/observation.rs"]
 mod observation;
+#[path = "cell/resident_head.rs"]
+mod resident_head;
 #[path = "cell/resident_leases.rs"]
 mod resident_leases;
 
@@ -52,7 +54,7 @@ enum ResidencyState {
     Cold,
     Head { region: Arc<ResidentRegion> },
     Full(Arc<ResidentRegion>),
-    Damaged,
+    Damaged { slot_counts: (usize, usize) },
 }
 
 #[derive(Debug)]
@@ -63,6 +65,7 @@ pub(crate) struct RelationalRegionResidency {
     state: Mutex<ResidencyState>,
     damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
+    head_readmission: Option<super::resident_history::ResidentHistoryReadmission>,
     backing_custody: Option<crate::durability::medium::RelationalDurableMemberCustody>,
     raw_head: RegionLoadCache,
     raw_full: RegionLoadCache,
@@ -101,6 +104,7 @@ impl RelationalRegionResidency {
                 },
             )])),
             backing: Some(cold),
+            head_readmission: None,
             backing_custody: Some(custody),
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
@@ -110,14 +114,14 @@ impl RelationalRegionResidency {
         }))
     }
 
-    pub(crate) fn resident(
+    pub(super) fn resident(
         partition: PartitionState,
         commitment: PartitionContentCommitment,
     ) -> RelationalResidencyLease<Full> {
         Self::resident_with_commitment(partition, Some(commitment))
     }
 
-    pub(crate) fn resident_uncommitted(
+    pub(super) fn resident_uncommitted(
         partition: PartitionState,
     ) -> RelationalResidencyLease<Full> {
         Self::resident_with_commitment(partition, None)
@@ -135,6 +139,7 @@ impl RelationalRegionResidency {
             partition_id: region.partition.partition_id,
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
+            head_readmission: None,
             backing_custody: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
@@ -193,9 +198,9 @@ impl RelationalRegionResidency {
                 *state = ResidencyState::Head { region };
             }
             if matches!(demand, ResidencyDemand::Full)
-                && let ResidencyState::Head { .. } = &*state
+                && let ResidencyState::Head { region } = &*state
             {
-                let region = self.raw_full(execution, limit)?;
+                let region = self.raw_full(region, execution, limit)?;
                 *state = ResidencyState::Full(region);
             }
             match &*state {
@@ -218,8 +223,19 @@ impl RelationalRegionResidency {
                 if failure.cause.is_proven_damage()
                     && failure.subject == RelationalStorageSubject::Region(self.partition_id)
                 {
+                    let slot_counts = match &*state {
+                        ResidencyState::Head { region } | ResidencyState::Full(region) => (
+                            region.partition.entity_arena.slot_count(),
+                            region.partition.relation_arena.slot_count(),
+                        ),
+                        ResidencyState::Cold => self
+                            .backing
+                            .as_ref()
+                            .map_or((0, 0), |cold| (cold.entity_slots, cold.relation_slots)),
+                        ResidencyState::Damaged { slot_counts } => *slot_counts,
+                    };
                     let _ = self.damage.set(failure);
-                    *state = ResidencyState::Damaged;
+                    *state = ResidencyState::Damaged { slot_counts };
                 }
                 Err(Failure::StorageUnavailable(failure))
             }
@@ -229,6 +245,10 @@ impl RelationalRegionResidency {
 
     pub(crate) fn has_cold_backing(&self) -> bool {
         self.backing.is_some()
+    }
+
+    pub(crate) fn requires_symbol_admission(&self) -> bool {
+        self.backing.is_some() || self.head_readmission.is_some()
     }
 
     /// The same terminal refusal applies to fresh guards even when their
@@ -274,6 +294,7 @@ impl RelationalRegionResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .take();
         self.backing = None;
+        self.head_readmission = None;
         self.backing_custody.take();
         self.checkpoint_bindings
             .get_mut()
@@ -310,16 +331,17 @@ impl RelationalRegionResidency {
 
     pub(super) fn raw_full(
         &self,
+        head: &Arc<ResidentRegion>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<ResidentRegion>, Failure> {
-        cell_load_cache::load(&self.raw_full, self.partition_id, || {
-            let cold = self
-                .backing
+        cell_load_cache::load(&self.raw_full, self.partition_id, || match &self.backing {
+            Some(cold) => region_load::load_full(cold, head, execution, limit),
+            None => self
+                .head_readmission
                 .as_ref()
-                .ok_or_else(|| self.failure(Cause::SourceUnavailable))?;
-            let head = self.raw_head(execution, limit)?;
-            region_load::load_full(cold, &head, execution, limit)
+                .ok_or_else(|| self.failure(Cause::SourceUnavailable))?
+                .load_full(head, execution, limit),
         })
     }
 

@@ -14,6 +14,7 @@ impl RelationalRegionResidency {
                 region.partition.entity_arena.slot_count(),
                 region.partition.relation_arena.slot_count(),
             ),
+            ResidencyState::Damaged { slot_counts } => *slot_counts,
             _ => unreachable!("a cell without cold backing is born resident"),
         }
     }

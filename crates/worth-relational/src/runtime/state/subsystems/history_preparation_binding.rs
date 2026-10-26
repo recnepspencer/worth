@@ -240,7 +240,7 @@ impl RelationalPreparationHistory {
         previous: Option<&Arc<RelationalBranchRoot>>,
         envelope: Arc<CanonicalCommitEnvelope>,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::symbols::data::StringInterner,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         #[cfg(test)]
         if self.root_capture_sabotage.swap(false, Ordering::Relaxed) {

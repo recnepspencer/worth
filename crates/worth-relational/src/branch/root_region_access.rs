@@ -34,6 +34,40 @@ impl RelationalBranchRoot {
         }
         Ok(())
     }
+
+    pub(crate) fn probe_head_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::PartitionHeadProbe as Probe;
+        match self.probe_head_region(id) {
+            Probe::Resident(view) => {
+                if self
+                    .regions
+                    .get(id)
+                    .is_some_and(|region| region.partition.head_symbols_admitted(symbols))
+                {
+                    Probe::Resident(view)
+                } else {
+                    Probe::Cold
+                }
+            }
+            other => other,
+        }
+    }
+
+    pub(crate) fn demand_region_head_with_symbols(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if let Some(lease) = self.demand_region_head(execution, id)? {
+            lease.admit_symbols(execution, symbols)?;
+        }
+        Ok(())
+    }
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -66,7 +100,7 @@ impl RelationalBranchRoot {
                     return Probe::Absent;
                 };
                 let lease = region.partition.lease();
-                if !lease.cell().has_cold_backing()
+                if !lease.cell().requires_symbol_admission()
                     || symbols.region_symbols_admitted(lease.symbol_admission_identity())
                 {
                     Probe::Resident(partition)

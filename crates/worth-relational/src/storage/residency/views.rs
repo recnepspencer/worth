@@ -1,7 +1,7 @@
 mod mutation_clone;
 use super::ResidentRegion;
 use crate::identity::data::{EntityId, RelationId};
-use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
+use crate::storage::overlay::PartitionState;
 use crate::storage::substrate::{EntityRecordKind, RelationRecordKind, SlotView};
 
 #[derive(Clone, Copy)]
@@ -107,7 +107,8 @@ impl<'lease> RelationalRegionFullView<'lease> {
     pub(crate) fn partition(&self) -> &'lease PartitionState {
         &self.region.partition
     }
-    pub(crate) fn commitment(&self) -> &'lease PartitionContentCommitment {
+    #[cfg(test)]
+    pub(super) fn commitment(&self) -> &'lease crate::storage::overlay::PartitionContentCommitment {
         self.region
             .commitment
             .as_ref()

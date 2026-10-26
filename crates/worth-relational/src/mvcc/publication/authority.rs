@@ -181,7 +181,7 @@ impl PublicationPreparationRuntime for RelationalRuntime {
                 previous_root.as_ref(),
                 Arc::clone(envelope),
                 schema_registry,
-                &self.services.symbols.interner_snapshot(),
+                &self.services.symbols,
             )
             .map_err(|denial| format!("branch-root capture denied: {denial:?}"))
     }
@@ -214,7 +214,7 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
                 previous_root.as_ref(),
                 Arc::clone(envelope),
                 schema_registry,
-                &self.services.symbols.interner_snapshot(),
+                &self.services.symbols,
             )
             .map_err(|denial| format!("branch-root capture denied: {denial:?}"))
     }

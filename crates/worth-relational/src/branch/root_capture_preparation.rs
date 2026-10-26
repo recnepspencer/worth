@@ -39,9 +39,10 @@ pub(super) fn prepare(
     previous: Option<&Arc<RelationalBranchRoot>>,
     envelope: Arc<CanonicalCommitEnvelope>,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    symbols: &crate::symbols::data::StringInterner,
+    symbols: &crate::runtime::RuntimeSymbolTable,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     let root_id = issuer.issue_root_id()?;
+    let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
     let prepared_regions = prepare_regions(
         issuer,
         root_id,
@@ -49,8 +50,8 @@ pub(super) fn prepare(
         published_delta,
         previous,
         symbols,
+        &prepared_schema.authority,
     )?;
-    let prepared_schema = prepare_schema(issuer, previous, &envelope, registry)?;
     let publication_cost = prepared_schema.apply_cost(prepared_regions.publication_cost);
     let correctness_index = RelationalRootCorrectnessIndex::AuthoritativeFallback;
     let axes = RelationalBranchRootAxes {
@@ -96,21 +97,33 @@ pub(super) fn prepare(
     Ok(PreparedRelationalBranchRootCapture { root })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn prepare_regions(
     issuer: &RelationalBranchRootIdentityIssuer,
     root_id: u64,
     partitions: &impl PartitionAccess,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    symbols: &crate::symbols::data::StringInterner,
+    symbols: &crate::runtime::RuntimeSymbolTable,
+    schema: &Arc<RelationalBranchRootSchemaAuthority>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
-        Some(previous) if previous.committed.is_some() => {
-            capture::build_incremental_regions(issuer, root_id, published_delta, previous, symbols)?
-        }
+        Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(
+            issuer,
+            root_id,
+            published_delta,
+            previous,
+            symbols,
+            schema,
+        )?,
         _ => {
             let projected = published_delta.projected_partitions_from_access(partitions);
-            capture::build_initial_regions(issuer, root_id, &projected, symbols)?
+            capture::build_initial_regions(
+                issuer,
+                root_id,
+                &projected,
+                &symbols.interner_snapshot(),
+            )?
         }
     };
     let (entity_slot_count, relation_slot_count) =
@@ -136,29 +149,23 @@ fn root_slot_counts(
             .values()
             .fold((0, 0), |(entities, relations), region| {
                 (
-                    entities.saturating_add(region.partition.entity_arena.slot_count()),
-                    relations.saturating_add(region.partition.relation_arena.slot_count()),
+                    entities.saturating_add(region.entity_slots),
+                    relations.saturating_add(region.relation_slots),
                 )
             });
     };
     published_delta.partition_ids().fold(
         (previous.entity_slot_count, previous.relation_slot_count),
         |(entities, relations), partition_id| {
-            let old = previous.partition_state(partition_id);
-            let new = regions
-                .get(partition_id)
-                .map(|region| region.partition.as_ref());
+            let old = previous.regions.get(partition_id);
+            let new = regions.get(partition_id);
             (
                 entities
-                    .saturating_sub(old.map_or(0, |partition| partition.entity_arena.slot_count()))
-                    .saturating_add(new.map_or(0, |partition| partition.entity_arena.slot_count())),
+                    .saturating_sub(old.map_or(0, |region| region.entity_slots))
+                    .saturating_add(new.map_or(0, |region| region.entity_slots)),
                 relations
-                    .saturating_sub(
-                        old.map_or(0, |partition| partition.relation_arena.slot_count()),
-                    )
-                    .saturating_add(
-                        new.map_or(0, |partition| partition.relation_arena.slot_count()),
-                    ),
+                    .saturating_sub(old.map_or(0, |region| region.relation_slots))
+                    .saturating_add(new.map_or(0, |region| region.relation_slots)),
             )
         },
     )

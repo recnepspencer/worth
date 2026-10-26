@@ -21,6 +21,9 @@ pub(crate) struct RelationalResidencyLease<Level> {
 }
 
 impl<Level> RelationalResidencyLease<Level> {
+    pub(super) fn resident_region(&self) -> &ResidentRegion {
+        &self.region
+    }
     /// A shared cell authenticates bytes once; each demanding runtime admits
     /// their dictionary closure into its own independently writable authority.
     pub(crate) fn admit_symbols(
@@ -30,7 +33,7 @@ impl<Level> RelationalResidencyLease<Level> {
     ) -> Result<(), RelationalResidencyDemandFailure> {
         // Published resident cells were captured under the owner's complete
         // dictionary; forks copy that dictionary along with those warm cells.
-        if !self.cell.has_cold_backing() {
+        if !self.cell.requires_symbol_admission() {
             return Ok(());
         }
         symbols.demand_region_symbols(execution, self.symbol_admission_identity(), || {

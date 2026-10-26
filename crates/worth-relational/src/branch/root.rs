@@ -55,6 +55,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
     InvalidHistoryCoverage(PartitionId),
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {
@@ -213,7 +214,7 @@ impl RelationalBranchRoot {
         previous: Option<&Arc<Self>>,
         envelope: Arc<CanonicalCommitEnvelope>,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::symbols::data::StringInterner,
+        symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(
             issuer,

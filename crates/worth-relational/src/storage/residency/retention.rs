@@ -45,6 +45,32 @@ impl RelationalRegionRetention {
         }
     }
 
+    pub(crate) fn from_head_lease(lease: RelationalResidencyLease<super::Head>) -> Self {
+        Self {
+            cell: lease.cell().clone(),
+            authority: None,
+            full: OnceLock::new(),
+            head: OnceLock::from(lease),
+            clear_pins_on_write: false,
+        }
+    }
+
+    pub(super) fn capture_region(
+        &self,
+    ) -> Result<Option<&super::ResidentRegion>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        self.cell.check_damage()?;
+        if let Some(lease) = self.full.get() {
+            return Ok(Some(lease.resident_region()));
+        }
+        if self.head.get().is_none()
+            && let Some(lease) = self.cell.lease_resident_head()?
+        {
+            let _ = self.head.set(lease);
+        }
+        Ok(self.head.get().map(|lease| lease.resident_region()))
+    }
+
     pub(crate) fn cell(&self) -> &Arc<RelationalRegionResidency> {
         &self.cell
     }
@@ -96,6 +122,25 @@ impl RelationalRegionRetention {
             let _ = self.head.set(lease);
         }
         self.head.get().map(|lease| lease.head_view())
+    }
+
+    pub(crate) fn head_symbols_admitted(
+        &self,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> bool {
+        if !self.cell.requires_symbol_admission() {
+            return true;
+        }
+        let identity = self
+            .full
+            .get()
+            .map(|lease| lease.symbol_admission_identity())
+            .or_else(|| {
+                self.head
+                    .get()
+                    .map(|lease| lease.symbol_admission_identity())
+            });
+        identity.is_some_and(|identity| symbols.region_symbols_admitted(identity))
     }
 
     pub(crate) fn demand_head_cached(
@@ -150,9 +195,6 @@ impl RelationalRegionRetention {
             .demand_head(execution, limit, self.authority.as_deref())
     }
 
-    pub(crate) fn full_view(&self) -> super::RelationalRegionFullView<'_> {
-        self.lease().full_view()
-    }
     pub(crate) fn is_uniquely_owned(&self) -> bool {
         Arc::strong_count(&self.cell)
             == 1 + usize::from(self.full.get().is_some()) + usize::from(self.head.get().is_some())

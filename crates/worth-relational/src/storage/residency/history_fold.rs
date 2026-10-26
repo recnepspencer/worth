@@ -176,7 +176,7 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         Ok(result)
     }
 
-    fn fold_row<K: HistoryRowKind>(
+    pub(super) fn fold_row<K: HistoryRowKind>(
         &mut self,
         source: &dyn RelationalDurableColdSource,
         directory: &Arc<RelationalHistoryMemberDirectory>,
@@ -204,7 +204,6 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         for (image, index) in chunks.into_iter().rev() {
             let earlier = &K::rows(&image)[index].earlier;
             for metadata in earlier {
-                crate::execution::check_request(self.execution).map_err(Failure::Request)?;
                 self.charge_output(metadata)?;
                 result
                     .try_reserve(1)
@@ -215,7 +214,8 @@ impl<'request, 'scope, 'host> HistoryFolder<'request, 'scope, 'host> {
         Ok(result)
     }
 
-    fn charge_output(&mut self, metadata: &impl Serialize) -> Result<(), Failure> {
+    pub(super) fn charge_output(&mut self, metadata: &impl Serialize) -> Result<(), Failure> {
+        crate::execution::check_request(self.execution).map_err(Failure::Request)?;
         let mut counter = OutputLength {
             length: self.output_bytes,
             limit: self.limit,

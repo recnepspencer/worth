@@ -1,4 +1,6 @@
-use crate::storage::residency::{RelationalRegionResidency, RelationalRegionRetention};
+use crate::storage::residency::{
+    PreparedResidentRegion, RegionPublicationFailure, RelationalRegionRetention,
+};
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -24,91 +26,33 @@ impl RelationalRootRegion {
     pub(super) fn new(
         creation_root_id: u64,
         id: u64,
-        mut partition: PartitionState,
+        partition: PartitionState,
         symbols: &crate::symbols::data::StringInterner,
-        previous: Option<(&Self, &crate::storage::overlay::PartitionMutationJournal)>,
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
-        crate::storage::residency::rebuild_region_history_kind_buckets(&mut partition).map_err(
-            |_| {
-                RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
-                    partition.partition_id,
-                )
-            },
-        )?;
-        partition.clear_runtime_pin_counters();
-        let (content_commitment, content_values_hashed) =
-            crate::storage::overlay::PartitionContentCommitment::capture(
-                &partition,
-                symbols,
-                previous.map(|(region, journal)| {
-                    (
-                        region.partition.full_view().commitment(),
-                        region.partition.as_ref(),
-                        journal,
-                    )
-                }),
-            )
-            .map_err(|error| match error {
-                crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(
-                    symbol,
-                ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
-                crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage => {
-                    RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(
-                        partition.partition_id,
-                    )
-                }
-            })?;
-        let content_digest = content_commitment.digest(partition.partition_id);
-        let kind_commitment =
-            crate::storage::residency::RelationalRegionKindCommitment::capture(&partition)
-                .map_err(|_| {
-                    RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
-                        partition.partition_id,
-                    )
-                })?;
-        let (allocation_inventory, materialization_unavailable_records) =
-            if let Some((previous, journal)) = previous {
-                let inventory = partition.allocation_inventory_since(
-                    &previous.partition,
-                    previous.allocation_inventory(),
-                );
-                let counts = unavailable_delta(
-                    &partition.entity_arena,
-                    &previous.partition.entity_arena,
-                    &journal.entity_slots,
-                ) + unavailable_delta(
-                    &partition.relation_arena,
-                    &previous.partition.relation_arena,
-                    &journal.relation_slots,
-                );
-                let unavailable = previous
-                    .materialization_unavailable_records
-                    .checked_add_signed(counts)
-                    .expect("journal lifecycle delta must fit its previous region");
-                (inventory, unavailable)
-            } else {
-                (
-                    partition.allocation_inventory(),
-                    partition.entity_arena.lifecycle_counts().unavailable
-                        + partition.relation_arena.lifecycle_counts().unavailable,
-                )
-            };
-        Ok(Self {
+        let partition_id = partition.partition_id;
+        let prepared = PreparedResidentRegion::initial(partition, symbols)
+            .map_err(|failure| capture_failure(partition_id, failure))?;
+        Ok(Self::from_prepared(creation_root_id, id, prepared))
+    }
+
+    pub(super) fn from_prepared(
+        creation_root_id: u64,
+        id: u64,
+        prepared: PreparedResidentRegion,
+    ) -> Self {
+        Self {
             creation_root_id,
             id,
-            partition_id: partition.partition_id,
-            allocation_inventory: Some(allocation_inventory),
-            content_digest,
-            kind_commitment,
-            entity_slots: partition.entity_arena.slot_count(),
-            relation_slots: partition.relation_arena.slot_count(),
-            partition: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
-                partition,
-                content_commitment,
-            )),
-            content_values_hashed,
-            materialization_unavailable_records,
-        })
+            partition_id: prepared.partition_id,
+            allocation_inventory: Some(prepared.inventory),
+            content_digest: prepared.content_digest,
+            kind_commitment: prepared.kind_commitment,
+            entity_slots: prepared.entity_slots,
+            relation_slots: prepared.relation_slots,
+            partition: prepared.retention,
+            content_values_hashed: prepared.content_values_hashed,
+            materialization_unavailable_records: prepared.unavailable_records,
+        }
     }
 
     pub(super) fn from_checkpoint(
@@ -176,21 +120,24 @@ impl RelationalRootRegion {
     }
 }
 
-fn unavailable_delta<K: crate::storage::substrate::RecordKind>(
-    current: &crate::storage::substrate::RecordArena<K>,
-    previous: &crate::storage::substrate::RecordArena<K>,
-    slots: &std::collections::BTreeSet<usize>,
-) -> isize {
-    let unavailable = |arena: &crate::storage::substrate::RecordArena<K>, slot| {
-        arena.physical_index(slot).is_some_and(|physical| {
-            arena.lifecycle[physical]
-                == crate::storage::data::RecordLifecycleState::MaterializationUnavailable
-        }) as isize
-    };
-    slots
-        .iter()
-        .map(|&slot| unavailable(current, slot) - unavailable(previous, slot))
-        .sum()
+pub(super) fn capture_failure(
+    partition: PartitionId,
+    failure: RegionPublicationFailure,
+) -> RelationalBranchRootCaptureDenial {
+    match failure {
+        RegionPublicationFailure::Storage(failure) => {
+            RelationalBranchRootCaptureDenial::StorageUnavailable(failure)
+        }
+        RegionPublicationFailure::Adjacency => {
+            RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(partition)
+        }
+        RegionPublicationFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(symbol),
+        ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
+        RegionPublicationFailure::Content(
+            crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage,
+        ) => RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(partition),
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

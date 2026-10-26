@@ -144,6 +144,25 @@ fn adopting_a_different_head_carries_its_owned_historical_projection_with_the_re
     oracle.reverse_adjacency = later.reverse_adjacency.clone();
     assert_owned_history(&mut partial, &mut oracle);
     assert_eq!(source.history_reads.load(Ordering::SeqCst), 0);
+    let symbols = fixture.cold.symbols.interner_snapshot();
+    let (commitment, _) = PartitionContentCommitment::capture_layered(&partial, &symbols).unwrap();
+    let owned = RelationalRegionResidency::resident_head(
+        partial,
+        commitment,
+        fixture.cold.schema.clone(),
+        &fixture.cold.symbols,
+    );
+    let reconstructed = full_demand(owned.cell(), 1 << 24).unwrap();
+    assert_eq!(
+        reconstructed
+            .full_view()
+            .partition()
+            .authoritative_content_digest(&symbols)
+            .unwrap(),
+        oracle.authoritative_content_digest(&symbols).unwrap()
+    );
+    assert!(source.history_reads.load(Ordering::SeqCst) > 0,
+        "Full promotion follows the adopted relation's own source as well as the original entity source");
 }
 
 fn update_target(

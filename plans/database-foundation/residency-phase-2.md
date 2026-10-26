@@ -1159,3 +1159,89 @@ The test file exceeded 400 lines after extending its producer fixture; moving
 that fixture into its named region-fixture module restores the cap without
 removing tests. Fresh contracts, World, Store and home lanes are running serially;
 no completion claim is made for their pending results.
+
+### Resident Head admission and explicit Full reconstruction
+
+Boundary: a changed Head owns current rows and resident suffixes; its prefixes
+own original member addresses, source ports and authenticated openings. These
+facts cannot grant a Full view. Schema plans come from the retained root schema
+authority. Reconstruction must use an isolated dictionary that retains the
+source page directory, so page admission cannot publish pending runtime meanings.
+It must fold each row's own prefix (including mixed sources), preserve slot and
+current adjacency facts, reconstruct local historical kinds from complete rows,
+and independently compare the resulting content commitment. The existing cell
+load boundary owns request checks, retry classification, serialization and sticky
+Region damage; symbol failures stay under Symbols.
+
+Plan: add a resident-Head constructor and owned schema/dictionary readmission
+context under residency. Share the bounded history folder with cold readmission;
+never encode a temporary member or invent a cold locator to promote owned Head.
+Full demand consumes the Head image and its context, validates complete rows and
+publishes a separate immutable Full region. Keep accepted Head views intact.
+Prove no-load construction/capture, independently appended Full equivalence,
+retryable limit refusal and sticky damaged-base refusal. Wire root/mirror
+construction and candidate custody in the following integrated cutover; until
+then outer preparation remains Full.
+
+Incremental root assembly currently borrows `PartitionState` through Full
+retention in both merge and commitment capture. Merely switching the outer
+guard would panic there and could mislabel a partial arena as Full. Move
+assembly, history commitment and level selection into the storage residency
+owner. It consumes an already accepted immutable region, the sealed overlay
+and journal, schema authority and the candidate's existing RuntimeSymbolTable
+binding (which already preserves cold pages and unpublished meanings). Root
+construction receives prepared retention and metadata only. Initial complete
+readmission remains an independently complete capture; a partial initial input
+must still be refused. Slot-count aggregation uses eager region facts. Keep
+existing allocation deltas, lifecycle deltas and identity ordering honest.
+
+The per-runtime symbol wrapper's CurrentPartitionAccess implementation still
+used its Full getter and inherited a default Head probe that classified a cold
+entry as Absent. The existing outer Full round masked that defect. Cut it over
+to explicit Head probe/demand using the same runtime dictionary admission
+identity as Full. A fork court must read a shared Head in both runtime orders
+while its named history member is missing, and require each runtime to admit
+its own region dictionary closure. The court checks cold-to-resident Head
+probing independently in both fork orders and materializes the expected record;
+text page faults remain a separate matrix obligation. No second admission
+registry is introduced.
+
+### Mirror publication boundary findings
+
+The mirror's current owner is `StorageSubsystem` and its read surface is one
+immutable `PartitionEdition` behind `RuntimeOwnedState`. Edition acquisition
+clones an Arc, and mutation copies only observed spines and regions. Existing
+publication plans retain ids and raw overlays, not resident mirror targets.
+`MirrorResidencyDemandBinding::demand` currently discards its admitted edition.
+Publication runs after durable append and reacquires the writer for each delta;
+the existing strategy then assumes Full retention or removes an entry and
+extracts its full partition. These are cold-capable representations at a point
+where refusal is too late.
+
+Pin adjustments and retention change current mirror metadata under that same
+writer between preparation and publication. Preparing replacement partitions
+from an earlier edition and overwriting the mirror would lose those changes.
+Holding a mirror write guard over journal I/O would also break the current
+reader/settler lock boundary. The replacement needs stable, resident publication
+targets whose current contents are edited under the existing mirror writer,
+while old editions retain their own immutable views. New-partition targets
+must remain candidate-private until publication; admission must not insert a
+visible empty partition merely to manufacture a stable target.
+
+A candidate holds a revocable payload/control and obtains a live owner operation
+at publication, rather than holding that operation throughout its lifetime.
+Before selecting target invalidation rules, verify recovery/configuration
+revocation and the exact branch-cutover handoff. Do not infer that a retained
+candidate prevents recovery. A stable target must be per-runtime across fork,
+with shared immutable cell payloads and separately owned pin metadata. The
+physical residency cell remains the sole payload admission/cache owner.
+
+Resident Head/root assembly now passes the full owner compile check, all three
+CI clippy commands, formatting, dirty caps, boundary and agent-context. The
+clippy run caught a nested-if style violation in the new retained capture
+accessor; the corrected let-chain passes. Removing the unused production Full
+convenience accessor also exposed two old unit-test calls; they now borrow the
+same accepted Full lease directly, preserving every assertion. Native execution
+for the new courts is queued after the already running serial workspace lanes.
+The format contracts run passes 203 tests with three existing ignores; World
+is progressing through its UI court. These runs do not close phase 2.
