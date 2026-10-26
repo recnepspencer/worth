@@ -23,11 +23,12 @@ pub(super) fn wait(
     let ready = start.with_extension("ready");
     let progress = start.with_extension("progress");
     while !ready.exists() {
-        if let Ok(next) = std::fs::read_to_string(&progress) {
-            if !next.is_empty() && next != phase {
-                phase = next;
-                last_progress = Instant::now();
-            }
+        if let Ok(next) = std::fs::read_to_string(&progress)
+            && !next.is_empty()
+            && next != phase
+        {
+            phase = next;
+            last_progress = Instant::now();
         }
         if started.elapsed() >= ceiling || last_progress.elapsed() >= Duration::from_secs(60) {
             return Err(format!(

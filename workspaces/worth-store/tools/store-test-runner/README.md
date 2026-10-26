@@ -100,6 +100,11 @@ aggregate ceiling allows 120 seconds of fixed setup plus five seconds per
 submitted operation. The history, exact crash seams, and recovery comparisons
 are unchanged.
 
+Under continuous eight-job boundary-check rebuilds, the complete C8 process
+target passed 40 tests in 495.53 seconds; its largest recorded writer setup
+was 39.38 seconds. The aggregate target includes all sixteen checkpoint crash
+scenarios and the independent writer, observer and recovery builds.
+
 The same suite runs under plain `cargo test`; the runner only bounds it. The
 suite's builds use their own target directory beside the test's, so repeated
 runs keep the normal compilation cache. There is no source inventory,
