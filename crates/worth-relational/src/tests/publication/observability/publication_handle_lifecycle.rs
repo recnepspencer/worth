@@ -16,7 +16,8 @@ fn publication_snapshot_handle_reads_without_becoming_a_pinned_snapshot() {
         .unwrap();
     let inspection = runtime
         .read_truth()
-        .inspect_snapshot(&outcome.snapshot)
+        .inspect_snapshot(execution, &outcome.snapshot)
+        .unwrap()
         .unwrap();
     let packet = explicit_query_packet(
         &runtime,
@@ -77,7 +78,8 @@ fn publication_snapshot_reads_use_authoritative_published_binding_version() {
         .unwrap();
     let inspection = runtime
         .read_truth()
-        .inspect_snapshot(&stale_handle)
+        .inspect_snapshot(execution, &stale_handle)
+        .unwrap()
         .unwrap();
 
     assert_eq!(read.snapshot.version_id, updated.snapshot.version_id);

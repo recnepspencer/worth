@@ -1531,3 +1531,24 @@ Extend the existing public read-door matrix with snapshot reads, snapshot
 inspection and snapshot-pinning inspection using actual owner-issued handles;
 check both region failures and per-runtime historical-symbol page failures,
 sticky refusal, no journal effect and Head availability where appropriate.
+
+Snapshot inspection now declares Full demand on its exact owner binding and
+preserves typed failures through inspect_snapshot_pinning. The existing public
+read-door family now covers 30 operations, including ordinary snapshot reads
+and both inspections, with region damage and history-only dictionary damage.
+Native library passes 1,953 tests (31 existing ignores); nine snapshot contracts,
+all three CI clippy lanes, formatting, dirty caps, boundary-check and
+agent-context pass. The first complete caller check found five external
+certification callers omitted from the initial src-only search; update them to
+pass their real request and distinguish request failure from an absent handle.
+Their original branch/root/cancellation assertions remain. The corrected full
+caller check passes.
+
+A subsequent member-lifetime audit found no placement custody in the symbol,
+lineage-node or deferred-index directory owners. StoreColdSource intentionally
+reads only currently selected members; retain_members is the existing mechanism
+that extends membership across replacement. In particular, symbol detached
+snapshots copy their page cache, so warming the live dictionary does not warm a
+region's isolated historical dictionary. Trace checkpoint page reuse/replacement
+and prove whether an older unadmitted page can disappear before adding custody;
+then use the existing port, not a second registry or a whole-manifest retainer.

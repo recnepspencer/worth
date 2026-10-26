@@ -5,6 +5,9 @@ use crate::execution::RelationalExecutionDenialCause;
 #[derive(Clone, Copy, Debug)]
 pub(super) enum ReadDoor {
     GraphInspection,
+    SnapshotRead,
+    SnapshotInspection,
+    SnapshotPinInspection,
     ConnectivityInspection,
     NeighborInspection,
     StructuralInspection,
@@ -34,8 +37,11 @@ pub(super) enum ReadDoor {
 }
 
 impl ReadDoor {
-    pub(super) const ALL: [Self; 27] = [
+    pub(super) const ALL: [Self; 30] = [
         Self::GraphInspection,
+        Self::SnapshotRead,
+        Self::SnapshotInspection,
+        Self::SnapshotPinInspection,
         Self::ConnectivityInspection,
         Self::NeighborInspection,
         Self::StructuralInspection,
@@ -73,6 +79,34 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::SnapshotRead | Self::SnapshotInspection | Self::SnapshotPinInspection => {
+                let (_, basis) = runtime
+                    .observe_branch(&runtime.main_branch_identity())
+                    .unwrap();
+                let handle = runtime
+                    .snapshots()
+                    .snapshot_for_observation(&basis.observation())
+                    .unwrap();
+                let answer = match self {
+                    Self::SnapshotRead => reader.read_snapshot(&handle, execution).map(|value| {
+                        assert!(value.is_some(), "the owner-issued handle must resolve")
+                    }),
+                    Self::SnapshotInspection => {
+                        reader.inspect_snapshot(execution, &handle).map(|value| {
+                            assert!(value.is_some(), "the owner-issued handle must resolve")
+                        })
+                    }
+                    Self::SnapshotPinInspection => runtime
+                        .inspect_what_happened()
+                        .inspect_snapshot_pinning(execution, &handle)
+                        .map(|value| {
+                            assert!(value.is_some(), "the owner-issued handle must resolve")
+                        }),
+                    _ => unreachable!("the operation selected a snapshot read"),
+                };
+                runtime.snapshots().release_snapshot(&handle).unwrap();
+                answer
+            }
             Self::GraphInspection => runtime
                 .inspect_what_happened()
                 .graph_summary(

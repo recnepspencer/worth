@@ -57,6 +57,8 @@ fn snapshot_reads_are_immutable_after_later_mutation() {
 
 #[test]
 fn snapshot_release_rejects_colliding_foreign_ids_and_double_release() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
     let first = runtime_with_test_schema();
     let second = runtime_with_test_schema();
     let (_, first_basis) = first.observe_branch(&first.main_branch_identity()).unwrap();
@@ -79,7 +81,8 @@ fn snapshot_release_rejects_colliding_foreign_ids_and_double_release() {
     ));
     assert!(first
         .read_truth()
-        .inspect_snapshot(&first_snapshot)
+        .inspect_snapshot(execution, &first_snapshot)
+        .unwrap()
         .is_some());
     assert!(first.snapshots().release_snapshot(&first_snapshot).is_ok());
     assert_eq!(

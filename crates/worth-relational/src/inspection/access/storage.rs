@@ -33,9 +33,15 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn inspect_snapshot(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &crate::snapshots::data::SnapshotHandle,
-    ) -> Option<crate::snapshots::data::SnapshotInspectionSummary> {
-        self.runtime.read_truth().inspect_snapshot(handle)
+    ) -> Result<
+        Option<crate::snapshots::data::SnapshotInspectionSummary>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.runtime
+            .read_truth()
+            .inspect_snapshot(execution, handle)
     }
 
     pub(crate) fn active_snapshot_count(&self) -> usize {

@@ -296,7 +296,8 @@ fn exact_snapshot_carries_its_observation_obligation_until_release() {
         world
             .runtime
             .read_truth()
-            .inspect_snapshot(&snapshot)
+            .inspect_snapshot(execution, &snapshot)
+            .expect("snapshot inspection keeps the original execution request")
             .unwrap()
             .root_id,
         Some(deleted.retired_root_identity())

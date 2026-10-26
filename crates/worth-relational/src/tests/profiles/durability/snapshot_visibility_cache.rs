@@ -80,7 +80,11 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         .read_snapshot(&snapshot, execution)
         .expect("read request remains live")
         .unwrap();
-    let inspection = runtime.read_truth().inspect_snapshot(&snapshot).unwrap();
+    let inspection = runtime
+        .read_truth()
+        .inspect_snapshot(execution, &snapshot)
+        .unwrap()
+        .unwrap();
     let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(

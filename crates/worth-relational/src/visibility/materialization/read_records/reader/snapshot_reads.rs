@@ -2,8 +2,23 @@ use super::*;
 use crate::visibility::snapshot_states::build_visibility_state;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
-    pub fn inspect_snapshot(&self, handle: &SnapshotHandle) -> Option<SnapshotInspectionSummary> {
-        resolve_snapshot_inspection(self.runtime, handle)
+    pub fn inspect_snapshot(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        handle: &SnapshotHandle,
+    ) -> Result<Option<SnapshotInspectionSummary>, crate::execution::RelationalExecutionDenialCause>
+    {
+        crate::execution::check_request(execution)?;
+        let Some(basis) = resolve_snapshot_basis(self.runtime, handle) else {
+            return Ok(None);
+        };
+        basis
+            .root()
+            .demand_all_full(execution, &self.runtime.services.symbols)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+        let summary = resolve_snapshot_inspection(self.runtime, handle);
+        crate::execution::check_request(execution)?;
+        Ok(summary)
     }
 
     /// A snapshot read requires the caller's borrowed execution custody.

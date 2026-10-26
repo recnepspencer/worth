@@ -231,7 +231,8 @@ fn cancellation_after_snapshot_pin_preserves_and_releases_the_exact_observation(
         world
             .runtime
             .read_truth()
-            .inspect_snapshot(&snapshot)
+            .inspect_snapshot(execution, &snapshot)
+            .expect("snapshot inspection keeps the original execution request")
             .unwrap()
             .version_id,
         basis.observation().version_id()

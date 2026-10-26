@@ -63,14 +63,18 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub fn inspect_snapshot_pinning(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &crate::snapshots::data::SnapshotHandle,
-    ) -> Option<SnapshotPinInspection> {
-        Some(SnapshotPinInspection {
-            snapshot: self.inspect_snapshot(handle)?,
-            origin: InspectionOrigin::VisibilitySnapshot,
-            access_path: InspectionAccessPath::SnapshotRead,
-            availability: InspectionAvailability::Direct,
-        })
+    ) -> Result<Option<SnapshotPinInspection>, crate::execution::RelationalExecutionDenialCause>
+    {
+        Ok(self
+            .inspect_snapshot(execution, handle)?
+            .map(|snapshot| SnapshotPinInspection {
+                snapshot,
+                origin: InspectionOrigin::VisibilitySnapshot,
+                access_path: InspectionAccessPath::SnapshotRead,
+                availability: InspectionAvailability::Direct,
+            }))
     }
 
     pub fn inspect_retention_execution(

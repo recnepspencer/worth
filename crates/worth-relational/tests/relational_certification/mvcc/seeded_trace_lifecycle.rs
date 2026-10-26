@@ -157,7 +157,10 @@ pub(super) fn delete_and_prove_absence(
     let inspection = world
         .runtime
         .read_truth()
-        .inspect_snapshot(&snapshot)
+        .inspect_snapshot(execution, &snapshot)
+        .unwrap_or_else(|error| {
+            trace_panic(trace, scenario_index, "snapshot inspection request", error)
+        })
         .unwrap_or_else(|| trace_panic(trace, scenario_index, "deleted root inspection", root));
     if inspection.root_id != Some(root) {
         trace_panic(trace, scenario_index, "deleted root lease", inspection);
