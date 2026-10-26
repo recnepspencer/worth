@@ -75,6 +75,17 @@ fn members(
         .operation_link(ReplaceNext::reference(), Next::reference())
         .operation_unlink(ReplaceNext::reference(), Next::reference())
         .operation(
+            InspectWalk::reference()
+                .definition()
+                .no_external_effect()
+                .no_aftermath()
+                .finish(),
+        )
+        .operation_requires_ability(InspectWalk::reference(), EditNode::reference())
+        .operation_read_entity(InspectWalk::reference(), Node::reference())
+        .operation_read_field(InspectWalk::reference(), NodeKey::reference())
+        .operation_read_relation(InspectWalk::reference(), Next::reference())
+        .operation(
             SetActive::reference()
                 .definition()
                 .no_external_effect()
@@ -132,6 +143,10 @@ worth_query_operation_reads!(ReplaceNext => [Node, NodeKey, Next]);
 worth_query_operation_expects_fact!(ReplaceNext => [NodeKey]);
 worth_query_operation_links!(ReplaceNext => [Next]);
 worth_query_operation_unlinks!(ReplaceNext => [Next]);
+
+worth_query_operation!(pub InspectWalk for WalkSchema, input ReplaceNextInputBinding);
+worth_query_operation_requires!(InspectWalk => [EditNode]);
+worth_query_operation_reads!(InspectWalk => [Node, NodeKey, Next]);
 
 #[derive(Clone, Debug)]
 pub struct SetActiveInput;

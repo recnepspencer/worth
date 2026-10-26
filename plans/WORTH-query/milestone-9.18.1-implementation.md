@@ -2450,3 +2450,294 @@ and structural requirements for this slice are now green. The persistent reviewe
 granted final commit clearance under qa-loop, qa-tests and code-quality-qa with
 no remaining material in-scope finding. This slice is complete; Phase 3 remains
 open and does not yet integrate into master.
+
+
+## Phase 3, Slice 4: Operation Walks And Recorded Dependencies
+
+### Initial boundary review (implementation plan not yet written)
+
+The next unfinished handoff is operation use of the completed pinned snapshot
+walk. It must include both the operation capability reader and the tracked
+handler reader used by real applications. Existing operation read_access methods
+require Relation: OperationReads<Operation> and delegate to the underlying
+snapshot reader. They intentionally do not record decision facts. The handler's
+relations_from/to instead call decision_relations_from/to, which admit the
+installed decision target, record the adjacency key and its success/failure,
+and retain handler versus computation-call attribution through DecisionReads.
+A forwarding-only change would leave the tracked application's walk missing.
+
+Authoritative graph truth remains the exact Native pin and its original request;
+relation/kind meaning and allowed decision targets remain installed contracts.
+The existing projection cookie validates typed roots. Pure direction, raw IDs,
+returned DTO metadata and public result names grant no additional authority.
+The operation layer owns attribution and sealing; it must not grow its own BFS
+or replace original execution/payer authority.
+
+The current sealing path matters. ExpectedFactKeys shares exact handler and
+computation keys. Projected completion re-observes ordinary Entity/Field/Relation/
+Adjacency keys through their existing fact owners. Each adjacency observation
+pins the same lease snapshot and performs a one-hop Native frontier read;
+publication currentness repeats that bounded observation and compares every
+physical relation triple, including absence. A walk cannot casually register a
+per-anchor set and then claim its sealing cost was one traversal. Repeating the
+whole walk's retained body per member would also create quadratic storage.
+Whether an existing batched/issued observation owner can carry the complete
+walk without either problem remains to be established before planning.
+
+The source-publication fact path demonstrates an existing carried-value
+boundary: the original reader retains owner-issued values separately from keys;
+completion requires the exact issued Arc and admission, rather than promoting
+a descriptive key to proof. This is evidence to examine, not permission to reuse
+a source-query authority for structural reads. Ordinary physical facts retain
+through the original StorageControl/RetainedFactStore and canonical locator
+owners. New structural evidence must enter those real retention, identity,
+currentness and canonical encoding paths honestly if a new fact shape is needed.
+
+A strict graph_reads_exactly_cover_fact_keys helper exists, but completion uses
+it only when no expected projected keys are present. The projected path still
+requires exact expected-key equality and installed-scope coverage for every
+fact. Do not infer that one semantic relation role necessarily means one
+physical anchor, or weaken exact coverage to accommodate a walk.
+
+Downstream evidence is concrete. Proprietary basis/thread.rs runs PreviousFeature
+one hop at a time through direct snapshot, installed invariant and tracked
+operation readers. The tracked implementation uses the handler's decision
+reader, so predecessor reads are dependencies today. Replacing that loop must
+preserve dependency coverage and the domain's own body, branching, retirement,
+introduction and duplicate-name judgments. This slice must establish the public
+tracked walk handoff; private cutover remains a later qualified slice.
+
+Open source questions before the implementation plan: the smallest complete
+structural dependency representation; whether existing issued fact/value storage
+can retain a move-only Native outcome with its original payer; exact handler and
+partitioned-computation handoff; complete/empty/multi-root and failed-read
+coverage; currentness and canonical encoding impact; and a focused real-handler
+court that makes a deep/leaf/nondiscovery change stale while a lawful twin commits.
+No Slice 4 production source has been edited.
+
+
+### Slice 4 resolved boundary decisions
+
+The persistent reviewer confirmed that no existing generic issued structural
+walk carrier closes this handoff. Use one logical structural-walk key and one
+privately issued shared Native value. Do not reuse SourceQuery scope, authority
+or semantic types. Reuse its ownership pattern and the real retained-fact,
+canonical-locator, currentness and original-memory owners. The fresh value binds
+its actual operation admission, selected original snapshot/cookie and installed
+relation contract. Completion consumes that exact issued value; a descriptor
+alone is insufficient. Publication compares against one genuine Native complete
+walk at its selected current snapshot, including entity liveness/kind/distance
+and every physical relation ID/kind/endpoints. No Query BFS or per-anchor reseal
+reads are introduced. Leaf absence is covered by the complete frontier, and
+invalidation posts every visited entity and selected adjacency boundary.
+
+Native output currently owns its vectors and reservation move-only. A private
+Query Arc backing can share that same Native owner between the public result
+and issued observation. Fund its own header/control/source fields before
+allocation on the original request; never quote the already-paid Native vectors
+again in generic fact storage. Canonical-root descriptor and registry/index
+allocations have their own original payments. Build the authoring registry in
+place and move it into ExpectedFactKeys at completion; that view is move-only,
+so no growing-Vec clone or second immutable-map allocation is required.
+
+Checkpoint facts deliberately exclude ordinary Adjacency and SourcePublication
+already. Keep the new live structural observation unsupported for checkpoint
+reuse as well; do not add a Native-from-metadata constructor or codec/version
+migration for this slice. It still needs complete canonical dependency identity,
+locator/body equality/merge, currentness and effect-routing treatment.
+
+Live computation carriage is a separate authority question. Native refresh can
+consume old fact payload/custody honestly only after its exact selected snapshot,
+completed carried calls/ranges, checked layout, contracts, root and handler-key
+conditions hold. It can decline late, leaving the generic expected-key path
+without a newly issued structural body. The observation-work guard is not a
+solution: it runs only with accounting, and unaccounted fact indices use None
+for optional work even for supported facts. The agreed first-slice policy is an
+explicit early Full eligibility decision for a prior containing the new typed
+structural key, in both postures, before old owner output or dirty-ordinal fast
+paths are accepted. Compute the presence bit in the existing index build and
+keep it independent of optional work. Do not alter older fact policies or relabel
+an old admission. Fresh execution issues the new value normally. Qualified live
+structural carriage is later work with its own complete fallback proof.
+
+### Slice 4 implementation plan
+
+The ordinary developer calls stay small:
+
+```rust,ignore
+let history = reader.walk(PreviousFeature::reference(), RelationDirection::Forward, &root)?;
+for step in &history {
+    inspect(step.entity(), step.distance());
+}
+let depends = reader.reaches(PreviousFeature::reference(), &root, &earlier)?;
+let all = reader.closure(PreviousFeature::reference(), RelationDirection::Reverse, &roots)?;
+```
+
+On the raw operation projection these are declared capability reads. On the
+handler DecisionReader and lent WorthQueryComputationReader they also retain
+one complete structural dependency and the existing caller attribution.
+
+1. Add a private retained backing below invariant_projection/walk for the
+   existing PinnedStructuralWalk, its actual original snapshot/cookie/query
+   signature and a separately quoted Arc/header payment. Change only the
+   private public-result representation; preserve its method signatures,
+   canonical iteration and identity minting. Construct it inside the original
+   checkpoint extent, with all before-growth claims and stops. Source-owned
+   Native vectors/ticket remain unchanged and are shared, never cloned.
+2. Add operation_reader/structural_walk with subordinate query, issued-value,
+   registry, canonical/currentness responsibilities as needed, each under400.
+   The query key owns one canonical root set derived from successful Native
+   distance-zero visits, plus installed endorelation/direction meaning. Quote
+   its root/control storage once. The issuer accepts only the current real
+   admitted reader and matching original backing, captures actual contracts and
+   original source binding, and is private to that owner. No public data-to-proof
+   factory, new authority marker, fresh request or budget is introduced.
+3. Add walk/closure/reaches capability methods to the operation reader, with
+   Relation: OperationReads<Operation>. Add decision variants which admit the
+   actual installed relation target and retain the issued complete value. The
+   original outer extent covers traversal, key/value allocation and attribution;
+   reaches also checkpoints its membership scan. Add handler and computation
+   reader methods delegating to the decision variants under the same trait
+   bounds. A decision read without a real admission is refused precisely.
+4. Extend DecisionReads and ExpectedFactKeys with a funded authoring structural
+   registry moved, not copied, at completion. Store one body per logical walk;
+   repeated calls verify the same original source/body and reuse that entry.
+   Record through the existing handler/computation attribution owner. Preserve
+   the first failed decision read and veto sealing even when swallowed. If a
+   failed walk has no complete canonical key/body, represent the failure
+   explicitly rather than inventing a successful key/value or partial walk.
+5. Add one private structural variant to FactKey and ObservedFact, reusing the
+   existing canonical locator/AdmittedFactKey/RetainedFactStore path. Supply
+   complete body equality/merge and canonical encoding of descriptor, visits
+   and physical relations. Fund canonical scratch by actual root/visit/edge
+   counts even though generic ChargedBytes/deep-clone reports no new Native
+   backing for an Arc clone. Keep checkpoint encode unsupported deliberately.
+   Audit all exhaustive fact/key consumers in one batch before the build.
+6. In both ordinary and qualified-native projected completion paths, consume
+   only the exact issued value for a structural key after actual admission,
+   original snapshot/source and installed-scope checks. Generic observe_fact
+   refuses descriptor-only structural reconstruction. Publication and source
+   currentness pin the real selected current snapshot, run one Native complete
+   walk and compare the complete canonical truth with original checkpoints and
+   a final poll; stops never turn into false or a partial success. Do not infer
+   permission or currentness from a diagnostic count, head version or digest.
+7. Add a posture-independent structural-presence field to the already-built
+   computation fact index, and an explicit full-run reason. Check that new
+   eligibility before computation_changes/dirty-ordinal shortcuts or any
+   carried output is accepted, while preserving prior basis-drift priority.
+   Both accounted and unaccounted runs then execute their owner freshly and
+   issue the current admission's value. Older comparison/budget policies stay
+   unchanged. Prove this using a genuinely sealed retained run and another real
+   admitted computation attempt, not fabricated key/flag metadata.
+8. Integrate the new physical body into invalidation, resident/index quotes,
+   FactRoutes, entity-touch/postcondition and source comparison consumers.
+   Build funded visit/edge routes once; retain existing first-match and explicit
+   link/unlink requirements. Never scan the whole walk separately per effect,
+   copy it per member or fabricate a post-effect Native outcome. If an effect
+   changes the read, use actual postcommit comparison/own-write-stale behavior.
+9. Reuse the authored WalkSchema/World fixture and ordinary edits. Add one
+   authoritative operation/binding/real tracked handler as necessary, using
+   the central schema definition and actual installation/authentication/read/
+   sealing/compare-and-commit path. A retained candidate must become stale for
+   a third-hop edge edit, a new child at an empty reached leaf and a nondiscovery
+   edge edit preserving reached IDs; an unrelated edit must let that same
+   retained candidate commit. Share empty/multi-root/reaches, handler versus
+   computation attribution, swallowed-stop, foreign/original-issuer and
+   same-issued-Arc/no-reseal-read controls in the small fixture. Add the genuine
+   reuse-attempt fresh-run control in both postures. Do not reopen Native BFS
+   or the already accepted installed-invariant mutant portfolios.
+10. Before building, review every new call's actual visibility and trait/type
+    boundary, all fact dispatchers, original allocation/drop order and the
+    concrete test fixture against the plan. Gate the source with the persistent
+    three-skill reviewer. Then compile one Query execution owner selection with
+    the real build-ID wrapper, locked Rust1.94 and proven nonincremental setting.
+    Reuse its emitted artifact for the new courts, Slice3's19 projection courts
+    and only affected canonical/currentness/computation regressions. Native
+    source is intended to stay unchanged, so reuse Slice3's32 Native passes.
+    Run required normal boundary/context and dirty fmt/caps/whitespace/function
+    review once on stable source. Update the direct guide/capability index with
+    compiled handler calls and the explicit fresh-computation/checkpoint reuse
+    limitation, without feature-doc-writer. Obtain final three-skill clearance
+    and commit the slice before continuing.
+
+The persistent review approved the concrete plan under qa-loop, qa-tests and
+code-quality-qa. Live issuance provenance must remain separate from canonical
+graph truth. Duplicate successful logical walks retain one issued body after
+same-source/truth validation and preserve caller attribution; a subsequent
+failed call still vetoes sealing. Declared closure/wire/receipts, qualified live
+structural carriage, private cutover and master integration remain outside it.
+
+### Slice4a boundary and implementation plan: capability-only operation reads
+
+Implement the raw operation reader capability as a small prerequisite commit.
+Its existing `read_access.rs` delegates declared one-hop reads to the snapshot
+reader and does not record decision dependencies. The handler decision reader
+is a separate surface. Adding raw complete reads here cannot satisfy the
+recorded-handler contract; that remains the next Slice4b implementation above.
+
+1. Add `walk`, `closure` and `reaches` to the operation reader in a dedicated
+   read-access child. Require the same `Relation: OperationReads<Operation>`
+   capability as existing `relations_from/to`, and delegate directly to the
+   already qualified snapshot executor. Reuse its result, original work and
+   memory payer, scope admission, foreign-identity checks and stop latch.
+2. Exercise the actual admitted-operation projection using the existing
+   centrally declared WalkSchema/World. Add an inspection-only operation with
+   explicit entity/key/relation reads and no arbitrary projection cap, leaving
+   the existing bounded edit operations intact. Compare actual result and
+   acquisition counts with the snapshot path; cover reverse/multiroot/empty and
+   reachability, foreign roots and swallowed original cancellation. Compare a
+   bounded refusal with the same graph under the uncapped inspection operation.
+   No fabricated admission, Native DTO or new test authority door is needed.
+3. Document this raw inspection surface and its distinction from recorded
+   decision reads. Add the capability-index entry. Do not expose these calls on
+   the handler/computation decision reader before issued dependencies exist.
+4. Review source before one batched Query owner build, then reuse its emitted
+   artifact for the new courts and the already focused projection/operation
+   regressions. Native source stays unchanged; reuse Slice3 Native evidence.
+   Run dirty formatting/line/function/whitespace checks and the required normal
+   boundary/context checks, obtain persistent three-skill clearance and commit.
+   Continue Slice4b with the accepted issued-value plan after this prerequisite.
+
+### Slice4a qualification and handoff
+
+The raw operation reader now exposes the three complete-read methods, each with
+the existing `Relation: OperationReads<Operation>` bound and one delegation to
+the snapshot reader. The result owner, Native executor, decision facts, handler
+and computation surfaces are unchanged. The guide and capability index identify
+these as inspection reads without publication-dependency protection. The
+central fixture declares InspectWalk consistently for all installations; its
+uncapped projection still consumes the original request's resources. Existing
+bounded edit-operation contracts remain intact.
+
+Evidence prefix outside the checkout:
+`C:\programming\worth worktees\targets\query-9.18.1-phase3-slice4a-`.
+
+- Corrected Query owner build3 passed in332.26seconds through the real fresh-ID
+  build wrapper, locked Rust1.94 and the established nonincremental setting.
+  Its emitted artifact ran22 focused tests: all3 actual admitted-operation
+  courts plus Slice3's19 projection/acquisition regressions. All22 passed,
+  none ignored, in7.01seconds. This includes exact cancellation after callback
+  entry, swallowed installed-limit denial and completion of the same32-node
+  graph with the uncapped inspection operation.
+- The final normal boundary check passed in346.16seconds and agent-context
+  check passed in0.83seconds, both begun on the corrected frozen source.
+  No snapshot updates or checker changes were required.
+- Final dirty static checks passed for7 Rust files: formatting,400-line caps,
+  whitespace and function scanning with no scan errors. The persistent reviewer
+  accepted all5 function advisories. All7 guide links resolve. Native source
+  did not change; Slice3's32 Native passes remain the causal evidence.
+- Earlier attempts are not green qualification: build1 found the path-attributed
+  parent needed explicit `#[path = "read_access/walk.rs"]` (one root diagnostic
+  with17 cascades,110.17seconds). Build2 compiled successfully in357.86seconds;
+  its test run passed21/22 because the cancellation fixture attempted an
+  unrelated sibling request inside the host extent before entering its callback.
+  Moving the genuinely retained admission outside that host extent matches the
+  existing counted-stop court; no production behavior was changed for this
+  fixture correction. The initial normal run had captured the old module path
+  and failed; it was replaced by the fresh final normal pass above.
+
+Persistent boundary/prebuild/correction and final result review cleared all
+three QA lenses, with no remaining material finding or additional build needed.
+Slice4a is complete and cleared for commit on the task branch. Slice4b still
+must implement the previously approved issued-body decision integration; this
+raw capability prerequisite does not complete Phase3 or authorize its merge.

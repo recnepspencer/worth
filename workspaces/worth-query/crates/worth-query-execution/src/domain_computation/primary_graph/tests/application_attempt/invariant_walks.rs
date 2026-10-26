@@ -4,6 +4,7 @@ mod branch;
 mod footprint;
 mod locality;
 mod observation;
+mod operation_projection;
 mod probe;
 mod program;
 mod resources;

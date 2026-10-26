@@ -1,6 +1,6 @@
 # Complete relation walks
 
-Use a complete walk when a rule or snapshot projection must inspect a dependency history, hierarchy,
+Use a complete walk when a rule or projection must inspect a dependency history, hierarchy,
 or other graph condition beyond a fixed number of hops. A walk follows one
 stored relation and returns each reachable entity with its minimum distance
 from the starting roots. Cycles and duplicate paths are allowed.
@@ -81,6 +81,22 @@ work-limit error inside the callback still prevents projection completion.
 completed projection. Actual acquisitions remain counted after a later refusal.
 These observations grant no authority and impose no budget.
 
+## Raw operation projections
+
+The raw `WorthQueryApplicationOperationInvariantProjectionReader` also accepts
+`walk`, `closure` and `reaches` with the same arguments and result types as the
+snapshot reader. The relation must implement `OperationReads<Operation>`, as
+for `relations_from` and `relations_to`. An admitted projection uses its selected
+snapshot, original request and installed projection work budget. The
+[compiled operation court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/operation_projection.rs)
+opens real authenticated operation admissions and exercises these calls.
+
+These are inspection reads. They do not record decision dependencies or protect
+an operation's result against source changes before publication. Recorded walk
+dependencies for handler and computation decision readers are still pending.
+Keep publication decisions on the existing recorded decision-read APIs until
+that support is available.
+
 ## Preparing the rule's read scope
 
 Preparation must identify every affected root from the domain's relationships.
@@ -153,9 +169,10 @@ binding/view, undeclared access, wrong kind and unprepared scope from work,
 memory and interruption failures. `Interrupted` preserves cancellation versus
 deadline. `MemoryAdmission` carries the original native allocation refusal.
 
-Complete walks currently belong to installed invariant views and snapshot
-projection readers. They follow one stored endorelation. Operation readers and
-declared queries retain their separate read APIs.
+Complete walks currently belong to installed invariant views, snapshot
+projection readers and raw operation projection readers. They follow one stored
+endorelation. Handler/computation decision readers and declared queries retain
+their separate read APIs.
 
 See [invariants and read observations](invariants-and-read-observations.md),
 [relation laws](../modeling/relation-laws.md), and
