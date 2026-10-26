@@ -5,6 +5,8 @@ use crate::transactions::data::{CommitPreparationReason, EntityReference, Relati
 use sha2::{Digest, Sha256};
 
 const POPULATION: usize = 600;
+#[path = "cold_symbol_view_levels.rs"]
+mod view_levels;
 
 struct SymbolFixture {
     runtime: crate::runtime::RelationalRuntime,

@@ -128,17 +128,14 @@ impl RelationalRegionRetention {
         &self,
         symbols: &crate::runtime::RuntimeSymbolTable,
     ) -> bool {
-        if !self.cell.requires_symbol_admission() {
-            return true;
-        }
         let identity = self
             .full
             .get()
-            .map(|lease| lease.symbol_admission_identity())
+            .map(|lease| lease.head_symbol_admission_identity())
             .or_else(|| {
                 self.head
                     .get()
-                    .map(|lease| lease.symbol_admission_identity())
+                    .map(|lease| lease.head_symbol_admission_identity())
             });
         identity.is_some_and(|identity| symbols.region_symbols_admitted(identity))
     }

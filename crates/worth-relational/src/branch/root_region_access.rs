@@ -100,9 +100,7 @@ impl RelationalBranchRoot {
                     return Probe::Absent;
                 };
                 let lease = region.partition.lease();
-                if !lease.cell().requires_symbol_admission()
-                    || symbols.region_symbols_admitted(lease.symbol_admission_identity())
-                {
+                if symbols.region_symbols_admitted(lease.symbol_admission_identity()) {
                     Probe::Resident(partition)
                 } else {
                     Probe::Cold

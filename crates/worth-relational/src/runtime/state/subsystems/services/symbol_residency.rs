@@ -101,16 +101,22 @@ impl RuntimeSymbolResidency {
         if admitted.contains(&region) {
             return Ok(());
         }
-        admitted.try_reserve(1).map_err(|_| {
-            unavailable(
-                RelationalStorageSubject::Symbols {
-                    first: Symbol(0),
-                    last: Symbol(u32::MAX - 1),
-                },
-                Cause::MemoryExhausted,
-            )
-        })?;
+        let covered_head = region.covered_head();
+        admitted
+            .try_reserve(1 + usize::from(covered_head.is_some()))
+            .map_err(|_| {
+                unavailable(
+                    RelationalStorageSubject::Symbols {
+                        first: Symbol(0),
+                        last: Symbol(u32::MAX - 1),
+                    },
+                    Cause::MemoryExhausted,
+                )
+            })?;
         self.demand_ids(owner, execution, ids())?;
+        if let Some(head) = covered_head {
+            admitted.insert(head);
+        }
         admitted.insert(region);
         Ok(())
     }

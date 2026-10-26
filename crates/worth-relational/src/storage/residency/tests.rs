@@ -21,6 +21,8 @@ mod history_fold_refusals;
 mod history_prefix_tests;
 #[path = "layered_history_tests.rs"]
 mod layered_history_tests;
+#[path = "lease_transfer_tests.rs"]
+mod lease_transfer_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
 #[path = "member_custody_tests.rs"]
@@ -29,6 +31,8 @@ mod member_custody_tests;
 mod mixed_history_tests;
 #[path = "projection_corruption_tests.rs"]
 mod projection_corruption;
+#[path = "symbol_admission_tests.rs"]
+mod symbol_admission_tests;
 
 #[path = "region_fixture.rs"]
 mod region_fixture;

@@ -247,10 +247,6 @@ impl RelationalRegionResidency {
         self.backing.is_some()
     }
 
-    pub(crate) fn requires_symbol_admission(&self) -> bool {
-        self.backing.is_some() || self.head_readmission.is_some()
-    }
-
     pub(super) fn content_symbols(
         &self,
         fallback: &crate::symbols::data::StringInterner,

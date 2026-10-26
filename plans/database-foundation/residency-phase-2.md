@@ -1260,3 +1260,100 @@ when it has one; that checks storage meaning without requiring an unrelated
 runtime's dictionary to have admitted the shared cell. It grants no serving
 authority and publishes no symbols. The owner compile check and three CI clippy
 commands pass; native execution remains in the serial queue.
+
+### Typed root-preparation refusal handoff
+
+The root now returns a typed StorageUnavailable refusal, but both publication
+preparation runtime implementations format every capture denial into String.
+The caller consequently turns storage damage into a bundle-assembly error, and
+metadata-only tail replay calls it ReplayFailure. This is a lossy pre-effect
+boundary even though ordinary preparation still has an outer Full guard.
+
+Introduce one publication-preparation denial vocabulary for semantic invalidity
+and storage unavailability. Preserve existing semantic details, carry the exact
+storage failure from root capture, map it to CommitPreparationReason with the
+original branch basis, and preserve ColdStorageUnavailable during tail replay.
+No conversion from the denial to String may silently erase a storage failure.
+Test the source-to-consumer refusal mapping with a producer-created branch basis
+and retain the existing invalid-root/publication courts. Position reservation
+remains downstream and no new side effect is introduced.
+
+### Full custody ownership transfer
+
+Resident publication targets will need to consume accepted data, not rediscover
+a Full state through an optional retention. The existing lease implements Drop
+itself, preventing safe field moves from an accepted Full lease. Move the same
+counting lifetime into a private cell-custody field; the public-in-crate typed
+lease remains the counted view. A Full-only consuming method can then release
+cell custody and move an unobserved region, or copy its structurally shared
+partition when another observation remains. No unsafe code, placeholder cell,
+load, authority promotion, new feature or alternate residency mechanism is
+needed.
+
+Use the consuming handoff in embedded checkpoint expansion, after the same Full
+demand and root-qualified kind admission. Kind authority checks only the
+demanded cell's bound identity, so consuming completed cells does not weaken
+another admission. Build independent kind images from the admitted partitions
+then move those partitions into their checkpoint images, removing duplicate
+partition clones. Preserve all existing concurrent lease and old-observation
+courts and add a consuming-custody observation/refcount court. Publication's
+current raw-retention extraction remains a separate required cutover.
+
+### Symbol admission follows the requested view level
+
+A Head lease may reference a physically Full immutable region. The current
+collector walks all metadata history even for that Head operation, while the
+cache key identifies only the region allocation. Narrowing the collector alone
+would let a Head mark falsely satisfy later Full symbol admission.
+
+Keep the one runtime admission registry and add Head/Full closure level to its
+immutable-view identity. Head admission collects current columns and extras,
+Full also collects historical aspect states. A successful Full admission records
+its covered Head identity; Head never records Full. Probe predicates use the
+requested identity. Keep fork dictionaries independently admitted and retain
+Weak identities to prevent allocation-address reuse. Prove the subset and cache
+behavior through public field-text admission, real committed symbolic fields,
+checkpoint reopen and a fork taken before the shared region is fully warmed.
+An unavailable history-only symbol page must refuse Full with its own sticky
+Symbols failure while Head continues to return current truth. Use headroom for
+the admitted symbol population, not exact page counts.
+
+The identity names the immutable logical cell version and requested closure,
+not a transient decoded-region allocation. Head-to-Full promotion replaces
+the physical region but preserves every current column; invalidating the Head
+key there would create repeated misses for an unchanged current view. A Weak
+cell identity prevents address reuse and forces copy-on-write rather than
+in-place modification while a dictionary admission can name that version.
+Full coverage records only the safe downward Head identity.
+
+Remove the cell-birth shortcut from dictionary admission: copied resident data
+can still reference cold dictionary pages in the demanding runtime. That
+runtime's existing page authority decides whether admission is needed. A
+memory-only dictionary remains the complete no-cold-source fast path, while a
+paged dictionary records each requested cell/closure even for newly resident
+cells. This also prevents a copied serving cell from bypassing the per-runtime
+admission established by the phase-1 review.
+
+### Mirror dictionary admission boundary
+
+Visibility point and adjacency reads probe a bare PartitionEdition; scans,
+statistics, retention and inspection demand its Full cells without admitting
+text into the demanding runtime. The isolated cell dictionary authenticates
+storage bytes but cannot grant that runtime symbol identity. A fork sharing a
+warmed physical region can therefore return tokens whose meanings its own
+paged dictionary has never admitted. Root reads already use the runtime's one
+region/closure registry; the mirror must consume that same authority.
+
+Add a borrowed symbol-admitted edition carrier under storage/partition_edition.
+Its probes report a miss until both the requested physical view and the runtime
+symbol closure are admitted. Explicit demand performs the existing region load
+then the existing dictionary admission, preserving the original request and
+subject. No new cache or I/O-bearing accessor is introduced. Full demand_all,
+touched-set mirror preparation and retention writer admission require the
+runtime dictionary explicitly. Cut visibility's probe orchestration and declared
+partition/scans, statistics and inspection over together. Test public historical
+visibility, declared scans, statistics, inspection and retention against a shared
+Full region and a damaged history-only symbol page, retaining sticky refusal,
+Head availability and unchanged journal checks. Memory-only execution remains
+the existing no-cold-source fast path. Candidate publication and lineage/event
+paging remain subsequent work, not claims of this slice.

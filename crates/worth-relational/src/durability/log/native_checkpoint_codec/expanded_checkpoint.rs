@@ -252,22 +252,23 @@ fn expand_regions(
     authority
         .bind(cells.iter().cloned())
         .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
-    let mut admitted = Vec::new();
-    let images = cells
-        .iter()
+    let admitted = cells
+        .into_iter()
         .map(|(_, cell)| {
             let lease = cell.demand_full(execution, MEMBER_LIMIT, Some(&authority))?;
-            admitted.push(lease.full_view().partition().clone());
-            partition_to_image_with_contracts(
-                lease.full_view().partition().clone(),
-                schema.aspect_plans(),
-                &contracts,
-            )
-            .map_err(Into::into)
+            drop(cell);
+            Ok(lease.into_owned_partition())
         })
         .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
     let kinds = crate::storage::residency::CheckpointRegionKindImages::capture(&admitted)
         .map_err(|cause| corrupt(format!("expanded kind projection: {cause:?}")))?;
+    let images = admitted
+        .into_iter()
+        .map(|partition| {
+            partition_to_image_with_contracts(partition, schema.aspect_plans(), &contracts)
+                .map_err(Into::into)
+        })
+        .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
     Ok((images, kinds))
 }
 
