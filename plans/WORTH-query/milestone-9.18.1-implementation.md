@@ -3478,3 +3478,22 @@ is still pending final closeout review and fresh non-force fast-forward checks;
 this paragraph does not claim it has already happened. The original dirty
 checkouts and private local main are preserved. Phases 4-6 remain unfinished;
 orbits, components and derived relations keep their own later obligations.
+
+### Phase 3 integration verified
+
+Final three-skill phase acceptance and closeout review passed. Fresh exact
+ancestry and worktree checks preceded normal non-force publication. Public
+master now contains closeout `40758e0663f43d316b30ffb0ed78f92514b7e1f3` and its
+qualified implementation 829091b7b2; private remote main contains qualified
+adoption `ac8481d578ac5f244a239680be8e6fc8aa414f16`. Both exact remote heads were
+verified after publication, and both task trees were clean.
+
+The original public/private checkout heads, branches and dirty-state hashes
+match their pre-publication snapshots. The checked-out private local main,
+index and files remain at 59959d1. No force, reset or discarded user work was
+used. `targets/query-9.18.1-phase3-default-integration.json` retains the exact
+preflight/publication/verification evidence. This following documentation-only
+record does not change the qualified implementation or SDK pin.
+
+Phase 3 is complete and integrated. Phases 4-6 remain unfinished; Phase 4 orbit
+relations and persistent aggregate identity are the next implementation target.
