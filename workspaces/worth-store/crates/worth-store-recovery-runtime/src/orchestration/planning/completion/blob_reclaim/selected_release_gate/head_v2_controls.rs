@@ -109,24 +109,24 @@ pub(super) fn read_checkpoint_source_controls(
             cause,
         })?;
     for request in requests {
-        if let Some(previous) = unique.last_mut() {
-            if previous.descriptor == request.descriptor {
-                if previous.descriptor_sha256 != request.descriptor_sha256
-                    || previous.reservation != request.reservation
-                    || previous.reservation_sha256 != request.reservation_sha256
-                    || previous.manifest.is_some()
-                        && request.manifest.is_some()
-                        && previous.manifest != request.manifest
-                {
-                    return Err(Denial::ConflictingRequest {
-                        descriptor: request.descriptor,
-                    });
-                }
-                if previous.manifest.is_none() {
-                    previous.manifest = request.manifest;
-                }
-                continue;
+        if let Some(previous) = unique.last_mut()
+            && previous.descriptor == request.descriptor
+        {
+            if previous.descriptor_sha256 != request.descriptor_sha256
+                || previous.reservation != request.reservation
+                || previous.reservation_sha256 != request.reservation_sha256
+                || previous.manifest.is_some()
+                    && request.manifest.is_some()
+                    && previous.manifest != request.manifest
+            {
+                return Err(Denial::ConflictingRequest {
+                    descriptor: request.descriptor,
+                });
             }
+            if previous.manifest.is_none() {
+                previous.manifest = request.manifest;
+            }
+            continue;
         }
         unique.push(request);
     }

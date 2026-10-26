@@ -80,10 +80,10 @@ fn restore(
         let remaining = other_wal.get_mut(&group.segment()).ok_or(())?;
         *remaining = remaining.checked_sub(group.encoded_wal_bytes()).ok_or(())?;
         let (reservation, published) = price_group(&group, roots)?;
-        if let Some((generation, _)) = published {
-            if !published_roots.insert(generation) {
-                return Err(());
-            }
+        if let Some((generation, _)) = published
+            && !published_roots.insert(generation)
+        {
+            return Err(());
         }
         owner.restore_wal_publication(reservation, published.map(|(_, bytes)| bytes))?;
     }
@@ -91,10 +91,10 @@ fn restore(
         if bytes == 0 {
             continue;
         }
-        if let Some(published) = lookup_root(roots, root) {
-            if published.bytes != bytes || !published_roots.insert(root) {
-                return Err(());
-            }
+        if let Some(published) = lookup_root(roots, root)
+            && (published.bytes != bytes || !published_roots.insert(root))
+        {
+            return Err(());
         }
         let remaining = other_wal.get_mut(&(segment, generation)).ok_or(())?;
         *remaining = remaining.checked_add(bytes).ok_or(())?;

@@ -171,7 +171,7 @@ fn commit_outcome(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> (Ended, Vec<Vec<u8>>, InFlight) {
-    let now = workload::artifacts_of(home.runtime());
+    let now = workload::append_live_artifacts(home.runtime(), &before);
     match outcome {
         Ok(_) => {
             assert_eq!(
@@ -187,6 +187,22 @@ fn commit_outcome(
         }) => {
             assert!(now == before, "{case}: a refused commit was installed");
             (Ended::Refused, before, InFlight::Refused)
+        }
+        Err(TransactionCommitError::Preparation { error, .. })
+            if matches!(
+                error.reason(),
+                worth_relational::facade::transactions::CommitPreparationReason::StorageUnavailable(
+                    _
+                )
+            ) =>
+        {
+            // A media fault can now refuse a declared cold demand before the
+            // durable step. Recovery must prove there was no journal append.
+            assert!(
+                now == before,
+                "{case}: unavailable cold storage published a commit"
+            );
+            (Ended::Refused, before, InFlight::NotDurable)
         }
         Err(error) => {
             let fate = error

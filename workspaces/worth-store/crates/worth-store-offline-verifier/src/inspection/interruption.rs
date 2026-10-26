@@ -20,10 +20,10 @@ pub(crate) fn reject_inspection_interruption_at(
     if cancellation.is_cancelled() {
         return Err(crate::OfflineInspectionDenial::Cancelled);
     }
-    if let Some(deadline) = budget.deadline() {
-        if now >= deadline {
-            return Err(crate::OfflineInspectionDenial::AbsoluteDeadlineReached { deadline });
-        }
+    if let Some(deadline) = budget.deadline()
+        && now >= deadline
+    {
+        return Err(crate::OfflineInspectionDenial::AbsoluteDeadlineReached { deadline });
     }
     if let Some(limit) = budget.max_elapsed() {
         let elapsed = started_at.elapsed();

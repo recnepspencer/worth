@@ -12,9 +12,7 @@ use worth_execution::{
     MapKernelStop, WorkCeilingDenial,
 };
 #[cfg(test)]
-use worth_execution::{
-    ChargedBytes, MapOutcome, ReduceInputDenial, ReductionMetrics, ReductionTree,
-};
+use worth_execution::{ChargedBytes, MapOutcome};
 use worth_foundational::{ExecutionReport, ExecutionRequestPolicy};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_runtime_world::facade::RuntimeWorldExecutionPlacement;
@@ -234,17 +232,6 @@ impl QueryMemoryReservation {
     }
 }
 
-/// What a completed tree keeps once its run ends, as execution counts it
-/// for a reducer with no declared storage: its nodes and the tree itself.
-#[cfg(test)]
-pub(super) fn kept_tree_bytes<R: ChargedBytes, Combine>(
-    tree: &ReductionTree<R, Combine>,
-) -> Option<u64> {
-    u64::try_from(size_of::<ReductionTree<R, Combine>>())
-        .ok()?
-        .checked_add(tree.additional_charged_bytes())
-}
-
 enum DispatchForm<'d> {
     Leased(ExecutionResourceLease<'d>),
 }
@@ -254,11 +241,6 @@ pub(super) struct QueryDispatch<'d> {
     form: DispatchForm<'d>,
     certified_seed: Option<u64>,
 }
-
-/// What a reduction produced, as `run_reduce` returns it.
-#[cfg(test)]
-pub(super) type Reduced<R, Combine, E> =
-    Result<(ReductionTree<R, Combine>, ExecutionReport, ReductionMetrics), ReduceInputDenial<E>>;
 
 impl QueryDispatch<'_> {
     #[cfg(test)]
@@ -292,85 +274,6 @@ impl QueryDispatch<'_> {
             DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
         }
         .map(|(outcome, _)| outcome)
-    }
-
-    /// Maps every partition of `map` and reduces the results over the
-    /// canonical tree, inside `ceiling`, taking over `inputs` as
-    /// [`Self::map`] does. The reduction hands what its completed tree keeps
-    /// to `tree` in one ledger step, so the tree is held from its build until
-    /// `tree` drops. Where a test chose certification, a completed reduction
-    /// is then certified outside the ceiling.
-    #[cfg(test)]
-    pub(super) fn reduce<T, K, R, E, Kernel, Diagnostic, Combine>(
-        &self,
-        ceiling: u64,
-        map: &ExecutionMap<T, K>,
-        inputs: QueryMemoryReservation,
-        tree: &mut QueryMemoryReservation,
-        (kernel, diagnostic): (Kernel, Diagnostic),
-        identity: R,
-        combine: Combine,
-        max_value_bytes: u64,
-        cause: super::partitioned_computation::WorthQueryPartitionedComputationFullCause,
-    ) -> Result<Reduced<R, Combine, E>, WorkCeilingDenial>
-    where
-        T: Sync + ChargedBytes,
-        R: Send + Sync + ChargedBytes + Clone + CanonicalBits,
-        E: Send + ChargedBytes,
-        Kernel:
-            Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
-        Diagnostic:
-            Fn(&T, &mut MapKernelContext<'_, '_>) -> Result<R, MapKernelFailure<E>> + Clone + Sync,
-        Combine: Fn(&R, &R) -> R + Clone + Sync,
-    {
-        let certification = self
-            .certified_seed
-            .map(|seed| (seed, diagnostic, identity.clone(), combine.clone()));
-        let ceiling = ExecutionWorkCeiling::new(Some(ceiling));
-        let held = tree.held.as_mut();
-        let mapped = super::partitioned_computation::FullTreeMapWork::default();
-        let run = |lease: Option<&ExecutionResourceLease<'_>>| {
-            let outcome = map.run_reduce_holding(
-                lease,
-                inputs.held,
-                held,
-                |input, context| mapped.kernel(input, context, &kernel),
-                identity,
-                combine,
-                max_value_bytes,
-                0,
-            );
-            super::partitioned_computation::observe_full_tree(cause, &outcome, &mapped);
-            outcome
-        };
-        let reduced = match &self.form {
-            DispatchForm::Leased(lease) => ceiling.run(lease, || run(Some(lease))),
-        }
-        .map(|(reduced, _)| reduced);
-        // The request counts the memory its retained tree keeps.
-        tree.bytes = match (&tree.held, &reduced) {
-            (Some(held), _) => held.bytes(),
-            (None, Ok(Ok((reduced, ..)))) => kept_tree_bytes(reduced).unwrap_or(u64::MAX),
-            (None, _) => 0,
-        };
-        if let (
-            Some((seed, kernel, identity, combine)),
-            DispatchForm::Leased(lease),
-            Ok(Ok((tree, report, _))),
-        ) = (certification, &self.form, &reduced)
-        {
-            test_placement::certify(
-                map,
-                lease,
-                seed,
-                kernel,
-                identity,
-                combine,
-                max_value_bytes,
-                (tree, report),
-            )?;
-        }
-        reduced
     }
 }
 

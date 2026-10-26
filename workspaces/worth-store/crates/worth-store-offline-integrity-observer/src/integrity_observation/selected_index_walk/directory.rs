@@ -23,7 +23,7 @@ pub(super) fn inspect_directory(
     if bytes.len() < 76 || &bytes[..8] != b"WRC11IDX" {
         return Err(damage(
             Cause::Framing,
-            Some((0, bytes.len().min(8).max(1) as u64)),
+            Some((0, bytes.len().clamp(1, 8) as u64)),
             Blast::Artifact,
         ));
     }

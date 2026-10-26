@@ -53,14 +53,13 @@ fn authored_body_portable_readmission_preserves_values_and_rejects_incomplete_re
     let mut parts = portable.into_parts();
     use worth_query_host::facade::declaration::application_schema::ApplicationOperationDecisionReadTarget;
     for member in &mut parts.members {
-        if let ApplicationSchemaMember::OperationDecisionRead { target, .. } = member {
-            if matches!(target, ApplicationOperationDecisionReadTarget::Field { field, .. }
+        if let ApplicationSchemaMember::OperationDecisionRead { target, .. } = member
+            && matches!(target, ApplicationOperationDecisionReadTarget::Field { field, .. }
                 if field == "DocumentRetentionField")
-            {
-                *target = ApplicationOperationDecisionReadTarget::Entity {
-                    entity: "Document".to_owned(),
-                };
-            }
+        {
+            *target = ApplicationOperationDecisionReadTarget::Entity {
+                entity: "Document".to_owned(),
+            };
         }
     }
     // The same member count and complete single-contribution coverage remain

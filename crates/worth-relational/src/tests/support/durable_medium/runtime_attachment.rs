@@ -62,6 +62,15 @@ impl RelationalDurableMedium for TestDurableMediumAttachment {
 pub(crate) struct AttachedTestMedium(Arc<TestDurableMedium>);
 
 impl AttachedTestMedium {
+    pub(crate) fn recovery_source(
+        &self,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableRecoverySource,
+        super::TestRecoverySourceRefusal,
+    > {
+        self.0.recovery_source()
+    }
+
     /// A fresh medium over the same contents, for another runtime to own, as
     /// a reopened home builds its own journal medium over the same Store.
     pub(crate) fn attachment(&self) -> Box<dyn RelationalDurableMedium> {

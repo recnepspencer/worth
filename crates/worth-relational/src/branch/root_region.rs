@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use crate::storage::residency::{RelationalRegionResidency, RelationalRegionRetention};
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -10,11 +10,12 @@ pub(crate) struct RelationalRootRegion {
     pub(super) creation_root_id: u64,
     pub(super) id: u64,
     pub(super) partition_id: PartitionId,
-    pub(super) partition: Arc<PartitionState>,
-    pub(super) allocation_inventory:
-        crate::storage::overlay::RelationalPartitionAllocationInventory,
+    pub(super) partition: RelationalRegionRetention,
+    allocation_inventory: Option<crate::storage::overlay::RelationalPartitionAllocationInventory>,
     pub(super) content_digest: [u8; 32],
-    pub(super) content_commitment: crate::storage::overlay::PartitionContentCommitment,
+    pub(super) kind_commitment: crate::storage::residency::RelationalRegionKindCommitment,
+    pub(super) entity_slots: usize,
+    pub(super) relation_slots: usize,
     pub(super) content_values_hashed: u64,
     materialization_unavailable_records: usize,
 }
@@ -27,6 +28,13 @@ impl RelationalRootRegion {
         symbols: &crate::symbols::data::StringInterner,
         previous: Option<(&Self, &crate::storage::overlay::PartitionMutationJournal)>,
     ) -> Result<Self, RelationalBranchRootCaptureDenial> {
+        crate::storage::residency::rebuild_region_history_kind_buckets(&mut partition).map_err(
+            |_| {
+                RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
+                    partition.partition_id,
+                )
+            },
+        )?;
         partition.clear_runtime_pin_counters();
         let (content_commitment, content_values_hashed) =
             crate::storage::overlay::PartitionContentCommitment::capture(
@@ -34,7 +42,7 @@ impl RelationalRootRegion {
                 symbols,
                 previous.map(|(region, journal)| {
                     (
-                        &region.content_commitment,
+                        region.partition.full_view().commitment(),
                         region.partition.as_ref(),
                         journal,
                     )
@@ -46,10 +54,19 @@ impl RelationalRootRegion {
                 ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
             })?;
         let content_digest = content_commitment.digest(partition.partition_id);
+        let kind_commitment =
+            crate::storage::residency::RelationalRegionKindCommitment::capture(&partition)
+                .map_err(|_| {
+                    RelationalBranchRootCaptureDenial::InvalidAdjacencyProjection(
+                        partition.partition_id,
+                    )
+                })?;
         let (allocation_inventory, materialization_unavailable_records) =
             if let Some((previous, journal)) = previous {
-                let inventory = partition
-                    .allocation_inventory_since(&previous.partition, previous.allocation_inventory);
+                let inventory = partition.allocation_inventory_since(
+                    &previous.partition,
+                    previous.allocation_inventory(),
+                );
                 let counts = unavailable_delta(
                     &partition.entity_arena,
                     &previous.partition.entity_arena,
@@ -75,13 +92,45 @@ impl RelationalRootRegion {
             creation_root_id,
             id,
             partition_id: partition.partition_id,
-            allocation_inventory,
+            allocation_inventory: Some(allocation_inventory),
             content_digest,
-            content_commitment,
+            kind_commitment,
+            entity_slots: partition.entity_arena.slot_count(),
+            relation_slots: partition.relation_arena.slot_count(),
+            partition: RelationalRegionRetention::from_lease(RelationalRegionResidency::resident(
+                partition,
+                content_commitment,
+            )),
             content_values_hashed,
             materialization_unavailable_records,
-            partition: Arc::new(partition),
         })
+    }
+
+    pub(super) fn from_checkpoint(
+        creation_root_id: u64,
+        id: u64,
+        checkpoint: super::root_checkpoint::RelationalRootRegionCheckpoint,
+    ) -> Self {
+        Self {
+            creation_root_id,
+            id,
+            partition_id: checkpoint.partition_id,
+            partition: RelationalRegionRetention::new(checkpoint.cell, checkpoint.kind_authority),
+            allocation_inventory: None,
+            content_digest: checkpoint.content_digest,
+            kind_commitment: checkpoint.kind_commitment,
+            entity_slots: checkpoint.entity_slots,
+            relation_slots: checkpoint.relation_slots,
+            content_values_hashed: 0,
+            materialization_unavailable_records: checkpoint.unavailable_records,
+        }
+    }
+
+    pub(super) fn allocation_inventory(
+        &self,
+    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
+        self.allocation_inventory
+            .unwrap_or_else(|| self.partition.cell().resident_inventory())
     }
 
     pub(super) fn materialization_unavailable_records(&self) -> usize {
@@ -89,28 +138,34 @@ impl RelationalRootRegion {
     }
 
     pub(super) fn observation(&self) -> RelationalRootRegionObservation {
-        debug_assert_eq!(self.partition.partition_id, self.partition_id);
+        let inventory = self.allocation_inventory();
         RelationalRootRegionObservation {
             creation_root_id: self.creation_root_id,
             region_id: self.id,
             partition_id: self.partition_id,
             root_region_bytes: std::mem::size_of::<Self>() as u64,
-            partition_state_bytes: std::mem::size_of::<PartitionState>() as u64,
-            authoritative_bytes: self.allocation_inventory.authoritative_bytes,
-            diagnostic_bytes: self.allocation_inventory.diagnostic_bytes,
-            retention_metadata_bytes: self.allocation_inventory.retention_metadata_bytes,
-            allocator_bookkeeping_bytes: self.allocation_inventory.allocator_bookkeeping_bytes,
-            optional_cache_bytes: self.allocation_inventory.optional_cache_bytes
-                + self.content_commitment.allocation_bytes(),
+            partition_state_bytes: self.partition.cell().residency_allocation_bytes(),
+            authoritative_bytes: inventory.authoritative_bytes,
+            diagnostic_bytes: inventory.diagnostic_bytes,
+            retention_metadata_bytes: inventory.retention_metadata_bytes,
+            allocator_bookkeeping_bytes: inventory.allocator_bookkeeping_bytes,
+            optional_cache_bytes: inventory.optional_cache_bytes
+                + self.partition.cell().resident_commitment_bytes(),
         }
     }
 
     pub(super) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
         let mut bytes = std::mem::size_of::<Self>() as u64;
-        if Arc::strong_count(&self.partition) == 1 {
-            bytes = bytes
-                .saturating_add(std::mem::size_of::<PartitionState>() as u64)
-                .saturating_add(self.partition.reclaimable_unique_authoritative_bytes());
+        if self.partition.is_uniquely_owned() {
+            bytes = bytes.saturating_add(self.partition.cell().residency_allocation_bytes());
+            if let Ok(Some(lease)) = self.partition.cell().lease_resident_full() {
+                bytes = bytes.saturating_add(
+                    lease
+                        .full_view()
+                        .partition()
+                        .reclaimable_unique_authoritative_bytes(),
+                );
+            }
         }
         bytes
     }

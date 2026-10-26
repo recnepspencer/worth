@@ -15,6 +15,42 @@ pub(super) struct RecordContentIndex {
 }
 
 impl RecordContentIndex {
+    pub(super) fn history_frontiers<K: RecordKind>(
+        &self,
+        arena: &RecordArena<K>,
+    ) -> Option<Vec<(u64, super::digest_index::HistoryAppendFrontier)>>
+    where
+        K::Meta: serde::Serialize,
+    {
+        self.histories
+            .iter()
+            .map(|(&slot, history)| {
+                let metadata = arena.metadata_history_at(usize::try_from(slot).ok()?)?;
+                let last_value = metadata
+                    .len()
+                    .checked_sub(1)
+                    .and_then(|index| metadata.get(index))
+                    .map(|value| hash_value(b"metadata", value));
+                Some((slot, history.append_frontier(last_value)?))
+            })
+            .collect()
+    }
+
+    pub(super) fn from_history_frontiers(
+        frontiers: &[(u64, super::digest_index::HistoryAppendFrontier)],
+    ) -> Option<Self> {
+        let mut result = Self::default();
+        for (slot, frontier) in frontiers {
+            let history = DigestIndex::from_append_frontier(frontier)?;
+            result.history_bytes += history.allocation_bytes();
+            if result.histories.contains_key(slot) {
+                return None;
+            }
+            result.histories.insert(*slot, history);
+        }
+        Some(result)
+    }
+
     pub(super) fn update<K: RecordKind>(
         &mut self,
         arena: &RecordArena<K>,
@@ -43,9 +79,17 @@ impl RecordContentIndex {
             let old = previous
                 .and_then(|arena| arena.metadata_history_at(slot))
                 .unwrap_or(&empty);
+            let history_offset = if previous.is_some() {
+                history
+                    .next_history_index()
+                    .checked_sub(old.len() as u128)
+                    .expect("resident history suffix belongs to its carried commitment")
+            } else {
+                0
+            };
             arena.metadata_history[physical].visit_changed_values(old, &mut |index, value, _| {
                 history.set(
-                    index as u128,
+                    history_offset + index as u128,
                     value.map(|value| hash_value(b"metadata", value)),
                 );
                 hashed_values += u64::from(value.is_some());

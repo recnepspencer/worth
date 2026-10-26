@@ -116,10 +116,9 @@ fn ordinary_attempt_refusal_cannot_be_swallowed_before_fact_completion() {
         super::opaque::ignored_refusals() > 0,
         "the nested seed must have swallowed an actual native admission refusal"
     );
-    let denial = refused
-        .completed
-        .err()
-        .expect("ignored observation failure cannot seal completed facts");
+    let Err(denial) = refused.completed else {
+        panic!("ignored observation failure cannot seal completed facts");
+    };
     assert_eq!(
         denial.kind(),
         WorthQueryApplicationAttemptDenialKind::ValueDecode(

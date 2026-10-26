@@ -137,7 +137,6 @@ fn low_maintenance_scope_preserves_durable_publication_without_catalog_validatio
                 PhysicalResidencyRetryPosture::AfterConfigurationChange
             );
             assert!(!pressure.effect_may_have_started());
-            drop(blobs);
 
             let marker = selected_marker(serving);
             assert_eq!(published.object(), object);

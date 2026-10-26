@@ -140,7 +140,7 @@ fn held_readers_block_retirement_without_scanning_every_root() {
         "retirement examined {examined_delta} entries across {protected} protected roots"
     );
     assert_eq!(serving.media_counters().deletions(), before);
-    drop(_borrowed);
+
     drop(held);
     drop(tail);
     assert_eq!(

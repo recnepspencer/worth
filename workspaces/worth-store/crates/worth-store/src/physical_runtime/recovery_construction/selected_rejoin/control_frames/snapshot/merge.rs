@@ -124,10 +124,10 @@ impl SelectedControlMediaFingerprint {
         if !self.heads.can_merge(&other.heads) {
             return Err(SelectedMediaRejoinDenial::CertificateRoster);
         }
-        if let (Some(destination), Some(donor)) = (&self.effects, &other.effects) {
-            if !destination.can_merge(donor) {
-                return Err(SelectedMediaRejoinDenial::RootBinding);
-            }
+        if let (Some(destination), Some(donor)) = (&self.effects, &other.effects)
+            && !destination.can_merge(donor)
+        {
+            return Err(SelectedMediaRejoinDenial::RootBinding);
         }
         Ok(())
     }

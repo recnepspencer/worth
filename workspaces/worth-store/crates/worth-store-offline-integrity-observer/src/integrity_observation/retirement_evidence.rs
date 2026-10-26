@@ -80,7 +80,7 @@ impl RetirementFact {
             Some((arena, offset, length))
         };
         Some(Self {
-            completion: action % 2 == 0,
+            completion: action.is_multiple_of(2),
             arena_only,
             source_root,
             id,

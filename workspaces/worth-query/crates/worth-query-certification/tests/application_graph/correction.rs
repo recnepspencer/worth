@@ -1,5 +1,9 @@
 //! Exact performed selection uses real public installation, publication and disclosure.
 #[path = "../../examples/application_correction_support/mod.rs"]
+#[allow(
+    dead_code,
+    reason = "The shared correction example also executes its independent portfolio courts"
+)]
 mod model;
 use model::{authentication::*, edit::Value, host};
 use std::num::NonZeroUsize;

@@ -107,6 +107,10 @@ impl AdjacencySet {
         entries.historical_by_kind = None;
     }
 
+    pub(crate) fn reset_historical_kind_buckets(&mut self) {
+        self.entries_mut().historical_by_kind = None;
+    }
+
     pub(crate) fn index_current_kind(&mut self, kind_id: KindId, relation_id: RelationId) {
         insert_kind_relation(
             &mut self.entries_mut().current_by_kind,
@@ -182,6 +186,27 @@ impl AdjacencySet {
                 .as_ref()
                 .and_then(|kinds| kinds.get(&kind_id)),
         )
+    }
+
+    pub(crate) fn checkpoint_kind_memberships(
+        &self,
+        basis: super::AdjacencyKindBasis,
+    ) -> Vec<(KindId, Vec<RelationId>)> {
+        let entries = self.entries();
+        let selected = if matches!(basis, super::AdjacencyKindBasis::Historical) {
+            &entries.historical_by_kind
+        } else {
+            &entries.current_by_kind
+        };
+        selected
+            .as_ref()
+            .map(|kinds| {
+                kinds
+                    .iter()
+                    .map(|(&kind, ids)| (kind, ids.keys().copied().collect()))
+                    .collect()
+            })
+            .unwrap_or_default()
     }
 
     pub(crate) fn historical_kind_ids(&self, kind_id: KindId) -> AdjacencyIds<'_> {

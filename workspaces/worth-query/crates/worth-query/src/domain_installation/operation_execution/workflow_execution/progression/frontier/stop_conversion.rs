@@ -52,22 +52,6 @@ pub(super) fn scope(cause: WorkCeilingDenial) -> WorkflowFrontierFailure {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn unavailable_accounting_retains_its_own_workflow_stop() {
-        let stopped = scope(WorkCeilingDenial::Stopped(
-            MapKernelStop::AccountingUnavailable,
-        ));
-        assert!(matches!(
-            stopped,
-            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
-                stage_identity: None
-            })
-        ));
-    }
-}
 pub(super) fn map(
     cause: MapStop<WorthQueryWorkflowStageComputed>,
     stage_identity: Option<String>,
@@ -93,5 +77,22 @@ pub(super) fn map(
                 })
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn unavailable_accounting_retains_its_own_workflow_stop() {
+        let stopped = scope(WorkCeilingDenial::Stopped(
+            MapKernelStop::AccountingUnavailable,
+        ));
+        assert!(matches!(
+            stopped,
+            WorkflowFrontierFailure::Denied(Denial::ComputationAccountingUnavailable {
+                stage_identity: None
+            })
+        ));
     }
 }

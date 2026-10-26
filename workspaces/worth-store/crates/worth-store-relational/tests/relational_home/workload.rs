@@ -137,7 +137,7 @@ impl Script {
                 let inherited = live.get(&main.0).cloned().unwrap_or_default();
                 live.insert(fork.0.clone(), inherited);
                 fork.clone()
-            } else if step > fork_at && generator.next() % 3 == 0 {
+            } else if step > fork_at && generator.next().is_multiple_of(3) {
                 fork.clone()
             } else {
                 main.clone()
@@ -262,8 +262,40 @@ pub(crate) fn artifacts_of(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
         .collect()
 }
 
+/// Inspect only newly performed positions while Store may be indeterminate.
+/// The acknowledged prefix is retained by the oracle before arming the fault;
+/// full byte agreement is checked independently after reopening the home.
+pub(crate) fn append_live_artifacts(
+    runtime: &RelationalRuntime,
+    before: &[Vec<u8>],
+) -> Vec<Vec<u8>> {
+    let artifacts = runtime
+        .durability()
+        .canonical_commit_artifacts(ExecutionAllocationPolicy::SystemAllocation);
+    assert!(
+        artifacts.len() >= before.len(),
+        "live selection lost an acknowledged index prefix"
+    );
+    let mut now = before.to_vec();
+    now.extend(
+        artifacts
+            .after_position(worth_relational::facade::publication::PatchStreamPosition(
+                before.len() as u64,
+            ))
+            .map(|artifact| {
+                artifact
+                    .expect("newly performed artifact encodes")
+                    .as_bytes()
+                    .to_vec()
+            }),
+    );
+    now
+}
+
 /// Every registered branch's head, read record by record.
 pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> BranchStates {
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
     super::branch_lifecycle::BRANCHES
         .into_iter()
         .filter_map(|name| {
@@ -278,14 +310,14 @@ pub(crate) fn states_of(runtime: &RelationalRuntime, records: &[RecordRef]) -> B
                     RecordRef::Entity(entity) => format!(
                         "{:?}",
                         reader
-                            .read_entity(*entity)
+                            .read_entity(execution, *entity)
                             .expect("entity read")
                             .effective()
                     ),
                     RecordRef::Relation(relation) => format!(
                         "{:?}",
                         reader
-                            .read_relation(*relation)
+                            .read_relation(execution, *relation)
                             .expect("relation read")
                             .effective()
                     ),

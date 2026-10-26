@@ -197,6 +197,7 @@ pub(super) fn recover_stage_from_final_history(
         crate::durability::data::RecoveryVerificationMode::AuditRecoveryVerification,
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
+        source.durability.cold_source(),
     )
     .with_commit_strategy_executors(source.commit_strategy_executor_registry().clone());
     let mut recovered = persisted_strategy_runtime(root_path);

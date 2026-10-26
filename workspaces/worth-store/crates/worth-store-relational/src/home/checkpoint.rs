@@ -5,6 +5,11 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use super::RelationalStoreHome;
 use crate::checkpoint_record::{self, RelationalStoreCheckpointRecordRefusal};
 
+#[cfg(test)]
+mod scope_tests;
+#[cfg(test)]
+mod tests;
+
 /// A checkpoint the home made the selected recovery basis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RelationalStoreCheckpoint {
@@ -63,10 +68,11 @@ impl RelationalStoreHome {
         &self,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<RelationalStoreCheckpoint, RelationalStoreCheckpointFailure> {
+        let members = self.cold_source.member_locators();
         let checkpoint = self
             .runtime
             .durability_authority()
-            .native_checkpoint(policy)
+            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &members, source: Some(self.cold_source.clone()) })
             .map_err(RelationalStoreCheckpointFailure::Capture)?;
         let covered = checkpoint
             .covered_position()
@@ -74,9 +80,15 @@ impl RelationalStoreHome {
         let covered_transitions = checkpoint
             .covered_branch_transitions()
             .ok_or(RelationalStoreCheckpointFailure::CoverageUnknown)?;
-        let generation =
-            checkpoint_record::publish(&self.serving, covered, covered_transitions, &checkpoint)
-                .map_err(RelationalStoreCheckpointFailure::Record)?;
+        let generation = checkpoint_record::publish(
+            &self.serving,
+            &self.cold_source,
+            covered,
+            covered_transitions,
+            &checkpoint,
+        )
+        .map_err(RelationalStoreCheckpointFailure::Record)?;
+        checkpoint.acknowledge_publication();
         complete_physical_checkpoint(&self.serving, generation)?;
         Ok(RelationalStoreCheckpoint {
             covered,

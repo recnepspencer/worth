@@ -3,6 +3,7 @@ use std::sync::Arc;
 use worth_foundational::FoundationalBranchTarget;
 
 use crate::history::data::CanonicalCommitEnvelope;
+#[cfg(test)]
 use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
@@ -24,10 +25,11 @@ impl HistorySubsystem {
                     )
                 })
                 .collect();
-            ledger.patch_stream_index = commits
-                .iter()
-                .map(|commit| (commit.position(), commit.envelope().commit.commit_id))
-                .collect();
+            ledger.patch_stream_index.extend(
+                commits
+                    .iter()
+                    .map(|commit| (commit.position(), commit.envelope().commit.commit_id)),
+            );
             for commit in commits {
                 ledger
                     .commit_catalog
@@ -145,7 +147,7 @@ impl HistorySubsystem {
             reservation.replace_head(previous_root);
         }
         self.branch_cells.restore_all(cells);
-        let mut catalog = RelationalCommitCatalog::default();
+        let mut catalog = self.ledger.read().commit_catalog.retained_cold_entries();
         for envelope in self.recorded_commit_envelopes() {
             let commit_id = envelope.commit.commit_id;
             let preencoded = self.commit_artifact(commit_id).ok_or_else(|| {

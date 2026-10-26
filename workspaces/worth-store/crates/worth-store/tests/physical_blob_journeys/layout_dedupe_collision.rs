@@ -145,7 +145,7 @@ fn forced_unequal_candidate_is_durably_quarantined_and_rebuild_never_reuses_its_
         decode_blob_record(frame),
         Ok(BlobRecordV1::DedupeQuarantine(_))
     )));
-    drop(blobs);
+
     assert!(matches!(
         serving
             .layouts()
@@ -301,7 +301,7 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
         Err(BlobIngestFailure::CertificationQuarantineGap)
     ));
     drop(conflicting);
-    drop(blobs);
+
     let selected = selected_blob_records(&serving);
     let orphan = selected
         .iter()
@@ -374,7 +374,7 @@ fn crash_gap_before_quarantine_leaves_reclaimable_orphan_and_original_reuse() {
         decode_blob_record(frame),
         Ok(BlobRecordV1::DedupeQuarantine(_))
     )));
-    drop(blobs);
+
     reopened.close();
 
     let report = observe_closed_store_named(

@@ -10,7 +10,7 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
     let rolled_back = create_entity(execution, &runtime, "rolled-back");
     let (_, mut transaction) = begin_on(&runtime, "main");
     transaction
-        .read_entity(retained)
+        .read_entity(execution, retained)
         .expect("retained read projects");
     let retained_batch = update_batch(retained, "retained-write");
     let retained_intent = retained_batch.intents[0].clone();
@@ -25,7 +25,7 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
     let expected_footprint = transaction.footprint().clone();
 
     transaction
-        .read_entity(rolled_back)
+        .read_entity(execution, rolled_back)
         .expect("rolled-back read projects");
     transaction
         .push_batch(
@@ -58,7 +58,7 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
         .expect("savepoint rollback succeeds");
     assert_eq!(transaction.footprint(), &expected_footprint);
     assert!(transaction
-        .read_entity(rolled_back)
+        .read_entity(execution, rolled_back)
         .expect("post-rollback read projects")
         .staged_mutations()
         .is_empty());
@@ -68,7 +68,7 @@ fn savepoint_rollback_restores_overlay_footprint_and_cached_plan() {
         .is_none());
     assert_eq!(
         transaction
-            .read_entity(retained)
+            .read_entity(execution, retained)
             .expect("retained mutation projects")
             .staged_mutations(),
         &[retained_mutation]

@@ -140,9 +140,8 @@ fn park_retirement_until_killed(world: &PhysicalResidencyStoreWorld, marker: &Pa
             thread::park();
         }
     });
-    match world.serving().retire_displaced_segment() {
-        returned => panic!("armed retirement seam {seam} returned before the kill: {returned:?}"),
-    }
+    let returned = world.serving().retire_displaced_segment();
+    panic!("armed retirement seam {seam} returned before the kill: {returned:?}")
 }
 
 fn segment_name(segment: u64, generation: u64) -> String {

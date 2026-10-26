@@ -10,7 +10,7 @@ impl CandidateBuild<'_> {
         artifact: RecordArtifactFile,
         bytes: Vec<u8>,
     ) -> Result<(), CandidateBuildDenial> {
-        let bytes = self.allowance.into_box(bytes)?;
+        let bytes = self.allowance.box_values(bytes)?;
         self.push_owned(artifact, bytes)
     }
 

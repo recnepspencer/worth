@@ -53,7 +53,7 @@ pub(super) fn require_frame(
     let placement = frame.selected_placement();
     if !matches!(placement, CurrentPhysicalRecordPlacement::Extent(extent)
         if extent.content_class() == SelectedRecordContentClass::Blob(kind))
-        || !routes.iter().any(|route| *route == placement)
+        || !routes.contains(&placement)
         || <[u8; 32]>::from(Sha256::digest(frame.bytes())) != frame.selected_payload_sha256()
     {
         return Err(SelectedCustodyDenial::SelectedControlFrame);

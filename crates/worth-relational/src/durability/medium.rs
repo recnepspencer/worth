@@ -15,6 +15,8 @@
 //! [`DurabilityAccess::recovery_plan_from_source`](crate::durability::access::DurabilityAccess::recovery_plan_from_source).
 
 mod binding;
+mod cold_source;
+pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod recovery_source;
 mod transition_read;
 mod unresolved;
@@ -106,3 +108,6 @@ pub enum RelationalDurablePublicationRefusal {
         crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactEncodeDenial,
     ),
 }
+
+mod preparation_admission;
+pub(crate) use preparation_admission::RelationalDurablePreparationAdmission;

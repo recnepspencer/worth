@@ -3,10 +3,11 @@ use super::*;
 use std::sync::{Arc, Mutex};
 use worth_relational::facade::durability::{
     RecoveryVerificationMode, RelationalBranchTransitionArtifact,
-    RelationalCanonicalCommitArtifact, RelationalDurableMedium, RelationalDurablePublication,
-    RelationalDurableRecoverySource,
+    RelationalCanonicalCommitArtifact, RelationalDurableColdSource, RelationalDurableMedium,
+    RelationalDurableMemberLocator, RelationalDurablePublication, RelationalDurableRecoverySource,
 };
 use worth_relational::facade::runtime::RelationalRuntimeApi;
+use worth_relational::facade::storage::RelationalStorageUnavailableCause;
 
 fn schema() -> worth_relational::facade::schema::RelationalSchemaRegistry {
     use worth_relational::facade::schema::{
@@ -31,6 +32,37 @@ struct Journal {
 
 #[derive(Debug)]
 struct LostForkAnswer(Arc<Mutex<Journal>>);
+impl RelationalDurableColdSource for LostForkAnswer {
+    fn read_member(
+        &self,
+        _locator: RelationalDurableMemberLocator,
+        _limit: u64,
+    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
+        // This fixture journals artifacts without publishing a checkpoint.
+        Err(RelationalStorageUnavailableCause::SourceUnavailable)
+    }
+
+    fn read_commit(
+        &self,
+        position: worth_relational::facade::publication::PatchStreamPosition,
+        limit: u64,
+    ) -> Result<Vec<u8>, RelationalStorageUnavailableCause> {
+        let journal = self.0.lock().unwrap();
+        let artifact = journal
+            .commits
+            .iter()
+            .find(|artifact| artifact.position() == position)
+            .ok_or(RelationalStorageUnavailableCause::SourceUnavailable)?;
+        let bytes = artifact.as_bytes();
+        if bytes.len() as u64 > limit {
+            return Err(RelationalStorageUnavailableCause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        Ok(bytes.to_vec())
+    }
+}
 impl RelationalDurableMedium for LostForkAnswer {
     fn read_transition(
         &self,
@@ -139,6 +171,7 @@ fn an_unresolved_durable_fork_retains_its_attempt_until_reopen() {
         None,
         durable.commits.clone(),
         durable.transitions.clone(),
+        Arc::new(LostForkAnswer(Arc::clone(&journal))),
     );
     drop(durable);
     let mut reopened = RelationalRuntimeApi::builder()

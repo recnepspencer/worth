@@ -19,8 +19,6 @@
 
 mod compute;
 pub(super) use incremental::observe_retained_full_tree;
-#[cfg(test)]
-pub(super) use incremental::{observe_full_tree, FullTreeMapWork};
 mod certification_reuse;
 mod denial;
 mod incremental;

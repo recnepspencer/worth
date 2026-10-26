@@ -18,6 +18,8 @@ pub(crate) use partition::{
     PartitionMutationJournal, PartitionState, RelationalPartitionAllocationInventory,
     SnapshotPartitionPins,
 };
-pub(crate) use partition_content::{PartitionContentCommitment, PartitionContentDigestError};
+pub(crate) use partition_content::{
+    PartitionContentCommitment, PartitionContentDigestError, PartitionHistoryFrontiers,
+};
 pub(crate) use publication::PublicationArtifacts;
 pub(crate) use working_state::WorkingState;

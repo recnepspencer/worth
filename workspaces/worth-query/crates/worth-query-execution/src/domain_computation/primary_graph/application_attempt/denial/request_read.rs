@@ -1,6 +1,7 @@
 //! Native read causes retained at the application attempt boundary.
 use super::{
-    AttemptDenialCause, WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    AttemptDenialCause, AttemptDenialMeaning, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind,
 };
 impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause>
     for WorthQueryApplicationAttemptDenial
@@ -10,6 +11,25 @@ impl From<worth_relational::facade::transactions::RelationalExecutionDenialCause
     }
 }
 impl WorthQueryApplicationAttemptDenial {
+    pub(in crate::domain_computation::primary_graph) fn native_storage_unavailable(
+        cause: worth_relational::facade::storage::RelationalStorageUnavailable,
+        subject: &str,
+    ) -> Self {
+        Self {
+            subject: subject.to_owned(),
+            meaning: AttemptDenialMeaning::NativeStorage(cause),
+        }
+    }
+
+    pub fn storage_unavailable(
+        &self,
+    ) -> Option<&worth_relational::facade::storage::RelationalStorageUnavailable> {
+        match &self.meaning {
+            AttemptDenialMeaning::NativeStorage(cause) => Some(cause),
+            _ => None,
+        }
+    }
+
     pub(in crate::domain_computation) fn relational_read_stopped(
         cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
         subject: &str,
@@ -23,11 +43,11 @@ impl WorthQueryApplicationAttemptDenial {
                 Err(Control::Cancelled) => WorthQueryApplicationAttemptDenialKind::Cancelled,
                 Err(Control::TimedOut) => WorthQueryApplicationAttemptDenialKind::DeadlineExceeded,
             };
-        Self {
+        Self::from_cause(
             kind,
-            subject: subject.to_owned(),
-            cause: AttemptDenialCause::RelationalExecution(cause),
-        }
+            subject.to_owned(),
+            AttemptDenialCause::RelationalExecution(cause),
+        )
     }
 
     pub(in crate::domain_computation) fn principal_read_stopped(
@@ -78,10 +98,10 @@ impl WorthQueryApplicationAttemptDenial {
                 Err(Control::Cancelled) => Kind::Cancelled,
                 Err(Control::TimedOut) => Kind::DeadlineExceeded,
             };
-        Self {
+        Self::from_cause(
             kind,
-            subject: subject.to_owned(),
-            cause: AttemptDenialCause::NativeQueryRead(Box::new(stop)),
-        }
+            subject.to_owned(),
+            AttemptDenialCause::NativeQueryRead(Box::new(stop)),
+        )
     }
 }

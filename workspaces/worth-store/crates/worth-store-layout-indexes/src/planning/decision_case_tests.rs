@@ -113,12 +113,16 @@ fn declared_selection_cases_equal_cases_emitted_by_ordinary_requests() {
     observed.insert(select_case(
         AccessPlanSelector
             .admit_read_request(
-                wal_family,
-                wal_key(),
-                wal_materialization.clone(),
-                access_planning().point_access(),
+                page_family,
+                page_key(),
+                page_exact.clone(),
+                crate::access_shapes()
+                    .explicit_degraded_exact_scan(
+                        crate::DegradedExactScanRequest::new().with_budget_rows(8),
+                    )
+                    .expect("a nonempty degraded scan declares real pre-execution cost"),
             )
-            .expect("LSM budget denial must follow ordinary request admission"),
+            .expect("budget denial must follow ordinary request admission"),
         PreExecutionBudgetEnvelope::new(PreExecutionBudgetScope::Foreground, 0, 0, 0, 0, 0),
     ));
     observed.insert(select_case(

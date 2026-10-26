@@ -102,7 +102,7 @@ fn resealed_marker_mutations_and_mixed_rosters_are_denied() {
     non_ancestor[PRIOR_ROOT_SHA..PRIOR_ROOT_SHA + 32].fill(2);
     non_ancestor[PRIOR_MARKER_SHA..PRIOR_MARKER_SHA + 32].fill(3);
     assert_tag_seven_rejected(&stream(&[], &non_ancestor));
-    assert_tag_seven_rejected(&stream(&[genesis.clone()], &genesis));
+    assert_tag_seven_rejected(&stream(std::slice::from_ref(&genesis), &genesis));
     assert_tag_seven_rejected(&stream(&[literal(BATCH_A)], &marker()));
     assert_tag_seven_rejected(&stream(&[marker()], &literal(ACCUMULATOR)));
 }

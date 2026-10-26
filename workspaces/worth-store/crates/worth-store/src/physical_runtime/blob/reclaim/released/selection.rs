@@ -215,10 +215,9 @@ pub(in crate::physical_runtime::blob::reclaim) fn discover_release_basis(
                 BlobRecordV1::DropSetManifestV3(manifest) => {
                     if let BlobReclaimSourceBasisV1::ReleasedGeneration(candidate) =
                         manifest.source_basis()
+                        && basis_matches_proof(candidate, proof)
                     {
-                        if basis_matches_proof(candidate, proof) {
-                            merge_basis(&mut basis, candidate)?;
-                        }
+                        merge_basis(&mut basis, candidate)?;
                     }
                 }
                 BlobRecordV1::ReclaimDescriptorV2(descriptor)

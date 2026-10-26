@@ -282,6 +282,23 @@ not rewritten, while their content is unchanged.
 - **Verification without loading.** Reopen recomputes each root's region
   commitment from its leaves and compares it with the root descriptor. Each
   member is verified against its leaf when it loads.
+  Leaves also carry separate head and history adjacency-kind commitments,
+  captured from the admitted region projection and folded into the region
+  Merkle commitment checked against the root descriptor in the manifest's commit
+  index. Admission reconstructs current buckets from authenticated current
+  adjacency and relation metadata, and historical buckets from the authenticated
+  history projection. Locally owned relation claims are checked against the
+  region's record history; peer relation claims are bound by that root
+  commitment. Neither verification requires loading a peer region.
+  The anchor is the manifest itself, protected by Store's record checksum and
+  each member's SHA-256 locator. That defends against the adversarial constraint
+  above, which is crashes and media faults. It does not resist a deliberately
+  forged manifest, because no journaled canonical artifact records the truth
+  root. Binding truth roots into the canonical journal is not in scope for this
+  milestone. Supplied cache buckets must agree
+  with the reconstruction. Leaves
+  naming the same member pair must agree on every fact, including counts and
+  content and kind commitments; an inconsistent manifest is corrupt.
 - **Embedded checkpoints** used by the Query host carry the same members
   inline. Placement is an artifact-policy parameter of one format.
 
@@ -299,6 +316,16 @@ source carries it, because recovery needs it before the medium is bound.
   readmits required text, rebuilds kind buckets and verifies the content
   digest.
 - Residency never relocates an identity or changes a slot directory.
+- Only proven damage to a cell's own content is sticky: a missing named
+  member, digest mismatch, invalid frame or invalid decoded content. Allocation,
+  cancellation, limits and transient or unknown source errors remain retryable.
+  Another subject's failure never damages this cell. Runtime fork shares cold
+  cells, and a full residency witness is required before copy-on-write editing.
+  The cell's dictionary is an isolated readmission dictionary. Each demanding
+  runtime admits the region's required text into its own symbol authority,
+  including when a fork shares an already loaded cell.
+  Successful symbol admission is reused per runtime and immutable region view;
+  warm reads never rescan the region's records or history for that admission.
 
 **Guards.** Loads happen only in operation orchestrators, never behind a
 pure-looking accessor:
@@ -383,6 +410,11 @@ unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
 that has a locator and is unchanged, encodes a resident region that changed,
 and records new locators once publication completes. A one-partition commit
 followed by a checkpoint writes O(1) new members.
+Carry eligibility is checked against the destination home's current verified
+member directory, not against a binding shared with another runtime. A resident
+region whose binding is absent there is encoded again. Publication records the
+destination's read source for its acknowledged directory; new bytes take
+precedence when deduplication sees both new and carried forms of one member.
 
 **Placed by the roadmap in Milestone 4, not deferred from this one:**
 

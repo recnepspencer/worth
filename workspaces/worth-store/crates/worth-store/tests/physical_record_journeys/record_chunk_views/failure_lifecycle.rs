@@ -181,7 +181,6 @@ fn abort_during_extent_read_reports_runtime_release_without_accusing_bytes() {
 
     let first = session.next_chunk().unwrap().unwrap();
     assert_eq!(first.bytes(), &expected[..fixture::CHUNK_PAYLOAD_BYTES]);
-    drop(first);
 
     let _shutdown = serving.abort();
     let failure = match session.next_chunk() {

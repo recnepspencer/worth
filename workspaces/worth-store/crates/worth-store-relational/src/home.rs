@@ -53,6 +53,7 @@ pub struct RelationalStoreHome {
     /// Declared before `serving` so the runtime, which holds the journal
     /// medium, is dropped first.
     runtime: RelationalRuntime,
+    cold_source: Arc<crate::cold_source::StoreColdSource>,
     serving: Arc<ServingPhysicalRuntime>,
 }
 
@@ -87,11 +88,17 @@ impl RelationalStoreHome {
         let serving = Arc::new(serving);
         let medium = StoreJournalMedium::new(Arc::clone(&serving), physical_store::placement());
         let mut runtime = builder.build_durable(Box::new(medium));
-        let readmitted = admit_descriptor(&serving, &runtime)
-            .and_then(|()| readmit_history(&serving, &mut runtime, execution));
+        let cold_source = Arc::new(crate::cold_source::StoreColdSource::new(serving.clone()));
+        let readmitted = admit_descriptor(&serving, &cold_source, &runtime)
+            .and_then(|()| readmit_history(&serving, &cold_source, &mut runtime, execution));
         match readmitted {
-            Ok(()) => Ok(Self { runtime, serving }),
+            Ok(()) => Ok(Self {
+                runtime,
+                cold_source,
+                serving,
+            }),
             Err(refusal) => {
+                drop(cold_source);
                 close::abandon(runtime, serving);
                 Err(refusal)
             }
@@ -101,6 +108,12 @@ impl RelationalStoreHome {
     /// The live runtime. Its commits are durable before they are visible.
     pub fn runtime(&self) -> &RelationalRuntime {
         &self.runtime
+    }
+
+    /// Demand-read activity since this home opened. Manifest and journal-tail
+    /// selection belong to recovery sequencing; these count cold-port calls.
+    pub fn cold_storage_reads(&self) -> crate::RelationalStoreColdReadCounters {
+        self.cold_source.counters()
     }
 
     /// The durable fate of the commit whose artifact digest is `digest` at
@@ -143,6 +156,7 @@ fn open_physical_store(
 /// descriptor; it is completed. One with history is refused.
 fn admit_descriptor(
     serving: &ServingPhysicalRuntime,
+    cold_source: &crate::cold_source::StoreColdSource,
     runtime: &RelationalRuntime,
 ) -> Result<(), Refusal> {
     let expected = HomeDescriptor::of(runtime);
@@ -153,7 +167,7 @@ fn admit_descriptor(
             found: found.describe(),
         }),
         None => {
-            let has_history = checkpoint_record::read(serving)
+            let has_history = checkpoint_record::read(serving, cold_source)
                 .map_err(Refusal::Checkpoint)?
                 .is_some()
                 || !recovered_history::journal_tail(serving, 0)
@@ -173,11 +187,12 @@ fn admit_descriptor(
 /// Hand the selected checkpoint, and the commits and branch transitions after
 /// it, to Relational.
 fn readmit_history(
-    serving: &ServingPhysicalRuntime,
+    serving: &Arc<ServingPhysicalRuntime>,
+    cold_source: &Arc<crate::cold_source::StoreColdSource>,
     runtime: &mut RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Refusal> {
-    let checkpoint = checkpoint_record::read(serving).map_err(Refusal::Checkpoint)?;
+    let checkpoint = checkpoint_record::read(serving, cold_source).map_err(Refusal::Checkpoint)?;
     let covered = checkpoint
         .as_ref()
         .map_or(0, |checkpoint| checkpoint.covered().0);
@@ -187,10 +202,8 @@ fn readmit_history(
     let tail = recovered_history::journal_tail(serving, covered).map_err(Refusal::Journal)?;
     let transitions = recovered_transitions::transition_tail(serving, covered_transitions)
         .map_err(Refusal::TransitionJournal)?;
-    if checkpoint.is_none() && tail.is_empty() && transitions.is_empty() {
-        return Ok(());
-    }
-    let source = RelationalDurableRecoverySource::new(checkpoint, tail, transitions);
+    let source =
+        RelationalDurableRecoverySource::new(checkpoint, tail, transitions, cold_source.clone());
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

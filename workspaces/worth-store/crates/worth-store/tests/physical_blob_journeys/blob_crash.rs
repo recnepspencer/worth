@@ -249,7 +249,7 @@ fn kill_child_at(root: &Path, seam: &'static str, timeout: Duration) -> ([u8; 16
     let mut child = Command::new(std::env::current_exe().unwrap())
         .args(["--exact", CHILD_TEST, "--nocapture", "--test-threads=1"])
         .env(CHILD_ROLE, seam)
-        .env(CHILD_ROOT, &root)
+        .env(CHILD_ROOT, root)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
@@ -326,7 +326,7 @@ fn assert_reopened(world: &KilledBlobWorld, published: bool, chunks: usize) {
             Err(BlobReadOpenFailure::PublicationNotFound)
         ));
     }
-    drop(blobs);
+
     serving.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-crash", world.seam);

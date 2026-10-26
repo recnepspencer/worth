@@ -56,9 +56,9 @@ impl ApplicationOperationBodyOwnedSelectionRetirement {
             && !self.member.is_empty()
             && self.member.trim() == self.member
             && self.source_input_index(body).is_some()
-            && !body
+            && body
                 .creation()
-                .is_some_and(|creation| creation.signing().is_some())
+                .is_none_or(|creation| creation.signing().is_none())
     }
     pub fn decision_reads(&self) -> Vec<Read> {
         vec![

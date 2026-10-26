@@ -140,12 +140,12 @@ impl ArenaAccounting {
                     ranges.uncertain.extend(free.iter().copied());
                 }
             }
-            if *generation == newest_root {
-                if let Some(all_routes) = self.routed_generations.get(path) {
-                    ranges
-                        .routed
-                        .extend(all_routes.iter().map(|&(start, end, _, _, _)| (start, end)));
-                }
+            if *generation == newest_root
+                && let Some(all_routes) = self.routed_generations.get(path)
+            {
+                ranges
+                    .routed
+                    .extend(all_routes.iter().map(|&(start, end, _, _, _)| (start, end)));
             }
         }
         for ((generation, path), mut ranges) in self.roots {
@@ -213,7 +213,8 @@ impl ArenaAccounting {
                     });
                     let uncertain_gap =
                         !ranges.uncertain.is_empty() && ranges.has_unproven_gap(length);
-                    let outcome = held_overlap
+
+                    held_overlap
                         .or(identity_overlap)
                         .or(geometry_damage)
                         .map_or_else(
@@ -233,8 +234,7 @@ impl ArenaAccounting {
                                     OfflinePhysicalBlastRadius::Artifact,
                                 )
                             },
-                        );
-                    outcome
+                        )
                 }
             };
             walk.record_outcome(&outcome);

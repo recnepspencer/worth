@@ -4,11 +4,7 @@ use worth_query_installation::facade::{
     InstalledAftermathRecoveryContract, PublishedAftermathPosture,
     WorthQueryInstalledAftermathContract,
 };
-#[cfg(test)]
-use worth_relational::facade::history::CommitId;
 use worth_relational::facade::history::{BranchId, RelationalCommitReceipt};
-#[cfg(test)]
-use worth_relational::facade::identity::VersionId;
 
 use crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage;
 use crate::domain_computation::application_aftermath::{
@@ -235,13 +231,6 @@ impl WorthQueryRecoveryHandleBindingAxisProbe {
 
     pub(crate) fn branch(mut self, value: BranchId) -> Self {
         self.binding.commit.branch_id = value;
-        self
-    }
-
-    pub(crate) fn relational_commit_id(mut self, value: u64) -> Self {
-        self.binding.commit.commit_id = CommitId(value);
-        self.binding.commit.version_id = VersionId(value);
-        self.binding.commit.parents.clear();
         self
     }
 

@@ -69,7 +69,11 @@ pub(super) fn finalize_published_commit(
         &published_snapshot_basis,
         phase_timing,
     );
-    run_retention(runtime, changed_records, version_id, phase_timing);
+    // Only main publishes into the mirror. A sibling's changed identities
+    // carry no authority to trim or reconcile the mirror's record versions.
+    if branch_id == &runtime.history.main_branch {
+        run_retention(runtime, changed_records, version_id, phase_timing);
+    }
     compact_durability(runtime, phase_timing);
     let snapshot_id = publish_artifacts(
         runtime,

@@ -58,16 +58,7 @@ pub(super) fn observe(
         panic!("fresh C8 role");
     };
     observed.require_store_identity(store).unwrap();
-    if target.is_none() {
-        assert_eq!(observed.posture, ProcessRecoveryPosture::Recovered);
-        assert!(observed.integrity_counters.admitted > 0);
-        assert!(
-            observed.integrity_counters.owner_decoder_entries
-                + observed.integrity_counters.owner_projection_entries
-                > 0
-        );
-    } else {
-        let target = target.unwrap();
+    if let Some(target) = target {
         let expected = super::process_integrity_projection::project_integrity_scope(target.scope);
         let matches = observed
             .ingress
@@ -96,6 +87,14 @@ pub(super) fn observe(
             matches.len(),
             observed.posture,
             observed.integrity_counters
+        );
+    } else {
+        assert_eq!(observed.posture, ProcessRecoveryPosture::Recovered);
+        assert!(observed.integrity_counters.admitted > 0);
+        assert!(
+            observed.integrity_counters.owner_decoder_entries
+                + observed.integrity_counters.owner_projection_entries
+                > 0
         );
     }
     observed.clone()

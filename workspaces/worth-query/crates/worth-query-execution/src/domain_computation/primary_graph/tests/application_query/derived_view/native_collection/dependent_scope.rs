@@ -72,11 +72,11 @@ fn dependent_second_scope_reconstructs_atomically_with_original_read_results() {
         let membership = world.application.execute_application_query_one_shot(
             &phase, selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &membership_query, &access, ApplicationQueryParameterSet::new(),
-                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&membership_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(membership_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap(),
         ).unwrap();
 
-        let batch = std::cell::RefCell::new(world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 4, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap());
+        let batch = std::cell::RefCell::new(world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 4, std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap());
         let second_root = Cell::new(None);
         let first_key = RefCell::new(None);
         let projections = Cell::new(0);
@@ -88,7 +88,7 @@ let first = |selector: &String| {
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
             let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
-                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
             let issued = world.application.execute_application_query_one_shot_in_batch(
                 &phase, plan, &batch.borrow(),
@@ -112,7 +112,7 @@ let second = |row: &AccountSummaryResult| {
             let access = WorthQueryApplicationQueryAccessContext::new(&principal, &root);
             let plan = selected.retain_selection(&execution).unwrap().admit_application_query(
                 &phase, &entry_query, &access, ApplicationQueryParameterSet::new(),
-                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
+                crate::domain_computation::primary_graph::WorthQueryProductQueryControls::new(std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract"), &request),
             ).unwrap();
             let issued = world.application.execute_application_query_one_shot_in_batch(
                 &phase, plan, &batch.borrow(),
@@ -138,7 +138,7 @@ let members = |row: &crate::domain_computation::primary_graph::tests::fixture::P
 
 
 
-        *batch.borrow_mut() = world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new((&entry_query).read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap();
+        *batch.borrow_mut() = world.application.application_query_batch_from_installed_reads(&[world.application.plan_installed_query_batch_reads(&entry_query, 2, std::num::NonZeroUsize::new(entry_query.read_graph().maximum_result_count()).expect("the fixture uses a nonzero installed query result contract")).unwrap()]).unwrap();
         let keys = world.application.reconstruct_managed_derived_collection_pair_lazy(
             &phase, &view, selected.product(), &membership, members, &first, &second,
             |row| row.label().to_owned(), |row| row.status().to_owned(),

@@ -36,15 +36,14 @@ pub(in crate::maintenance::rebuild) fn admit_source_authority(
     let requirement = admitted_strategy.rebuild_source_requirement();
     if let DerivedIndexRebuildSourceInput::WalReplayRecord { source_witness } =
         request.source_input()
+        && !record_kind_admits_recovery_replay(source_witness.record().identity().kind())
     {
-        if !record_kind_admits_recovery_replay(source_witness.record().identity().kind()) {
-            return Err(RebuildAdmissionDenial::source_strategy(
-                DerivedIndexRebuildDenied::SourceArtifactDoesNotMatchStrategy {
-                    required: requirement,
-                    source: "wal_replay_record_kind",
-                },
-            ));
-        }
+        return Err(RebuildAdmissionDenial::source_strategy(
+            DerivedIndexRebuildDenied::SourceArtifactDoesNotMatchStrategy {
+                required: requirement,
+                source: "wal_replay_record_kind",
+            },
+        ));
     }
     let source_authority = DerivedIndexAuthoritySource::declare(
         requirement,

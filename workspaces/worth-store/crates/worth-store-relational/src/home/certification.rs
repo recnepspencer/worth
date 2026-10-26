@@ -67,8 +67,13 @@ impl RelationalStoreHome {
     /// Store without its orderly close.
     #[doc(hidden)]
     pub fn certification_abort(self) {
-        let Self { runtime, serving } = self;
+        let Self {
+            runtime,
+            cold_source,
+            serving,
+        } = self;
         drop(runtime);
+        drop(cold_source);
         if let Ok(serving) = std::sync::Arc::try_unwrap(serving) {
             let _aborted = serving.abort();
         }

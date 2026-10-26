@@ -131,10 +131,7 @@ impl PhysicalWalReclamationWorkPort {
                 foreground_pressure_events,
             )
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerCapacityUnavailable)?;
-        let lease = match require_complete_lease(pacing) {
-            Ok(lease) => lease,
-            Err(failure) => return Err(failure),
-        };
+        let lease = require_complete_lease(pacing)?;
         let demand = PhysicalSchedulerDemand::wal_reclamation_background(ready, lease, capacity)
             .map_err(|_| PhysicalWalReclamationActionFailure::SchedulerDemandRejected)?;
         PhysicalWorkAdmission::require_current(

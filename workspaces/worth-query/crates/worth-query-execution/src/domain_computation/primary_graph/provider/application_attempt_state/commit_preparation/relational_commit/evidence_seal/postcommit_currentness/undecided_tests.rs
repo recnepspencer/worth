@@ -10,18 +10,8 @@ use super::tests::planned;
 use super::tests::rebase_at_current;
 use super::tests::rebase_result_at_current;
 use super::*;
-use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
-use crate::domain_computation::primary_graph::tests::application_attempt::authenticated_principal;
-use crate::domain_computation::primary_graph::tests::application_attempt::resolved_account;
 use crate::domain_computation::primary_graph::tests::fixture::installed_authorization_world;
-use crate::domain_computation::primary_graph::tests::fixture::live_scope;
 use crate::domain_computation::primary_graph::tests::fixture::AccountIdentity;
-use crate::domain_computation::primary_graph::tests::fixture::AccountStatus;
-use crate::domain_computation::primary_graph::tests::fixture::AuthorizationWorld;
-use crate::domain_computation::primary_graph::tests::fixture::TouchAccountOperation;
-use worth_execution::ExecutionAllocationPolicy;
-
-#[test]
 
 /// A source read's comparison is granted the most it can cost, so only one
 /// that cannot answer leaves the commit's own effect undecidable.

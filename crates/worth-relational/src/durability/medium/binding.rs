@@ -1,4 +1,4 @@
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard, OnceLock};
 
 use super::{
     RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject, RelationalDurableMedium,
@@ -23,13 +23,14 @@ use crate::history::data::PositionedCanonicalCommit;
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
     state: Mutex<BindingState>,
+    unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
 #[derive(Debug)]
 struct BindingState {
     /// `None` once the medium moved to a recovered runtime.
     medium: Option<Box<dyn RelationalDurableMedium>>,
-    unresolved: Option<RelationalDurabilityUnresolved>,
+    unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
 /// Why the durable step did not make a commit or transition durable.
@@ -43,6 +44,9 @@ pub(crate) enum RelationalDurableStepStop {
 }
 
 impl RelationalDurableMediumBinding {
+    pub(super) fn preparation_fate(&self) -> Arc<OnceLock<RelationalDurabilityUnresolved>> {
+        self.unresolved.clone()
+    }
     pub(crate) fn read_transition(
         &self,
         sequence: crate::branch::RelationalBranchTransitionSequence,
@@ -55,11 +59,13 @@ impl RelationalDurableMediumBinding {
             .read_transition(sequence)
     }
     pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
+        let unresolved = Arc::new(OnceLock::new());
         Self {
             state: Mutex::new(BindingState {
                 medium: Some(medium),
-                unresolved: None,
+                unresolved: unresolved.clone(),
             }),
+            unresolved,
         }
     }
 
@@ -145,7 +151,7 @@ impl BindingState {
     /// The medium, when no earlier fate is unresolved and the medium has not
     /// moved.
     fn admitting_medium(&self) -> Result<&dyn RelationalDurableMedium, RelationalDurableStepStop> {
-        if let Some(earlier) = self.unresolved.as_ref() {
+        if let Some(earlier) = self.unresolved.get() {
             return Err(RelationalDurableStepStop::Unresolved(earlier.clone()));
         }
         self.medium
@@ -167,7 +173,9 @@ impl BindingState {
             )),
             RelationalDurablePublication::Indeterminate { detail } => {
                 let fate = RelationalDurabilityUnresolved::new(subject, detail);
-                self.unresolved = Some(fate.clone());
+                self.unresolved
+                    .set(fate.clone())
+                    .expect("one unresolved fate per incarnation");
                 Err(RelationalDurableStepStop::Unresolved(fate))
             }
         }

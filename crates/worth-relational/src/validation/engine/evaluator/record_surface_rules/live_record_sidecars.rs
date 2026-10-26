@@ -51,7 +51,7 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
     missing_label: &str,
     count_scans: impl Fn(&InvariantExecutionContext<'_, '_>, usize),
 ) -> Option<InvariantViolation> {
-    let mut has_touched_surface = false;
+    let mut has_touched_surface = context.partition_access().touched_partition_ids().is_some();
     for partition_id in context.partition_access().partition_ids_iter() {
         if !context.checkpoint(1) {
             return None;
@@ -65,6 +65,10 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
     for partition_id in context.partition_access().partition_ids_iter() {
         if !context.checkpoint(1) {
             return None;
+        }
+        let has_touched_partition = has_touched_slots(context.partition_access(), partition_id);
+        if has_touched_surface && !has_touched_partition {
+            continue;
         }
         let Some(partition) = context.partition_access().get_partition(partition_id) else {
             if !context.claim_result(4096) {
@@ -81,7 +85,6 @@ fn evaluate_live_record_sidecar<K: RecordKind>(
                     .with_scan(StorageInconsistencyScan::LiveRecordSidecar),
             ));
         };
-        let has_touched_partition = has_touched_slots(context.partition_access(), partition_id);
         let touched_slots_for_partition = if has_touched_partition {
             let arena = K::arena(partition);
             if !context.check_scratch_peak(

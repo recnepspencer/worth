@@ -2,10 +2,6 @@
 use super::*;
 use crate::application_program::discovered_contracts::CounterfeitDelivery;
 use crate::application_program::discovered_delivery::{BatchDelivery, NoProjectionDelivery};
-use worth_query_host::facade::application_entry::{
-    WorthQueryOperationDeliveryDenial as DeliveryDenial,
-    WorthQueryOperationDeliveryPolicy as Policy,
-};
 use worth_query_topology_entry::PlanarOutputRead;
 #[test]
 fn discovered_ordinary_batch_is_complete_and_same_basis_without_work_estimates() {

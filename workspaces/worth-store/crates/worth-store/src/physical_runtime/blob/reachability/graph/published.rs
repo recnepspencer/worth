@@ -173,7 +173,7 @@ pub(super) fn authenticate(
 fn leaf_occurrence_matches(total: u64, size: u32, start: u64, covered: u64, ordinal: u64) -> bool {
     let size = u64::from(size);
     size != 0
-        && start % size == 0
+        && start.is_multiple_of(size)
         && covered != 0
         && total
             .checked_sub(start)

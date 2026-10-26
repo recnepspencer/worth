@@ -1,33 +1,33 @@
 use super::{AccessPlanCostClass, AccessPlanCostDenial, AccessPlanCostEstimate};
 use crate::access::budget::PlannedCounterEnvelope;
 use crate::access::AdmittedAccessIntent;
-use crate::planning::candidates::EligibleStrategyOperation;
+use crate::planning::candidates::EligibleLsmOperation;
 
 const PAGE_BYTES: u64 = 4_096;
 const CHUNK_NODE_BYTES: u64 = 8_192;
 const DEGRADED_ROW_WORKING_BYTES: u64 = 64;
 
 pub(in crate::planning) fn derive_access_plan_cost(
-    operation: Option<EligibleStrategyOperation>,
+    operation: Option<EligibleLsmOperation>,
     intent: AdmittedAccessIntent,
     envelope: PlannedCounterEnvelope,
     materialization: Option<crate::AdmittedLayoutMaterialization>,
 ) -> Result<AccessPlanCostEstimate, AccessPlanCostDenial> {
     let (class, counters, degraded_rows) = match operation {
-        Some(EligibleStrategyOperation::LsmLookup) => {
+        Some(EligibleLsmOperation::Lookup) => {
             (AccessPlanCostClass::LsmLookup, envelope.lookup(), None)
         }
-        Some(EligibleStrategyOperation::LsmRunPublication) => (
+        Some(EligibleLsmOperation::RunPublication) => (
             AccessPlanCostClass::LsmRunPublication,
             envelope.publication(),
             None,
         ),
-        Some(EligibleStrategyOperation::LsmReplayRecovery) => (
+        Some(EligibleLsmOperation::ReplayRecovery) => (
             AccessPlanCostClass::LsmReplayRecovery,
             envelope.recovery(),
             None,
         ),
-        Some(EligibleStrategyOperation::LsmCompaction) => (
+        Some(EligibleLsmOperation::Compaction) => (
             AccessPlanCostClass::LsmCompaction,
             envelope.publication(),
             None,

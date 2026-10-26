@@ -28,6 +28,7 @@ pub(crate) fn native_checkpoint_recovery_plan(
         verification_mode,
         descriptor_semantics_version,
         Vec::new(),
+        runtime.durability.cold_source(),
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone())
 }

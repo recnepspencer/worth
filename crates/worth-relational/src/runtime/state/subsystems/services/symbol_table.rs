@@ -1,3 +1,5 @@
+mod cold_pages;
+
 use std::sync::{Arc, RwLock};
 
 use im::OrdMap;
@@ -8,6 +10,7 @@ use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTable
 pub(crate) struct RuntimeSymbolTable {
     state: Arc<RwLock<StringInterner>>,
     configuration_snapshot: Arc<RwLock<OrdMap<StoredSymbolText, Symbol>>>,
+    cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
 }
 
 impl Default for RuntimeSymbolTable {
@@ -15,6 +18,7 @@ impl Default for RuntimeSymbolTable {
         Self {
             state: Arc::new(RwLock::new(StringInterner::default())),
             configuration_snapshot: Arc::new(RwLock::new(OrdMap::new())),
+            cold: Arc::new(RwLock::new(None)),
         }
     }
 }
@@ -24,13 +28,30 @@ impl Clone for RuntimeSymbolTable {
         Self {
             state: Arc::clone(&self.state),
             configuration_snapshot: Arc::clone(&self.configuration_snapshot),
+            cold: self.cold.clone(),
         }
     }
 }
 
 impl PartialEq for RuntimeSymbolTable {
     fn eq(&self, other: &Self) -> bool {
-        self.interner_snapshot() == other.interner_snapshot()
+        let left = self
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        let right = other
+            .cold
+            .read()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .clone();
+        let same_directory = match (left, right) {
+            (None, None) => true,
+            (Some(left), Some(right)) => left.same_directory(&right),
+            _ => false,
+        };
+        same_directory
+            && self.interner_snapshot() == other.interner_snapshot()
             && self.configuration_snapshot() == other.configuration_snapshot()
     }
 }
@@ -39,17 +60,35 @@ impl Eq for RuntimeSymbolTable {}
 
 impl RuntimeSymbolTable {
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
-        let state = self
-            .state
+        let cold = self
+            .cold
             .read()
-            .expect("runtime symbol table lock poisoned");
-        let configuration = self
-            .configuration_snapshot
-            .read()
-            .expect("runtime symbol configuration snapshot lock poisoned");
+            .unwrap_or_else(|error| error.into_inner())
+            .clone();
+        let snapshot = || {
+            let state = self
+                .state
+                .read()
+                .expect("runtime symbol table lock poisoned");
+            let configuration = self
+                .configuration_snapshot
+                .read()
+                .expect("runtime symbol configuration snapshot lock poisoned");
+            (state.clone(), configuration.clone())
+        };
+        // Page admission locks pages before the owner dictionary. Fork uses
+        // that same order, so copied admission marks and text are one snapshot.
+        let (cold, (state, configuration)) = match cold {
+            Some(pages) => {
+                let (pages, snapshot) = pages.detached_with_owner(snapshot);
+                (Some(Arc::new(pages)), snapshot)
+            }
+            None => (None, snapshot()),
+        };
         Self {
-            state: Arc::new(RwLock::new(state.clone())),
-            configuration_snapshot: Arc::new(RwLock::new(configuration.clone())),
+            state: Arc::new(RwLock::new(state)),
+            configuration_snapshot: Arc::new(RwLock::new(configuration)),
+            cold: Arc::new(RwLock::new(cold)),
         }
     }
     pub(crate) fn normalize_client_keys(
@@ -78,6 +117,15 @@ impl RuntimeSymbolTable {
     {
         use crate::symbols::data::RelationalFieldTextAdmissionDenial as Denial;
         let raw = std::str::from_utf8(input.bytes()).map_err(|_| Denial::InvalidUtf8)?;
+        self.demand_text(execution, raw)
+            .map_err(|failure| match failure {
+                crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
+                    failure,
+                ) => Denial::StorageUnavailable(failure),
+                crate::storage::residency::RelationalResidencyDemandFailure::Request(cause) => {
+                    Denial::Request(cause)
+                }
+            })?;
         let mut state = self
             .state
             .write()
@@ -180,6 +228,7 @@ impl RuntimeSymbolTable {
     }
 
     pub(crate) fn replace(&self, interner: StringInterner) {
+        *self.cold.write().unwrap_or_else(|error| error.into_inner()) = None;
         let snapshot = interner.snapshot();
         let mut state = self
             .state

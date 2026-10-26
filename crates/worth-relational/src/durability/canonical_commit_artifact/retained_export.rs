@@ -20,23 +20,78 @@ impl DurabilityAccess<'_> {
         &self,
         policy: ExecutionAllocationPolicy<'scope, 'authority>,
     ) -> RelationalCanonicalCommitArtifacts<'scope, 'authority> {
-        RelationalCanonicalCommitArtifacts {
-            retained: self
-                .runtime
+        let directory = self.runtime.durability.checkpoint_selection().snapshot();
+        let mut retained = directory.as_ref().map_or_else(Vec::new, |directory| {
+            directory
+                .manifest
+                .commits
+                .iter()
+                .map(|entry| RetainedArtifact::Cold {
+                    entry: entry.clone(),
+                    source: directory.source.clone(),
+                })
+                .collect()
+        });
+        retained.extend(
+            self.runtime
                 .history
                 .positioned_canonical_commits_snapshot()
-                .into_iter(),
+                .into_iter()
+                .filter(|commit| {
+                    directory.as_ref().is_none_or(|directory| {
+                        commit.position() > directory.manifest.covered_position
+                    })
+                })
+                .map(RetainedArtifact::Resident),
+        );
+        RelationalCanonicalCommitArtifacts {
+            retained: retained.into_iter(),
             policy,
         }
     }
+}
+
+enum RetainedArtifact {
+    Resident(Arc<PositionedCanonicalCommit>),
+    Cold {
+        entry: crate::history::RelationalCommitIndexEntry,
+        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    },
 }
 
 /// Lazily framed artifacts for one fixed selection of retained commits, in
 /// strictly increasing position order. A denial for one item does not end
 /// the iteration; the caller decides whether to continue.
 pub struct RelationalCanonicalCommitArtifacts<'scope, 'authority> {
-    retained: std::vec::IntoIter<Arc<PositionedCanonicalCommit>>,
+    retained: std::vec::IntoIter<RetainedArtifact>,
     policy: ExecutionAllocationPolicy<'scope, 'authority>,
+}
+
+impl RelationalCanonicalCommitArtifacts<'_, '_> {
+    /// Select positions strictly above an acknowledged prefix before any
+    /// journal body is demanded. Ordinary iterator skipping may pull and
+    /// discard a body; this seek advances only immutable index entries.
+    pub fn after_position(
+        mut self,
+        position: crate::publication::patch::data::PatchStreamPosition,
+    ) -> Self {
+        let count = self
+            .retained
+            .as_slice()
+            .iter()
+            .take_while(|entry| {
+                let selected = match entry {
+                    RetainedArtifact::Resident(commit) => commit.position(),
+                    RetainedArtifact::Cold { entry, .. } => entry.position,
+                };
+                selected <= position
+            })
+            .count();
+        if count != 0 {
+            let _ = self.retained.nth(count - 1);
+        }
+        self
+    }
 }
 
 impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
@@ -44,9 +99,46 @@ impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
         Result<RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.retained
-            .next()
-            .map(|commit| RelationalCanonicalCommitArtifact::from_positioned(&commit, self.policy))
+        self.nth(0)
+    }
+
+    fn nth(&mut self, n: usize) -> Option<Self::Item> {
+        // Skipping an immutable index prefix does not demand its bodies.
+        self.retained.nth(n).map(|commit| match commit {
+            RetainedArtifact::Resident(commit) => {
+                RelationalCanonicalCommitArtifact::from_positioned(&commit, self.policy)
+            }
+            RetainedArtifact::Cold { entry, source } => {
+                self.policy.check_live()?;
+                let failure = |cause| {
+                    RelationalCanonicalCommitArtifactEncodeDenial::StorageUnavailable(
+                        crate::storage::data::RelationalStorageUnavailable {
+                            subject: crate::storage::data::RelationalStorageSubject::Envelope(
+                                entry.position,
+                            ),
+                            cause,
+                        },
+                    )
+                };
+                let bytes = source
+                    .read_commit(entry.position, 1 << 30)
+                    .map_err(&failure)?;
+                let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
+                    .map_err(|_| {
+                        failure(crate::storage::data::RelationalStorageUnavailableCause::Damaged)
+                    })?;
+                if artifact.position() != entry.position
+                    || artifact.commit_id() != entry.commit.commit_id
+                    || artifact.payload_digest().as_bytes() != &entry.payload_digest
+                {
+                    return Err(failure(
+                        crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
+                    ));
+                }
+                self.policy.check_live()?;
+                Ok(artifact)
+            }
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -64,3 +156,7 @@ impl std::fmt::Debug for RelationalCanonicalCommitArtifacts<'_, '_> {
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+#[path = "retained_export/skip_tests.rs"]
+mod skip_tests;

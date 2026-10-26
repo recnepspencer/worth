@@ -70,7 +70,7 @@ fn exhausted_affected_source_read_cannot_stamp_an_old_sum_current() {
                 .unwrap();
                 let refresh_runtime = std::sync::Mutex::new(&mut *runtime);
                 let refreshed = std::sync::atomic::AtomicBool::new(false);
-                let (outcome, report) = healthy
+                let (outcome, _report) = healthy
                     .run(ExecutionWorkCeiling::new(Some(0)), |lease| {
                         map.run(
                             lease,

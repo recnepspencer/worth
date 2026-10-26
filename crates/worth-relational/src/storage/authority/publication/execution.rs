@@ -66,9 +66,9 @@ fn execute_partition(
 /// but it is not the only one: `Arc::try_unwrap` hands back the shared value for
 /// any surviving strong reference, whatever holds it.
 fn unwrap_partition(
-    partition: std::sync::Arc<crate::storage::overlay::PartitionState>,
+    partition: crate::storage::residency::RelationalRegionRetention,
 ) -> crate::storage::overlay::PartitionState {
-    std::sync::Arc::try_unwrap(partition).unwrap_or_else(|shared| shared.as_ref().clone())
+    partition.into_partition()
 }
 
 fn merge_entity_slots(

@@ -40,10 +40,10 @@ pub fn release_checkpoint_batch_records_digest_v1(
         {
             return Err(ReleaseCheckpointCertificateDenial::InvalidBinding);
         }
-        if let Some(prior) = index.checked_sub(1).map(|index| batches[index]) {
-            if batch.cumulative_dropped() <= prior.cumulative_dropped() {
-                return Err(ReleaseCheckpointCertificateDenial::InvalidBinding);
-            }
+        if let Some(prior) = index.checked_sub(1).map(|index| batches[index])
+            && batch.cumulative_dropped() <= prior.cumulative_dropped()
+        {
+            return Err(ReleaseCheckpointCertificateDenial::InvalidBinding);
         }
         let encoded = batch.encode_fixed();
         digest.update((encoded.len() as u32).to_le_bytes());

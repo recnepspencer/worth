@@ -2,6 +2,8 @@ pub(crate) use recovery::{AdmittedRecoveredCodecPublication, RecoveredCodecPubli
 mod authority_continuity;
 mod checkpoint_capture;
 mod checkpoint_image;
+mod checkpoint_member_carry;
+mod checkpoint_native_capture;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;

@@ -1,7 +1,7 @@
 use crate::identity::data::{EntityId, RelationId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::transactions::data::{
-    CommitConflict, CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent,
+    CreateIntent, CreatedEntityRef, CreatedRelationRef, EntityMutationIntent,
     RelationMutationIntent,
 };
 
@@ -68,24 +68,34 @@ impl super::BranchBoundRelationalTransaction {
     /// staged mutations for that identity in authoring order.
     pub fn read_entity(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
-    ) -> Result<RelationalTransactionEntityRead, CommitConflict> {
+    ) -> Result<RelationalTransactionEntityRead, super::RelationalTransactionReadDenial> {
         self.footprint
             .admit_read(super::RelationalTransactionReadLocus::Existing(
                 crate::transactions::data::RecordRef::Entity(entity_id),
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        let base = root.partition_state(entity_id.partition_id).and_then(|partition| {
-            crate::visibility::materialization::read_records::materialization::materialize_current_authoritative_entity_record(
-                root.schema_authority().registry(),
-                partition,
-                entity_id.partition_id,
-                entity_id.slot_index(),
-            )
-        }).filter(|record| {
-            entity_id.generation.is_zero() || record.entity_id.generation == entity_id.generation
-        });
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::TransactionRead,
+        )
+        .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
+        if !self.read_leases.contains_key(&entity_id.partition_id)
+            && let Some(lease) = root.demand_region_head(execution, entity_id.partition_id)?
+        {
+            lease.admit_symbols(execution, &self.symbols)?;
+            self.read_leases.insert(entity_id.partition_id, lease);
+        }
+        let base = self
+            .read_leases
+            .get(&entity_id.partition_id)
+            .and_then(|lease| {
+                lease
+                    .head_view()
+                    .entity_record(root.schema_authority().registry(), entity_id)
+            });
         let staged = self
             .overlay
             .entity_mutations(entity_id)
@@ -103,25 +113,34 @@ impl super::BranchBoundRelationalTransaction {
     /// all staged mutations for that identity in authoring order.
     pub fn read_relation(
         &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
-    ) -> Result<RelationalTransactionRelationRead, CommitConflict> {
+    ) -> Result<RelationalTransactionRelationRead, super::RelationalTransactionReadDenial> {
         self.footprint
             .admit_read(super::RelationalTransactionReadLocus::Existing(
                 crate::transactions::data::RecordRef::Relation(relation_id),
             ))
             .map_err(super::RelationalTransactionStagingDenial::into_conflict)?;
         let root = self.basis.inner.root.as_ref();
-        let base = root.partition_state(relation_id.partition_id).and_then(|partition| {
-            crate::visibility::materialization::read_records::materialization::materialize_current_authoritative_relation_record(
-                root.schema_authority().registry(),
-                partition,
-                relation_id.partition_id,
-                relation_id.slot_index(),
-            )
-        }).filter(|record| {
-            relation_id.generation.is_zero()
-                || record.relation_id.generation == relation_id.generation
-        });
+        crate::authority::commit::pipeline::consult_stage_control(
+            execution,
+            crate::authority::commit::pipeline::CommitStage::TransactionRead,
+        )
+        .map_err(|stop| super::RelationalTransactionReadDenial::Request(stop.into()))?;
+        if !self.read_leases.contains_key(&relation_id.partition_id)
+            && let Some(lease) = root.demand_region_head(execution, relation_id.partition_id)?
+        {
+            lease.admit_symbols(execution, &self.symbols)?;
+            self.read_leases.insert(relation_id.partition_id, lease);
+        }
+        let base = self
+            .read_leases
+            .get(&relation_id.partition_id)
+            .and_then(|lease| {
+                lease
+                    .head_view()
+                    .relation_record(root.schema_authority().registry(), relation_id)
+            });
         let staged = self
             .overlay
             .relation_mutations(relation_id)

@@ -3,12 +3,21 @@
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
 
+mod append_frontier;
 #[cfg(test)]
 mod tests;
+pub(crate) use append_frontier::HistoryAppendFrontier;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct DigestIndex {
     root: Option<Arc<Node>>,
+    history_last_value: Option<Arc<HistoryLastValue>>,
+}
+
+#[derive(Debug, Clone)]
+struct HistoryLastValue {
+    key: u128,
+    value: [u8; 32],
 }
 
 #[derive(Debug, Clone)]
@@ -27,6 +36,7 @@ impl DigestIndex {
         debug_assert!(entries.windows(2).all(|pair| pair[0].0 < pair[1].0));
         Self {
             root: (!entries.is_empty()).then(|| build_sorted(entries)),
+            history_last_value: None,
         }
     }
 
@@ -37,6 +47,13 @@ impl DigestIndex {
     }
 
     pub(super) fn set(&mut self, key: u128, value: Option<[u8; 32]>) {
+        if self
+            .history_last_value
+            .as_ref()
+            .is_some_and(|last| key >= last.key)
+        {
+            self.history_last_value = value.map(|value| Arc::new(HistoryLastValue { key, value }));
+        }
         self.root = match value {
             Some(digest) => Some(insert(self.root.take(), key, digest)),
             None => remove(self.root.take(), key),
@@ -47,9 +64,16 @@ impl DigestIndex {
         self.root
             .as_ref()
             .map_or(0, |root| root.nodes as u64 * Arc::<Node>::layout_bytes())
+            + self
+                .history_last_value
+                .as_ref()
+                .map_or(0, |_| Arc::<HistoryLastValue>::layout_bytes())
     }
 
     pub(super) fn visit_allocations(&self, visitor: &mut dyn StorageAllocationVisitor) {
+        if let Some(last) = &self.history_last_value {
+            visitor.visit(last.observation(false));
+        }
         fn walk(node: &Arc<Node>, visitor: &mut dyn StorageAllocationVisitor) {
             if visitor.visit(node.observation(false))
                 && let Some(children) = &node.children

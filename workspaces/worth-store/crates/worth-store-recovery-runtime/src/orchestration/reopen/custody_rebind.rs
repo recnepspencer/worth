@@ -149,8 +149,8 @@ pub(super) fn rebind_selected_custody(
     } else {
         None
     };
-    if let Some(claim) = &mut state.verified_selected_tier_custody {
-        if claim
+    if let Some(claim) = &mut state.verified_selected_tier_custody
+        && claim
             .rebind_published_root_and_free_header(
                 &state.selection,
                 published,
@@ -160,9 +160,8 @@ pub(super) fn rebind_selected_custody(
                 completed.format(),
             )
             .is_err()
-        {
-            return Err(state);
-        }
+    {
+        return Err(state);
     }
     let planning = std::mem::replace(&mut state.custody, PlanningCustody::Unresolved);
     let custody = match (planning, pending_effective) {

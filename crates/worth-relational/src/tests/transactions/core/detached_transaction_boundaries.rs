@@ -22,14 +22,18 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
 
     let (storm_basis, mut storm) = begin_on(&runtime, "storm");
     let (maintenance_basis, mut maintenance) = begin_on(&runtime, "maintenance");
-    let storm_root_read = storm.read_relation(relation).expect("root read projects");
+    let storm_root_read = storm
+        .read_relation(execution, relation)
+        .expect("root read projects");
     assert_eq!(
         storm_root_read.base().map(|record| record.relation_id),
         Some(relation)
     );
     assert!(storm_root_read.staged_mutations().is_empty());
     assert_eq!(
-        storm.read_relation(relation).expect("repeat read projects"),
+        storm
+            .read_relation(execution, relation)
+            .expect("repeat read projects"),
         storm_root_read
     );
 
@@ -49,7 +53,7 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
         .expect("test staging stays within configured resource budgets");
     assert_eq!(
         storm
-            .read_relation(relation)
+            .read_relation(execution, relation)
             .expect("staged relation read projects")
             .effective()
             .map(|record| record.target.clone()),
@@ -57,13 +61,13 @@ fn relation_overlays_and_validation_footprints_stay_exact_basis_local() {
     );
     assert_eq!(
         storm
-            .read_relation(relation)
+            .read_relation(execution, relation)
             .expect("staged relation read projects")
             .staged_mutations(),
         &[storm_relation_mutation]
     );
     let maintenance_read = maintenance
-        .read_relation(relation)
+        .read_relation(execution, relation)
         .expect("maintenance relation read projects");
     assert!(maintenance_read.staged_mutations().is_empty());
     assert_eq!(

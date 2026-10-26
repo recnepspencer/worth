@@ -170,7 +170,10 @@ impl PlanningResidentAllowance {
         )
     }
 
-    pub(crate) fn into_box<T>(&mut self, values: Vec<T>) -> Result<Box<[T]>, PlanningMemoryDenial> {
+    pub(crate) fn box_values<T>(
+        &mut self,
+        values: Vec<T>,
+    ) -> Result<Box<[T]>, PlanningMemoryDenial> {
         let capacity_bytes = Self::vector_bytes(&values)?;
         let length_bytes = Self::slot_bytes::<T>(values.len())?;
         // A shrinking conversion may allocate before releasing the old Vec.

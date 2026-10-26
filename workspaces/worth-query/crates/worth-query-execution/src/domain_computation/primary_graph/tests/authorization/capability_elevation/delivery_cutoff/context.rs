@@ -151,7 +151,3 @@ pub(super) fn assert_resources_released(world: &AuthorizationWorld) {
 pub(super) fn one() -> NonZeroUsize {
     NonZeroUsize::new(1).unwrap()
 }
-
-pub(super) fn buffer_limit() -> NonZeroUsize {
-    NonZeroUsize::new(4_096).unwrap()
-}

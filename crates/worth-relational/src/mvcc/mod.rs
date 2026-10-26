@@ -48,9 +48,9 @@ pub use transaction::{
     PreparedRelationalChangeSummaryDenial, PreparedRelationalRecordChange,
     PreparedRelationalRelationEndpoints, RelationalBranchTransactionAdmissionDenial,
     RelationalPreparationPort, RelationalTransactionEntityRead, RelationalTransactionFootprint,
-    RelationalTransactionIntent, RelationalTransactionReadLocus, RelationalTransactionRelationRead,
-    RelationalTransactionRelationValue, RelationalTransactionStagingDenial,
-    RelationalTransactionWriteLocus,
+    RelationalTransactionIntent, RelationalTransactionReadDenial, RelationalTransactionReadLocus,
+    RelationalTransactionRelationRead, RelationalTransactionRelationValue,
+    RelationalTransactionStagingDenial, RelationalTransactionWriteLocus,
 };
 pub(crate) use validation::RelationalTransactionValidationInput;
 pub use validation::{

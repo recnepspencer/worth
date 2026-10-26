@@ -24,6 +24,23 @@ fn a_recovered_runtime_publishes_its_next_commit_at_the_next_position() {
     let offered_before_recovery = medium.offered().len();
 
     let (recovery, recovered) = recover_with(execution, &runtime, durable_runtime_with_test_schema);
+    let cold = recovered
+        .durability
+        .cold_source()
+        .expect("recovery carries its read-only source");
+    assert_eq!(
+        cold.read_commit(PatchStreamPosition(1), 1 << 24).unwrap(),
+        medium
+            .artifact_bytes(PatchStreamPosition(1))
+            .unwrap()
+            .into_vec()
+    );
+    assert!(matches!(
+        cold.read_commit(PatchStreamPosition(1), 1),
+        Err(
+            crate::storage::data::RelationalStorageUnavailableCause::LimitExceeded { limit: 1, .. }
+        )
+    ));
 
     assert_eq!(medium.offered().len(), offered_before_recovery);
     assert_eq!(
@@ -41,6 +58,8 @@ fn a_recovered_runtime_publishes_its_next_commit_at_the_next_position() {
     let (second, reopened_again) =
         recover_with(execution, &recovered, durable_runtime_with_test_schema);
     assert_eq!(second.recovered_commits, 4);
+    let reopened_cold = reopened_again.durability.cold_source().unwrap();
+    assert!(std::sync::Arc::ptr_eq(&cold, &reopened_cold));
     assert_eq!(
         reopened_again
             .history()

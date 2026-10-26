@@ -33,7 +33,7 @@ pub(super) fn medium_recovery_plan(
     let parts = source.into_parts();
     let checkpoint = parts
         .checkpoint
-        .map(|source| readmit_covered_checkpoint(execution, source))
+        .map(|source| readmit_covered_checkpoint(execution, source, parts.cold_source.clone()))
         .transpose()?;
     let covered = checkpoint
         .as_ref()
@@ -80,6 +80,7 @@ pub(super) fn medium_recovery_plan(
         verification_mode,
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
+        Some(parts.cold_source),
     )
     .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone()))
 }
@@ -89,14 +90,17 @@ pub(super) fn medium_recovery_plan(
 fn readmit_covered_checkpoint(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: RelationalDurableCheckpointSource,
+    cold_source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
 ) -> Result<(DurableCheckpoint, PatchStreamPosition), RelationalRecoveryStop> {
     let filed_under = source.covered();
     let filed_transitions = source.covered_transitions();
-    let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
-        execution,
-        source.into_checkpoint().bytes(),
-    )?
-    .checkpoint;
+    let checkpoint =
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint_from_source(
+            execution,
+            source.into_checkpoint().bytes(),
+            Some(cold_source),
+        )?
+        .checkpoint;
     let covered = checkpoint_coverage(&checkpoint);
     if covered != filed_under {
         return Err(DurabilityError::new(
@@ -124,6 +128,9 @@ fn readmit_covered_checkpoint(
 /// The last position a checkpoint's retained envelopes include, or zero for a
 /// checkpoint of an empty history.
 pub(crate) fn checkpoint_coverage(checkpoint: &DurableCheckpoint) -> PatchStreamPosition {
+    if let Some(directory) = &checkpoint.directory {
+        return directory.manifest.covered_position;
+    }
     checkpoint
         .envelopes
         .iter()

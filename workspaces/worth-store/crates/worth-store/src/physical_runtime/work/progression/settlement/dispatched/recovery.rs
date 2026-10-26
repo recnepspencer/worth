@@ -82,17 +82,16 @@ impl DispatchedPhysicalWork {
         let prefix_bytes = physical
             .prefix_verified()
             .map_or(0, |prefix| prefix.completed_bytes());
-        if let Some(prefix) = physical.prefix_verified() {
-            if prefix.store() != self.intent().identity().store()
+        if let Some(prefix) = physical.prefix_verified()
+            && (prefix.store() != self.intent().identity().store()
                 || prefix.owner() != self.admitted.authority().media_owner_observation().owner()
                 || prefix.coordinate().artifact() != coordinate.artifact()
                 || prefix.coordinate().offset() != 0
                 || prefix.coordinate().length() as u64 != prefix_bytes
                 || prefix_bytes >= expected
-                || prefix.completed_bytes() != prefix_bytes
-            {
-                return false;
-            }
+                || prefix.completed_bytes() != prefix_bytes)
+        {
+            return false;
         }
         let Some(appended) = physical.appended() else {
             return false;
@@ -112,17 +111,16 @@ impl DispatchedPhysicalWork {
     ) -> bool {
         let expected = u64::from(coordinate.length());
         let prefix_bytes = prefix_verified.map_or(0, |prefix| prefix.completed_bytes());
-        if let Some(prefix) = prefix_verified {
-            if prefix.store() != self.intent().identity().store()
+        if let Some(prefix) = prefix_verified
+            && (prefix.store() != self.intent().identity().store()
                 || prefix.owner() != self.admitted.authority().media_owner_observation().owner()
                 || prefix.coordinate().artifact() != coordinate.artifact()
                 || prefix.coordinate().offset() != 0
                 || prefix.coordinate().length() as u64 != prefix_bytes
                 || prefix_bytes >= expected
-                || prefix.completed_bytes() != prefix_bytes
-            {
-                return false;
-            }
+                || prefix.completed_bytes() != prefix_bytes)
+        {
+            return false;
         }
         append.store() == self.intent().identity().store()
             && append.owner() == self.admitted.authority().media_owner_observation().owner()

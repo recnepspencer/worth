@@ -116,19 +116,19 @@ fn observe_bounded(
         root,
         free_space,
         placements: allowance
-            .into_box(placements)
+            .box_values(placements)
             .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         segment_entries: allowance
-            .into_box(segment_entries)
+            .box_values(segment_entries)
             .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         free_entries: allowance
-            .into_box(free_entries)
+            .box_values(free_entries)
             .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         referenced_artifacts: allowance
-            .into_box(referenced_artifacts)
+            .box_values(referenced_artifacts)
             .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
         artifacts: allowance
-            .into_box(artifacts)
+            .box_values(artifacts)
             .map_err(|denial| resident::memory_failure(root_artifact, denial))?,
     }))
 }

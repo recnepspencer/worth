@@ -82,26 +82,4 @@ impl PartitionEditionCopyLane {
             }
         });
     }
-
-    /// Charge the deep materialization of `partitions` partition states.
-    ///
-    /// This is the wholesale form, used where materializing every partition is
-    /// the contract rather than an accident. Incremental copy-on-write reaches
-    /// the same reconstructive counters through [`Self::settle`], which is also
-    /// how an ordinary edit reports the partitions it was forced to copy.
-    pub(crate) fn charge_partition_materialization(
-        self,
-        instrumentation: &RuntimeInstrumentation,
-        partitions: usize,
-    ) {
-        debug_assert_eq!(
-            self,
-            Self::Reconstructive,
-            "whole-state materialization belongs to the reconstructive lane"
-        );
-        instrumentation.count(|counters| {
-            counters.reconstructive_state_clones += 1;
-            counters.reconstructive_partitions_materialized += partitions;
-        });
-    }
 }

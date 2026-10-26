@@ -107,10 +107,7 @@ pub(in crate::physical_runtime::blob) fn validate_selected_claims(
         if ordinal == 0 || ordinal > selected_chunks {
             return Err(BlobResumeFailure::ConflictingClaims);
         }
-        let expected_bytes = ordinal
-            .checked_mul(chunk_size)
-            .unwrap_or(u64::MAX)
-            .min(total);
+        let expected_bytes = ordinal.saturating_mul(chunk_size).min(total);
         if durable_bytes != expected_bytes {
             return Err(BlobResumeFailure::ConflictingClaims);
         }

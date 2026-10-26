@@ -30,17 +30,17 @@ impl WorthQueryManagedComputationOwner<Schema, Feature, Computation> for Owner {
         checkpoint: &mut WorthQueryManagedComputationCheckpoint<'_>,
     ) -> Result<Vec<u8>, WorthQueryManagedComputationDenial<Self::Stopped>> {
         checkpoint.poll()?;
-        if !self.stop_in_completion {
-            if let Some(cancel) = &self.cancel {
-                cancel.cancel();
-                assert_eq!(
-                    checkpoint.poll(),
-                    Err(WorthQueryManagedComputationCheckpointDenial::Interrupted(
-                        WorthQueryManagedComputationInterruption::Cancelled
-                    ))
-                );
-                // A child that ignores the original stop must not publish success.
-            }
+        if !self.stop_in_completion
+            && let Some(cancel) = &self.cancel
+        {
+            cancel.cancel();
+            assert_eq!(
+                checkpoint.poll(),
+                Err(WorthQueryManagedComputationCheckpointDenial::Interrupted(
+                    WorthQueryManagedComputationInterruption::Cancelled
+                ))
+            );
+            // A child that ignores the original stop must not publish success.
         }
         Ok(prepared.0.clone())
     }

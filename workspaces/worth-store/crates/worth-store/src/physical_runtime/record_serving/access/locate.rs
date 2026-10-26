@@ -356,14 +356,14 @@ impl PhysicalRecordReader {
         if let Some(runtime) = self.runtime.upgrade() {
             runtime.health.observe_read_denial(denial);
         }
-        if let RecordReadDenial::ResidencyUnavailable(reason) = denial {
-            if let Some(pressure) = super::super::PhysicalRecordPressureEvidence::from_failure(
+        if let RecordReadDenial::ResidencyUnavailable(reason) = denial
+            && let Some(pressure) = super::super::PhysicalRecordPressureEvidence::from_failure(
                 reason,
                 self.generation,
                 basis,
-            ) {
-                return RecordReadError::from_pressure(pressure, observation);
-            }
+            )
+        {
+            return RecordReadError::from_pressure(pressure, observation);
         }
         RecordReadError::new(denial, observation)
     }

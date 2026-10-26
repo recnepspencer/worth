@@ -40,7 +40,7 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
     ingest.push(&[0x7e]).unwrap();
     ingest.push(&[0x7f]).unwrap();
     let published = ingest.finish().unwrap();
-    drop(blobs);
+
     serving.close();
 
     let serving = serving_from_open(directory.path());
@@ -165,6 +165,6 @@ fn denied_cold_blob_rebuild_releases_maintenance_allocation_and_scheduler_capaci
     assert_eq!(bytes, [0x7e, 0x7f]);
     assert_eq!(read.read_next(&mut bytes).unwrap(), 0);
     drop(read);
-    drop(blobs);
+
     serving.close();
 }

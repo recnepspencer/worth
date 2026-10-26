@@ -161,7 +161,7 @@ fn native_storage_returns_late_interruption_without_sealing_partial_evidence() {
             }
             cancellation.cancel();
             let cause = if interrupt_at_seal {
-                builder.seal().err().expect("cancelled seal")
+                builder.seal().expect_err("cancelled seal")
             } else {
                 builder.push(fact(0)).unwrap_err()
             };

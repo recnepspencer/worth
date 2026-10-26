@@ -18,29 +18,14 @@ impl HistorySubsystem {
         checkpoints: &[RelationalBranchCellCheckpoint],
         lifecycle: &[crate::durability::data::DurableBranchLifecycleImage],
         retired_names: &[crate::history::data::BranchId],
-        root_partitions: &mut std::collections::BTreeMap<
-            CommitId,
-            std::collections::BTreeMap<
-                crate::identity::data::PartitionId,
-                crate::storage::overlay::PartitionState,
-            >,
-        >,
-        root_schema_authorities: &std::collections::BTreeMap<
-            CommitId,
-            Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
-        >,
+        roots: &std::collections::BTreeMap<CommitId, Arc<crate::branch::RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         if checkpoints.is_empty() {
             return Err("durable checkpoint omitted exact branch-cell state".to_owned());
         }
         let postures = recorded_postures(checkpoints, lifecycle)?;
         let mut cells = std::collections::BTreeMap::new();
-        let mut readmitted_roots: std::collections::BTreeMap<
-            CommitId,
-            Arc<crate::branch::RelationalBranchRoot>,
-        > = std::collections::BTreeMap::new();
         for checkpoint in checkpoints.iter().cloned() {
             let root = match checkpoint.observation.target() {
                 FoundationalBranchTarget::Empty => {
@@ -63,45 +48,21 @@ impl HistorySubsystem {
                         &checkpoint.branch_id,
                         checkpoint.observation.target(),
                     )?;
-                    if let Some(root) = readmitted_roots.get(&commit_id) {
-                        Some(root.clone())
-                    } else {
-                        let partitions = root_partitions.remove(&commit_id).ok_or_else(|| {
-                            format!(
-                                "durable branch cell references missing branch-root image `{}`",
-                                commit_id.0
-                            )
-                        })?;
-                        let schema_authority = root_schema_authorities
-                            .get(&commit_id)
-                            .cloned()
-                            .ok_or_else(|| {
-                                format!(
-                                    "durable branch cell references missing root schema authority `{}`",
-                                    commit_id.0
-                                )
-                            })?;
-                        let root = self
-                            .readmit_branch_root(
-                                partitions,
-                                envelope,
-                                target.roots().clone(),
-                                schema_authority,
-                                symbols,
-                            )
-                            .map_err(|denial| {
-                                format!("durable branch root readmission denied: {denial:?}")
-                            })?;
-                        if root.descriptor() != Some(target.roots()) {
-                            return Err(format!(
-                                "durable branch-root image does not match target `{}`",
-                                commit_id.0
-                            ));
-                        }
-                        self.root_identity_issuer.observe_root(&root);
-                        readmitted_roots.insert(commit_id, root.clone());
-                        Some(root)
+                    let root = roots.get(&commit_id).ok_or_else(|| {
+                        format!(
+                            "durable branch cell references missing branch-root image or region directory `{}`",
+                            commit_id.0
+                        )
+                    })?;
+                    if root.descriptor() != Some(target.roots()) || !root.links_envelope(&envelope)
+                    {
+                        return Err(format!(
+                            "durable branch-root directory does not match target `{}`",
+                            commit_id.0
+                        ));
                     }
+                    self.root_identity_issuer.observe_root(root);
+                    Some(Arc::clone(root))
                 }
             };
             let mut cell = RelationalBranchReferenceCell::from_checkpoint_with_root(

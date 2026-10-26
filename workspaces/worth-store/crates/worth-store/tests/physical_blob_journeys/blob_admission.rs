@@ -76,6 +76,6 @@ fn source_window_and_frames_are_denied_before_chunk_effects() {
         .resolve_publication(object.bytes(), 1, &scope, limits)
         .unwrap();
     assert_eq!(resolved, published);
-    drop(blobs);
+
     serving.close();
 }

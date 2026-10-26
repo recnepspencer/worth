@@ -54,7 +54,7 @@ pub(super) fn read_extent(
     if !alignment.is_power_of_two()
         || maximum_frame != page_bytes
         || maximum_frame <= (48 + CHUNK_METADATA_BYTES) as u64
-        || arena_offset % alignment != 0
+        || !arena_offset.is_multiple_of(alignment)
     {
         return Err("parent oracle arena manifest geometry is invalid".to_owned());
     }

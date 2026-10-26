@@ -18,8 +18,6 @@ use super::*;
 /// The owned certification compute allowance: every entry of the largest set
 /// and headroom for the input's digest.
 pub(super) const TOTALS_WORK: usize = WORK_PER_ENTRY * LARGEST_SET + WORK_BESIDE_ENTRIES;
-/// The bytes the totals keep.
-
 /// The region output, as the final output feature's artifact in place of
 /// the final output.
 pub(super) struct RegionArtifact;

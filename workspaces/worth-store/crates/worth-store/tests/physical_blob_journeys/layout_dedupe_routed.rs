@@ -54,7 +54,7 @@ fn original_occurrence_meeting_routed_source_keeps_cell_and_live_reuse() {
         "the routed cell is unchanged and still names the first publication",
     );
     assert!(read_exact(&blobs, &scope, reused, &payload) > 0);
-    drop(blobs);
+
     serving.close();
 }
 

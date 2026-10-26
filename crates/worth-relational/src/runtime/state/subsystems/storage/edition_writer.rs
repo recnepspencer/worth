@@ -1,4 +1,5 @@
-use std::sync::{Arc, RwLockWriteGuard};
+use crate::storage::residency::RelationalRegionRetention;
+use std::sync::RwLockWriteGuard;
 
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionState;
@@ -72,14 +73,16 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             copies.record_spine_copy();
         }
         map.get_mut(&partition_id)
-            .map(|partition| own_partition(copies, partition))
+            .and_then(|partition| own_partition(copies, partition))
     }
 
     /// Exclusive access to every partition, copying each one that an observer
     /// still holds. This is Theta(all slots in the substrate) in the worst
     /// case, which is why the copies it performs are counted individually
     /// rather than summarized as one event.
-    pub(crate) fn partitions_mut(&mut self) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
+    pub(crate) fn resident_partitions_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
         let Self {
             edition, copies, ..
         } = self;
@@ -88,14 +91,18 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
             copies.record_spine_copy();
         }
         map.values_mut()
-            .map(move |partition| own_partition(copies, partition))
+            .filter_map(move |partition| own_partition(copies, partition))
     }
 
     pub(crate) fn insert(&mut self, partition_id: PartitionId, partition: PartitionState) {
-        self.map_mut().insert(partition_id, Arc::new(partition));
+        self.map_mut()
+            .insert(partition_id, RelationalRegionRetention::resident(partition));
     }
 
-    pub(crate) fn remove(&mut self, partition_id: PartitionId) -> Option<Arc<PartitionState>> {
+    pub(crate) fn remove(
+        &mut self,
+        partition_id: PartitionId,
+    ) -> Option<RelationalRegionRetention> {
         self.map_mut().remove(&partition_id)
     }
 
@@ -121,13 +128,15 @@ impl Drop for PartitionEditionWriter<'_> {
 /// nobody performed.
 fn own_partition<'partition>(
     copies: &mut PartitionCopyTally,
-    partition: &'partition mut Arc<PartitionState>,
-) -> &'partition mut PartitionState {
-    if Arc::get_mut(partition).is_none() {
+    partition: &'partition mut RelationalRegionRetention,
+) -> Option<&'partition mut PartitionState> {
+    let copied = !partition.is_uniquely_owned();
+    let partition = partition.make_mut()?;
+    if copied {
         copies.record_partition_copy(
             partition.entity_arena.slot_count(),
             partition.relation_arena.slot_count(),
         );
     }
-    Arc::make_mut(partition)
+    Some(partition)
 }

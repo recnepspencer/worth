@@ -1,7 +1,11 @@
 mod branch_lifecycle_images;
 mod branch_root_schema_images;
 mod checkpoint_coverage;
+mod checkpoint_directory;
+pub(crate) use checkpoint_directory::RelationalCheckpointDirectory;
 mod checkpoint_images;
+mod checkpoint_manifest;
+mod checkpoint_member;
 mod checkpoint_restore_work;
 mod native_checkpoint;
 mod native_checkpoint_capture_denial;
@@ -29,6 +33,8 @@ pub(crate) use checkpoint_images::{
     DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
     DurableRecordSlotFrontier, DurableReusableRecordSlot,
 };
+pub(crate) use checkpoint_manifest::*;
+pub use checkpoint_member::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
 pub use checkpoint_restore_work::CheckpointRestoreWork;
 pub use native_checkpoint::{NativeCheckpointSectionBytes, RelationalNativeCheckpoint};
 pub use native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial;

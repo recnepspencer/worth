@@ -67,7 +67,7 @@ pub(crate) fn world() -> PhysicalResidencyStoreWorld {
         .expect("failed-ingest drop");
     assert_eq!(failed.disposition(), BlobReclaimDisposition::Dropped);
     assert_eq!(failed.dropped_records().len(), 1);
-    drop(blobs);
+
     checkpoint(&world, [0xc1; 32]);
 
     let released_scope = admitted_blob_scope("c11.recovery.mixed.released.scope");
@@ -93,7 +93,7 @@ pub(crate) fn world() -> PhysicalResidencyStoreWorld {
         }
         Err(failure) => panic!("independent publication failed: {failure:?}"),
     };
-    drop(blobs);
+
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()
