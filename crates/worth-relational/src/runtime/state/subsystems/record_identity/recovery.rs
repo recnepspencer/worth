@@ -14,11 +14,11 @@ use super::{
 };
 
 impl RecordIdentitySubsystem {
-    /// Release checkpoint-restored reservations that no replayed canonical
-    /// allocation consumed. Reconstructing the reservation capabilities and
-    /// dropping them preserves the ordinary origin-sensitive RAII behavior:
-    /// reclaimed slots return to reuse while append-frontier gaps stay burned.
-    pub(crate) fn release_unconsumed_restored_reservations(&self) {
+    /// Release copied/restored pending entries without a live owning handle.
+    /// A detached fork calls this on its own copied state; recovery calls it
+    /// after replay consumed its canonical reservations. Ordinary origin-sensitive
+    /// RAII returns reclaimed slots while append-frontier gaps stay burned.
+    pub(crate) fn release_unowned_reservations(&self) {
         let reservations = {
             let state = self.lock();
             state

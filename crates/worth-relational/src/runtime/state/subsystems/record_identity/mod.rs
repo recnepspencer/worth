@@ -166,8 +166,10 @@ impl RuntimeSubsystem for RecordIdentitySubsystem {
     fn fork(&self) -> Self {
         let mut state = self.lock().clone();
         state.staged_replay_allocations = None;
-        Self {
+        let fork = Self {
             state: Arc::new(Mutex::new(state)),
-        }
+        };
+        fork.release_unowned_reservations();
+        fork
     }
 }

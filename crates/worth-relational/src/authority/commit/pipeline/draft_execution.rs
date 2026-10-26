@@ -15,6 +15,12 @@ pub(super) struct PreparedCommitExecution {
 }
 
 impl PreparedCommitExecution {
+    pub(super) fn take_proposed_record_allocations(
+        &mut self,
+    ) -> crate::runtime::PendingRecordAllocations {
+        self.proposed_invariant_state.take_record_allocations()
+    }
+
     pub(super) fn admitted_mut(&mut self) -> &mut AdmittedCommitExecution {
         &mut self.admitted
     }

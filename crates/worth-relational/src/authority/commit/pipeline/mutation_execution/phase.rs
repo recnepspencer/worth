@@ -54,6 +54,7 @@ pub(super) struct MutationPhaseInput<'a, 'request, 'authority> {
     pub(super) proposal_identity: &'a crate::mvcc::RelationalMutationProposalIdentity,
     pub(super) prevalidated_mutation_sensitive:
         Option<crate::validation::engine::InvariantExecutionResult>,
+    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
     pub(super) execution: &'a worth_execution::ExecutionRequest<'request, 'authority>,
 }
 
@@ -73,6 +74,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
+        record_allocations,
         execution,
     } = input;
     commit_log.begin_phase(CommitPhase::AuthoritativeMutation);
@@ -87,6 +89,7 @@ pub(super) fn run_authoritative_mutation_phase(
         proposed_version_id,
         proposal_identity,
         prevalidated_mutation_sensitive,
+        record_allocations,
         execution,
         control,
     )
@@ -107,6 +110,7 @@ fn run_authoritative_mutation_for_runtime(
     proposed_version_id: crate::identity::data::VersionId,
     proposal_identity: &crate::mvcc::RelationalMutationProposalIdentity,
     prevalidated_mutation_sensitive: Option<crate::validation::engine::InvariantExecutionResult>,
+    mut record_allocations: crate::runtime::PendingRecordAllocations,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<MutationPhaseOutput, TransactionCommitError> {
@@ -124,7 +128,6 @@ fn run_authoritative_mutation_for_runtime(
     };
     let branch_local_delete_allowance =
         branch_local_delete_allowance_for_plan(selected_branch_state, working_state, merged_plan);
-    let mut record_allocations = runtime.record_identity.begin_allocations();
     let schema_registry = schema_authority.registry();
     let aspect_plans = schema_authority.aspect_plans();
     let MutationApplyOutcome {
@@ -146,6 +149,13 @@ fn run_authoritative_mutation_for_runtime(
             runtime.commit_work_budget.clone(),
         )
     })?;
+    record_allocations
+        .finish_reapplication()
+        .map_err(|denial| {
+            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+            ))
+        })?;
     record_preparation_telemetry(runtime, preparation_telemetry);
     crate::authority::commit::phases::prepare::record_mutation_counters(runtime, working_state);
 

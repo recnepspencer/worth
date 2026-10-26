@@ -71,6 +71,7 @@ pub(super) fn mutate_commit_execution(
     let selected_branch_state = validated.prepared_mut().selected_branch_state().clone();
     let proposed_version_id = validated.prepared_mut().proposed_version_id();
     let proposal_identity = validated.prepared_mut().proposal_identity().clone();
+    let record_allocations = validated.prepared_mut().take_proposed_record_allocations();
     let prevalidated_mutation_sensitive = validated
         .prepared_mut()
         .admitted_mut()
@@ -91,6 +92,7 @@ pub(super) fn mutate_commit_execution(
             proposed_version_id,
             proposal_identity: &proposal_identity,
             prevalidated_mutation_sensitive,
+            record_allocations,
             execution,
         },
         control,

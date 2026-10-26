@@ -51,6 +51,11 @@ pub(super) fn bind_commit_history(
 ) -> Result<HistoryBoundCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::History)?;
     let version_id = mutated.version_id();
+    let commit_id = mutated
+        .validated_mut()
+        .prepared_mut()
+        .proposal_identity()
+        .commit_id();
     let admitted = mutated.validated_mut().prepared_mut().admitted_mut();
     let merge_diagnostics_plan = admitted.merge_execution_diagnostics_plan().cloned();
     let (transaction_id, validation_input, _, merge_plan, commit_log, phase_timing) =
@@ -62,6 +67,7 @@ pub(super) fn bind_commit_history(
         transaction_id,
         validation_input,
         version_id,
+        commit_id,
         merge_plan,
     )?;
     let additional_diagnostics_entries = merge_plan

@@ -9,8 +9,15 @@ use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, Transa
 pub(crate) struct AppliedInvariantState {
     working_state: WorkingState,
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
+    record_allocations: Option<crate::runtime::PendingRecordAllocations>,
 }
 impl AppliedInvariantState {
+    pub(crate) fn take_record_allocations(&mut self) -> crate::runtime::PendingRecordAllocations {
+        self.record_allocations
+            .take()
+            .expect("move proposed allocation custody once")
+    }
+
     pub(crate) fn working_state(&self) -> &WorkingState {
         &self.working_state
     }
@@ -62,10 +69,7 @@ pub(crate) fn prepare_proposed_invariant_state(
     )?;
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &proposed, merged_plan);
     let mut symbols = runtime.services.symbols.interner_snapshot();
-    let mut record_allocations = crate::runtime::PendingRecordAllocations::new(
-        crate::runtime::RuntimeSubsystem::fork(&runtime.record_identity),
-        None,
-    );
+    let mut record_allocations = runtime.record_identity.begin_allocations();
     let applied = apply_plan_to_working_state(
         &mut proposed,
         &apply_plan,
@@ -78,11 +82,13 @@ pub(crate) fn prepare_proposed_invariant_state(
         lease,
         runtime.commit_work_budget.clone(),
     )?;
-    record_allocations.finish_mutation().map_err(|denial| {
-        TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-            crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
-        ))
-    })?;
+    record_allocations
+        .prepare_reapplication()
+        .map_err(|denial| {
+            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+            ))
+        })?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut proposed,
         &applied.effect.adjacency.deltas,
@@ -91,5 +97,6 @@ pub(crate) fn prepare_proposed_invariant_state(
     Ok(AppliedInvariantState {
         working_state: proposed,
         created_entities: applied.created_entities,
+        record_allocations: Some(record_allocations),
     })
 }

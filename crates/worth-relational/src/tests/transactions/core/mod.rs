@@ -7,6 +7,7 @@ mod bulk_mutation_planning;
 mod cancellation_boundaries;
 mod cancellation_critical_section;
 mod cancellation_residue_assertion;
+mod canonical_proposal_custody;
 mod commit_artifact_summaries;
 mod created_entity_correspondence;
 mod detached_branch_footprint_assertion;

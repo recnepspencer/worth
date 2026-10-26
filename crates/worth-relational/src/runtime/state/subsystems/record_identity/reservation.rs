@@ -23,6 +23,10 @@ pub(super) struct RecordSlotReservation {
 }
 
 impl RecordSlotReservation {
+    pub(super) fn coordinates(&self) -> (RecordAllocationClass, PartitionId, usize, u32) {
+        (self.class, self.partition_id, self.slot, self.generation)
+    }
+
     pub(super) fn new(
         authority: Arc<Mutex<RecordIdentityState>>,
         class: RecordAllocationClass,

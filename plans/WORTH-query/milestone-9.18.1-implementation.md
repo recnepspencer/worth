@@ -3962,3 +3962,200 @@ task checkout remains clean at `59dc27b4877132cae722e0889e81c5f83e44c8ea`,
 with no dependency-pin change. The persistent reviewer granted final qa-loop,
 qa-tests and code-quality-qa clearance for this exact scope and its normal topic
 commit/push. No further build is required; Phase 4 default integration stays closed.
+
+## Phase 4 Slice 3 — canonical proposal custody (boundary review)
+
+Slice 2 is committed and published as
+`c85237b2b8271e627c4fb80fd1f489352a882601`. The next prerequisite is actual
+business-record and occurrence identity before proposed-state reads. This slice
+does not qualify proposed aggregate identity or expose an orbit/lineage API.
+
+### Boundary findings
+
+`prepare_proposed_invariant_state` currently interprets the real business plan
+against a detached working state but allocates through a fork of the identity
+subsystem. It retains the created bindings and drops the forked reservations.
+The authoritative mutation later reserves again against the live subsystem.
+An intervening candidate can therefore change the actual allocation selected
+for a create that was already read in the proposed state. A predicted allocation
+list or a copied seed is insufficient for the future persistent-identity reader.
+
+The live `PendingRecordAllocations` owner already holds exact slot reservations,
+origins, generations and canonical decisions. Its RAII handles return reclaimed
+slots on discard and burn append gaps; publication consumes them only at canonical
+cutover. It must move through the validated candidate to final mutation. Final
+application may readopt its own reserved prefix; it must not call `reserve_exact`
+again against reservations that it already owns. Preserve the existing detached
+symbol interner and ordinary final business interpreter rather than inventing a
+symbol-table adoption protocol.
+
+`RelationalMutationProposalIdentity` already reserves an actual proposed version
+but not a canonical commit occurrence. The history sequence owner must issue the
+occurrence once, carry it with the private proposal identity and consume that same
+occurrence at history binding. Neither the next counter nor proposal ordinal is a
+commit occurrence. Failed/stale/discarded candidates may burn occurrences; no
+publication or metadata becomes visible from reservation alone.
+
+Both ordinary validated proposals and the direct commit/merge preparation path
+must use this custody. The final existing aggregate owner continues to append its
+private allocations to the same stream after history binding. In replay, proposed
+business application consumes only the business prefix from the staged canonical
+manifest. Its private tail remains for the ordinary aggregate consequence owner;
+the final full-stream check cannot move to the end of the business prefix.
+
+The Native/custom preparation barrier remains authoritative. Invalid business
+permutations must retain their original Native law refusal before any aggregate
+classification or custom preparation. This custody slice changes neither that
+engine nor aggregate-consequence timing. Later proposed orbit reads still need a
+prepared aggregate artifact after that barrier, consumed by the final seal.
+
+Runtime fork is a separate owner: it cannot inherit live reservation capabilities
+held by candidates in the source runtime. Its copied allocator state needs honest
+origin-sensitive orphan handling while the source reservations stay live. The
+checkpoint/recovery owner already records pending origins and releases unconsumed
+restored reservations. Preserve those semantics and generation high-water marks.
+
+Commit occurrence order and publication stream order are distinct. The existing
+`publication_stream_order` courts publish B before an earlier-reserved A, checkpoint
+B, replay A from the actual position-selected tail and require a fresh recovered
+commit above both. Recovery resets carried target sequences per envelope, then
+refreshes final floors from the maximum of the entire recorded inventory. Reuse
+those courts; they already expose an incorrect numeric-order recovery shortcut.
+
+The persistent reviewer confirmed that moving the existing Native allocation
+owner into the validated proposal extends its existing RAII lifetime rather than
+creating a new payload authority. Its actor/storage allocation policy remains
+authoritative. No new retention allowance, copied canonical/expected vectors or
+aggregate-funding dependency is justified. Any genuinely new auxiliary allocation
+would still need its own actual owner. Unaccounted Native validation stays lawful.
+Native-only qualification is proportionate while public signatures and Query
+inputs remain unchanged; reader integration will carry its own Query build.
+
+The persistent reviewer completed the boundary review under qa-loop, qa-tests
+and code-quality-qa with no remaining blocker. The ordered plan follows from
+these verified constraints; no Slice 3 code was edited before this review.
+
+### Implementation plan
+
+The result is owner-custody continuity: a created record observed in the actual
+validated proposed state has the same identity when that proposal commits,
+including after another branch prepares or publishes first. The exact proposed
+version and canonical occurrence remain attached to that proposal. No public
+signature, query shape, reader API, or application schema meaning changes.
+
+1. Extend the private proposal identity with the history owner's actual reserved
+   commit occurrence. Issue it once alongside the version, then pass it through
+   ordinary and merge history resolution instead of reserving a second ID.
+   Preserve all existing basis/runtime/proposal/version affinity checks and
+   original capacity denials. Real reverse-publication recovery remains lawful.
+2. Retain the actual `PendingRecordAllocations` owner in `AppliedInvariantState`
+   and move it through existing validated/prepared custody into authoritative
+   mutation. Remove the forked allocation prediction. Keep detached proposal
+   symbols and ordinary final business interpretation; no symbol adoption layer.
+3. In the identity owner, capture the completed proposed business prefix and
+   add a private cursor for reapplying only that already-reserved prefix. Check
+   canonical ordinal/class/partition/slot/generation against each live owned
+   reservation. Extra or missing allocation requests refuse. Do not reserve
+   twice, copy either stream or append the prefix to canonical history again.
+   Complete that business reapplication before the existing aggregate owner may
+   append new private allocations or consume the staged replay tail. Keep the
+   full-stream completion check after all ordinary consequences.
+4. Let detached runtime forks release their copied unowned pending reservations
+   with the existing origin-sensitive cleanup. Reclaimed slots become reusable;
+   append gaps and generation high-water marks remain. Source candidate handles
+   keep their original reservations. Give this cleanup one neutral owner name
+   shared by fork and recovery; recovery still cleans up after actual replay.
+5. Add actual validated-proposal courts for interleaved branch allocations and
+   reverse commit, discard/stale cleanup, and runtime fork with a live candidate.
+   Compare actual proposed bindings/records and canonical prefix with real final
+   bindings/receipts. Add small allocator courts for owned-prefix replay,
+   reclaimed generation preservation and mismatched allocation requests. These
+   are custody proofs, not custom-reader or proposed aggregate-ID qualification.
+6. Review source with the persistent reviewer before one batched Native library
+   artifact build. Run the new owner/custody courts plus the existing
+   `publication_stream_order` (3), `record_allocation_recovery` (8), and
+   `aggregate_identity` (20) filters, and existing directly affected proposal
+   affinity courts. Run scoped formatting/caps/function/whitespace and required
+   normal boundary/context checks. Resolve actual failures before rebuilding;
+   no broad portfolio or Query rebuild is justified while this slice changes
+   only private Native custody. Record exact evidence and final all-three-skill
+   clearance, then commit/push only the topic branch.
+
+Responsibility remains in the existing physical owners: `proposal_identity`
+issues proposal identity; `proposed_invariant_state` holds detached truth and
+reservation custody; `record_identity` owns live handles and reapplication;
+draft/mutation/history phases move that custody; runtime fork and recovery use
+the allocator's cleanup. Tests stay with the identity owner and transaction core.
+No aggregate policy enters the allocator or invariant engine.
+
+Public/proposed orbit identity, lineage readers and latest resolution, declared
+shapes, consumer cutovers, ordinary branch merge and Phase 4 default integration
+remain outside this prerequisite slice. The next reader slice must still add an
+aggregate artifact after the Native/custom barrier and consume it at final seal.
+
+### Slice 3 runtime and structural qualification — 2026-10-26
+
+The implementation follows the reviewed custody plan. Proposed business
+application now holds real move-only reservations; final business application
+readopts exactly that owned prefix and preserves its canonical entries. The
+existing metadata owner then appends or consumes its private tail and performs
+the full completion check. Both history paths use the same occurrence issued
+with the proposal identity. Detached fork cleanup touches only its copied owner.
+No public Native signature, Query input, invariant engine or aggregate policy
+changed. This is custody qualification, not proposed orbit-reader qualification.
+
+One Native artifact was built, with no failed build or retry. The locked root
+`worth-relational --lib --no-run` build under Rust
+`+1.94.0-x86_64-pc-windows-msvc` passed in 207.69 seconds with zero compiler
+diagnostics. It used disabled incremental compilation, the existing target
+directory, `RUST_MIN_STACK=67108864` and build identity
+`d1bec762-96f8-4ed2-bcd2-c5b83997d46b`. `source-freeze1.json` matched all 16
+Rust inputs before and after the build and runtime run. Raw outputs, exact
+runner commands and counts are retained under
+`C:\programming\worth worktees\targets\query-9.18.1-phase4-slice3-*`.
+
+All 51 distinct selected tests passed, with no failures, ignored cases, duplicate
+counting or zero-test filters:
+
+- Validated proposal custody: 3, in 0.56 seconds. The transaction courts compare
+  actual proposed bindings/metadata with final bindings and receipt occurrence/
+  version, exercise reverse sibling commit, discard/stale cleanup and a runtime
+  fork while a source candidate still owns live reservations. They do not claim
+  to acquire a custom orbit reader or inspect the proposal's private prefix.
+- Allocation owner: 10, in 0.05 seconds, including 4 new courts. These inspect the
+  actual owned canonical prefix across readoption, retain reclaimed generation,
+  allow later allocations, refuse wrong class/partition and extra/missing prefix
+  requests, distinguish exact ordinal/slot/generation denials against authentic
+  handles, and isolate copied reclaimed reservations in a fork.
+- Existing publication stream order: 3, in 0.20 seconds, including reverse
+  publication across a checkpoint, exact tail recovery and a new recovered
+  commit above both earlier occurrence maxima.
+- Existing allocation recovery: 8, in 0.64 seconds; aggregate identity: 20, in
+  0.52 seconds. These include the ordinary private metadata tail, original
+  occurrence/allocation gaps, maintenance, atomic admission and persisted parity.
+- Existing proposal affinity: 2, in 0.06 seconds; prepared discard: 1, in 0.06
+  seconds; same-commit created endpoints: 4, in 0.10 seconds.
+
+Scoped formatting, dirty line caps, function scrutiny and whitespace passed in
+0.37, 14.28, 3.21 and 0.38 seconds. All 16 current Rust files are below 400
+lines. The persistent reviewer accepted all 14 function advisories with zero
+scan errors: explicit owner/occurrence handoffs preserve the existing phase
+lifetimes. No new context bag or threshold-driven extraction is warranted.
+The reviewer independently checked the terminal runtime logs and source freeze
+and accepted this focused Native evidence. No further runtime build is needed.
+Query/certification were deliberately not rebuilt for this private prerequisite;
+their reader-integration gate remains due with the public reader slice.
+
+Required normal boundary-check passed in 534.04 seconds; agent-context check
+passed in 1.28 seconds. The final scope is 17 paths: 16 Native Rust files and
+this implementation ledger. Rust source still matches the accepted build freeze,
+and the exact staged scope passes whitespace checking.
+
+The final checkout audit retains the original public/private heads and branches;
+this task made no writes in either original checkout. Their dirty contents are
+outside this task's claim. The private task remains clean at
+`59dc27b4877132cae722e0889e81c5f83e44c8ea`, with no dependency-pin change.
+Remote topic is at the Slice 2 parent, and remote master remains
+`a7c68255a96569df5d8df2c6f778ad3dfd133653`. The persistent reviewer granted
+final qa-loop, qa-tests and code-quality-qa clearance for the exact 17-path topic
+commit/push. No further build is due; Phase 4 default integration remains closed.
