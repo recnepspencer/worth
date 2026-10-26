@@ -58,8 +58,12 @@ pub(super) fn load_head(
     let commitment = PartitionContentCommitment::capture_head(&partition, &symbols, &frontiers)
         .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
     verify_leaf(cold, &partition, &commitment).map_err(|cause| unavailable(cold, cause))?;
-    install_history_prefixes(&mut partition.entity_arena, cold);
-    install_history_prefixes(&mut partition.relation_arena, cold);
+    let history_custody = cold
+        .source
+        .retain_members(&[cold.history])
+        .map_err(|cause| unavailable(cold, cause))?;
+    install_history_prefixes(&mut partition.entity_arena, cold, &history_custody);
+    install_history_prefixes(&mut partition.relation_arena, cold, &history_custody);
     crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
@@ -157,6 +161,7 @@ fn unavailable(cold: &RelationalColdRegion, cause: Cause) -> RelationalStorageUn
 fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
     arena: &mut crate::storage::substrate::RecordArena<K>,
     cold: &RelationalColdRegion,
+    custody: &crate::durability::medium::RelationalDurableMemberCustody,
 ) {
     for row_index in 0..arena.slot_count() {
         if !arena.metadata_history[row_index].is_empty() {
@@ -164,6 +169,7 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
                 row_index,
                 Some(crate::storage::substrate::RecordHistoryPrefix {
                     source: cold.source.clone(),
+                    _placement_custody: custody.clone(),
                     member: cold.history,
                     partition_id: cold.partition_id,
                     schema_carrier_digest: cold.schema_carrier_digest,

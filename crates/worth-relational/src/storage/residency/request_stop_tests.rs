@@ -7,6 +7,13 @@ struct RetryAfterFailure {
     failure: std::sync::Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for RetryAfterFailure {
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        self.source.retain_members(members)
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -30,7 +37,7 @@ fn retry_after(cause: Cause) {
     });
     let mut cold = fixture.cold;
     cold.source = source.clone();
-    let cell = RelationalRegionResidency::cold(cold);
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
     assert_eq!(head_demand(&cell, 1 << 24).unwrap_err().cause, cause);
     *source.failure.lock().unwrap() = None;
     assert!(head_demand(&cell, 1 << 24)
@@ -61,6 +68,13 @@ impl std::fmt::Debug for CancelAfterRead {
     }
 }
 impl RelationalDurableColdSource for CancelAfterRead {
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        self.source.retain_members(members)
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -89,7 +103,7 @@ fn cancellation_during_readmission_preserves_the_request_and_does_not_damage_the
         cancellation,
         first: AtomicBool::new(true),
     });
-    let cell = RelationalRegionResidency::cold(cold);
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
     let failure = cell
         .demand_head(&ExecutionRequest::serial(&request), 1 << 24, None)
         .unwrap_err();

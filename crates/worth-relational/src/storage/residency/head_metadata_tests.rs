@@ -183,5 +183,5 @@ fn cell_with_head(
     });
     cold.head = locator;
     cold.source = source.clone();
-    (RelationalRegionResidency::cold(cold), source)
+    (RelationalRegionResidency::cold(cold).unwrap(), source)
 }

@@ -20,7 +20,7 @@ pub use crate::durability::data::{
 pub use crate::durability::medium::{
     RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
     RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMedium,
-    RelationalDurableMemberLocator, RelationalDurablePublication,
+    RelationalDurableMemberCustody, RelationalDurableMemberLocator, RelationalDurablePublication,
     RelationalDurablePublicationRefusal, RelationalDurableRecoverySource,
     RelationalDurableTransitionReadFailure,
 };

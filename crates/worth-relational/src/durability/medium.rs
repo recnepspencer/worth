@@ -17,6 +17,8 @@
 mod binding;
 mod cold_source;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
+mod member_custody;
+pub use member_custody::RelationalDurableMemberCustody;
 mod recovery_source;
 mod transition_read;
 mod unresolved;

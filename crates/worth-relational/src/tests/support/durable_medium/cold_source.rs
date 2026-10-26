@@ -3,6 +3,13 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 
 impl RelationalDurableColdSource for super::TestDurableMedium {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,

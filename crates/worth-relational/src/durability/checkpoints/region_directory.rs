@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::branch::{RelationalBranchRootSchemaAuthority, RelationalRootRegionCheckpoint};
 use crate::durability::data::{
     DurabilityError, RecoveryFailureClass, RelationalCheckpointDirectory,
-    RelationalCheckpointRegion,
+    RelationalCheckpointRegion, RelationalRecoveryStop,
 };
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::identity::data::PartitionId;
@@ -63,7 +63,7 @@ impl ReadmittedRegionDirectory {
         &mut self,
         schema_digest: [u8; 32],
         leaves: &[RelationalCheckpointRegion],
-    ) -> Result<Vec<RelationalRootRegionCheckpoint>, DurabilityError> {
+    ) -> Result<Vec<RelationalRootRegionCheckpoint>, RelationalRecoveryStop> {
         let schema = self
             .schemas
             .get(&schema_digest)
@@ -73,11 +73,10 @@ impl ReadmittedRegionDirectory {
         let mut result = Vec::new();
         for leaf in leaves {
             let key = (leaf.partition_id, schema_digest, leaf.head, leaf.history);
-            let cell = self
-                .cells
-                .entry(key)
-                .or_insert_with(|| {
-                    RelationalRegionResidency::cold(RelationalColdRegion {
+            let cell = match self.cells.entry(key) {
+                std::collections::btree_map::Entry::Occupied(entry) => entry.get().clone(),
+                std::collections::btree_map::Entry::Vacant(entry) => {
+                    let cell = RelationalRegionResidency::cold(RelationalColdRegion {
                         kind_authority: leaf.kind_authority,
                         source: self.directory.source.clone(),
                         partition_id: leaf.partition_id,
@@ -90,9 +89,10 @@ impl ReadmittedRegionDirectory {
                         entity_slots: leaf.entity_slots,
                         relation_slots: leaf.relation_slots,
                         unavailable_records: leaf.unavailable_records,
-                    })
-                })
-                .clone();
+                    })?;
+                    entry.insert(cell).clone()
+                }
+            };
             result.push(RelationalRootRegionCheckpoint {
                 partition_id: leaf.partition_id,
                 content_digest: leaf.content_digest,

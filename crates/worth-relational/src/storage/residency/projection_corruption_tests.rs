@@ -76,7 +76,7 @@ fn historical_projection_is_reconstructed_from_owned_record_history() {
         corrupt: AtomicBool::new(false),
     });
     assert_integrity_refusal(
-        full_demand(&RelationalRegionResidency::cold(cold), 1 << 24).unwrap_err(),
+        full_demand(&RelationalRegionResidency::cold(cold).unwrap(), 1 << 24).unwrap_err(),
     );
 }
 
@@ -100,7 +100,7 @@ fn replaced_member(
         history: cold.history,
         corrupt: AtomicBool::new(false),
     });
-    RelationalRegionResidency::cold(cold)
+    RelationalRegionResidency::cold(cold).unwrap()
 }
 
 fn assert_integrity_refusal(failure: crate::storage::data::RelationalStorageUnavailable) {

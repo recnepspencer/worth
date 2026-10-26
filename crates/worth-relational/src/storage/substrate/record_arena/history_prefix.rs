@@ -9,6 +9,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub(crate) struct RecordHistoryPrefix {
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
+    pub(crate) _placement_custody: crate::durability::medium::RelationalDurableMemberCustody,
     pub(crate) member: RelationalDurableMemberLocator,
     pub(crate) partition_id: PartitionId,
     pub(crate) schema_carrier_digest: [u8; 32],

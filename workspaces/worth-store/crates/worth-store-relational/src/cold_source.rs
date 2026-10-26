@@ -6,7 +6,7 @@ use std::sync::{
 };
 
 use worth_relational::facade::durability::{
-    RelationalDurableColdSource, RelationalDurableMemberLocator,
+    RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
 };
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
@@ -16,8 +16,12 @@ use worth_store::physical_runtime::{
     ServingPhysicalRuntime,
 };
 
+mod member_custody;
+#[cfg(test)]
+mod member_custody_tests;
 #[cfg(test)]
 mod tests;
+pub(crate) use member_custody::RetainedMemberPublication;
 
 /// Calls through the home's demand-read port, including typed refusals.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -32,6 +36,7 @@ pub(crate) struct StoreColdSource {
         u64,
         std::collections::BTreeMap<RelationalDurableMemberLocator, AnchoredRecordMemberLocator>,
     )>,
+    custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
 }
@@ -47,6 +52,7 @@ impl StoreColdSource {
         Self {
             serving,
             members: RwLock::new((0, Default::default())),
+            custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
         }
@@ -79,6 +85,9 @@ impl StoreColdSource {
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
     }
+    pub(crate) fn protect_member_selection(&self) -> RetainedMemberPublication<'_> {
+        self.custody.protect_selection()
+    }
     pub(crate) fn member_locators(&self) -> Vec<RelationalDurableMemberLocator> {
         self.members
             .read()
@@ -91,6 +100,24 @@ impl StoreColdSource {
 }
 
 impl RelationalDurableColdSource for StoreColdSource {
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<RelationalDurableMemberCustody, Cause> {
+        self.custody
+            .retain(members, self.serving.clone(), |selected| {
+                let current = self
+                    .members
+                    .read()
+                    .unwrap_or_else(|error| error.into_inner());
+                if selected.iter().all(|member| current.1.contains_key(member)) {
+                    Ok(())
+                } else {
+                    Err(Cause::MissingMember)
+                }
+            })
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,

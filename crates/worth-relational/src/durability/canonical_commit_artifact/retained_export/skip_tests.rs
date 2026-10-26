@@ -11,6 +11,13 @@ struct SelectedJournal {
     reads: AtomicUsize,
 }
 impl RelationalDurableColdSource for SelectedJournal {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(&self, _: RelationalDurableMemberLocator, _: u64) -> Result<Vec<u8>, Cause> {
         Err(Cause::SourceUnavailable)
     }

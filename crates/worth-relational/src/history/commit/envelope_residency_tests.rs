@@ -17,6 +17,13 @@ struct Source {
     failure: Option<Cause>,
 }
 impl RelationalDurableColdSource for Source {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(&self, _: RelationalDurableMemberLocator, _: u64) -> Result<Vec<u8>, Cause> {
         panic!("envelope demand reads the journal only")
     }

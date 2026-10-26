@@ -6,6 +6,13 @@ use crate::validation::engine::state_view::InvariantStateView;
 #[derive(Debug)]
 struct HistoryUnavailable(Arc<CountedSource>);
 impl RelationalDurableColdSource for HistoryUnavailable {
+    fn retain_members(
+        &self,
+        members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        self.0.retain_members(members)
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -26,7 +33,7 @@ fn edition(fixture: &RegionFixture) -> crate::runtime::PartitionEdition {
     cold.source = Arc::new(HistoryUnavailable(fixture.source.clone()));
     crate::runtime::PartitionEdition::new(BTreeMap::from([(
         fixture.entity.partition_id,
-        RelationalRegionRetention::new(RelationalRegionResidency::cold(cold), None),
+        RelationalRegionRetention::new(RelationalRegionResidency::cold(cold).unwrap(), None),
     )]))
 }
 

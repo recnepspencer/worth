@@ -84,6 +84,9 @@ pub(crate) fn publish(
     covered_transitions: RelationalBranchTransitionSequence,
     checkpoint: &RelationalNativeCheckpoint,
 ) -> Result<u64, Refusal> {
+    // The fence precedes reading the anchor and lasts through selection. New
+    // read custody cannot arrive in the gap between member union and cutover.
+    let retained = cold_source.protect_member_selection();
     let records = serving.anchored_records().map_err(Refusal::Unavailable)?;
     let previous = records
         .read(anchor(), MAXIMUM_CHECKPOINT_BYTES)
@@ -104,25 +107,34 @@ pub(crate) fn publish(
         .iter()
         .map(|member| ((member.sha256(), member.length()), *member))
         .collect::<std::collections::BTreeMap<_, _>>();
-    let members = checkpoint
+    let mut members = checkpoint
         .members()
         .iter()
         .map(|member| {
             let key = member.locator();
             if let Some(locator) = old_members.get(&(key.sha256, key.length)) {
-                return Ok(AnchoredRecordMember::Carried { locator: *locator });
+                return Ok((key, AnchoredRecordMember::Carried { locator: *locator }));
             }
             match member {
-                RelationalCheckpointMember::New { locator, bytes } => {
-                    Ok(AnchoredRecordMember::New {
+                RelationalCheckpointMember::New { locator, bytes } => Ok((
+                    key,
+                    AnchoredRecordMember::New {
                         key: locator.sha256,
                         bytes: bytes.to_vec(),
-                    })
-                }
+                    },
+                )),
                 RelationalCheckpointMember::Carried { .. } => Err(Refusal::Malformed),
             }
         })
-        .collect::<Result<Vec<_>, _>>()?;
+        .collect::<Result<std::collections::BTreeMap<_, _>, _>>()?;
+    for key in retained.member_locators() {
+        if let std::collections::btree_map::Entry::Vacant(entry) = members.entry(key) {
+            let locator = old_members
+                .get(&(key.sha256, key.length))
+                .ok_or(Refusal::Malformed)?;
+            entry.insert(AnchoredRecordMember::Carried { locator: *locator });
+        }
+    }
     let mut payload = Vec::with_capacity(HEADER_BYTES + checkpoint.bytes().len());
     payload.extend_from_slice(MAGIC);
     payload.extend_from_slice(&FORMAT_VERSION.to_le_bytes());
@@ -140,7 +152,7 @@ pub(crate) fn publish(
                 crate::physical_store::placement(),
                 deadline,
             )
-            .with_members(members),
+            .with_members(members.into_values().collect()),
         )
         .map_err(Refusal::Publication)?
     {

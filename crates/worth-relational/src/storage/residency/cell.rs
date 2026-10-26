@@ -62,14 +62,24 @@ pub(crate) struct RelationalRegionResidency {
     >,
     state: Mutex<ResidencyState>,
     backing: Option<RelationalColdRegion>,
+    backing_custody: Option<crate::durability::medium::RelationalDurableMemberCustody>,
     raw_head: RegionLoadCache,
     raw_full: RegionLoadCache,
     pub(super) leases: AtomicUsize,
 }
 
 impl RelationalRegionResidency {
-    pub(crate) fn cold(cold: RelationalColdRegion) -> Arc<Self> {
-        Arc::new(Self {
+    pub(crate) fn cold(
+        cold: RelationalColdRegion,
+    ) -> Result<Arc<Self>, RelationalStorageUnavailable> {
+        let custody = cold
+            .source
+            .retain_members(&[cold.head, cold.history])
+            .map_err(|cause| RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Region(cold.partition_id),
+                cause,
+            })?;
+        Ok(Arc::new(Self {
             partition_id: cold.partition_id,
             checkpoint_bindings: Mutex::new(std::collections::BTreeMap::from([(
                 cold.schema_carrier_digest,
@@ -85,11 +95,12 @@ impl RelationalRegionResidency {
                 },
             )])),
             backing: Some(cold),
+            backing_custody: Some(custody),
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Cold),
             leases: AtomicUsize::new(0),
-        })
+        }))
     }
 
     pub(crate) fn resident(
@@ -117,6 +128,7 @@ impl RelationalRegionResidency {
             partition_id: region.partition.partition_id,
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
+            backing_custody: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Full(region.clone())),
@@ -213,6 +225,7 @@ impl RelationalRegionResidency {
     }
 
     pub(crate) fn into_partition(self) -> PartitionState {
+        drop(self.backing_custody);
         drop(
             self.raw_head
                 .into_inner()
@@ -248,6 +261,7 @@ impl RelationalRegionResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .take();
         self.backing = None;
+        self.backing_custody.take();
         self.checkpoint_bindings
             .get_mut()
             .unwrap_or_else(|poisoned| poisoned.into_inner())

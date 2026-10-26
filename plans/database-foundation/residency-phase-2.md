@@ -890,3 +890,63 @@ owner formatting, dirty Rust line caps, whitespace, agent-context and a fresh
 plain boundary-check. Function review retains each existing complete codec,
 adoption/accounting orchestration and producer fixture in its responsibility;
 the prefix adds no separate authority or allocation counter.
+
+
+### Placement custody implementation plan
+
+The next cut adds an explicit metadata-only retain_members operation to the
+existing cold-source port and an owned, clonable RelationalDurableMemberCustody
+carrier through the durability facade. It carries a provider-owned lifetime,
+not byte admission or record pin authority. Every provider implements the new
+contract explicitly. Immutable inline/fixture sources already retain their
+addressed bytes for the source lifetime; forwarding fault ports delegate custody
+to their source without injecting a payload read.
+
+Store owns a locator-count registry under cold_source/member_custody.rs.
+Acquisition verifies current selected membership without reading member payloads
+and may return the existing storage cause. A publication read guard freezes
+acquisition/release while checkpoint_record publishes and selects its anchor;
+the member union carries each live locator from that destination's verified
+current member table. Taking this guard before reading the prior anchor closes
+the selection race. It grants no ordinary journal or branch publication door.
+Recovery constructs all cold cells before the home is exposed to concurrent
+checkpoint calls. Cell construction acquires backing-member custody and returns
+a typed region failure on refusal; Head suffix references share independent
+history-member custody so sparse adoption can outlive the source cell.
+
+Tests must use actual Store anchored members, prove metadata retention performs
+no payload read, preserve a carried member through replacement while custody
+lives, release it when the final owner drops, and verify the selection guard
+excludes custody mutation. Keep the existing cached-locator/no-membership court.
+Relational tests must prove custody drops only after all prefix copies and cell
+owners release it, and propagate acquisition refusal without journal effects.
+Run Relational lib/contracts, Store lib and the focused home regression, World,
+CI clippy, formatting, caps, boundary and context. The complete home oracle is
+required again after Head writes and layered capture integrate this cut. Layer
+closure custody will extend the same member set, never introduce a second port.
+
+
+Placement custody is implemented through the existing read port, its owning
+provider registry, cold cell construction and prefix lifetime. The member union
+uses the destination's verified current locators and freezes custody mutation
+until the anchor is published and selected. Owned custody also retains the
+provider's physical session. The producer-backed Store court proves actual
+checkpoint replacement, clone lifetime, no payload read during acquisition,
+release after the last owner and physical-session lifetime; the reviewed foreign
+carry and cached-locator courts remain unchanged and pass.
+
+The first new native lifetime court incorrectly requested GraphSparseEntities
+with no entity-slot set, which deliberately produces only entity shape. The
+fixture therefore owned no entity history to retain. Supply its actual selected
+slot; the lifetime assertions remain unchanged. Both new native courts pass,
+including typed acquisition refusal and retry with no payload reads.
+
+This cut passes Relational lib (1,925; 31 unchanged ignored), contracts (203;
+three unchanged ignored), World (265 unit, 41 integration with three unchanged
+ignored, plus example and doc), Store lib (five), and the complete home oracle
+(35, no ignored, 1,993.95 seconds). All three CI owner/service clippy commands,
+owner formatting, dirty caps, whitespace, plain boundary-check and agent-context
+pass. Function review keeps the complete checkpoint publication boundary and
+its end-to-end lifetime court together; existing codec and scope courts retain
+their responsibilities. The outer preparation level remains Full until history
+layering, mixed mirror commitments and typed publication custody integrate it.

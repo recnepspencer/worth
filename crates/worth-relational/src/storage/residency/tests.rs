@@ -19,6 +19,8 @@ mod head_metadata_tests;
 mod history_prefix_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
+#[path = "member_custody_tests.rs"]
+mod member_custody_tests;
 #[path = "projection_corruption_tests.rs"]
 mod projection_corruption;
 
@@ -32,6 +34,13 @@ struct CountedSource {
 }
 
 impl RelationalDurableColdSource for CountedSource {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -150,7 +159,7 @@ fn region_with_history() -> RegionFixture {
             + partition.relation_arena.lifecycle_counts().unavailable,
     };
     RegionFixture {
-        cell: RelationalRegionResidency::cold(cold.clone()),
+        cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
         cold,
         source,
         entity,
@@ -263,7 +272,7 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
         history: locator,
         corrupt: AtomicBool::new(false),
     });
-    let cell = RelationalRegionResidency::cold(cold);
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
     let head = head_demand(&cell, 1 << 24).unwrap();
     assert!(head.head_view().entity(fixture.entity).is_some());
     assert_eq!(
@@ -290,7 +299,7 @@ fn damaged_content_and_leaf_mismatches_are_sticky_typed_refusals() {
 
     let mut wrong_leaf = fixture.cold;
     wrong_leaf.content_digest[0] ^= 1;
-    let cell = RelationalRegionResidency::cold(wrong_leaf);
+    let cell = RelationalRegionResidency::cold(wrong_leaf).unwrap();
     assert_eq!(
         head_demand(&cell, 1 << 24).unwrap_err().cause,
         Cause::IntegrityMismatch

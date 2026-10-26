@@ -240,10 +240,10 @@ fn expand_regions(
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
-            });
-            (leaf.partition_id, cell)
+            })?;
+            Ok((leaf.partition_id, cell))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, crate::storage::data::RelationalStorageUnavailable>>()?;
     authority
         .bind(cells.iter().cloned())
         .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
