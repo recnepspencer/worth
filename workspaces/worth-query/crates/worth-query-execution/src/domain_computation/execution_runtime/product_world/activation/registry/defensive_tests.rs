@@ -113,6 +113,67 @@ fn unsupported_program_refusals_leave_the_full_activation_limit_available() {
     }
 }
 
+#[test]
+fn per_program_counter_overflow_refunds_the_live_reservation() {
+    let revision = program_revision();
+    let limit = test_product_world_resources()
+        .budgets()
+        .live_product_branches();
+    let maximum = limit.get().unwrap();
+    let registry = WorthQueryProductActivationRegistry::new(limit).unwrap();
+    registry.require_program_coordination();
+    let held = (1..maximum)
+        .map(|_| {
+            registry
+                .reserve_for_source_program(Some(&revision))
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    // Consistent per-program reservations are bounded by live capacity. Inject
+    // desynchronization only in this counter to reach its defensive producer.
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .in_flight_programs
+        .insert(revision, usize::MAX);
+    for _ in 0..2 {
+        let produced = registry
+            .reserve_for_source_program(Some(&revision))
+            .err()
+            .expect("the per-program overflow must be refused before map reservation");
+        assert_eq!(
+            produced,
+            WorthQueryProductActivationDenial::OccupancyOverflow
+        );
+        assert!(matches!(
+            Creation::from(produced),
+            Creation::CoordinationOccupancyOverflow
+        ));
+        assert_eq!(Adoption::from(produced), Adoption::OccupancyOverflow);
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.in_flight_programs.get(&revision), Some(&usize::MAX));
+        assert_eq!(state.reserved_gates, held.len());
+    }
+    registry
+        .state
+        .lock()
+        .unwrap()
+        .in_flight_programs
+        .insert(revision, held.len());
+    let last = registry
+        .reserve_for_source_program(Some(&revision))
+        .expect("per-program overflow must refund the last live slot");
+    assert!(
+        matches!(registry.reserve_for_source_program(Some(&revision)), Err(WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy }) if (limit, occupancy) == (maximum, maximum))
+    );
+    drop((last, held));
+    let state = registry.state.lock().unwrap();
+    assert!(state.in_flight_programs.is_empty());
+    assert_eq!(state.reserved_gates, 0);
+    assert!(state.live_occurrences.is_empty());
+}
+
 // Mint a real canonical revision through declaration validation. Program
 // contents are irrelevant to this registry's support and reservation lifecycle.
 fn program_revision() -> ApplicationProgramRevision {
