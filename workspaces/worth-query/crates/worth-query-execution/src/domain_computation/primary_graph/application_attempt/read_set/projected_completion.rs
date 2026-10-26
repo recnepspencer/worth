@@ -135,6 +135,19 @@ impl<Schema, Operation, Input, Scope>
         ),
         WorthQueryApplicationAttemptDenial,
     > {
+        if let WorthQueryApplicationFactKey::Aggregate(key) = key {
+            return super::aggregate::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                None,
+            );
+        }
         if let WorthQueryApplicationFactKey::StructuralWalk(key) = key {
             return super::structural_walk::observe(
                 execution,
@@ -185,6 +198,20 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
         scope: super::InstalledScopePosition,
     ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+        if let WorthQueryApplicationFactKey::Aggregate(key) = key {
+            return super::aggregate::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                Some(scope),
+            )
+            .map(|(_, fact)| fact);
+        }
         if let WorthQueryApplicationFactKey::StructuralWalk(key) = key {
             return super::structural_walk::observe(
                 execution,
@@ -346,6 +373,7 @@ fn key_entities_are_in_scope(
     scope: &super::super::read_scope::WorthQueryApplicationReadScope,
 ) -> bool {
     match key {
+        WorthQueryApplicationFactKey::Aggregate(key) => scope.admits(key.member()),
         WorthQueryApplicationFactKey::StructuralWalk(key) => {
             key.roots().iter().all(|id| scope.admits(*id))
         }

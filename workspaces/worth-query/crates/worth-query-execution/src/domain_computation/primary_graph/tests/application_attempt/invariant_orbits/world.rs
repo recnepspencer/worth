@@ -4,8 +4,9 @@ use crate::domain_computation::{execution_runtime::*, primary_graph::*};
 use worth_query_declaration::facade::{application_schema::*, authentication::*};
 use worth_query_installation::facade::*;
 
-pub(super) struct World<const O: bool = true> {
-    pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<OrbitSchema<O>>,
+pub(in crate::domain_computation::primary_graph) struct World<const O: bool = true> {
+    pub(in crate::domain_computation::primary_graph) application:
+        WorthQueryPrimaryGraphApplicationRuntime<OrbitSchema<O>>,
     pub(super) binding: WorthQueryInstalledPrincipalBinding<
         OrbitSchema<O>,
         IdentityBinding,
@@ -14,7 +15,8 @@ pub(super) struct World<const O: bool = true> {
         u64,
         U64ApplicationValueBinding,
     >,
-    pub(super) invariant: WorthQueryApplicationInvariantProjectionAuthority<OrbitSchema<O>>,
+    pub(in crate::domain_computation::primary_graph) invariant:
+        WorthQueryApplicationInvariantProjectionAuthority<OrbitSchema<O>>,
     pub(super) observation: probe::Observation,
 }
 pub(super) struct Graph {
@@ -102,7 +104,8 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
             bootstrap
                 .bind_entity(
                     WorthQueryApplicationEntitySeed::new(Node::reference(), node_key::<O>(key))
-                        .field(NodeKey::reference(), key),
+                        .field(NodeKey::reference(), key)
+                        .field(Marked::reference(), false),
                 )
                 .unwrap();
         }
@@ -116,6 +119,7 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
                 ))
                 .unwrap();
         }
+        super::decision::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(

@@ -34,6 +34,13 @@ impl WorthQueryApplicationObservedFact {
         if let Some(control) = control {
             control().map_err(CompanionPreflightStop::Execution)?;
         }
+        if let Self::Aggregate { observation } = self {
+            check_request(execution)?;
+            super::super::super::fact_verification_observation::source_currentness();
+            return comparison_result(
+                observation.remains_equal(runtime, execution, snapshot, control),
+            );
+        }
         let Self::StructuralWalk { observation } = self else {
             return self.source_currentness_in(runtime, execution, snapshot);
         };

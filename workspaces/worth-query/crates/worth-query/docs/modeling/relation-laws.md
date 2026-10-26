@@ -136,7 +136,20 @@ returned member through the original projection's realized scope. These are
 inspection reads; they do not record publication decision dependencies. The
 compiled [projection examples](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection.rs)
 exercise ordinary and operation readers, including a retained basis after an edit.
-Declared orbit-query shapes, decision dependencies, lineage reads and Proprietary
+Handler `DecisionReader::orbit` / `orbit_of` and computation readers record two
+original Native facts: persistent identity with complete canonical membership,
+and the complete successor walk with physical edges. Lower-level admitted
+operation readers call `decision_orbit` / `decision_orbit_of`. Both values remain
+bound to their original admission, installed contracts and realized scope; a
+selector alone cannot reconstruct them at sealing. Fresh comparison detects
+identity changes even when membership is restored by later edits. Incidental
+stored lineage is outside orbit-answer equality. The compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+and [currentness court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/currentness.rs)
+exercise this path. Aggregate inputs currently require full verification and a
+fresh computation; live fact bodies cannot be reconstructed from checkpoints.
+
+Declared orbit-query shapes, lineage reads and Proprietary
 adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
 separate existing execution limitations and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)

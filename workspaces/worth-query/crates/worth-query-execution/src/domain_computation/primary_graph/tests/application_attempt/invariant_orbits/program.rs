@@ -118,7 +118,7 @@ pub(super) fn swap_successors<const O: bool>(
 }
 
 use worth_query_declaration::facade::application_schema::*;
-pub(super) fn authorize<const O: bool, Operation, Input>(
+pub(in crate::domain_computation::primary_graph) fn authorize<const O: bool, Operation, Input>(
     world: &World<O>,
     phase: &WorthQueryAdvancementPhase<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

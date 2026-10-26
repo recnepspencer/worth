@@ -4,35 +4,48 @@ use super::super::{
     WorthQueryInvariantRelation,
 };
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
+use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
+use std::sync::Arc;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-use worth_relational::facade::{identity::KindId, runtime::PinnedAggregateRead};
+use worth_relational::facade::identity::KindId;
 
 /// Complete orbit inspected at one projection snapshot. Membership order comes
 /// from the successor relation, while persistent naming comes from Native storage.
 pub struct WorthQueryInvariantProjectionOrbit<Schema, Relation, Entity> {
-    aggregate: PinnedAggregateRead,
+    aggregate: Arc<AggregateObservation>,
     walk: WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>,
     identity: WorthQueryAggregateIdentity<Schema, Relation>,
 }
 impl<Schema, Relation, Entity> WorthQueryInvariantProjectionOrbit<Schema, Relation, Entity> {
     pub(super) fn new(
-        aggregate: PinnedAggregateRead,
+        aggregate: Arc<AggregateObservation>,
         walk: WorthQueryInvariantProjectionWalk<Schema, Relation, Entity>,
         binding: ApplicationSchemaBindingIdentity,
         relation: KindId,
     ) -> Self {
-        let identity = WorthQueryAggregateIdentity::from_pinned_read(&aggregate, binding, relation);
+        let identity =
+            WorthQueryAggregateIdentity::from_pinned_read(aggregate.native(), binding, relation);
         Self {
             aggregate,
             walk,
             identity,
         }
     }
+    pub(in crate::domain_computation::primary_graph) fn aggregate(
+        &self,
+    ) -> &Arc<AggregateObservation> {
+        &self.aggregate
+    }
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn walk(
+        &self,
+    ) -> &WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
+        &self.walk
+    }
     pub fn identity(&self) -> &WorthQueryAggregateIdentity<Schema, Relation> {
         &self.identity
     }
     pub fn len(&self) -> usize {
-        self.aggregate.len()
+        self.aggregate.native().len()
     }
     pub fn is_empty(&self) -> bool {
         false

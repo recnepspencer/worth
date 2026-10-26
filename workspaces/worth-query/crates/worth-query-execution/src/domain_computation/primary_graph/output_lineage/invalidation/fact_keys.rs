@@ -49,6 +49,12 @@ where
     F: FnMut(Key) -> Result<(), E>,
 {
     match fact {
+        Fact::Aggregate { .. } => {
+            return Err(FactKeyProjectionStop::FullVerificationRequired(
+                FullVerificationReason::UnsupportedFact,
+            ))
+        }
+
         Fact::StructuralWalk { observation } => {
             let query = observation.key();
             let direction = match query.direction() {

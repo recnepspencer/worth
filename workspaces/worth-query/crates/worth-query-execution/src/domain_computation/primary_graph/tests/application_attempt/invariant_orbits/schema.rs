@@ -23,45 +23,48 @@ impl<const O: bool> ApplicationSchema for OrbitSchema<O> {
     const MINOR: u32 = 0;
     fn declaration(
     ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
-        ApplicationSchemaDeclarationBuilder::for_schema()
-            .entity(ExternalMapping::reference())
-            .entity(Principal::reference())
-            .entity(Node::reference())
-            .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
-            .field(
-                ExternalMapping::reference(),
-                ExternalIdentityField::reference(),
-            )
-            .field(
-                ExternalMapping::reference(),
-                MappingStatusField::reference(),
-            )
-            .aspect(Principal::reference(), PrincipalFacts::reference())
-            .field(Principal::reference(), PrincipalKey::reference())
-            .aspect(Node::reference(), NodeData::reference())
-            .field(Node::reference(), NodeKey::reference())
-            .relation(
-                MappingTarget::reference(),
-                ExternalMapping::reference(),
-                Principal::reference(),
-            )
-            .principal_binding(IdentityBinding::reference())
-            .relation(Next::reference(), Node::reference(), Node::reference())
-            .operation(
-                ReplaceNext::reference()
-                    .definition()
-                    .no_external_effect()
-                    .no_aftermath()
-                    .finish(),
-            )
-            .operation_read_entity(ReplaceNext::reference(), Node::reference())
-            .operation_read_field(ReplaceNext::reference(), NodeKey::reference())
-            .operation_expected_fact(ReplaceNext::reference(), NodeKey::reference())
-            .operation_read_relation(ReplaceNext::reference(), Next::reference())
-            .operation_link(ReplaceNext::reference(), Next::reference())
-            .operation_unlink(ReplaceNext::reference(), Next::reference())
-            .invariant(super::probe::definition::<O>())
-            .build()
+        super::decision::binding::declare(
+            ApplicationSchemaDeclarationBuilder::for_schema()
+                .entity(ExternalMapping::reference())
+                .entity(Principal::reference())
+                .entity(Node::reference())
+                .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
+                .field(
+                    ExternalMapping::reference(),
+                    ExternalIdentityField::reference(),
+                )
+                .field(
+                    ExternalMapping::reference(),
+                    MappingStatusField::reference(),
+                )
+                .aspect(Principal::reference(), PrincipalFacts::reference())
+                .field(Principal::reference(), PrincipalKey::reference())
+                .aspect(Node::reference(), NodeData::reference())
+                .field(Node::reference(), NodeKey::reference())
+                .field(Node::reference(), Marked::reference())
+                .relation(
+                    MappingTarget::reference(),
+                    ExternalMapping::reference(),
+                    Principal::reference(),
+                )
+                .principal_binding(IdentityBinding::reference())
+                .relation(Next::reference(), Node::reference(), Node::reference())
+                .operation(
+                    ReplaceNext::reference()
+                        .definition()
+                        .no_external_effect()
+                        .no_aftermath()
+                        .finish(),
+                )
+                .operation_read_entity(ReplaceNext::reference(), Node::reference())
+                .operation_read_field(ReplaceNext::reference(), NodeKey::reference())
+                .operation_expected_fact(ReplaceNext::reference(), NodeKey::reference())
+                .operation_read_relation(ReplaceNext::reference(), Next::reference())
+                .operation_link(ReplaceNext::reference(), Next::reference())
+                .operation_unlink(ReplaceNext::reference(), Next::reference())
+                .invariant(super::probe::definition::<O>()),
+        )
+        .build()
     }
 }
 worth_query_entity!(pub ExternalMapping for S: OrbitModel);
@@ -74,6 +77,7 @@ worth_query_aspect!(pub PrincipalFacts for S: OrbitModel, Principal; identity = 
 worth_query_field!(pub PrincipalKey for S: OrbitModel, Principal, PrincipalFacts: u64 => U64ApplicationValueBinding, read_only, equality);
 worth_query_aspect!(pub NodeData for S: OrbitModel, Node; identity = AspectIdentity(0x9181_4103), revision = AspectContractRevision(1));
 worth_query_field!(pub NodeKey for S: OrbitModel, Node, NodeData: u64 => U64ApplicationValueBinding, read_only, equality);
+worth_query_field!(pub Marked for S: OrbitModel, Node, NodeData: bool => BoolApplicationValueBinding, read_write, equality);
 pub struct Next;
 impl Next {
     pub fn reference<S: OrbitModel>() -> ApplicationRelationRef<S, Self, Node, Node> {

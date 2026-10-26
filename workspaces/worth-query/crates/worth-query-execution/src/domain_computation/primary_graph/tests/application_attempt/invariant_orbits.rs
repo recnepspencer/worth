@@ -1,10 +1,11 @@
 //! Installed orbit APIs on static schema profiles, through ordinary commits.
 mod api;
+pub(in crate::domain_computation::primary_graph) mod decision;
 mod probe;
-mod program;
+pub(in crate::domain_computation::primary_graph) mod program;
 mod projection;
-mod schema;
-mod world;
+pub(in crate::domain_computation::primary_graph) mod schema;
+pub(in crate::domain_computation::primary_graph) mod world;
 use crate::domain_computation::primary_graph::*;
 use schema::{Node, OrbitSchema};
 use world::World;

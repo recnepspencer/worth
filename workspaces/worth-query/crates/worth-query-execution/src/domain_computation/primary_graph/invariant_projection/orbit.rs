@@ -5,14 +5,15 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
+use crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation;
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
 use worth_relational::facade::{
     runtime::{
-        PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
-        PinnedAggregateReadScope, RelationalPinnedReadAdmissionDenial,
+        PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
+        RelationalPinnedReadAdmissionDenial,
     },
     transactions::RelationalExecutionDenialCause as Cause,
 };
@@ -44,10 +45,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             if layout.from != layout.to {
                 return Err(Denial::new(Kind::InvalidOrbit, relation.name()));
             }
-            let aggregate =
-                self.read_orbit_identity(layout.kind, member.entity_id, relation.name())?;
+            let aggregate = self.read_orbit_identity(
+                layout.from,
+                layout.kind,
+                member.entity_id,
+                relation.name(),
+            )?;
             let anchor = WorthQueryInvariantEntityIdentity {
-                entity_id: aggregate.anchor(),
+                entity_id: aggregate.native().anchor(),
                 kind: layout.from,
                 entity: member.entity.clone(),
                 authority_identity: self.authority_identity,
@@ -56,12 +61,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             // Both Native pins are admitted at this reader's same immutable snapshot.
             // The ordinary walk owns complete physical-edge and realized-scope admission.
             let walk = self.walk(relation, RelationDirection::Forward, &anchor)?;
-            if walk.len() != aggregate.len() || walk.relations().len() != aggregate.len() {
+            if walk.len() != aggregate.native().len()
+                || walk.relations().len() != aggregate.native().len()
+            {
                 return Err(Denial::new(Kind::InvalidOrbit, relation.name()));
             }
             for entity in walk.entities() {
                 self.orbit_checkpoint(context, relation.name())?;
-                if !aggregate.contains(entity.entity_id) {
+                if !aggregate.native().contains(entity.entity_id) {
                     return Err(Denial::new(Kind::InvalidOrbit, relation.name()));
                 }
             }
@@ -91,10 +98,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
 
     fn read_orbit_identity(
         &mut self,
+        entity_kind: worth_relational::facade::identity::KindId,
         relation: worth_relational::facade::identity::KindId,
         member: worth_relational::facade::identity::EntityId,
         subject: &str,
-    ) -> Result<PinnedAggregateRead, Denial> {
+    ) -> Result<std::sync::Arc<AggregateObservation>, Denial> {
         let pin = self
             .runtime
             .read_truth()
@@ -106,13 +114,17 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 ),
                 _ => Denial::new(Kind::EndpointUnavailable, subject),
             })?;
-        let result = pin.read_aggregate(
+        let result = AggregateObservation::read(
+            &pin,
             self.execution,
-            PinnedAggregateReadScope::new(relation, member)
-                .with_work_limit(self.work_budget.remaining().map(|n| n as u64)),
+            subject,
+            entity_kind,
+            relation,
+            member,
+            self.work_budget.remaining().map(|n| n as u64),
         );
         let work = match &result {
-            Ok(value) => value.work_units(),
+            Ok(value) => value.native().work_units(),
             Err(denial) => denial.work,
         };
         if let Err(PinnedAggregateReadDenial {
