@@ -307,14 +307,9 @@ pub(super) fn reserve_slot(
         .len()
         .checked_add(state.reserved_branches)
         .ok_or(ProductBranchRegistryDenial::OccupancyOverflow)?;
-    if state
-        .maximum_branches
-        .is_some_and(|maximum| occupied >= maximum)
-    {
+    if let Some(limit) = state.maximum_branches.filter(|maximum| occupied >= *maximum) {
         return Err(ProductBranchRegistryDenial::CapacityExhausted {
-            limit: state
-                .maximum_branches
-                .expect("the policy rejected this occupancy"),
+            limit,
             occupancy: occupied,
         });
     }
