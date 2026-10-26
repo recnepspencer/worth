@@ -252,3 +252,5 @@ fn retryable_page_failure(cause: Cause) {
     table.demand_symbol_ids(&execution, [symbol]).unwrap();
     assert!(table.with_read(|symbols| symbols.retained_text(symbol).is_some()));
 }
+#[path = "placement_tests.rs"]
+mod placement_tests;

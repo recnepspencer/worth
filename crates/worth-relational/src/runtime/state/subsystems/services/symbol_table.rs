@@ -1,4 +1,5 @@
 mod cold_pages;
+pub(crate) use cold_pages::ColdSymbolDirectoryDenial;
 
 use std::sync::{Arc, RwLock};
 

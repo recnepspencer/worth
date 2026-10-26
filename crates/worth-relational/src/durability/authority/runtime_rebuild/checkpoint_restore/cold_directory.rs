@@ -28,7 +28,7 @@ pub(super) fn restore(
     paged_symbols.replace(symbols);
     paged_symbols
         .install_cold_pages(&directory)
-        .map_err(corrupt)?;
+        .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
     let mut regions = ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone())?;
     let heads = checkpoint
         .envelopes

@@ -1552,3 +1552,48 @@ snapshots copy their page cache, so warming the live dictionary does not warm a
 region's isolated historical dictionary. Trace checkpoint page reuse/replacement
 and prove whether an older unadmitted page can disappear before adding custody;
 then use the existing port, not a second registry or a whole-manifest retainer.
+
+### Dictionary directory placement custody
+
+Boundary review: capture_metadata rebuilds both ID-range pages and hash-bucket
+pages from the checkpoint dictionary. Adding a meaning changes the last range
+and its bucket member. Store's cold source serves selected placement only;
+detached dictionaries copy their admission cache, so another owner's warming
+cannot discharge their cold obligations. Region custody retains region members,
+not these dictionary members. An older directory therefore needs its own
+placement owner. This is metadata retention, not payload residency or admission.
+
+Plan: retain the union of each dictionary directory's ID and bucket locators
+through the existing cold-source port before installing it. Detached owners
+clone that opaque custody. Keep constructor storage failures typed through
+recovery and retain invalid-frontier refusals separately. Add a replacement
+court using real checkpoint-produced pages and a pruning cold-source port: the
+old owner stays cold across replacement, reads its old ID and bucket pages,
+and releases placement after its final detached owner drops. Also exercise a
+retryable custody refusal without reading payloads. Run focused courts, native
+lib, formatting, caps and enforcement before committing. Then verify the two
+reported regressions before building the full subject-by-path matrix.
+
+Dictionary custody is now acquired before directory installation/frontier
+mutation and cloned by detached owners. The replacement court uses two genuine
+checkpoint captures: both the tail ID member and the selected bucket change.
+A pruning source retains the old members while a detached dictionary still
+owns them, performs no payload reads on acquisition/replacement, and releases
+the old placement after the final owner drops. A retryable placement refusal
+preserves its Symbols subject and ColdStorageUnavailable recovery class without
+changing the dictionary frontier. Focused courts pass 2/2; the full native
+library passes 1,955 tests with 31 existing ignores. Initial verification caught
+a missing path attribute on the new child test module; the corrected module
+uses the established sibling-test layout. Production behavior was not weakened.
+
+The same complete native run re-verifies both coordinator regression tests:
+complexity_budget_unobserved_write_copies_no_partition and
+publication_port_performs_one_exact_candidate_and_reports_the_loser_stale.
+Both pass unchanged. Commit 0715b8f785 already transfers mirror target custody
+rather than retaining a prepared Full observer. Commit 3a727cdad0 already
+resolves branch-local recent IDs through immutable_commit_receipt, whose
+performed canonical-envelope fallback covers the cutover-before-settlement
+window and whose branch filter prevents unrelated performed routes leaking.
+No second mechanism or cleanup-branch merge is needed. The exact run is recorded
+in target/lane-evidence/dictionary-native.log (HEAD aef7ca6237, dirty tree);
+final closeout lanes must be recorded again after all implementation commits.

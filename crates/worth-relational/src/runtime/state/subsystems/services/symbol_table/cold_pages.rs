@@ -2,6 +2,23 @@
 use super::super::symbol_residency::RuntimeSymbolResidency;
 use super::*;
 
+#[derive(Debug)]
+pub(crate) enum ColdSymbolDirectoryDenial {
+    Invalid(&'static str),
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+}
+
+impl ColdSymbolDirectoryDenial {
+    pub(crate) fn into_recovery_stop(self) -> crate::durability::data::RelationalRecoveryStop {
+        match self {
+            Self::Invalid(message) => {
+                crate::durability::checkpoints::region_directory::corrupt(message).into()
+            }
+            Self::StorageUnavailable(failure) => failure.into(),
+        }
+    }
+}
+
 impl RuntimeSymbolTable {
     pub(crate) fn demand_region_symbols(
         &self,
@@ -47,7 +64,7 @@ impl RuntimeSymbolTable {
     pub(crate) fn install_cold_pages(
         &self,
         directory: &crate::durability::data::RelationalCheckpointDirectory,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), ColdSymbolDirectoryDenial> {
         let frontier = directory
             .manifest
             .symbols
@@ -58,18 +75,22 @@ impl RuntimeSymbolTable {
         let frontier = u32::try_from(frontier)
             .ok()
             .and_then(|last| last.checked_add(1))
-            .ok_or("checkpoint symbol frontier is exhausted")?;
+            .ok_or(ColdSymbolDirectoryDenial::Invalid(
+                "checkpoint symbol frontier is exhausted",
+            ))?;
         let frontier = frontier.max(directory.manifest.symbol_identity_frontier);
-        self.with_write(|symbols| symbols.reserve_frontier(frontier))?;
+        let pages = RuntimeSymbolResidency::new(
+            directory.manifest.symbols.clone(),
+            directory.manifest.symbol_buckets.clone(),
+            directory.source.clone(),
+        )
+        .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;
+        self.with_write(|symbols| symbols.reserve_frontier(frontier))
+            .map_err(ColdSymbolDirectoryDenial::Invalid)?;
         *self
             .cold
             .write()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) =
-            Some(Arc::new(RuntimeSymbolResidency::new(
-                directory.manifest.symbols.clone(),
-                directory.manifest.symbol_buckets.clone(),
-                directory.source.clone(),
-            )));
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Arc::new(pages));
         Ok(())
     }
 

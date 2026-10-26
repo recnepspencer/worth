@@ -12,7 +12,8 @@ pub(crate) use compiled_artifacts::CompiledArtifactStore;
 pub(crate) use instrumentation::RuntimeInstrumentation;
 use sequence::RuntimeSequenceState;
 pub(crate) use symbol_table::{
-    PendingSymbolMeanings, PreparedSymbolPublication, RuntimeSymbolTable, SymbolReservationDenial,
+    ColdSymbolDirectoryDenial, PendingSymbolMeanings, PreparedSymbolPublication,
+    RuntimeSymbolTable, SymbolReservationDenial,
 };
 
 #[derive(Debug, Clone)]

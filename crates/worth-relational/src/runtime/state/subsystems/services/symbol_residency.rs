@@ -25,6 +25,7 @@ pub(super) struct RuntimeSymbolResidency {
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
     source: Arc<dyn RelationalDurableColdSource>,
+    _placement: crate::durability::medium::RelationalDurableMemberCustody,
     pages: Mutex<
         BTreeMap<
             RelationalDurableMemberLocator,
@@ -54,14 +55,35 @@ impl RuntimeSymbolResidency {
         by_id: Vec<RelationalCheckpointPage>,
         by_value: Vec<RelationalCheckpointSymbolBucket>,
         source: Arc<dyn RelationalDurableColdSource>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, RelationalStorageUnavailable> {
+        let members = by_id
+            .iter()
+            .map(|page| page.member)
+            .chain(
+                by_value
+                    .iter()
+                    .flat_map(|bucket| bucket.pages.iter().copied()),
+            )
+            .collect::<BTreeSet<_>>();
+        let placement = source
+            .retain_members(&members.into_iter().collect::<Vec<_>>())
+            .map_err(|cause| {
+                unavailable(
+                    RelationalStorageSubject::Symbols {
+                        first: Symbol(by_id.first().map_or(0, |page| page.first as u32)),
+                        last: Symbol(by_id.last().map_or(0, |page| page.last as u32)),
+                    },
+                    cause,
+                )
+            })?;
+        Ok(Self {
             regions: Mutex::new(HashSet::new()),
             by_id,
             by_value,
             source,
+            _placement: placement,
             pages: Mutex::new(BTreeMap::new()),
-        }
+        })
     }
 
     pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
@@ -76,6 +98,7 @@ impl RuntimeSymbolResidency {
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
                 source: self.source.clone(),
+                _placement: self._placement.clone(),
                 pages: Mutex::new(pages.clone()),
             },
             owner,

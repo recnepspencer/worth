@@ -151,7 +151,8 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
         directory.manifest.symbols.clone(),
         directory.manifest.symbol_buckets.clone(),
         source.clone(),
-    );
+    )
+    .unwrap();
     cold.demand_page(
         &table,
         &execution,
