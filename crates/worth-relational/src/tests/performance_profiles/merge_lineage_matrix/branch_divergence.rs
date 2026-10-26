@@ -10,7 +10,8 @@ pub(super) fn certify_lineage_branch_divergence_breadth(
             let created = create_entity_outcome(execution, &runtime, "main");
             let start_lineage = runtime
                 .lineage_access()
-                .for_record(changed_entities(&created)[0])
+                .for_record(execution, changed_entities(&created)[0])
+                .unwrap()
                 .expect("start lineage")
                 .lineage_id;
             create_branch_from_main(&runtime, "feature");
@@ -23,14 +24,17 @@ pub(super) fn certify_lineage_branch_divergence_breadth(
 
             runtime.performance_access().reset_counters();
             let started_at = Instant::now();
-            let divergence = runtime.lineage_access().divergence_between_branches(
-                execution,
-                LineageDivergenceRequest {
-                    left_branch: BranchId("main".to_string()),
-                    right_branch: BranchId("feature".to_string()),
-                    traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-                },
-            );
+            let divergence = runtime
+                .lineage_access()
+                .divergence_between_branches(
+                    execution,
+                    LineageDivergenceRequest {
+                        left_branch: BranchId("main".to_string()),
+                        right_branch: BranchId("feature".to_string()),
+                        traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+                    },
+                )
+                .unwrap();
             let resolution =
                 runtime
                     .lineage_access()

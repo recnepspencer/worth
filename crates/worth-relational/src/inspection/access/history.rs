@@ -20,10 +20,12 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn resolve_lineage_record_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         entity_id: EntityId,
-    ) -> Option<HistoricalLineageResolution> {
-        self.runtime.lineage_access().resolve_record_history(
+    ) -> Result<Option<HistoricalLineageResolution>, crate::execution::RelationalExecutionDenialCause>
+    {
+        self.runtime.lineage_access().resolve_record_history(execution,
             crate::facade::lineage::RecordHistoryRequest {
                 branch_id: branch_id.clone(),
                 entity_id,

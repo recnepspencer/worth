@@ -54,7 +54,7 @@ fn bridge_resolved_lineage_continuity_lowers_split_successor_artifact() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = runtime
         .resolve_lineage_continuity(&packet)
@@ -130,7 +130,7 @@ fn bridge_resolved_lineage_continuity_lowers_merge_like_successor_artifact() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = runtime
         .resolve_lineage_continuity(&packet)

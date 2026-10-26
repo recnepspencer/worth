@@ -14,6 +14,7 @@ impl RuntimeBridgeRelationalSource {
     #[doc(hidden)]
     pub fn read_retained_entity_aspect_state(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &TruthSnapshotIdentity,
         branch: &TruthBranchIdentity,
         record: RelationalBridgeRecordIdentityParts,
@@ -48,13 +49,18 @@ impl RuntimeBridgeRelationalSource {
 
         self.runtime
             .with_runtime(|runtime| {
-                runtime.entity_record_at_observation(observation.observation(), entity_id)
+                runtime.entity_record_at_observation(
+                    execution,
+                    observation.observation(),
+                    entity_id,
+                )
             })
             .map(|record| record.and_then(|record| record.authoritative_aspect_state))
             .map_err(|denial| {
-                RelationalBridgeSourceError::new(crate::adapter::RelationalBridgeSourceErrorTag::ObservationRead(denial), format!(
-                    "retained relational entity projection read an observation from another runtime: {denial:?}"
-                ))
+                RelationalBridgeSourceError::new(
+                    crate::adapter::RelationalBridgeSourceErrorTag::ObservationRead(denial),
+                    format!("retained relational entity projection refused: {denial:?}"),
+                )
             })
     }
 }

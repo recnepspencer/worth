@@ -15,6 +15,7 @@ pub trait ContinuityLineageSource: Send + Sync + 'static {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError>;
 }
 

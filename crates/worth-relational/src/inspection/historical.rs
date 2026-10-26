@@ -105,7 +105,7 @@ impl<'runtime> InspectionAccess<'runtime> {
         };
         let lineage_resolution_context = match record_observation.target {
             RecordRef::Entity(entity_id) => {
-                self.resolve_lineage_record_history(branch_id, entity_id)
+                self.resolve_lineage_record_history(execution, branch_id, entity_id)?
             }
             RecordRef::Relation(_) => None,
         };

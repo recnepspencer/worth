@@ -144,7 +144,7 @@ impl WorthQueryRuntime {
             WorthQueryLiveArtifactTarget::from_subscription_installation(binding.installation());
         let source_rows = self
             .backend
-            .live_entities_for_granular_scope(&target, scope, basis)
+            .live_entities_for_granular_scope(execution, &target, scope, basis)
             .map_err(WorthQueryRuntimeError::Workspace)?;
         self.finish_live_read_execution(execution, binding, target, source_rows, Some(basis))
     }

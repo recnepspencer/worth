@@ -77,6 +77,22 @@ impl PartitionEdition {
         Ok(())
     }
 
+    pub(crate) fn demand_partition_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<
+        Option<RelationalResidencyLease<crate::storage::residency::Head>>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        self.partitions
+            .get(&id)
+            .map(|region| region.demand_head(execution, 1 << 30))
+            .transpose()
+    }
+
     /// A scan declares the whole immutable edition before visiting any row.
     pub(crate) fn demand_all(
         &self,

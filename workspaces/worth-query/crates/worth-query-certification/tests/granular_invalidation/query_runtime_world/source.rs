@@ -58,6 +58,7 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
 
     fn project_granular_scope(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
         scope: &domain::WorthQueryMaintenanceScope,
@@ -87,9 +88,11 @@ impl WorthQueryPrimaryGraphSourceProjection for IntentSourceProjection {
         self.observations
             .exact_record_reads
             .fetch_add(1, Ordering::SeqCst);
-        Ok(project_record_at_basis(graph, basis, requested)?
-            .into_iter()
-            .collect())
+        Ok(
+            project_record_at_basis(request_execution, graph, basis, requested)?
+                .into_iter()
+                .collect(),
+        )
     }
 }
 
@@ -107,15 +110,26 @@ fn project_record(
 }
 
 fn project_record_at_basis(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     basis: &runtime::WorthQueryGranularSourceReadBasis,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
 ) -> Result<Option<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
     graph
         .relational_bridge_source()
-        .read_retained_entity_aspect_state(basis.snapshot(), basis.branch(), record)
+        .read_retained_entity_aspect_state(
+            request_execution,
+            basis.snapshot(),
+            basis.branch(),
+            record,
+        )
         .map(|state| state.and_then(|state| project_aspect_state(record, &state)))
-        .map_err(|error| foundation::WorthQueryWorkspaceError::new(error.to_string()))
+        .map_err(|error| match error.kind() {
+            worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ObservationRead(
+                denial,
+            ) => foundation::WorthQueryWorkspaceError::observation_read_denied(denial),
+            _ => foundation::WorthQueryWorkspaceError::new(error.to_string()),
+        })
 }
 
 fn project_observation_record(

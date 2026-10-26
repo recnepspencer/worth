@@ -8,8 +8,14 @@ mod cold_candidates;
 mod cold_envelopes;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
+#[path = "cold_lineage_fixture.rs"]
+mod cold_lineage_fixture;
+#[path = "cold_lineage_nodes.rs"]
+mod cold_lineage_nodes;
 #[path = "cold_merges.rs"]
 mod cold_merges;
+#[path = "cold_observation_reads.rs"]
+mod cold_observation_reads;
 #[path = "cold_pins.rs"]
 mod cold_pins;
 #[path = "cold_symbols.rs"]
@@ -115,6 +121,7 @@ fn fixture_from_runtime(
             .collect(),
         damaged: AtomicBool::new(true),
         reads: AtomicUsize::new(0),
+        member_reads: std::sync::Mutex::new(Vec::new()),
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
         failed_member: std::sync::Mutex::new(None),
@@ -283,6 +290,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
             .collect(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
+        member_reads: std::sync::Mutex::new(Vec::new()),
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
         failed_member: std::sync::Mutex::new(None),

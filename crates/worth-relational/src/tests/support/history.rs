@@ -186,11 +186,13 @@ pub(crate) fn relation_aspect_history_digest_on_branch(
 }
 
 pub(crate) fn lineage_aspect_history_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     lineage_id: LineageId,
     filter: Option<&ProjectionAspectFilter>,
 ) -> crate::facade::history::LineageAspectResolutionDigest {
     lineage_aspect_history_digest_on_branch(
+        execution,
         runtime,
         &BranchId("main".to_string()),
         lineage_id,
@@ -199,6 +201,7 @@ pub(crate) fn lineage_aspect_history_digest(
 }
 
 pub(crate) fn lineage_aspect_history_digest_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     lineage_id: LineageId,
@@ -206,7 +209,7 @@ pub(crate) fn lineage_aspect_history_digest_on_branch(
 ) -> crate::facade::history::LineageAspectResolutionDigest {
     runtime
         .lineage_access()
-        .entity_aspect_history_with_trace(
+        .entity_aspect_history_with_trace(execution,
             crate::facade::lineage::HistoricalResolutionRequest {
                 branch_id: branch_id.clone(),
                 lineage_id,
@@ -214,6 +217,6 @@ pub(crate) fn lineage_aspect_history_digest_on_branch(
                     crate::facade::lineage::HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
             },
             filter,
-        )
+        ).unwrap()
         .lineage_aspect_resolution_digest()
 }

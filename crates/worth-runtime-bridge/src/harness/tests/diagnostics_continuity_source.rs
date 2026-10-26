@@ -11,6 +11,7 @@ impl ContinuityLineageSource for DiagnosticsContinuityLineageSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         BridgeHistoricalLineageAuthority::try_new(
             request.authority_basis().clone(),

@@ -285,12 +285,14 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     let second_entity = changed_entities(&second)[0];
     let first_lineage = runtime
         .lineage_access()
-        .for_record(first_entity)
+        .for_record(execution, first_entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let second_lineage = runtime
         .lineage_access()
-        .for_record(second_entity)
+        .for_record(execution, second_entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
@@ -352,7 +354,7 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
             traversal_basis:
                 crate::facade::lineage::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
         },
-    );
+    ).unwrap();
 
     assert_eq!(graph.nodes.len(), 2);
     assert_eq!(graph.events.len(), 2);
@@ -363,7 +365,8 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(first_entity)
+            .for_record(execution, first_entity)
+            .unwrap()
             .unwrap()
             .lineage_id(),
         first_lineage
@@ -371,7 +374,8 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(second_entity)
+            .for_record(execution, second_entity)
+            .unwrap()
             .unwrap()
             .lineage_id(),
         second_lineage

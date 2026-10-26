@@ -82,6 +82,7 @@ impl WorthQueryPrimaryGraphSourceProjection for FinancialSourceProjection {
 
     fn project_granular_scope(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
         scope: &domain::WorthQueryMaintenanceScope,
@@ -100,39 +101,45 @@ impl WorthQueryPrimaryGraphSourceProjection for FinancialSourceProjection {
             domain::WorthQueryMaintenanceScope::SourcePartition(partition)
                 if partition == "usd-rates" =>
             {
-                return self.project_records_at_basis(graph, basis)
+                return self.project_records_at_basis(request_execution, graph, basis)
             }
             domain::WorthQueryMaintenanceScope::WholeLogicalGraph => {
-                return self.project_records_at_basis(graph, basis);
+                return self.project_records_at_basis(request_execution, graph, basis);
             }
             domain::WorthQueryMaintenanceScope::SourcePartition(_) => return Ok(Vec::new()),
         };
         if requested != self.record && self.secondary_record != Some(requested) {
             return Ok(Vec::new());
         }
-        Ok(
-            project_financial_record_at_basis(
-                graph,
-                basis,
-                requested,
-                self.derive_risk_from_curve,
-            )?
-            .into_iter()
-            .collect(),
-        )
+        Ok(project_financial_record_at_basis(
+            request_execution,
+            graph,
+            basis,
+            requested,
+            self.derive_risk_from_curve,
+        )?
+        .into_iter()
+        .collect())
     }
 }
 
 impl FinancialSourceProjection {
     fn project_records_at_basis(
         &self,
+        request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
         basis: &runtime::WorthQueryGranularSourceReadBasis,
     ) -> Result<Vec<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
         std::iter::once(self.record)
             .chain(self.secondary_record)
             .map(|record| {
-                project_financial_record_at_basis(graph, basis, record, self.derive_risk_from_curve)
+                project_financial_record_at_basis(
+                    request_execution,
+                    graph,
+                    basis,
+                    record,
+                    self.derive_risk_from_curve,
+                )
             })
             .collect::<Result<Vec<_>, _>>()
             .map(|rows| rows.into_iter().flatten().collect())
@@ -196,6 +203,7 @@ fn project_financial_record(
 }
 
 fn project_financial_record_at_basis(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &worth_query_execution::facade::integration::WorthQueryPrimaryGraphIntegrationHandle,
     basis: &runtime::WorthQueryGranularSourceReadBasis,
     record: worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts,
@@ -203,13 +211,23 @@ fn project_financial_record_at_basis(
 ) -> Result<Option<foundation::WorthQueryEntity>, foundation::WorthQueryWorkspaceError> {
     graph
         .relational_bridge_source()
-        .read_retained_entity_aspect_state(basis.snapshot(), basis.branch(), record)
+        .read_retained_entity_aspect_state(
+            request_execution,
+            basis.snapshot(),
+            basis.branch(),
+            record,
+        )
         .map(|state| {
             state.and_then(|state| {
                 project_financial_aspect_state(record, &state, derive_risk_from_curve)
             })
         })
-        .map_err(|error| foundation::WorthQueryWorkspaceError::new(error.to_string()))
+        .map_err(|error| match error.kind() {
+            worth_runtime_bridge::facade::RelationalBridgeSourceErrorTag::ObservationRead(
+                denial,
+            ) => foundation::WorthQueryWorkspaceError::observation_read_denied(denial),
+            _ => foundation::WorthQueryWorkspaceError::new(error.to_string()),
+        })
 }
 
 fn project_financial_observation_record(

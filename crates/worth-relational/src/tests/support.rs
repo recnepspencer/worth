@@ -168,7 +168,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|lineage_id| {
                 (
                     *lineage_id,
-                    lineage_aspect_history_digest(runtime, *lineage_id, None),
+                    lineage_aspect_history_digest(execution, runtime, *lineage_id, None),
                 )
             })
             .collect(),

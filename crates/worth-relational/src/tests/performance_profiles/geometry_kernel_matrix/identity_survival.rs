@@ -15,7 +15,8 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
             let entity = changed_entities(&created)[0];
             let start_lineage = runtime
                 .lineage_access()
-                .for_record(entity)
+                .for_record(execution, entity)
+                .unwrap()
                 .expect("initial lineage")
                 .lineage_id;
 
@@ -25,7 +26,8 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
             let replaced_entity = changed_entities(&replacement)[0];
             let replacement_lineage = runtime
                 .lineage_access()
-                .for_record(replaced_entity)
+                .for_record(execution, replaced_entity)
+                .unwrap()
                 .expect("replacement lineage")
                 .lineage_id;
 

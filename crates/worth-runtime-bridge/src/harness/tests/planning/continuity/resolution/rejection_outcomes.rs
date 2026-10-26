@@ -54,7 +54,7 @@ fn bridge_resolved_lineage_continuity_rejects_ambiguous_successor_sets() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = runtime
         .resolve_lineage_continuity(&packet)
@@ -122,7 +122,7 @@ fn bridge_resolved_lineage_continuity_rejects_no_authoritative_successor() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = runtime
         .resolve_lineage_continuity(&packet)

@@ -19,7 +19,8 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -74,14 +75,17 @@ fn complexity_budget_lineage_branch_divergence_reports_breadth() {
     );
 
     runtime.performance_access().reset_counters();
-    let divergence = runtime.lineage_access().divergence_between_branches(
-        execution,
-        LineageDivergenceRequest {
-            left_branch: BranchId("main".to_string()),
-            right_branch: BranchId("feature".to_string()),
-            traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-        },
-    );
+    let divergence = runtime
+        .lineage_access()
+        .divergence_between_branches(
+            execution,
+            LineageDivergenceRequest {
+                left_branch: BranchId("main".to_string()),
+                right_branch: BranchId("feature".to_string()),
+                traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_branch_divergence_requests, 1);
@@ -125,13 +129,16 @@ fn complexity_budget_lineage_graph_snapshot_reports_full_breadth() {
     create_entity_outcome(execution, &runtime, "right");
 
     runtime.performance_access().reset_counters();
-    let graph = runtime.lineage_access().graph(
-        execution,
-        LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        },
-    );
+    let graph = runtime
+        .lineage_access()
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_graph_snapshot_requests, 1);

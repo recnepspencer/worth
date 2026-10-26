@@ -470,3 +470,77 @@ agent-context. Scoped function review reports only the two cohesive end-to-end
 D7 restore/replay proofs. The production checkpoint format, recovery counters
 and original cancellation court are unchanged. The only implementation change
 is the test medium's actual member storage and bounded read port.
+
+
+## Lineage node page boundary review
+
+Native capture already writes node-range members, but cold restore installs no
+node read port. `for_record` reads an undemanded mirror partition and then asks
+the empty live node map, conflating cold data with absence. Add a runtime-owned
+node-page residency owner, installed from the accepted directory without reads.
+Explicit point demand authenticates the frame, bounded ordered node range and
+exact entity binding, shares concurrent loads and preserves sticky failures.
+The operation retains a counted page lease while reading and returns owned
+immutable node meaning. In-memory publication remains in the existing node
+owner; no new allocation authority or issuance rule is introduced.
+
+`for_record` will take the original execution request, demand its mirror region
+at Head, then demand its selected node page. Update direct callers and propagate
+storage denials through read orchestrators. Page import validates all identities
+before updating the derived node indexes. Checkpoint capture continues to carry
+unloaded pages and emit only new resident nodes. Prove real cold point reads,
+source failures, sticky damage, bounded page warming and one concurrent load.
+Lineage event paging, complete historical traversal and envelope-query bounds
+remain required follow-on work in this same phase; this node boundary alone
+will not be reported as phase completion.
+
+
+The node cut also removes `RuntimeLineageNodeSource`: its only reader treated an
+empty undemanded node map as authority. Point association now takes the original
+request and retains a Head mirror witness plus a counted node-page lease.
+Historical association demands Full selected-root regions. Graph comparison,
+lineage aspect-history readers and retained-observation node projections return
+the typed execution/storage refusal. Capture's deliberately resident-only node
+snapshot is named for that contract and still carries unloaded members.
+
+Retained entity/relation reads and record-history selection now demand their
+exact retained-root partition before reading it. Their denial distinguishes a
+foreign observation from a request/storage refusal. Origin-only commit
+selection keeps a separate foreign-origin admission type; it acquires no new
+storage failure. Bridge snapshot, continuity and replay adapters preserve the
+native refusal. Continuity source/planning and Query granular projections carry
+the existing request through the newly fallible boundary. Query uses its existing
+native execution-denial translation, including StorageUnavailable.
+
+The producer-written cold-node fixture is shared by node and retained-region
+courts. Seven node doors check sticky page damage, and retained entity, relation,
+history and lineage projections check sticky selected-region damage. A separate
+point court fails the mirror Head. Failure advances neither the journal nor its
+publication offers. A graph court may admit healthy pages before its damaged
+page; the oracle requires no node from that damaged page and no further work on
+sticky retry, rather than incorrectly requiring all healthy caches to stay
+empty. Cold and concurrent point reads compare with the producer's node meaning,
+keep minority-population headroom, and require one actual selected-page load.
+
+
+Node/retained-read verification: Relational lib 1,894 passed (31 unchanged
+ignored), Bridge 1,102, World 263 and Server 12 passed. Query certification's
+application_graph target passed 365 (five unchanged ignored), and
+granular_invalidation passed 15. All owner test targets compile; Query lib and
+both affected certification targets check successfully. All three CI
+owner/service clippy commands, formatting, dirty line caps, agent-context and
+plain boundary-check passed. Function review found no additional responsibility
+cut required: the new parser, cell owner, producer-written fixture and fault
+courts each have one responsibility; other candidates carry existing coherent
+orchestrations or only gain the original request parameter. The final whole
+phase still requires its complete verification matrix after the remaining
+implementation.
+
+
+The final cap run found that request forwarding plus formatting grew Query's
+bridge-backed backend from 394 to 403 lines. Its result was consumed after the
+initial node commit; that commit is amended before continuing. Split validated
+backend construction into the owning `bridge_backed/construction.rs` child,
+with identical methods and visibility, rather than compressing formatting or
+adding an exemption. Repeat Query compilation, formatting, caps and context
+checks for the corrected cut. No test or product behavior is weakened.

@@ -84,7 +84,7 @@ fn runtime_bridge_lineage_source_resolves_real_relational_history() {
         .plan_continuity_requests_from_planned_route(&planned_route)
         .expect("continuity requests should derive native prior slices");
     let lineage_packet = bridge
-        .plan_historical_lineage_packet(&continuity_requests)
+        .plan_historical_lineage_packet(&continuity_requests, execution)
         .expect("historical lineage packet should resolve");
     let authority = lineage_packet
         .entries()
@@ -248,7 +248,7 @@ fn plan_lineage_packet(
         .plan_continuity_requests_from_planned_route(&planned_route)
         .map_err(|error| error.to_string())?;
     bridge
-        .plan_historical_lineage_packet(&continuity_requests)
+        .plan_historical_lineage_packet(&continuity_requests, execution)
         .map_err(|error| error.to_string())
 }
 

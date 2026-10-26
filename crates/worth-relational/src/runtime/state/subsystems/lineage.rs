@@ -5,8 +5,11 @@ use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{LineageEventRecord, LineageNode};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 
+mod node_page;
+mod node_residency;
 mod resolution_indexes;
 mod state;
+pub(crate) use node_residency::ResidentLineageNode;
 
 pub(crate) use state::{LineageState, ValidatedLineageEventBatch};
 
@@ -15,12 +18,69 @@ pub(crate) use state::{LineageState, ValidatedLineageEventBatch};
 #[derive(Debug, Default)]
 pub(crate) struct LineageSubsystem {
     state: RuntimeOwnedState<LineageState>,
+    node_residency:
+        RuntimeOwnedState<Option<std::sync::Arc<node_residency::RuntimeLineageNodeResidency>>>,
 }
 
 impl LineageSubsystem {
     /// Replace the whole subsystem, for checkpoint restore.
     pub(crate) fn install(&self, state: LineageState) {
         *self.state.write() = state;
+        *self.node_residency.write() = None;
+    }
+
+    pub(crate) fn install_cold_node_pages(
+        &self,
+        directory: &crate::durability::data::RelationalCheckpointDirectory,
+    ) {
+        *self.node_residency.write() = Some(std::sync::Arc::new(
+            node_residency::RuntimeLineageNodeResidency::new(directory),
+        ));
+    }
+
+    pub(crate) fn demand_node(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: LineageId,
+    ) -> Result<
+        Option<ResidentLineageNode>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        let residency = self.node_residency.read().clone();
+        if let Some(residency) = residency
+            && residency.covers(id)
+        {
+            let Some(node) = residency.demand(execution, id)? else {
+                return Ok(None);
+            };
+            let mut state = self.state.write();
+            for admitted in node.page_nodes() {
+                if state
+                    .nodes
+                    .get(&admitted.lineage_id())
+                    .is_some_and(|prior| prior != admitted)
+                    || state
+                        .indexed_lineage_for_entity(admitted.entity_id())
+                        .0
+                        .is_some_and(|prior| prior != admitted.lineage_id())
+                {
+                    return Err(node.reject_binding());
+                }
+            }
+            for admitted in node.page_nodes() {
+                state.record_node(admitted.clone());
+            }
+            return Ok(Some(node));
+        }
+        Ok(self
+            .state
+            .read()
+            .nodes
+            .get(&id)
+            .cloned()
+            .map(ResidentLineageNode::published))
     }
 
     pub(crate) fn snapshot(&self) -> LineageState {
@@ -192,12 +252,14 @@ impl RuntimeSubsystem for LineageSubsystem {
     fn new(_: &Self::Config) -> Self {
         Self {
             state: RuntimeOwnedState::new(LineageState::empty()),
+            node_residency: Default::default(),
         }
     }
 
     fn fork(&self) -> Self {
         Self {
             state: RuntimeOwnedState::new(self.snapshot()),
+            node_residency: self.node_residency.detached(),
         }
     }
 }

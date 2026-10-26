@@ -100,7 +100,7 @@ fn bridge_historical_lineage_packet_uses_planned_continuity_requests() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
 
     assert_eq!(requests.requests().len(), 1);
@@ -238,7 +238,7 @@ fn bridge_historical_lineage_packet_rejects_mismatched_returned_authority_basis(
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let error = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect_err("mismatched lineage authority should be rejected");
 
     assert_eq!(
@@ -300,7 +300,7 @@ fn bridge_historical_lineage_packet_preserves_typed_unsupported_class_failure() 
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let error = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect_err("unsupported continuity class should stay typed");
 
     assert_eq!(
@@ -384,7 +384,7 @@ fn bridge_continuity_planning_deduplicates_prior_slices_before_lineage_resolutio
         .plan_continuity_requests(&duplicated_route_record)
         .expect("continuity requests should deduplicate semantic duplicates");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
 
     assert_eq!(requests.prior_slice_count(), 2);

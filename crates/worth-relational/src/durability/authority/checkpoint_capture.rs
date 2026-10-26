@@ -159,7 +159,7 @@ impl CapturedCheckpointBasis {
                 .schema_contract_runtime
                 .aspect_contract_plans
                 .clone(),
-            lineage_nodes: runtime.lineage_access().nodes_snapshot(),
+            lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
             index_definitions: runtime.index_access().definitions_snapshot(),
             carried_index_image: runtime.indexes.carried_checkpoint_image(),
             derived_index_checkpoint:

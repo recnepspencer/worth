@@ -119,8 +119,8 @@ fn read_packet(
         let aspect_value = match record_ref {
             RecordRef::Entity(entity_id) => {
                 match runtime
-                    .entity_record_at_observation(observation, entity_id)
-                    .map_err(foreign_snapshot_observation)?
+                    .entity_record_at_observation(&execution, observation, entity_id)
+                    .map_err(snapshot_observation_denial)?
                 {
                     Some(record) => {
                         require_declared_aspect(
@@ -134,8 +134,8 @@ fn read_packet(
             }
             RecordRef::Relation(relation_id) => {
                 match runtime
-                    .relation_record_at_observation(observation, relation_id)
-                    .map_err(foreign_snapshot_observation)?
+                    .relation_record_at_observation(&execution, observation, relation_id)
+                    .map_err(snapshot_observation_denial)?
                 {
                     Some(record) => {
                         require_declared_aspect(
@@ -156,12 +156,8 @@ fn read_packet(
     Ok((records, memory))
 }
 
-fn foreign_snapshot_observation(
-    denial: RelationalObservationReadDenial,
-) -> BridgeSnapshotReadError {
-    BridgeSnapshotReadError::new(format!(
-        "relational bridge snapshot reader read an observation from another runtime: {denial:?}"
-    ))
+fn snapshot_observation_denial(denial: RelationalObservationReadDenial) -> BridgeSnapshotReadError {
+    BridgeSnapshotReadError::observation_read(denial)
 }
 
 /// Relation endpoints and lifecycle are readable on every record; any other

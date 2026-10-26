@@ -66,20 +66,26 @@ impl<'runtime> HistoryAccess<'runtime> {
 
     pub fn lineage_entity_aspect_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         lineage_id: LineageId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> Option<LineageAspectHistory> {
-        self.lineage_entity_aspect_history_with_trace(branch_id, lineage_id, filter)
-            .history
+    ) -> Result<Option<LineageAspectHistory>, crate::execution::RelationalExecutionDenialCause>
+    {
+        Ok(self
+            .lineage_entity_aspect_history_with_trace(execution, branch_id, lineage_id, filter)?
+            .history)
     }
 
     pub fn lineage_entity_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         lineage_id: LineageId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> LineageAspectHistoryQueryResult {
+    ) -> Result<LineageAspectHistoryQueryResult, crate::execution::RelationalExecutionDenialCause>
+    {
+        crate::execution::check_request(execution)?;
         let resolution = self
             .runtime
             .lineage_access()
@@ -91,6 +97,12 @@ impl<'runtime> HistoryAccess<'runtime> {
             });
         let lineage_scope = self.lineage_scope(&resolution.start, &resolution.traversed_event_ids);
         let envelopes = self.branch_commit_envelopes(branch_id);
+        let mut entity_scope = BTreeSet::new();
+        for id in &lineage_scope {
+            if let Some(node) = self.runtime.lineage.demand_node(execution, *id)? {
+                entity_scope.insert(node.node().entity_id());
+            }
+        }
         let entries = envelopes
             .iter()
             .flat_map(|envelope| {
@@ -101,13 +113,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                         return None;
                     }
                     match change.record.target {
-                        RecordRef::Entity(entity_id)
-                            if self
-                                .runtime
-                                .lineage_access()
-                                .for_record(entity_id)
-                                .is_some_and(|node| lineage_scope.contains(&node.lineage_id)) =>
-                        {
+                        RecordRef::Entity(entity_id) if entity_scope.contains(&entity_id) => {
                             Some(AspectHistoryEntry {
                                 origin: aspect_history_origin(change),
                                 resolution: AspectResolutionContext::ResolvedViaLineage {
@@ -143,7 +149,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                 traversed_event_ids: resolution.traversed_event_ids,
             })
         };
-        LineageAspectHistoryQueryResult { history, trace }
+        Ok(LineageAspectHistoryQueryResult { history, trace })
     }
 
     fn record_aspect_history_with_trace(

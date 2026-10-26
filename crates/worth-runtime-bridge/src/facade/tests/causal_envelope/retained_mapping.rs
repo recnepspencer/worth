@@ -58,7 +58,7 @@ fn causal_envelope_maps_retained_source_structural_stream_continuity_and_merge_r
         .last_route_record()
         .expect("route record should be retained");
     let continuity = runtime
-        .deliver_continuity(&route_record)
+        .deliver_continuity(&route_record, execution)
         .expect("continuity should deliver")
         .canonical_record()
         .clone();

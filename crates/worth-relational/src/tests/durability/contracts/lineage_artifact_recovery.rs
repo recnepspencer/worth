@@ -196,7 +196,8 @@ fn replay_and_durable_lineage_payload_conflict_denies() {
     let second = create_entity_outcome(execution, &runtime, "payload-conflict-second");
     let first_lineage = runtime
         .lineage_access()
-        .for_record(changed_entities(&first)[0])
+        .for_record(execution, changed_entities(&first)[0])
+        .unwrap()
         .expect("first tail lineage")
         .lineage_id();
     let mut plan = crate::tests::support::recovery_plan_for(

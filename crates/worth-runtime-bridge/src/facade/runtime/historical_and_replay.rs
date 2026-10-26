@@ -18,17 +18,19 @@ impl RuntimeBridge {
     /// fn deliver_continuity(
     ///     bridge: &RuntimeBridge,
     ///     route_record: &BridgeRouteRecord,
+    ///     execution: worth_execution::ExecutionRequest<'_, '_>,
     /// ) -> Result<(), Box<dyn std::error::Error>> {
-    ///     let _result = bridge.deliver_continuity(route_record)?;
+    ///     let _result = bridge.deliver_continuity(route_record, execution)?;
     ///     Ok(())
     /// }
     /// ```
     pub fn deliver_continuity(
         &self,
         route_record: &BridgeRouteRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<crate::diagnostics::BridgeDeliveredContinuityResult, BridgeContinuityError> {
         let requests = self.plan_continuity_requests(route_record)?;
-        let packet = self.plan_historical_lineage_packet(&requests)?;
+        let packet = self.plan_historical_lineage_packet(&requests, execution)?;
         let resolved = self.resolve_lineage_continuity(&packet)?;
         let artifact = self.lower_continuity_artifact(&resolved);
         let canonical_record =
@@ -89,6 +91,7 @@ impl RuntimeBridge {
     pub fn replay_canonical_continuity_record(
         &self,
         record: &BridgeCanonicalContinuityRecord,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeContinuityReplaySummary, BridgeReplayError> {
         let record = record.decode()?;
         let _continuity_replay_mismatch_counters =
@@ -121,10 +124,13 @@ impl RuntimeBridge {
         }
 
         let packet = self
-            .plan_historical_lineage_packet(&requests)
+            .plan_historical_lineage_packet(&requests, execution)
             .map_err(|error| {
                 BridgeReplayError::new(
-                    BridgeReplayErrorKind::ContinuityResolutionMismatch,
+                    match error.kind() {
+                        BridgeContinuityErrorKind::ObservationRead(denial) => BridgeReplayErrorKind::ObservationRead(denial),
+                        _ => BridgeReplayErrorKind::ContinuityResolutionMismatch,
+                    },
                     format!("Bridge continuity replay failed to reconstruct the historical lineage packet: {error}"),
                 )
                 .with_context(replay_context.clone())

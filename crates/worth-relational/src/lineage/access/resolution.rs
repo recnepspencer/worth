@@ -234,16 +234,20 @@ impl<'runtime> LineageAccess<'runtime> {
 
     pub fn resolve_record_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: RecordHistoryRequest,
-    ) -> Option<HistoricalLineageResolution> {
-        let lineage = self.for_record(request.entity_id)?;
-        Some(
-            self.resolve_historical_lineage(HistoricalResolutionRequest {
+    ) -> Result<Option<HistoricalLineageResolution>, crate::execution::RelationalExecutionDenialCause>
+    {
+        let Some(lineage) = self.for_record(execution, request.entity_id)? else {
+            return Ok(None);
+        };
+        Ok(Some(self.resolve_historical_lineage(
+            HistoricalResolutionRequest {
                 branch_id: request.branch_id,
                 lineage_id: lineage.lineage_id,
                 boundedness_basis: request.boundedness_basis,
-            }),
-        )
+            },
+        )))
     }
 
     fn event_positions_for_sources(

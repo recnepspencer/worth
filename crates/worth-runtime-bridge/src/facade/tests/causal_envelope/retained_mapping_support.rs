@@ -20,6 +20,7 @@ impl crate::adapter::ContinuityLineageSource for CausalLineageSource {
     fn historical_lineage(
         &self,
         request: crate::adapter::BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<
         crate::adapter::BridgeHistoricalLineageAuthority,
         crate::error::BridgeLineageSourceError,

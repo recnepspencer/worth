@@ -39,7 +39,9 @@ pub use history::{
 pub(crate) use indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };
-pub(crate) use lineage::{LineageState, LineageSubsystem, ValidatedLineageEventBatch};
+pub(crate) use lineage::{
+    LineageState, LineageSubsystem, ResidentLineageNode, ValidatedLineageEventBatch,
+};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use owned_state::RuntimeOwnedState;
 pub(crate) use publication::PublicationSubsystem;

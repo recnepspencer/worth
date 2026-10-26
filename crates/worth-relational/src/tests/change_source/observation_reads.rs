@@ -40,12 +40,12 @@ fn an_exact_entity_read_refuses_a_foreign_observation() {
 
     assert!(read
         .owner
-        .entity_record_at_observation(&read.observation, read.entity)
+        .entity_record_at_observation(execution, &read.observation, read.entity)
         .unwrap()
         .is_some());
     assert_eq!(
         read.other
-            .entity_record_at_observation(&read.observation, read.entity)
+            .entity_record_at_observation(execution, &read.observation, read.entity)
             .unwrap_err(),
         RelationalObservationReadDenial::ForeignObservation
     );
@@ -60,12 +60,12 @@ fn an_exact_relation_read_refuses_a_foreign_observation() {
 
     assert!(read
         .owner
-        .relation_record_at_observation(&read.observation, read.relation)
+        .relation_record_at_observation(execution, &read.observation, read.relation)
         .unwrap()
         .is_some());
     assert_eq!(
         read.other
-            .relation_record_at_observation(&read.observation, read.relation)
+            .relation_record_at_observation(execution, &read.observation, read.relation)
             .unwrap_err(),
         RelationalObservationReadDenial::ForeignObservation
     );
@@ -80,12 +80,12 @@ fn a_record_history_read_refuses_a_foreign_observation() {
 
     assert!(read
         .owner
-        .record_history_at_observation(&read.observation, read.entity)
+        .record_history_at_observation(execution, &read.observation, read.entity)
         .unwrap()
         .is_some());
     assert_eq!(
         read.other
-            .record_history_at_observation(&read.observation, read.entity)
+            .record_history_at_observation(execution, &read.observation, read.entity)
             .unwrap_err(),
         RelationalObservationReadDenial::ForeignObservation
     );
@@ -99,20 +99,20 @@ fn a_lineage_visibility_read_refuses_a_foreign_observation() {
     let read = foreign_read(execution);
     let lineages = read
         .owner
-        .record_history_at_observation(&read.observation, read.entity)
+        .record_history_at_observation(execution, &read.observation, read.entity)
         .unwrap()
         .expect("the owned entity has a lineage")
         .resolved;
 
     assert_eq!(
         read.owner
-            .visible_entities_for_lineages_at_observation(&read.observation, &lineages)
+            .visible_entities_for_lineages_at_observation(execution, &read.observation, &lineages)
             .unwrap(),
         vec![read.entity]
     );
     assert_eq!(
         read.other
-            .visible_entities_for_lineages_at_observation(&read.observation, &lineages)
+            .visible_entities_for_lineages_at_observation(execution, &read.observation, &lineages)
             .unwrap_err(),
         RelationalObservationReadDenial::ForeignObservation
     );

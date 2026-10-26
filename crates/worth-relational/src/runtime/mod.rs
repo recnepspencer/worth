@@ -82,9 +82,9 @@ pub(crate) use state::{
     RelationalForkOwnerBinding, RelationalPreparationHistory, RelationalPreparationOwnerBinding,
     RelationalPreparationRuntime, RelationalRuntimeConfigurationBinding,
     RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
-    RelationalRuntimePublicationBinding, ResidentPartitionEdition, ResidentPartitionEntry,
-    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,
-    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    RelationalRuntimePublicationBinding, ResidentLineageNode, ResidentPartitionEdition,
+    ResidentPartitionEntry, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
+    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
     SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{

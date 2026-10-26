@@ -282,7 +282,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     let corrected_lineage = world
         .runtime
         .lineage_access()
-        .for_record(corrected_trade)
+        .for_record(execution, corrected_trade)
+        .unwrap()
         .expect("corrected trade lineage")
         .lineage_id();
     let _audit = emit_trade_correction_audit_record(execution, &mut world, analysis.clone());
@@ -308,7 +309,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(corrected_trade)
+            .for_record(execution, corrected_trade)
+            .unwrap()
             .expect("recovered corrected trade lineage")
             .lineage_id(),
         corrected_lineage

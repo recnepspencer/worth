@@ -9,7 +9,8 @@ pub(super) fn run_replacement_strategy_certification(
     let replacement_entity = create_entity(execution, &runtime, "replace-target");
     let replacement_start_lineage = runtime
         .lineage_access()
-        .for_record(replacement_entity)
+        .for_record(execution, replacement_entity)
+        .unwrap()
         .expect("replacement entity lineage before strategy")
         .lineage_id;
     let replacement_commit = execute_strategy_commit(
@@ -38,7 +39,8 @@ pub(super) fn run_replacement_strategy_certification(
         .expect("replacement entity visible after strategy");
     let replacement_end_lineage = runtime
         .lineage_access()
-        .for_record(replacement_record)
+        .for_record(execution, replacement_record)
+        .unwrap()
         .expect("replacement entity lineage after strategy")
         .lineage_id;
     assert_ne!(replacement_start_lineage, replacement_end_lineage);
@@ -115,7 +117,8 @@ pub(super) fn run_replacement_strategy_certification(
     );
     let recovered_replacement_lineage = recovered
         .lineage_access()
-        .for_record(replacement_record)
+        .for_record(execution, replacement_record)
+        .unwrap()
         .expect("recovered replacement entity lineage")
         .lineage_id;
     let recovered_replacement_strategy_artifacts = recovered_replacement_envelope

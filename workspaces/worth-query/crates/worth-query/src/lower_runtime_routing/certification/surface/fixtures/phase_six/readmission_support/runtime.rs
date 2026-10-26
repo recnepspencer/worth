@@ -87,7 +87,7 @@ pub(in crate::lower_runtime_routing::certification::surface::fixtures::phase_six
         .last_route_record()
         .expect("continuity route record should be retained");
     runtime
-        .deliver_continuity(&route_record)
+        .deliver_continuity(&route_record, resource_request)
         .expect("continuity should deliver")
 }
 

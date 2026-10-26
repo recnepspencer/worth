@@ -52,7 +52,7 @@ fn bridge_continuity_replay_matches_original_canonical_artifact() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = runtime
         .resolve_lineage_continuity(&packet)
@@ -61,7 +61,7 @@ fn bridge_continuity_replay_matches_original_canonical_artifact() {
     let canonical = runtime.canonicalize_continuity_record(&route_record, &requests, &artifact);
 
     let replay = runtime
-        .replay_canonical_continuity_record(&canonical)
+        .replay_canonical_continuity_record(&canonical, execution)
         .expect("continuity replay should preserve canonical artifact");
 
     assert_eq!(replay.continuity_identity(), artifact.continuity_identity());
@@ -124,7 +124,7 @@ fn bridge_continuity_replay_rejects_artifact_drift() {
         .plan_continuity_requests(&route_record)
         .expect("continuity requests should plan");
     let packet = original_runtime
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .expect("historical lineage packet should plan");
     let resolved = original_runtime
         .resolve_lineage_continuity(&packet)
@@ -155,7 +155,7 @@ fn bridge_continuity_replay_rejects_artifact_drift() {
         .expect("runtime should build");
 
     let error = restarted_runtime
-        .replay_canonical_continuity_record(&canonical)
+        .replay_canonical_continuity_record(&canonical, execution)
         .expect_err("continuity replay should reject successor drift");
 
     assert_eq!(

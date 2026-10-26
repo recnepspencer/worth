@@ -149,7 +149,7 @@ impl HarnessAdapter for BridgeHarnessAdapter {
                                     .plan_continuity_requests(&route_record)
                                     .ok()?;
                                 let packet = runtime_bridge
-                                    .plan_historical_lineage_packet(&requests)
+                                    .plan_historical_lineage_packet(&requests, resource_request)
                                     .ok()?;
                                 let resolved =
                                     runtime_bridge.resolve_lineage_continuity(&packet).ok()?;

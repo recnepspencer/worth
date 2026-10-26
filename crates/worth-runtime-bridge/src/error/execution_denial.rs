@@ -97,7 +97,8 @@ impl crate::snapshot::BridgeSnapshotReadError {
             Kind::ExecutionDenied(denial) => {
                 super::BridgeDeliveryErrorKind::ExecutionDenied(denial)
             }
-            Kind::ExternalSnapshotReadFailure
+            Kind::ObservationRead(_)
+            | Kind::ExternalSnapshotReadFailure
             | Kind::SnapshotIdentityMismatch
             | Kind::DuplicateRecord
             | Kind::RecordCountMismatch

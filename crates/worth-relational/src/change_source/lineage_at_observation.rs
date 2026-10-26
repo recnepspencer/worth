@@ -14,13 +14,21 @@ impl RelationalRuntime {
     /// # Errors
     ///
     /// [`RelationalObservationReadDenial::ForeignObservation`] when another
-    /// runtime issued `observation`.
+    /// runtime issued `observation`; [`RelationalObservationReadDenial::Execution`]
+    /// when the request or required resident storage refuses the read.
     pub fn record_history_at_observation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &RelationalBranchObservation,
         entity_id: EntityId,
     ) -> Result<Option<HistoricalLineageResolution>, RelationalObservationReadDenial> {
         self.admit_observation_read(observation)?;
+        crate::execution::check_request(execution)
+            .map_err(RelationalObservationReadDenial::Execution)?;
+        observation
+            .selected_root()
+            .demand_regions_full(execution, [entity_id.partition_id])
+            .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
         Ok(self
             .lineage_access()
             .resolve_record_history_for_observation(entity_id, observation))
@@ -31,15 +39,19 @@ impl RelationalRuntime {
     /// # Errors
     ///
     /// [`RelationalObservationReadDenial::ForeignObservation`] when another
-    /// runtime issued `observation`.
+    /// runtime issued `observation`; [`RelationalObservationReadDenial::Execution`]
+    /// when the request or required resident storage refuses the read.
     pub fn visible_entities_for_lineages_at_observation(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         observation: &RelationalBranchObservation,
         lineage_ids: &[LineageId],
     ) -> Result<Vec<EntityId>, RelationalObservationReadDenial> {
         self.admit_observation_read(observation)?;
-        Ok(self
-            .lineage_access()
-            .visible_entity_ids_for_lineages_for_observation(lineage_ids, observation))
+        crate::execution::check_request(execution)
+            .map_err(RelationalObservationReadDenial::Execution)?;
+        self.lineage_access()
+            .visible_entity_ids_for_lineages_for_observation(execution, lineage_ids, observation)
+            .map_err(RelationalObservationReadDenial::Execution)
     }
 }

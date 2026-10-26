@@ -210,7 +210,8 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let original_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(request_execution, entity)
+        .unwrap()
         .expect("original lineage")
         .lineage_id;
     let request = runtime
@@ -263,7 +264,8 @@ fn entity_replacement_reconciliation_strategy_commits_lineage_sensitive_replace_
         .expect("replacement entity visible");
     let replacement_lineage = runtime
         .lineage_access()
-        .for_record(replacement_record.entity_id)
+        .for_record(request_execution, replacement_record.entity_id)
+        .unwrap()
         .expect("replacement lineage")
         .lineage_id;
     let strategy_artifacts = commit

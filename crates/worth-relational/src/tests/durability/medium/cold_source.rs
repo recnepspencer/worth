@@ -14,6 +14,7 @@ pub(super) struct MemberSource {
     pub(super) commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
     pub(super) damaged: AtomicBool,
     pub(super) reads: AtomicUsize,
+    pub(super) member_reads: std::sync::Mutex<Vec<RelationalDurableMemberLocator>>,
     pub(super) commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
     pub(super) commits_damaged: AtomicBool,
     pub(super) failed_member: std::sync::Mutex<Option<RelationalDurableMemberLocator>>,
@@ -26,6 +27,7 @@ impl RelationalDurableColdSource for MemberSource {
         limit: u64,
     ) -> Result<Vec<u8>, Cause> {
         self.reads.fetch_add(1, Ordering::Relaxed);
+        self.member_reads.lock().unwrap().push(locator);
         if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
             return Err(Cause::Damaged);
         }
