@@ -129,3 +129,13 @@ fn defensive_branch_counter_overflow_and_allocation_have_distinct_producers() {
     }
 }
 
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "branch capacity occupancy exceeds its installed limit")]
+fn branch_capacity_desynchronization_is_loud_in_debug_builds() {
+    let construction = RuntimeWorldOwnerConstructionContract::new().unwrap();
+    let owner = construction.owner_identity();
+    let registry = ProductBranchRegistry::new(owner, branch_limit(1));
+    registry.state.lock().unwrap().reserved_branches = 2;
+    let _ = registry.reserve_root(owner);
+}

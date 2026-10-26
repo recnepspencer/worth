@@ -33,6 +33,10 @@ impl ActivationCapacity {
             // rather than a later load that could race with a release.
             .map_err(|occupancy| {
                 if let Some(limit) = self.maximum.filter(|maximum| occupancy >= *maximum) {
+                    debug_assert_eq!(
+                        occupancy, limit,
+                        "activation capacity occupancy exceeds its installed limit"
+                    );
                     WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy }
                 } else {
                     WorthQueryProductActivationDenial::OccupancyOverflow
@@ -69,5 +73,14 @@ mod tests {
         );
         assert_eq!(owner.live.load(Ordering::Acquire), usize::MAX);
         owner.live.store(0, Ordering::Release);
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(expected = "activation capacity occupancy exceeds its installed limit")]
+    fn activation_capacity_desynchronization_is_loud_in_debug_builds() {
+        let owner = ActivationCapacity::new(Some(1));
+        owner.live.store(2, Ordering::Release);
+        let _ = owner.reserve();
     }
 }

@@ -307,7 +307,14 @@ pub(super) fn reserve_slot(
         .len()
         .checked_add(state.reserved_branches)
         .ok_or(ProductBranchRegistryDenial::OccupancyOverflow)?;
-    if let Some(limit) = state.maximum_branches.filter(|maximum| occupied >= *maximum) {
+    if let Some(limit) = state
+        .maximum_branches
+        .filter(|maximum| occupied >= *maximum)
+    {
+        debug_assert_eq!(
+            occupied, limit,
+            "branch capacity occupancy exceeds its installed limit"
+        );
         return Err(ProductBranchRegistryDenial::CapacityExhausted {
             limit,
             occupancy: occupied,
