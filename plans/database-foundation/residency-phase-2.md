@@ -433,3 +433,40 @@ clippy commands pass, and formatting, dirty caps, agent-context and scoped
 function review pass. The sole function advisory is this complete adversarial
 page-to-negative-probe proof, kept together so its authority and oracle remain
 visible.
+
+
+## D7 lineage continuity and external fixture members
+
+D7 is explicit: "Commit, version and lineage frontiers resume one past the
+largest durable value." It also says an identity never durable or acknowledged
+may be lost on process death. An uncommitted prototype incorrectly required
+abandoned lineage clocks to survive checkpoint/reopen. Its new manifest fields,
+restore changes, validator and cancellation-oracle rewrite are withdrawn. The
+original cancellation byte-equality court is restored exactly. This removes
+only this slice's own uncommitted prototype; all prior task commits remain.
+
+The uncommitted claims `abandoned_lineage_and_event_ids_are_not_reused_after_any_checkpoint_restore`,
+`checkpoint_lineage_frontiers_must_cover_published_identities`,
+`replay_of_an_inflight_candidate_preserves_a_later_abandoned_lineage_floor`, and
+`cold_manifest_frontiers_are_checked_against_the_admitted_head_envelope` are
+retired because they require metadata or cross-process guarantees D7 does not
+specify. Their replacements exercise real discard, image/embedded/cold restore
+and tail replay, require every published node/event identity to remain protected,
+and require the specified one-past-durable floor. Live discard still never
+rewinds a running allocator. No product identity mechanism is changed.
+
+Those real cold tests exposed a valid fixture defect: the in-crate medium filed
+external checkpoint headers but its `read_member` always returned
+SourceUnavailable. It now persists actual New member bytes under the same
+journal lock as the checkpoint and retains earlier content-addressed members.
+Its read port enforces the requested limit. Verify this through external reopen,
+ordinary publication, inflight tail replay and reads of older retained members.
+This corrects the test medium, not the Store home or Relational's typed failures.
+
+
+The corrected scope passes the full Relational lib (1,889; 31 existing ignored),
+all three CI owner/service clippy commands, formatting, dirty caps and
+agent-context. Scoped function review reports only the two cohesive end-to-end
+D7 restore/replay proofs. The production checkpoint format, recovery counters
+and original cancellation court are unchanged. The only implementation change
+is the test medium's actual member storage and bounded read port.
