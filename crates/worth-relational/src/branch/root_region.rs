@@ -52,6 +52,11 @@ impl RelationalRootRegion {
                 crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(
                     symbol,
                 ) => RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
+                crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage => {
+                    RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(
+                        partition.partition_id,
+                    )
+                }
             })?;
         let content_digest = content_commitment.digest(partition.partition_id);
         let kind_commitment =

@@ -4,6 +4,7 @@ mod head_commitment;
 #[cfg(test)]
 #[path = "partition_content/tests.rs"]
 mod incremental_tests;
+mod record_history;
 mod records;
 pub(crate) use head_commitment::PartitionHistoryFrontiers;
 
@@ -16,6 +17,7 @@ use sha2::{Digest, Sha256};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PartitionContentDigestError {
     UnresolvedContentSymbol(Symbol),
+    InvalidHistoryCoverage,
 }
 
 /// Derived, destroyable commitment acceleration. Exact storage identities and
@@ -34,7 +36,26 @@ impl PartitionContentCommitment {
         symbols: &StringInterner,
         previous: Option<(&Self, &PartitionState, &PartitionMutationJournal)>,
     ) -> Result<(Self, u64), PartitionContentDigestError> {
+        if previous.is_none()
+            && partition
+                .entity_arena
+                .history_prefixes
+                .iter()
+                .chain(partition.relation_arena.history_prefixes.iter())
+                .any(Option::is_some)
+        {
+            return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+        }
         Self::capture_seeded(partition, symbols, previous, Self::default())
+    }
+
+    /// Reuse only prefix openings already authenticated during Head admission.
+    /// This does not provide independent verification of omitted history.
+    pub(crate) fn capture_layered(
+        partition: &PartitionState,
+        symbols: &StringInterner,
+    ) -> Result<(Self, u64), PartitionContentDigestError> {
+        Self::capture_seeded(partition, symbols, None, Self::default())
     }
 
     fn capture_seeded(

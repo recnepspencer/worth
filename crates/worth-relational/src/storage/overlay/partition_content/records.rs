@@ -1,7 +1,6 @@
 use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::substrate::{
-    HistoryAppendFrontier, RecordArena, RecordKind, SharedColumn, SharedMap,
-    StorageAllocationVisitor,
+    HistoryAppendFrontier, RecordArena, RecordKind, SharedMap, StorageAllocationVisitor,
 };
 use crate::symbols::data::{StringInterner, Symbol};
 use std::collections::BTreeMap;
@@ -88,36 +87,18 @@ impl RecordContentIndex {
                 .physical_index(slot)
                 .expect("journal-selected record exists");
             let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
-            let mut history = self
+            let cached = self
                 .histories
                 .get(&(slot as u64))
                 .cloned()
                 .unwrap_or_default();
-            let old_bytes = history.allocation_bytes();
-            let empty = SharedColumn::default();
-            let old = previous
-                .and_then(|arena| arena.metadata_history_at(slot))
-                .unwrap_or(&empty);
-            let history_offset = if previous.is_some() {
-                history
-                    .next_history_index()
-                    .checked_sub(old.len() as u128)
-                    .expect("resident history suffix belongs to its carried commitment")
+            let old_bytes = cached.allocation_bytes();
+            let (history, hashed) = if carried_head {
+                (cached, 0)
             } else {
-                0
+                super::record_history::update(arena, previous, slot, &cached)?
             };
-            if !carried_head {
-                arena.metadata_history[physical].visit_changed_values(
-                    old,
-                    &mut |index, value, _| {
-                        history.set(
-                            history_offset + index as u128,
-                            value.map(|value| hash_value(b"metadata", value)),
-                        );
-                        hashed_values += u64::from(value.is_some());
-                    },
-                );
-            }
+            hashed_values += hashed;
             let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
             let digest = hash_value(
                 b"record",

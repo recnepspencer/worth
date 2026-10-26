@@ -34,6 +34,11 @@ pub(super) fn storage_root_from_authoritative_regions(
                 crate::storage::overlay::PartitionContentDigestError::UnresolvedContentSymbol(
                     symbol,
                 ) => super::RelationalBranchRootCaptureDenial::UnresolvedContentSymbol(symbol),
+                crate::storage::overlay::PartitionContentDigestError::InvalidHistoryCoverage => {
+                    super::RelationalBranchRootCaptureDenial::InvalidHistoryCoverage(
+                        region.partition_id,
+                    )
+                }
             })?;
         if content_digest != region.content_digest {
             return Err(

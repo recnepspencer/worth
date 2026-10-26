@@ -21,6 +21,8 @@ mod history_prefix_tests;
 mod level_tests;
 #[path = "member_custody_tests.rs"]
 mod member_custody_tests;
+#[path = "mixed_history_tests.rs"]
+mod mixed_history_tests;
 #[path = "projection_corruption_tests.rs"]
 mod projection_corruption;
 

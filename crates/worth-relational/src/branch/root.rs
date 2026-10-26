@@ -54,6 +54,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     PublishedPartitionMissing(PartitionId),
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
+    InvalidHistoryCoverage(PartitionId),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,
     StorageContentMismatch {

@@ -977,3 +977,37 @@ suffix appends. Run the existing independent Full/Head digest and frontier
 courts, full Relational lib, formatting, caps, boundary, context and CI clippy.
 Mixed-prefix hashing and the layered wire/reader remain the immediately
 following integration work, rather than treating the carried hash as Full data.
+
+## Mixed-prefix commitment boundary and plan
+
+The record commitment currently offsets a resident suffix using the destination
+cache and the previous resident suffix length. This is valid only while the
+prefix basis is unchanged. Sparse mirror adoption can replace that basis, and
+materialization suspension deliberately removes it. Continuing the old tree in
+either case retains unrelated history or attempts to edit opaque omitted rows.
+
+Keep ordinary Full reconstruction independent: a complete capture refuses an
+arena carrying omitted history. Add an explicit layered capture for already
+admitted prefixes. In incremental capture, compare immutable prefix facts;
+unchanged bases use the existing column delta, changed bases reconstruct the
+selected record opening and hash its resident suffix, and removed bases start
+from complete resident rows. Keep this decision and suffix hashing in a named
+record-history module under the commitment owner. Invalid coverage is a typed
+capture denial rather than an arithmetic panic. This adds no storage load.
+
+Producer-written tests will combine independently captured Head histories and
+compare the result with a separately materialized Full reference, including
+replacement in both directions, physical-row changes, removal and continued
+appends. Preserve the prior leaf-authentication and independent Full courts.
+Run focused residency/content courts and full Relational lib, CI clippy,
+formatting, caps, boundary-check and context. Layered wire, Full folding and
+publication custody follow this hashing boundary; preparation remains Full.
+
+The opening-carriage cut is committed as a4cb5d4fc4. The mixed-prefix cut now
+passes the full Relational library (1,930; 31 unchanged ignored), all three CI
+clippy commands and the four producer-backed mixed-history courts. The final
+focused rerun also crosses from a cold prefix to complete rows and back before
+appending again. Formatting, dirty caps and whitespace pass; boundary-check and
+agent-context completed successfully during this batch. Function review keeps
+the canonical arena update and complete producer-written proofs together; the
+prefix-basis decision is now separate from record and adjacency hashing.
