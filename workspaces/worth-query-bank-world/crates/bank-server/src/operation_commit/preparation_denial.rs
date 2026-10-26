@@ -117,8 +117,6 @@ pub enum BankCommitPreparationDenial {
         /// Physical allocation refusal, including its original checked quote.
         allocation: Option<ExecutionAllocationDenial>,
     },
-    InvalidProposalShape,
-    AccountingRevisionOverflow,
 }
 
 impl From<WorthQueryApplicationAttemptDenial> for BankCommitPreparationDenial {
