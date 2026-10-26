@@ -45,9 +45,9 @@ pub(crate) fn request_with_configuration(
 /// re-reads the manifest of each one to order the retirements among them.
 /// Fresh object/session identities can change durable index packing and the
 /// byte footprint between producers. Replanning fixed media is deterministic.
-/// Admit the declared observation window plus a staging-sized allowance for
-/// retained WAL projections, supersession scratch and publication backing.
-/// This budget follows the declared byte bounds, rather than a measured peak.
+/// This fixture chooses 128 MiB: twice its own 64 MiB ADMITTED_BYTES window,
+/// about three times the measured 43 MiB planning need. That headroom covers
+/// producer-dependent packing; it is not a bound declared by recovery.
 pub(crate) fn request_for_long_ingest(root: &Path) -> PhysicalRecoveryOpenRequest {
     request_for_long_ingest_with_manifest_entries(root, 18432)
 }
