@@ -33,7 +33,8 @@ use worth_store_physical_format::{
     OriginalDropReservationRequestV1, PersistedRecordIdentity, PhysicalCheckpointIdentity,
     ReleaseCustodyHeadKeyV1, ReleasedDropPredecessorV1, ReleasedDropTipProvenanceV1,
     ReleasedDropWalFateWitnessV1, MAX_CHECKPOINT_CERTIFICATE_BYTES,
-    MAX_CHECKPOINT_CERTIFICATE_RECORDS, TIER_EPOCH_CHECKPOINT_CERTIFICATE_WIRE_BYTES,
+    MAX_CHECKPOINT_CERTIFICATE_RECORDS, RELEASE_CHECKPOINT_BATCH_WIRE_BYTES,
+    TIER_EPOCH_CHECKPOINT_CERTIFICATE_WIRE_BYTES,
 };
 
 use super::certificate_capacity::CheckpointCustodyOrigin;
@@ -235,11 +236,23 @@ impl SelectedReleaseCustodyLedger {
         } else {
             0
         };
-        u64::from(self.used_records)
+        // The selected ledger already includes one NoRelease or Accumulator
+        // frame. The incoming closure replaces that marker; it does not add
+        // a second marker beside it. Only existing Batch frames carry forward.
+        let existing_batches = u64::from(self.used_records.saturating_sub(1));
+        let Some(existing_bytes) = existing_batches
+            .checked_mul(RELEASE_CHECKPOINT_BATCH_WIRE_BYTES as u64 + CERTIFICATE_FRAME_OVERHEAD)
+        else {
+            return false;
+        };
+        if existing_bytes > u64::from(self.used_bytes) {
+            return false;
+        }
+        existing_batches
             .checked_add(u64::from(needed_records))
             .and_then(|count| count.checked_add(tier_records))
             .is_some_and(|count| count <= MAX_CHECKPOINT_CERTIFICATE_RECORDS)
-            && u64::from(self.used_bytes)
+            && existing_bytes
                 .checked_add(u64::from(worst_case_encoded_bytes))
                 .and_then(|bytes| bytes.checked_add(tier_bytes))
                 .is_some_and(|bytes| bytes <= MAX_CHECKPOINT_CERTIFICATE_BYTES)
