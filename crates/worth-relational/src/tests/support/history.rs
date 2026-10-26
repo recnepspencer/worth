@@ -136,11 +136,13 @@ pub(crate) fn any_aspect_filter(
 }
 
 pub(crate) fn entity_aspect_history_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     entity_id: crate::facade::identity::EntityId,
     filter: Option<&ProjectionAspectFilter>,
 ) -> crate::facade::history::AspectHistoryDigest {
     entity_aspect_history_digest_on_branch(
+        execution,
         runtime,
         &BranchId("main".to_string()),
         entity_id,
@@ -149,6 +151,7 @@ pub(crate) fn entity_aspect_history_digest(
 }
 
 pub(crate) fn entity_aspect_history_digest_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     entity_id: crate::facade::identity::EntityId,
@@ -156,16 +159,19 @@ pub(crate) fn entity_aspect_history_digest_on_branch(
 ) -> crate::facade::history::AspectHistoryDigest {
     runtime
         .history()
-        .entity_aspect_history_with_trace(branch_id, entity_id, filter)
+        .entity_aspect_history_with_trace(execution, branch_id, entity_id, filter)
+        .unwrap()
         .aspect_history_digest()
 }
 
 pub(crate) fn relation_aspect_history_digest(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     relation_id: RelationId,
     filter: Option<&ProjectionAspectFilter>,
 ) -> crate::facade::history::AspectHistoryDigest {
     relation_aspect_history_digest_on_branch(
+        execution,
         runtime,
         &BranchId("main".to_string()),
         relation_id,
@@ -174,6 +180,7 @@ pub(crate) fn relation_aspect_history_digest(
 }
 
 pub(crate) fn relation_aspect_history_digest_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch_id: &BranchId,
     relation_id: RelationId,
@@ -181,7 +188,8 @@ pub(crate) fn relation_aspect_history_digest_on_branch(
 ) -> crate::facade::history::AspectHistoryDigest {
     runtime
         .history()
-        .relation_aspect_history_with_trace(branch_id, relation_id, filter)
+        .relation_aspect_history_with_trace(execution, branch_id, relation_id, filter)
+        .unwrap()
         .aspect_history_digest()
 }
 

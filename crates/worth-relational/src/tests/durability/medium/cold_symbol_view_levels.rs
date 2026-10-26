@@ -6,13 +6,13 @@ use crate::transactions::data::{EntityMutationIntent, UpdateEntityFieldsIntent};
 use worth_execution::ExecutionImmutableBytes;
 use worth_foundational::facade::{AspectValue, InternedString};
 
-pub(super) struct ViewFixture {
-    pub(super) runtime: crate::runtime::RelationalRuntime,
-    pub(super) source: Arc<MemberSource>,
-    pub(super) entity: crate::identity::data::EntityId,
-    pub(super) historical: Symbol,
-    pub(super) current: Symbol,
-    pub(super) historical_page: RelationalDurableMemberLocator,
+pub(in super::super) struct ViewFixture {
+    pub(in super::super) runtime: crate::runtime::RelationalRuntime,
+    pub(in super::super) source: Arc<MemberSource>,
+    pub(in super::super) entity: crate::identity::data::EntityId,
+    pub(in super::super) historical: Symbol,
+    pub(in super::super) current: Symbol,
+    pub(in super::super) historical_page: RelationalDurableMemberLocator,
 }
 
 #[test]
@@ -137,7 +137,9 @@ fn head_symbols_never_cover_full_history_or_inherit_its_page_damage() {
     }
 }
 
-pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> ViewFixture {
+pub(in super::super) fn reopened(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> ViewFixture {
     let producer = durable_runtime_with_test_schema();
     let (_, basis) = producer
         .observe_branch(&producer.main_branch_identity())
@@ -227,22 +229,22 @@ pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) ->
         0,
         "reopen reads no dictionary or region member"
     );
-    let fork = receiving.fork().unwrap();
-    let transaction = test_owner_begin_transaction_for_main(&receiving);
-    let selected = receiving.selected_branch_state(&transaction.basis).unwrap();
+    let warmed = receiving.fork().unwrap();
+    let transaction = test_owner_begin_transaction_for_main(&warmed);
+    let selected = warmed.selected_branch_state(&transaction.basis).unwrap();
     selected
         .state()
         .root()
-        .demand_all_full(execution, &receiving.services.symbols)
+        .demand_all_full(execution, &warmed.services.symbols)
         .unwrap();
-    assert!(fork
+    assert!(receiving
         .services
         .symbols
         .interner_snapshot()
         .resolve(historical)
         .is_none());
     ViewFixture {
-        runtime: fork,
+        runtime: receiving,
         source,
         entity,
         historical,

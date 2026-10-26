@@ -43,7 +43,7 @@ fn a_cold_lineage_point_read_loads_one_node_page_and_no_region_history() {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum NodeDoor {
+pub(super) enum NodeDoor {
     Point,
     RecordHistory,
     AspectHistory,
@@ -54,7 +54,16 @@ enum NodeDoor {
 }
 
 impl NodeDoor {
-    fn read(
+    pub(super) const ALL: [Self; 7] = [
+        Self::Point,
+        Self::RecordHistory,
+        Self::AspectHistory,
+        Self::AspectHistoryTrace,
+        Self::Graph,
+        Self::Divergence,
+        Self::ObservationVisible,
+    ];
+    pub(super) fn read(
         self,
         fixture: &NodeFixture,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -126,15 +135,7 @@ impl NodeDoor {
 fn every_node_guard_preserves_a_sticky_typed_page_failure_without_publication() {
     let backing = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    for door in [
-        NodeDoor::Point,
-        NodeDoor::RecordHistory,
-        NodeDoor::AspectHistory,
-        NodeDoor::AspectHistoryTrace,
-        NodeDoor::Graph,
-        NodeDoor::Divergence,
-        NodeDoor::ObservationVisible,
-    ] {
+    for door in NodeDoor::ALL {
         let fixture = reopened(execution);
         fixture
             .runtime

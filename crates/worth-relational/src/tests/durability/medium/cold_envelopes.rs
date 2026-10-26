@@ -164,7 +164,7 @@ fn patch_stream_demands_only_the_requested_batch_and_refuses_sticky_journal_dama
 }
 
 #[derive(Clone, Copy, Debug)]
-enum EnvelopeSurface {
+pub(super) enum EnvelopeSurface {
     VersionSummary,
     CommitInspection,
     RecentInspection,
@@ -173,7 +173,14 @@ enum EnvelopeSurface {
 }
 
 impl EnvelopeSurface {
-    fn read(
+    pub(super) const ALL: [Self; 5] = [
+        Self::VersionSummary,
+        Self::CommitInspection,
+        Self::RecentInspection,
+        Self::RecentBranchInspection,
+        Self::CompiledArtifact,
+    ];
+    pub(super) fn read(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalRuntime,
@@ -239,13 +246,7 @@ impl EnvelopeSurface {
 fn envelope_surfaces_keep_index_facts_readable_and_refuse_cold_body_damage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    for door in [
-        EnvelopeSurface::VersionSummary,
-        EnvelopeSurface::CommitInspection,
-        EnvelopeSurface::RecentInspection,
-        EnvelopeSurface::RecentBranchInspection,
-        EnvelopeSurface::CompiledArtifact,
-    ] {
+    for door in EnvelopeSurface::ALL {
         for damaged in [false, true] {
             let producer = match door {
                 EnvelopeSurface::CompiledArtifact => RelationalRuntimeApi::builder()

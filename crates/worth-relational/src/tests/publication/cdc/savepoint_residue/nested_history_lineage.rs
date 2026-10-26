@@ -147,15 +147,14 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
 
     assert_subscriber_stream_omits_detail(&runtime, checkpoint, "abandoned");
 
-    let direct_history =
-        runtime
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), anchor, None);
-    let direct_traced = runtime.history().entity_aspect_history_with_trace(
-        &BranchId("main".to_string()),
-        anchor,
-        None,
-    );
+    let direct_history = runtime
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), anchor, None)
+        .unwrap();
+    let direct_traced = runtime
+        .history()
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), anchor, None)
+        .unwrap();
     assert_eq!(direct_history.len(), 2);
     assert_eq!(direct_traced.aspect_history_digest().entry_count, 2);
     assert_direct_history_origin_invariants(&direct_history, RecordRef::Entity(anchor));

@@ -32,9 +32,9 @@ impl IndexAccess<'_> {
             .map_err(|stop| {
                 use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 let kind = match stop {
-                    Pin::Request(stop) => BoundedRelatedEntityOrderedLookupDenialKind::Execution(
-                        crate::execution::denial::kernel_stop(stop),
-                    ),
+                    Pin::Request(stop) => {
+                        BoundedRelatedEntityOrderedLookupDenialKind::Execution(stop)
+                    }
                     Pin::SnapshotUnavailable => {
                         BoundedRelatedEntityOrderedLookupDenialKind::SnapshotUnavailable
                     }

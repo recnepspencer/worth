@@ -42,9 +42,7 @@ impl IndexAccess<'_> {
                     Pin::IndexNotInstalled(_) => {
                         BoundedEntityFieldLookupDenialKind::IndexNotInstalled
                     }
-                    Pin::Request(stop) => BoundedEntityFieldLookupDenialKind::Execution(
-                        crate::execution::denial::kernel_stop(stop),
-                    ),
+                    Pin::Request(stop) => BoundedEntityFieldLookupDenialKind::Execution(stop),
                 };
                 BoundedEntityFieldLookupDenial::new(kind, request.index_id())
             })?;

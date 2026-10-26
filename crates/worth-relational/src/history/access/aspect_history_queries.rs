@@ -13,36 +13,44 @@ use crate::publication::patch::data::ordered_aspect_keys;
 use crate::transactions::data::RecordRef;
 use crate::visibility::materialization::read_records::ProjectionAspectFilter;
 
+use super::branch_envelope_reads::ASPECT_HISTORY_COMMIT_CEILING;
 use super::HistoryAccess;
+use crate::execution::RelationalExecutionDenialCause;
 
 impl<'runtime> HistoryAccess<'runtime> {
     pub fn entity_aspect_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         entity_id: EntityId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> Vec<AspectHistoryEntry> {
-        self.entity_aspect_history_with_trace(branch_id, entity_id, filter)
-            .entries
+    ) -> Result<Vec<AspectHistoryEntry>, RelationalExecutionDenialCause> {
+        Ok(self
+            .entity_aspect_history_with_trace(execution, branch_id, entity_id, filter)?
+            .entries)
     }
 
     pub fn relation_aspect_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         relation_id: RelationId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> Vec<AspectHistoryEntry> {
-        self.relation_aspect_history_with_trace(branch_id, relation_id, filter)
-            .entries
+    ) -> Result<Vec<AspectHistoryEntry>, RelationalExecutionDenialCause> {
+        Ok(self
+            .relation_aspect_history_with_trace(execution, branch_id, relation_id, filter)?
+            .entries)
     }
 
     pub fn entity_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         entity_id: EntityId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> AspectHistoryQueryResult {
+    ) -> Result<AspectHistoryQueryResult, RelationalExecutionDenialCause> {
         self.record_aspect_history_with_trace(
+            execution,
             branch_id,
             RecordRef::Entity(entity_id),
             HistoryAspectQueryTarget::Entity(entity_id),
@@ -52,11 +60,13 @@ impl<'runtime> HistoryAccess<'runtime> {
 
     pub fn relation_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         relation_id: RelationId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> AspectHistoryQueryResult {
+    ) -> Result<AspectHistoryQueryResult, RelationalExecutionDenialCause> {
         self.record_aspect_history_with_trace(
+            execution,
             branch_id,
             RecordRef::Relation(relation_id),
             HistoryAspectQueryTarget::Relation(relation_id),
@@ -96,13 +106,22 @@ impl<'runtime> HistoryAccess<'runtime> {
                     crate::facade::lineage::HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
             });
         let lineage_scope = self.lineage_scope(&resolution.start, &resolution.traversed_event_ids);
-        let envelopes = self.branch_commit_envelopes(branch_id);
         let mut entity_scope = BTreeSet::new();
         for id in &lineage_scope {
             if let Some(node) = self.runtime.lineage.demand_node(execution, *id)? {
                 entity_scope.insert(node.node().entity_id());
             }
         }
+        self.demand_branch_history_regions(
+            execution,
+            branch_id,
+            entity_scope.iter().map(|entity| entity.partition_id),
+        )?;
+        let envelopes = self.demand_branch_commit_envelopes(
+            execution,
+            branch_id,
+            ASPECT_HISTORY_COMMIT_CEILING,
+        )?;
         let entries = envelopes
             .iter()
             .flat_map(|envelope| {
@@ -154,12 +173,22 @@ impl<'runtime> HistoryAccess<'runtime> {
 
     fn record_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         target: RecordRef,
         requested_target: HistoryAspectQueryTarget,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> AspectHistoryQueryResult {
-        let envelopes = self.branch_commit_envelopes(branch_id);
+    ) -> Result<AspectHistoryQueryResult, RelationalExecutionDenialCause> {
+        let partition = match target {
+            RecordRef::Entity(entity) => entity.partition_id,
+            RecordRef::Relation(relation) => relation.partition_id,
+        };
+        self.demand_branch_history_regions(execution, branch_id, [partition])?;
+        let envelopes = self.demand_branch_commit_envelopes(
+            execution,
+            branch_id,
+            ASPECT_HISTORY_COMMIT_CEILING,
+        )?;
         let entries = envelopes
             .iter()
             .flat_map(|envelope| {
@@ -177,7 +206,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                     })
             })
             .collect::<Vec<_>>();
-        AspectHistoryQueryResult {
+        Ok(AspectHistoryQueryResult {
             trace: AspectHistoryResolutionTrace {
                 requested_target,
                 branch_id: branch_id.clone(),
@@ -190,7 +219,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                 traversed_lineage_events: 0,
             },
             entries,
-        }
+        })
     }
 
     fn lineage_scope(
@@ -222,7 +251,9 @@ impl<'runtime> HistoryAccess<'runtime> {
         )
     }
 
-    fn commit_span(envelopes: &[CanonicalCommitEnvelope]) -> Option<AspectHistoryCommitSpan> {
+    fn commit_span(
+        envelopes: &[std::sync::Arc<CanonicalCommitEnvelope>],
+    ) -> Option<AspectHistoryCommitSpan> {
         Some(AspectHistoryCommitSpan {
             first_commit_id: envelopes.first()?.commit.commit_id,
             last_commit_id: envelopes.last()?.commit.commit_id,

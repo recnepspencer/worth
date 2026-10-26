@@ -44,13 +44,14 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
     let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
-    let expected_history =
-        runtime
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), entity, None);
+    let expected_history = runtime
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap();
     let expected_digest = runtime
         .history()
-        .entity_aspect_history_with_trace(&BranchId("main".to_string()), entity, None)
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap()
         .aspect_history_digest();
     let expected_envelope = runtime
         .replay()
@@ -60,13 +61,14 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
     });
 
-    let recovered_history =
-        recovered
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), entity, None);
+    let recovered_history = recovered
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap();
     let recovered_digest = recovered
         .history()
-        .entity_aspect_history_with_trace(&BranchId("main".to_string()), entity, None)
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap()
         .aspect_history_digest();
     let recovered_replay = recovered.replay();
     let recovered_envelope = recovered_replay
@@ -99,25 +101,37 @@ fn durability_contract_recovery_preserves_relation_aspect_history_for_retained_a
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r-audit");
     let relation = changed_relations(&relation_outcome)[0];
     let deleted = delete_entity(execution, &runtime, source);
-    let expected_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("main".to_string()), relation, None);
+    let expected_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+        .unwrap();
     let expected_digest = runtime
         .history()
-        .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
+        .relation_aspect_history_with_trace(
+            execution,
+            &BranchId("main".to_string()),
+            relation,
+            None,
+        )
+        .unwrap()
         .aspect_history_digest();
     let (outcome, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::RetainDanglingForAudit)
     });
 
-    let recovered_history =
-        recovered
-            .history()
-            .relation_aspect_history(&BranchId("main".to_string()), relation, None);
+    let recovered_history = recovered
+        .history()
+        .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+        .unwrap();
     let recovered_digest = recovered
         .history()
-        .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
+        .relation_aspect_history_with_trace(
+            execution,
+            &BranchId("main".to_string()),
+            relation,
+            None,
+        )
+        .unwrap()
         .aspect_history_digest();
 
     assert_eq!(outcome.latest_commit, Some(deleted.commit.clone()));
@@ -202,12 +216,14 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
     );
 
     let expected_main_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         relation,
         None,
     );
     let expected_feature_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         relation,
@@ -259,12 +275,14 @@ fn durability_contract_recovery_preserves_branch_local_endpoint_deletion_retirem
         .unwrap();
 
     let recovered_main_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &recovered,
         &BranchId("main".to_string()),
         relation,
         None,
     );
     let recovered_feature_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &recovered,
         &BranchId("feature".to_string()),
         relation,

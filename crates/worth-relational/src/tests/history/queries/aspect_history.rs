@@ -10,15 +10,14 @@ fn record_local_aspect_history_reads_committed_patch_truth() {
     let created = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&created)[0];
     let updated = update_entity(execution, &runtime, entity, "after");
-    let history =
-        runtime
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), entity, None);
-    let traced = runtime.history().entity_aspect_history_with_trace(
-        &BranchId("main".to_string()),
-        entity,
-        None,
-    );
+    let history = runtime
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap();
+    let traced = runtime
+        .history()
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap();
     let artifact = traced.trace.diagnostic_artifact();
     let digest = traced.aspect_history_digest();
     let resolved_aspects = ordered_aspect_keys([
@@ -62,25 +61,33 @@ fn record_local_aspect_history_reads_committed_patch_truth() {
     assert_eq!(history[0].origin.changed_aspects, resolved_aspects);
     assert_eq!(history[1].origin.commit_id, updated.commit.commit_id);
 
-    let filtered = runtime.history().entity_aspect_history(
-        &BranchId("main".to_string()),
-        entity,
-        Some(&ProjectionAspectFilter::whole_aspects(
-            ProjectionAspectFilterMode::All,
-            [AspectKey::new("name").unwrap()],
-        )),
-    );
-    let any_filtered = runtime.history().entity_aspect_history(
-        &BranchId("main".to_string()),
-        entity,
-        Some(&ProjectionAspectFilter::whole_aspects(
-            ProjectionAspectFilterMode::Any,
-            [
-                AspectKey::new("missing").unwrap(),
-                AspectKey::new("name").unwrap(),
-            ],
-        )),
-    );
+    let filtered = runtime
+        .history()
+        .entity_aspect_history(
+            execution,
+            &BranchId("main".to_string()),
+            entity,
+            Some(&ProjectionAspectFilter::whole_aspects(
+                ProjectionAspectFilterMode::All,
+                [AspectKey::new("name").unwrap()],
+            )),
+        )
+        .unwrap();
+    let any_filtered = runtime
+        .history()
+        .entity_aspect_history(
+            execution,
+            &BranchId("main".to_string()),
+            entity,
+            Some(&ProjectionAspectFilter::whole_aspects(
+                ProjectionAspectFilterMode::Any,
+                [
+                    AspectKey::new("missing").unwrap(),
+                    AspectKey::new("name").unwrap(),
+                ],
+            )),
+        )
+        .unwrap();
     assert_eq!(filtered.len(), 2);
     assert_eq!(any_filtered.len(), 2);
 }
@@ -149,16 +156,24 @@ fn aspect_history_projection_filter_matches_field_level_patch_locus() {
         ProjectionAspectScope::fields(aspect_key("summary"), [field_key("missing")]),
     );
 
-    let status_history = runtime.history().entity_aspect_history(
-        &BranchId("main".to_string()),
-        entity,
-        Some(&status_filter),
-    );
-    let missing_sibling_history = runtime.history().entity_aspect_history(
-        &BranchId("main".to_string()),
-        entity,
-        Some(&missing_sibling_filter),
-    );
+    let status_history = runtime
+        .history()
+        .entity_aspect_history(
+            execution,
+            &BranchId("main".to_string()),
+            entity,
+            Some(&status_filter),
+        )
+        .unwrap();
+    let missing_sibling_history = runtime
+        .history()
+        .entity_aspect_history(
+            execution,
+            &BranchId("main".to_string()),
+            entity,
+            Some(&missing_sibling_filter),
+        )
+        .unwrap();
 
     assert_eq!(status_history.len(), 1);
     assert_eq!(
@@ -237,19 +252,21 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
     let delete_outcome = delete_entity(execution, &runtime, hub);
     let expected_entity_digests = leaves
         .iter()
-        .map(|entity| entity_aspect_history_digest(&runtime, *entity, Some(&name_filter)))
+        .map(|entity| {
+            entity_aspect_history_digest(execution, &runtime, *entity, Some(&name_filter))
+        })
         .collect::<Vec<_>>();
     let expected_relation_digests = relations
         .iter()
         .map(|relation| {
-            relation_aspect_history_digest(&runtime, *relation, Some(&endpoints_filter))
+            relation_aspect_history_digest(execution, &runtime, *relation, Some(&endpoints_filter))
         })
         .collect::<Vec<_>>();
     let lifecycle_filter = any_aspect_filter(["lifecycle"]);
     let expected_lifecycle_relation_digests = relations
         .iter()
         .map(|relation| {
-            relation_aspect_history_digest(&runtime, *relation, Some(&lifecycle_filter))
+            relation_aspect_history_digest(execution, &runtime, *relation, Some(&lifecycle_filter))
         })
         .collect::<Vec<_>>();
     crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
@@ -281,18 +298,30 @@ fn bulk_like_aspect_history_filters_and_query_packets_stay_stable_after_recovery
     .result;
     let recovered_entity_digests = leaves
         .iter()
-        .map(|entity| entity_aspect_history_digest(&recovered, *entity, Some(&name_filter)))
+        .map(|entity| {
+            entity_aspect_history_digest(execution, &recovered, *entity, Some(&name_filter))
+        })
         .collect::<Vec<_>>();
     let recovered_relation_digests = relations
         .iter()
         .map(|relation| {
-            relation_aspect_history_digest(&recovered, *relation, Some(&endpoints_filter))
+            relation_aspect_history_digest(
+                execution,
+                &recovered,
+                *relation,
+                Some(&endpoints_filter),
+            )
         })
         .collect::<Vec<_>>();
     let recovered_lifecycle_relation_digests = relations
         .iter()
         .map(|relation| {
-            relation_aspect_history_digest(&recovered, *relation, Some(&lifecycle_filter))
+            relation_aspect_history_digest(
+                execution,
+                &recovered,
+                *relation,
+                Some(&lifecycle_filter),
+            )
         })
         .collect::<Vec<_>>();
 

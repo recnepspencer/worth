@@ -37,23 +37,28 @@ impl<'runtime> InspectionAccess<'runtime> {
 
     pub(crate) fn entity_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         entity_id: EntityId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> AspectHistoryQueryResult {
+    ) -> Result<AspectHistoryQueryResult, crate::execution::RelationalExecutionDenialCause> {
         self.runtime
             .history()
-            .entity_aspect_history_with_trace(branch_id, entity_id, filter)
+            .entity_aspect_history_with_trace(execution, branch_id, entity_id, filter)
     }
 
     pub(crate) fn relation_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: &BranchId,
         relation_id: RelationId,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> AspectHistoryQueryResult {
-        self.runtime
-            .history()
-            .relation_aspect_history_with_trace(branch_id, relation_id, filter)
+    ) -> Result<AspectHistoryQueryResult, crate::execution::RelationalExecutionDenialCause> {
+        self.runtime.history().relation_aspect_history_with_trace(
+            execution,
+            branch_id,
+            relation_id,
+            filter,
+        )
     }
 }

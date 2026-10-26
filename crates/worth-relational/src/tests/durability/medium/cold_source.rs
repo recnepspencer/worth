@@ -18,6 +18,13 @@ pub(super) struct MemberSource {
     pub(super) commit_reads: std::sync::Mutex<Vec<PatchStreamPosition>>,
     pub(super) commits_damaged: AtomicBool,
     pub(super) failed_member: std::sync::Mutex<Option<RelationalDurableMemberLocator>>,
+    pub(super) failures: std::sync::Mutex<BTreeMap<ColdRead, Cause>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum ColdRead {
+    Member(RelationalDurableMemberLocator),
+    Commit(PatchStreamPosition),
 }
 
 impl RelationalDurableColdSource for MemberSource {
@@ -35,6 +42,14 @@ impl RelationalDurableColdSource for MemberSource {
     ) -> Result<Vec<u8>, Cause> {
         self.reads.fetch_add(1, Ordering::Relaxed);
         self.member_reads.lock().unwrap().push(locator);
+        if let Some(cause) = self
+            .failures
+            .lock()
+            .unwrap()
+            .get(&ColdRead::Member(locator))
+        {
+            return Err(*cause);
+        }
         if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
             return Err(Cause::Damaged);
         }
@@ -53,6 +68,14 @@ impl RelationalDurableColdSource for MemberSource {
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         self.commit_reads.lock().unwrap().push(position);
+        if let Some(cause) = self
+            .failures
+            .lock()
+            .unwrap()
+            .get(&ColdRead::Commit(position))
+        {
+            return Err(*cause);
+        }
         if self.commits_damaged.load(Ordering::Relaxed) {
             return Err(Cause::Damaged);
         }

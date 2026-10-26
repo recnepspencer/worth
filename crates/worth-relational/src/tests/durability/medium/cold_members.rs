@@ -4,12 +4,18 @@ mod cold_source;
 use cold_source::MemberSource;
 #[path = "cold_candidates.rs"]
 mod cold_candidates;
+#[path = "cold_envelope_matrix.rs"]
+mod cold_envelope_matrix;
 #[path = "cold_envelopes.rs"]
 mod cold_envelopes;
+#[path = "cold_index_matrix.rs"]
+mod cold_index_matrix;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
 #[path = "cold_lineage_fixture.rs"]
 mod cold_lineage_fixture;
+#[path = "cold_lineage_matrix.rs"]
+mod cold_lineage_matrix;
 #[path = "cold_lineage_nodes.rs"]
 mod cold_lineage_nodes;
 #[path = "cold_merges.rs"]
@@ -18,6 +24,10 @@ mod cold_merges;
 mod cold_observation_reads;
 #[path = "cold_pins.rs"]
 mod cold_pins;
+#[path = "cold_read_door.rs"]
+mod cold_read_door;
+#[path = "cold_read_matrix.rs"]
+mod cold_read_matrix;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
 #[path = "cold_visibility.rs"]
@@ -42,108 +52,11 @@ use std::sync::{
 #[path = "cold_isolation.rs"]
 mod isolation;
 
-fn fixture(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_tail: bool,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    fixture_with_history(execution, with_tail, 0)
-}
-
-fn fixture_with_history(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_tail: bool,
-    updates: usize,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    fixture_from_runtime(
-        execution,
-        durable_runtime_with_test_schema(),
-        with_tail,
-        updates,
-    )
-}
-
-fn fixture_from_runtime(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: crate::runtime::RelationalRuntime,
-    with_tail: bool,
-    updates: usize,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    let entity = create_entity(execution, &runtime, "member-before");
-    for update in 0..updates {
-        update_entity_and_release_snapshot(
-            execution,
-            &runtime,
-            entity,
-            &format!("member-update-{update}"),
-        );
-    }
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-        .unwrap();
-    let covered = native.covered_position().unwrap();
-    let transitions = native.covered_branch_transitions().unwrap();
-    if with_tail {
-        update_entity_and_release_snapshot(execution, &runtime, entity, "member-after");
-    }
-    let artifacts = attached_test_medium(&runtime).offered();
-    let tail = artifacts
-        .iter()
-        .filter(|artifact| artifact.position() > covered)
-        .cloned()
-        .collect();
-    let source = Arc::new(MemberSource {
-        members: native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                RelationalCheckpointMember::Carried { .. } => {
-                    panic!("first capture owns every member")
-                }
-            })
-            .collect(),
-        commits: artifacts
-            .iter()
-            .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
-            .collect(),
-        damaged: AtomicBool::new(true),
-        reads: AtomicUsize::new(0),
-        member_reads: std::sync::Mutex::new(Vec::new()),
-        commit_reads: std::sync::Mutex::new(Vec::new()),
-        commits_damaged: AtomicBool::new(false),
-        failed_member: std::sync::Mutex::new(None),
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            covered,
-            transitions,
-            native,
-        )),
-        tail,
-        Vec::new(),
-        source.clone(),
-    );
-    (recovery, source, entity)
-}
+#[path = "cold_recovery_fixture.rs"]
+mod cold_recovery_fixture;
+use cold_recovery_fixture::{
+    checkpoint_fixture, fixture, fixture_from_runtime, fixture_with_history,
+};
 
 #[test]
 fn a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal() {
@@ -303,6 +216,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
         failed_member: std::sync::Mutex::new(None),
+        failures: std::sync::Mutex::new(Default::default()),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

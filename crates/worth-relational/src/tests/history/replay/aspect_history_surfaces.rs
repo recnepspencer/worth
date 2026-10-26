@@ -13,21 +13,28 @@ fn replay_contract_preserves_aspect_bearing_patch_and_history_surfaces() {
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r1");
     let relation = changed_relations(&relation_outcome)[0];
-    let expected_entity_history =
-        runtime
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), entity, None);
-    let expected_relation_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("main".to_string()), relation, None);
+    let expected_entity_history = runtime
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap();
+    let expected_relation_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+        .unwrap();
     let expected_entity_digest = runtime
         .history()
-        .entity_aspect_history_with_trace(&BranchId("main".to_string()), entity, None)
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), entity, None)
+        .unwrap()
         .aspect_history_digest();
     let expected_relation_digest = runtime
         .history()
-        .relation_aspect_history_with_trace(&BranchId("main".to_string()), relation, None)
+        .relation_aspect_history_with_trace(
+            execution,
+            &BranchId("main".to_string()),
+            relation,
+            None,
+        )
+        .unwrap()
         .aspect_history_digest();
 
     let replay = runtime

@@ -4,7 +4,7 @@ use crate::visibility::snapshot_states::resolve_snapshot_basis;
 
 impl VisibilityReadContext<'_> {
     /// Capture native immutable custody while the installed owner is borrowed.
-    /// Only selected index handles are retained. Index absence remains cold;
+    /// Only selected index handles are retained. Genuine index absence remains absent;
     /// no later read is permitted to consult a current generation registry.
     pub fn pin_read_capability(
         &self,
@@ -33,22 +33,25 @@ impl VisibilityReadContext<'_> {
         use RelationalPinnedReadAdmissionDenial as Denial;
         request
             .check_live()
-            .map_err(|stop| denied(Denial::Request(stop)))?;
+            .map_err(|stop| denied(Denial::Request(stop.into())))?;
         let snapshot = self
             .resolved_snapshot_handle(handle)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
-        let context = self
-            .query_plan_context(&snapshot)
-            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let basis = resolve_snapshot_basis(self.runtime, &snapshot)
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
+        let (schema_version, _, _) =
+            super::super::snapshot_reads::query_schema_context_for_root(basis.root());
         let indexes = self.pin_indexes(
             &basis,
-            context.schema_version,
+            schema_version,
             selected_indexes,
+            request,
             validate,
             &denied,
         )?;
+        let context = self
+            .query_plan_context(&snapshot)
+            .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         // StringInterner's im maps clone shared nodes, never their entries.
         let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
@@ -97,7 +100,7 @@ impl VisibilityReadContext<'_> {
         use RelationalPinnedReadAdmissionDenial as Denial;
         request
             .check_live()
-            .map_err(|stop| denied(Denial::Request(stop)))?;
+            .map_err(|stop| denied(Denial::Request(stop.into())))?;
         if !view.is_from_runtime(self.runtime) {
             return Err(denied(Denial::SnapshotUnavailable));
         }
@@ -116,9 +119,16 @@ impl VisibilityReadContext<'_> {
             descriptor_semantics_version,
             evidence_basis,
         };
-        let indexes =
-            self.pin_indexes(&basis, schema_version, selected_indexes, validate, denied)?;
-        let (current_version, instrumentation, symbols) = view.retain_pinning_metadata();
+        let indexes = self.pin_indexes(
+            &basis,
+            schema_version,
+            selected_indexes,
+            request,
+            validate,
+            denied,
+        )?;
+        let (current_version, instrumentation, _) = view.retain_pinning_metadata();
+        let symbols = self.runtime.services.symbols.interner_snapshot();
         Ok(RelationalPinnedRead {
             current_version,
             instrumentation,
@@ -135,11 +145,12 @@ impl VisibilityReadContext<'_> {
         basis: &VisibilitySnapshotBasis,
         schema: crate::schema::data::SchemaVersionId,
         selected_indexes: &[DerivedIndexId],
+        request: &worth_execution::ExecutionRequest<'_, '_>,
         validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
         denied: impl Fn(RelationalPinnedReadAdmissionDenial) -> E,
     ) -> Result<BTreeMap<DerivedIndexId, PinnedIndex>, E> {
         use RelationalPinnedReadAdmissionDenial as Denial;
-        let mut indexes = BTreeMap::new();
+        let mut definitions = BTreeMap::new();
         for &index in selected_indexes {
             let definition = self
                 .runtime
@@ -147,6 +158,21 @@ impl VisibilityReadContext<'_> {
                 .definition(index)
                 .ok_or_else(|| denied(Denial::IndexNotInstalled(index)))?;
             validate(&definition)?;
+            definitions.insert(index, definition);
+        }
+        basis
+            .root()
+            .demand_all_full(request, &self.runtime.services.symbols)
+            .map_err(|failure| denied(Denial::Request(failure.into())))?;
+        if !definitions.is_empty() {
+            self.runtime
+                .indexes
+                .definition_read_binding()
+                .demand_checkpoint_image(request)
+                .map_err(|failure| denied(Denial::Request(failure.into())))?;
+        }
+        let mut indexes = BTreeMap::new();
+        for (index, definition) in definitions {
             let generation = self.runtime.indexes.exact_generation(
                 index,
                 definition.branch_scoped.then_some(basis.branch_id()),

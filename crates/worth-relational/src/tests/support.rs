@@ -150,7 +150,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|entity_id| {
                 (
                     *entity_id,
-                    entity_aspect_history_digest(runtime, *entity_id, None),
+                    entity_aspect_history_digest(execution, runtime, *entity_id, None),
                 )
             })
             .collect(),
@@ -159,7 +159,7 @@ pub(super) fn capture_aspect_truth_bundle(
             .map(|relation_id| {
                 (
                     *relation_id,
-                    relation_aspect_history_digest(runtime, *relation_id, None),
+                    relation_aspect_history_digest(execution, runtime, *relation_id, None),
                 )
             })
             .collect(),

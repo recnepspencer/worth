@@ -73,7 +73,7 @@ pub(crate) struct PinnedIndex {
 
 #[derive(Debug)]
 pub enum RelationalPinnedReadAdmissionDenial {
-    Request(worth_execution::MapKernelStop),
+    Request(crate::execution::RelationalExecutionDenialCause),
     SnapshotUnavailable,
     IndexNotInstalled(DerivedIndexId),
 }
@@ -105,7 +105,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             .get(&index)
             .map(|entry| entry.definition.as_ref())
     }
-    /// `None` retains a cold index's absence at pin time.
+    /// `None` records genuine generation absence after checkpoint admission.
     pub fn index_generation(&self, index: DerivedIndexId) -> Option<DerivedIndexGenerationId> {
         self.indexes
             .get(&index)?

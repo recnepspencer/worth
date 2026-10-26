@@ -182,11 +182,10 @@ fn chip_profile_declared_aspect_fanout_preserves_endpoint_history_for_netlist_li
     );
     assert_eq!(deleted.changed_records.len(), 4);
     for relation in relations {
-        let history = runtime.history().relation_aspect_history(
-            &BranchId("main".to_string()),
-            relation,
-            None,
-        );
+        let history = runtime
+            .history()
+            .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+            .unwrap();
         assert_eq!(history.len(), 2);
         assert_direct_history_origin_invariants(&history, RecordRef::Relation(relation));
         assert_eq!(
@@ -287,21 +286,23 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
             ],
         )
         .unwrap();
-    let main_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("main".to_string()), relation, None);
-    let feature_history =
-        runtime
-            .history()
-            .relation_aspect_history(&BranchId("feature".to_string()), relation, None);
+    let main_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("main".to_string()), relation, None)
+        .unwrap();
+    let feature_history = runtime
+        .history()
+        .relation_aspect_history(execution, &BranchId("feature".to_string()), relation, None)
+        .unwrap();
     let main_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         relation,
         None,
     );
     let feature_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         relation,

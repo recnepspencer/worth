@@ -31,9 +31,7 @@ impl IndexAccess<'_> {
             |stop| {
                 use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
                 let kind = match stop {
-                    Pin::Request(stop) => {
-                        Denial::Execution(crate::execution::denial::kernel_stop(stop))
-                    }
+                    Pin::Request(stop) => Denial::Execution(stop),
                     Pin::SnapshotUnavailable => Denial::SnapshotUnavailable,
                     Pin::IndexNotInstalled(_) => Denial::IndexNotInstalled,
                 };

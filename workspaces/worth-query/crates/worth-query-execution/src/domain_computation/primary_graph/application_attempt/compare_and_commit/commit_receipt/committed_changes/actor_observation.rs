@@ -108,7 +108,7 @@ impl WorthQueryApplicationCommittedChanges {
                     .pin_view_read_capability(&view, &[], execution)
                     .map_err(|cause| match cause {
                         PinStop::Request(cause) => {
-                            Denial::request_read_stopped(cause, "committed approval symbols")
+                            Denial::relational_read_stopped(cause, "committed approval symbols")
                         }
                         PinStop::SnapshotUnavailable => {
                             invalid("committed approval symbol snapshot is unavailable")

@@ -1,4 +1,5 @@
 use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersion};
+#[cfg(test)]
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
@@ -163,6 +164,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                 .is_some()
     }
 
+    #[cfg(test)]
     pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<CanonicalCommitEnvelope> {
         let mut envelopes = self
             .runtime
@@ -300,26 +302,5 @@ impl<'runtime> HistoryAccess<'runtime> {
                 references.into_values().rev().take(limit).collect()
             }
         }
-    }
-
-    pub(super) fn branch_commit_envelopes(
-        &self,
-        branch_id: &BranchId,
-    ) -> Vec<CanonicalCommitEnvelope> {
-        let Some(head) = self.branch_head(branch_id) else {
-            return Vec::new();
-        };
-        let branch_commits = self.ancestor_set(head.commit_id);
-        let mut envelopes = self
-            .commit_envelopes_snapshot()
-            .into_iter()
-            .filter(|envelope| {
-                branch_commits.contains(&envelope.commit.commit_id)
-                    && envelope.commit.branch_id == *branch_id
-            })
-            .collect::<Vec<_>>();
-        envelopes
-            .sort_by_key(|envelope| (envelope.commit.version_id.0, envelope.commit.commit_id.0));
-        envelopes
     }
 }

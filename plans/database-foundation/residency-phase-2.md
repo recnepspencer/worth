@@ -1597,3 +1597,117 @@ window and whose branch filter prevents unrelated performed routes leaking.
 No second mechanism or cleanup-branch merge is needed. The exact run is recorded
 in target/lane-evidence/dictionary-native.log (HEAD aef7ca6237, dirty tree);
 final closeout lanes must be recorded again after all implementation commits.
+
+### Subject-by-path failure matrix: guard families
+
+Boundary review: thirty public visibility, scan, statistics, retention and
+inspection doors share Full region guards, but their declared root versus
+mirror scopes differ. The existing damaged-region loop does not distinguish
+Head-member from history-member failures and exercises proven damage only.
+Historical dictionary admission has a separate physically warmed-fork court.
+The cold port can select only one damaged member today; it cannot inject a
+retryable failure into all placements of one consulted subject. Envelope,
+lineage and index guards have different production doors and must remain
+separate adapters, rather than being mislabeled as dependencies of all reads.
+
+Plan: keep one closed inventory of read doors, split its adapter out of the
+already-near-cap visibility court, and add a table crossing every door with
+region Head, region history and historical symbol pages. Inject all storage
+failure classes through a locator-selective source; assert the exact typed
+subject/cause, no journal or offered publication advance, sticky proven damage,
+and successful retry after transient/allocation/limit refusal. Preserve the
+existing cross-fork dictionary and retained-observation courts. Then extend
+the same matrix vocabulary to actual envelope, lineage and index adapters,
+transaction/commit/merge guards and retained reads, with explicit applicability
+so unconsulted subjects cannot masquerade as tested cells. Matrix coverage is
+not complete until those families and the compile-time Head fence and home
+cold/warm/fully-warmed agreement have real evidence.
+
+The cold lineage matrix exposes a production panic in aspect history:
+branch_commit_envelopes traverses commit_envelopes_snapshot, which dereferences
+all catalog bodies without accepted demands. The prior node court prewarmed
+those bodies and therefore could not expose this independent dependency.
+
+Boundary and fix plan: select branch ancestry from immutable receipts first,
+with a finite 4,096-commit policy ceiling checked before any envelope demand;
+refuse excess work with the existing WorkExhausted request cause, never partial
+history. Demand only the selected authoring branch's bodies with the original
+request and existing authenticated envelope cells. Keep the selected Arc bodies
+through result construction. Make the four direct aspect-history operations
+execution-taking Results, propagate through inspection, and preserve lineage's
+existing typed Result. Remove the production all-catalog body traversal;
+retain only the owner-test snapshot door under cfg(test). Add a cold envelope
+failure cell for each history surface and a small-bound refusal court using
+actual producer history. No fixture-wide body warming may conceal this gap.
+
+The index matrix reaches its intended red boundary: SnapshotPin with an injected
+MissingMember returns Ok(false), silently dropping the real restored generation.
+Pinning currently reads exact_generation before admitting the deferred image.
+
+Boundary and fix plan: pinning is the operation orchestrator. Validate owner,
+exact basis and every selected definition first, demand the exact root at Full
+with its symbol authority, then demand the selected index image before retaining
+native generation handles. Empty index selections do not demand the image.
+Carry the existing pin Request variant's native execution cause directly rather
+than restricting it to MapKernelStop; this preserves storage subjects and all
+request-control causes through field, join, ordering and Query callers. Refresh
+the pinned symbol snapshot after Full admission, including view pins whose
+metadata snapshot predates warming. Preserve query preparation's existing
+kernel-stop reports while routing storage refusal as its typed ReadRequest.
+The index matrix covers two pin doors, field preparation and validation,
+candidate preparation and commit; each failure must precede journal effects.
+
+The first six-subject matrix wave now passes 696 injected-failure cells:
+32 Full read/pin doors x Head/history/symbols x six causes (576), seven
+envelope doors x six (42), seven node-consuming doors x six (42), and six
+index doors x six (36). This is scoped coverage, not completion of every
+transaction, merge, retained export, event and index-build path. All cells
+refuse with the exact typed subject/cause before journal effects; proven
+MissingMember/Damaged/IntegrityMismatch stay sticky, while SourceUnavailable,
+LimitExceeded and MemoryExhausted succeed after the injected refusal clears.
+
+The matrix found and corrected two product gaps: aspect history dereferenced
+unadmitted catalog bodies; pinning treated an unadmitted index image as absent.
+Aspect history now demands the selected records at Full and bounded selected
+branch bodies through authenticated cells. Four direct history APIs and their
+inspection callers carry the original request and Result. Native whole-history
+snapshotting is test-only. Pinning validates definitions before payload demand,
+retains Full root custody, loads the selected index image and captures meanings
+after admission. Its Request denial carries the native execution cause; Query
+uses its existing native storage-denial mapper. The native cause owns the
+single projection of kernel-only stops so both query preparation and managed
+Query reads preserve interruption reports without turning storage failure into
+a synthetic kernel stop.
+
+Fixture corrections remain distinct from product fixes. The new dictionary
+child initially lacked its sibling path attribute. A Windows ANSI write made
+one matrix source non-UTF-8; it is now explicit UTF-8. The symbol matrix initially
+returned a memory-only fork while asserting a durable medium; warming the fork
+and testing the still-cold durable original preserves both claims. The index
+matrix initially used a materialized view where pinning requires an exact
+projection, and accessed a denial field instead of its getter. It then exposed
+that merely registering an index does not publish a generation: setup now uses
+the declared field schema, builds through the actual index authority, verifies
+the exact producer head generation, and captures that state. Its checkpoint
+fixture is separated from the fault courts. No test claim is weakened.
+
+Query caller checking initially rejected the widened refusal at two kernel-only
+mappers. The performed-approval caller now uses relational_read_stopped; managed
+read denial projects genuine kernel stops and preserves other native causes.
+The corrected Query lib/test caller check passes. The complete native library
+passes 1,960 tests (31 existing ignores), including all four matrix families,
+the bounded-history ceiling court, and the existing Head compile-time fence.
+All three owner-service CI clippy lanes, formatting, composition/dirty caps,
+boundary-check and agent-context pass. A boundary run started during edits
+observed a module declaration before its file existed and refused; its corrected
+stable-tree run passes. Composition reports 59 advisories: the new long routines
+are closed operation adapters or explicit producer/fault courts, not mixed
+production responsibilities; API forwarding in existing larger courts retains
+the original assertions. No touched file exceeds its applicable cap.
+
+These intermediate logs are under target/lane-evidence/matrix-*.log with
+commands, HEAD c83ea18eca, dirty-tree status, UTC start/end and exit codes.
+They do not substitute for the final post-implementation lane list. The three
+owner-service clippy lanes are not the entire CI lint list: query_gate also
+names lint-lower, lint-query, lint-fixture, lint-bank and lint-ui-binding; final
+verification must include those actual command suites.

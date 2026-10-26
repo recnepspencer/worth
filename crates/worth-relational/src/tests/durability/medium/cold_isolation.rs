@@ -92,6 +92,7 @@ fn recover_shape(
         commit_reads: std::sync::Mutex::new(Vec::new()),
         commits_damaged: AtomicBool::new(false),
         failed_member: std::sync::Mutex::new(None),
+        failures: std::sync::Mutex::new(Default::default()),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

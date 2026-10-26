@@ -24,12 +24,14 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
         .history()
         .branch_head(&BranchId("feature".to_string()));
     let main_digest_before = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         changed_relations(&accepted)[0],
         None,
     );
     let feature_digest_before = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         changed_relations(&accepted)[0],
@@ -81,6 +83,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
     );
     assert_eq!(
         relation_aspect_history_digest_on_branch(
+            execution,
             &runtime,
             &BranchId("main".to_string()),
             changed_relations(&accepted)[0],
@@ -90,6 +93,7 @@ fn relation_integrity_rejected_branch_local_commit_does_not_advance_truth_or_lea
     );
     assert_eq!(
         relation_aspect_history_digest_on_branch(
+            execution,
             &runtime,
             &BranchId("feature".to_string()),
             changed_relations(&accepted)[0],

@@ -23,7 +23,7 @@ fn relation_demand_judges_exact_nonzero_slot_under_proposed_rules_without_rewrit
         .read_version(execution, runtime.current_version_id())
         .unwrap();
     let before_record = before.get_relation(good).unwrap().clone();
-    let before_history = relation_aspect_history_digest(&runtime, good, None);
+    let before_history = relation_aspect_history_digest(execution, &runtime, good, None);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(batch(good), Policy::SystemAllocation)
@@ -57,7 +57,7 @@ fn relation_demand_judges_exact_nonzero_slot_under_proposed_rules_without_rewrit
         Some(&before_record),
         "payload/endpoints/lifecycle/version/lineage unchanged"
     );
-    let after_history = relation_aspect_history_digest(&runtime, good, None);
+    let after_history = relation_aspect_history_digest(execution, &runtime, good, None);
     assert_eq!(after_history.entry_count, before_history.entry_count);
     assert_eq!(
         after_history.opaque_aspect_entry_count,

@@ -1,6 +1,7 @@
 mod ancestry;
 mod aspect_history_queries;
 mod bounded_commit_patches;
+mod branch_envelope_reads;
 mod commit_surfaces;
 mod envelope_reads;
 mod merge_branch_basis;

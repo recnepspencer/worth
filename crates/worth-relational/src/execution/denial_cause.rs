@@ -39,3 +39,20 @@ pub enum RelationalExecutionDenialCause {
     ExpectedIdentitiesNotCanonical,
     MemoryOverflow,
 }
+
+impl RelationalExecutionDenialCause {
+    /// Project only execution-kernel stops; storage and admission refusals
+    /// retain their native payload rather than becoming synthetic map stops.
+    pub fn as_kernel_stop(self) -> Option<worth_execution::MapKernelStop> {
+        use worth_execution::MapKernelStop as Stop;
+        match self {
+            Self::Cancelled => Some(Stop::Cancelled),
+            Self::DeadlineElapsed => Some(Stop::DeadlineElapsed),
+            Self::WorkCounterOverflow => Some(Stop::WorkCounterOverflow),
+            Self::AccountingUnavailable => Some(Stop::AccountingUnavailable),
+            Self::WorkExhausted => Some(Stop::WorkCeiling),
+            Self::NestedStopped => Some(Stop::NestedStopped),
+            _ => None,
+        }
+    }
+}
