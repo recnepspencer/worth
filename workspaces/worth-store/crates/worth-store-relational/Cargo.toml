@@ -28,14 +28,10 @@ certification-test-authority = [
 
 [[test]]
 name = "relational_home"
+path = "tests/relational_home.rs"
 # The crash oracle uses the compiled certification media and interruption doors.
 # Keep that requirement explicit; the certification feature lane runs the suite.
 required-features = ["certification-test-authority"]
 
 [lints]
 workspace = true
-
-[[test]]
-name = "relational_home"
-path = "tests/relational_home.rs"
-required-features = ["certification-test-authority"]
