@@ -4362,3 +4362,189 @@ ledger) under all three QA skills, with commit eligibility contingent on those
 terminal gates and this factual record. Both conditions are now satisfied. No
 source changed after freeze 2. The concurrent specification/roadmap extension is
 excluded from this slice, and Phase 4 default integration remains closed.
+
+## Phase 4 Slice 5 — Committed Native aggregate source
+
+Slice 4 is committed/pushed as `da27f1ed3000f74fa4e008144fd9ec19690b4005`.
+Its custom port borrows proposal custody; it does not grant an ordinary
+application read or historical lineage source. This slice adds that missing
+committed Native boundary before Query carries the result. Scope is member to
+committed aggregate identity/canonical membership and stored incident lineage.
+Identity-only lookup/latest resolution, Query orbit order/readers/facts/shapes,
+consumer adoption and ordinary merge readiness remain open. No default merge is
+eligible from this slice alone.
+
+### Boundary review
+
+`RelationalPinnedRead<Snapshot>` is already the owner-issued immutable source.
+Its pinning path admits the real snapshot or exact observation, retains the
+selected root, and reads schema from that root. Generic `()` pins have no
+operational snapshot/plan door. Implement the new read against this receiver,
+using its retained root/schema/version and the caller's original execution
+request. Do not construct a proposal invocation, consult current runtime schema,
+materialize a whole `read_snapshot`, or create a Query/private-ID registry.
+
+Native schema binding permits distinct definitions on one source relation. A
+source-only read must return `AmbiguousAggregateRelation` when more than one
+actual installed contract matches; do not choose the first or narrow existing
+schema legality. The normal Query orbit lowering installs one definition per
+declared source. Qualify the ambiguity refusal with a real two-definition schema
+and its single-definition twin; definition-qualified selection remains a later
+boundary. The existing proposed reader's mismatch refusal is not weakened.
+
+The aggregate owner already has exact funded permutation traversal and one
+strict stored membership decoder. Extract its existing collection into a shared
+private operation returning the actual stored aggregate row and members. The
+custom read continues through it; the pinned source consumes it directly. Keep
+canonical member order explicit; it is not successor order. Query will later
+compose actual source traversal rather than treating an ID-sorted set as an orbit.
+
+Historical incident lineage differs from Slice 4's proposed transition events.
+Start from the actual private aggregate row found through membership, inspect
+both selected-root incoming and outgoing lineage relations, and decode the
+central fixed grammar's explicit 1/2 tags and actual occurrence. Validate endpoint
+kinds, definition and minted identity. Split generic row validity from the active
+group's current-anchor/member checks: opposite endpoints may be valid retired
+aggregates, particularly a `MergedInto` source. Reciprocal split events are
+lawful; do not infer a DAG, global latest result or numeric occurrence order.
+Deduplicate incident edge identities before decoding; reject distinct duplicate
+event tuples/corrupt grammar rather than silently hide them. Return deterministic
+semantic tuples without private entity/relation IDs or metadata write access.
+
+Fund the new immutable result, event/member collections, transient collections
+and Arc/control backing before growth on the actual original Native extent.
+One pure-read result retains that grant until its final clone drops. Unaccounted
+Native work retains no invented payer. Ordinary reads have no custom-rule
+allowance. An optional caller read-work limit and additional refusal checkpoint
+only narrow the original request; neither grants source or execution authority.
+
+The current commit-oriented funding helper erases domain detail into
+`TransactionCommitError`. Preserve private typed funding failure first, then
+adapt at existing commit/custom callers. A genuine local
+`PlanDenial::ReadWorkLimitExceeded` must remain distinct from original request
+work exhaustion; no `WorkExhausted` sentinel or string parsing is permitted.
+Generalize only the private read checkpoint/core naming needed by these two
+read audiences. Existing custom local-only debit and exact cumulative billing
+remain unchanged, with their current courts reused.
+
+The ordinary read adapter follows the existing pinned-walk ownership model:
+return a genuine nonexecution domain decline as callback data before the measured
+framework classifies it. A private charged `ReadOutcome::Declined` holds no partial
+body and covers any owned denial backing (currently heapless). Translate that
+value to the typed public read refusal after handoff. Partial scratch drops before
+the grant shrinks/releases. Commit/custom adapters keep their existing framework
+domain-failure behavior unchanged.
+
+Poll the actual context before building, after an external checkpoint callback,
+and after building before wrapping a local decline. A nested/request stop vetoes
+that local value. Execution, Stop, Panic, result-capacity, memory and control
+failures remain real framework failures. Do not consume any pending computation
+or request stop; the read-domain-as-data adapter avoids the take-any-stop hazard
+entirely. Preserve the actual typed measured failure only over its `NestedStopped`
+promotion, not over another concrete handoff failure. No execution-framework API
+or reservation split is needed. This refinement was reviewed before code edits.
+
+Keep checked acquisition tallies and read-work observations outside the callback's
+returned value through final control/admission handoff. Note selected adjacency
+only after obtaining its list, and entity/relation metadata only after `Some`,
+including records later rejected by kind/grammar checks. Report aspect-state
+acquisition separately if included. Failed probes still cost work. Include any
+metadata acquired by adjacency visibility filtering at that actual owner boundary;
+do not report a preallocation estimate or execution report as graph reads. No
+partial semantic group/event body may escape a refusal.
+
+The persistent reviewer has reviewed these boundaries under all three QA skills.
+Future Query carriage must invoke this actual Native door once and retain its
+body in a private actual-read observation issuer. A structural-walk observation
+does not prove aggregate identity or historical events. That later integration
+must cover ordinary typed reads, issued operation/handler facts, both seal paths,
+complete truth/currentness comparison, canonical identity/routes/source merging,
+retention/whitelists/checkpoint policy and an explicit early Full computation
+fallback until incremental carriage is genuinely qualified.
+
+### Implementation plan
+
+1. Refactor the private funding core to retain domain versus execution failure,
+   with existing transaction adapters preserving current behavior. Generalize
+   the private read checkpoint to typed domain denials and optional external
+   acquisition tally. Keep original reports/account locking, local-only custom
+   debit and unaccounted posture intact. Preserve the current exact100-unit and
+   tracked-counter courts.
+2. Extract shared stored-group collection. Centralize stored-row validation
+   (kind, fixed grammar, definition, mint, lifecycle consistency), keeping active
+   anchor/membership checks in the group validator. Add the single lineage grammar
+   decoder and an aggregate-owned incident-lineage reader over actual selected
+   adjacency, with original funding and actual acquisition notes.
+3. Add the pinned read scope, opaque retained result and typed denial/observation
+   values in the Native aggregate owner. Implement the receiver entry through
+   existing `crate::runtime::RelationalPinnedRead` and verified root accessors;
+   export only the intended Native facade. Preserve `()` pin restrictions and
+   avoid runtime/request handles in the immutable result.
+4. Integrate the domain-as-data read handoff, distinct local limit,
+   external-callback stop precedence, final control check and
+   outside-payload observations. A declined local read must leave lawful parent
+   work usable; swallowed original request refusal must still stop its parent.
+5. Reuse the aggregate fixtures to read real birth/split/merge snapshots and
+   complete stored incident tuples. Retain an old pin across mutation and
+   operational snapshot retirement, compare siblings sharing an identity but
+   differing in members, and verify selected schema after current configuration
+   changes. Cover original cancellation/work/memory refusal, local-limit/funded
+   twins, nested callback-stop precedence, truthful failure observations and last
+   retained payer release. Reuse existing pin-retirement and aggregate recovery
+   evidence rather than add a second test portfolio.
+6. Obtain source/court clearance, freeze and batch one Native artifact. Run the
+   focused new owner/pin courts plus affected existing accounting, custom handoff,
+   aggregate/recovery filters, scoped static and required NORMAL/context checks.
+   Record actual failed attempts and final all-three-skill clearance, then commit
+   and push only this slice. Query downstream builds wait for real Query consumer
+   changes; all public orbit/latest/fact and default-integration claims stay open.
+
+Expected responsibilities are private typed funding/observation, stored group,
+stored scalar grammar/lineage decoding, pinned read entry/scope/result and incident
+lineage traversal. Existing view code may carry a narrow acquisition callback at
+the point it actually filters metadata; it receives no aggregate policy or
+authority. Keep every touched Rust file within its actual cap. No Slice 5 code
+implementation preceded this boundary review and plan.
+
+### Slice 5 qualification
+
+The persistent reviewer cleared the production source, seven real pin/stop
+courts and one independent scalar-grammar court under all three QA skills.
+Review caught the old scalar decoder's normalization of contradictory lifecycle
+fields; it now enforces active/no-retirement and retired/seed-sentinel/nonzero
+retirement grammar. Canonical active anchors may differ from their birth seed,
+and valid retired lineage endpoints remain accepted. No event-time numeric
+ordering or malformed-graph authority door was added. The configuration-drift
+court uses the existing Native owner control and explicitly makes no claim that
+its empty replacement is a lawful production schema migration.
+
+All 20 scoped Rust files passed formatting (0.51s), line caps (8.77s), function
+scan (1.80s, thirteen accepted advisories/zero scan errors) and whitespace (0.17s).
+Native build 1 passed on its first attempt in 152.18 seconds with zero diagnostics.
+Build identity: `cd4ca062-9c06-49e5-8459-0c92af542191`; evidence prefix:
+`targets/query-9.18.1-phase4-slice5-*`. All 96 distinct tests passed across thirteen
+nonempty filters, with zero failed/ignored cases: existing pins 5, pinned walks
+6, Native allowance 1, prerequisites 10, structural custom reads 8, proposal
+custody 3, allocation owner 10, publication order 3, allocation recovery 8,
+aggregate owner 35, proposal affinity 2, prepared discard 1 and created endpoints
+4. The reviewer independently audited raw distinct names and rehashed all twenty
+freeze-1 Rust inputs without a mismatch.
+
+The runtime evidence covers local read-limit refusal/funded retry inside the
+same accounted or unaccounted Native extent, ignored original work/cancellation/
+memory failure still stopping the parent, and an external nested failure vetoing
+a simultaneous local limit. Snapshot retirement, retained old-root events,
+retired opposite endpoints, siblings with the same ID/different members, actual
+selected schema, `()` pins and last-clone payer release ran through the new entry.
+Legal two-definition ambiguity refuses before graph acquisition; the ordinary
+single-definition twin reads. Existing custom local-only debit, exact cumulative
+accounting, private metadata recovery and proposal custody stayed green.
+
+No additional runtime or Query/certification rebuild is required for this
+additive Native-only source; actual Query carriage still requires its own gates.
+Final NORMAL boundary checking passed in 427.89 seconds, and final agent-context
+checking passed in 0.59 seconds. The reviewer granted final clearance under all
+three QA skills for the exact 21-path topic commit/push (20 Rust inputs plus
+this ledger), including cached whitespace and the factual terminal record. No
+implementation changed after freeze 1. The concurrent specification/roadmap
+extension stays excluded, and Phase 4 default integration remains closed.

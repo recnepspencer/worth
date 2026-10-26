@@ -1,41 +1,19 @@
 //! Original Native accounting posture and retained consequence preparation custody.
-use super::AggregateTransitionDenial;
+use super::observations::{Acquisition, AggregateReadObservations};
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation, MapKernelFailure, ScopeStop};
+mod failure;
+pub(super) use failure::{FundingFailure, PlanDenial};
 #[cfg(test)]
 mod tests;
-#[derive(Debug)]
-pub(super) enum PlanDenial {
-    Execution(crate::execution::RelationalExecutionDenialCause),
-    OrdinaryMetadataWrite,
-    InvalidPermutation,
-    InvalidStoredIdentity,
-    IncompleteStoredMembership,
-    Transition(AggregateTransitionDenial),
-}
-impl From<AggregateTransitionDenial> for PlanDenial {
-    fn from(value: AggregateTransitionDenial) -> Self {
-        Self::Transition(value)
-    }
-}
-impl ChargedBytes for PlanDenial {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
 pub(super) type BuildResult<T> = Result<T, MapKernelFailure<PlanDenial>>;
-impl From<AggregateTransitionDenial> for MapKernelFailure<PlanDenial> {
-    fn from(value: AggregateTransitionDenial) -> Self {
-        Self::Domain(value.into())
-    }
-}
 
 pub(super) struct AggregateWork<'a, 'scope, 'authority, 'memory> {
     context: &'a mut worth_execution::MapKernelContext<'scope, 'authority>,
     memory: Option<&'a mut worth_execution::ExecutionResultMemory<'memory>>,
     claimed: u64,
-    rule_allowance:
-        &'a mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    read_checkpoint: &'a mut dyn FnMut(u64) -> BuildResult<()>,
+    observations: Option<&'a mut AggregateReadObservations>,
 }
 impl AggregateWork<'_, '_, '_, '_> {
     pub(super) fn checkpoint(&mut self, units: u64) -> BuildResult<()> {
@@ -45,8 +23,29 @@ impl AggregateWork<'_, '_, '_, '_> {
             self.context.poll()
         }
         .map_err(MapKernelFailure::Stop)?;
-        (self.rule_allowance)(units)
-            .map_err(|cause| MapKernelFailure::Domain(PlanDenial::Execution(cause)))
+        let result = (self.read_checkpoint)(units);
+        self.settle(result)
+    }
+    pub(super) fn poll(&mut self) -> BuildResult<()> {
+        self.context.poll().map_err(MapKernelFailure::Stop)
+    }
+    fn settle<T>(&mut self, result: BuildResult<T>) -> BuildResult<T> {
+        match (self.context.poll(), result) {
+            // The callback began at a clean original checkpoint. Its actual
+            // execution refusal may be promoted by its own nested Native work.
+            (
+                Err(worth_execution::MapKernelStop::NestedStopped),
+                Err(MapKernelFailure::Domain(PlanDenial::Execution(cause))),
+            ) => Err(MapKernelFailure::Domain(PlanDenial::Execution(cause))),
+            (Err(stop), _) => Err(MapKernelFailure::Stop(stop)),
+            (Ok(()), result) => result,
+        }
+    }
+    pub(super) fn acquired(&mut self, acquisition: Acquisition) -> BuildResult<()> {
+        if let Some(observations) = self.observations.as_mut() {
+            observations.acquired(acquisition)?;
+        }
+        Ok(())
     }
     pub(super) fn retain(&mut self, bytes: u64) -> BuildResult<()> {
         self.checkpoint(1)?;
@@ -77,23 +76,67 @@ pub(super) fn run<T: ChargedBytes>(
     budget: Option<&crate::execution::RequestWorkBudget>,
     build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
 ) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
-    run_with_allowance(execution, budget, &mut |_| Ok(()), build)
+    run_core(execution, budget, &mut |_| Ok(()), None, build).map_err(FundingFailure::into_commit)
 }
 
-pub(super) fn run_in_custom_read<T: ChargedBytes>(
+pub(super) fn run_custom_read<T: ChargedBytes>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
     build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
 ) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
-    run_with_allowance(execution, None, allowance, build)
+    let mut checkpoint = |units| {
+        allowance(units).map_err(|cause| MapKernelFailure::Domain(PlanDenial::Execution(cause)))
+    };
+    run_core(execution, None, &mut checkpoint, None, build).map_err(FundingFailure::into_commit)
 }
 
-fn run_with_allowance<T: ChargedBytes>(
+enum ReadOutcome<T> {
+    Value(T),
+    Declined(PlanDenial),
+}
+impl<T: ChargedBytes> ChargedBytes for ReadOutcome<T> {
+    fn additional_charged_bytes(&self) -> u64 {
+        match self {
+            Self::Value(value) => value.additional_charged_bytes(),
+            Self::Declined(denial) => denial.additional_charged_bytes(),
+        }
+    }
+}
+
+/// Read-owned domain declines are data, not failed framework computations.
+/// Request/resource failures keep their original stopping posture.
+pub(super) fn run_read<T: ChargedBytes>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    checkpoint: &mut dyn FnMut(u64) -> BuildResult<()>,
+    observations: &mut AggregateReadObservations,
+    build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
+) -> Result<(T, Option<ExecutionMemoryReservation>), FundingFailure> {
+    let (outcome, retention) = run_core(execution, None, checkpoint, Some(observations), |work| {
+        work.poll()?;
+        let result = build(work);
+        match work.settle(result) {
+            Ok(value) => Ok(ReadOutcome::Value(value)),
+            Err(MapKernelFailure::Domain(denial))
+                if !matches!(denial, PlanDenial::Execution(_)) =>
+            {
+                Ok(ReadOutcome::Declined(denial))
+            }
+            Err(failure) => Err(failure),
+        }
+    })?;
+    match outcome {
+        ReadOutcome::Value(value) => Ok((value, retention)),
+        ReadOutcome::Declined(denial) => Err(FundingFailure::Domain(denial)),
+    }
+}
+
+fn run_core<T: ChargedBytes>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     budget: Option<&crate::execution::RequestWorkBudget>,
-    allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    checkpoint: &mut dyn FnMut(u64) -> BuildResult<()>,
+    mut observations: Option<&mut AggregateReadObservations>,
     build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
-) -> Result<(T, Option<ExecutionMemoryReservation>), TransactionCommitError> {
+) -> Result<(T, Option<ExecutionMemoryReservation>), FundingFailure> {
     let mut build = Some(build);
     enum NativeStage<T> {
         Accounted,
@@ -111,13 +154,14 @@ fn run_with_allowance<T: ChargedBytes>(
                 context,
                 memory: None,
                 claimed: 0,
-                rule_allowance: &mut *allowance,
+                read_checkpoint: &mut *checkpoint,
+                observations: observations.as_deref_mut(),
             };
             build.take().expect("one aggregate preparation")(&mut work)
                 .map(NativeStage::Unaccounted)
-                .map_err(failure)
+                .map_err(failure::kernel)
         })
-        .map_err(|denial| execution_error(denial.into()))?;
+        .map_err(|denial| FundingFailure::Execution(denial.into()))?;
     if let NativeStage::Unaccounted(value) = stage? {
         return Ok((value, None));
     }
@@ -125,7 +169,7 @@ fn run_with_allowance<T: ChargedBytes>(
     let handoff = execution.in_scope(|lease| {
         settled = Some((|| {
             let mut retention =
-                ExecutionMemoryReservation::reserve_in_scope(lease, 0).map_err(lease_error)?;
+                ExecutionMemoryReservation::reserve_in_scope(lease, 0).map_err(failure::lease)?;
             let mut invoke = |ceiling| {
                 execution.run_measured_result(
                     worth_execution::ExecutionWorkCeiling::new(ceiling),
@@ -136,7 +180,8 @@ fn run_with_allowance<T: ChargedBytes>(
                             context,
                             memory: Some(memory),
                             claimed: 0,
-                            rule_allowance: &mut *allowance,
+                            read_checkpoint: &mut *checkpoint,
+                            observations: observations.as_deref_mut(),
                         };
                         build.take().expect("one aggregate preparation")(&mut work)
                     },
@@ -153,8 +198,8 @@ fn run_with_allowance<T: ChargedBytes>(
             };
             match outcome.result {
                 Ok(value) => Ok((value, Some(retention))),
-                Err(ScopeStop::Admission(denial)) => Err(lease_error(denial)),
-                Err(ScopeStop::Failure(cause)) => Err(failure(cause)),
+                Err(ScopeStop::Admission(denial)) => Err(failure::lease(denial)),
+                Err(ScopeStop::Failure(cause)) => Err(failure::kernel(cause)),
             }
         })());
     });
@@ -168,42 +213,7 @@ fn run_with_allowance<T: ChargedBytes>(
             )),
             Some(Err(error)),
         ) => Err(error),
-        (Err(denial), _) => Err(execution_error(denial.into())),
+        (Err(denial), _) => Err(FundingFailure::Execution(denial.into())),
         (Ok(()), None) => unreachable!("successful scope invokes aggregate stage"),
     }
-}
-
-fn failure(cause: MapKernelFailure<PlanDenial>) -> TransactionCommitError {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
-    match cause {
-        MapKernelFailure::Domain(denial) => invalid_plan(denial),
-        MapKernelFailure::Stop(stop) => execution_error(stop.into()),
-        MapKernelFailure::ResultCapacityExceeded => execution_error(Cause::ResultCapacityExceeded),
-        MapKernelFailure::Panic => execution_error(Cause::WorkerFailed),
-    }
-}
-fn invalid_plan(denial: PlanDenial) -> TransactionCommitError {
-    if let PlanDenial::Execution(cause) = denial {
-        return execution_error(cause);
-    }
-    let detail = match denial {
-        PlanDenial::Transition(denial) => {
-            format!("Native aggregate identity transition denied: {denial:?}")
-        }
-        other => format!("Native aggregate identity preparation denied: {other:?}"),
-    };
-    TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-        crate::transactions::data::ConflictClass::KindSchemaMismatch { detail },
-    ))
-}
-fn lease_error(denial: worth_execution::LeaseDenial) -> TransactionCommitError {
-    execution_error(crate::execution::denial::lease_denial(denial))
-}
-fn execution_error(
-    cause: crate::execution::RelationalExecutionDenialCause,
-) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
-        partition_identity: None,
-    })
 }

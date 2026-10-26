@@ -8,12 +8,13 @@ use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::structural_traversal::{walk as walk_native_breadth_first, BreadthFirstRead};
 use crate::transactions::data::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
-use worth_foundational::facade::{AggregateIdentity, AspectKey, ContractValidatedAspectValueView};
+use worth_foundational::facade::AggregateIdentity;
 
+use super::observations::Acquisition;
 use super::preparation::{AggregateWork, BuildResult, PlanDenial};
-use super::record::{AggregateRecord, AGGREGATE_ASPECT};
+use super::record::AggregateRecord;
 use super::retention_extent as extent;
-use super::{transition, PriorAggregate};
+use super::PriorAggregate;
 
 pub(super) struct StoredAggregate {
     pub(super) entity: EntityId,
@@ -59,7 +60,13 @@ pub(super) fn collect(
             continue;
         };
         let old = before.entity_metadata(*entity);
+        if old.is_some() {
+            work.acquired(Acquisition::Entity)?;
+        }
         let new = after.entity_metadata(*entity);
+        if new.is_some() {
+            work.acquired(Acquisition::Entity)?;
+        }
         if old.is_none() != new.is_none()
             && old
                 .as_ref()
@@ -115,18 +122,8 @@ pub(super) fn read_stored_group(
         return work.invalid(PlanDenial::InvalidPermutation);
     };
     let (_, entity) = membership(view, first, contract.membership_kind, work)?;
-    work.retain(extent::stored_row())?;
-    let Some(row) = read_record(view, entity) else {
-        return work.invalid(PlanDenial::InvalidStoredIdentity);
-    };
-    if view
-        .entity_metadata(entity)
-        .is_none_or(|meta| meta.kind_id != contract.storage.aggregate_kind)
-        || row.definition != contract.definition
-        || row.current_anchor != Some(first)
-        || row.retired.is_some()
-        || row.identity != transition::mint(row.definition, row.born, row.seed)
-    {
+    let row = super::stored_record::read(view, entity, contract, work)?;
+    if row.current_anchor != Some(first) || row.retired.is_some() {
         return work.invalid(PlanDenial::InvalidStoredIdentity);
     }
     for &member in members {
@@ -155,6 +152,7 @@ fn membership(
         let Some(edge) = view.relation_metadata(relation) else {
             continue;
         };
+        work.acquired(Acquisition::Relation)?;
         if edge.kind_id != kind {
             continue;
         }
@@ -165,16 +163,6 @@ fn membership(
     binding.ok_or(worth_execution::MapKernelFailure::Domain(
         PlanDenial::IncompleteStoredMembership,
     ))
-}
-
-fn read_record(view: &InvariantStateView<'_>, entity: EntityId) -> Option<AggregateRecord> {
-    let state = view.entity_aspect_state(entity)?;
-    let ContractValidatedAspectValueView::Struct(fields) =
-        state.get(&AspectKey::new(AGGREGATE_ASPECT)?)?.view()
-    else {
-        return None;
-    };
-    AggregateRecord::decode(|locator| fields.get(locator.field_path().fields().first()?))
 }
 
 pub(super) fn groups(
@@ -188,9 +176,13 @@ pub(super) fn groups(
     let mut groups = Vec::new();
     for &seed in seeds {
         work.checkpoint(1)?;
-        if visited.contains(&seed) || view.entity_metadata(seed).is_none() {
+        if visited.contains(&seed) {
             continue;
         }
+        if view.entity_metadata(seed).is_none() {
+            continue;
+        }
+        work.acquired(Acquisition::Entity)?;
         let members = walk_native_breadth_first(
             &[seed],
             &mut OrbitRead {
@@ -231,11 +223,11 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
         mut enqueue: impl FnMut(&mut Self, EntityId) -> BuildResult<()>,
     ) -> BuildResult<()> {
         self.work.checkpoint(1)?;
-        if self
-            .view
-            .entity_metadata(entity)
-            .is_none_or(|entry| entry.kind_id != self.contract.member_kind)
-        {
+        let metadata = self.view.entity_metadata(entity);
+        if metadata.is_some() {
+            self.work.acquired(Acquisition::Entity)?;
+        }
+        if metadata.is_none_or(|entry| entry.kind_id != self.contract.member_kind) {
             return self.work.invalid(PlanDenial::InvalidPermutation);
         }
         let ids = outgoing(self.view, entity, self.work)?;
@@ -248,6 +240,7 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
             let Some(edge) = self.view.relation_metadata(id) else {
                 continue;
             };
+            self.work.acquired(Acquisition::Relation)?;
             if edge.kind_id == self.contract.source_relation && edge.source == entity {
                 self.work.retain(extent::successor_edge())?;
                 edges.insert((id, edge.target));
@@ -272,5 +265,8 @@ fn outgoing(
             .saturating_add(extent::empty_candidate()),
     )?;
     work.checkpoint(count.saturating_mul(8).saturating_add(1))?;
-    Ok(view.outgoing_relations_for_entity(entity))
+    let ids = view
+        .outgoing_relations_for_entity_observed(entity, || work.acquired(Acquisition::Relation))?;
+    work.acquired(Acquisition::Adjacency)?;
+    Ok(ids)
 }

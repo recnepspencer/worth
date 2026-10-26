@@ -168,7 +168,7 @@ fn native_custom_read_debits_rule_once_and_original_enclosing_report_once() {
                 .then_some(())
                 .ok_or(Cause::WorkExhausted)
         };
-        let (_, retention) = run_in_custom_read(&execution, &mut allowance, |nested| {
+        let (_, retention) = run_custom_read(&execution, &mut allowance, |nested| {
             nested.checkpoint(60)?;
             Ok(Payload(Vec::new()))
         })

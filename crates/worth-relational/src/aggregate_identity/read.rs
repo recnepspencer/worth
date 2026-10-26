@@ -45,11 +45,18 @@ enum ReadBacking {
     Stored(Arc<StoredAggregateRead>),
 }
 
-/// Borrow of an actual event in this proposal's transition. Historical lineage
-/// and latest-identity resolution are separate APIs, not inferred from this view.
+/// Borrow of an actual event retained by a Native aggregate read. The enclosing
+/// reader distinguishes stored incident history from a proposed transition;
+/// latest-identity resolution is not inferred from either event view.
 #[derive(Clone, Copy)]
 pub struct AggregateReadLineageEvent<'read> {
     event: &'read super::AggregateLineageEvent,
+}
+
+impl<'read> AggregateReadLineageEvent<'read> {
+    pub(super) fn new(event: &'read super::AggregateLineageEvent) -> Self {
+        Self { event }
+    }
 }
 
 impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {

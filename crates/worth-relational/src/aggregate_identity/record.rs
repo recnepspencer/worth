@@ -8,6 +8,8 @@ use worth_foundational::facade::{
 use super::AggregateLineageKind;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, PartitionId};
+#[cfg(test)]
+mod tests;
 
 pub(crate) const AGGREGATE_ASPECT: &str = "aggregate-identity";
 pub(crate) const LINEAGE_ASPECT: &str = "aggregate-lineage";
@@ -39,6 +41,29 @@ pub(crate) struct AggregateRecord {
     pub(crate) seed: EntityId,
     pub(crate) current_anchor: Option<EntityId>,
     pub(crate) retired: Option<CommitId>,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(crate) struct LineageRecord {
+    pub(crate) occurrence: CommitId,
+    pub(crate) kind: AggregateLineageKind,
+}
+
+impl LineageRecord {
+    pub(crate) fn decode<'a>(
+        mut read: impl FnMut(&AspectFieldLocator) -> Option<&'a AspectValue>,
+    ) -> Option<Self> {
+        let occurrence = CommitId(u64_value(read(&locator(LINEAGE_ASPECT, "occurrence"))?)?);
+        let AspectValue::UInt8(kind) = read(&locator(LINEAGE_ASPECT, "kind"))? else {
+            return None;
+        };
+        let kind = match *kind {
+            1 => AggregateLineageKind::SplitFrom,
+            2 => AggregateLineageKind::MergedInto,
+            _ => return None,
+        };
+        Some(Self { occurrence, kind })
+    }
 }
 
 pub(crate) fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
@@ -86,7 +111,12 @@ impl AggregateRecord {
             AspectValue::Bool(value) => *value,
             _ => return None,
         };
+        let seed = decode_entity(&values, "seed")?;
         let current = decode_entity(&values, "current")?;
+        let retired = u64_value(values["retired"])?;
+        if (active && retired != 0) || (!active && (retired == 0 || current != seed)) {
+            return None;
+        }
         Some(Self {
             identity: AggregateIdentity::from_bytes(decode_digest(&values, "identity")?),
             definition: AggregateDefinitionIdentity::from_bytes(decode_digest(
@@ -94,9 +124,9 @@ impl AggregateRecord {
                 "definition",
             )?),
             born: CommitId(u64_value(values["born"])?),
-            seed: decode_entity(&values, "seed")?,
+            seed,
             current_anchor: active.then_some(current),
-            retired: (!active).then_some(CommitId(u64_value(values["retired"])?)),
+            retired: (!active).then_some(CommitId(retired)),
         })
     }
 }
