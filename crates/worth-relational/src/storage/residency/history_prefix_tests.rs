@@ -53,6 +53,15 @@ fn a_head_history_prefix_survives_reset_and_reuse_until_its_rows_are_suspended()
         arena.history_prefixes[physical].as_ref().unwrap().row_index,
         prefix.row_index
     );
+    assert_eq!(
+        arena.history_prefixes[physical]
+            .as_ref()
+            .unwrap()
+            .history_frontier
+            .id(),
+        prefix.history_frontier.id(),
+        "generation reuse preserves the original shared history opening"
+    );
 
     arena.suspend_materialization(slot).unwrap();
     assert!(arena.metadata_history[physical].is_empty());
@@ -96,8 +105,56 @@ fn sparse_adoption_preserves_the_source_history_row_when_the_physical_row_change
     let adopted = destination.history_prefixes[adopted_row].as_ref().unwrap();
     assert_eq!(adopted.member, prefix.member);
     assert_eq!(adopted.row_index, prefix.row_index);
+    assert_eq!(adopted.history_frontier.id(), prefix.history_frontier.id());
     assert!(Arc::ptr_eq(&adopted.source, &prefix.source));
     assert_eq!(destination.metadata_history[adopted_row].len(), 1);
+    assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() {
+    let fixture = region_with_history();
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
+    let physical = head
+        .partition
+        .entity_arena
+        .physical_index(fixture.entity.slot_index())
+        .unwrap();
+    let prefix = head.partition.entity_arena.history_prefixes[physical]
+        .as_ref()
+        .unwrap();
+    let (openings, _) = head
+        .commitment
+        .as_ref()
+        .unwrap()
+        .history_frontiers(&head.partition)
+        .unwrap()
+        .into_arenas();
+    let (_, expected) = openings
+        .into_iter()
+        .find(|(slot, _)| *slot == fixture.entity.slot_index() as u64)
+        .unwrap();
+    assert_eq!(prefix.history_frontier.as_ref(), &expected);
+    struct Owners(BTreeMap<u64, u64>);
+    impl crate::storage::substrate::StorageAllocationVisitor for Owners {
+        fn visit(
+            &mut self,
+            value: crate::storage::substrate::StorageAllocationObservation,
+        ) -> bool {
+            self.0.insert(value.id, value.bytes).is_none()
+        }
+    }
+    let mut owners = Owners(BTreeMap::new());
+    head.partition
+        .entity_arena
+        .visit_authoritative_allocations(false, &mut owners);
+    let bytes = owners
+        .0
+        .get(&prefix.history_frontier.id())
+        .expect("the actual opening owner is part of the arena footprint");
+    assert!(*bytes >= prefix.history_frontier.owned_allocation_bytes());
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
 }
 

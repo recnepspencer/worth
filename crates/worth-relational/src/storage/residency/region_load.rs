@@ -62,8 +62,19 @@ pub(super) fn load_head(
         .source
         .retain_members(&[cold.history])
         .map_err(|cause| unavailable(cold, cause))?;
-    install_history_prefixes(&mut partition.entity_arena, cold, &history_custody);
-    install_history_prefixes(&mut partition.relation_arena, cold, &history_custody);
+    let (entity_openings, relation_openings) = frontiers.into_arenas();
+    install_history_prefixes(
+        &mut partition.entity_arena,
+        cold,
+        &history_custody,
+        entity_openings,
+    )?;
+    install_history_prefixes(
+        &mut partition.relation_arena,
+        cold,
+        &history_custody,
+        relation_openings,
+    )?;
     crate::execution::check_request(execution).map_err(Failure::Request)?;
     Ok(Arc::new(ResidentRegion {
         partition,
@@ -162,8 +173,13 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
     arena: &mut crate::storage::substrate::RecordArena<K>,
     cold: &RelationalColdRegion,
     custody: &crate::durability::medium::RelationalDurableMemberCustody,
-) {
-    for row_index in 0..arena.slot_count() {
+    openings: Vec<(u64, crate::storage::substrate::HistoryAppendFrontier)>,
+) -> Result<(), Failure> {
+    for (slot, opening) in openings {
+        let row_index = usize::try_from(slot)
+            .ok()
+            .and_then(|slot| arena.physical_index(slot))
+            .ok_or_else(|| unavailable(cold, Cause::Damaged))?;
         if !arena.metadata_history[row_index].is_empty() {
             arena.history_prefixes.set(
                 row_index,
@@ -174,10 +190,12 @@ fn install_history_prefixes<K: crate::storage::substrate::RecordKind>(
                     partition_id: cold.partition_id,
                     schema_carrier_digest: cold.schema_carrier_digest,
                     row_index,
+                    history_frontier: crate::storage::substrate::StorageAllocation::new(opening),
                 }),
             );
         }
     }
+    Ok(())
 }
 
 fn contracts(cold: &RelationalColdRegion) -> Result<CheckpointAspectContractCatalog, Cause> {

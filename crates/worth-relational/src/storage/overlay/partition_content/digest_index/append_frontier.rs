@@ -1,21 +1,7 @@
 //! A right spine plus opaque left siblings is sufficient to extend a
 //! monotonically indexed history, without retaining its earlier values.
 use super::*;
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct HistoryAppendFrontier {
-    siblings: Vec<HistoryFrontierSibling>,
-    last: Option<(u128, [u8; 32])>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-struct HistoryFrontierSibling {
-    key: u128,
-    bit: u32,
-    digest: [u8; 32],
-    parent_bit: u32,
-}
+use crate::storage::substrate::{HistoryAppendFrontier, HistoryFrontierSibling};
 
 impl DigestIndex {
     pub(in crate::storage::overlay::partition_content) fn append_frontier(

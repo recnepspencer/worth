@@ -1,6 +1,7 @@
 //! Walk actual storage owners, preserving identities across retained arena editions.
 use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_metadata,
+    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, visit_history_prefix,
+    visit_metadata,
 };
 use super::{RecordArena, RecordKind};
 use crate::storage::substrate::{visit_inline_value, StorageAllocationVisitor};
@@ -21,7 +22,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.kind_ids
             .visit_allocations(unique, visitor, &mut visit_inline_value);
         self.history_prefixes
-            .visit_allocations(unique, visitor, &mut visit_inline_value);
+            .visit_allocations(unique, visitor, &mut visit_history_prefix);
         self.created_at
             .visit_allocations(unique, visitor, &mut visit_inline_value);
         self.retired_at

@@ -950,3 +950,30 @@ pass. Function review keeps the complete checkpoint publication boundary and
 its end-to-end lifetime court together; existing codec and scope courts retain
 their responsibilities. The outer preparation level remains Full until history
 layering, mixed mirror commitments and typed publication custody integrate it.
+
+
+## Per-record history opening boundary
+
+A mirror can adopt slots from different selected roots while keeping its own
+retention lifecycle. Its next commitment cannot use one previous partition's
+history cache as the basis for every adopted slot. Each prefix must therefore
+carry the original authenticated per-record append opening alongside its source
+row. The existing construction's region-only opening is insufficient for that
+next step; preparation remains Full until this is integrated.
+
+Move only the serialized opening facts to the record-arena substrate facade;
+keep Patricia reconstruction, hashing and verification in the content owner.
+There is no equivalent frontier vocabulary in worth-foundational. Install the
+opening in a prefix only after Head validates the current row, exact slot
+coverage and original complete leaf. Keep it behind shared storage ownership so
+sparse adoption preserves the same opening without cloning its sibling vector.
+Account for the actual owner and sibling bytes in ordinary inventories and
+unique/delta walks. Preserve the current wire fields and format in this data
+placement cut; no compatibility re-export remains at the old owner path.
+
+Producer-written tests must preserve the opening through reset/reuse and
+physical-row adoption and prove it still names the baseline while a resident
+suffix appends. Run the existing independent Full/Head digest and frontier
+courts, full Relational lib, formatting, caps, boundary, context and CI clippy.
+Mixed-prefix hashing and the layered wire/reader remain the immediately
+following integration work, rather than treating the carried hash as Full data.

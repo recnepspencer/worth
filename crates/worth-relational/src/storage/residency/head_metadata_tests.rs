@@ -59,6 +59,20 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
     written_head
         .entity_arena
         .apply_extra_update(slot, extra.clone(), version);
+    let physical = written_head.entity_arena.physical_index(slot).unwrap();
+    let baseline = &head.partition.entity_arena.history_prefixes[physical]
+        .as_ref()
+        .unwrap()
+        .history_frontier;
+    let carried = &written_head.entity_arena.history_prefixes[physical]
+        .as_ref()
+        .unwrap()
+        .history_frontier;
+    assert_eq!(
+        baseline.id(),
+        carried.id(),
+        "appending keeps the prefix's original opening"
+    );
     let mut journal = crate::storage::overlay::PartitionMutationJournal::default();
     journal.entity_slots.insert(slot);
     let (appended, _) = PartitionContentCommitment::capture(
@@ -67,6 +81,19 @@ fn a_head_append_matches_a_separately_recomputed_full_history_root() {
         Some((head.commitment.as_ref().unwrap(), &head.partition, &journal)),
     )
     .unwrap();
+    let (advanced, _) = appended
+        .history_frontiers(&written_head)
+        .unwrap()
+        .into_arenas();
+    let (_, advanced) = advanced
+        .into_iter()
+        .find(|(logical, _)| *logical == slot as u64)
+        .unwrap();
+    assert_ne!(
+        carried.as_ref(),
+        &advanced,
+        "the current commitment advances independently of its cold baseline"
+    );
     assert_eq!(
         written_head
             .entity_arena

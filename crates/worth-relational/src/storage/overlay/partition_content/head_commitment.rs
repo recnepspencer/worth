@@ -1,5 +1,5 @@
 use super::*;
-use digest_index::HistoryAppendFrontier;
+use crate::storage::substrate::HistoryAppendFrontier;
 
 /// History Merkle right spines carry enough proof to check current content
 /// against the original region leaf and to append without reading old values.
@@ -7,6 +7,17 @@ use digest_index::HistoryAppendFrontier;
 pub(crate) struct PartitionHistoryFrontiers {
     entities: Vec<(u64, HistoryAppendFrontier)>,
     relations: Vec<(u64, HistoryAppendFrontier)>,
+}
+
+impl PartitionHistoryFrontiers {
+    pub(crate) fn into_arenas(
+        self,
+    ) -> (
+        Vec<(u64, HistoryAppendFrontier)>,
+        Vec<(u64, HistoryAppendFrontier)>,
+    ) {
+        (self.entities, self.relations)
+    }
 }
 
 impl PartitionContentCommitment {

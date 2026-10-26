@@ -1,6 +1,7 @@
 use super::{digest_index::DigestIndex, hash_value, PartitionContentDigestError};
 use crate::storage::substrate::{
-    RecordArena, RecordKind, SharedColumn, SharedMap, StorageAllocationVisitor,
+    HistoryAppendFrontier, RecordArena, RecordKind, SharedColumn, SharedMap,
+    StorageAllocationVisitor,
 };
 use crate::symbols::data::{StringInterner, Symbol};
 use std::collections::BTreeMap;
@@ -18,7 +19,7 @@ impl RecordContentIndex {
     pub(super) fn history_frontiers<K: RecordKind>(
         &self,
         arena: &RecordArena<K>,
-    ) -> Option<Vec<(u64, super::digest_index::HistoryAppendFrontier)>>
+    ) -> Option<Vec<(u64, HistoryAppendFrontier)>>
     where
         K::Meta: serde::Serialize,
     {
@@ -37,7 +38,7 @@ impl RecordContentIndex {
     }
 
     pub(super) fn from_history_frontiers<K: RecordKind>(
-        frontiers: &[(u64, super::digest_index::HistoryAppendFrontier)],
+        frontiers: &[(u64, HistoryAppendFrontier)],
         arena: &RecordArena<K>,
     ) -> Option<Self>
     where

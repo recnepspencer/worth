@@ -3,6 +3,51 @@ use super::RecordKind;
 use crate::symbols::data::Symbol;
 use std::collections::BTreeMap;
 
+pub(super) fn history_prefix_bytes(prefix: &Option<super::super::RecordHistoryPrefix>) -> u64 {
+    prefix.as_ref().map_or(0, |prefix| {
+        crate::storage::substrate::StorageAllocation::<super::super::HistoryAppendFrontier>::layout_bytes()
+            + prefix.history_frontier.owned_allocation_bytes()
+    })
+}
+
+pub(super) fn visit_history_prefix(
+    prefix: &Option<super::super::RecordHistoryPrefix>,
+    allocation: crate::storage::substrate::StorageAllocationObservation,
+    visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+) {
+    if visitor.visit(allocation) {
+        visit_prefix_opening(prefix, allocation.unique, visitor);
+    }
+}
+
+pub(super) fn visit_new_history_prefix(
+    prefix: &Option<super::super::RecordHistoryPrefix>,
+    previous: Option<&Option<super::super::RecordHistoryPrefix>>,
+    allocation: crate::storage::substrate::StorageAllocationObservation,
+    visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+) {
+    if visitor.visit(allocation)
+        && prefix.as_ref().map(|prefix| prefix.history_frontier.id())
+            != previous
+                .and_then(|prefix| prefix.as_ref())
+                .map(|prefix| prefix.history_frontier.id())
+    {
+        visit_prefix_opening(prefix, allocation.unique, visitor);
+    }
+}
+
+fn visit_prefix_opening(
+    prefix: &Option<super::super::RecordHistoryPrefix>,
+    unique: bool,
+    visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+) {
+    if let Some(prefix) = prefix {
+        let mut allocation = prefix.history_frontier.observation(unique);
+        allocation.bytes += prefix.history_frontier.owned_allocation_bytes();
+        visitor.visit(allocation);
+    }
+}
+
 pub(super) fn metadata_history_bytes<K: RecordKind>(
     history: &crate::storage::substrate::SharedColumn<K::Meta>,
 ) -> u64 {
