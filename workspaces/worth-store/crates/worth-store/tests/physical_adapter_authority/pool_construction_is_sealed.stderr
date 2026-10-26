@@ -4,6 +4,11 @@ error[E0432]: unresolved import `worth_store::physical_runtime::PhysicalResidenc
 1 | use worth_store::physical_runtime::PhysicalResidencyPool;
   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `PhysicalResidencyPool` in `physical_runtime`
   |
+help: a similar name exists in the module
+  |
+1 - use worth_store::physical_runtime::PhysicalResidencyPool;
+1 + use worth_store::physical_runtime::PhysicalResidencyDenial;
+  |
 help: consider importing this struct instead
   |
 1 - use worth_store::physical_runtime::PhysicalResidencyPool;
