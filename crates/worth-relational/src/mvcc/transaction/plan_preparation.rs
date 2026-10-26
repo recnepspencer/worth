@@ -20,7 +20,7 @@ impl BranchBoundRelationalTransaction {
         )?;
         self.ensure_current_basis(&preparation)
             .map_err(TransactionCommitError::conflict)?;
-        self.demand_preparation_metadata(
+        self.demand_preparation_inputs(
             execution,
             &preparation.services.symbols,
             &preparation.index_definitions,

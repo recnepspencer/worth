@@ -22,6 +22,13 @@ pub(super) fn prepare_merge_draft(
 ) -> Result<AcceptedMergeDraft, TransactionCommitError> {
     let basis = admitted.validation_input().basis();
     let selected = admitted.selected_branch_state();
+    crate::authority::commit::preparation::demand_mutation_inputs(
+        execution,
+        basis,
+        &runtime.services.symbols,
+        &admitted.merged_plan().merged_intents,
+        Default::default(),
+    )?;
     let (answer, round) = crate::storage::residency::probe_full(
         execution,
         &selected.with_symbol_admission(&runtime.services.symbols),

@@ -11,14 +11,14 @@ impl super::BranchBoundRelationalTransaction {
         indexes: &crate::runtime::IndexDefinitionReadBinding,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
-        self.demand_preparation_metadata(execution, symbols, indexes)?;
+        self.demand_preparation_inputs(execution, symbols, indexes)?;
         self.demand_declared_regions(execution, symbols, mirror)
             .map_err(|failure| {
                 crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
             })
     }
 
-    pub(crate) fn demand_preparation_metadata(
+    pub(crate) fn demand_preparation_inputs(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
@@ -52,7 +52,14 @@ impl super::BranchBoundRelationalTransaction {
         })();
         admitted.map_err(|failure| {
             crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
-        })
+        })?;
+        crate::authority::commit::preparation::demand_mutation_inputs(
+            execution,
+            &self.basis,
+            symbols,
+            self.batches().iter().flat_map(|batch| &batch.intents),
+            self.footprint.validation_partitions(),
+        )
     }
 
     fn demand_declared_regions(

@@ -91,7 +91,7 @@ impl RelationalPreparationRuntime {
                 &self.mirror_residency,
             )?;
         } else {
-            transaction.demand_preparation_metadata(
+            transaction.demand_preparation_inputs(
                 execution,
                 &self.services.symbols,
                 &self.index_definitions,

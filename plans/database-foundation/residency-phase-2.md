@@ -777,3 +777,38 @@ were then rebuilt green. This was an environment failure, not a product or test
 failure. An unused test import was removed and all test targets checked again.
 Outer preparation remains Full pending the next cold-prefix/capture integration;
 this prerequisite does not claim complete Head write or candidate custody.
+
+
+## Reviewed phase-1 integration and known input admission
+
+The reviewed milestone head 5ff19564e7 is merged in 6273ec42c1. The merge
+preserves cell-local proven damage, retryable source/resource refusals,
+per-runtime dictionary admission, root-authenticated kind projections,
+destination-scoped member carry, cold fork pin clearing and resident pin
+custody, together with both review and phase-2 tests.
+
+The first integration lib run exposed a stale test capture policy: the Head
+invariant fixture described an empty destination after cold recovery. Commit
+5346365b52 supplies its actual member directory and read source; every Head,
+Full, sticky-failure and no-I/O assertion remains unchanged.
+
+The complete home oracle then exposed a product error in preparation. A known
+cold input partition was omitted from the provisional working state; a draft
+could issue symbols and records against that empty state before the recorded
+miss discarded it. Retrying correctly spent fresh identities, but ordinary
+cold fork writes consequently differed from the memory reference, making
+later scripted identities stale. The process-kill fork court and the fork
+commit/transition media sweeps caught the resulting artifact and endpoint
+mismatches. No oracle assertion or canonical artifact was normalized away.
+
+Known intent/footprint partitions are now demanded before draft identity
+issuance, through one shared preparation guard used by preview, proposal and
+independent merge preparation. Data-dependent reads retain probe/retry and
+never rewind an issued identity. The new fault-free home regression reproduces
+the original failure and passes all three oracle seeds with the guard, including
+script continuation. The full Relational lib passes 1,920 tests (31 unchanged
+ignored), including the post-apply miss court's spent-identity and single-round
+telemetry assertions. The original fork process-kill court passes. Fresh
+contracts, World and the complete home oracle follow this correction before
+phase-2 implementation continues. Preparation still demands Full pending the
+cold-prefix cut; this correction does not claim that remaining work complete.
