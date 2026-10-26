@@ -1,3 +1,5 @@
+mod abort_outcome;
+mod commit_outcome;
 mod commit_stop;
 mod control_stopped;
 mod counters;
@@ -16,6 +18,8 @@ mod session_lease;
 mod terminal_binding;
 mod terminal_outcome;
 
+pub use abort_outcome::*;
+pub use commit_outcome::*;
 pub use commit_stop::*;
 pub use control_stopped::*;
 pub use counters::*;
