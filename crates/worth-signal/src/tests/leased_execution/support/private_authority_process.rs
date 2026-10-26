@@ -4,6 +4,7 @@ pub(crate) enum NativeExecutionEvidence {
     PlacementRendezvous,
     ThroughputParity,
     TypedResultRoom,
+    RichResultRoom,
 }
 
 pub(crate) fn run_with_private_authority(
@@ -14,6 +15,7 @@ pub(crate) fn run_with_private_authority(
         NativeExecutionEvidence::PlacementRendezvous => "PLACEMENT_RENDEZVOUS",
         NativeExecutionEvidence::ThroughputParity => "THROUGHPUT_PARITY",
         NativeExecutionEvidence::TypedResultRoom => "TYPED_RESULT_ROOM",
+        NativeExecutionEvidence::RichResultRoom => "RICH_RESULT_ROOM",
     };
     const CHILD_TEST: &str = "WORTH_SIGNAL_PRIVATE_EXECUTION_AUTHORITY";
     if std::env::var(CHILD_TEST).as_deref() == Ok(test_name) {

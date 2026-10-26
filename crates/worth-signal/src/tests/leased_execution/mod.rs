@@ -11,6 +11,7 @@ mod nested_result_limit;
 mod reports;
 mod resource_stops;
 mod reversed_plan_order;
+mod rich_result_room;
 mod scoped_consumer_capacity;
 mod scoped_result_capacity;
 mod serial_request;
