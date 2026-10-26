@@ -14,7 +14,6 @@ pub enum WorthQueryWorkspaceErrorKind {
     ),
     UnsupportedCollection,
     UnsupportedWriteFamily,
-    EmptySchema,
     BatchAtomicityUnsupported,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,

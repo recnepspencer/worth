@@ -41,7 +41,6 @@ pub enum WorthQueryProductBranchCreateError {
     IdentityExhausted,
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
     Creation(WorthQueryProductBranchCreationDenial),
-    BranchCoordinationCapacityExhausted,
     ProductUnpublished(super::WorthQueryProductBranchCreationRecovery),
 }
 

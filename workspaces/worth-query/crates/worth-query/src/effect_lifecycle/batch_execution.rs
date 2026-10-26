@@ -13,7 +13,6 @@ use super::taxonomy::EffectAuthorityLane;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EffectBatchExecutionDenialKind {
-    ComponentExecutionDenied(EffectExecutionDenialKind),
     AggregateExecutionDenied(EffectExecutionDenialKind),
 }
 
