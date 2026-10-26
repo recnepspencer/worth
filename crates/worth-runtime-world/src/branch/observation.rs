@@ -55,6 +55,8 @@ impl ProductBranchObservationObligation {
         components: ObservationRetentionObligation,
         history: ExplicitCommitHistoryProtectionObligation,
     ) -> Self {
+        // This local OnceLock has never escaped or been set; set is its first
+        // operation, so construction guarantees an empty slot.
         let initialized = OnceLock::new();
         initialized
             .set(history)
@@ -70,6 +72,9 @@ impl ProductBranchObservationObligation {
 /// moves. Finalization installs the exact successor's history protection and
 /// performs no allocation or owner call inside the branch critical section.
 #[derive(Debug)]
+// Not Clone: its private observation remains inside this owner until finalize
+// consumes self. The factory leaves history empty, and no public observation
+// or second finalizer can reach the Arc before that single consuming set.
 pub(crate) struct PreparedProductBranchObservation {
     observation: ProductBranchObservation,
 }
@@ -178,8 +183,7 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerUnavailable,
-    /// The currentness registry's physical lookup bound did not fit its Work counter.
-    CurrentnessAccountingOverflow,
+
     ForeignOwner,
     RetiredBranch,
     DuplicateName,

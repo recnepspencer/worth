@@ -1,5 +1,4 @@
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
-use worth_runtime_world::facade::RuntimeWorldBranchAdmissionDenial;
 
 use super::*;
 
@@ -33,9 +32,6 @@ where
             ..
         }) => {
             let kind = match world_denial {
-                worth_runtime_world::facade::RuntimeWorldServiceDenial::Denied(
-                    RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
-                ) => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
                 _ => WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
             };
             Err(denial(kind, Binding::IDENTITY).into())

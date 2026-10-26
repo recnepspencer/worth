@@ -14,7 +14,7 @@ pub enum WorthQueryProductBranchCloseDenial {
     OwnerUnavailable,
     UnknownBranch,
     AlreadyClosed,
-    RetentionStillRequired,
+
     CapacityExhausted,
     CleanupCapacityExhausted,
     OwnerCleanupPending(WorthQueryProductBranchOwnerCleanupFailure),
@@ -130,15 +130,11 @@ fn map_retirement_denial(
         | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::OwnerUnavailable) => {
             WorthQueryProductBranchCloseDenial::OwnerUnavailable
         }
-        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::UnknownBranch) => {
-            WorthQueryProductBranchCloseDenial::UnknownBranch
-        }
+
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::AlreadyRetired) => {
             WorthQueryProductBranchCloseDenial::AlreadyClosed
         }
-        RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchRetirementDenial::RetentionStillRequired,
-        ) => WorthQueryProductBranchCloseDenial::RetentionStillRequired,
+
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchRetirementDenial::CapacityExhausted,
         ) => WorthQueryProductBranchCloseDenial::CapacityExhausted,

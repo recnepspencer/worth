@@ -109,9 +109,7 @@ pub(super) fn map_world_denial(
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
-        | RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchAdmissionDenial::OwnerUnavailable,
-        ) => {
+        | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)
         }
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
@@ -122,24 +120,34 @@ pub(super) fn map_world_denial(
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
-        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled)),
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )),
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
-        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut)),
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::CapacityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationCapacityExhausted)
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationCapacityExhausted,
+            )
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
-        ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::CustodyCapacityExhausted),
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(
+            AdmissionRefusal::CustodyCapacityExhausted,
+        ),
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::IdentityExhausted) => {
-            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationIdentityExhausted)
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationIdentityExhausted,
+            )
         }
-        RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
-        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Ok(crate::domain_computation::WorthQueryProviderSessionDenialKind::ExecutionResource { denial: crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::WorkCounterOverflow, partition_identity: None, policy_ancestor: None })),
+
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
-            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationStaleSourceHead)
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationStaleSourceHead,
+            )
         }
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchAdmissionDenial::DuplicateName

@@ -66,7 +66,6 @@ where
                 &self.basis,
             )
             .map_err(|stop| match stop {
-                SelectedPermissionSecurityStop::AccountingOverflow => work_denial(),
                 SelectedPermissionSecurityStop::World => denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                     self.query.name(),

@@ -1,14 +1,11 @@
 //! Reuse one already issued Query basis only while its World head is current.
 
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
-use worth_runtime_world::facade::RuntimeWorldBranchAdmissionDenial;
-use worth_runtime_world::facade::RuntimeWorldServiceDenial;
 
 use super::*;
 
 pub(in crate::domain_computation::primary_graph) enum SelectedPermissionSecurityStop {
     World,
-    AccountingOverflow,
 }
 
 /// A current-head seal whose exact selected field indexes were prepared for
@@ -136,9 +133,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             }
 
             Err(ProductBranchCurrentnessFailure::AdmissionDenied { denial, .. }) => match denial {
-                RuntimeWorldServiceDenial::Denied(
-                    RuntimeWorldBranchAdmissionDenial::CurrentnessAccountingOverflow,
-                ) => Err(SelectedPermissionSecurityStop::AccountingOverflow),
                 _ => Err(SelectedPermissionSecurityStop::World),
             },
         }

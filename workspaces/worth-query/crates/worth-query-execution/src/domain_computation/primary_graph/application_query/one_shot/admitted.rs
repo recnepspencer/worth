@@ -143,9 +143,6 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
 
 
         SelectedAuthorizedReadStop::Security(
-            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::AccountingOverflow,
-        ) => return WorthQueryAdmittedOneShotStop::WorkCounterOverflow,
-        SelectedAuthorizedReadStop::Security(
             crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::World,
         ) | SelectedAuthorizedReadStop::StaleSecurity => {
             WorthQueryApplicationOneShotDenialKind::Authorization(
