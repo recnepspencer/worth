@@ -19,6 +19,8 @@ pub struct RelationIntegrityDeclarations {
     pub acyclicity_contracts: Vec<AcyclicityContractDeclaration>,
     pub partition_isolation_contracts: Vec<PartitionIsolationContractDeclaration>,
     pub connectivity_minimum_contracts: Vec<ConnectivityMinimumContractDeclaration>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub aggregate_identity: Option<super::AggregateIdentityContractDeclaration>,
 }
 
 impl RelationIntegrityDeclarations {
@@ -30,6 +32,7 @@ impl RelationIntegrityDeclarations {
         endpoint_deletion_integrity_contracts: Vec<EndpointDeletionIntegrityDeclaration>,
     ) -> Self {
         Self {
+            aggregate_identity: None,
             plan_revision: derive_relation_integrity_plan_revision(
                 &endpoint_kind_contracts,
                 &cardinality_contracts,
@@ -39,6 +42,7 @@ impl RelationIntegrityDeclarations {
                 &[],
                 &[],
                 &[],
+                None,
             ),
             endpoint_kind_contracts,
             cardinality_contracts,
@@ -52,7 +56,8 @@ impl RelationIntegrityDeclarations {
     }
 
     pub fn contract_count(&self) -> usize {
-        self.endpoint_kind_contracts.len()
+        usize::from(self.aggregate_identity.is_some())
+            + self.endpoint_kind_contracts.len()
             + self.cardinality_contracts.len()
             + self.uniqueness_contracts.len()
             + self.symmetry_contracts.len()
@@ -99,7 +104,17 @@ impl RelationIntegrityDeclarations {
             &self.acyclicity_contracts,
             &self.partition_isolation_contracts,
             &self.connectivity_minimum_contracts,
+            self.aggregate_identity.as_ref(),
         );
+    }
+
+    pub fn with_aggregate_identity(
+        mut self,
+        contract: super::AggregateIdentityContractDeclaration,
+    ) -> Self {
+        self.aggregate_identity = Some(contract);
+        self.recompute_plan_revision();
+        self
     }
 }
 

@@ -28,6 +28,7 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     acyclicity_contracts: &[AcyclicityContractDeclaration],
     partition_isolation_contracts: &[PartitionIsolationContractDeclaration],
     connectivity_minimum_contracts: &[ConnectivityMinimumContractDeclaration],
+    aggregate_identity: Option<&super::AggregateIdentityContractDeclaration>,
 ) -> RelationIntegrityPlanRevision {
     let mut digest = RelationIntegrityRevisionDigest::new();
     digest.mix_endpoint_kind_contracts(endpoint_kind_contracts);
@@ -38,6 +39,10 @@ pub(crate) fn derive_relation_integrity_plan_revision(
     digest.mix_acyclicity_contracts(acyclicity_contracts);
     digest.mix_partition_isolation_contracts(partition_isolation_contracts);
     digest.mix_connectivity_minimum_contracts(connectivity_minimum_contracts);
+    if let Some(aggregate) = aggregate_identity {
+        digest.mix_bytes(b"aggregate_identity_v1");
+        digest.mix_bytes(&aggregate.canonical_bytes());
+    }
     RelationIntegrityPlanRevision(digest.finish())
 }
 

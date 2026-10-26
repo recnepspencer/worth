@@ -79,7 +79,6 @@ pub(super) fn prepare_commit_execution(
     mut admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Draft)?;
-    let lease = super::request_lease(execution);
     let merge_parent_count = admitted
         .merge_history_plan()
         .map(|plan| plan.requested_merge_parent_count)
@@ -130,7 +129,8 @@ pub(super) fn prepare_commit_execution(
             admitted.merged_plan(),
             admitted.validation_input().schema_authority(),
             proposed_version_id,
-            lease,
+            execution,
+            admitted.validation_input().intent().materialization_mode(),
         )?,
     };
     admitted.phase_timing_mut().draft_structural_summary_micros =

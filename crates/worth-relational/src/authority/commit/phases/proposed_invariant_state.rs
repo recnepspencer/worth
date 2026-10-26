@@ -34,8 +34,10 @@ pub(crate) fn prepare_proposed_invariant_state(
     merged_plan: &MergedCommitPlan,
     schema_authority: &crate::branch::RelationalBranchRootSchemaAuthority,
     version_id: crate::identity::data::VersionId,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    materialization_mode: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
 ) -> Result<AppliedInvariantState, TransactionCommitError> {
+    let lease = crate::authority::commit::pipeline::request_lease(execution);
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
         version_id,
@@ -47,6 +49,17 @@ pub(crate) fn prepare_proposed_invariant_state(
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
     let mut proposed = working_state.clone();
+    crate::aggregate_identity::guard::ordinary_plan(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        schema_authority.registry(),
+        &crate::validation::engine::state_view::InvariantStateView::new(
+            selected_state,
+            selected_state.version_id(),
+        ),
+        &merged_plan.merged_intents,
+        materialization_mode,
+    )?;
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &proposed, merged_plan);
     let mut symbols = runtime.services.symbols.interner_snapshot();
     let mut record_allocations = crate::runtime::PendingRecordAllocations::new(
@@ -65,6 +78,11 @@ pub(crate) fn prepare_proposed_invariant_state(
         lease,
         runtime.commit_work_budget.clone(),
     )?;
+    record_allocations.finish_mutation().map_err(|denial| {
+        TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
+            crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+        ))
+    })?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut proposed,
         &applied.effect.adjacency.deltas,

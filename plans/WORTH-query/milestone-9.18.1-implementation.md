@@ -3653,5 +3653,312 @@ The persistent reviewer cleared this 39-file slice under qa-loop, qa-tests and
 code-quality-qa for commit and ordinary topic-branch publication. No additional
 build or suite is required by the accepted evidence and carry boundaries.
 
+## Phase 4 Slice 2 — committed aggregate identity and lineage
+
+### Boundary brief
+
+Slice 1 is committed at `98513ae34e70b807b6574119a840e90ce963fe9a`.
+The next authority is persistent aggregate identity, shared with Phase 5.
+
+Authoritative inputs are the installed orbit declaration, the selected immutable
+branch's actual prestate, the final native post-plan state, and the canonical
+`RelationalCommitReceipt`. Native history binding reserves CommitId after
+authoritative mutation. Proposal ordinal, runtime instance, worker order and
+counter previews are not persistent naming material. New members' actual IDs
+also do not come from the detached invariant allocator: that allocator is forked.
+
+The intended owner is one domain-neutral transition over prior aggregate
+identity/membership, final membership, definition identity and exact occurrence.
+Query's installed contract delegates construction/publication of its private
+platform records to Native. This is explicit delegation, not a claim that an
+application handler authored the generated MutationIntents. Definition identity
+must namespace minting because two relations can share member and occurrence.
+Membership/order remains graph truth; there is no position field beside the
+successor relation and no runtime-global identity registry.
+
+Storage should reuse Query's reserved platform graph kinds and Native's ordinary
+immutable storage, allocation evidence, patch, checkpoint and branch cutover.
+`platform_entity_lowering` already allocates kinds/aspects outside the application
+catalog. Native `MutationEffect::accumulate` combines canonical deltas, physical
+changes, adjacency and diagnostics. A Native consequence phase after history
+binding can apply only the exact reserved metadata kinds/fields named by the
+installed contract, sharing the original request/version/allocation owner.
+Business graph writes and identity/lineage records then publish or refuse as one.
+
+Two existing seams require repair rather than an assumed free ride. Recovery's
+`replay_ordinary_commit` re-executes canonical business intents; it does not apply
+arbitrary new rows from the patch. The same transition/consequence owner must
+therefore run during replay with the carried canonical occurrence and allocation
+decisions. `apply_plan_to_working_state` currently checks full allocation-stream
+consumption after its single batch. Final consumption must move to the owner
+after business and metadata phases; detached validation still finishes its own
+independent scope. Snapshot validation may consume the earlier detached verdict.
+Generated metadata requires actual final-state admission, including Native whole
+snapshot limits; an old verdict cannot certify rows it never saw.
+
+Committed records belong to the selected branch's immutable graph root. Forks
+inherit those exact rows, sibling edits cannot leak, and reconstruction preserves
+identity/lineage records and original allocation authority. Existing publication
+companions only prepare Query payload beside a sealed envelope and cannot stand
+in for durable records. A separate opaque catalog/envelope dialect would also
+duplicate the storage and retention mechanisms already available here.
+
+The final milestone still requires proposed-state invariant orbit identities.
+This slice exposes no proposed-ID read or fallback returning the old identity.
+The reader slice must carry an owner-reserved canonical occurrence and adopted
+canonical member allocations before custom preparation; it will invoke this same
+transition owner and retain the validated artifact for final seal consumption.
+Late publication timing must not become a dependency of the transition policy.
+This handoff remains an explicit prerequisite before Phase 4 can close.
+
+Historical questions resolved by the decisions and plan below: exact reserved record
+layout and schema contract binding; canonical transition rules for simultaneous
+split/merge overlap; final-state validation and replay call sites; scoped graph
+collection through the existing Native traversal; original work/memory payer;
+and an ordinary hostile handler path that cannot write real platform records.
+
+### Resolved transition and storage decisions
+
+The transition compares complete old and final partitions. An old identity is
+eligible for retention only in the part containing its least surviving member.
+For a merge, compare all incoming old fragments by their current least member.
+If the winning fragment is eligible, keep its old identity; otherwise mint the
+final result's identity from the occurrence, definition and final least member.
+New members do not compete with surviving old fragments, so insertion into a
+whole aggregate cannot rename it. Record nonkeeper contributions as SplitFrom
+events and losing keeper identities as MergedInto events. Only final identities
+are persisted; no temporary intermediate aggregate identity is invented. Total
+disappearance retires the old identity without a successor.
+
+This is conceptual split-then-merge semantics at one commit boundary. A cross-swap
+can produce reciprocal SplitFrom events between identities that both remain
+current. Events are occurrence-qualified history, not a timeless DAG. `latest`
+will follow retirement/MergedInto continuity, never blindly follow every split
+edge. The independent model must use explicit fragments and cover a winning
+nonkeeper fragment, cross-swap, old-anchor deletion and total disappearance.
+
+Use reserved platform entity records for aggregate identity and a reserved
+relation kind for occurrence-qualified lineage. Each definition gets its own
+member-to-aggregate relation, preventing different definitions from competing
+for one membership slot. Metadata scalar fields use Native's existing scalar
+grammar (UUID halves for 32-byte identities and explicit numeric coordinates),
+not a new opaque body or content-ref pretending to hold inline bytes. Immutable
+birth occurrence/anchor is retained when the current anchor changes.
+
+Replay re-enters the ordinary Native commit pipeline, so the same post-history
+owner derives the same private consequences from canonical business intents.
+Keep that business plan intact; accumulate generated physical effects and
+allocation decisions into publication. Only two callers use the mutation apply
+function. Move complete-stream checking to the final owner after both phases;
+the detached proposed-state caller finishes its independent forked stream.
+Any nonempty generated effects, including updates and deletions, force actual
+final snapshot admission instead of consuming the earlier prevalidated result.
+
+Late private writes also need honest storage demand. An original sparse working
+set may not contain the existing aggregate row or membership edges. Native's
+record arena already supports selected-slot clones and owned slot adoption.
+Materialize only required private entity/relation slots from the selected root,
+never overwrite business mutations, and promote entity-only overlay posture
+when real generated graph writes require it. Preserve the existing publication
+journal and account through the original request/storage owners. Do not force
+whole-partition materialization merely because an aggregate exists.
+
+Schema carrier ordering fixes the descriptor's placement. Durable readmission
+registers entities, then relations in KindId order. The single explicit aggregate
+descriptor therefore belongs to its reserved membership relation and names the
+earlier business `source_relation`; it does not require a forward reference from
+the business relation to later metadata kinds. Validate the candidate membership
+registration, its actual homogeneous/exact-one business source, exact reserved
+record grammar and unique definition namespace. Classify `source_relation` only;
+never infer a definition from a marker or mirror the descriptor on the source.
+
+### Implementation plan
+
+Result: a schema declaring `.orbit()` automatically receives immutable birth
+identity, current membership/anchor and committed lineage records through its
+ordinary bootstrap and mutation commits. Anchor removal and lawful rewiring
+preserve/evolve identity by the rules above. No application writer can author
+those records. There is no new public orbit-read API in this slice.
+
+Directory responsibilities:
+
+- Foundational values: portable aggregate/definition identities only, without
+  mutation or observation authority.
+- Native schema relation-integrity owner: explicit enabled aggregate contract,
+  exact reserved storage layout, canonical plan meaning and validation.
+- Native aggregate-identity owner: pure transition policy, committed record
+  scalar encoding, Native traversal adapter, private consequence authoring and
+  read-only committed-record observation. Keep policy independent of commit stage.
+- Native storage overlay/arena owners: selected private-slot materialization and
+  correct publication posture, without a second storage engine.
+- Native history-binding/mutation/snapshot owners: same-occurrence consequence
+  execution, one final allocation-stream check and truthful final-state admission.
+- Query schema-layout owner: append reserved kinds/aspects without moving prior
+  platform allocations; bind each actual `.orbit()` definition to the Native
+  contract through the existing relation-integrity lowering seam.
+- Existing Native and Query owner courts: real commit/replay/fork/stop evidence,
+  independent identity model, lowering/handler authority and focused regressions.
+
+Ordered implementation:
+
+1. Add the portable identity values and one pure transition owner. Inputs name
+   exact definition/occurrence and complete old/new membership. Prove ordinary
+   continuity, separate split/merge, mixed overlap and disappearance against an
+   independently structured fragment model. No runtime registry or public mint
+   authority is introduced.
+2. Add the explicit Native aggregate contract and private record schema/encoding.
+   Its canonical meaning includes definition and exact metadata kinds/fields;
+   marker strings or cardinality-contract names cannot enable it. Validate that
+   it binds a homogeneous orbit with exact-one law and its reserved storage.
+   Query reserves metadata after existing platform kinds/aspects and lowers the
+   actual orbit declaration. Lawless schemas retain their existing meaning.
+3. Implement affected-cohort collection using the existing Native traversal
+   driver and authoritative selected-root/working-state access. Unrelated
+   scalar edits do not scan all members or refresh records. Complete old/new
+   membership drives the transition; no successor order is stored separately.
+4. Apply exact private consequences after history binding under the original
+   request, version and allocation owner. Reject ordinary business attempts to
+   write the protected metadata kinds. Materialize only demanded private slots,
+   combine effects before patch assembly, finish the full allocation stream and
+   run final snapshot admission whenever generated effects are nonempty. Replay uses the
+   same owner and original occurrence/allocation decisions.
+5. Exercise actual committed metadata through Native's existing ordinary test
+   runtime and Query's actual lowered schema. Include anchor removal, split,
+   merge, mixed cross-swap, independent definitions sharing a member, unrelated
+   edits, exact replay/checkpoint/fork parity, a stale/stopped publication with
+   no visible metadata, and a hostile write with a lawful ordinary twin.
+   Compare complete identities/lineage, not only counts or successful exits.
+6. Add factual capability/guide notes limited to the committed owner. Record the
+   remaining proposed-reader handoff explicitly. Gate the final exact slice with
+   the persistent reviewer under qa-loop, qa-tests and code-quality-qa, commit
+   and publish only the topic branch. Phase 4 default integration remains closed.
+
+Verification will batch Native and affected Query owner artifacts after the
+source pass, reuse existing caches and one coordinated build identity, and run
+only focused court filters plus required formatting/caps/function scrutiny,
+normal boundary-check and agent-context. Replay, persistence and authority are
+real cross-cutting changes, so their focused owner lanes are required; a private
+workspace build is not justified until the consumer cutover. Resolve discovered
+authority/materialization defects in the brief and plan before further editing.
+
 Persistent identity, lineage, orbit readers, declared orbit shapes and consumer
 cutovers remain unfinished Phase 4 work. No Phase 4 default integration is due.
+
+
+### Implementation review corrections (Slice 2, qualification pending)
+
+The first source review exposed three integration facts that refine the plan.
+Native optional accounting must be preserved: aggregate preparation consults the
+original Native request and its actual accounted ancestor; unaccounted work polls
+controls without inventing a meter or reservation. Accounted stages retain the
+original request's measured report and cumulative work account, including stops.
+Preparation and exact late storage demand keep separate original-lineage tickets
+through their consumers and final admission. Dynamic preparation quotes both
+mutation-vector capacities, closed scalar grammar, and collection coexistence.
+The storage owner quotes lazy sparse shells and selected column/AVL adoption paths
+before growth. Lazy SharedColumn defaults do not copy unrelated record payloads.
+The shared BFS driver now has a neutral Native mechanics owner; custom-rule policy
+and aggregate persistence consume it independently.
+
+Ordinary metadata write protection is checked once while deriving the proposed
+state, before business application. Owner-sealed physical suspend/rematerialize
+operations retain the existing exact materialization mode. Those physical-only
+commits preserve logical aggregate identity and lineage, so they do not generate
+new aggregate transitions. They still finish the one canonical allocation stream.
+Member deletion can also retire an incident private membership edge for audit
+inside the ordinary business apply. Late materialization preserves touched slots,
+and aggregate consequences never restore that edge from a prior root.
+
+Any generated effect uses a separately retained final admission plan containing
+business and private intents, without changing the canonical business plan.
+Mutation-sensitive and snapshot-publication checks consume this final extent;
+earlier publication receipts cannot certify added, updated, or deleted metadata.
+
+Branch-merge integration remains explicitly unfinished: generic Native merge may
+propose writes to private aggregate kinds, which ordinary-author protection must
+refuse. This slice provides no bypass. Supported ordinary branch merge must be
+resolved and proved before Phase 4 default integration. Fork and selected-root
+isolation, committed records, replay, and atomic admission remain this slice's
+qualification obligations. Proposed orbit readers and their earlier canonical
+occurrence/allocation handoff remain the next dependent slice, as planned above.
+
+The runtime courts exposed three fixture assumptions and one real denial-carriage
+defect. Unaccounted commit evidence now uses a separate accounted request only
+for inspection. Anchor removal explicitly deletes the observed business edge in
+the same mutation; it does not depend on later cascade expansion for premerge
+cardinality. The merge fence observes the actual typed readiness refusal rather
+than claiming the merge reached execution. Assertions about the real accounted
+ancestor execute outside Native panic containment.
+
+For worker-only Serial backing under an accounted ancestor, `in_scope` lends the
+authentic memory owner but its Native final poll can promote an already-settled
+measured refusal to `NestedStopped`. Preparation retains that callback's typed
+error only for this exact promotion. Cancellation, deadline, admission and other
+handoff denials remain authoritative, and a successful callback cannot escape a
+failed handoff. The measured report and retention lifecycle are unchanged. The
+persistent reviewer cleared this bounded repair under all three required skills;
+final runtime qualification remains pending below.
+
+### Slice 2 qualification — 2026-10-26
+
+The committed private-record slice passes its focused runtime gates. This does
+not qualify public orbit/lineage reads, declared shapes, application consumer
+cutovers or ordinary branch merge. Phase 4 remains open, with no default-branch
+integration authorized by this slice's evidence.
+
+One coordinated build identity,
+`a5a9d526-2415-4c24-8b01-854a8bcb5f38`, identifies the retained artifacts.
+Commands used Rust `+1.94.0-x86_64-pc-windows-msvc`, locked manifests, disabled
+incremental compilation, the existing `query-9.18.1` target directory and
+`RUST_MIN_STACK=67108864`. The final source fingerprint is `source-freeze5.json`;
+all Rust inputs matched before and after the final builds and runtime courts.
+Evidence is retained outside the repository under
+`C:\programming\worth worktees\targets\query-9.18.1-phase4-slice2-*`.
+
+- Native root `cargo test --locked -p worth-relational --lib --no-run` passed
+  in 153.87 seconds (`native-build5`). The artifact reports no warnings.
+  `aggregate_identity:: --test-threads=1` passed all 20 tests in 0.71 seconds:
+  independent transition model and mint vector, actual request work/memory/stop
+  behavior, protected writes and schema grammar, final snapshot admission,
+  discard, birth/anchor removal/split/merge/fork, physical owner maintenance,
+  the typed merge-readiness limitation, and checkpoint/tail-replay parity with
+  burned occurrence and allocation gaps. `record_allocation_recovery::` passed
+  all 8 existing courts in 0.68 seconds, with no ignored cases.
+- Query execution's library artifact built in 515.74 seconds (`query-build1`).
+  Its actual schema-layout court passed: two enabled definitions install distinct
+  namespaces with shared private storage, absent declarations do not enable an
+  owner, and private kinds stay outside the application catalog. This is one
+  court, not two tests. The reviewer approved carrying its result over the later
+  Native-only reservation, diagnostic and denial-carriage corrections; the
+  lowering/schema/canonical inputs and court are unchanged.
+- Current-source `worth-query-certification --test application_graph --no-run`
+  passed in 619.90 seconds (`installed-build1`). Its `relation_laws::` filter
+  passed all 35 installed application courts in 29.10 seconds, with no ignored
+  cases. This includes the stored orbit application's actual ordinary commits.
+  The build retains the existing `StructuralWalkObservation` visibility warning
+  in untouched structural-walk/fact code; it is not warning-free evidence.
+- Required normal boundary-check passed in 331.77 seconds and agent-context
+  check passed in 20.89 seconds. The reviewer approved carrying these over the
+  final same-owner denial mapping and factual documentation correction, which
+  change no module, facade, manifest or dependency topology.
+- Final scoped rustfmt, dirty line caps, function scrutiny and whitespace checks
+  passed (0.37, 7.83, 1.80 and 0.30 seconds). The function scan covered 60 current
+  Rust files with zero scan errors; all 30 advisories were reviewed as coherent
+  lifetimes rather than threshold-driven extraction opportunities. The existing
+  foundational facade aggregation exemption applies. Guide links resolve.
+
+Raw failed attempts remain alongside the final evidence. They include the
+initial wrong-workspace Cargo selection, mechanical API errors, corrected fixture
+assumptions, the merge error-enum correction and the real ancestor-denial defect.
+No failed run is counted as acceptance. Final Native, lowering and installed
+runtime results are recorded separately in `runtime-summary.json`.
+
+The final scope has 64 paths: 60 current Rust files, the removed custom-rule BFS
+path now owned by neutral Native traversal, and three documentation files.
+Original public/private checkout heads and branches remain at their captured
+values. Their dirty-state hashes differ from the earlier capture; this task made
+no writes there and does not claim those files remained unchanged. The private
+task checkout remains clean at `59dc27b4877132cae722e0889e81c5f83e44c8ea`,
+with no dependency-pin change. The persistent reviewer granted final qa-loop,
+qa-tests and code-quality-qa clearance for this exact scope and its normal topic
+commit/push. No further build is required; Phase 4 default integration stays closed.

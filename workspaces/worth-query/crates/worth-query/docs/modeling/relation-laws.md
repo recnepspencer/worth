@@ -104,8 +104,20 @@ self-edges. Duplicate physical edges violate the exactly-one constraint even
 when they connect the same pair. Rewire all affected successors in one mutation
 to split or merge cycles. These changes preserve the permutation law.
 
-The stored orbit law is available now. Orbit reads, persistent aggregate
-identity and lineage are the remaining work in milestone 9.18.1 Phase 4.
+The stored orbit law also enables platform-owned committed aggregate identity
+and lineage records. Birth identity depends on the definition, commit occurrence
+and least member at birth; removing that member does not rename a whole orbit.
+On a split, the part containing the least surviving old member keeps its identity.
+On a merge, the participant with the least current anchor keeps its identity.
+Mixed rewiring conceptually splits first, then compares the incoming old fragments.
+If the winning fragment does not contain its old identity's least surviving member,
+the result gets a newly minted final identity; it cannot take the keeper part's
+identity. Split and merge events name the actual final identities and commit
+occurrence. Applications cannot write these private records.
+
+Public orbit and lineage reads, declared orbit-query shapes, consumer cutovers
+and ordinary branch-merge integration remain unfinished in milestone 9.18.1
+Phase 4. The committed records do not yet expose a public reader API.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.

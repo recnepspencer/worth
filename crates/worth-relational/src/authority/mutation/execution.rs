@@ -2,7 +2,7 @@ use crate::config::data::MutationConfig;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use crate::storage::overlay::WorkingState;
 use crate::symbols::data::StringInterner;
-use crate::transactions::data::{AuthoritativeApplyPlan, CommitConflict, TransactionCommitError};
+use crate::transactions::data::{AuthoritativeApplyPlan, TransactionCommitError};
 
 use super::effect_assembly::assemble_effect;
 use super::intents::dispatch_intent;
@@ -51,21 +51,12 @@ pub(crate) fn apply_plan_to_working_state(
 
     let preparation_telemetry = workspace.preparation_telemetry();
     let (created_entities, created_relations) = workspace.into_created_bindings();
-    record_allocations
-        .finish_mutation()
-        .map_err(record_allocation_conflict)?;
     Ok(MutationApplyOutcome {
         effect,
         preparation_telemetry,
         created_entities,
         created_relations,
     })
-}
-
-fn record_allocation_conflict(
-    denial: crate::transactions::data::RecordAllocationDenial,
-) -> CommitConflict {
-    CommitConflict::new(crate::transactions::data::ConflictClass::RecordAllocationDenied { denial })
 }
 
 fn estimated_mutation_effect_shape(

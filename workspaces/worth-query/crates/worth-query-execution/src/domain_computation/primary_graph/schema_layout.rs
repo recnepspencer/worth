@@ -10,6 +10,7 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
+mod aggregate_identity;
 mod application_layout_lowering;
 mod authorization_selectors;
 mod capability_grant_join;
@@ -179,6 +180,15 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
+        let registry = aggregate_identity::lower(
+            registry,
+            schema,
+            native_contracts,
+            &schema_id,
+            schema_version_id,
+            &entity_kinds,
+            &relation_kinds,
+        )?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
         let signing = signed_entities::lower(schema, &entity_kinds)?;

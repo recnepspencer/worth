@@ -1,5 +1,6 @@
 use super::boundary_validation::BoundaryValidatedCommitExecution;
 
+mod aggregate_consequences;
 mod phase;
 
 use phase::{run_authoritative_mutation_phase, MutationPhaseInput};
@@ -11,6 +12,7 @@ pub(super) struct MutatedCommitExecution {
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
     created_relations: crate::transactions::data::CommitCreatedRelationBindings,
     record_allocations: crate::runtime::PendingRecordAllocations,
+    aggregate_admission: Option<crate::aggregate_identity::AggregateAdmission>,
 }
 
 impl MutatedCommitExecution {
@@ -19,8 +21,15 @@ impl MutatedCommitExecution {
     ) -> (
         &mut BoundaryValidatedCommitExecution,
         &crate::transactions::data::CommitCreatedEntityBindings,
+        Option<&crate::transactions::data::MergedCommitPlan>,
     ) {
-        (&mut self.validated, &self.created_entities)
+        (
+            &mut self.validated,
+            &self.created_entities,
+            self.aggregate_admission
+                .as_ref()
+                .map(|admission| &admission.plan),
+        )
     }
 
     pub(super) fn validated_mut(&mut self) -> &mut BoundaryValidatedCommitExecution {
@@ -102,5 +111,6 @@ pub(super) fn mutate_commit_execution(
         created_entities,
         created_relations,
         record_allocations,
+        aggregate_admission: None,
     })
 }

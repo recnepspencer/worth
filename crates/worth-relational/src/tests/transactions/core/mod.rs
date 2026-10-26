@@ -1,3 +1,4 @@
+mod aggregate_identity;
 mod aspect_patch_publication;
 mod branch_local_empty_basis;
 mod branch_root_selection_denials;

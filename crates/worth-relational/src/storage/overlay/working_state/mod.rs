@@ -1,3 +1,4 @@
+mod consequence_materialization;
 mod construction;
 mod mutation_tracking;
 #[cfg(test)]

@@ -311,10 +311,14 @@ pub mod replay {
 }
 
 pub mod schema {
+    pub use crate::schema::aggregate_identity::{
+        register_aggregate_identity_storage, register_aggregate_membership,
+    };
     pub use crate::schema::data::{
-        AcyclicityContractDeclaration, AllowedCycleClass, AspectBinding,
-        AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
-        AspectLoweringTrace, AspectLoweringTraceRow, CardinalityContractDeclaration,
+        AcyclicityContractDeclaration, AggregateIdentityContractDeclaration,
+        AggregateIdentityStorage, AllowedCycleClass, AspectBinding, AspectContractPlanRevision,
+        AspectDeclarationTrace, AspectDeclarationTraceRow, AspectLoweringTrace,
+        AspectLoweringTraceRow, CardinalityContractDeclaration,
         ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
         DeclaredAspectContractBinding, DescriptorCanonicalBasisSupportPolicy,
         DescriptorCanonicalBasisVersion, DescriptorSemanticsSupportPolicy,

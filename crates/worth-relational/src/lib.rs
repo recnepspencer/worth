@@ -22,6 +22,7 @@
 #![forbid(unsafe_code)]
 #![deny(unreachable_patterns)]
 
+mod aggregate_identity;
 mod aspect_wire;
 mod authority;
 mod authorization;
@@ -53,6 +54,7 @@ mod schema;
 mod simulation;
 mod snapshots;
 mod storage;
+mod structural_traversal;
 mod symbols;
 mod transactions;
 mod validation;

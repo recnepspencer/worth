@@ -98,6 +98,7 @@ pub(super) fn bind_commit_history(
         &schema_continuity,
     ));
     let merge_parent_branches = validation_input.merge_parent_branch_ids();
+    mutated.bind_aggregate_consequences(execution, runtime, history.commit_id)?;
     Ok(HistoryBoundCommitExecution {
         mutated,
         history,

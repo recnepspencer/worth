@@ -42,14 +42,14 @@ pub use continuity::{
 pub use registry_errors::{SchemaRegistryError, SchemaRegistryErrorClass};
 pub(crate) use relation_integrity::derive_relation_integrity_plan_revision;
 pub use relation_integrity::{
-    CardinalityContractDeclaration, ContractId, EndpointDeletionIntegrityDeclaration,
-    EndpointDeletionIntegrityMode, EndpointKindContractDeclaration,
-    LoweredCardinalityMaximumContract, LoweredCardinalityMinimumContract,
-    LoweredEndpointDeletionIntegrityContract, LoweredEndpointKindContract,
-    LoweredRelationIntegrityPlan, LoweredSymmetryContract, LoweredUniquenessContract,
-    MinimumCardinalityEnforcement, PairMinimumSemantics, RelationIntegrityDeclarations,
-    RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, SymmetryContractDeclaration,
-    SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
+    AggregateIdentityContractDeclaration, AggregateIdentityStorage, CardinalityContractDeclaration,
+    ContractId, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
+    EndpointKindContractDeclaration, LoweredCardinalityMaximumContract,
+    LoweredCardinalityMinimumContract, LoweredEndpointDeletionIntegrityContract,
+    LoweredEndpointKindContract, LoweredRelationIntegrityPlan, LoweredSymmetryContract,
+    LoweredUniquenessContract, MinimumCardinalityEnforcement, PairMinimumSemantics,
+    RelationIntegrityDeclarations, RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision,
+    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
 };
 pub use structural_invariants::{
     AcyclicityContractDeclaration, AllowedCycleClass, ConnectivityMinimumContractDeclaration,
@@ -138,6 +138,7 @@ impl RelationalSchemaRegistry {
             ));
         }
         let registration = crate::schema::canonicalize_relation_registration(registration)?;
+        crate::schema::aggregate_identity::validate_binding(&self, &registration)?;
         self.relation_kinds
             .insert(registration.kind_id, registration);
         Ok(self)
@@ -347,6 +348,7 @@ impl RelationalSchemaRegistry {
                     &registration
                         .relation_integrity
                         .connectivity_minimum_contracts,
+                    registration.relation_integrity.aggregate_identity.as_ref(),
                 ),
                 cross_context_policy: registration.cross_context_policy,
                 cascade_delete_policy: registration.cascade_delete_policy,

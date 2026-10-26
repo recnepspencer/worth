@@ -9,6 +9,17 @@ pub(super) fn allocate_platform_aspect_identities(
     allocate_after(catalog.maximum_aspect_identity())
 }
 
+pub(super) fn allocate_aggregate_aspect_identities(
+    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+) -> Result<[AspectIdentity; 2], WorthQueryPrimaryGraphInstallationDenial> {
+    let installed = allocate_platform_aspect_identities(catalog)?;
+    let last = installed.last().expect("platform aspects are nonempty").0;
+    Ok([
+        AspectIdentity(last.checked_add(1).ok_or_else(contract_space_exhausted)?),
+        AspectIdentity(last.checked_add(2).ok_or_else(contract_space_exhausted)?),
+    ])
+}
+
 fn allocate_after(
     maximum_application_identity: Option<AspectIdentity>,
 ) -> Result<[AspectIdentity; 18], WorthQueryPrimaryGraphInstallationDenial> {
