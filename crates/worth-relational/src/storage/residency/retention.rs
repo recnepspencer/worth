@@ -197,59 +197,14 @@ impl RelationalRegionRetention {
             == 1 + usize::from(self.full.get().is_some()) + usize::from(self.head.get().is_some())
     }
 
-    pub(crate) fn into_partition(self) -> PartitionState {
-        let full = self.full.into_inner();
-        drop(self.head.into_inner());
-        if self.cell.has_cold_backing() {
-            return full
-                .expect("cold publication requires its admitted root view")
-                .full_view()
-                .partition()
-                .clone();
-        }
-        drop(full);
-        match Arc::try_unwrap(self.cell) {
-            Ok(cell) => cell.into_partition(),
-            Err(cell) => cell
-                .lease_resident_full()
-                .expect("resident lease admission fits the process")
-                .expect("publication requires resident substrate")
-                .full_view()
-                .partition()
-                .clone(),
-        }
-    }
-
-    /// A cold retention cannot produce mutable access. Its operation must first
-    /// acquire a Full lease through the explicit, fallible demand boundary.
-    pub(crate) fn make_mut(&mut self) -> Option<&mut PartitionState> {
-        self.cell.check_damage().ok()?;
-        drop(self.head.take());
-        let lease = self
-            .full
-            .take()
-            .or_else(|| self.cell.lease_resident_full().ok().flatten())?;
-        let retained = lease.retained_region();
-        drop(lease);
-        if self.cell.has_cold_backing() || Arc::get_mut(&mut self.cell).is_none() {
-            let lease = RelationalRegionResidency::resident_uncommitted(retained.partition.clone());
-            self.cell = lease.cell().clone();
-            drop(lease);
-            self.authority = None;
-        }
-        drop(retained);
-        let partition = Arc::get_mut(&mut self.cell)?.partition_mut()?;
-        if self.clear_pins_on_write {
-            partition.clear_runtime_pin_counters();
-            self.clear_pins_on_write = false;
-        }
-        Some(partition)
-    }
-
     pub(crate) fn fork(&self) -> Self {
         let mut fork = self.clone();
         fork.clear_pins_on_write = true;
         fork
+    }
+
+    pub(crate) fn clears_pins_on_write(&self) -> bool {
+        self.clear_pins_on_write
     }
 }
 

@@ -1,8 +1,12 @@
 mod edition_copy_lane;
 mod edition_writer;
+mod mirror_state;
 mod partition_edition;
 mod residency_demand;
+mod resident_target;
+use mirror_state::{CurrentMirror, MirrorRegion};
 pub(crate) use residency_demand::MirrorResidencyDemandBinding;
+pub(crate) use resident_target::ResidentMirrorTarget;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
 pub(crate) use edition_writer::{
@@ -29,17 +33,17 @@ use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResid
 /// partition only when a reader still holds the previous edition of it.
 #[derive(Debug, Default)]
 pub(crate) struct StorageSubsystem {
-    partitions: RuntimeOwnedState<PartitionEdition>,
+    partitions: RuntimeOwnedState<CurrentMirror>,
 }
 
 impl StorageSubsystem {
     pub(crate) fn install_cells(&self, cells: PartitionMap) {
-        *self.partitions.write() = PartitionEdition::new(cells);
+        *self.partitions.write() = CurrentMirror::from_cells(cells);
     }
     /// One structurally shared edition of the substrate. O(1): one atomic
     /// increment, no allocation, no retained lock.
     pub(crate) fn acquire(&self) -> PartitionEdition {
-        self.partitions.read().clone()
+        self.partitions.read().edition.clone()
     }
 
     /// Exclusive authority to install the next edition, charged to `lane`.
@@ -76,14 +80,17 @@ impl StorageSubsystem {
 
     pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
         use crate::storage::overlay::CurrentPartitionAccess;
-        self.partitions.read().partition_ids()
+        self.partitions.read().edition.partition_ids()
     }
 
     pub(crate) fn partition(
         &self,
         partition_id: PartitionId,
     ) -> Option<RelationalResidencyLease<Full>> {
-        self.partitions.read().shared_partition(partition_id)
+        self.partitions
+            .read()
+            .edition
+            .shared_partition(partition_id)
     }
 
     pub(crate) fn install_owned(
@@ -118,7 +125,7 @@ impl RuntimeSubsystem for StorageSubsystem {
             .map(|(id, region)| (id, region.fork()))
             .collect();
         Self {
-            partitions: RuntimeOwnedState::new(PartitionEdition::new(partitions)),
+            partitions: RuntimeOwnedState::new(CurrentMirror::from_cells(partitions)),
         }
     }
 }

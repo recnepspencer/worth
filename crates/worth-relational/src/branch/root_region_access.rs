@@ -1,6 +1,21 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn resident_full_region_witness(
+        &self,
+        id: PartitionId,
+    ) -> Result<
+        Option<
+            crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Full>,
+        >,
+        crate::storage::data::RelationalStorageUnavailable,
+    > {
+        self.regions
+            .get(id)
+            .map(|region| region.partition.pin_lease())
+            .transpose()
+    }
+
     pub(crate) fn admitted_head_region(
         &self,
         id: PartitionId,

@@ -1374,3 +1374,119 @@ the producer had released its earlier snapshot. That fixture was wrong: retain
 the real produced snapshot across the update and assert that mirror metadata
 history actually contains multiple versions before checkpointing. Every
 original failure assertion is retained and the corrected matrix passes.
+
+### Resident mirror publication targets
+
+The main mirror currently classifies and rediscovers its publication targets
+only during settlement, after the canonical cutover. Full demand makes its raw
+retention extraction succeed by convention, but the candidate carries no typed
+target. Pin and retention writes between preparation and settlement must remain
+visible: copying an earlier partition into the candidate and later replacing
+the mirror would overwrite their metadata. A mirror lock cannot span journal
+I/O or consumer callbacks.
+
+Use stable per-runtime resident targets, separate from immutable reader
+editions. Storage owns a current map and its immutable edition; its existing
+writer is the only target editor. Each target contains a counted accepted
+resident lease, never a cold retention. A candidate retains the target, and
+settlement edits its current contents under the existing mirror writer. A new
+partition target stays private in the prepared publication until installation.
+Recovery and runtime fork create their own target spines; immutable region
+cells remain shared. Publication's owner admission and configuration/branch
+checks remain before effect, so a revoked candidate cannot edit an old spine.
+
+The cached edition must preserve O(1) reader acquisition and existing COW
+semantics. Before editing a target, detach only that cached entry, preserving
+external editions. Consume its accepted lease into a writer-owned edit and
+restore a new immutable resident cell on writer release. The target's temporary
+editing state is guarded by that same exclusive writer, never a cold state or
+a loader. An unobserved payload moves; an observed payload copies. Preserve
+fork pin detachment and the existing copy-lane accounting.
+
+First cut Full publication over to this target protocol, with preparation
+producing the entire effect plan before position reservation. Remove effect-
+time target classification, missing/resident expectations and raw retention
+extraction from publication. Keep a single mirror writer for pinning,
+retention and publication. Prove preservation of intervening pin changes,
+immutable old editions, private new targets, disposal and stale/recovered
+candidate rejection through the existing owner courts plus focused target
+courts. Run native library/contracts and owner CI clippy before extending the
+same protocol to owned Head edits. Head pin/current-metadata access and
+post-publication retention must then be cut over before enabling Head
+preparation; a Head payload must never be labeled Full for convenience.
+
+The Full target cutover now carries a PreparedMirrorPublication through the
+candidate and completion. Existing targets retain the mirror's latest accepted
+Full lease; new targets borrow the prepared root's Full witness and stay private.
+The storage effect interpreter performs no target classification or demand.
+CurrentMirror explicitly owns awaiting directory entries and resident targets,
+with a derived immutable reader edition. Full edits consume a lease and freeze
+back into a new immutable cell. Retention entry reads remain lazy and do not
+copy until an edit; accepted Full entry edits are now infallible. The former raw
+retention extraction, raw cell mutation and cold-backing edit special cases are
+removed. Full custody still owns the member-retention guard through Drop.
+
+The first target check caught an attempted private cell-field read; obtain the
+partition id from the accepted Full view instead of widening cell visibility.
+The first native run then exposed a real new product loop: the awaiting target
+directory and reader edition had separate retention admission caches. The
+declared demand filled the edition's root-qualified cache, while target minting
+asked the copied directory cache for a witness and kept refusing. Stop that
+scoped run after diagnosis and transfer the guarded edition's accepted witness.
+Do not promote a raw physically Full cold cell: phase 1 deliberately requires
+root-qualified serving admission. The existing 27-door symbol matrix is the
+regression. The corrected four symbol courts, two new public preparation/
+publication courts and full native library pass (1,953 passed, 31 existing
+ignores). Cleaning up the now-infallible inner retention edit also exposed two
+stale `?` calls in its sparse-slot court; remove those operators, preserving all
+assertions. The corrected native library passes again. Contracts, CI clippy and
+the repository enforcers are running against the stable source before the next
+cutover.
+
+### Head write cutover boundary
+
+The remaining Full dependencies are concrete. Preparation's outer proposal,
+preview and merge rounds still probe Full even though their selected read is
+current-only. Mirror targets and editors currently accept only Full. Settlement
+then reconciles current lifecycle through a Full mirror accessor and invokes
+full-history trimming without an execution request. Public snapshot inspection
+also resolves a materialized snapshot behind a pure Option-returning API.
+Enabling Head only at the draft loop would leave these later readers dishonest.
+
+Extend the target protocol with separately typed owned Head edits, carrying
+schema and isolated dictionary readmission context. A Head edit preserves its
+authenticated cold row prefixes and resident suffix, never fabricates Full, and
+freezes a new Head version. Full promotion remains an explicit fallible demand;
+its accepted edition witness upgrades the matching current target. Current pin
+and lifecycle operations use current-only edit views. Historical retention and
+replay pin custody retain their Full witnesses. New partition/adoption targets
+must accept the level actually proven by root assembly.
+
+D9 requires Head writes and Full retention. Retire settlement's implicit
+full-history trim uniformly, including the memory reference, and perform that
+work in the explicit Full retention pass. Choosing whether to trim from the
+current residency temperature would make history/statistics depend on warming.
+The existing touched-record automatic-trimming claim is retired by this D9
+cutover; keep its retention assertions and exercise the guarded pass explicitly.
+Extend that pass to trim live record history under the same retained-version
+fence before reclamation. Keep current lifecycle reconciliation in settlement,
+using the published resident targets, without history reads or loads.
+
+Snapshot inspection must take the original request, declare Full root demand
+for the selected observation, and return the existing typed execution failure.
+Its identity-only consumers should use root/binding facts rather than building
+snapshot record materialization merely to validate a handle. Audit every caller
+and propagate the failure through World, Query and the bank world. Only after
+these handoffs are closed should proposal/preview/merge discovery change to
+Head. Add a type-level negative history boundary with a valid Full counterpart,
+actual cold-history failure/locality courts, and retained-observation agreement.
+Candidate-wide artifact/root/custody probing remains a required audit beyond
+changing those three outer round calls.
+
+The stable target slice passes all 1,953 native tests (31 existing ignores),
+203 contracts (three existing ignores), all three CI clippy lanes, formatting,
+dirty caps, boundary-check and agent-context. The final small custody cleanup
+hoists the guarded edition outside the touched-set loop and checks the original
+request even for an empty publication. Native library and all three clippy lanes
+pass again after that cleanup. These results establish the Full target protocol;
+they do not claim Head preparation or the remaining history/lineage work.

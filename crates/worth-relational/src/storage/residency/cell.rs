@@ -66,7 +66,7 @@ pub(crate) struct RelationalRegionResidency {
     damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
     head_readmission: Option<super::resident_history::ResidentHistoryReadmission>,
-    backing_custody: Option<crate::durability::medium::RelationalDurableMemberCustody>,
+    _backing_custody: Option<crate::durability::medium::RelationalDurableMemberCustody>,
     raw_head: RegionLoadCache,
     raw_full: RegionLoadCache,
     pub(super) leases: AtomicUsize,
@@ -105,7 +105,7 @@ impl RelationalRegionResidency {
             )])),
             backing: Some(cold),
             head_readmission: None,
-            backing_custody: Some(custody),
+            _backing_custody: Some(custody),
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Cold),
@@ -140,7 +140,7 @@ impl RelationalRegionResidency {
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
             head_readmission: None,
-            backing_custody: None,
+            _backing_custody: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Full(region.clone())),
@@ -243,10 +243,6 @@ impl RelationalRegionResidency {
         }
     }
 
-    pub(crate) fn has_cold_backing(&self) -> bool {
-        self.backing.is_some()
-    }
-
     pub(super) fn content_symbols(
         &self,
         fallback: &crate::symbols::data::StringInterner,
@@ -264,61 +260,6 @@ impl RelationalRegionResidency {
     /// retention already holds an older, valid immutable lease.
     pub(crate) fn check_damage(&self) -> Result<(), RelationalStorageUnavailable> {
         self.damage.get().copied().map_or(Ok(()), Err)
-    }
-
-    pub(crate) fn into_partition(self) -> PartitionState {
-        drop(self.backing_custody);
-        drop(
-            self.raw_head
-                .into_inner()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        );
-        drop(
-            self.raw_full
-                .into_inner()
-                .unwrap_or_else(|poisoned| poisoned.into_inner()),
-        );
-        let state = self
-            .state
-            .into_inner()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let ResidencyState::Full(region) = state else {
-            panic!("publication requires full residency")
-        };
-        match Arc::try_unwrap(region) {
-            Ok(region) => region.partition,
-            Err(region) => region.partition.clone(),
-        }
-    }
-
-    pub(super) fn partition_mut(&mut self) -> Option<&mut PartitionState> {
-        // Only an exclusive mirror writer can reach this method. Old roots and
-        // editions retain their old cell; no accepted lease sees a mutation.
-        self.raw_head
-            .get_mut()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
-        self.raw_full
-            .get_mut()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .take();
-        self.backing = None;
-        self.head_readmission = None;
-        self.backing_custody.take();
-        self.checkpoint_bindings
-            .get_mut()
-            .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .clear();
-        let state = self
-            .state
-            .get_mut()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        let ResidencyState::Full(region) = state else {
-            return None;
-        };
-        let region = Arc::get_mut(region)?;
-        region.commitment = None;
-        Some(&mut region.partition)
     }
 
     // Raw readmission authenticates record content independently of derived

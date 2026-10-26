@@ -116,6 +116,7 @@ impl RelationalResidencyLease<Full> {
         }
     }
 
+    #[cfg(test)]
     pub(super) fn retained_region(&self) -> Arc<ResidentRegion> {
         self.region.clone()
     }

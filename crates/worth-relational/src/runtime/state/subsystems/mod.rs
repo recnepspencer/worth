@@ -56,7 +56,8 @@ pub(crate) use services::{
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,
-    PartitionEditionWriter, ResidentPartitionEdition, ResidentPartitionEntry, StorageSubsystem,
+    PartitionEditionWriter, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    StorageSubsystem,
 };
 pub(crate) use visibility::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,

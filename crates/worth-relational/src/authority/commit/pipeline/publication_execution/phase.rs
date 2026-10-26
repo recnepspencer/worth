@@ -68,8 +68,7 @@ pub(super) fn finalize_publication_phase(
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
 ) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
-        clone_mode,
-        committed_partitions,
+        mirror_publication,
         prepared_history,
         validated_lineage_events,
         lineage_nodes,
@@ -110,8 +109,7 @@ pub(super) fn finalize_publication_phase(
     finalize_published_commit(
         runtime,
         FinalizationInput {
-            clone_mode,
-            committed_partitions,
+            mirror_publication,
             prepared_history,
             changed_records: &changed_records,
             version_id,

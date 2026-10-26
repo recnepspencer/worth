@@ -1,12 +1,5 @@
 pub(super) struct FinalizationInput<'a> {
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublicationAccelerators,
     pub(super) changed_records: &'a [crate::transactions::data::RecordRef],
     pub(super) version_id: crate::identity::data::VersionId,
@@ -30,8 +23,7 @@ pub(super) fn finalize_published_commit(
     input: FinalizationInput<'_>,
 ) {
     let FinalizationInput {
-        clone_mode,
-        committed_partitions,
+        mirror_publication,
         prepared_history,
         changed_records,
         version_id,
@@ -48,13 +40,7 @@ pub(super) fn finalize_published_commit(
         published_snapshot_slot,
     } = input;
     let index_refresh_basis = prepared_history.index_refresh_basis().clone();
-    publish_storage(
-        runtime,
-        branch_id,
-        clone_mode,
-        committed_partitions,
-        phase_timing,
-    );
+    publish_storage(runtime, mirror_publication, phase_timing);
     refresh_indexes(runtime, changed_records, &index_refresh_basis, phase_timing);
     let started = std::time::Instant::now();
     prepared_history.install(runtime, patch_position);
@@ -100,21 +86,13 @@ pub(super) fn finalize_published_commit(
 
 fn publish_storage(
     runtime: &crate::runtime::RelationalRuntime,
-    branch_id: &crate::history::data::BranchId,
-    clone_mode: crate::storage::overlay::PartitionCloneMode,
-    committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    prepared: crate::storage::PreparedMirrorPublication,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
     runtime
         .storage_authority()
-        .publish_branch_partition_commits(branch_id, clone_mode, committed_partitions);
+        .publish_prepared_mirror(prepared);
     timing.storage_commit_micros = started.elapsed().as_micros() as u64;
 }
 

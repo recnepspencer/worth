@@ -4,76 +4,56 @@ use crate::storage::overlay::{summarize_entity_chunk_plan, EntityWorkingSetLayou
 
 use super::super::StorageAuthority;
 use super::plan::{
-    PartitionPublicationPlan, PartitionPublicationStrategy, PlannedPartitionPublication,
+    PartitionPublicationStrategy, PlannedExistingPartitionPublication, PlannedPartitionPublication,
+    PreparedMirrorPublication,
 };
 
 pub(super) fn execute_partition_publication(
     authority: &StorageAuthority<'_>,
-    plan: PartitionPublicationPlan,
+    plan: PreparedMirrorPublication,
 ) {
     for partition in plan.partitions {
         execute_partition(authority, partition);
     }
 }
 
-fn execute_partition(
-    authority: &StorageAuthority<'_>,
-    mut publication: PlannedPartitionPublication,
-) {
+fn execute_partition(authority: &StorageAuthority<'_>, publication: PlannedPartitionPublication) {
     let mut writer = authority.runtime.edit_partitions();
-    match publication.strategy {
-        PartitionPublicationStrategy::MissingPartition { entity_layout } => {
+    match publication {
+        PlannedPartitionPublication::New {
+            target,
+            entity_layout,
+            entity_slots,
+        } => {
             if let Some(layout) = entity_layout {
-                record_entity_replacement(authority.runtime, &publication, layout);
+                record_entity_replacement(authority.runtime, entity_slots, layout);
             }
-            publication.partition_state.clear_runtime_pin_counters();
-            writer.insert(publication.partition_id, publication.partition_state);
+            writer.install_target(target);
         }
-        PartitionPublicationStrategy::ExistingEntityOnly(layout) => {
-            let base = writer
-                .partition_mut(publication.partition_id)
-                .expect("planned existing entity partition must remain present");
-            let published_chunks = merge_entity_slots(base, &mut publication, layout);
+        PlannedPartitionPublication::Existing(mut publication) => {
+            let target = publication.target.clone();
+            let mut entity_chunks = None;
+            writer.transform_target(&target, |mut base| match publication.strategy {
+                PartitionPublicationStrategy::EntityOnly(layout) => {
+                    entity_chunks = merge_entity_slots(&mut base, &mut publication, layout);
+                    base
+                }
+                PartitionPublicationStrategy::HybridGraph { entity_layout } => {
+                    publish_hybrid_partition(authority.runtime, publication, base, entity_layout)
+                }
+                PartitionPublicationStrategy::WholePartition => {
+                    publish_whole_partition(publication, base)
+                }
+            });
             drop(writer);
-            count_published_chunks(authority.runtime, published_chunks);
-        }
-        PartitionPublicationStrategy::ExistingHybridGraph { entity_layout } => {
-            let base = writer
-                .remove(publication.partition_id)
-                .expect("planned existing hybrid partition must remain present");
-            let published = publish_hybrid_partition(
-                authority.runtime,
-                publication,
-                unwrap_partition(base),
-                entity_layout,
-            );
-            writer.insert(published.0, published.1);
-        }
-        PartitionPublicationStrategy::ExistingWholePartition => {
-            let base = writer
-                .remove(publication.partition_id)
-                .expect("planned existing whole partition must remain present");
-            let published = publish_whole_partition(publication, unwrap_partition(base));
-            writer.insert(published.0, published.1);
+            count_published_chunks(authority.runtime, entity_chunks);
         }
     }
 }
 
-/// Take sole ownership of a partition removed from the substrate, copying
-/// whenever any other strong reference to it still exists.
-///
-/// A reader holding the edition being replaced is the ordinary reason for that,
-/// but it is not the only one: `Arc::try_unwrap` hands back the shared value for
-/// any surviving strong reference, whatever holds it.
-fn unwrap_partition(
-    partition: crate::storage::residency::RelationalRegionRetention,
-) -> crate::storage::overlay::PartitionState {
-    partition.into_partition()
-}
-
 fn merge_entity_slots(
     base: &mut crate::storage::overlay::PartitionState,
-    publication: &mut PlannedPartitionPublication,
+    publication: &mut PlannedExistingPartitionPublication,
     layout: EntityWorkingSetLayout,
 ) -> Option<usize> {
     let chunk_plan = summarize_entity_chunk_plan(publication.journal.entity_slots.len(), layout);
@@ -109,27 +89,23 @@ fn count_published_chunks(
 
 fn record_entity_replacement(
     runtime: &crate::runtime::RelationalRuntime,
-    publication: &PlannedPartitionPublication,
+    entity_slots: usize,
     layout: EntityWorkingSetLayout,
 ) {
     if matches!(layout, EntityWorkingSetLayout::AoSoACandidate { .. }) {
-        let summary = summarize_entity_chunk_plan(publication.journal.entity_slots.len(), layout);
-        runtime.performance_access().count_aosoa_publish_soa_merge(
-            summary.chunk_count.max(1),
-            publication.journal.entity_slots.len(),
-        );
+        let summary = summarize_entity_chunk_plan(entity_slots, layout);
+        runtime
+            .performance_access()
+            .count_aosoa_publish_soa_merge(summary.chunk_count.max(1), entity_slots);
     }
 }
 
 fn publish_hybrid_partition(
     runtime: &crate::runtime::RelationalRuntime,
-    mut publication: PlannedPartitionPublication,
+    mut publication: PlannedExistingPartitionPublication,
     mut base: crate::storage::overlay::PartitionState,
     entity_layout: Option<EntityWorkingSetLayout>,
-) -> (
-    crate::identity::data::PartitionId,
-    crate::storage::overlay::PartitionState,
-) {
+) -> crate::storage::overlay::PartitionState {
     base.merge_adjacency_from(&publication.partition_state, &publication.journal);
     if let Some(layout) = entity_layout {
         let published_chunks = merge_entity_slots(&mut base, &mut publication, layout);
@@ -154,16 +130,13 @@ fn publish_hybrid_partition(
     }
     publication.partition_state.adjacency = base.adjacency;
     publication.partition_state.reverse_adjacency = base.reverse_adjacency;
-    (publication.partition_id, publication.partition_state)
+    publication.partition_state
 }
 
 fn publish_whole_partition(
-    mut publication: PlannedPartitionPublication,
+    mut publication: PlannedExistingPartitionPublication,
     mut base: crate::storage::overlay::PartitionState,
-) -> (
-    crate::identity::data::PartitionId,
-    crate::storage::overlay::PartitionState,
-) {
+) -> crate::storage::overlay::PartitionState {
     base.merge_adjacency_from(&publication.partition_state, &publication.journal);
     if publication.journal.entity_slots.is_empty() {
         publication.partition_state.entity_arena = base.entity_arena;
@@ -183,5 +156,5 @@ fn publish_whole_partition(
     }
     publication.partition_state.adjacency = base.adjacency;
     publication.partition_state.reverse_adjacency = base.reverse_adjacency;
-    (publication.partition_id, publication.partition_state)
+    publication.partition_state
 }

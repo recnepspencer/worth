@@ -19,7 +19,7 @@ impl RelationalRegionResidency {
             checkpoint_bindings: Mutex::new(Default::default()),
             backing: None,
             head_readmission: Some(readmission),
-            backing_custody: None,
+            _backing_custody: None,
             raw_head: Mutex::new(None),
             raw_full: Mutex::new(None),
             state: Mutex::new(ResidencyState::Head {

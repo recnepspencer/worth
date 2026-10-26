@@ -1,13 +1,12 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::storage::overlay::{
-    PartitionAccess, PartitionCloneMode, PartitionMutationJournal, PartitionState,
-};
+use crate::storage::overlay::{PartitionAccess, PartitionMutationJournal, PartitionState};
 
 use super::StorageAuthority;
 
 mod execution;
 mod plan;
+pub(crate) use plan::PreparedMirrorPublication;
 
 /// Exact partition set published by the storage owner for one operation.
 ///
@@ -92,35 +91,8 @@ impl RelationalPublishedPartitionDelta {
 }
 
 impl StorageAuthority<'_> {
-    pub(crate) fn publish_branch_partition_commits(
-        &self,
-        branch_id: &crate::history::data::BranchId,
-        clone_mode: PartitionCloneMode,
-        committed_partitions: BTreeMap<
-            crate::identity::data::PartitionId,
-            (PartitionState, PartitionMutationJournal),
-        >,
-    ) -> RelationalPublishedPartitionDelta {
-        let published_delta =
-            RelationalPublishedPartitionDelta::from_committed_partitions(&committed_partitions);
-        // The runtime-wide map is a legacy main-branch projection, not MVCC
-        // authority. Non-main publications install truth only in their
-        // immutable branch root below the history publication boundary.
-        if branch_id == &self.runtime.history.main_branch {
-            let existing_partition_ids = self
-                .runtime
-                .partitions
-                .partition_ids()
-                .into_iter()
-                .collect();
-            let plan = plan::plan_partition_publication(
-                clone_mode,
-                &existing_partition_ids,
-                committed_partitions,
-            );
-            execution::execute_partition_publication(self, plan);
-        }
-        published_delta
+    pub(crate) fn publish_prepared_mirror(&self, prepared: PreparedMirrorPublication) {
+        execution::execute_partition_publication(self, prepared);
     }
 
     pub(crate) fn affirm_no_partition_changes(&self) -> RelationalPublishedPartitionDelta {

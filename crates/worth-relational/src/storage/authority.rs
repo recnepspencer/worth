@@ -2,7 +2,7 @@ mod pinning;
 mod publication;
 mod retention;
 
-pub(crate) use publication::RelationalPublishedPartitionDelta;
+pub(crate) use publication::{PreparedMirrorPublication, RelationalPublishedPartitionDelta};
 
 use crate::identity::data::{PartitionId, RecordId};
 use crate::runtime::RelationalRuntime;

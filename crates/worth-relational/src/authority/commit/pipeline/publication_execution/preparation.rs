@@ -12,14 +12,7 @@ use crate::transactions::data::{CommitLog, TransactionCommitError};
 pub(super) struct PreparedPublicationPhase {
     pub(super) mutation_identities:
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -38,14 +31,7 @@ pub(super) struct PreparedPublicationPhase {
 }
 
 pub(super) struct PreparedPublicationCompletion {
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublicationAccelerators,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -101,8 +87,7 @@ impl PreparedPublicationPhase {
             self.canonical_publication_route,
         );
         let completion = PreparedPublicationCompletion {
-            clone_mode: self.clone_mode,
-            committed_partitions: self.committed_partitions,
+            mirror_publication: self.mirror_publication,
             prepared_history,
             validated_lineage_events: self.validated_lineage_events,
             lineage_nodes: self.lineage_nodes,
@@ -276,10 +261,22 @@ pub(super) fn prepare_publication_phase(
             .with_commit_log(commit_log.clone())
         })?;
 
+    let mirror_publication = runtime
+        .mirror_residency
+        .prepare_publication(
+            execution,
+            &runtime.services.symbols,
+            &branch_id,
+            prepared_history.root(),
+            clone_mode,
+            committed_partitions,
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+        })?;
     Ok(PreparedPublicationPhase {
         mutation_identities,
-        clone_mode,
-        committed_partitions,
+        mirror_publication,
         prepared_history,
         validated_lineage_events,
         lineage_nodes,
