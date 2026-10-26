@@ -175,7 +175,7 @@ pub(super) fn observe_target(
         |visit| {
             match visit {
                 RelationalAdjacencyVisit::Prepare { .. } => {}
-                RelationalAdjacencyVisit::List => {}
+                RelationalAdjacencyVisit::List | RelationalAdjacencyVisit::Acquired => {}
                 RelationalAdjacencyVisit::Relation(id) => {
                     let Some(relation) = view.exact_relation_metadata(id).map_err(|_| stale())?
                     else {

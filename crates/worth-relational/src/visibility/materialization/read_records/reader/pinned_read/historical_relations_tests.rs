@@ -46,6 +46,26 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
         .read_truth()
         .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &execution)
         .unwrap();
+    use crate::runtime::PinnedStructuralWalkScope;
+    use worth_foundational::facade::RelationDirection;
+    let walk_scope = || {
+        PinnedStructuralWalkScope::new(
+            std::slice::from_ref(&source),
+            KindId(1),
+            KindId(2),
+            RelationDirection::Forward,
+        )
+    };
+    let old_walk = before
+        .complete_relation_walk(&execution, walk_scope())
+        .unwrap();
+    let new_walk = after
+        .complete_relation_walk(&execution, walk_scope())
+        .unwrap();
+    assert_eq!(old_walk.visits().len(), 2);
+    assert_eq!(old_walk.relations().len(), 1);
+    assert_eq!(new_walk.visits().len(), 1);
+    assert!(new_walk.relations().is_empty());
     let old = before
         .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), Some(8))
         .unwrap()

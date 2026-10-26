@@ -7,8 +7,9 @@ use worth_query_installation::facade::*;
 
 mod seed;
 
-pub(super) struct World {
-    pub(super) application: WorthQueryPrimaryGraphApplicationRuntime<WalkSchema>,
+pub(in crate::domain_computation::primary_graph) struct World {
+    pub(in crate::domain_computation::primary_graph) application:
+        WorthQueryPrimaryGraphApplicationRuntime<WalkSchema>,
     pub(super) binding: WorthQueryInstalledPrincipalBinding<
         WalkSchema,
         IdentityBinding,
@@ -17,19 +18,23 @@ pub(super) struct World {
         u64,
         U64ApplicationValueBinding,
     >,
-    pub(super) invariant: WorthQueryApplicationInvariantProjectionAuthority<WalkSchema>,
+    pub(in crate::domain_computation::primary_graph) invariant:
+        WorthQueryApplicationInvariantProjectionAuthority<WalkSchema>,
     pub(super) observation: Observation,
 }
 
-pub(super) struct Graph {
-    pub(super) nodes: usize,
-    pub(super) edges: Vec<(u64, u64)>,
-    pub(super) active: bool,
-    pub(super) blocked: Vec<u64>,
+pub(in crate::domain_computation::primary_graph) struct Graph {
+    pub(in crate::domain_computation::primary_graph) nodes: usize,
+    pub(in crate::domain_computation::primary_graph) edges: Vec<(u64, u64)>,
+    pub(in crate::domain_computation::primary_graph) active: bool,
+    pub(in crate::domain_computation::primary_graph) blocked: Vec<u64>,
 }
 
 impl Graph {
-    pub(super) fn three_hops(active: bool, blocked: Vec<u64>) -> Self {
+    pub(in crate::domain_computation::primary_graph) fn three_hops(
+        active: bool,
+        blocked: Vec<u64>,
+    ) -> Self {
         Self {
             nodes: 6,
             edges: vec![(0, 1), (1, 2), (2, 3)],
@@ -39,7 +44,7 @@ impl Graph {
     }
 }
 
-pub(super) fn install(graph: Graph) -> World {
+pub(in crate::domain_computation::primary_graph) fn install(graph: Graph) -> World {
     install_world(graph, super::probe::Probe::disabled())
 }
 

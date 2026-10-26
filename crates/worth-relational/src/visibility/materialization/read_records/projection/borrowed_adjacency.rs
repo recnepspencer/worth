@@ -10,8 +10,13 @@ use crate::visibility::snapshot_states::SnapshotStateBasis;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalAdjacencyVisit {
-    Prepare { work: u64, bytes: u64 },
+    Prepare {
+        work: u64,
+        bytes: u64,
+    },
     List,
+    /// The selected list (including an absent/empty list) was acquired.
+    Acquired,
     Relation(RelationId),
 }
 
@@ -114,6 +119,7 @@ impl VisibilityProjectionView {
             let mut ledger = AdjacencyLeaseLedger::default();
             let ids = ledger.lease(adjacency, basis, kind);
             let result = (|| {
+                visit(RelationalAdjacencyVisit::Acquired)?;
                 let mut ids = ids.try_iter(|work, bytes| {
                     visit(RelationalAdjacencyVisit::Prepare { work, bytes })
                 })?;

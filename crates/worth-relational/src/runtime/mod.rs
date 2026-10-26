@@ -28,7 +28,9 @@ pub use crate::validation::engine::HarnessAuditMode;
 pub use crate::validation::InvariantAccess;
 pub use crate::visibility::materialization::read_records::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, EntityProjectionRecord,
-    EntityRecordProjection, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
+    EntityRecordProjection, PinnedStructuralWalk, PinnedStructuralWalkDenial,
+    PinnedStructuralWalkDenialKind, PinnedStructuralWalkReads, PinnedStructuralWalkScope,
+    PinnedStructuralWalkVisit, PositionedRelationalSnapshot, QueryLeasedReadOutcome,
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,

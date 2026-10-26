@@ -41,12 +41,16 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
             traversal.relation_kind(),
             direction,
             |visit| {
+                if matches!(visit, RelationalAdjacencyVisit::Acquired) {
+                    return Ok(());
+                }
                 if let RelationalAdjacencyVisit::Prepare { work, bytes } = visit {
                     return admission::prepare(state.admission, work, bytes);
                 }
                 admission::prepare(state.admission, 1, 0)?;
                 let id = match visit {
-                    RelationalAdjacencyVisit::Prepare { .. } => {
+                    RelationalAdjacencyVisit::Prepare { .. }
+                    | RelationalAdjacencyVisit::Acquired => {
                         unreachable!("preparation is handled above")
                     }
                     RelationalAdjacencyVisit::List => {

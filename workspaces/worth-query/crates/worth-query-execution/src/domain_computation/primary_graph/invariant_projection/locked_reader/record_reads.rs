@@ -14,6 +14,11 @@ where
         self.snapshot.version_id()
     }
 
+    /// Reads performed so far by this snapshot projection; diagnostic only.
+    pub const fn work(&self) -> WorthQueryInvariantProjectionWork {
+        self.work
+    }
+
     pub fn resolve_entity<Aspect, Entity, Field, Value, Write, Unit>(
         &mut self,
 

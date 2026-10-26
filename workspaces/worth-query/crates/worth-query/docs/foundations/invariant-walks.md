@@ -1,11 +1,11 @@
-# Walks in installed invariants
+# Complete relation walks
 
-Use an invariant walk when a rule must inspect a dependency history, hierarchy,
+Use a complete walk when a rule or snapshot projection must inspect a dependency history, hierarchy,
 or other graph condition beyond a fixed number of hops. A walk follows one
 stored relation and returns each reachable entity with its minimum distance
 from the starting roots. Cycles and duplicate paths are allowed.
 
-## Calling the API
+## Installed invariant views
 
 Import the installed APIs from
 `worth_query_host::facade::application_invariants`. Resolve the relation binding
@@ -42,6 +42,44 @@ not discover a new entity.
 Reachability is reflexive for a valid local entity. `reaches` currently performs
 a complete forward walk before answering, even for a reflexive query. Failure
 to complete returns an error rather than `false`.
+
+## Snapshot projections
+
+Import snapshot projection authority and result types from
+`worth_query_host::facade::primary_graph`. Inside
+`WorthQueryApplicationInvariantProjectionAuthority::project`, use the existing
+application relation reference and a locally resolved identity:
+
+```rust,ignore
+let root = reader.resolve_entity(NodeKey::reference(), 0_u64)?;
+let walk = reader.walk(Next::reference(), RelationDirection::Forward, &root)?;
+for step in &walk {
+    inspect(step.entity(), step.distance());
+}
+let depends = reader.reaches(Next::reference(), &root, &target)?;
+let shared = reader.closure(Next::reference(), RelationDirection::Reverse, &roots)?;
+```
+
+The [compiled snapshot callback](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/walk/tests.rs)
+uses a real installed schema and graph. Snapshot methods take relation references;
+installed invariant views take their resolver-issued relation bindings.
+
+A snapshot walk reads one pinned branch root through Native's complete executor.
+It uses the same snapshot projection authority as `relations_from` and
+`relations_to`. Use identities from that authority. It does not add principal
+access or make a foreign identity local. Iteration mints typed identities without
+graph access. Those identities can be passed to the snapshot's ordinary field
+reads, which still acquire the requested data.
+
+The walk retains its result allocation. The completed snapshot separately keeps
+payment for its reached-entity scope, so dropping the walk does not release the
+snapshot's scope funding. Both use the original execution request. A cancelled
+or resource-refused walk returns no partial result; swallowing an execution or
+work-limit error inside the callback still prevents projection completion.
+
+`reader.work()` reports observations so far; `completed.work()` reports the
+completed projection. Actual acquisitions remain counted after a later refusal.
+These observations grant no authority and impose no budget.
 
 ## Preparing the rule's read scope
 
@@ -115,9 +153,9 @@ binding/view, undeclared access, wrong kind and unprepared scope from work,
 memory and interruption failures. `Interrupted` preserves cancellation versus
 deadline. `MemoryAdmission` carries the original native allocation refusal.
 
-These methods currently belong to installed invariant views and follow one
-stored endorelation. Snapshot projections, operation readers and declared
-queries have separate read APIs.
+Complete walks currently belong to installed invariant views and snapshot
+projection readers. They follow one stored endorelation. Operation readers and
+declared queries retain their separate read APIs.
 
 See [invariants and read observations](invariants-and-read-observations.md),
 [relation laws](../modeling/relation-laws.md), and

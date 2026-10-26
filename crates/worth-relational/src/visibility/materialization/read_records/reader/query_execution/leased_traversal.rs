@@ -1,9 +1,10 @@
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::BTreeSet;
 
 use worth_execution::{MapKernelContext, MapKernelFailure};
 
 use super::super::query_packetization::PacketizedQueryWork;
 use super::super::RelationalPinnedRead;
+use super::breadth_first_frontier::BreadthFirstFrontier;
 use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDenial};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::query::data::{
@@ -62,9 +63,8 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
     };
     let mut budget = QueryPacketBudget::new(context, ceiling)?;
     let projection = reader;
-    let mut visited_entities = BTreeSet::new();
     let mut emitted_relations = BTreeSet::new();
-    let mut frontier = VecDeque::<FrontierEntry>::new();
+    let mut frontier = BreadthFirstFrontier::<FrontierEntry>::new();
     let mut entities = Vec::new();
     let mut relations = Vec::new();
     let mut entity_visit_keys = Vec::new();
@@ -73,15 +73,12 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
 
     for seed in seeds.iter().copied() {
         budget.checkpoint(1)?;
-        if visited_entities.contains(&seed) {
-            continue;
-        }
-        budget.claim_scratch(entity_scratch_bytes())?;
-        visited_entities.insert(seed);
-        frontier.push_back((seed, 0, seed, None));
+        frontier.enqueue(seed, (seed, 0, seed, None), || {
+            budget.claim_scratch(entity_scratch_bytes())
+        })?;
     }
 
-    while let Some((entity_id, depth, root_seed, via_relation)) = frontier.pop_front() {
+    while let Some((entity_id, depth, root_seed, via_relation)) = frontier.pop() {
         budget.checkpoint(1)?;
         budget.check_temporary_record(projection.candidate_entity_bytes_for_id(entity_id))?;
         let Some(entity_record) = reader
@@ -155,10 +152,12 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_leas
                 Direction::Outgoing => relation_record.target,
                 Direction::Incoming => relation_record.source,
             };
-            if !visited_entities.contains(&neighbor) {
-                budget.claim_scratch(entity_scratch_bytes())?;
-                visited_entities.insert(neighbor);
-                frontier.push_back((neighbor, depth + 1, root_seed, Some(relation_id)));
+            if !frontier.contains(&neighbor) {
+                frontier.enqueue(
+                    neighbor,
+                    (neighbor, depth + 1, root_seed, Some(relation_id)),
+                    || budget.claim_scratch(entity_scratch_bytes()),
+                )?;
             }
         }
     }

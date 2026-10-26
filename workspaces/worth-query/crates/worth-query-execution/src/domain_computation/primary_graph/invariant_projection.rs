@@ -23,8 +23,13 @@ pub use operation_reader::{
 mod realized_scope;
 mod relation_identity;
 mod traversal;
+mod walk;
 mod work;
 pub(in crate::domain_computation::primary_graph) use consumed_output::EvidenceView;
+pub use walk::{
+    WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
+    WorthQueryInvariantProjectionWalkStep,
+};
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;

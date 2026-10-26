@@ -8,8 +8,8 @@ mod probe;
 mod program;
 mod resources;
 mod rule;
-mod schema;
-mod world;
+pub(in crate::domain_computation::primary_graph) mod schema;
+pub(in crate::domain_computation::primary_graph) mod world;
 
 use crate::domain_computation::primary_graph::*;
 use schema::{Node, WalkSchema};

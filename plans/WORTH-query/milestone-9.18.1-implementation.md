@@ -2114,3 +2114,339 @@ regressions, documentation and required structural evidence were complete.
 No material in-scope finding remains. Commit the installed-invariant walk slice
 on codex/worth-query-9.18.1. Phase 3 remains open; its default integration and
 private adoption follow the remaining operation/declared work and phase proof.
+
+
+## Phase 3, Slice 3: Pinned Native Walks And Snapshot Projections
+
+### Boundary brief
+
+The next unfinished boundary is a complete pinned read consumed by the snapshot
+projection reader. Operation decision attribution and portable declared-query
+closure change different authority/identity contracts and remain subsequent
+slices. This slice must end in a real snapshot adapter, not a substrate stub.
+
+The entering truth is the owner-created RelationalPinnedRead: its immutable
+selected root, schema, generation/version and exact context, together with the
+original ExecutionRequest. Existing query execution consults that request and
+enters its scope. Existing leased traversal already owns FIFO/cycle dedup and
+physical edge visitation. Complete forward connectivity exists, but incoming
+neighborhood is one hop. Legacy traversal order is depth/root/via/entity, its
+depth is u32, and checked reduction discards the visit keys. Emitted-record and
+packet counts are not acquisition observations. Neither legacy result vectors
+nor QueryLeasedReadOutcome retain their output reservation. Those weaker
+representations cannot certify the new product walk's distance, counts or payer.
+
+The new pinned path may own a single global multi-source frontier, complete
+Forward/Reverse traversal, checked usize distances, ordering by minimum distance
+then EntityId, actual acquisition observations, and retained result memory. One
+global packet avoids repeated overlap work across the legacy four-seed packet
+partition; it implies neither parallel traversal nor a four-root product cap.
+Share private FIFO/visited mechanics with the existing pinned traversal owner.
+Keep custom_rule's separate driver/payer private, and preserve legacy query
+scope, provenance order, canonical digest and result contracts.
+
+Metadata authority already exists in projection/borrowed_records and
+borrowed_adjacency. Extract/share their exact-root core with the pinned owner;
+do not duplicate live/generation/schema decisions or clone full aspect records
+for structural reads. Ordinary frontier reads are explicitly live-only; audit
+retained edges belong to their separately named API. Require live,
+generation-correct endpoints before exposing visits, filter audit-retained
+relations, and refuse inconsistent matching live endpoints rather than certify
+a partial successful path. Native storage materialization confers no principal
+authorization. Query must preserve the same installed layout, local identity,
+branch and read/disclosure contracts as its one-hop snapshot reads.
+
+ExecutionMemoryReservation is an owned, non-Clone ticket on the original
+serial/leased lineage. ExecutionRequest::run_measured_result already lends
+MapKernelContext plus ExecutionResultMemory, admits cooperating allocation
+before growth, measures completion and leaves that exact reservation holding
+the output. The final native checkpoint choice below preserves optional accounting; do not
+rewrite generic legacy query resource transport or use the measured path to
+manufacture an absent contract. Scratch,
+result and temporary overlap must remain funded through their real lifetimes.
+Ordered scratch maps can establish canonical order, then allocate final vectors
+once at known sizes. This avoids the legacy exact-per-record growth helper's
+quadratic copying without changing that unrelated growth policy.
+
+The snapshot adapter validates its installed endorelation and root authority,
+lowers once, folds actual Native observations on success or refusal, and mints
+typed identities directly from already-read metadata. Calling endpoint or
+one-hop readers for every result would be a second acquisition path. Borrowed
+iteration preserves the original projection authority cookie and root name;
+no raw full Native record or metadata-derived authority is exposed.
+
+Realized entity scope is separate retained state: it moves from the reader to
+the completed projection/snapshot and can outlive a returned walk. Its own
+reservation must move with WorthQueryRealizedProjectionScope. New entries mean
+physical insertions into entity_ids, not broad contains(), which also recognizes
+carried computation ranges. record() also writes an optional per-call set, so
+both physical trees must be admitted when present. A from-empty nodes<=keys
+bound does not bound incremental allocations in an existing tree: ancestor
+splits need an explicit height/insertion bound. Native result custody and scope
+backing remain separate owners on the same original account.
+
+Reader completion already carries native_read_stop, retention_exhausted and
+local-work exhaustion. A swallowed acquisition/admission error must still veto
+projection completion with its original cause and previously performed reads.
+No empty scope, false reaches answer or partial walk substitutes for refusal.
+
+Later boundaries are concrete: operation reads distinguish capability from
+sealed decision facts; their existing exact-key completion must consume genuine
+walk dependency evidence. Declared root paths need an authored closure step,
+canonical/archive/installation meaning, receipts and actual adjacency revision
+sources. Current RootPathSourceBuilder clones owned sets per row, so closure
+must avoid multiplying a complete dependency footprint by every returned row.
+Private basis/thread.rs currently iterates previous() across three reader
+families and performs domain body/branch/name checks. Adoption must replace the
+structural loop while preserving those domain judgments. None is claimed here.
+
+
+### Boundary qualification: optional accounting and scope growth
+
+Further source review narrows the execution choice. run_measured_result is the
+right retained-result mechanism for an accounted opaque callback, but its
+for_run path must not manufacture accounting for a genuinely unaccounted Native
+request. The dedicated pinned path instead uses the existing
+ExecutionRequest::run_native_with_checkpoint. Its for_native posture retains
+real serial/leased backing and accounted ancestors, charges the parent and
+performs a final poll. Cooperative original reservations fund scratch and
+output before allocation; the returned Native result owns its output ticket.
+Do not create a SerialMemoryBudget or treat a physical report as reads.
+Only the exact absent-active-memory case may remain unreserved for a genuinely
+unaccounted request; other lineage/admission/memory refusals remain failures.
+Effective inherited accounting must be respected as well as the request's own
+posture. Small no-account and accounted-ancestor controls protect this boundary.
+
+Root lowering, Native traversal and realized-scope admission remain inside one
+original active extent. Reusing a request value in separate completed serial
+stages could refresh a ceiling; that is insufficient. Actual read totals live
+in owner-local state outside a callback's returned payload, because final poll
+can discard that payload while correctly refusing handoff.
+
+For scope-set growth, after-total N keys imply at most floor(log2(N+1))
+nonempty levels under the weak two-child invariant. A new insertion needs at
+most one split sibling per level and a new root/initial leaf; levels+2 nodes is
+a conservative bound. Quote NEW physical entries independently in entity_ids
+and the optional call set, using the Rust1.94 node bound
+11*sizeof(EntityId)+14*sizeof(usize). Check old+new, N+1, products and cumulative
+reservation arithmetic before growth. Keep the reusable cumulative ticket in
+the realized scope, with both sets dropping before it. The persistent reviewer
+confirmed the bound and these original-accounting constraints.
+
+### Slice 3 implementation plan
+
+The new user path is a snapshot projection using the existing relation ref:
+
+```rust,ignore
+let start = reader.resolve_entity(FeatureKey::reference(), key)?;
+let history = reader.walk(PreviousFeature::reference(), RelationDirection::Forward, &start)?;
+for step in &history {
+    inspect(step.entity(), step.distance());
+}
+let depends = reader.reaches(PreviousFeature::reference(), &later, &earlier)?;
+let shared = reader.closure(PreviousFeature::reference(), RelationDirection::Forward, &roots)?;
+```
+
+This is the existing snapshot projection authority and identity family, distinct
+from installed proposed/committed invariant handles. Operation reader methods,
+sealed decision attribution and declared path closure are not exposed here.
+
+1. Reuse VisibilityProjectionView::from_pinned, an existing private Native
+   conversion that already retains the exact immutable basis/schema/symbols for
+   both snapshot and observation pins. The new pinned path delegates to the
+   existing borrowed entity/relation metadata and selected-kind adjacency core.
+   No extraction or duplicate metadata logic is needed. Keep public projection
+   methods unchanged and retain generation/schema/live and no-aspect semantics.
+2. Introduce a private FIFO/visited frontier under query_execution and use it
+   in both legacy leased_traversal and the new complete policy. Preserve legacy
+   root/via ordering, depth representation, packetization, digests and result
+   behavior. New complete reads use one global root set and checked usize depth,
+   canonicalize actual metadata identities, and include every live matching
+   physical relation, including nondiscovery edges. No custom_rule driver moves.
+3. Add query_execution/pinned_walk with separate execution, traversal, retained
+   outcome and allocation-extent responsibilities. The pinned receiver seals the
+   source; the original native checkpoint extent owns work/controls. Record
+   actual list/candidate/metadata acquisitions at their real boundaries, retaining
+   totals on every refusal. Keep local optional projection-read limits separate
+   from diagnostic counts and original execution accounting. No partial result
+   escapes cancellation, deadline, allocation, kind or endpoint failure.
+4. Admit ordered scratch sets/maps/queue before growth on original optional
+   reservations. Build final canonical step/relation vectors once at known
+   sizes, retaining overlap until scratch backing is dropped. Return a lean,
+   non-Clone result whose vectors precede its owned output reservation in drop
+   order. Use metadata only, no full aspect payload clones. Preserve absent
+   accounting and any real accounted ancestor; do not reset serial work.
+5. Add invariant_projection/walk with root lowering, Native orchestration and a
+   subordinate typed result/iterator owner. Validate relation installation,
+   endorelation meaning and every root's existing authority cookie/kind before
+   graph reads. Fund root-ID backing and checkpoint lowering on the same original
+   extent; Native is called once. Fold performed reads even when acquisition or
+   later admission fails, and latch the original completion stop. Mint wrappers
+   directly from trusted already-acquired metadata, sharing the existing root
+   name/cookie. Empty closures allocate no identity names.
+6. Add realized_scope/retention_extent for the checked insertion bound and retain
+   a reusable original reservation in WorthQueryRealizedProjectionScope. Count
+   actual new entries in each physical set; reserve before calling record().
+   Checkpoint every new-entry counting and insertion loop on the same original
+   context. The snapshot retains its own scope payment after a walk drops. Keep
+   Native result and realized-set custody separate; never wrap a walk as a fake
+   ComputationCallSequence or make a graph read to rebuild scope.
+7. Expose the typed snapshot result through the existing projection audience
+   facade. Extend the feature guidance directly (without feature-doc-writer),
+   capability index and a real compiled snapshot callback. Clearly retain the
+   distinction from installed invariant views and from future operation/declared
+   surfaces. No authority/disclosure promise exceeds existing one-hop reads.
+8. Build the full Native and snapshot source/tests before the large gates.
+   Native proof uses a small independent graph with cycle/self/diamond/overlap,
+   Forward/Reverse, duplicate/permuted five-plus roots, canonical distances and
+   physical edges. Add old-pin/new-pin commit/retirement and explicit audit
+   separation; original serial/leased in-progress stop and funded twins;
+   genuinely unaccounted plus accounted-ancestor behavior; held-result
+   competing-original-reservation/drop custody. Reuse the existing pinned
+   commit/frontier and fragment reduction seams rather than repeat every
+   accepted structural BFS proof.
+9. Snapshot courts use the real installed graph/authority and test canonical
+   reads, local/foreign identity, swallowed-stop refusal, actual observations,
+   result/snapshot scope custody and a cumulative serial budget whose whole
+   work exceeds either individual stage. Prefer a few cohesive cases and
+   completing twins over a new portfolio. No fake native records or identities.
+10. Compile one scoped Native owner selection and one Query execution selection
+    with the real build wrapper/toolchain. Reuse their emitted artifacts for the
+    focused pinned/metadata/legacy traversal/reduction and snapshot/read/refusal
+    regressions. Preserve the proven Rust1.94 nonincremental workaround where
+    needed. No foundational, archive, installation, Graph/Topology/private-CAD
+    portfolios are repeated for unchanged boundaries. Run normal boundary-check,
+    agent-context, dirty caps/fmt/whitespace and scoped advisory review once after
+    stable source. Gate the complete slice with the persistent reviewer under
+    qa-loop, qa-tests and code-quality-qa, then commit it before the next slice.
+
+There is no product preference or approval question. Native lifetime/accounting
+and snapshot scope are the proof-bearing boundary. Any contradictory source or
+runtime evidence revises this brief before dependent code continues.
+
+
+The persistent reviewer approved this Slice 3 plan under all three QA skills.
+The final implementation uses native checkpoints, with original checkpoints in
+scope-membership counting and insertion as well as lowering and traversal.
+
+
+Implementation source discovery found the existing private
+VisibilityProjectionView::from_pinned<Snapshot> conversion. It clones immutable
+custody, not rows, and already delegates all borrowed metadata/adjacency reads
+to their one owner. Reuse it instead of extracting those cores unnecessarily.
+The accepted authority boundary is unchanged and the implementation/gate scope
+is smaller. No snapshot-only public door is added to observation-backed pins.
+
+
+### Slice 3 acquisition-boundary correction
+
+Incremental persistent review identified that the existing borrowed adjacency
+`List` event is pre-admission, not acquisition. Preserve that event's legacy
+meaning, and add `Acquired` after the selected list lease. The new Native walk
+counts there, including empty lists and lists whose later edge scan stops.
+Legacy callers ignore the new notification before charging work. Entity and
+relation observations count acquired metadata only; failed probes still spend
+original/private work. Iterator temporary payment remains held through edge
+callbacks and scratch growth until the borrowed iterator drops. These source
+findings refine steps 3 and 4 without changing the accepted authority model.
+
+The implementation and its focused tests are drafted; no completion is claimed
+before build/runtime evidence, the normal boundary/context gates and final
+persistent reviewer clearance.
+
+
+### Slice 3 optional-accounting execution finding
+
+The first focused Native run passed 30 of 32 courts, including all selected
+legacy regressions, the new 1,000-hop forward/reverse court, canonical graph
+facts and leased cancellation/custody. Its genuinely unaccounted serial case
+exposed that even `MapKernelContext::checkpoint(0)` requires accounting. The
+new Native/snapshot/scope checkpoint helpers must call checkpoint(units) only
+when the original context has accounting, and otherwise poll its original
+controls. Their independent checked local read-work meter still advances;
+real accounted ancestors retain their metered branch. No generic execution or
+legacy traversal policy changes are needed. The persistent reviewer confirmed
+this source-backed correction.
+
+The other failure was an overstrong test assertion: an outer execution scope
+may return a correctly typed inner Native WorkExhausted refusal. Assert that
+exact original cause and absence of a walk, with a funded twin, rather than
+requiring a duplicate outer failure. The current Query build remains frozen
+until it finishes; corrections will be batched with its actual runtime results.
+
+
+### Slice 3 current Native qualification
+
+The corrected Native build 3 passed in 182.88 seconds using the real build-ID
+wrapper, locked Rust1.94 toolchain and nonincremental workaround. Its emitted
+artifact passed all 32 selected owner/regression courts (zero failed/ignored,
+2.18 seconds). They include the six new complete-walk courts, all five existing
+pinned custody/commit/audit courts, canonical legacy neighborhood and parallel
+traversal/reduction, packet stops/storage, and budgeted authorization controls.
+The previously failing genuinely unaccounted request and exact inner original
+work-exhaustion cases now pass, including the identical 4,096-root funded twin.
+No full Native/Query/Topology/private portfolio was repeated.
+
+Query build 2 identified only test placement errors: the three new courts had
+called an owner-private projection-limit entrance from a neighboring fixture.
+Move them into invariant_projection/walk/tests.rs. Reuse the same real installed
+schema/factories through cfg(test) visibility bounded to primary_graph, rather
+than widening the production entrance or adding a test constructor. The public
+compiled callback remains the same authored code and its guide link follows
+the move. The persistent reviewer cleared this correction, exact refusal-owner
+assertions, original-accounting branches, all scoped function advisories and
+Native facade exports. Query runtime and final normal structural evidence are
+still required before slice commit.
+
+
+### Slice 3 runtime and review qualification
+
+The final Query build 3 passed in 635.03 seconds with the same real build-ID
+wrapper, locked Rust1.94 and nonincremental setting. Its emitted artifact passed
+19 focused courts, zero failed/ignored, in 7.94 seconds: the three new snapshot
+walk courts, two field-acquisition courts, three one-hop acquisition/stop courts,
+and eleven existing snapshot projection/read/identity/lifecycle courts. Combined
+with the current Native artifact's 32 passes, this proves the final source's
+canonical full traversal, old pinned truth, original cancellation, genuinely
+absent accounting, ancestor/leased payment, original cumulative work exhaustion,
+result/snapshot scope custody and the affected legacy paths. Both snapshot walk
+and reaches swallowed-cancellation cases preserve exact Cancelled with no later
+acquisitions; the cumulative 4,096-root case preserves exact WorkExhausted and
+its identical uncapped twin completes. Neither court requires a redundant outer
+failure after the responsible inner owner already returned the original cause.
+
+Final formatting, dirty line caps, function scrutiny and whitespace checks pass
+on all 30 scoped Rust files. The persistent reviewer accepted all 20 function
+advisories: new functions retain one read/accounting responsibility, and the
+newly included fixture/transaction bodies changed only visibility or reflow.
+No file exceeds 400 lines. The direct feature guide is source-linked to the
+compiled snapshot callback; its six relative links and six API tokens resolve
+against the passing artifact. No feature-doc-writer skill was used.
+
+The official boundary snapshot regeneration passed in 435.15 seconds. Its only
+logical inventory change is the three intended public snapshot walk result,
+step and iterator types; no facade documentation debt was added. The initial
+normal guard's expected inventory drift and three missing result rustdocs were
+corrected explicitly. The post-update normal boundary/context run must still
+finish before final commit clearance. Logs, commands and machine-readable
+results use the query-9.18.1-phase3-slice3 prefix under the task's targets folder.
+
+All three QA reviews have cleared production source, tests, documentation,
+exports, generated inventory, scoped advisories and current runtime evidence.
+Operation capability/decision walks, declared closure/wire/receipt integration,
+private adoption and Phase 3 master integration remain subsequent work. This
+slice does not claim the whole phase is complete.
+
+
+### Slice 3 final structural qualification
+
+The post-update NORMAL boundary-check passed in 507.36 seconds and reported
+Road 1 Cargo topology valid. Agent-context check passed in 1.21 seconds. This
+is the ordinary enforcement mode on the final source, not snapshot-update or
+sealed-source-only evidence. The generated diff remains exactly three facade
+exports; regeneration added no documentation debt or dependency-graph change.
+All runtime, direct-guide/source-link, dirty formatting/size/advisory/whitespace
+and structural requirements for this slice are now green. The persistent reviewer
+granted final commit clearance under qa-loop, qa-tests and code-quality-qa with
+no remaining material in-scope finding. This slice is complete; Phase 3 remains
+open and does not yet integrate into master.

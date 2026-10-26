@@ -76,7 +76,11 @@ pub use pinned_read::{RelationalPinnedRead, RelationalPinnedReadAdmissionDenial}
 pub use positioned_snapshot::{
     PositionedRelationalSnapshot, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
 };
-pub use query_execution::{QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial};
+pub use query_execution::{
+    PinnedStructuralWalk, PinnedStructuralWalkDenial, PinnedStructuralWalkDenialKind,
+    PinnedStructuralWalkReads, PinnedStructuralWalkScope, PinnedStructuralWalkVisit,
+    QueryLeasedReadOutcome, QueryReadExecutionStop, QueryReadPacketDenial,
+};
 pub use truth_adjacency::{AdjacencyTruthReadLimitExceeded, BoundedAdjacencyTruthRead};
 pub use truth_frontier_adjacency::{
     BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded,
