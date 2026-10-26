@@ -22,7 +22,7 @@ pub(crate) fn entity_kind_in_state(
 ) -> Result<Option<crate::identity::data::KindId>, InvariantViolation> {
     let Some(partition) = context
         .partition_access()
-        .get_partition(entity_id.partition_id)
+        .get_current_partition(entity_id.partition_id)
     else {
         return Err(storage_inconsistency_violation(
             class,
@@ -38,7 +38,7 @@ pub(crate) fn entity_kind_in_state(
                 ),
         ));
     };
-    let Some(slot) = partition.entity_arena.get(&entity_id) else {
+    let Some(slot) = partition.entity_arena().get(&entity_id) else {
         return Err(storage_inconsistency_violation(
             class,
             format!(

@@ -1,4 +1,5 @@
 use super::*;
+use crate::storage::overlay::CurrentPartitionAccess;
 
 struct Ids(Vec<PartitionId>);
 
@@ -6,15 +7,28 @@ impl PartitionAccess for Ids {
     fn get_partition(&self, _: PartitionId) -> Option<&PartitionState> {
         None
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for Ids {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+    }
+
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.0.clone()
     }
+
     fn partition_ids_with_memory(
         &self,
         memory: &mut dyn PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, PartitionIdsDenial> {
         collect_partition_ids(self.0.len(), self.0.iter().copied(), memory)
     }
+
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new(self.0.iter().copied())
     }

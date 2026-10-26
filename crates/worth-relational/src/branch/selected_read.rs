@@ -32,12 +32,34 @@ impl<'round> SelectedRelationalBranchRead<'round> {
 }
 
 impl PartitionAccess for SelectedRelationalBranchRead<'_> {
-    fn has_read_misses(&self) -> bool {
-        self.partitions.has_read_misses()
-    }
-
     fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
         self.partitions.get_partition(id)
+    }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for SelectedRelationalBranchRead<'_> {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.partitions.get_current_partition(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.partitions.probe_head_partition(id)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.partitions.demand_head_partition(execution, id)
+    }
+
+    fn has_read_misses(&self) -> bool {
+        self.partitions.has_read_misses()
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {

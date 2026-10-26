@@ -3,7 +3,7 @@
 //! and touched-scope capture; only custom reads use this exact before-image.
 
 use crate::identity::data::VersionId;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 
 use super::InvariantObservation;
 
@@ -15,7 +15,7 @@ impl InvariantObservation<'_> {
             && self.before_image_partition_access().is_some()
     }
 
-    pub(crate) fn custom_enforcement_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn custom_enforcement_partition_access(&self) -> &dyn CurrentPartitionAccess {
         if self.custom_uses_suspension_source() {
             self.before_image_partition_access()
                 .expect("sealed suspension source exists")
@@ -24,7 +24,7 @@ impl InvariantObservation<'_> {
         }
     }
 
-    pub(crate) fn custom_committed_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn custom_committed_partition_access(&self) -> &dyn CurrentPartitionAccess {
         if self.custom_uses_suspension_source() {
             self.before_image_partition_access()
                 .expect("sealed suspension source exists")

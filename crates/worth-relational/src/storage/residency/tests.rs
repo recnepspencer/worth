@@ -374,3 +374,6 @@ mod request_stop_tests;
 
 #[path = "probe_tests.rs"]
 mod probe_tests;
+
+#[path = "head_probe_tests.rs"]
+mod head_probe_tests;

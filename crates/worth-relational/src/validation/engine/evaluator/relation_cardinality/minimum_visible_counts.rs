@@ -5,7 +5,7 @@ use candidate_entities::record_candidate_entity;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::schema::data::LoweredCardinalityMinimumContract;
-use crate::storage::substrate::{HistoricalMetadata, RelationArena, VersionedRelationMetadata};
+use crate::storage::substrate::VersionedRelationMetadata;
 use crate::transactions::data::EntityReference;
 
 use super::super::super::context::InvariantExecutionContext;
@@ -110,11 +110,11 @@ pub(super) fn visible_relation_counts<'scope>(
         if !context.checkpoint(1) {
             return snapshot;
         }
-        let Some(partition) = state_view.state().get_partition(partition_id) else {
+        let Some(partition) = state_view.state().get_current_partition(partition_id) else {
             continue;
         };
-        collect_historical_relation_counts(context, contract, partition, &mut snapshot);
-        collect_historical_candidate_entities(
+        collect_selected_root_relation_counts(context, contract, partition, &mut snapshot);
+        collect_selected_root_candidate_entities(
             context,
             contract,
             partition_id,
@@ -129,21 +129,21 @@ pub(super) fn visible_relation_counts<'scope>(
 mod planned_counts;
 use planned_counts::planned_visible_relation_counts;
 
-fn collect_historical_relation_counts(
+fn collect_selected_root_relation_counts(
     context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
-    partition: &crate::storage::overlay::PartitionState,
+    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
     snapshot: &mut VisibleRelationCountSnapshot,
 ) {
     let state_view = context.state_view();
-    for slot in partition.relation_arena.occupied_slots_iter() {
+    for slot in partition.relation_arena().occupied_slots_iter() {
         if !context.checkpoint(1) {
             return;
         }
         context.metrics().count_relation_slot_scans(1);
         snapshot.relation_slot_scans += 1;
         let Some(metadata) =
-            visible_relation_metadata(&state_view, &partition.relation_arena, slot)
+            visible_relation_metadata(&state_view, &partition.relation_arena(), slot)
         else {
             continue;
         };
@@ -163,22 +163,22 @@ fn collect_historical_relation_counts(
     }
 }
 
-fn collect_historical_candidate_entities(
+fn collect_selected_root_candidate_entities(
     context: &InvariantExecutionContext<'_, '_>,
     contract: &LoweredCardinalityMinimumContract,
     partition_id: crate::identity::data::PartitionId,
-    partition: &crate::storage::overlay::PartitionState,
+    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
     snapshot: &mut VisibleRelationCountSnapshot,
 ) {
     let state_view = context.state_view();
-    for slot in partition.entity_arena.occupied_slots_iter() {
+    for slot in partition.entity_arena().occupied_slots_iter() {
         if !context.checkpoint(1) {
             return;
         }
         context.metrics().count_entity_slot_scans(1);
         snapshot.entity_slot_scans += 1;
         let Some(metadata) =
-            state_view.entity_metadata_at(&partition.entity_arena, partition_id, slot)
+            state_view.entity_metadata_at(&partition.entity_arena(), partition_id, slot)
         else {
             continue;
         };
@@ -264,15 +264,12 @@ fn decrement_count<Key: Ord>(counts: &mut BTreeMap<Key, usize>, key: Key) {
 
 fn visible_relation_metadata<'state>(
     state_view: &InvariantStateView<'state>,
-    arena: &'state RelationArena,
+    arena: &crate::storage::residency::RelationalRecordHeadArenaView<
+        'state,
+        crate::storage::substrate::RelationRecordKind,
+    >,
     slot: usize,
 ) -> Option<&'state VersionedRelationMetadata> {
-    let history = arena.metadata_history_at(slot)?;
-    let end = history.partition_point(|entry| entry.effective_at() <= state_view.version_id());
-    (0..end).rev().map(|index| &history[index]).find(|entry| {
-        entry.effective_at() <= state_view.version_id()
-            && entry
-                .retired_at()
-                .is_none_or(|retired| state_view.version_id() < retired)
-    })
+    let metadata = arena.current_metadata_at(slot)?;
+    state_view.metadata_is_visible(metadata).then_some(metadata)
 }

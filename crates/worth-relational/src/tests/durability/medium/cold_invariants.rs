@@ -14,7 +14,7 @@ fn recovered(
     Arc<MemberSource>,
     crate::identity::data::EntityId,
 ) {
-    let (source, counter, entity) = fixture(execution, false);
+    let (source, counter, entity) = fixture_with_history(execution, false, 3);
     counter.damaged.store(damaged, Ordering::Relaxed);
     let mut runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
@@ -152,4 +152,80 @@ fn cold_and_warm_invariant_reads_settle_one_round_of_evidence() {
         after_cold.invariant_entity_slot_scans - before.invariant_entity_slot_scans,
         after_warm.invariant_entity_slot_scans - after_cold.invariant_entity_slot_scans,
     );
+}
+
+#[test]
+fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (runtime, counter, entity) = recovered(execution, false);
+    let checkpoint = runtime
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers,
+        )
+        .unwrap();
+    #[derive(serde::Deserialize)]
+    struct Input {
+        manifest: crate::durability::data::RelationalCheckpointManifest,
+    }
+    let manifest = rmp_serde::from_slice::<Input>(
+        checkpoint
+            .bytes()
+            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+            .unwrap(),
+    )
+    .unwrap()
+    .manifest;
+    let history = manifest
+        .mirror
+        .iter()
+        .find(|region| region.partition_id == entity.partition_id)
+        .unwrap()
+        .history;
+    assert_eq!(counter.reads.load(Ordering::Relaxed), 0);
+    *counter.failed_member.lock().unwrap() = Some(history);
+    let position = runtime.history().latest_patch_stream_position();
+    let cold = runtime
+        .validation()
+        .mutation_sensitive_state(execution)
+        .unwrap();
+    assert!(!cold.results().is_empty());
+    let reads = counter.reads.load(Ordering::Relaxed);
+    assert!(reads > 0);
+    assert!(!counter.member_reads.lock().unwrap().contains(&history));
+    let warm = runtime
+        .validation()
+        .mutation_sensitive_state(execution)
+        .unwrap();
+    assert_eq!(cold.results(), warm.results());
+    assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
+    let full = runtime
+        .storage_access()
+        .storage_stats(execution)
+        .unwrap_err();
+    assert_eq!(
+        full,
+        RelationalExecutionDenialCause::StorageUnavailable(
+            crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(
+                    entity.partition_id
+                ),
+                cause: Cause::Damaged,
+            },
+        )
+    );
+    let reads = counter.reads.load(Ordering::Relaxed);
+    *counter.failed_member.lock().unwrap() = None;
+    assert_eq!(
+        runtime
+            .storage_access()
+            .storage_stats(execution)
+            .unwrap_err(),
+        full
+    );
+    assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
+    assert_eq!(runtime.history().latest_patch_stream_position(), position);
+    assert!(attached_test_medium(&runtime).offered().is_empty());
 }

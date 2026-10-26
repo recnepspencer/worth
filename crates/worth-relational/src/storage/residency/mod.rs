@@ -3,12 +3,14 @@ mod cell;
 mod kind_authority;
 mod lease;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
+mod head_arena;
 mod region_capture;
 mod region_image;
 mod region_load;
 #[cfg(test)]
 mod tests;
 mod views;
+pub(crate) use head_arena::RelationalRecordHeadArenaView;
 
 pub(crate) use lease::{Full, Head, RelationalResidencyLease};
 pub(crate) use region_capture::capture_region_members;
@@ -27,6 +29,13 @@ mod demand_failure;
 pub(crate) use demand_failure::RelationalResidencyDemandFailure;
 
 mod cell_load_cache;
+mod discovery_policy;
+mod head_probe;
 mod probe;
+#[cfg(test)]
+pub(crate) use head_probe::probe_head;
+pub(crate) use head_probe::{probe_head_sources, PartitionHeadProbe};
 mod required_symbols;
-pub(crate) use probe::{probe_full, probe_full_sources, PartitionProbe};
+#[cfg(test)]
+pub(crate) use probe::probe_full_sources;
+pub(crate) use probe::{probe_full, PartitionProbe};

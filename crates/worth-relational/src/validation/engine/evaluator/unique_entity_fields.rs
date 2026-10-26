@@ -31,7 +31,11 @@ pub(super) fn evaluate_unique_entity_aspect_field(
         if !context.checkpoint(1) {
             return None;
         }
-        if state_view.state().get_partition(partition_id).is_none() {
+        if state_view
+            .state()
+            .get_current_partition(partition_id)
+            .is_none()
+        {
             if !context.check_result_peak(4096) {
                 return None;
             }

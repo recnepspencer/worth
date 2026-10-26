@@ -46,7 +46,7 @@ impl CandidateTouchedKinds {
             relations: BTreeSet::new(),
         };
         for partition in partitions {
-            proposed.state().get_partition(partition)?;
+            proposed.state().get_current_partition(partition)?;
             for slot in proposed.state().touched_entity_slots(partition)? {
                 pay_visit(budget)?;
                 let current = proposed.entity_metadata_for_slot(partition, slot);

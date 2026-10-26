@@ -65,6 +65,16 @@ impl PartitionAccess for WorkingState {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&super::super::PartitionState> {
         self.partitions.get(&partition_id)
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for WorkingState {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+    }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.partitions.keys().copied().collect()

@@ -619,3 +619,59 @@ caps, agent-context and a fresh plain boundary-check. Function review keeps the
 paired region codec, full readmission, canonical record commitment and real
 producer fixture together: their flagged orchestrations each implement one
 complete contract. No additional responsibility split is needed for this cut.
+
+
+## Current-source interface boundary review
+
+The current-source interface will lend RelationalRegionHeadView and current
+arena views only; it will not return PartitionState or a historical column.
+Full PartitionAccess will extend that current-source interface, keeping its
+historical methods available only to Full readers. Source ids, touched-slot
+facts and miss reporting belong to the common current-source contract rather
+than parallel metadata authorities. Add a Head-only probe round implementing
+only the current interface. Root/edition implementations must distinguish
+Absent from Cold and explicitly demand/cache their root-admitted Head leases.
+A shared raw load cannot bypass another root's serving admission.
+
+Invariant state views should consume the current contract and latest metadata,
+not index a historical column. Their selected-root/current-candidate owner
+continues to determine the semantic basis. Historical visibility/reconstruction
+keeps Full access. Current overlay reads must use the probing base, including
+before-image reads; do not add a dummy Full implementation to a Head round.
+After this read cut, Head working buffers and layered history capture can be
+integrated into draft and candidate-wide preparation without presenting a
+partial buffer as Full.
+
+
+The current-source cut is implemented. Invariant observation, preparation,
+sidecar, cardinality, uniqueness, aspect and adjacency readers consume only
+CurrentPartitionAccess and typed current arenas. Before-images still select the
+independent baseline source. Full readers retain PartitionAccess, which extends
+the current contract; sparse row selection has one shared decision rule.
+Head and Full probes share one inline miss ledger, discard/load loop and bounded
+escalation policy. HeadReadRound cannot implement the Full source contract.
+
+The real region court proves current metadata, aspects and adjacency work with
+an unavailable historical member, while a Full demand returns its failure.
+Related sources and a cold before-image converge independently; a provisional
+Head absence cannot escape or mask sticky damage. The real recovery court now
+has earlier committed versions and runs the public invariant orchestrator with
+its mirror history unavailable: cold and warm results agree without reading
+history; statistics demands Full and returns the same sticky typed damage with
+no journal advance or publication. The full Relational lib passes 1,903 cases
+with 31 unchanged ignored. The earlier focused Head family passed 40 cases.
+
+The source-lattice compiler cut exposed one remaining Full getter in custom
+applicability; the caller was migrated to the current interface. The source
+split also made the state-view test file exceed 400 lines; enumeration-refusing
+access fixtures now have their own semantic file. No assertion was weakened.
+Function review retains the typed row selector's five explicit facts, existing
+complete invariant evaluations and real producer/test orchestrations together.
+The Head/Full discovery policy was consolidated instead of duplicating its
+ledger and retry authority. All three CI owner/service clippy commands, a fresh
+plain boundary-check, dirty line caps and agent-context pass for this cut.
+
+The specification explicitly says Milestone 2 never evicts regions and a
+retained root keeps its counted leases. Do not expand this phase into Milestone
+4 release/eviction work. Head mutation buffers, history-prefix carry and typed
+candidate/publication custody are the next required cut.

@@ -1,6 +1,39 @@
 use super::*;
 
 impl RelationalBranchRoot {
+    pub(crate) fn admitted_head_region(
+        &self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.regions
+            .get(id)
+            .and_then(|region| region.partition.admitted_head_view())
+    }
+    pub(crate) fn probe_head_region(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::PartitionHeadProbe as Probe;
+        match self.regions.get(id) {
+            None => Probe::Absent,
+            Some(region) => region
+                .partition
+                .admitted_head_view()
+                .map_or(Probe::Cold, Probe::Resident),
+        }
+    }
+    pub(crate) fn demand_region_head_cached(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        if let Some(region) = self.regions.get(id) {
+            region.partition.demand_head_cached(execution, 1 << 30)?;
+        }
+        Ok(())
+    }
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

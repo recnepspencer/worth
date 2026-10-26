@@ -11,6 +11,7 @@ pub(crate) struct RelationalRegionRetention {
     cell: Arc<RelationalRegionResidency>,
     authority: Option<Arc<super::RelationalRegionKindAuthority>>,
     full: OnceLock<RelationalResidencyLease<Full>>,
+    head: OnceLock<RelationalResidencyLease<super::Head>>,
 }
 
 impl RelationalRegionRetention {
@@ -22,6 +23,7 @@ impl RelationalRegionRetention {
             cell,
             authority,
             full: OnceLock::new(),
+            head: OnceLock::new(),
         }
     }
 
@@ -36,6 +38,7 @@ impl RelationalRegionRetention {
             cell,
             authority: None,
             full: OnceLock::from(lease),
+            head: OnceLock::new(),
         }
     }
 
@@ -76,6 +79,33 @@ impl RelationalRegionRetention {
         self.full.get().map(|lease| lease.full_view().partition())
     }
 
+    pub(crate) fn admitted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
+        if let Some(full) = self.full.get() {
+            return Some(full.head_view());
+        }
+        if self.head.get().is_none() {
+            let lease = self.cell.lease_resident_head().ok().flatten()?;
+            let _ = self.head.set(lease);
+        }
+        self.head.get().map(|lease| lease.head_view())
+    }
+
+    pub(crate) fn demand_head_cached(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<(), super::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        if self.full.get().is_none() && self.head.get().is_none() {
+            let lease = self
+                .cell
+                .demand_head(execution, limit, self.authority.as_deref())?;
+            let _ = self.head.set(lease);
+        }
+        Ok(())
+    }
+
     pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
         self.authority.clone()
     }
@@ -85,6 +115,10 @@ impl RelationalRegionRetention {
         limit: u64,
     ) -> Result<super::RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
     {
+        self.demand_head_cached(execution, limit)?;
+        if let Some(head) = self.head.get() {
+            return Ok(head.clone());
+        }
         self.cell
             .demand_head(execution, limit, self.authority.as_deref())
     }
@@ -97,11 +131,13 @@ impl RelationalRegionRetention {
     }
 
     pub(crate) fn is_uniquely_owned(&self) -> bool {
-        Arc::strong_count(&self.cell) == 1 + usize::from(self.full.get().is_some())
+        Arc::strong_count(&self.cell)
+            == 1 + usize::from(self.full.get().is_some()) + usize::from(self.head.get().is_some())
     }
 
     pub(crate) fn into_partition(self) -> PartitionState {
         let full = self.full.into_inner();
+        drop(self.head.into_inner());
         if self.cell.has_cold_backing() {
             return full
                 .expect("cold publication requires its admitted root view")
@@ -124,6 +160,7 @@ impl RelationalRegionRetention {
 
     pub(crate) fn make_mut(&mut self) -> &mut PartitionState {
         // Drop our read lease before asking for exclusive cell ownership.
+        drop(self.head.take());
         let retained = self.full.take().map(|lease| lease.retained_region());
         if self.cell.has_cold_backing() || Arc::get_mut(&mut self.cell).is_none() {
             let copied = if let Some(region) = &retained {
@@ -155,10 +192,15 @@ impl Clone for RelationalRegionRetention {
         if let Some(lease) = self.full.get() {
             let _ = full.set(lease.clone());
         }
+        let head = OnceLock::new();
+        if let Some(lease) = self.head.get() {
+            let _ = head.set(lease.clone());
+        }
         Self {
             cell: self.cell.clone(),
             authority: self.authority.clone(),
             full,
+            head,
         }
     }
 }

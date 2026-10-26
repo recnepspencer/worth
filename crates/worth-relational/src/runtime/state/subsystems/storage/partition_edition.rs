@@ -176,6 +176,41 @@ impl PartitionAccess for PartitionEdition {
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.partition(partition_id)
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.partitions
+            .get(&id)
+            .and_then(|region| region.admitted_head_view())
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::PartitionHeadProbe as Probe;
+        match self.partitions.get(&id) {
+            None => Probe::Absent,
+            Some(region) => region
+                .admitted_head_view()
+                .map_or(Probe::Cold, Probe::Resident),
+        }
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        if let Some(region) = self.partitions.get(&id) {
+            region.demand_head_cached(execution, 1 << 30)?;
+        }
+        Ok(())
+    }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.partitions.keys().copied().collect()

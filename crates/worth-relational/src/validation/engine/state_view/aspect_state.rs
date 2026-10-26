@@ -18,9 +18,8 @@ impl<'state> InvariantStateView<'state> {
             None => locate(),
         }?;
         self.partition_from_source(entity_id.partition_id, location.source)?
-            .entity_arena
-            .metadata_history_at(entity_id.slot_index())?
-            .get(location.history_index)?
+            .entity_arena()
+            .current_metadata_at(entity_id.slot_index())?
             .authoritative_aspect_state
             .as_ref()
     }
@@ -30,20 +29,19 @@ impl<'state> InvariantStateView<'state> {
         let (source, partition) =
             self.entity_partition_source_for_slot(entity_id.partition_id, slot)?;
         if partition
-            .entity_arena
+            .entity_arena()
             .get(&entity_id)
             .map(|slot_view| slot_view.generation())
             != Some(entity_id.generation_value())
         {
             return None;
         }
-        let history = partition.entity_arena.metadata_history_at(slot)?;
-        let index = self.visible_metadata_index(history)?;
-        history[index].authoritative_aspect_state.as_ref()?;
-        Some(AspectLocation {
-            source,
-            history_index: index,
-        })
+        let metadata = partition.entity_arena().current_metadata_at(slot)?;
+        if !self.metadata_is_visible(metadata) {
+            return None;
+        }
+        metadata.authoritative_aspect_state.as_ref()?;
+        Some(AspectLocation { source })
     }
 
     pub(crate) fn relation_aspect_state(
@@ -58,9 +56,8 @@ impl<'state> InvariantStateView<'state> {
             None => locate(),
         }?;
         self.partition_from_source(relation_id.partition_id, location.source)?
-            .relation_arena
-            .metadata_history_at(relation_id.slot_index())?
-            .get(location.history_index)?
+            .relation_arena()
+            .current_metadata_at(relation_id.slot_index())?
             .authoritative_aspect_state
             .as_ref()
     }
@@ -70,19 +67,18 @@ impl<'state> InvariantStateView<'state> {
         let (source, partition) =
             self.relation_partition_source_for_slot(relation_id.partition_id, slot)?;
         if partition
-            .relation_arena
+            .relation_arena()
             .get(&relation_id)
             .map(|slot_view| slot_view.generation())
             != Some(relation_id.generation_value())
         {
             return None;
         }
-        let history = partition.relation_arena.metadata_history_at(slot)?;
-        let index = self.visible_metadata_index(history)?;
-        history[index].authoritative_aspect_state.as_ref()?;
-        Some(AspectLocation {
-            source,
-            history_index: index,
-        })
+        let metadata = partition.relation_arena().current_metadata_at(slot)?;
+        if !self.metadata_is_visible(metadata) {
+            return None;
+        }
+        metadata.authoritative_aspect_state.as_ref()?;
+        Some(AspectLocation { source })
     }
 }

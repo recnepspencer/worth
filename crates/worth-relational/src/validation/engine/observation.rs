@@ -1,5 +1,7 @@
 use crate::runtime::PartitionEdition;
-use crate::storage::overlay::{OverlayStateView, PartitionAccess, WorkingState};
+use crate::storage::overlay::{
+    CurrentPartitionAccess, OverlayStateView, PartitionAccess, WorkingState,
+};
 use serde::{Deserialize, Serialize};
 
 mod custom_semantics;
@@ -30,7 +32,7 @@ pub(crate) struct CommittedInvariantView<'runtime> {
 #[derive(Clone)]
 enum CommittedInvariantState<'runtime> {
     Runtime(PartitionEdition),
-    Branch(&'runtime dyn PartitionAccess),
+    Branch(&'runtime dyn CurrentPartitionAccess),
 }
 
 impl<'runtime> CommittedInvariantView<'runtime> {
@@ -66,21 +68,21 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         }
     }
 
-    pub(crate) fn committed_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn committed_partition_access(&self) -> &dyn CurrentPartitionAccess {
         match &self.committed {
             CommittedInvariantState::Runtime(state) => state,
             CommittedInvariantState::Branch(state) => *state,
         }
     }
 
-    pub(crate) fn enforcement_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn enforcement_partition_access(&self) -> &dyn CurrentPartitionAccess {
         match self.enforcement.as_ref() {
             Some(state) => state,
             None => self.committed_partition_access(),
         }
     }
 
-    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
+    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn CurrentPartitionAccess> {
         self.enforcement
             .as_ref()
             .map(|_| self.committed_partition_access())
@@ -120,11 +122,11 @@ impl<'runtime> SpeculativeInvariantView<'runtime> {
         }
     }
 
-    pub(crate) fn partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn partition_access(&self) -> &dyn CurrentPartitionAccess {
         &self.state
     }
 
-    pub(crate) fn before_image_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn before_image_partition_access(&self) -> &dyn CurrentPartitionAccess {
         self.state.base_partition_access()
     }
 }
@@ -135,16 +137,16 @@ pub(crate) enum InvariantObservation<'runtime> {
     Speculative(SpeculativeInvariantView<'runtime>),
     Probed {
         meaning: &'runtime InvariantObservation<'runtime>,
-        committed: &'runtime dyn PartitionAccess,
-        enforcement: &'runtime dyn PartitionAccess,
-        before_image: Option<&'runtime dyn PartitionAccess>,
+        committed: &'runtime dyn CurrentPartitionAccess,
+        enforcement: &'runtime dyn CurrentPartitionAccess,
+        before_image: Option<&'runtime dyn CurrentPartitionAccess>,
     },
 }
 
 impl<'runtime> InvariantObservation<'runtime> {
     pub(crate) fn with_probed_sources<'round>(
         &'round self,
-        [committed, enforcement, before_image]: [&'round dyn PartitionAccess; 3],
+        [committed, enforcement, before_image]: [&'round dyn CurrentPartitionAccess; 3],
     ) -> InvariantObservation<'round>
     where
         'runtime: 'round,
@@ -199,7 +201,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         }
     }
 
-    pub(crate) fn committed_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn committed_partition_access(&self) -> &dyn CurrentPartitionAccess {
         match self {
             Self::Committed(view) => view.committed_partition_access(),
             Self::Speculative(view) => view.partition_access(),
@@ -207,7 +209,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         }
     }
 
-    pub(crate) fn enforcement_partition_access(&self) -> &dyn PartitionAccess {
+    pub(crate) fn enforcement_partition_access(&self) -> &dyn CurrentPartitionAccess {
         match self {
             Self::Committed(view) => view.enforcement_partition_access(),
             Self::Speculative(view) => view.partition_access(),
@@ -231,7 +233,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         }
     }
 
-    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn PartitionAccess> {
+    pub(crate) fn before_image_partition_access(&self) -> Option<&dyn CurrentPartitionAccess> {
         match self {
             Self::Committed(view) => view.before_image_partition_access(),
             Self::Speculative(view) => Some(view.before_image_partition_access()),

@@ -25,15 +25,15 @@ impl CurrentVersionMinimumIndex {
             if !context.checkpoint(1) {
                 return index;
             }
-            let Some(partition) = state.state().get_partition(partition_id) else {
+            let Some(partition) = state.state().get_current_partition(partition_id) else {
                 continue;
             };
-            for slot in partition.entity_arena.live_bitset.set_slots() {
+            for slot in partition.entity_arena().live_slots() {
                 if !context.checkpoint(1) {
                     return index;
                 }
                 index.entity_slot_scans += 1;
-                let Some(view) = partition.entity_arena.get_slot(slot) else {
+                let Some(view) = partition.entity_arena().get_slot(slot) else {
                     continue;
                 };
                 let Some(kind_id) = view.kind_id() else {
@@ -50,12 +50,12 @@ impl CurrentVersionMinimumIndex {
                     .or_default()
                     .push(EntityId::new(partition_id, slot as u64, view.generation()));
             }
-            for slot in partition.relation_arena.live_bitset.set_slots() {
+            for slot in partition.relation_arena().live_slots() {
                 if !context.checkpoint(1) {
                     return index;
                 }
                 index.relation_slot_scans += 1;
-                let Some(view) = partition.relation_arena.get_slot(slot) else {
+                let Some(view) = partition.relation_arena().get_slot(slot) else {
                     continue;
                 };
                 let (Some(kind_id), Some(endpoints)) =

@@ -28,12 +28,25 @@ impl PartitionAccess for ResidentPartitionEdition {
     fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
         self.partition(id)
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for ResidentPartitionEdition {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+    }
+
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.edition.partition_ids()
     }
+
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         self.edition.partition_ids_iter()
     }
+
     fn partition_ids_with_memory(
         &self,
         memory: &mut dyn crate::storage::overlay::PartitionIdMemory,

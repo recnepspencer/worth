@@ -74,7 +74,7 @@ impl StorageSubsystem {
     }
 
     pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
-        use crate::storage::overlay::PartitionAccess;
+        use crate::storage::overlay::CurrentPartitionAccess;
         self.partitions.read().partition_ids()
     }
 

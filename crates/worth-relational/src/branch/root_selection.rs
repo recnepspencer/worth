@@ -70,6 +70,28 @@ impl PartitionAccess for SelectedRelationalBranchState {
     ) -> Option<&PartitionState> {
         self.state().get_partition(partition_id)
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for SelectedRelationalBranchState {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.state().get_current_partition(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.state().probe_head_partition(id)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.state().demand_head_partition(execution, id)
+    }
 
     fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
         self.state().partition_ids()

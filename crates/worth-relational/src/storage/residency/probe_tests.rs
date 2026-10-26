@@ -164,12 +164,47 @@ impl PartitionAccess for DiscoverySource {
         self.admitted[id.0 as usize].store(true, Ordering::SeqCst);
         Ok(())
     }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for DiscoverySource {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::{PartitionHeadProbe as Head, PartitionProbe as Full};
+        match crate::storage::overlay::PartitionAccess::probe_full_partition(self, id) {
+            Full::Absent => Head::Absent,
+            Full::Cold => Head::Cold,
+            Full::Resident(partition) => Head::Resident(
+                crate::storage::residency::RelationalRegionHeadView::from_owned_partition(
+                    partition,
+                ),
+            ),
+        }
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        crate::storage::overlay::PartitionAccess::demand_full_partition(self, execution, id)
+    }
+
     fn partition_ids(&self) -> Vec<PartitionId> {
         self.partition_ids_iter().collect()
     }
+
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
         Box::new((0..self.admitted.len()).map(|id| PartitionId(id as u32)))
     }
+
     fn partition_ids_with_memory(
         &self,
         memory: &mut dyn crate::storage::overlay::PartitionIdMemory,

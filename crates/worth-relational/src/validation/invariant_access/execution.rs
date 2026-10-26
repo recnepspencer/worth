@@ -108,7 +108,7 @@ impl<'runtime> InvariantAccess<'runtime> {
                 .before_image_partition_access()
                 .unwrap_or_else(|| observation.committed_partition_access()),
         ];
-        let (answer, counts) = crate::storage::residency::probe_full_sources(
+        let (answer, counts) = crate::storage::residency::probe_head_sources(
             execution, sources, |views| {
                 let counts = std::sync::Mutex::new(Default::default());
                 let view = self.view.with_counter_sink(&counts);
