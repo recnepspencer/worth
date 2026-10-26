@@ -290,3 +290,6 @@ fn a_cold_symbol_probe_spends_the_abandoned_record_identity_and_reads_only_touch
 
 #[path = "cold_symbol_read_doors.rs"]
 mod cold_symbol_read_doors;
+
+#[path = "cold_symbol_failure_matrix.rs"]
+mod failure_matrix;

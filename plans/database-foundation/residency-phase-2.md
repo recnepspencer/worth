@@ -1786,3 +1786,70 @@ routines are explicit producer/fault/reference courts; the longer production
 writer functions consume or restore one target, and the existing preparation
 orchestrators retain their declared stages. No responsibility is split merely
 to meet the cap. Logs matrix-head-* record this intermediate dirty-tree epoch.
+
+### Remaining preparation failure classes
+
+Boundary review: the original symbol bucket court covers five real doors but
+only damaged bytes; MemberSource now carries native per-locator failure causes.
+The existing global invariant court discovers a remote Head after an applied
+draft, and currently proves only malformed content. Both use genuine recovery
+and canonical medium prefixes, so the new tables can preserve production
+provenance rather than introducing another injection hook. The same doors must
+retain native typed failures for all six classes; only proven damage may stick.
+
+Plan: add a nested symbol-bucket table using the original fixture/door adapter,
+assert diagnostics, dictionary and journal invariance immediately after refusal,
+then distinguish sticky refusal from successful retry. Add the corresponding
+remote invariant Head table selected from actual manifest locators, preserving
+the existing identity-spending and accepted-counter courts. Keep these changes
+separate from envelope lifetime and lineage-event paging, which need their own
+producer/fault cases. Run the focused tables before broad native verification.
+
+The bucket table passes all 30 cases (five native doors by six causes). The
+remote invariant tables pass 18 Head refusal cases and 18 history-independent
+success cases; the original malformed-Head and identity-spending courts pass
+unchanged. Boundary-check for the preceding Head slice also completes green.
+The current-operation producer and adapter are now separate named modules so
+the same six door implementations cover both successful unavailable-history
+runs and typed Head/symbol-page failures. The declared-demand table adds 72
+cells using actual root/mirror Head locators and actual symbol id pages. Its
+adapter checks the original native transaction-read or preparation variant
+before projecting the storage payload; a post-effect or generic failure fails
+the court rather than being normalized into the expected answer.
+
+The declared-demand table's first run failed an overly broad I/O assertion:
+a sticky symbol-page refusal may be reached after admission of another region
+on the next preparation path. The failure remains the same native subject and
+cause. The corrected assertion checks the actual failed member set, refusing
+any reread of those members while permitting unrelated region admission. This
+matches damage isolation instead of treating one subject's damage as a global
+no-I/O latch. Journal and diagnostic invariance assertions are retained.
+
+The corrected declared-demand family passes all 72 refusal cases, the 36
+unavailable-history success cases, and the retained-reference Full promotion
+court. The successful retry of a publishing door advances only its ordinary
+commit; both its failed first call and every nonpublishing retry leave the
+journal unchanged. These tables reveal no additional product defect. Their
+fault adapters and producer extraction preserve the previous assertions.
+
+The all-test owner clippy lane exposed a real module-wiring defect from the
+phase-2 reservation split: #[path = "symbol_table/reservations.rs"] made its
+implicit mod tests resolve to symbol_table/tests.rs again. Clippy's duplicate_mod
+error was correct; six reservation tests in reservations/tests.rs had not been
+compiled at all. An explicit path now loads that intended file. The parent
+symbol-table tests remain unchanged and run once, not twice. No test or claim
+is deleted; the corrected tree must run the previously disconnected reservation
+courts as well as the new matrices, then repeat the failed clippy lane.
+
+That clippy run also correctly rejected two now-identity .into() conversions
+in the pin court after its denial type widened to RelationalExecutionDenialCause.
+The assertions now compare the same native values directly. No lint is allowed
+away and the failed all-test lane will be rerun on the corrected sources.
+
+With the reservation path and pin comparisons corrected, all six newly wired
+reservation courts pass and the complete native library passes 1,970 tests
+with 31 existing ignores. The new fault tables have 120 denial cells (30 symbol
+buckets, 18 remote Heads, 72 declared Head/id pages), plus 54 history-independent
+current success cells across this and the preceding slice. Every table checks
+its typed native boundary before extracting the payload. Formatting, dirty
+caps, context and whitespace pass; the corrected all-test clippy run is active.

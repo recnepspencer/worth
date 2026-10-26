@@ -230,14 +230,14 @@ fn resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admissio
             .demand_replay_pins(execution, fixture.source_state.clone())
             .map(|_| ())
     };
-    assert_eq!(demand(), Err(expected.into()));
+    assert_eq!(demand(), Err(expected));
     let reads = fixture.source.reads.load(Ordering::Relaxed);
     assert!(
         reads > before,
         "the fixture must actually cross the mirror's cold source"
     );
     fixture.source.damaged.store(false, Ordering::Relaxed);
-    assert_eq!(demand(), Err(expected.into()));
+    assert_eq!(demand(), Err(expected));
     assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
     assert!(fixture
         .runtime

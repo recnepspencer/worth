@@ -270,4 +270,5 @@ impl PendingSymbolMeanings {
 }
 
 #[cfg(test)]
+#[path = "reservations/tests.rs"]
 mod tests;

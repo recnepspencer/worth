@@ -30,11 +30,41 @@ fn runtime(
 
 fn recovered(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> (crate::runtime::RelationalRuntime, Arc<MemberSource>, usize) {
+) -> (
+    crate::runtime::RelationalRuntime,
+    Arc<MemberSource>,
+    usize,
+    PreparationPlacements,
+) {
     let producer = runtime(TestDurableMedium::new().attachment());
     create_entity_in_partition(execution, &producer, "remote-value", REMOTE);
     let (recovery, source, _) = fixture_from_runtime(execution, producer, false, 0);
     source.damaged.store(false, Ordering::Relaxed);
+    #[derive(serde::Deserialize)]
+    struct Input {
+        manifest: crate::durability::data::RelationalCheckpointManifest,
+    }
+    let manifest = rmp_serde::from_slice::<Input>(
+        recovery
+            .checkpoint()
+            .unwrap()
+            .checkpoint()
+            .bytes()
+            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+            .unwrap(),
+    )
+    .unwrap()
+    .manifest;
+    let regions = manifest
+        .mirror
+        .iter()
+        .chain(manifest.roots.iter().flat_map(|root| root.regions.iter()))
+        .filter(|region| region.partition_id == REMOTE);
+    let mut placements = PreparationPlacements::default();
+    for region in regions {
+        placements.heads.insert(region.head);
+        placements.history.insert(region.history);
+    }
     let attachment = TestDurableMedium::new().attachment();
     for bytes in source.commits.values() {
         let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
@@ -80,7 +110,7 @@ fn recovered(
         .unwrap()
         .entity_arena
         .slot_count();
-    (receiving, source, floor)
+    (receiving, source, floor, placements)
 }
 
 fn transaction(
@@ -123,7 +153,7 @@ fn candidate_invariant_discovery_refuses_stickily_without_publishing_round_effec
         PreparationDoor::Candidate,
         PreparationDoor::Commit,
     ] {
-        let (runtime, source, _) = recovered(execution);
+        let (runtime, source, _, _) = recovered(execution);
         let before = runtime.performance_access().counters();
         let diagnostics = runtime.publication.diagnostics.snapshot();
         let dictionary = runtime.services.symbols.snapshot();
@@ -174,8 +204,8 @@ fn candidate_invariant_discovery_refuses_stickily_without_publishing_round_effec
 fn a_region_retry_spends_the_applied_draft_identity_and_settles_one_round() {
     let backing = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
-    let (cold, source, floor) = recovered(execution);
-    let (warm, _, warm_floor) = recovered(execution);
+    let (cold, source, floor, _) = recovered(execution);
+    let (warm, _, warm_floor, _) = recovered(execution);
     let (_, basis) = warm.observe_branch(&warm.main_branch_identity()).unwrap();
     basis
         .inner
@@ -220,3 +250,11 @@ fn a_region_retry_spends_the_applied_draft_identity_and_settles_one_round() {
     release_test_commit_snapshot(&cold, &cold_commit);
     release_test_commit_snapshot(&warm, &warm_commit);
 }
+
+#[derive(Default)]
+struct PreparationPlacements {
+    heads: std::collections::BTreeSet<RelationalDurableMemberLocator>,
+    history: std::collections::BTreeSet<RelationalDurableMemberLocator>,
+}
+#[path = "cold_preparation_failure_matrix.rs"]
+mod failure_matrix;
