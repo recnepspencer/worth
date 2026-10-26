@@ -132,9 +132,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 Ok(None)
             }
 
-            Err(ProductBranchCurrentnessFailure::AdmissionDenied { denial, .. }) => match denial {
-                _ => Err(SelectedPermissionSecurityStop::World),
-            },
+            Err(ProductBranchCurrentnessFailure::AdmissionDenied { .. }) => {
+                Err(SelectedPermissionSecurityStop::World)
+            }
         }
     }
 }

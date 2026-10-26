@@ -27,14 +27,10 @@ where
         Ok(current) => Ok(current),
         Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(())) => Ok(false),
 
-        Err(ProductBranchCurrentnessFailure::AdmissionDenied {
-            denial: world_denial,
-            ..
-        }) => {
-            let kind = match world_denial {
-                _ => WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-            };
-            Err(denial(kind, Binding::IDENTITY).into())
-        }
+        Err(ProductBranchCurrentnessFailure::AdmissionDenied { .. }) => Err(denial(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            Binding::IDENTITY,
+        )
+        .into()),
     }
 }
