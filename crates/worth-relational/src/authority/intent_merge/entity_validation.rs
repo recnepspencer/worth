@@ -1,4 +1,5 @@
-use crate::capabilities::{SchemaSource, StorageRead};
+use crate::capabilities::SchemaSource;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, CreateIntent, EntityMutationIntent, MutationIntent,
 };
@@ -7,7 +8,7 @@ use super::record_lookup::entity_exists_in_state;
 use super::schema_conflicts::schema_error_to_commit_conflict;
 
 pub(super) fn validate_entity_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     intent: &MutationIntent,
 ) -> Result<(), CommitConflict> {
@@ -49,7 +50,7 @@ pub(super) fn validate_entity_intent(
 }
 
 fn validate_existing_entity_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     entity_id: crate::identity::data::EntityId,
     intent: &MutationIntent,

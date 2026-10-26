@@ -10,7 +10,7 @@ mod slot_resolution;
 mod working_state;
 pub(crate) use slot_resolution::{
     current_entity_partition_source_for_slot, current_relation_partition_source_for_slot,
-    entity_partition_source_for_slot, relation_partition_source_for_slot, PartitionSource,
+    PartitionSource,
 };
 
 pub(crate) use access::{

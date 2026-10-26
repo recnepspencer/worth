@@ -1,6 +1,6 @@
 //! Whole-struct effects use the validated candidate's actual two retained roots.
 use super::{collection::TouchCollection, *};
-use crate::storage::overlay::{PartitionAccess, WorkingState};
+use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
 use crate::transactions::data::EntityMutationIntent;
 use worth_foundational::facade::{
     AspectBinding, AspectContract, AspectShape, ContractValidatedAspectValueView,
@@ -20,8 +20,8 @@ pub(super) fn project<'p>(
     let kind = proposal
         .prepared
         .working_state
-        .get_partition(spec.entity_id.partition_id)
-        .and_then(|p| p.entity_arena.get(&spec.entity_id))
+        .get_current_partition(spec.entity_id.partition_id)
+        .and_then(|p| p.entity_arena().get(&spec.entity_id))
         .and_then(|r| r.kind_id())
         .ok_or(ValidatedMutationTouchProjectionError::MissingEntityKind(
             spec.entity_id,
@@ -121,11 +121,11 @@ fn aspect<'a>(
     entity: EntityId,
     contract: &AspectContract,
 ) -> Result<Option<&'a StructAspectValue>, ()> {
-    let partition = state.get_partition(entity.partition_id).ok_or(())?;
-    let record = partition.entity_arena.get(&entity).ok_or(())?;
+    let partition = state.get_current_partition(entity.partition_id).ok_or(())?;
+    let record = partition.entity_arena().get(&entity).ok_or(())?;
     let _ = record; // exact identity/generation was checked by get above
     let extra = partition
-        .entity_arena
+        .entity_arena()
         .extra_at(crate::storage::substrate::slot_of::<
             crate::storage::substrate::EntityRecordKind,
         >(&entity))

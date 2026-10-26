@@ -5,7 +5,7 @@ use crate::authority::commit::touched_scope::{
 };
 use crate::identity::data::PartitionId;
 use crate::mvcc::bulk_reservations_for_plan;
-use crate::runtime::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{CommitTopology, MergedCommitPlan};
 use crate::validation::data::InvariantPlanContract;
 
@@ -20,8 +20,8 @@ pub(crate) struct CommitStructuralSummary {
 
 impl CommitStructuralSummary {
     pub(crate) fn derive(
-        current_state: &impl PartitionAccess,
-        planning_state: &impl PartitionAccess,
+        current_state: &impl CurrentPartitionAccess,
+        planning_state: &impl CurrentPartitionAccess,
         merged_plan: &MergedCommitPlan,
         merge_parent_count: usize,
     ) -> Self {

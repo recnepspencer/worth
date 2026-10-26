@@ -3,6 +3,7 @@
 use super::payload_coverage::{validate_created_relation_payload, OutputPayloadCoverageFailure};
 use super::{origin_request, CanonicalCommitEnvelope};
 use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitCreatedEntityBindings, CommitCreatedRelationBindings, EntityReference,
     TransactionCommitError,
@@ -79,9 +80,8 @@ pub(super) fn capture_created_relations(
             continue;
         }
         let record = state
-            .partitions
-            .get(&id.partition_id)
-            .and_then(|partition| partition.relation_arena.get(id))
+            .get_current_partition(id.partition_id)
+            .and_then(|partition| partition.relation_arena().get(id))
             .filter(|record| record.is_live())
             .ok_or_else(|| crate::mvcc::origin_denial("native relation create is not present"))?;
         if record.kind_id() != Some(created.kind_id)
@@ -156,7 +156,7 @@ pub(super) fn continue_relations(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
     use crate::publication::patch::data::RecordStructuralChange as Change;
-    use crate::storage::overlay::{relation_partition_source_for_slot, OverlayStateView};
+    use crate::storage::overlay::{current_relation_partition_source_for_slot, OverlayStateView};
     use crate::transactions::data::RecordRef;
     let after_image = OverlayStateView::new(basis.inner.root.as_ref(), state);
     for relation in &prior.relations {
@@ -166,19 +166,18 @@ pub(super) fn continue_relations(
         let before = basis
             .inner
             .root
-            .partition_state(relation.id.partition_id)
+            .get_current_partition(relation.id.partition_id)
             .ok_or_else(|| crate::mvcc::origin_denial("prior relation partition absent"))?;
         let row = before
-            .relation_arena
+            .relation_arena()
             .get(&relation.id)
             .filter(|row| row.is_live())
             .ok_or_else(|| {
                 crate::mvcc::origin_denial("prior relation generation absent or retired")
             })?;
         let write = before
-            .relation_arena
-            .metadata_history_at(relation.id.slot_index())
-            .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+            .relation_arena()
+            .current_metadata_at(relation.id.slot_index())
             .ok_or_else(|| crate::mvcc::origin_denial("prior relation write position absent"))?
             .effective_at;
         if (write != relation.after_write
@@ -202,14 +201,14 @@ pub(super) fn continue_relations(
                 "relation write/endpoints break native producer continuity",
             ));
         }
-        let (_, after) = relation_partition_source_for_slot(
+        let (_, after) = current_relation_partition_source_for_slot(
             &after_image,
             relation.id.partition_id,
             relation.id.slot_index(),
         )
         .ok_or_else(|| crate::mvcc::origin_denial("successor relation partition absent"))?;
         let row = after
-            .relation_arena
+            .relation_arena()
             .get(&relation.id)
             .ok_or_else(|| crate::mvcc::origin_denial("successor relation generation absent"))?;
         let patch = envelope
@@ -238,9 +237,8 @@ pub(super) fn continue_relations(
             .as_ref()
             .ok_or_else(|| crate::mvcc::origin_denial("successor relation endpoints absent"))?;
         let after_write = after
-            .relation_arena
-            .metadata_history_at(relation.id.slot_index())
-            .and_then(|rows| rows.get(rows.len().checked_sub(1)?))
+            .relation_arena()
+            .current_metadata_at(relation.id.slot_index())
             .ok_or_else(|| crate::mvcc::origin_denial("successor relation write position absent"))?
             .effective_at;
         if row.kind_id() != Some(relation.kind)

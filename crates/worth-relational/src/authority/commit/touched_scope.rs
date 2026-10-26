@@ -1,11 +1,11 @@
 use crate::identity::data::PartitionId;
-use crate::runtime::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     EntityMutationIntent, ExistingRecordTarget, MergedCommitPlan, MutationIntent,
 };
 
 pub(super) fn touched_partitions_for_plan_set(
-    current_state: &impl PartitionAccess,
+    current_state: &impl CurrentPartitionAccess,
     plan: &MergedCommitPlan,
 ) -> std::collections::BTreeSet<PartitionId> {
     let mut touched = std::collections::BTreeSet::new();
@@ -22,17 +22,15 @@ pub(super) fn touched_partitions_for_plan_set(
                     if !widen_entity_adjacency_scope {
                         continue;
                     }
-                    if let Some(partition) = current_state.get_partition(entity_id.partition_id) {
-                        let slot = entity_id.slot_index();
-                        if let Some(adjacency) = partition.adjacency.get(slot) {
-                            for relation_id in adjacency.current_ids() {
-                                include_relation_scope(current_state, &mut touched, *relation_id);
-                            }
-                        }
-                        if let Some(adjacency) = partition.reverse_adjacency.get(slot) {
-                            for relation_id in adjacency.current_ids() {
-                                include_relation_scope(current_state, &mut touched, *relation_id);
-                            }
+                    if let Some(partition) =
+                        current_state.get_current_partition(entity_id.partition_id)
+                    {
+                        for relation_id in partition
+                            .outgoing_candidates(entity_id)
+                            .iter()
+                            .chain(partition.incoming_candidates(entity_id).iter())
+                        {
+                            include_relation_scope(current_state, &mut touched, *relation_id);
                         }
                     }
                 }
@@ -56,16 +54,15 @@ pub(super) fn touched_partitions_for_flat_plan_set(
 }
 
 fn include_relation_scope(
-    current_state: &impl PartitionAccess,
+    current_state: &impl CurrentPartitionAccess,
     touched: &mut std::collections::BTreeSet<PartitionId>,
     relation_id: crate::identity::data::RelationId,
 ) {
     touched.insert(relation_id.partition_id);
-    if let Some(partition) = current_state.get_partition(relation_id.partition_id)
+    if let Some(partition) = current_state.get_current_partition(relation_id.partition_id)
         && let Some(endpoints) = partition
-            .relation_arena
-            .extra
-            .get(relation_id.slot_index())
+            .relation_arena()
+            .extra_at(relation_id.slot_index())
             .and_then(|extra| extra.endpoints.as_ref())
     {
         touched.insert(endpoints.source.partition_id);

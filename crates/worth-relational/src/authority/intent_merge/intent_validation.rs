@@ -1,5 +1,6 @@
-use crate::capabilities::{SchemaSource, StorageRead};
+use crate::capabilities::SchemaSource;
 use crate::runtime::RuntimeInstrumentation;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitConflict, CreateIntent, CreatedEntityRef, MutationIntent, RelationMutationIntent,
 };
@@ -9,7 +10,7 @@ use super::entity_validation::validate_entity_intent;
 use super::relation_validation::validate_relation_intent;
 
 pub(crate) fn validate_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,

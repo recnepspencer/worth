@@ -4,7 +4,7 @@ use crate::config::data::CascadeDeletePolicy;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::WorkingState;
-use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionState};
 use crate::storage::substrate::{
     EntityExtra, EntityRecordKind, RecordKind, RelationEndpoints, RelationExtra, RelationRecordKind,
 };
@@ -136,10 +136,10 @@ pub(super) fn delete_entity_with_cascade(
     }
     for relation_id in attached {
         let cascade_policy = state
-            .get_partition(relation_id.partition_id)
+            .get_current_partition(relation_id.partition_id)
             .and_then(|partition| {
                 partition
-                    .relation_arena
+                    .relation_arena()
                     .get(&relation_id)
                     .and_then(|slot| slot.kind_id())
             })

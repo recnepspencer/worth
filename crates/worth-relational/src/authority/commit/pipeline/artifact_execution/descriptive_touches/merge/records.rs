@@ -1,3 +1,4 @@
+use crate::storage::residency::RelationalRecordHeadArenaView;
 use std::collections::BTreeMap;
 use worth_execution::MapKernelFailure;
 
@@ -5,7 +6,7 @@ use crate::history::data::{
     RelationalDescriptiveTouch as Touch, RelationalTouchAdjacencyDirection as Direction,
 };
 use crate::identity::data::{EntityId, PartitionId, RelationId};
-use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
+use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind};
 use crate::transactions::data::RecordRef;
 
 use super::super::{Failure, TouchBudget};
@@ -17,8 +18,8 @@ pub(super) fn entity(
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
     slot: usize,
-    old: Option<&RecordArena<EntityRecordKind>>,
-    new: &RecordArena<EntityRecordKind>,
+    old: Option<RelationalRecordHeadArenaView<'_, EntityRecordKind>>,
+    new: RelationalRecordHeadArenaView<'_, EntityRecordKind>,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
@@ -42,8 +43,8 @@ pub(super) fn relation(
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
     slot: usize,
-    old: Option<&RecordArena<RelationRecordKind>>,
-    new: &RecordArena<RelationRecordKind>,
+    old: Option<RelationalRecordHeadArenaView<'_, RelationRecordKind>>,
+    new: RelationalRecordHeadArenaView<'_, RelationRecordKind>,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
@@ -138,8 +139,8 @@ fn record<K: RecordKind>(
     working: &crate::runtime::WorkingState,
     partition: PartitionId,
     slot: usize,
-    old: Option<&RecordArena<K>>,
-    new: &RecordArena<K>,
+    old: Option<RelationalRecordHeadArenaView<'_, K>>,
+    new: RelationalRecordHeadArenaView<'_, K>,
     target: impl Fn(PartitionId, usize, u32) -> RecordRef,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,

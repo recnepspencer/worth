@@ -2,8 +2,8 @@ use crate::authority::commit::structural_summary::CommitStructuralSummary;
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::summarize_entity_chunk_plan;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::EntityWorkingSetLayout;
-use crate::storage::overlay::PartitionAccess;
 use crate::storage::overlay::PartitionCloneMode;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::CommitPhaseTiming;
@@ -235,7 +235,7 @@ pub(crate) fn prepare_lowered_working_state_scope(
 
 pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     runtime: &RelationalPreparationRuntime,
-    base_state: &impl PartitionAccess,
+    base_state: &impl CurrentPartitionAccess,
     merged_plan: &MergedCommitPlan,
     merge_parent_count: usize,
     footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
@@ -266,8 +266,8 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
         .iter()
         .map(|partition_id| {
             base_state
-                .get_partition(*partition_id)
-                .map(|partition| partition.entity_arena.slot_count())
+                .get_current_partition(*partition_id)
+                .map(|partition| partition.entity_arena().slot_count())
                 .unwrap_or(0)
         })
         .sum();
@@ -289,8 +289,8 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
             .iter()
             .map(|partition_id| {
                 base_state
-                    .get_partition(*partition_id)
-                    .map(|partition| partition.relation_arena.slot_count())
+                    .get_current_partition(*partition_id)
+                    .map(|partition| partition.relation_arena().slot_count())
                     .unwrap_or(0)
             })
             .sum()

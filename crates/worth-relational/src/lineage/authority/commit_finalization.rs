@@ -7,7 +7,8 @@ use crate::lineage::data::{
     FinalizedLineageEventBatch, LineageDecisionKind, LineageDecisionLog, LineageEventKind,
     LineageFinalizationArtifact, LineageNode, PreparedLineageFinalization,
 };
-use crate::runtime::{PartitionAccess, WorkingState};
+use crate::runtime::WorkingState;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityMutationIntent, MutationIntent, RecordRef};
 
 struct LineageFinalizationPlan {
@@ -250,14 +251,12 @@ fn created_entity_lineage_slot(
     entity_id: EntityId,
     version_id: VersionId,
 ) -> Option<Option<LineageId>> {
-    let partition = staged.get_partition(entity_id.partition_id)?;
-    let physical = partition
-        .entity_arena
-        .physical_index(entity_id.local_slot.0 as usize)?;
-    if partition.entity_arena.created_at.get(physical).copied() != Some(version_id) {
+    let partition = staged.get_current_partition(entity_id.partition_id)?;
+    let arena = partition.entity_arena();
+    if arena.created_at_for_slot(entity_id.slot_index()) != Some(version_id) {
         return None;
     }
-    Some(partition.entity_arena.extra.get(physical)?.lineage_id)
+    Some(arena.get(&entity_id)?.extra().lineage_id)
 }
 
 fn install_lineage_id(
@@ -288,8 +287,8 @@ fn install_lineage_id(
 
 fn entity_lineage(staged: &WorkingState, entity_id: EntityId) -> Option<LineageId> {
     staged
-        .get_partition(entity_id.partition_id)
-        .and_then(|partition| partition.entity_arena.get(&entity_id))
+        .get_current_partition(entity_id.partition_id)
+        .and_then(|partition| partition.entity_arena().get(&entity_id))
         .and_then(|slot_view| slot_view.extra().lineage_id)
 }
 
@@ -312,19 +311,12 @@ fn find_replace_target_entity(
         if consumed_replace_targets.contains(candidate) {
             continue;
         }
-        let partition = staged.get_partition(candidate.partition_id)?;
-        let physical = partition
-            .entity_arena
-            .physical_index(candidate.local_slot.0 as usize)?;
-        let created_now = partition.entity_arena.created_at.get(physical) == Some(&version_id);
+        let partition = staged.get_current_partition(candidate.partition_id)?;
+        let arena = partition.entity_arena();
+        let created_now = arena.created_at_for_slot(candidate.slot_index()) == Some(version_id);
         let matching_partition = candidate.partition_id == replacement_partition_id;
-        let matching_kind = partition
-            .entity_arena
-            .kind_ids
-            .get(physical)
-            .copied()
-            .flatten()
-            .is_some_and(|kind_id| kind_id == replacement_kind_id);
+        let matching_kind =
+            arena.get(candidate).and_then(|slot| slot.kind_id()) == Some(replacement_kind_id);
         if created_now && matching_partition && matching_kind {
             consumed_replace_targets.insert(*candidate);
             return Some(*candidate);

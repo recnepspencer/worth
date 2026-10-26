@@ -1,12 +1,12 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::StorageRead;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{CommitConflict, ConflictClass, CreatedEntityRef, EntityReference};
 
 use super::super::record_lookup::entity_exists_in_state;
 
 pub(super) fn validate_relation_endpoint_primitives(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     relation_cross_context_policy: crate::config::data::CrossContextPolicy,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     source: &EntityReference,
@@ -49,7 +49,7 @@ fn validate_cross_context_endpoint_policy(
 }
 
 fn validate_endpoint_entities_are_live_in_commit_scope(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     source: &EntityReference,
     target: &EntityReference,
     created_entities: &BTreeSet<CreatedEntityRef>,
@@ -68,7 +68,7 @@ fn validate_endpoint_entities_are_live_in_commit_scope(
 }
 
 fn entity_reference_exists_in_commit_scope(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     entity_reference: &EntityReference,
     created_entities: &BTreeSet<CreatedEntityRef>,
 ) -> bool {

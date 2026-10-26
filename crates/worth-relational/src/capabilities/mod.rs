@@ -6,7 +6,6 @@ mod publication;
 mod runtime;
 mod schema;
 mod snapshots;
-mod storage;
 mod visibility;
 
 pub(crate) use diagnostics::*;
@@ -17,5 +16,4 @@ pub(crate) use publication::*;
 pub(crate) use runtime::*;
 pub(crate) use schema::*;
 pub(crate) use snapshots::*;
-pub(crate) use storage::*;
 pub(crate) use visibility::*;

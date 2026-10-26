@@ -1,6 +1,6 @@
 use super::*;
 use crate::identity::data::PartitionId;
-use crate::storage::overlay::{PartitionAccess, PartitionState};
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess, PartitionState};
 
 #[test]
 fn related_sources_do_not_confuse_equal_partition_ids() {
@@ -47,7 +47,11 @@ fn a_resident_overlay_does_not_hide_its_cold_before_image() {
         base.entity.partition_id,
         RelationalRegionRetention::new(base.cell.clone(), None),
     )]));
-    let overlay = crate::storage::overlay::OverlayStateView::new(&edition, &staged);
+    let overlay = FullCompositeSource {
+        base: &edition,
+        staged: &staged,
+        current: crate::storage::overlay::OverlayStateView::new(&edition, &staged),
+    };
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let mut rounds = 0;
@@ -269,5 +273,62 @@ fn deep_or_wide_discovery_escalates_and_drops_the_round_before_loading() {
             .admitted
             .iter()
             .all(|flag| flag.load(Ordering::SeqCst)));
+    }
+}
+
+/// A Full composite over actual Full-owned staged contents and the real cold
+/// edition. Preparation overlays deliberately expose only current reads.
+struct FullCompositeSource<'source> {
+    base: &'source dyn PartitionAccess,
+    staged: &'source BTreeMap<PartitionId, PartitionState>,
+    current:
+        crate::storage::overlay::OverlayStateView<'source, BTreeMap<PartitionId, PartitionState>>,
+}
+impl PartitionAccess for FullCompositeSource<'_> {
+    fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
+        self.staged.get(&id).or_else(|| self.base.get_partition(id))
+    }
+    fn base_source(&self) -> Option<&dyn PartitionAccess> {
+        Some(self.base)
+    }
+    fn base_partition(&self, id: PartitionId) -> Option<&PartitionState> {
+        self.base.get_partition(id)
+    }
+    fn probe_full_partition(&self, id: PartitionId) -> PartitionProbe<'_> {
+        match self.staged.get(&id) {
+            Some(partition) => PartitionProbe::Resident(partition),
+            None => self.base.probe_full_partition(id),
+        }
+    }
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), RelationalResidencyDemandFailure> {
+        if self.staged.contains_key(&id) {
+            return crate::execution::check_request(execution)
+                .map_err(RelationalResidencyDemandFailure::Request);
+        }
+        self.base.demand_full_partition(execution, id)
+    }
+}
+impl CurrentPartitionAccess for FullCompositeSource<'_> {
+    fn get_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
+        self.current.get_current_partition(id)
+    }
+    fn base_current_source(&self) -> Option<&dyn CurrentPartitionAccess> {
+        Some(self.base)
+    }
+    fn base_current_partition(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
+        self.current.base_current_partition(id)
+    }
+    fn partition_ids(&self) -> Vec<PartitionId> {
+        self.current.partition_ids()
+    }
+    fn partition_ids_with_memory(
+        &self,
+        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
+    ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
+        self.current.partition_ids_with_memory(memory)
     }
 }

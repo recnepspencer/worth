@@ -5,7 +5,7 @@ use crate::authority::intent_merge::{
     detect_conflicting_updates, validate_branch_locality, validate_intent,
 };
 use crate::capabilities::{InstrumentationSource, RuntimeConfigSource};
-use crate::runtime::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{CommitConflict, ConflictClass, MergedCommitPlan, MutationIntent};
 use std::time::Instant;
 
@@ -19,7 +19,7 @@ pub(crate) struct MergedPlanPreparationTiming {
 impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn validate_staged_branch_locality(
         &self,
-        current_state: &impl PartitionAccess,
+        current_state: &impl CurrentPartitionAccess,
         interner: &crate::symbols::data::StringInterner,
     ) -> Result<(), CommitConflict> {
         validate_branch_locality(current_state, self.batches(), interner)
@@ -28,7 +28,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn build_merged_plan_for_state(
         &self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        current_state: &impl PartitionAccess,
+        current_state: &impl CurrentPartitionAccess,
         intents: Vec<MutationIntent>,
     ) -> Result<MergedCommitPlan, CommitConflict> {
         self.build_merged_plan_for_state_with_timing(runtime, current_state, intents)
@@ -38,7 +38,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
     pub(crate) fn build_merged_plan_for_state_with_timing(
         &self,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        current_state: &impl PartitionAccess,
+        current_state: &impl CurrentPartitionAccess,
         mut intents: Vec<MutationIntent>,
     ) -> Result<(MergedCommitPlan, MergedPlanPreparationTiming), CommitConflict> {
         let created_entities = collect_created_entity_refs(&intents);
@@ -172,7 +172,7 @@ impl crate::mvcc::BranchBoundRelationalTransaction {
 }
 
 pub(crate) fn bulk_reservations_for_plan(
-    _state: &impl PartitionAccess,
+    _state: &impl CurrentPartitionAccess,
     plan: &MergedCommitPlan,
 ) -> (usize, usize) {
     let mut entity_requests = BTreeMap::new();

@@ -15,6 +15,6 @@ pub(crate) struct WorkingState {
     pub(crate) adjacency_policy: AdjacencyPolicy,
     pub(crate) clone_mode: PartitionCloneMode,
     pub(crate) entity_working_set_layout: EntityWorkingSetLayout,
-    pub(crate) partitions: BTreeMap<PartitionId, PartitionState>,
+    pub(in crate::storage) partitions: BTreeMap<PartitionId, PartitionState>,
     pub(crate) mutation_journal: BTreeMap<PartitionId, PartitionMutationJournal>,
 }

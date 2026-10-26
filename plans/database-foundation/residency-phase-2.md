@@ -675,3 +675,105 @@ The specification explicitly says Milestone 2 never evicts regions and a
 retained root keeps its counted leases. Do not expand this phase into Milestone
 4 release/eviction work. Head mutation buffers, history-prefix carry and typed
 candidate/publication custody are the next required cut.
+
+
+## Head write and history carry boundary review
+
+WorkingState is a mutation buffer, not proof of complete history. Remove its
+Full source implementation and make preparation's selected read and overlay
+sources current-only. Keep historical algorithms on the actual Full interface;
+do not add a conversion or dummy Full implementation to recover compilation.
+Current mutation cloning belongs inside storage and must not expose a raw
+partition through Head's read API. Keep the outer preparation probe Full until
+cold-prefix custody and capture are implemented, so no partial buffer can be
+published without its history basis during this cutover.
+
+A mirror publication can combine untouched slots from its own edition with
+changed slots from the selected branch. Therefore one partition-wide cold
+history base is insufficient: cold history prefix custody must follow each
+record's history through sparse cloning, adoption, suspension and generation
+reuse. The owning arena's history columns are the semantic location; clearing
+or replacing a history must clear or replace that prefix too. No identity may
+move to another slot. History members can encode per-slot prefix references and
+resident earlier rows; Head retains only current rows. Full readmission folds
+only registered prefix members, bounds cumulative reads, rejects cycles and
+verifies the complete content commitment. Capture carries the referenced
+member closure explicitly so Store never relies on omitted old placement.
+
+Region eviction and cache release remain Milestone 4 work, as specified. This
+cut must carry counted read custody and genuine cold prefixes, rather than add
+an eviction policy or a new authority lane.
+
+
+The proposed concrete prefix representation is an optional history-prefix column
+on each RecordArena, following metadata_history through its existing persistent
+column cloning/adoption. A prefix owns the original ColdRegion read port/schema/
+symbol authority, selected history-member slot and checked append frontier.
+At head admission, install it only for nonempty histories after the current row
+and frontier have authenticated each other. Reset, suspension and replacement
+must clear it with their history; slot adoption must adopt both together.
+The frontier includes the baseline current row, while the cold member contains
+only its earlier rows. Rehashing a changed resident suffix retires/rewrites the
+baseline row at its carried offset, then appends subsequent rows. Generation
+reuse must never retain the prior generation's prefix.
+
+Use per-slot wire prefix references plus resident earlier rows in the changed
+history grammar, with a clean format cut. Different slots in the mirror may
+name different selected-branch bases. Carry a compact registered dependency
+closure in checkpoint metadata and include every reachable base as Carried;
+Store's selected-members map is not an implicit archive of omitted members.
+Full readmission can cache decoded members within one bounded demand, reject
+cycles and unknown references, fold selected slot prefixes, and independently
+recompute the complete content commitment. The Head lease/read view must still
+have no historical accessor. Encoding custody may inspect resident suffixes
+and prefix references without claiming Full serving custody.
+
+Root construction should use the accepted current view's carried commitment
+for its incremental update and derive a Head cell whenever prefixes remain.
+Do not require a Full previous region merely to hash or account for a Head
+change. Capture and later Full admission must both understand that state before
+switching outer preparation and mirror touched-set demands from Full to Head.
+Candidate-wide artifact discovery and effect-only publication custody remain
+required in this same phase; this type cut is not their completion.
+
+
+The mutation-source type cut now passes. WorkingState, preparation overlays and
+SelectedRelationalBranchRead implement CurrentPartitionAccess only, and the
+working partition map is storage-private. The negative compile-time court
+protects all three plus HeadReadRound from gaining a Full implementation.
+Intent admission, stale-target checks, touched-scope inference, lineage
+finalization, descriptive touches and candidate output associations use current
+views. Current arena methods lend current version/revision columns and creation
+positions without exposing historical columns. Storage-owned mutation cloning
+retains the previous clone/selection semantics. The empty StorageRead marker
+and now-unused Full sparse selectors were removed rather than kept as aliases.
+Touched relation scope uses the slot directory through extra_at, including
+sparse slot layouts, rather than indexing a physical column by logical slot.
+
+The relation-birth court selects the exact canonical creation version and its
+unique native allocation/Created operation. Current birth metadata corroborates
+it when creation is still current; historical birth metadata is not demanded
+by preparation. Canonical structural birth and exposed endpoint operations must
+still agree, and roster assertions never supply their own native proof. The
+existing real-retention hostile-envelope court passes unchanged apart from its
+source parameter type. The eventual fallible history cut must preserve indexed
+envelope digest checks and typed read failures at these exact-version lookups.
+The Full composite probe court retains its historical assertion through an
+explicit test source built from actual Full-owned staged contents and the real
+cold edition; current-only preparation overlays are not given a test-only Full
+implementation. No assertion was weakened or claim retired.
+
+The full Relational lib passes 1,903 tests (31 unchanged ignored), and all lib/
+integration test targets compile. All three CI owner/service clippy commands,
+a fresh plain boundary-check, dirty line caps and agent-context pass. Function
+review keeps existing complete admission/member/touch courts together: their
+current-source type narrowing does not add responsibilities or accounting.
+One compile round exposed misplaced imports before inner module documentation;
+the imports were moved below the documentation. The CI clippy rerun also hit
+OS error 112 because the shared disk filled. Cargo's package-scoped cleaner,
+explicitly pinned to this worktree's target, removed 21 GiB of regenerable
+Relational artifacts; compilation, the full lib and all three clippy commands
+were then rebuilt green. This was an environment failure, not a product or test
+failure. An unused test import was removed and all test targets checked again.
+Outer preparation remains Full pending the next cold-prefix/capture integration;
+this prerequisite does not claim complete Head write or candidate custody.

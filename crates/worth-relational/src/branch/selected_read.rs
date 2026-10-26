@@ -1,20 +1,18 @@
 //! Borrowed record view for one selected branch preparation round.
 use super::SelectedRelationalBranchState;
 use crate::identity::data::{PartitionId, VersionId};
-use crate::storage::overlay::{
-    PartitionAccess, PartitionIdMemory, PartitionIdsDenial, PartitionState,
-};
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionIdMemory, PartitionIdsDenial};
 
 #[derive(Clone, Copy)]
 pub(crate) struct SelectedRelationalBranchRead<'round> {
     selected: &'round SelectedRelationalBranchState,
-    partitions: &'round dyn PartitionAccess,
+    partitions: &'round dyn CurrentPartitionAccess,
 }
 
 impl<'round> SelectedRelationalBranchRead<'round> {
     pub(crate) fn in_round(
         selected: &'round SelectedRelationalBranchState,
-        partitions: &'round dyn PartitionAccess,
+        partitions: &'round dyn CurrentPartitionAccess,
     ) -> Self {
         Self {
             selected,
@@ -28,12 +26,6 @@ impl<'round> SelectedRelationalBranchRead<'round> {
 
     pub(crate) fn version_id(&self) -> VersionId {
         self.selected.version_id()
-    }
-}
-
-impl PartitionAccess for SelectedRelationalBranchRead<'_> {
-    fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
-        self.partitions.get_partition(id)
     }
 }
 

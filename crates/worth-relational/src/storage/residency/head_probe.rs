@@ -164,11 +164,14 @@ pub(crate) fn probe_head_sources<const N: usize, T>(
 
 #[cfg(test)]
 #[test]
-fn a_head_round_cannot_implement_the_full_history_source_contract() {
+fn current_sources_cannot_implement_the_full_history_source_contract() {
     trait WithoutFull<A> {
         fn witness() {}
     }
     impl<T: ?Sized> WithoutFull<()> for T {}
     impl<T: ?Sized + crate::storage::overlay::PartitionAccess> WithoutFull<u8> for T {}
     let _ = <HeadReadRound<'_, '_> as WithoutFull<_>>::witness;
+    let _ = <crate::storage::overlay::WorkingState as WithoutFull<_>>::witness;
+    let _ = <crate::storage::overlay::OverlayStateView<'_, crate::storage::overlay::WorkingState> as WithoutFull<_>>::witness;
+    let _ = <crate::branch::SelectedRelationalBranchRead<'_> as WithoutFull<_>>::witness;
 }

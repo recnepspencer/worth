@@ -18,7 +18,7 @@ use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId, VersionId};
 use crate::storage::overlay::PartitionState;
 use crate::storage::overlay::{
-    EntityWorkingSetLayout, OverlayStateView, PartitionAccess, PartitionCloneMode, WorkingState,
+    EntityWorkingSetLayout, OverlayStateView, PartitionCloneMode, WorkingState,
 };
 use crate::storage::partition::AdjacencySet;
 use crate::storage::substrate::{EntityArena, RelationArena, SlotInit};

@@ -2,7 +2,6 @@ use std::collections::BTreeMap;
 
 use crate::identity::data::PartitionId;
 
-use super::super::access::PartitionAccess;
 use super::WorkingState;
 
 impl WorkingState {
@@ -61,18 +60,13 @@ impl WorkingState {
     }
 }
 
-impl PartitionAccess for WorkingState {
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&super::super::PartitionState> {
-        self.partitions.get(&partition_id)
-    }
-}
-
 impl crate::storage::overlay::CurrentPartitionAccess for WorkingState {
     fn get_current_partition(
         &self,
         id: crate::identity::data::PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+        self.partitions
+            .get(&id)
             .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
     }
 

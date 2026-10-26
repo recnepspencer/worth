@@ -1,12 +1,12 @@
 use std::collections::BTreeSet;
 
 use crate::authority::mutation::BranchLocalDeleteAllowance;
-use crate::capabilities::StorageRead;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{MergedCommitPlan, MutationIntent};
 
 pub(crate) fn branch_local_delete_allowance_for_plan(
-    selected_state: &impl StorageRead,
-    working_state: &impl StorageRead,
+    selected_state: &impl CurrentPartitionAccess,
+    working_state: &impl CurrentPartitionAccess,
     merged_plan: &MergedCommitPlan,
 ) -> BranchLocalDeleteAllowance {
     let mut entity_ids = BTreeSet::new();

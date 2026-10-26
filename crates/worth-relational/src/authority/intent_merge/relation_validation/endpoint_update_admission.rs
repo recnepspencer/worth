@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::{SchemaSource, StorageRead};
+use crate::capabilities::SchemaSource;
 use crate::runtime::RuntimeInstrumentation;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CommitConflict, ConflictClass, CreatedEntityRef, UpdateRelationEndpointsIntent,
 };
@@ -12,7 +13,7 @@ use super::relation_target_admission::validate_existing_relation_target;
 use super::schema_relation_admission::require_registered_relation_kind;
 
 pub(super) fn validate_relation_endpoint_update_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,
@@ -33,7 +34,7 @@ pub(super) fn validate_relation_endpoint_update_intent(
 }
 
 fn reject_endpoint_update_duplicate_identity(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     instrumentation: &RuntimeInstrumentation,
     spec: &UpdateRelationEndpointsIntent,
 ) -> Result<(), CommitConflict> {

@@ -1,5 +1,5 @@
 //! One sparse overlay/base row selection rule for native reads and preparation.
-use super::{CurrentPartitionAccess, PartitionAccess, PartitionState};
+use super::CurrentPartitionAccess;
 use crate::identity::data::PartitionId;
 use crate::storage::residency::RelationalRegionHeadView;
 
@@ -34,37 +34,6 @@ fn select<T>(
         return (PartitionSource::Base, base);
     }
     (PartitionSource::Visible, visible)
-}
-
-pub(crate) fn entity_partition_source_for_slot(
-    state: &dyn PartitionAccess,
-    partition_id: PartitionId,
-    slot: usize,
-) -> Option<(PartitionSource, &PartitionState)> {
-    let partition = state.get_partition(partition_id)?;
-    Some(select(
-        partition,
-        entity_uses_visible(state, partition_id, slot),
-        || state.base_partition(partition_id),
-    ))
-}
-
-pub(crate) fn relation_partition_source_for_slot(
-    state: &dyn PartitionAccess,
-    partition_id: PartitionId,
-    slot: usize,
-) -> Option<(PartitionSource, &PartitionState)> {
-    let partition = state.get_partition(partition_id)?;
-    let use_visible = relation_uses_visible(
-        state,
-        partition_id,
-        slot,
-        partition.relation_arena.get_slot(slot).is_some(),
-        partition.relation_overlay_is_sparse,
-    );
-    Some(select(partition, use_visible, || {
-        state.base_partition(partition_id)
-    }))
 }
 
 pub(crate) fn current_entity_partition_source_for_slot(

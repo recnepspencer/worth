@@ -5,19 +5,12 @@ pub(super) struct NoWorldPartitionEnumeration<'a> {
     pub(super) state: &'a OverlayStateView<'a, WorkingState>,
 }
 
-impl PartitionAccess for NoWorldPartitionEnumeration<'_> {
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.state.get_partition(partition_id)
-    }
-}
-
 impl crate::storage::overlay::CurrentPartitionAccess for NoWorldPartitionEnumeration<'_> {
     fn get_current_partition(
         &self,
         id: crate::identity::data::PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        crate::storage::overlay::PartitionAccess::get_partition(self, id)
-            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+        self.state.get_current_partition(id)
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
@@ -60,23 +53,12 @@ impl<'a> NoSlotEnumerationForRead<'a> {
     }
 }
 
-impl PartitionAccess for NoSlotEnumerationForRead<'_> {
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.state.get_partition(partition_id)
-    }
-
-    fn base_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.state.base_partition(partition_id)
-    }
-}
-
 impl crate::storage::overlay::CurrentPartitionAccess for NoSlotEnumerationForRead<'_> {
     fn get_current_partition(
         &self,
         id: crate::identity::data::PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        crate::storage::overlay::PartitionAccess::get_partition(self, id)
-            .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
+        self.state.get_current_partition(id)
     }
 
     fn base_current_source(&self) -> Option<&dyn crate::storage::overlay::CurrentPartitionAccess> {

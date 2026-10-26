@@ -1,5 +1,5 @@
-use crate::capabilities::StorageRead;
 use crate::identity::data::{KindId, PartitionId};
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::symbols::data::{ClientKey, StringInterner, Symbol};
 use crate::transactions::data::{
     CommitConflict, ConflictClass, CreateIntent, EntityMutationIntent, EntityReference,
@@ -14,7 +14,7 @@ use super::{
 /// Rejects references outside the selected branch before client-key
 /// normalization can mutate runtime-owned symbol state.
 pub(crate) fn validate_branch_locality(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     batches: &[crate::transactions::data::WorkerIntentBatch],
     interner: &crate::symbols::data::StringInterner,
 ) -> Result<(), CommitConflict> {
@@ -82,7 +82,7 @@ pub(crate) fn validate_branch_locality(
 }
 
 fn validate_endpoint(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     created_entities: &std::collections::BTreeSet<BranchLocalCreatedEntityRef>,
     interner: &crate::symbols::data::StringInterner,
     endpoint: &EntityReference,

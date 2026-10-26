@@ -4,7 +4,7 @@ use crate::authority::mutation::stale_targets::{
 };
 use crate::authority::mutation::MutationWorkspace;
 use crate::authority::mutation::{apply_adjacency_deltas, AdjacencyDelta, AdjacencyDeltaKind};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{RelationEndpoints, RelationExtra};
 use crate::transactions::data::{
     CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
@@ -33,14 +33,14 @@ pub(super) fn apply(
             }
             let partition = context
                 .state
-                .get_partition(intent.relation_id.partition_id)
+                .get_current_partition(intent.relation_id.partition_id)
                 .ok_or_else(|| {
                     CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                         relation_id: intent.relation_id,
                         missing: RelationEndpointUpdateMissingState::Partition,
                     })
                 })?;
-            let slot_view = partition.relation_arena.get_slot(slot).ok_or_else(|| {
+            let slot_view = partition.relation_arena().get_slot(slot).ok_or_else(|| {
                 CommitConflict::new(ConflictClass::RelationEndpointUpdateStateInconsistency {
                     relation_id: intent.relation_id,
                     missing: RelationEndpointUpdateMissingState::Slot,

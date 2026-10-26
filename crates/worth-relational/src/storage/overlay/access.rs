@@ -73,62 +73,27 @@ impl crate::storage::overlay::CurrentPartitionAccess for BTreeMap<PartitionId, P
 
 #[derive(Clone)]
 pub(crate) struct OverlayStateView<'a, S> {
-    base_partitions: &'a dyn PartitionAccess,
+    base_partitions: &'a dyn super::CurrentPartitionAccess,
     staged: &'a S,
 }
 
 impl<'a, S> OverlayStateView<'a, S> {
-    pub(crate) fn new(base_partitions: &'a dyn PartitionAccess, staged: &'a S) -> Self {
+    pub(crate) fn new(
+        base_partitions: &'a dyn super::CurrentPartitionAccess,
+        staged: &'a S,
+    ) -> Self {
         Self {
             base_partitions,
             staged,
         }
     }
 
-    pub(crate) fn base_partition_access(&self) -> &'a dyn PartitionAccess {
+    pub(crate) fn base_partition_access(&self) -> &'a dyn super::CurrentPartitionAccess {
         self.base_partitions
     }
 }
 
-impl<S: PartitionAccess> PartitionAccess for OverlayStateView<'_, S> {
-    fn base_source(&self) -> Option<&dyn PartitionAccess> {
-        Some(self.base_partitions)
-    }
-
-    fn probe_full_partition(&self, id: PartitionId) -> super::super::residency::PartitionProbe<'_> {
-        match self.staged.probe_full_partition(id) {
-            super::super::residency::PartitionProbe::Absent => {
-                self.base_partitions.probe_full_partition(id)
-            }
-            probe => probe,
-        }
-    }
-
-    fn demand_full_partition(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: PartitionId,
-    ) -> Result<(), super::super::residency::RelationalResidencyDemandFailure> {
-        match self.staged.probe_full_partition(id) {
-            super::super::residency::PartitionProbe::Absent => {
-                self.base_partitions.demand_full_partition(execution, id)
-            }
-            _ => self.staged.demand_full_partition(execution, id),
-        }
-    }
-
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.staged
-            .get_partition(partition_id)
-            .or_else(|| self.base_partitions.get_partition(partition_id))
-    }
-
-    fn base_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.base_partitions.get_partition(partition_id)
-    }
-}
-
-impl<S: PartitionAccess> crate::storage::overlay::CurrentPartitionAccess
+impl<S: super::CurrentPartitionAccess> crate::storage::overlay::CurrentPartitionAccess
     for OverlayStateView<'_, S>
 {
     fn get_current_partition(

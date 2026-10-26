@@ -1,7 +1,7 @@
 use crate::identity::data::RelationId;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionState;
-use crate::storage::overlay::{PartitionAccess, WorkingState};
+use crate::storage::overlay::{CurrentPartitionAccess, WorkingState};
 
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 
@@ -71,8 +71,8 @@ pub(in crate::authority::mutation) fn delete_relation(
 
 fn relation_is_visible_for_audit_retention(state: &WorkingState, relation_id: RelationId) -> bool {
     state
-        .get_partition(relation_id.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation_id))
+        .get_current_partition(relation_id.partition_id)
+        .and_then(|partition| partition.relation_arena().get(&relation_id))
         .is_some_and(|relation_slot| {
             matches!(
                 relation_slot.lifecycle(),
@@ -83,8 +83,8 @@ fn relation_is_visible_for_audit_retention(state: &WorkingState, relation_id: Re
 
 fn relation_is_live(state: &WorkingState, relation_id: RelationId) -> bool {
     state
-        .get_partition(relation_id.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation_id))
+        .get_current_partition(relation_id.partition_id)
+        .and_then(|partition| partition.relation_arena().get(&relation_id))
         .is_some_and(|relation_slot| relation_slot.lifecycle() == RecordLifecycleState::Live)
 }
 
@@ -101,8 +101,8 @@ fn relation_mutation_snapshot(
     relation_id: RelationId,
 ) -> Option<RelationMutationSnapshot> {
     let relation_slot = state
-        .get_partition(relation_id.partition_id)?
-        .relation_arena
+        .get_current_partition(relation_id.partition_id)?
+        .relation_arena()
         .get_slot(relation_id.slot_index())?;
     let endpoints = relation_slot.extra().endpoints.clone()?;
     Some(RelationMutationSnapshot {

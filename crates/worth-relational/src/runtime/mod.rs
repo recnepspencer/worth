@@ -58,7 +58,7 @@ pub use state::{
     RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
 };
 
-pub(crate) use crate::storage::overlay::{PartitionAccess, WorkingState};
+pub(crate) use crate::storage::overlay::WorkingState;
 pub use construction::RelationalRuntimeForkDenial;
 pub(crate) use construction::RuntimeExtensions;
 pub use state::RelationalRuntime;

@@ -7,14 +7,15 @@ mod schema_relation_admission;
 
 use std::collections::BTreeSet;
 
-use crate::capabilities::{SchemaSource, StorageRead};
+use crate::capabilities::SchemaSource;
 use crate::runtime::RuntimeInstrumentation;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     CreateIntent, CreatedEntityRef, MutationIntent, RelationMutationIntent,
 };
 
 pub(super) fn validate_relation_intent(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     schema_source: &impl SchemaSource,
     default_cross_context_policy: crate::config::data::CrossContextPolicy,
     instrumentation: &RuntimeInstrumentation,

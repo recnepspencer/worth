@@ -1,7 +1,5 @@
 use crate::runtime::PartitionEdition;
-use crate::storage::overlay::{
-    CurrentPartitionAccess, OverlayStateView, PartitionAccess, WorkingState,
-};
+use crate::storage::overlay::{CurrentPartitionAccess, OverlayStateView, WorkingState};
 use serde::{Deserialize, Serialize};
 
 mod custom_semantics;
@@ -46,7 +44,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
     }
 
     pub(crate) fn from_branch_with_proposed(
-        state: &'runtime dyn PartitionAccess,
+        state: &'runtime dyn CurrentPartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
@@ -59,7 +57,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         }
     }
 
-    pub(crate) fn from_branch(state: &'runtime dyn PartitionAccess) -> Self {
+    pub(crate) fn from_branch(state: &'runtime dyn CurrentPartitionAccess) -> Self {
         Self {
             committed: CommittedInvariantState::Branch(state),
             enforcement: None,
@@ -164,7 +162,7 @@ impl<'runtime> InvariantObservation<'runtime> {
     }
 
     pub(crate) fn committed_branch_with_proposed(
-        state: &'runtime dyn PartitionAccess,
+        state: &'runtime dyn CurrentPartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
@@ -177,7 +175,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         ))
     }
 
-    pub(crate) fn committed_branch(state: &'runtime dyn PartitionAccess) -> Self {
+    pub(crate) fn committed_branch(state: &'runtime dyn CurrentPartitionAccess) -> Self {
         Self::Committed(CommittedInvariantView::from_branch(state))
     }
 

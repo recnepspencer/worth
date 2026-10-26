@@ -327,7 +327,7 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
 
 fn run(
     execution: &ExecutionRequest<'_, '_>,
-    state: &dyn PartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     birth: &CanonicalCommitEnvelope,

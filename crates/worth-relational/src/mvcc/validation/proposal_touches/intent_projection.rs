@@ -3,7 +3,7 @@ use super::{
     ValidatedMutationTouchProjectionWork,
 };
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{
     AspectFieldPatch, CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
@@ -228,8 +228,8 @@ fn entity_kind(
 ) -> Result<KindId, ValidatedMutationTouchProjectionError> {
     work.owner_state_lookups += 1;
     state
-        .get_partition(entity.partition_id)
-        .and_then(|partition| partition.entity_arena.get(&entity))
+        .get_current_partition(entity.partition_id)
+        .and_then(|partition| partition.entity_arena().get(&entity))
         .and_then(|record| record.kind_id())
         .ok_or(ValidatedMutationTouchProjectionError::MissingEntityKind(
             entity,
@@ -243,8 +243,8 @@ fn relation_kind(
 ) -> Result<KindId, ValidatedMutationTouchProjectionError> {
     work.owner_state_lookups += 1;
     state
-        .get_partition(relation.partition_id)
-        .and_then(|partition| partition.relation_arena.get(&relation))
+        .get_current_partition(relation.partition_id)
+        .and_then(|partition| partition.relation_arena().get(&relation))
         .and_then(|record| record.kind_id())
         .ok_or(ValidatedMutationTouchProjectionError::MissingRelationKind(
             relation,
