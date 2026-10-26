@@ -1,4 +1,7 @@
 //! In-process scheduling at the real final product comparison boundary.
+// Certification-only faults/backstops: only the sealed *_for_test doors arm
+// these controls. The boundary guard closes ordinary callers; their intentional
+// panic reports a violated test scenario, never an ordinary product refusal.
 use std::num::NonZeroUsize;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

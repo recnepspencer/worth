@@ -2,6 +2,9 @@
 //! runtime. Each control is a verb or a count: none returns a Query runtime,
 //! so no caller can redeem a commit receipt through them.
 
+// Certification-only faults/backstops: only the sealed *_for_test doors arm
+// these controls. The boundary guard closes ordinary callers; their intentional
+// panic reports a violated test scenario, never an ordinary product refusal.
 use super::BankIdentityRuntime;
 
 impl BankIdentityRuntime {

@@ -117,6 +117,8 @@ impl ApplicationOperationBodyOwnedSelectionRetirement {
             &self.selected,
             &self.maximum_owners.get().to_string(),
         ] {
+            // String's fmt::Write always succeeds; these str/usize operands invoke
+            // no authored formatter or fallible I/O.
             write!(&mut record, "{}:{part};", part.len()).expect("String write");
         }
         record
