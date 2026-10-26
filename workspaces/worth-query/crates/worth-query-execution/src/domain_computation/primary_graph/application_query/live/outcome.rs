@@ -15,7 +15,6 @@ pub enum WorthQueryApplicationLiveOpenDenialKind {
     LiveContractMissing,
     /// The live cause binding does not match the installed live contract.
     BindingMismatch,
-
     /// The initial query admission was refused.
     Admission(WorthQueryApplicationQueryAdmissionDenialKind),
     /// Authorization refused the read; the full denial is attached.

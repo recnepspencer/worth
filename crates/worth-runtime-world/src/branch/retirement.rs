@@ -3,8 +3,6 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RuntimeWorldBranchRetirementDenial {
     OwnerUnavailable,
-
     AlreadyRetired,
-
     CapacityExhausted,
 }

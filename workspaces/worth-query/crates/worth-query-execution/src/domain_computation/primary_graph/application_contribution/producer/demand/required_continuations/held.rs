@@ -259,7 +259,7 @@ where
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial> {
         let demand = self.demand.as_mut().ok_or_else(|| {
             WorthQueryOutputDemandDenial::new(
-                super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                super::super::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
                 "required successor has no admitted demand",
             )
         })?;
@@ -269,7 +269,7 @@ where
             .required()
             .ok_or_else(|| {
                 WorthQueryOutputDemandDenial::new(
-                    super::super::WorthQueryOutputDemandDenialKind::ForeignDemand,
+                    super::super::WorthQueryOutputDemandDenialKind::RequiredSuccessorStateUnavailable,
                     "required successor has no execution provenance",
                 )
             })?

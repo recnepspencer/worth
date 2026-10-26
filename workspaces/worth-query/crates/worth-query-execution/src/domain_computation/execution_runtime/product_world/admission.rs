@@ -143,7 +143,6 @@ pub(super) fn map_world_denial(
                 AdmissionRefusal::ObservationIdentityExhausted,
             )
         }
-
         RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
             WorthQueryProductBranchAdmissionDenial::Refused(
                 AdmissionRefusal::ObservationStaleSourceHead,

@@ -65,11 +65,11 @@ where
                 &self.security_product,
                 &self.basis,
             )
-            .map_err(|stop| match stop {
-                SelectedPermissionSecurityStop::World => denial(
+            .map_err(|SelectedPermissionSecurityStop| {
+                denial(
                     WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
                     self.query.name(),
-                ),
+                )
             })?;
 
         super::super::super::admission_preparation::validate_admission_request(

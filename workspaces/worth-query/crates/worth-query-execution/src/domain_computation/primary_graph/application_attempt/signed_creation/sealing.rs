@@ -36,7 +36,6 @@ pub enum WorthQuerySignedCreationPreparationDenial {
     CanonicalBasis(worth_foundational::facade::CanonicalBasisConstructionDenial),
     CanonicalDigest(worth_foundational::facade::CanonicalDigestDerivationDenial),
     CanonicalAccountingOverflow,
-
     CanonicalAllocationUnavailable,
 }
 impl std::fmt::Display for WorthQuerySignedCreationPreparationDenial {

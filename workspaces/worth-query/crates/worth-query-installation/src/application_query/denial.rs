@@ -7,7 +7,6 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
     BindingQueryNotInstalled,
     BindingResultLimitIsZero,
     BindingScopeMeaningChanged,
-
     InvalidBindingIdentity,
     QueryNotInstalled,
     QueryMeaningChanged,
@@ -15,9 +14,7 @@ pub enum WorthQueryApplicationQueryInstallationDenialKind {
     LiveEffectNotInstalled,
     LiveScopeIdentityNotInstalled,
     LiveTargetIdentityNotInstalled,
-
     RelationNotInstalled,
-
     ForeignRuntime,
     StaleGeneration,
     SchemaMeaningChanged,

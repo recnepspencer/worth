@@ -99,7 +99,6 @@ pub enum WorthQueryPrimaryGraphInstallationDenialKind {
     AuthorizationPolicyRejected,
     /// The Runtime Bridge rejected the installation.
     RuntimeBridgeRejected,
-
     /// The schema declares conditional nodes, so the runtime must be published
     /// through conditional installation.
     ConditionalBindingsRequired,

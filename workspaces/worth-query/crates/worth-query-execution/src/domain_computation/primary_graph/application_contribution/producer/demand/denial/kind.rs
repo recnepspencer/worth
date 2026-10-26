@@ -80,6 +80,8 @@ pub enum WorthQueryOutputDemandDenialKind {
     /// The demand, or its dependent connection, belongs to another runtime,
     /// schema binding, or program.
     ForeignDemand,
+    /// An internal required successor lost its admitted demand or execution provenance.
+    RequiredSuccessorStateUnavailable,
     /// A dependent output's parent settlement belongs to another program,
     /// feature, or branch position.
     ForeignSettlement,

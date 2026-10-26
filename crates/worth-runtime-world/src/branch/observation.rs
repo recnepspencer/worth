@@ -183,7 +183,6 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     CancelledBeforeEffect,
     DeadlineBeforeEffect,
     OwnerUnavailable,
-
     ForeignOwner,
     RetiredBranch,
     DuplicateName,

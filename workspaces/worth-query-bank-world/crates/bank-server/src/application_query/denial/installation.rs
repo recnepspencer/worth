@@ -14,7 +14,6 @@ pub enum BankApplicationQueryInstallationDenialKind {
     BindingQueryNotInstalled,
     BindingResultLimitIsZero,
     BindingScopeMeaningChanged,
-
     InvalidBindingIdentity,
     QueryNotInstalled,
     QueryMeaningChanged,
@@ -22,9 +21,7 @@ pub enum BankApplicationQueryInstallationDenialKind {
     LiveEffectNotInstalled,
     LiveScopeIdentityNotInstalled,
     LiveTargetIdentityNotInstalled,
-
     RelationNotInstalled,
-
     ForeignRuntime,
     StaleGeneration,
     SchemaMeaningChanged,
@@ -79,7 +76,6 @@ pub(super) const fn query_installation(
         QueryInstallation::BindingQueryNotInstalled => Bank::BindingQueryNotInstalled,
         QueryInstallation::BindingResultLimitIsZero => Bank::BindingResultLimitIsZero,
         QueryInstallation::BindingScopeMeaningChanged => Bank::BindingScopeMeaningChanged,
-
         QueryInstallation::InvalidBindingIdentity => Bank::InvalidBindingIdentity,
         QueryInstallation::QueryNotInstalled => Bank::QueryNotInstalled,
         QueryInstallation::QueryMeaningChanged => Bank::QueryMeaningChanged,
@@ -87,9 +83,7 @@ pub(super) const fn query_installation(
         QueryInstallation::LiveEffectNotInstalled => Bank::LiveEffectNotInstalled,
         QueryInstallation::LiveScopeIdentityNotInstalled => Bank::LiveScopeIdentityNotInstalled,
         QueryInstallation::LiveTargetIdentityNotInstalled => Bank::LiveTargetIdentityNotInstalled,
-
         QueryInstallation::RelationNotInstalled => Bank::RelationNotInstalled,
-
         QueryInstallation::ForeignRuntime => Bank::ForeignRuntime,
         QueryInstallation::StaleGeneration => Bank::StaleGeneration,
         QueryInstallation::SchemaMeaningChanged => Bank::SchemaMeaningChanged,
