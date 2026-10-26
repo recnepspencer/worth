@@ -23,6 +23,11 @@ impl TestDurableMediumAttachment {
 }
 
 impl RelationalDurableMedium for TestDurableMediumAttachment {
+    fn cold_source(
+        &self,
+    ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {
+        self.contents.clone()
+    }
     fn read_transition(
         &self,
         sequence: crate::branch::RelationalBranchTransitionSequence,

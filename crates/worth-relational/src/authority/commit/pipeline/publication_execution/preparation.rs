@@ -250,7 +250,7 @@ pub(super) fn prepare_publication_phase(
     let canonical_publication_route = runtime
         .history
         .reserve_canonical_publication_route(
-            Arc::clone(&canonical_commit_envelope),
+            prepared_history.envelope_residency(),
             Arc::clone(prepared_history.root()),
         )
         .map_err(|detail| {

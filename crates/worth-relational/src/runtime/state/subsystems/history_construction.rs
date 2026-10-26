@@ -32,9 +32,17 @@ impl HistorySubsystem {
             self.canonical_publication_routes
                 .detached_branch_transitions(),
         );
+        canonical_publication_routes.install_checkpoint_catalog(self.commit_artifacts());
         for positioned in self.canonical_publication_routes.performed_snapshot() {
+            let artifact = self
+                .commit_artifact(positioned.commit.commit_id)
+                .expect("performed owner inventory has its catalog entry");
             canonical_publication_routes
-                .install_recovered(positioned)
+                .install_recovered(
+                    positioned,
+                    artifact.envelope_residency(),
+                    artifact.roots().clone(),
+                )
                 .expect("owner canonical inventory is valid when detached");
         }
         let mut snapshot = Self {

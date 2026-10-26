@@ -13,24 +13,13 @@ impl HistorySubsystem {
         &mut self,
         commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
     ) -> Result<(), String> {
-        self.rebuild_recovered_canonical_routes(commits.iter().cloned())
-            .map_err(str::to_owned)?;
         self.with_ledger_mut(|ledger| {
-            ledger.commit_envelopes = commits
-                .iter()
-                .map(|commit| {
-                    (
-                        commit.envelope().commit.commit_id,
-                        Arc::clone(commit.canonical_arc()),
-                    )
-                })
-                .collect();
             ledger.patch_stream_index.extend(
                 commits
                     .iter()
                     .map(|commit| (commit.position(), commit.envelope().commit.commit_id)),
             );
-            for commit in commits {
+            for commit in &commits {
                 ledger
                     .commit_catalog
                     .synchronize_recovered_envelope(Arc::clone(commit.canonical_arc()))
@@ -38,8 +27,20 @@ impl HistorySubsystem {
                         format!("recovered canonical catalog synchronization denied: {denial:?}")
                     })?;
             }
-            Ok(())
-        })
+            ledger.commit_envelopes = commits
+                .iter()
+                .map(|commit| {
+                    let id = commit.commit.commit_id;
+                    let artifact = ledger.commit_catalog.get(id).ok_or_else(|| {
+                        "recovered canonical inventory has no catalog entry".to_owned()
+                    })?;
+                    Ok((id, artifact.envelope_residency()))
+                })
+                .collect::<Result<_, String>>()?;
+            Ok::<_, String>(())
+        })?;
+        self.rebuild_recovered_canonical_routes(commits)
+            .map_err(str::to_owned)
     }
 
     pub(super) fn rebuild_catalog_with_live_roots(

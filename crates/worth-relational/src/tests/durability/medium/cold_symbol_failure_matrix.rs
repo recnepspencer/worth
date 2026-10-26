@@ -14,7 +14,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
         Door::Candidate,
         Door::CommitRevision,
     ] {
-        for cause in FAILURES {
+        for (cause, sticky) in FAILURES {
             let fixture = reopened(execution);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
             let offered = attached_test_medium(&fixture.runtime).offered().len();
@@ -49,7 +49,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
             assert_eq!(fixture.runtime.services.symbols.snapshot(), symbols);
             fixture.source.failures.lock().unwrap().clear();
             let reads = fixture.source.reads.load(Ordering::Relaxed);
-            if cause.is_proven_damage() {
+            if sticky {
                 assert_eq!(door.run(execution, &fixture), Err(failure));
                 assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
                 assert_eq!(

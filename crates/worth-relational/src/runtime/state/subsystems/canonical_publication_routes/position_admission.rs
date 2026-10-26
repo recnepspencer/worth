@@ -26,6 +26,13 @@ pub enum RelationalCanonicalPositionAdmissionDenial {
 }
 
 impl CanonicalPositionAdmission {
+    pub(super) fn retained(retention: &super::RetainedCanonicalPosition) -> Option<Self> {
+        let (position, canonical) = retention.upgrade_parts()?;
+        Some(Self {
+            position,
+            canonical,
+        })
+    }
     pub(super) fn performed(
         position: PatchStreamPosition,
         canonical: Arc<CanonicalCommitEnvelope>,

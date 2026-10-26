@@ -1,9 +1,6 @@
-use std::sync::Arc;
-
 use crate::durability::data::{
     CheckpointRestoreWork, DurabilityError, DurableCheckpoint, RelationalRecoveryStop,
 };
-use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, IndexingState, LineageState, RelationalRuntime};
 
 use super::super::super::derived_index_artifacts::restore_checkpoint_derived_index_artifacts;
@@ -11,6 +8,8 @@ use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 
 mod branch_root_images;
 mod cold_directory;
+mod history_readmission;
+use history_readmission::prepare_history;
 mod partition_images;
 mod record_identity;
 mod recovered_codec_meaning;
@@ -125,83 +124,6 @@ fn prepare_partitions(
         &aspect_contracts,
         work,
     )
-}
-
-fn prepare_history(
-    restored: &mut RelationalRuntime,
-    checkpoint: &DurableCheckpoint,
-    mut branch_roots: branch_root_images::RestoredBranchRootImages,
-    symbols: &crate::symbols::data::StringInterner,
-    work: &mut CheckpointRestoreWork,
-) -> Result<HistorySubsystem, DurabilityError> {
-    let mut history = restored.history.detached_owner_snapshot();
-    history.with_ledger_mut(|ledger| {
-        ledger.commit_envelopes = checkpoint
-            .envelopes
-            .iter()
-            .map(|commit| {
-                (
-                    commit.envelope().commit.commit_id,
-                    Arc::clone(commit.canonical_arc()),
-                )
-            })
-            .collect();
-        ledger.patch_stream_index = checkpoint
-            .envelopes
-            .iter()
-            .map(|commit| (commit.position(), commit.envelope().commit.commit_id))
-            .collect();
-    });
-    for commit in &checkpoint.envelopes {
-        history
-            .install_recovered_canonical_route(Arc::new(commit.clone()))
-            .map_err(|detail| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    detail,
-                )
-            })?;
-        work.history_envelopes_routed += 1;
-    }
-    if let Some(position) = history.latest_recorded_patch_position() {
-        history.advance_canonical_stream_floor(position);
-    }
-    let commit_graph = checkpoint
-        .envelopes
-        .iter()
-        .map(|envelope| {
-            (
-                envelope.commit.commit_id,
-                VersionNode {
-                    commit: envelope.commit.clone(),
-                },
-            )
-        })
-        .collect();
-    history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
-    let roots = root_readmission::readmit_selected_images(
-        &history,
-        checkpoint,
-        &mut branch_roots,
-        symbols,
-    )?;
-    history
-        .restore_branch_cells(
-            &checkpoint.branch_cells,
-            &checkpoint.branch_lifecycle,
-            &checkpoint.retired_branch_names,
-            &roots,
-            &restored.config.schema.registry,
-        )
-        .map_err(|detail| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                detail,
-            )
-        })?;
-    work.branch_cells_readmitted += checkpoint.branch_cells.len();
-    history.restore_branch_transition_coverage(checkpoint.coverage.up_to_branch_transition);
-    Ok(history)
 }
 
 fn prepare_lineage(

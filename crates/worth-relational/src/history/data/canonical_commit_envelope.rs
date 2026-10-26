@@ -22,6 +22,7 @@ use crate::transactions::data::{
 
 mod authoritative_artifact_encoding;
 mod embedded_checkpoint;
+mod payload_digest;
 pub(crate) use authoritative_artifact_encoding::AuthoritativeArtifactEnvelopeRef;
 pub(crate) use embedded_checkpoint::EmbeddedCheckpointEnvelopeRef;
 #[path = "canonical_commit_envelope/descriptive_touches.rs"]
@@ -231,6 +232,15 @@ impl CanonicalCommitEnvelope {
     /// indexes have distinct lifecycle lanes and cannot perturb commit-byte
     /// accounting.
     pub(crate) fn encode_authoritative_payload(&self) -> Result<Vec<u8>, rmp_serde::encode::Error> {
+        let mut bytes = Vec::new();
+        self.write_authoritative_payload(&mut bytes)?;
+        Ok(bytes)
+    }
+
+    fn write_authoritative_payload<W: std::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<(), rmp_serde::encode::Error> {
         let identity_and_authority = (
             &self.commit,
             &self.branch_context,
@@ -256,7 +266,7 @@ impl CanonicalCommitEnvelope {
             &self.schema_reconciliation_descriptor,
             &self.descriptor_semantics_version,
         );
-        rmp_serde::to_vec_named(&(identity_and_authority, canonical_semantics))
+        rmp_serde::encode::write_named(writer, &(identity_and_authority, canonical_semantics))
     }
 
     pub(crate) fn committed_record_changes(

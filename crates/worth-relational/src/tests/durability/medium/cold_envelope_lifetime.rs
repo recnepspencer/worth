@@ -80,3 +80,185 @@ fn recovered_nonhead_envelope_custody_ends_with_the_last_inflight_read() {
     source.failures.lock().unwrap().clear();
     assert_eq!(read().unwrap().unwrap().commit, receipt);
 }
+
+#[test]
+fn settled_live_nonhead_envelopes_release_only_when_a_durable_copy_exists() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    for durable in [false, true] {
+        let runtime = if durable {
+            durable_runtime_with_test_schema()
+        } else {
+            runtime_with_test_schema()
+        };
+        let entity = create_entity(execution, &runtime, "live-envelope-before");
+        let commit = runtime
+            .history()
+            .branch_head(&BranchId("main".into()))
+            .unwrap()
+            .commit_id;
+        let body = runtime
+            .history()
+            .demand_commit_envelope(execution, commit)
+            .unwrap()
+            .unwrap();
+        let weak = Arc::downgrade(&body);
+        drop(body);
+        update_entity_and_release_snapshot(execution, &runtime, entity, "live-envelope-after");
+        runtime.history.reclaim_retired_branch_roots(1024);
+        assert!(
+            runtime.history.retired_branch_root_count() < 4,
+            "a single retired version fits reclamation headroom"
+        );
+        if durable {
+            assert!(
+                weak.upgrade().is_none(),
+                "a settled nonhead without a reader must release its journal-backed body"
+            );
+        } else {
+            assert!(
+                weak.upgrade().is_some(),
+                "memory-only history has no other copy"
+            );
+        }
+        let patches = runtime
+            .history()
+            .bounded_canonical_commit_patches(
+                execution,
+                commit,
+                std::num::NonZeroUsize::new(32).unwrap(),
+            )
+            .unwrap();
+        assert!(
+            !patches.is_empty(),
+            "released bodies read back from their durable journal"
+        );
+    }
+}
+
+#[test]
+fn cold_source_is_bound_before_a_durable_runtime_publishes_its_first_commit() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let source = runtime
+        .durability
+        .cold_source()
+        .expect("medium attachment supplies its journal read port");
+    let entity = create_entity(execution, &runtime, "attached-source-seed");
+    let position = runtime.history().latest_patch_stream_position().unwrap();
+    let bytes = source.read_commit(position, 64 << 20).unwrap();
+    let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes).unwrap();
+    assert_eq!(artifact.position(), position);
+    let envelope =
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::readmit(
+            artifact.as_bytes(),
+            execution,
+        )
+        .unwrap()
+        .into_positioned();
+    assert_eq!(
+        envelope.commit.commit_id,
+        runtime
+            .history()
+            .branch_head(&BranchId("main".into()))
+            .unwrap()
+            .commit_id
+    );
+    assert!(envelope
+        .patch
+        .authoritative_record_patches
+        .iter()
+        .any(|patch| patch.target == crate::transactions::data::RecordRef::Entity(entity)));
+    assert_eq!(
+        runtime.history().latest_patch_stream_position(),
+        Some(position)
+    );
+    assert!(runtime_with_test_schema()
+        .durability
+        .cold_source()
+        .is_none());
+}
+
+#[test]
+fn released_live_history_remains_in_external_capture_and_retained_recovery() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = durable_runtime_with_test_schema();
+    let entity = create_entity(execution, &runtime, "live-index-seed");
+    for n in 0..12 {
+        update_entity_and_release_snapshot(execution, &runtime, entity, &format!("live-index-{n}"));
+    }
+    runtime.history.reclaim_retired_branch_roots(1024);
+    let ids = runtime
+        .history
+        .commit_artifacts()
+        .into_iter()
+        .map(|artifact| artifact.commit_id())
+        .collect::<Vec<_>>();
+    let resident = runtime
+        .history
+        .commit_artifacts()
+        .into_iter()
+        .filter(|artifact| artifact.resident_envelope().is_some())
+        .count();
+    assert!(
+        resident < 4,
+        "released journal bodies fit head and reclamation headroom"
+    );
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut recovered = durable_runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    for id in &ids {
+        assert_eq!(
+            recovered
+                .history()
+                .demand_commit_envelope(execution, *id)
+                .unwrap()
+                .unwrap()
+                .commit
+                .commit_id,
+            *id
+        );
+    }
+    let (source, reads, _) = checkpoint_fixture(execution, runtime, entity, false);
+    reads.damaged.store(false, Ordering::Relaxed);
+    let mut reopened = durable_runtime_with_test_schema();
+    let plan = reopened
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            source,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    reopened
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    for id in ids {
+        assert_eq!(
+            reopened
+                .history()
+                .demand_commit_envelope(execution, id)
+                .unwrap()
+                .unwrap()
+                .commit
+                .commit_id,
+            id
+        );
+    }
+    assert!(
+        reads.commit_reads.lock().unwrap().len() < 32,
+        "head admission and one selected read per commit have bounded headroom"
+    );
+}

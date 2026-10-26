@@ -62,6 +62,7 @@ pub(crate) use canonical_publication_routes::{
     CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
     PatchPositionReservationAdmission, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+    RetainedCanonicalPosition,
 };
 pub use canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
@@ -300,10 +301,20 @@ impl HistorySubsystem {
             self.canonical_publication_routes
                 .detached_branch_transitions(),
         );
+        routes.install_checkpoint_catalog(fork.commit_artifacts());
         for commit in positioned {
-            routes.install_recovered(commit).map_err(|_| {
-                crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
-            })?;
+            let artifact = fork
+                .commit_artifact(commit.commit.commit_id)
+                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            routes
+                .install_recovered(
+                    commit,
+                    artifact.envelope_residency(),
+                    artifact.roots().clone(),
+                )
+                .map_err(|_| {
+                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                })?;
         }
         fork.canonical_publication_routes = routes;
         Ok(fork)

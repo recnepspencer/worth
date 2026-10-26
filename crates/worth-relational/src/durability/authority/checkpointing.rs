@@ -82,7 +82,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        let captured = self.capture_checkpoint_basis()?;
+        let captured = self
+            .capture_checkpoint_basis()?
+            .demand_memory_image(self.runtime, execution)?;
         self.finalize_captured_checkpoint(captured)
     }
 

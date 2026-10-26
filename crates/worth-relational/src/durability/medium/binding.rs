@@ -23,6 +23,7 @@ use crate::history::data::PositionedCanonicalCommit;
 #[derive(Debug)]
 pub(crate) struct RelationalDurableMediumBinding {
     state: Mutex<BindingState>,
+    cold_source: Arc<dyn super::RelationalDurableColdSource>,
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
@@ -43,7 +44,27 @@ pub(crate) enum RelationalDurableStepStop {
     Unresolved(RelationalDurabilityUnresolved),
 }
 
+/// Placement facts issued only after the journal answered Committed.
+#[derive(Debug)]
+pub(crate) struct RelationalDurableCommitReadmission {
+    entry: crate::history::RelationalCommitIndexEntry,
+    source: Arc<dyn super::RelationalDurableColdSource>,
+}
+impl RelationalDurableCommitReadmission {
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        crate::history::RelationalCommitIndexEntry,
+        Arc<dyn super::RelationalDurableColdSource>,
+    ) {
+        (self.entry, self.source)
+    }
+}
+
 impl RelationalDurableMediumBinding {
+    pub(crate) fn cold_source(&self) -> Arc<dyn super::RelationalDurableColdSource> {
+        self.cold_source.clone()
+    }
     pub(super) fn preparation_fate(&self) -> Arc<OnceLock<RelationalDurabilityUnresolved>> {
         self.unresolved.clone()
     }
@@ -60,7 +81,9 @@ impl RelationalDurableMediumBinding {
     }
     pub(crate) fn new(medium: Box<dyn RelationalDurableMedium>) -> Self {
         let unresolved = Arc::new(OnceLock::new());
+        let cold_source = medium.cold_source();
         Self {
+            cold_source,
             state: Mutex::new(BindingState {
                 medium: Some(medium),
                 unresolved: unresolved.clone(),
@@ -76,12 +99,20 @@ impl RelationalDurableMediumBinding {
     pub(crate) fn publish(
         &self,
         commit: &PositionedCanonicalCommit,
+        roots: &crate::branch::RelationalBranchRootDescriptor,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), RelationalDurableStepStop> {
+    ) -> Result<RelationalDurableCommitReadmission, RelationalDurableStepStop> {
         let mut state = self.state();
         let medium = state.admitting_medium()?;
         let artifact = RelationalCanonicalCommitArtifact::from_positioned(commit, policy)
             .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
+        let entry = crate::history::RelationalCommitIndexEntry {
+            commit: commit.commit.clone(),
+            position: commit.position(),
+            root: roots.clone(),
+            payload_digest: *artifact.payload_digest().as_bytes(),
+            schema_version: commit.schema_version,
+        };
         let answer = medium.publish(&artifact);
         state.settle(
             answer,
@@ -90,7 +121,11 @@ impl RelationalDurableMediumBinding {
                 commit_id: artifact.commit_id(),
                 digest: artifact.payload_digest(),
             },
-        )
+        )?;
+        Ok(RelationalDurableCommitReadmission {
+            entry,
+            source: self.cold_source.clone(),
+        })
     }
 
     /// Encode `transition` as its artifact and make it durable.

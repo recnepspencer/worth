@@ -20,7 +20,7 @@ fn residency_failure_matrix_current_doors_never_consult_region_history() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in CurrentDoor::ALL {
-        for cause in FAILURES {
+        for (cause, _) in FAILURES {
             let fixture = CurrentFixture::reopened(execution);
             assert!(!fixture.history.is_empty());
             fixture.source.failures.lock().unwrap().extend(

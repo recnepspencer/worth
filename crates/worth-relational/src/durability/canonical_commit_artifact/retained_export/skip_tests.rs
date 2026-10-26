@@ -56,15 +56,21 @@ fn seeking_past_an_acknowledged_index_prefix_never_demands_its_journal_bodies() 
                 .iter()
                 .find(|owner| owner.identity().commit_id() == artifact.commit_id())
                 .unwrap();
-            RetainedArtifact::Cold {
-                entry: crate::history::RelationalCommitIndexEntry {
-                    commit: owner.receipt(),
-                    position: artifact.position(),
-                    root: owner.roots().clone(),
-                    payload_digest: *artifact.payload_digest().as_bytes(),
-                    schema_version: owner.schema_version(),
-                },
-                source: source.clone(),
+            let entry = crate::history::RelationalCommitIndexEntry {
+                commit: owner.receipt(),
+                position: artifact.position(),
+                root: owner.roots().clone(),
+                payload_digest: *artifact.payload_digest().as_bytes(),
+                schema_version: owner.schema_version(),
+            };
+            RetainedArtifact {
+                position: entry.position,
+                cell: Arc::new(crate::history::RelationalCommitEnvelopeResidency::cold(
+                    entry,
+                    source.clone(),
+                    None,
+                    None,
+                )),
             }
         })
         .collect::<Vec<_>>();

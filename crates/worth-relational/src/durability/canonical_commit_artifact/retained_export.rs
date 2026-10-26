@@ -4,7 +4,6 @@ use worth_execution::ExecutionAllocationPolicy;
 
 use super::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactEncodeDenial};
 use crate::durability::access::DurabilityAccess;
-use crate::history::data::PositionedCanonicalCommit;
 
 impl DurabilityAccess<'_> {
     /// The runtime's retained performed canonical commits, in strictly
@@ -20,30 +19,35 @@ impl DurabilityAccess<'_> {
         &self,
         policy: ExecutionAllocationPolicy<'scope, 'authority>,
     ) -> RelationalCanonicalCommitArtifacts<'scope, 'authority> {
-        let directory = self.runtime.durability.checkpoint_selection().snapshot();
-        let mut retained = directory.as_ref().map_or_else(Vec::new, |directory| {
-            directory
-                .manifest
-                .commits
-                .iter()
-                .map(|entry| RetainedArtifact::Cold {
-                    entry: entry.clone(),
-                    source: directory.source.clone(),
-                })
-                .collect()
-        });
-        retained.extend(
-            self.runtime
+        let mut selected = std::collections::BTreeMap::new();
+        for artifact in self.runtime.history.commit_artifacts() {
+            let cell = artifact.envelope_residency();
+            let position = cell
+                .journal_index()
+                .map(|entry| entry.position)
+                .or_else(|| {
+                    cell.positioned_if_resident()
+                        .map(|commit| commit.position())
+                });
+            if let Some(position) = position {
+                selected.insert(position, RetainedArtifact { position, cell });
+            }
+        }
+        for commit in self.runtime.history.positioned_canonical_commits_snapshot() {
+            if let Some(cell) = self
+                .runtime
                 .history
-                .positioned_canonical_commits_snapshot()
-                .into_iter()
-                .filter(|commit| {
-                    directory.as_ref().is_none_or(|directory| {
-                        commit.position() > directory.manifest.covered_position
-                    })
-                })
-                .map(RetainedArtifact::Resident),
-        );
+                .performed_envelope_residency(commit.commit.commit_id)
+            {
+                selected
+                    .entry(commit.position())
+                    .or_insert(RetainedArtifact {
+                        position: commit.position(),
+                        cell,
+                    });
+            }
+        }
+        let retained = selected.into_values().collect::<Vec<_>>();
         RelationalCanonicalCommitArtifacts {
             retained: retained.into_iter(),
             policy,
@@ -51,12 +55,9 @@ impl DurabilityAccess<'_> {
     }
 }
 
-enum RetainedArtifact {
-    Resident(Arc<PositionedCanonicalCommit>),
-    Cold {
-        entry: crate::history::RelationalCommitIndexEntry,
-        source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
-    },
+struct RetainedArtifact {
+    position: crate::publication::patch::data::PatchStreamPosition,
+    cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
 }
 
 /// Lazily framed artifacts for one fixed selection of retained commits, in
@@ -79,13 +80,7 @@ impl RelationalCanonicalCommitArtifacts<'_, '_> {
             .retained
             .as_slice()
             .iter()
-            .take_while(|entry| {
-                let selected = match entry {
-                    RetainedArtifact::Resident(commit) => commit.position(),
-                    RetainedArtifact::Cold { entry, .. } => entry.position,
-                };
-                selected <= position
-            })
+            .take_while(|entry| entry.position <= position)
             .count();
         if count != 0 {
             let _ = self.retained.nth(count - 1);
@@ -104,41 +99,9 @@ impl Iterator for RelationalCanonicalCommitArtifacts<'_, '_> {
 
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
         // Skipping an immutable index prefix does not demand its bodies.
-        self.retained.nth(n).map(|commit| match commit {
-            RetainedArtifact::Resident(commit) => {
-                RelationalCanonicalCommitArtifact::from_positioned(&commit, self.policy)
-            }
-            RetainedArtifact::Cold { entry, source } => {
-                self.policy.check_live()?;
-                let failure = |cause| {
-                    RelationalCanonicalCommitArtifactEncodeDenial::StorageUnavailable(
-                        crate::storage::data::RelationalStorageUnavailable {
-                            subject: crate::storage::data::RelationalStorageSubject::Envelope(
-                                entry.position,
-                            ),
-                            cause,
-                        },
-                    )
-                };
-                let bytes = source
-                    .read_commit(entry.position, 1 << 30)
-                    .map_err(&failure)?;
-                let artifact = RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes)
-                    .map_err(|_| {
-                        failure(crate::storage::data::RelationalStorageUnavailableCause::Damaged)
-                    })?;
-                if artifact.position() != entry.position
-                    || artifact.commit_id() != entry.commit.commit_id
-                    || artifact.payload_digest().as_bytes() != &entry.payload_digest
-                {
-                    return Err(failure(
-                        crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
-                    ));
-                }
-                self.policy.check_live()?;
-                Ok(artifact)
-            }
-        })
+        self.retained
+            .nth(n)
+            .map(|commit| commit.cell.export_artifact(self.policy))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

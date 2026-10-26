@@ -277,9 +277,14 @@ fn graft_disconnected_branch_head(
             commit: orphan_head,
         },
     );
+    let digest = envelope.authoritative_payload_digest().unwrap();
     runtime.history.with_ledger_mut(|ledger| {
-        ledger
-            .commit_envelopes
-            .insert(envelope.commit.commit_id, Arc::new(envelope))
+        ledger.commit_envelopes.insert(
+            envelope.commit.commit_id,
+            Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
+                Arc::new(envelope),
+                digest,
+            )),
+        )
     });
 }

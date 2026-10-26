@@ -30,7 +30,7 @@ pub(crate) use history::{
     PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, RetainedCanonicalPosition,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{

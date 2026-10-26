@@ -126,7 +126,7 @@ fn residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class()
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for subject in Subject::ALL {
         for door in Door::ALL {
-            for cause in FAILURES {
+            for (cause, sticky) in FAILURES {
                 let fixture = CurrentFixture::reopened(execution);
                 let targets = subject.targets(&fixture);
                 assert!(!targets.is_empty());
@@ -147,7 +147,7 @@ fn residency_failure_matrix_aspect_history_doors_cover_every_subject_and_class()
                 subject.assert_subject(&fixture, failure);
                 fixture.source.failures.lock().unwrap().clear();
                 let before = attempts(&fixture, &targets);
-                if cause.is_proven_damage() {
+                if sticky {
                     assert_eq!(door.run(execution, &fixture), Err(denial));
                     assert_eq!(
                         attempts(&fixture, &targets),

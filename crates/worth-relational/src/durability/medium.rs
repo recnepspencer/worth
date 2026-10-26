@@ -25,7 +25,9 @@ mod unresolved;
 pub use transition_read::RelationalDurableTransitionReadFailure;
 pub(crate) use transition_read::RelationalTransitionHistoryReader;
 
-pub(crate) use binding::{RelationalDurableMediumBinding, RelationalDurableStepStop};
+pub(crate) use binding::{
+    RelationalDurableCommitReadmission, RelationalDurableMediumBinding, RelationalDurableStepStop,
+};
 pub use recovery_source::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
 pub use unresolved::{RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject};
 
@@ -49,6 +51,11 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 /// runtime, and a forked runtime never inherits publication access. Speculative
 /// forks may carry only a read-only historical-transition reader.
 pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+    /// The same durable journal's read-only source, available before the first
+    /// publication. Each committed artifact remains readable at its position;
+    /// member placement and retention stay owned by the source provider.
+    fn cold_source(&self) -> std::sync::Arc<dyn RelationalDurableColdSource>;
+
     /// Read one historical transition for explicit replay. Implementations
     /// bound the admitted artifact size and verify its frame before returning.
     fn read_transition(

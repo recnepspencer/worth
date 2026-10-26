@@ -152,9 +152,9 @@ impl PreparedBranchPublicationPreflight {
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
-                |positioned| match &medium {
-                    Some(medium) => medium.publish(positioned, durable_policy),
-                    None => Ok(()),
+                |positioned, roots| match &medium {
+                    Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
+                    None => Ok(None),
                 },
                 |position| {
                     symbol_meanings

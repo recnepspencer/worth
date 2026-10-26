@@ -19,16 +19,21 @@ impl ReadSubject {
         Self::HistoricalSymbols,
     ];
 }
-pub(super) const FAILURES: [Cause; 6] = [
-    Cause::MissingMember,
-    Cause::SourceUnavailable,
-    Cause::Damaged,
-    Cause::IntegrityMismatch,
-    Cause::LimitExceeded {
-        length: 2,
-        limit: 1,
-    },
-    Cause::MemoryExhausted,
+// Expected persistence is independent of the product's damage classifier.
+// A directory-proven missing member is damage; an unavailable source is not.
+pub(super) const FAILURES: [(Cause, bool); 6] = [
+    (Cause::MissingMember, true),
+    (Cause::SourceUnavailable, false),
+    (Cause::Damaged, true),
+    (Cause::IntegrityMismatch, true),
+    (
+        Cause::LimitExceeded {
+            length: 2,
+            limit: 1,
+        },
+        false,
+    ),
+    (Cause::MemoryExhausted, false),
 ];
 
 struct MatrixFixture {
@@ -137,7 +142,7 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for subject in ReadSubject::ALL {
         for door in ReadDoor::ALL {
-            for cause in FAILURES {
+            for (cause, sticky) in FAILURES {
                 let fixture = MatrixFixture::new(subject, execution);
                 let frontier = fixture.runtime.history().latest_patch_stream_position();
                 let offered = attached_test_medium(&fixture.runtime).offered().len();
@@ -150,7 +155,7 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                 fixture.assert_subject(failure);
                 fixture.source.failures.lock().unwrap().clear();
                 let reads = fixture.source.reads.load(Ordering::Relaxed);
-                if cause.is_proven_damage() {
+                if sticky {
                     assert_eq!(
                         fixture.run(door, execution),
                         Err(denial),

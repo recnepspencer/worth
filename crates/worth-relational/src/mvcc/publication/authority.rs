@@ -39,6 +39,11 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn envelope_residency(
+        &self,
+    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+        self.publication.artifact.envelope_residency()
+    }
     pub(crate) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {

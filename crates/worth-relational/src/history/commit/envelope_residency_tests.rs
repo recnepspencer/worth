@@ -81,7 +81,7 @@ fn an_indexed_envelope_remains_cold_until_explicit_readmission_and_loads_once() 
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, None);
     let expected = entry.commit.clone();
-    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None);
+    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None, None);
     assert!(cell.get().is_none());
     assert_eq!(source.reads.load(Ordering::Relaxed), 0);
     let first = cell.demand(&execution, 1 << 30).unwrap();
@@ -99,7 +99,7 @@ fn an_indexed_envelope_storage_failure_is_typed_and_sticky() {
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let (entry, source) = selected(&execution, Some(Cause::Damaged));
     let position = entry.position;
-    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None);
+    let cell = RelationalCommitEnvelopeResidency::cold(entry, source.clone(), None, None);
     for _ in 0..2 {
         let stop = cell.demand(&execution, 1 << 30).unwrap_err();
         let crate::storage::residency::RelationalResidencyDemandFailure::StorageUnavailable(
@@ -147,4 +147,65 @@ fn relinking_other_envelopes_preserves_an_index_even_while_its_body_is_in_flight
             .is_none(),
         "only explicitly replaced identities leave the projection"
     );
+}
+
+#[test]
+fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_position() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    for journal_backed in [false, true] {
+        let (entry, source) = selected(&execution, None);
+        let performed = RelationalCommitEnvelopeResidency::readmit_positioned(
+            &entry,
+            source.as_ref(),
+            &execution,
+            1 << 30,
+        )
+        .unwrap();
+        let position = performed.position();
+        let body = performed.canonical_arc().clone();
+        let weak = Arc::downgrade(&body);
+        let digest = body.authoritative_payload_digest().unwrap();
+        let cell = RelationalCommitEnvelopeResidency::resident(body, digest);
+        let reads = source.reads.load(Ordering::Relaxed);
+        cell.bind_performed(
+            &performed,
+            journal_backed.then(|| {
+                (
+                    entry.clone(),
+                    source.clone() as Arc<dyn RelationalDurableColdSource>,
+                )
+            }),
+        );
+        drop(performed);
+        assert_eq!(cell.positioned_if_resident().unwrap().position(), position);
+        assert!(
+            weak.upgrade().is_some(),
+            "unsettled publication retains its exact body"
+        );
+        assert_eq!(
+            source.reads.load(Ordering::Relaxed),
+            reads,
+            "binding never loads"
+        );
+        cell.settle();
+        assert_eq!(weak.upgrade().is_none(), journal_backed);
+        assert_eq!(
+            source.reads.load(Ordering::Relaxed),
+            reads,
+            "settlement never loads"
+        );
+        assert_eq!(
+            cell.journal_index().as_deref(),
+            journal_backed.then_some(&entry)
+        );
+        let flight = cell.demand(&execution, 1 << 30).unwrap();
+        assert_eq!(flight.commit, entry.commit);
+        assert_eq!(cell.positioned_if_resident().unwrap().position(), position);
+        if journal_backed {
+            assert!(source.reads.load(Ordering::Relaxed) > reads);
+        } else {
+            assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+        }
+    }
 }

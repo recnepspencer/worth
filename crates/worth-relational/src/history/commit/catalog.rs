@@ -69,7 +69,8 @@ impl RelationalCommitCatalog {
             "prepared catalog artifact was validated as unique"
         );
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries
+            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
     }
 
     pub(crate) fn install_prepared_recovery(&mut self, artifact: RelationalCommitArtifact) {
@@ -78,7 +79,8 @@ impl RelationalCommitCatalog {
             .resident_envelope()
             .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope))));
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries
+            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
     }
 
     pub(crate) fn synchronize_recovered_envelope(
@@ -101,7 +103,8 @@ impl RelationalCommitCatalog {
             None => RelationalCommitArtifact::from_envelope(envelope)?,
         };
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries
+            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
         Ok(())
     }
 
@@ -114,7 +117,8 @@ impl RelationalCommitCatalog {
             return Err(RelationalCommitCatalogAppendDenial::DuplicateCommit);
         }
         let identity = artifact.identity().clone();
-        self.entries.insert(commit_id, Arc::new(artifact));
+        self.entries
+            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
         Ok(RelationalCommitCatalogEntry { identity })
     }
 
@@ -141,7 +145,7 @@ impl RelationalCommitCatalog {
         &mut self,
         entry: super::RelationalCommitIndexEntry,
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
-        admitted: Option<Arc<crate::history::data::CanonicalCommitEnvelope>>,
+        admitted: Option<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<(), RelationalCommitCatalogEnvelopeAppendDenial> {
         let artifact = RelationalCommitArtifact::from_index(entry, source, admitted)
             .map_err(RelationalCommitCatalogEnvelopeAppendDenial::Artifact)?;

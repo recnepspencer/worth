@@ -117,7 +117,7 @@ impl RelationalPreparationHistory {
 
     pub(crate) fn reserve_canonical_publication_route(
         &self,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<super::PreparedCanonicalPublicationRoute, &'static str> {
         RelationalCanonicalPublicationRoutes::reserve(&self.canonical_routes, envelope, root)

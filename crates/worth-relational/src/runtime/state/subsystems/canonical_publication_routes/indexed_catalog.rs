@@ -22,11 +22,20 @@ impl RelationalCanonicalPublicationRoutes {
                 .collect(),
         );
     }
+    pub(crate) fn performed_envelope_residency(
+        &self,
+        id: CommitId,
+    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.by_commit
+            .get(&id)
+            .filter(|route| route.is_visible())
+            .map(|route| route.envelope.clone())
+    }
     pub(crate) fn indexed_receipt(&self, id: CommitId) -> Option<RelationalCommitReceipt> {
         if let Some(route) = self.by_commit.get(&id)
             && route.is_visible()
         {
-            return Some(route.envelope.commit.clone());
+            return Some(route.commit.clone());
         }
         self.checkpoint_catalog
             .read()

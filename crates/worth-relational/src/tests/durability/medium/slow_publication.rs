@@ -69,6 +69,11 @@ impl PublicationGate {
 }
 
 impl RelationalDurableMedium for SlowFirstPublication {
+    fn cold_source(
+        &self,
+    ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {
+        self.contents.cold_source()
+    }
     fn read_transition(
         &self,
         sequence: crate::branch::RelationalBranchTransitionSequence,

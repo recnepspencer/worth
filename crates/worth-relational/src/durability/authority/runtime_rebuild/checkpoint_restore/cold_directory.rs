@@ -35,19 +35,33 @@ pub(super) fn restore(
         .iter()
         .map(|entry| (entry.commit.commit_id, Arc::clone(entry.canonical_arc())))
         .collect::<BTreeMap<_, _>>();
+    let positioned = checkpoint
+        .envelopes
+        .iter()
+        .map(|entry| (entry.commit.commit_id, entry.clone()))
+        .collect::<BTreeMap<_, _>>();
     let mut catalog = RelationalCommitCatalog::default();
     for entry in &directory.manifest.commits {
         catalog
             .append_indexed_recovery(
                 entry.clone(),
                 directory.source.clone(),
-                heads.get(&entry.commit.commit_id).cloned(),
+                positioned.get(&entry.commit.commit_id).cloned(),
             )
             .map_err(|denial| corrupt(format!("indexed commit admission: {denial:?}")))?;
     }
+    let head_cells = heads
+        .keys()
+        .map(|id| {
+            catalog
+                .get(*id)
+                .map(|artifact| (*id, artifact.envelope_residency()))
+                .ok_or_else(|| corrupt("admitted head has no catalog entry"))
+        })
+        .collect::<Result<_, _>>()?;
     history.with_ledger_mut(|ledger| {
         ledger.commit_catalog = catalog;
-        ledger.commit_envelopes = heads.clone();
+        ledger.commit_envelopes = head_cells;
         ledger.commit_graph = directory
             .manifest
             .commits

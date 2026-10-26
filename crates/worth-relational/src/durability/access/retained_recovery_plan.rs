@@ -14,7 +14,7 @@ pub(super) fn retained_recovery_plan(
         .durable_checkpoints()
         .last()
         .map(|checkpoint| checkpoint.as_ref().clone());
-    let tail_log = tail_log_after_in_memory_checkpoint(runtime, checkpoint.as_ref());
+    let tail_log = tail_log_after_in_memory_checkpoint(runtime, execution, checkpoint.as_ref())?;
     let covered = checkpoint.as_ref().map_or(
         crate::branch::RelationalBranchTransitionSequence(0),
         |checkpoint| checkpoint.coverage.up_to_branch_transition,
@@ -60,33 +60,23 @@ pub(super) fn retained_recovery_plan(
 
 fn tail_log_after_in_memory_checkpoint(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     checkpoint: Option<&crate::durability::data::DurableCheckpoint>,
-) -> Vec<crate::durability::migration::ReadmittedCanonicalCommit> {
-    match checkpoint.and_then(|checkpoint| {
+) -> Result<
+    Vec<crate::durability::migration::ReadmittedCanonicalCommit>,
+    crate::durability::data::RelationalRecoveryStop,
+> {
+    let after = checkpoint.and_then(|checkpoint| {
         checkpoint
             .envelopes
             .iter()
             .map(crate::history::data::PositionedCanonicalCommit::position)
             .max()
-    }) {
-        Some(up_to_position) => runtime
-            .durable_log()
-            .into_iter()
-            .filter(|entry| entry.position() > up_to_position)
-            .map(|entry| {
-                crate::durability::migration::ReadmittedCanonicalCommit::exact(
-                    entry.as_ref().clone(),
-                )
-            })
-            .collect(),
-        None => runtime
-            .durable_log()
-            .into_iter()
-            .map(|entry| {
-                crate::durability::migration::ReadmittedCanonicalCommit::exact(
-                    entry.as_ref().clone(),
-                )
-            })
-            .collect(),
-    }
+    });
+    Ok(runtime
+        .durability
+        .demand_log_after(execution, after)?
+        .into_iter()
+        .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
+        .collect())
 }

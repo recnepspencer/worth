@@ -12,7 +12,7 @@ fn residency_failure_matrix_declared_current_doors_preserve_every_failure_class(
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for subject in [Subject::Head, Subject::Symbols] {
         for door in CurrentDoor::ALL {
-            for cause in FAILURES {
+            for (cause, sticky) in FAILURES {
                 let fixture = CurrentFixture::reopened(execution);
                 let members = match subject {
                     Subject::Head => &fixture.heads,
@@ -61,7 +61,7 @@ fn residency_failure_matrix_declared_current_doors_preserve_every_failure_class(
                 );
                 fixture.source.failures.lock().unwrap().clear();
                 let reads = fixture.source.reads.load(Ordering::Relaxed);
-                if cause.is_proven_damage() {
+                if sticky {
                     assert_eq!(run(), Err(failure));
                     assert!(fixture.source.member_reads.lock().unwrap()[reads..].iter()
                         .all(|member| !members.contains(member)),

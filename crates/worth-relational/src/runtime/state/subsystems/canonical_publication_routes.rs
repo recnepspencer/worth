@@ -20,6 +20,9 @@ mod patch_position_reservation;
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
+#[path = "canonical_publication_routes/position_retention.rs"]
+mod position_retention;
+pub(crate) use position_retention::RetainedCanonicalPosition;
 
 #[path = "canonical_publication_routes/indexed_catalog.rs"]
 mod indexed_catalog;
@@ -60,7 +63,9 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 }
 
 struct CanonicalPublicationRoute {
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    commit: crate::history::data::RelationalCommitReceipt,
+    roots: crate::branch::RelationalBranchRootDescriptor,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
     performed_position: AtomicU64,
     performed: AtomicBool,
@@ -92,6 +97,7 @@ pub(crate) enum CanonicalCheckpointAdmissionError {
 pub(crate) struct PreparedCanonicalPublicationRoute {
     routes: Arc<RelationalCanonicalPublicationRoutes>,
     route: Arc<CanonicalPublicationRoute>,
+    resident: Arc<CanonicalCommitEnvelope>,
 }
 
 impl Default for RelationalCanonicalPublicationRoutes {
@@ -117,11 +123,16 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_recovered(
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
+        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        roots: crate::branch::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
         let installs_version_route = positioned.envelope().authority_kind()
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
+        envelope.bind_performed(&positioned, None);
         let route = Arc::new(CanonicalPublicationRoute {
-            envelope: Arc::clone(positioned.canonical_arc()),
+            envelope,
+            commit: positioned.commit.clone(),
+            roots,
             handoff: Mutex::new(None),
             performed_position: AtomicU64::new(0),
             performed: AtomicBool::new(true),
@@ -153,11 +164,19 @@ impl RelationalCanonicalPublicationRoutes {
 
     pub(crate) fn reserve(
         routes: &Arc<Self>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<crate::branch::RelationalBranchRoot>,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
+        let resident = envelope.get().ok_or("prepared envelope is not resident")?;
+        let commit = resident.commit.clone();
+        let roots = root
+            .descriptor()
+            .cloned()
+            .ok_or("prepared root has no committed descriptor")?;
         let route = Arc::new(CanonicalPublicationRoute {
             envelope,
+            commit,
+            roots,
             handoff: Mutex::new(Some(CanonicalPublicationHandoff {
                 root,
                 publication_cell: None,
@@ -166,8 +185,8 @@ impl RelationalCanonicalPublicationRoutes {
             performed: AtomicBool::new(false),
             settled: AtomicBool::new(false),
         });
-        let commit_id = route.envelope.commit.commit_id;
-        let version_id = route.envelope.commit.version_id;
+        let commit_id = route.commit.commit_id;
+        let version_id = route.commit.version_id;
         if routes
             .by_commit
             .insert(commit_id, Arc::clone(&route))
@@ -186,6 +205,7 @@ impl RelationalCanonicalPublicationRoutes {
         Ok(PreparedCanonicalPublicationRoute {
             routes: Arc::clone(routes),
             route,
+            resident,
         })
     }
 
@@ -206,7 +226,7 @@ impl RelationalCanonicalPublicationRoutes {
         let Some((_, route)) = self.by_commit.remove(&commit_id) else {
             return false;
         };
-        self.by_version.remove(&route.envelope.commit.version_id);
+        self.by_version.remove(&route.commit.version_id);
         true
     }
 
@@ -215,11 +235,11 @@ impl RelationalCanonicalPublicationRoutes {
             return;
         }
         self.by_commit
-            .remove_if(&route.envelope.commit.commit_id, |_, existing| {
+            .remove_if(&route.commit.commit_id, |_, existing| {
                 Arc::ptr_eq(existing, route)
             });
         self.by_version
-            .remove_if(&route.envelope.commit.version_id, |_, existing| {
+            .remove_if(&route.commit.version_id, |_, existing| {
                 Arc::ptr_eq(existing, route)
             });
     }
@@ -230,7 +250,7 @@ impl PreparedCanonicalPublicationRoute {
     /// Settlement is keyed by it before movement, so it must be readable
     /// without waiting for the route to perform.
     pub(crate) fn commit_id(&self) -> CommitId {
-        self.route.envelope.commit.commit_id
+        self.route.commit.commit_id
     }
 
     pub(crate) fn selected_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
@@ -250,8 +270,11 @@ impl PreparedCanonicalPublicationRoute {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         durable: impl FnOnce(
             &PositionedCanonicalCommit,
-        )
-            -> Result<(), crate::durability::medium::RelationalDurableStepStop>,
+            &crate::branch::RelationalBranchRootDescriptor,
+        ) -> Result<
+            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            crate::durability::medium::RelationalDurableStepStop,
+        >,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
         self.route
@@ -263,6 +286,7 @@ impl PreparedCanonicalPublicationRoute {
             .publication_cell = Some(publication_cell);
         self.routes.performed_stream.record_with_cutover(
             Arc::clone(&self.route),
+            self.resident.clone(),
             admission,
             durable,
             cutover,
@@ -307,6 +331,7 @@ impl CanonicalPublicationRoute {
     }
 
     pub(super) fn mark_settled(&self) {
+        self.envelope.settle();
         self.settled.store(true, Ordering::Release);
     }
 
@@ -334,5 +359,5 @@ impl CanonicalPublicationRoute {
 fn visible_envelope(
     route: Option<Arc<CanonicalPublicationRoute>>,
 ) -> Option<Arc<CanonicalCommitEnvelope>> {
-    route.and_then(|route| route.is_visible().then(|| Arc::clone(&route.envelope)))
+    route.and_then(|route| route.is_visible().then(|| route.envelope.get()).flatten())
 }

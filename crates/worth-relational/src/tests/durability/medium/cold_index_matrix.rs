@@ -129,7 +129,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in IndexDoor::ALL {
-        for cause in FAILURES {
+        for (cause, sticky) in FAILURES {
             let producer = durable_runtime_with_declared_aspect_schema(
                 CascadeDeletePolicy::CascadeDeleteRelations,
             );
@@ -235,7 +235,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
             assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
             source.failures.lock().unwrap().clear();
             let reads = source.reads.load(Ordering::Relaxed);
-            if cause.is_proven_damage() {
+            if sticky {
                 assert_eq!(door.read(&runtime, execution, index), Err(expected));
                 assert_eq!(source.reads.load(Ordering::Relaxed), reads);
             } else {

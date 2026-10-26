@@ -17,6 +17,10 @@ pub(crate) struct CapturedManifest {
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) members: BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     pub(crate) envelopes: Vec<Vec<u8>>,
+    pub(crate) envelope_cells: BTreeMap<
+        crate::publication::patch::data::PatchStreamPosition,
+        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    >,
     pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
@@ -29,32 +33,60 @@ impl CapturedManifest {
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         prior: Option<&RelationalCheckpointManifest>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
+        journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
     ) -> Result<Self, RelationalNativeCheckpointCaptureDenial> {
         let mut members = BTreeMap::new();
-        let mut commits = prior.map_or_else(Vec::new, |prior| prior.commits.clone());
-        let mut envelopes = Vec::new();
-        for positioned in checkpoint
-            .envelopes
-            .iter()
-            .filter(|entry| prior.is_none_or(|prior| entry.position() > prior.covered_position))
+        let mut commits = BTreeMap::new();
+        for entry in prior
+            .into_iter()
+            .flat_map(|prior| prior.commits.iter().cloned())
+            .chain(journal_index)
         {
+            if let Some(existing) = commits.insert(entry.position, entry.clone())
+                && existing != entry
+            {
+                return Err(
+                    corrupt("checkpoint commit index has competing placement facts").into(),
+                );
+            }
+        }
+        let mut envelopes = Vec::new();
+        let mut embedded_positions = std::collections::BTreeSet::new();
+        for positioned in &checkpoint.envelopes {
             policy.check_live()?;
-            let payload_digest =
-                RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
-                    .map_err(|error| corrupt(format!("canonical checkpoint digest: {error}")))?;
             let envelope = positioned.envelope();
             let root = checkpoint
                 .commit_descriptors
                 .get(&envelope.commit.commit_id)
                 .ok_or_else(|| corrupt("checkpoint commit lacks its catalog descriptor"))?;
-            commits.push(crate::history::RelationalCommitIndexEntry {
-                commit: envelope.commit.clone(),
-                position: positioned.position(),
-                root: root.clone(),
-                payload_digest,
-                schema_version: envelope.schema_version,
-            });
+            if let Some(existing) = commits.get(&positioned.position()) {
+                if existing.commit != envelope.commit
+                    || &existing.root != root
+                    || existing.schema_version != envelope.schema_version
+                {
+                    return Err(
+                        corrupt("resident envelope disagrees with its admitted index").into(),
+                    );
+                }
+            } else {
+                let payload_digest =
+                    RelationalCanonicalCommitArtifact::positioned_payload_digest(positioned)
+                        .map_err(|error| {
+                            corrupt(format!("canonical checkpoint digest: {error}"))
+                        })?;
+                commits.insert(
+                    positioned.position(),
+                    crate::history::RelationalCommitIndexEntry {
+                        commit: envelope.commit.clone(),
+                        position: positioned.position(),
+                        root: root.clone(),
+                        payload_digest,
+                        schema_version: envelope.schema_version,
+                    },
+                );
+            }
             if placement.is_embedded() {
+                embedded_positions.insert(positioned.position());
                 envelopes.push(
                     rmp_serde::to_vec_named(&super::embedded_commit::EmbeddedCommitRef::new(
                         positioned,
@@ -63,6 +95,16 @@ impl CapturedManifest {
                 );
             }
         }
+        let commits = commits.into_values().collect::<Vec<_>>();
+        let carried_envelopes = if placement.is_embedded() {
+            commits
+                .iter()
+                .filter(|entry| !embedded_positions.contains(&entry.position))
+                .cloned()
+                .collect()
+        } else {
+            Vec::new()
+        };
         let mut entries = checkpoint.symbol_table.entries.clone();
         entries.sort_by_key(|(symbol, _)| *symbol);
         let mut symbol_pages = Vec::new();
@@ -134,7 +176,8 @@ impl CapturedManifest {
             .map_err(|cause| corrupt(format!("derived index member: {cause:?}")))?,
         );
         Ok(Self {
-            carried_envelopes: Vec::new(),
+            carried_envelopes,
+            envelope_cells: BTreeMap::new(),
             manifest: RelationalCheckpointManifest {
                 coverage: checkpoint.coverage.clone(),
                 covered_position: commits.last().map_or(
@@ -178,6 +221,7 @@ impl CapturedManifest {
             policy,
             None,
             &RelationalCheckpointArtifactPolicy::Embedded,
+            Vec::new(),
         )?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();

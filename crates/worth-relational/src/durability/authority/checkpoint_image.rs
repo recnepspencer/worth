@@ -4,7 +4,7 @@ use crate::durability::data::{
     CheckpointCoverage, DurabilityError, DurableBranchRootImage, DurableCheckpoint,
     RecoveryFailureClass,
 };
-use crate::lineage::data::{LineageCheckpointArtifact, LineageCheckpointDigestBasis};
+use crate::lineage::data::LineageCheckpointArtifact;
 
 use super::checkpoint_capture::{CapturedCheckpointBasis, CapturedRecordIdentity};
 
@@ -21,6 +21,9 @@ impl CapturedCheckpointBasis {
             branch_roots,
             record_identity,
             envelopes,
+            journal_index: _,
+            envelope_cells: _,
+            lineage_basis,
             commit_descriptors,
             partitions,
             aspect_contracts,
@@ -48,28 +51,6 @@ impl CapturedCheckpointBasis {
                 CheckpointAspectContractCatalog::from_plans(&aspect_contracts)?,
             ),
         };
-        let published_lineage_commit_count = envelopes
-            .iter()
-            .filter(|envelope| envelope.has_lineage_authority())
-            .count();
-        let canonical_published_event_ids = envelopes
-            .iter()
-            .flat_map(|envelope| {
-                envelope
-                    .lineage_digest_basis()
-                    .canonical_event_ids()
-                    .iter()
-                    .copied()
-            })
-            .collect();
-        let published_lineage_event_count = envelopes
-            .iter()
-            .map(|envelope| envelope.lineage_digest_basis().lineage_event_count())
-            .sum();
-        let published_lineage_decision_count = envelopes
-            .iter()
-            .map(|envelope| envelope.lineage_digest_basis().lineage_decision_count())
-            .sum();
         let record_identity = checkpoint_record_identity(record_identity)?;
         let CapturedBranchRootImages {
             roots: branch_roots,
@@ -117,15 +98,7 @@ impl CapturedCheckpointBasis {
                 .map(|partition| partition_to_image_with_contracts(partition, mirror_plans, &mirror_contracts))
                 .collect::<Result<Vec<_>, _>>()?,
             aspect_contracts: mirror_contracts.portable_contracts(),
-            lineage: LineageCheckpointArtifact::new(
-                LineageCheckpointDigestBasis::new(
-                    published_lineage_commit_count,
-                    canonical_published_event_ids,
-                    published_lineage_event_count,
-                    published_lineage_decision_count,
-                ),
-                lineage_nodes,
-            ),
+            lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
             index_definitions,
             derived_index_artifacts: crate::indexes::data::DerivedIndexArtifacts::default(),
             derived_index_checkpoint: Some(derived_index_checkpoint),

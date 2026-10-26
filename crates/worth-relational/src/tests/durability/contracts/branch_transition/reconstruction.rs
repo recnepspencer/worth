@@ -64,6 +64,11 @@ struct CountedTransitionReads {
 }
 
 impl RelationalDurableMedium for CountedTransitionReads {
+    fn cold_source(
+        &self,
+    ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {
+        self.medium.cold_source()
+    }
     fn read_transition(
         &self,
         sequence: Sequence,

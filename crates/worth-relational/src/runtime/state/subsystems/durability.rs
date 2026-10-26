@@ -48,7 +48,9 @@ impl DurabilitySubsystem {
     }
 
     pub(crate) fn attach_medium(&mut self, medium: Box<dyn RelationalDurableMedium>) {
-        self.medium = Some(Arc::new(RelationalDurableMediumBinding::new(medium)));
+        let binding = Arc::new(RelationalDurableMediumBinding::new(medium));
+        self.cold_source = Some(binding.cold_source());
+        self.medium = Some(binding);
     }
 
     /// Move the medium out so it can move into the runtime recovery rebuilt.
@@ -69,7 +71,14 @@ impl DurabilitySubsystem {
             .or_else(|| self.transition_history.clone())
     }
 
-    pub(crate) fn push_log_envelope(&self, commit: PositionedCanonicalCommit) {
+    pub(crate) fn push_log_envelope(
+        &self,
+        commit: (
+            CommitId,
+            crate::publication::patch::data::PatchStreamPosition,
+            Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        ),
+    ) {
         self.state.write().push_log_envelope(commit);
     }
 
@@ -77,7 +86,14 @@ impl DurabilitySubsystem {
         self.state.write().push_checkpoint(checkpoint);
     }
 
-    pub(crate) fn set_log(&self, log: Vec<PositionedCanonicalCommit>) {
+    pub(crate) fn set_log(
+        &self,
+        log: Vec<(
+            CommitId,
+            crate::publication::patch::data::PatchStreamPosition,
+            Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        )>,
+    ) {
         self.state.write().set_log(log);
     }
 
@@ -111,7 +127,36 @@ impl DurabilitySubsystem {
     /// Every durable envelope, shared rather than copied, so scans never hold
     /// the subsystem lock while they read.
     pub(crate) fn log(&self) -> Vec<Arc<PositionedCanonicalCommit>> {
-        self.state.read().log.clone()
+        self.state
+            .read()
+            .log
+            .iter()
+            .filter_map(|entry| entry.2.positioned_if_resident())
+            .map(Arc::new)
+            .collect()
+    }
+
+    pub(crate) fn demand_log_after(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        after: Option<crate::publication::patch::data::PatchStreamPosition>,
+    ) -> Result<Vec<PositionedCanonicalCommit>, crate::durability::data::RelationalRecoveryStop>
+    {
+        let selected = self
+            .state
+            .read()
+            .log
+            .iter()
+            .filter(|entry| after.is_none_or(|position| entry.1 > position))
+            .map(|entry| entry.2.clone())
+            .collect::<Vec<_>>();
+        selected
+            .into_iter()
+            .map(|cell| {
+                cell.demand_positioned(execution, 1 << 30)
+                    .map_err(Into::into)
+            })
+            .collect()
     }
 
     pub(crate) fn log_len(&self) -> usize {

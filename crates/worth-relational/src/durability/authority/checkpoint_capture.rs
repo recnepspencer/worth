@@ -19,6 +19,10 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) branch_roots: Vec<RelationalBranchRootCheckpoint>,
     pub(super) record_identity: CapturedRecordIdentity,
     pub(super) envelopes: Vec<PositionedCanonicalCommit>,
+    pub(super) envelope_cells:
+        Vec<std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>>,
+    pub(super) journal_index: Vec<crate::history::RelationalCommitIndexEntry>,
+    pub(super) lineage_basis: crate::lineage::data::LineageCheckpointDigestBasis,
     pub(super) commit_descriptors: std::collections::BTreeMap<
         crate::history::data::CommitId,
         crate::branch::RelationalBranchRootDescriptor,
@@ -64,6 +68,23 @@ impl CapturedCheckpointBasis {
         // derived generations before selecting bounded payloads.
         runtime.run_index_generation_reclamation_pass();
         let envelopes = selection.positioned_snapshot();
+        let selected_directory = runtime.durability.checkpoint_selection().snapshot();
+        let artifacts = runtime.history.commit_artifacts();
+        let lineage_basis = super::checkpoint_lineage_basis::capture(
+            &artifacts,
+            selected_directory
+                .as_ref()
+                .map(|directory| &directory.manifest),
+        )?;
+        let journal_index = artifacts
+            .iter()
+            .filter_map(|artifact| {
+                artifact
+                    .envelope_residency()
+                    .journal_index()
+                    .map(|entry| entry.as_ref().clone())
+            })
+            .collect();
         let covered_transitions = selection.covered_transitions();
         let branch_roots = runtime
             .history
@@ -132,10 +153,22 @@ impl CapturedCheckpointBasis {
             })
             .map(|root| root.schema_authority().clone());
         let captured = Self {
-            selected_directory: runtime.durability.checkpoint_selection().snapshot(),
-            latest_commit: envelopes
-                .last()
-                .map(|positioned| positioned.envelope().commit.clone()),
+            envelope_cells: artifacts
+                .iter()
+                .map(|artifact| artifact.envelope_residency())
+                .collect(),
+            journal_index,
+            lineage_basis,
+            latest_commit: selection.latest_receipt().or_else(|| {
+                selected_directory.as_ref().and_then(|directory| {
+                    directory
+                        .manifest
+                        .commits
+                        .last()
+                        .map(|entry| entry.commit.clone())
+                })
+            }),
+            selected_directory,
             branch_cells,
             branch_lifecycle: runtime.history.branch_lifecycle_snapshot(),
             retired_branch_names: runtime.history.retired_branch_names(),
@@ -147,9 +180,7 @@ impl CapturedCheckpointBasis {
                 append_frontiers: runtime.record_identity.frontier_snapshot(),
                 pending_reservations: runtime.record_identity.pending_snapshot(),
             },
-            commit_descriptors: runtime
-                .history
-                .commit_artifacts()
+            commit_descriptors: artifacts
                 .iter()
                 .map(|artifact| (artifact.identity().commit_id(), artifact.roots().clone()))
                 .collect(),

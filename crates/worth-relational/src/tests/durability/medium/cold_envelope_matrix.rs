@@ -13,6 +13,9 @@ enum EnvelopeDoor {
     Surface(EnvelopeSurface),
     Patches,
     Stream,
+    RetainedExport,
+    EmbeddedCheckpoint,
+    MemoryCheckpoint,
 }
 impl EnvelopeDoor {
     fn read(
@@ -23,6 +26,30 @@ impl EnvelopeDoor {
         position: crate::publication::patch::data::PatchStreamPosition,
     ) -> Result<usize, Execution> {
         match self {
+            Self::RetainedExport => runtime.durability()
+                .canonical_commit_artifacts(execution.allocation_policy())
+                .after_position(crate::publication::patch::data::PatchStreamPosition(position.0 - 1))
+                .next().expect("selected index entry exists")
+                .map(|artifact| artifact.as_bytes().len())
+                .map_err(|denial| match denial {
+                    crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial::StorageUnavailable(failure) => Execution::StorageUnavailable(failure),
+                    other => panic!("funded real artifact: {other:?}"),
+                }),
+            Self::EmbeddedCheckpoint => runtime.durability_authority()
+                .native_checkpoint(execution.allocation_policy())
+                .map(|checkpoint| checkpoint.bytes().len())
+                .map_err(|denial| match denial {
+                    crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) =>
+                        Execution::StorageUnavailable(error.storage_unavailable.expect("cold journal refusal")),
+                    other => panic!("funded real capture: {other:?}"),
+                }),
+            Self::MemoryCheckpoint => runtime.durability_authority().checkpoint(execution)
+                .map(|checkpoint| checkpoint.envelopes.len())
+                .map_err(|denial| match denial {
+                    RelationalRecoveryStop::Durability(error) =>
+                        Execution::StorageUnavailable(error.storage_unavailable.expect("cold journal refusal")),
+                    other => panic!("funded real image: {other:?}"),
+                }),
             Self::Surface(surface) => surface.read(execution, runtime, receipt),
             Self::Patches => runtime
                 .history()
@@ -62,9 +89,15 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
     for door in EnvelopeSurface::ALL
         .map(EnvelopeDoor::Surface)
         .into_iter()
-        .chain([EnvelopeDoor::Patches, EnvelopeDoor::Stream])
+        .chain([
+            EnvelopeDoor::Patches,
+            EnvelopeDoor::Stream,
+            EnvelopeDoor::RetainedExport,
+            EnvelopeDoor::EmbeddedCheckpoint,
+            EnvelopeDoor::MemoryCheckpoint,
+        ])
     {
-        for cause in FAILURES {
+        for (cause, sticky) in FAILURES {
             let runtime = || match door {
                 EnvelopeDoor::Surface(EnvelopeSurface::CompiledArtifact) => {
                     RelationalRuntimeApi::builder()
@@ -116,19 +149,50 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
                 "{door:?} x {cause:?}"
             );
             source.failures.lock().unwrap().clear();
-            let reads = source.commit_reads.lock().unwrap().len();
-            if cause.is_proven_damage() {
+            let reads = source
+                .commit_reads
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|read| **read == position)
+                .count();
+            if sticky {
+                assert_eq!(
+                    runtime
+                        .history()
+                        .demand_commit_envelope(execution, receipt.commit_id),
+                    Err(expected),
+                    "body reads must share export/capture damage"
+                );
                 assert_eq!(
                     door.read(&runtime, execution, &receipt, position),
                     Err(expected)
                 );
-                assert_eq!(source.commit_reads.lock().unwrap().len(), reads);
+                assert_eq!(
+                    source
+                        .commit_reads
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .filter(|read| **read == position)
+                        .count(),
+                    reads
+                );
             } else {
                 assert!(
                     door.read(&runtime, execution, &receipt, position).unwrap() > 0,
                     "retry returns genuine body contents"
                 );
-                assert!(source.commit_reads.lock().unwrap().len() > reads);
+                assert!(
+                    source
+                        .commit_reads
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .filter(|read| **read == position)
+                        .count()
+                        > reads
+                );
             }
             assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
             assert_eq!(attached_test_medium(&runtime).offered().len(), offered);

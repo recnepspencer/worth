@@ -74,6 +74,9 @@ impl RelationalDurableColdSource for LostForkAnswer {
     }
 }
 impl RelationalDurableMedium for LostForkAnswer {
+    fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
+        Arc::new(Self(self.0.clone()))
+    }
     fn read_transition(
         &self,
         sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,

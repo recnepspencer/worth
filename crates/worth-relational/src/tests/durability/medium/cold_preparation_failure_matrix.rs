@@ -27,7 +27,7 @@ fn residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in PreparationDoor::ALL {
-        for cause in FAILURES {
+        for (cause, sticky) in FAILURES {
             let (runtime, source, _, placements) = recovered(execution);
             assert!(!placements.heads.is_empty());
             let frontier = runtime.history().latest_patch_stream_position();
@@ -65,7 +65,7 @@ fn residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_
             );
             source.failures.lock().unwrap().clear();
             let reads = source.reads.load(Ordering::Relaxed);
-            if cause.is_proven_damage() {
+            if sticky {
                 assert_eq!(door.run(execution, &runtime), Err(failure));
                 assert_eq!(source.reads.load(Ordering::Relaxed), reads);
                 assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
@@ -92,7 +92,7 @@ fn residency_failure_matrix_remote_current_invariants_never_consult_history() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in PreparationDoor::ALL {
-        for cause in FAILURES {
+        for (cause, _) in FAILURES {
             let (runtime, source, _, placements) = recovered(execution);
             assert!(!placements.history.is_empty());
             source.failures.lock().unwrap().extend(

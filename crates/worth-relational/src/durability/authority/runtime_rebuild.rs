@@ -186,7 +186,23 @@ pub(super) fn rebuild_runtime_from_plan(
         })?;
     reconcile_recovered_lineage_artifacts(&mut restored, &finalized_tail)?;
     refresh_checkpoint_counters(&mut restored)?;
-    restored.durability.set_log(finalized_tail);
+    let log = finalized_tail
+        .iter()
+        .map(|commit| {
+            let id = commit.commit.commit_id;
+            restored
+                .history
+                .commit_artifact(id)
+                .map(|artifact| (id, commit.position(), artifact.envelope_residency()))
+                .ok_or_else(|| {
+                    DurabilityError::new(
+                        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                        "recovered durable log has no catalog entry",
+                    )
+                })
+        })
+        .collect::<Result<_, _>>()?;
+    restored.durability.set_log(log);
 
     finalize_restored_runtime(execution, &mut restored)?;
     recovered_roots.finish();

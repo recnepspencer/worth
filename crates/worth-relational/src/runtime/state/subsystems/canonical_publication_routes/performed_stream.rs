@@ -23,7 +23,7 @@ pub(super) struct PerformedPublicationStream {
 }
 
 pub(super) struct PerformedPublicationNode {
-    positioned: Arc<PositionedCanonicalCommit>,
+    position: PatchStreamPosition,
     route: Arc<CanonicalPublicationRoute>,
     previous: Option<Arc<PerformedPublicationNode>>,
 }
@@ -58,7 +58,7 @@ impl PerformedPublicationStream {
         let mut cursor = self.head.load_full();
         while let Some(node) = cursor {
             if node.route.is_performed() && !node.route.is_settled() {
-                let commit_id = node.positioned.envelope().commit.commit_id;
+                let commit_id = node.route.commit.commit_id;
                 first = Some(first.map_or(commit_id, |current: CommitId| current.min(commit_id)));
             }
             cursor = node.previous.clone();
@@ -89,7 +89,7 @@ impl PerformedPublicationStream {
     fn performed_head_position(&self, current: &Option<Arc<PerformedPublicationNode>>) -> u64 {
         current
             .as_ref()
-            .map(|head| head.positioned.position().0)
+            .map(|head| head.position.0)
             .unwrap_or(0)
             .max(self.recovered_position_floor.load(Ordering::Acquire))
     }
@@ -102,8 +102,15 @@ impl PerformedPublicationStream {
     pub(super) fn record_with_cutover(
         &self,
         route: Arc<CanonicalPublicationRoute>,
+        resident: Arc<CanonicalCommitEnvelope>,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
-        durable: impl FnOnce(&PositionedCanonicalCommit) -> Result<(), DurableStepStop>,
+        durable: impl FnOnce(
+            &PositionedCanonicalCommit,
+            &crate::branch::RelationalBranchRootDescriptor,
+        ) -> Result<
+            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            DurableStepStop,
+        >,
         cutover: impl FnOnce(PatchStreamPosition),
     ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
@@ -116,14 +123,18 @@ impl PerformedPublicationStream {
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
-                Arc::clone(&route.envelope),
+                resident,
             ),
         ));
         // Durable before live: the position is assigned only once the medium
         // holds it, and the cutover below runs only after that.
-        durable(&positioned).map_err(CanonicalPublicationRecordError::Durable)?;
+        let journal =
+            durable(&positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
+        route
+            .envelope
+            .bind_performed(&positioned, journal.map(|receipt| receipt.into_parts()));
         let node = Arc::new(PerformedPublicationNode {
-            positioned: Arc::clone(&positioned),
+            position: positioned.position(),
             route: Arc::clone(&route),
             previous: current,
         });
@@ -147,12 +158,12 @@ impl PerformedPublicationStream {
         let current = self.head.load_full();
         if current
             .as_ref()
-            .is_some_and(|head| head.positioned.position() >= positioned.position())
+            .is_some_and(|head| head.position >= positioned.position())
         {
             return Err("recovered canonical stream order is not strictly increasing");
         }
         let node = Arc::new(PerformedPublicationNode {
-            positioned: Arc::clone(&positioned),
+            position: positioned.position(),
             route,
             previous: current,
         });
@@ -169,7 +180,7 @@ impl PerformedPublicationStream {
             .by_patch
             .get(&position)
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(node.positioned.canonical_arc()))
+            .and_then(|node| node.route.envelope.get())
     }
 
     pub(super) fn positioned_at(
@@ -180,7 +191,7 @@ impl PerformedPublicationStream {
             .by_patch
             .get(&position)
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(&node.positioned))
+            .and_then(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
     }
 
     pub(super) fn visible_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
@@ -188,7 +199,7 @@ impl PerformedPublicationStream {
             .by_patch
             .values()
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(node.positioned.canonical_arc()))
+            .filter_map(|node| node.route.envelope.get())
             .collect()
     }
 
@@ -198,7 +209,7 @@ impl PerformedPublicationStream {
             .iter()
             .rev()
             .find(|(_, node)| node.route.is_visible())
-            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
     }
 
     pub(super) fn after(
@@ -214,7 +225,7 @@ impl PerformedPublicationStream {
             .range((start, std::ops::Bound::Unbounded))
             .filter(|(_, node)| node.route.is_visible())
             .take(max_commits)
-            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
             .collect()
     }
 
@@ -225,7 +236,7 @@ impl PerformedPublicationStream {
             .rev()
             .filter(|(_, node)| node.route.is_visible())
             .take(limit)
-            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
             .collect()
     }
 
@@ -236,7 +247,7 @@ impl PerformedPublicationStream {
             .get(&commit_id)
             .and_then(|position| index.by_patch.get(position))
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(&node.positioned))
+            .and_then(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
     }
 
     fn refresh_index(&self) -> std::sync::MutexGuard<'_, PerformedPublicationIndex> {
@@ -259,10 +270,10 @@ impl PerformedPublicationStream {
             pending.push(node);
         }
         for node in pending.into_iter().rev() {
-            let position = node.positioned.position();
+            let position = node.position;
             index
                 .by_commit
-                .insert(node.route.envelope.commit.commit_id, position);
+                .insert(node.route.commit.commit_id, position);
             index.by_patch.insert(position, Arc::clone(&node));
         }
         index.indexed_head = head;
@@ -274,7 +285,7 @@ impl PerformedPublicationStream {
             .by_patch
             .values()
             .filter(|node| node.route.is_performed())
-            .map(|node| Arc::clone(&node.positioned))
+            .filter_map(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
             .collect()
     }
 
@@ -284,6 +295,12 @@ impl PerformedPublicationStream {
 }
 
 impl PerformedCheckpointSelection {
+    pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.head
+            .as_ref()
+            .filter(|head| head.route.is_performed())
+            .map(|head| head.route.commit.clone())
+    }
     /// The last branch transition sequence the checkpoint covers.
     pub(crate) fn covered_transitions(&self) -> crate::branch::RelationalBranchTransitionSequence {
         self.covered_transitions
@@ -293,8 +310,10 @@ impl PerformedCheckpointSelection {
         let mut positioned = Vec::new();
         let mut cursor = self.head.clone();
         while let Some(node) = cursor {
-            if node.route.is_performed() {
-                positioned.push(node.positioned.as_ref().clone());
+            if node.route.is_performed()
+                && let Some(resident) = node.route.envelope.positioned_if_resident()
+            {
+                positioned.push(resident);
             }
             cursor = node.previous.clone();
         }
