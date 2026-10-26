@@ -18,7 +18,9 @@ use worth_relational::facade::publication::PatchStreamPosition;
 use worth_store_relational::RelationalStoreCommitFate;
 use worth_store_relational::RelationalStoreHome;
 
-use super::durable_run::{apply, assert_holds, assert_reference_artifacts, open, steps_after};
+use super::durable_run::{
+    apply, assert_holds, assert_reference_artifacts, open_declaring, served_schema, steps_after,
+};
 use super::identity_safety;
 use super::workload::{self, Script};
 
@@ -135,8 +137,8 @@ pub(crate) fn assert_continues(
     );
     assert_holds(&home, script, &everything);
     home.close();
-    let again =
-        open(location, execution).unwrap_or_else(|refusal| panic!("{case}: reopen: {refusal:?}"));
+    let again = open_declaring(location, served_schema(&script.steps), execution)
+        .unwrap_or_else(|refusal| panic!("{case}: reopen: {refusal:?}"));
     assert_holds(&again, script, &everything);
     identity_safety::assert_creates_are_fresh(&again, script, execution, case);
     again.close();

@@ -33,7 +33,7 @@ const COMMITS: usize = 9;
 const CHECKPOINT_EVERY: usize = 3;
 /// Cases are independent homes in their own directories, so they run on a
 /// few workers; each case's fault schedule belongs to its own Store.
-const WORKERS: usize = 6;
+const WORKERS: usize = 8;
 
 /// How many cases ran and how the target ended in them.
 #[derive(Default, Debug)]
@@ -126,6 +126,7 @@ impl SeedSweep {
 }
 
 fn sweep(select: impl Fn(&Script) -> Target) {
+    let started = std::time::Instant::now();
     let request = workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
     let seeds: Vec<_> = SEEDS
@@ -198,6 +199,11 @@ fn sweep(select: impl Fn(&Script) -> Target) {
         failures.len(),
         cases.len(),
         failures.join("\n")
+    );
+    eprintln!(
+        "media sweep: {} scheduled cases, {WORKERS} workers, elapsed {:?}",
+        cases.len(),
+        started.elapsed()
     );
 }
 

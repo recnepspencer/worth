@@ -46,6 +46,14 @@ test(pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_term
 threads-required = "num-test-threads"
 slow-timeout = { period = "60s", terminate-after = 30 }
 
+# Each home sweep owns eight independent case workers. Reserve all eight slots
+# so the four sweeps cannot multiply their pools. All four retain the normal
+# 300 s/default and 600 s/CI guards. Checkpoint replacement measured 164.8 s
+# under continuous builds for 337 admitted cases. See the runner README.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(media_sweep::)'
+threads-required = "num-test-threads"
+
 # Scheduled maximum-roster proof: 64 chunks, 63 partial drops, one checkpoint,
 # one C8 recovery and a Serving rejoin/checkpoint (not an ordinary scenario).
 # Under continuous builds it passed in 732.6 s (8.34 s/drop, 196 s ingest),

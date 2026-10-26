@@ -70,6 +70,54 @@ progress fails fixture setup.
 `relational_home` requires the certification feature because its crash oracle
 uses the compiled media and interruption controls. The scenario CI partition
 selects it and enables `worth-store-relational/certification-test-authority`.
+The four home media sweeps each reserve the entire eight-slot nextest pool and
+run eight independent cases internally. Each case rebuilds its own Store
+because physical file identities forbid directory cloning; it then opens,
+injects one cut, recovers, compares the acknowledged/in-flight prefix, finishes
+the script, reopens and checks history, branch state and fresh identities.
+Schedules that reject a directive are now admitted before building that home.
+The final reopen declares the completed script's known schema, avoiding an
+unnecessary old-schema recovery/refusal.
+
+All four sweeps retain the ordinary 300-second/default and 600-second/CI
+guards. Checkpoint replacement measured 337 admitted cases (two seeds), versus
+176 for each commit matrix. Each seed discovers its actual media-operation
+count, and each sweep prints its counts and elapsed time. The loaded optimized
+checkpoint sweep passed in 164.81 seconds; its normal CI guard left 72.5%
+unused. No cuts, continuation steps or oracle checks are removed.
+Measurements use Windows 11, Rust 1.94.0 and unoptimized `ci-test` on a
+32-logical-processor, 128-GiB host during continuous boundary-check rebuilds
+with `CARGO_BUILD_JOBS=8`.
+
+| Sweep | Admitted cases | Before wall seconds (approx.) | After seconds |
+| --- | ---: | ---: | ---: |
+| First commit | 176 | 316.3 | 83.92 |
+| First fork commit | 176 | 325.4 | 87.97 |
+| Schema transition | 176 | 347.8 | 85.33 |
+| Checkpoint replacement | 337 | 452.1 | 164.81 |
+
+Baseline ran four six-worker sweeps concurrently (24 homes); optimized
+nextest runs one eight-worker sweep at a time. These timings measure the
+combined fixture and capacity change, not an isolated product speedup.
+The same 865 admitted cases and 189 refused schedules remain. The baseline
+wall observations include process startup and have about one-second resolution.
+
+Mean seconds per admitted case, before / after:
+
+| Sweep | Prepare | Open | Inject | Recover | Compare | Continue/reopen |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| First commit | 0.567 / 0.291 | 0.281 / 0.120 | 0.214 / 0.110 | 0.461 / 0.153 | 0.0021 / 0.0013 | 8.510 / 3.006 |
+| First fork commit | 2.235 / 1.027 | 0.365 / 0.147 | 0.220 / 0.137 | 0.481 / 0.211 | 0.0037 / 0.0030 | 6.561 / 2.283 |
+| Schema transition | 3.869 / 1.432 | 0.424 / 0.170 | 0.210 / 0.082 | 1.051 / 0.380 | 0.0056 / 0.0045 | 4.533 / 1.580 |
+| Checkpoint replacement | 2.434 / 1.257 | 0.326 / 0.197 | 0.277 / 0.163 | 0.363 / 0.205 | 0.0035 / 0.0031 | 3.732 / 1.943 |
+
+Checkpoint work is 337 * 3.77 / 8 = 159 seconds plus setup/teardown,
+matching 164.81 observed. Each commit matrix is 176 * about 3.8 / 8 = 84
+seconds plus setup/teardown. The ordinary 600-second CI budget leaves at
+least 72.5% unused in this measured run; no home timeout exception is needed.
+Phase profiling was temporary and is removed from both source and rebuilt
+CI executables.
+
 The weekly `Store certificate roster scale` workflow runs the explicitly
 ignored `maximum_certificate_roster_checkpoints_recovers_and_rejoins` test.
 It ingests 64 chunks at the production minimum of 64 KiB each (4 MiB total).
