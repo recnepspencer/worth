@@ -52,7 +52,7 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_fourteen_artifact_contract_frame_matches_the_frozen_vector() {
+fn version_sixteen_artifact_contract_frame_matches_the_frozen_vector() {
     let original =
         decode_hex(include_str!("artifact_contract_record/artifact_contract_v6.hex").trim());
     let denial =
@@ -92,13 +92,28 @@ fn version_fourteen_artifact_contract_frame_matches_the_frozen_vector() {
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
 
+    let retained =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v14.hex").trim());
+    let mut old_decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    let refusal = old_decoder.decode_frame(&retained).unwrap_err();
+    assert_eq!(
+        refusal.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(refusal.compatibility().unwrap().observed_version(), 14);
+    assert_eq!(
+        old_decoder.work(),
+        WorthQueryPackageArchiveDecodeWork::default()
+    );
+
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!("artifact_contract_record/artifact_contract_v14.hex").trim();
+    let golden = include_str!("artifact_contract_record/artifact_contract_v16.hex").trim();
     assert_eq!(encode_hex(&bytes), golden);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 14);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 16);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 7);
     assert_eq!(
         u32::from_be_bytes(bytes[4..8].try_into().unwrap()),

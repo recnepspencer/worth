@@ -3497,3 +3497,161 @@ record does not change the qualified implementation or SDK pin.
 
 Phase 3 is complete and integrated. Phases 4-6 remain unfinished; Phase 4 orbit
 relations and persistent aggregate identity are the next implementation target.
+## Phase 4 Slice 1 — stored orbit law
+
+### Boundary brief
+
+Phase 3 is accepted and integrated. The next unfinished requirement is the
+stored relation's permutation law. No orbit declaration, aggregate identity
+owner or orbit reader currently exists. This slice establishes the law through
+the existing declaration, portable record, installation and native commit path;
+it does not claim persistent identities or orbit reads.
+
+- Authoritative meaning enters as `ApplicationRelationIntegrity` and its owned
+  record. Completed typed declaration and fresh portable readmission share
+  `validate_relation_integrity`; both must reject an orbit whose declared source
+  and target kinds differ.
+- The const builder enables an explicit orbit law without changing independent
+  endpoint, cardinality or deletion policy. Its enabled meaning must participate
+  in schema identity and the existing canonical program manifest. Hand-authored
+  exactly-one cardinality alone cannot substitute for the orbit declaration.
+- Registry lowering already owns endpoint contracts and native physical
+  cardinality. Lower orbit to a same-kind endpoint contract and a separate
+  exactly-one source/target contract at CommitBoundary. Existing cardinality
+  remains conjunctive. Native minimum validation includes newly created and
+  isolated candidate entities, and native maximum validation counts physical
+  edges. No Query-side graph validator or application invariant is needed.
+- Native cardinality refusals already retain member, side, count and limit.
+  The borrowed Query law-denial view currently omits those fields; extend that
+  projection without recomputing a verdict or granting graph access.
+- The package record owns the complete integrity grammar. Preserve the orbit
+  bit through encoding/decoding and advance its exact record-frame version from
+  15 to 16 so old bytes cannot silently acquire new meaning. Fresh readmission
+  must reject hostile cross-kind records. Do not introduce a compatibility lane.
+- The real installed relation-law court can exercise valid cycles, open-chain
+  and duplicate proposals, atomic rewiring, and created isolated members via
+  its existing ordinary program and candidate writer. Reuse that court and its
+  actual committed graph readout; do not add a parallel fake validator.
+- Persistent identity, committed lineage, orbit readers and declared-query
+  shapes remain later Phase 4 slices. Law identity is the future owner's input,
+  not an application-owned aggregate registry. Phase 5 reuses that future owner.
+
+### Implementation plan
+
+Developer result: declare
+`ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit()`
+on a homogeneous relation. Bootstrap and subsequent commits require every live
+member to have exactly one predecessor and successor. A singleton is lawful
+only if the separately authored endpoint policy permits its self-edge.
+
+1. Add the const orbit builder, authored/owned flag, canonical enabled-law field
+   and completed-schema same-kind check. Keep all other authored policies.
+   Extend the existing declaration court to prove distinct removable law meaning
+   and cross-kind denial through the real declaration builder.
+2. Carry the flag through the existing package integrity grammar, bump record
+   version to 16, and add actual round-trip/readmission coverage, including
+   refusal of version 15 before decode work. Keep lawless record shortcuts.
+3. Lower one additional native `relation:orbit` cardinality contract with
+   source/target minima and maxima of one; preserve independent constraints and
+   existing endpoint permission. Defensively refuse inconsistent kind bindings
+   at lowering. Add only the original typed endpoint-cardinality refusal view
+   and its diagnostic enum re-export through the host facade.
+4. Extend the installed relation-law court with one orbit policy and focused
+   cases: lawful cycle/self-cycle and atomic split/merge rewiring; open chain,
+   excess physical successor/predecessor, and isolated creation refusal. Assert
+   the original named member/count and unchanged committed graph on refusal.
+   Cross-kind authoring/portable denial supplies the earliest honest kind guard;
+   native endpoint lowering remains the physical runtime guard.
+5. Update the capability index and existing relation-law guide for the completed
+   law only. No orbit-read, identity or lineage availability claim.
+
+Verification: format and cap the exact changed Rust set; run the declaration
+and package archive owner courts, focused lowerer tests, and installed orbit
+cases using one coordinated build identity and existing target caches. Run the
+required normal boundary-check and agent-context checks once after edits, plus
+whitespace and scoped function scrutiny. Expand only for observed failures or
+an actual shared-boundary concern. Do not build the private workspace for this
+public-only slice. Persistent reviewer gates use qa-loop, qa-tests and
+code-quality-qa before committing the slice. Default integration waits until
+all of Phase 4 is accepted.
+
+Reviewer boundary clearance: retain every live member in lawful seed truth,
+name the original native cardinality member, and prove a stricter independent
+endpoint policy remains conjunctive. The existing create command cannot splice
+a new member into an already full orbit. Extend its ordinary fixture input with
+an explicit `self_cycle` option (input/handler identities v3), keeping all prior
+commands false. This supplies a lawful singleton-creation twin without fixture
+law evaluation. Existing compatibility courts also exercise orbit program
+revision, unbound installation and checkpoint meaning. Split/merge mutations
+here prove only the permutation law; identity and lineage remain open.
+
+### Record-boundary verification refinement
+
+The reviewer found that the operation-contract unit golden still names frame15
+as current, while several integration positives still name frame14. The shared
+exact-current record boundary makes those fixtures causal to the version16
+change. Preserve every historical14/15 vector, add independently transformed
+current16 positives, and exercise the existing `archive_protocol` artifact once
+alongside the full archive owner. For payload-unchanged families, change only
+the two-byte record header. Walk explicit frame lengths for the minimal archive;
+replace its embedded bytes and recompute SHA256 of the archive for the envelope.
+Outer archive2, envelope1, manifest and operation-body profiles remain unchanged.
+Freeze the resulting literals and compare them to the ordinary production
+encoder and fresh reconstruction courts. This is a documented derivation, not
+a historical capture or an encoder-generated oracle. Add one real unlawful
+bootstrap and lawful twin through the existing installation-result court.
+Wait for active compilation to terminate before changing any Rust test source;
+retain the first run's actual outcome and reuse unaffected owner artifacts.
+
+### Slice 1 qualification
+
+The coordinated owner build passed in 577.16s. The existing declaration
+integrity court passed 10/10 and native lowering court passed 9/9. The first
+archive owner execution passed 123 cases and failed its one stale current15
+golden assertion; that failed run is retained as evidence. After the bounded
+fixture repair, the archive-only build passed in 13.84s, the entire archive
+owner passed 124/124, and `archive_protocol` passed 78/78. All nine independent
+current16 vector derivations matched ordinary encoding; five historical files
+and four historical inline literals remain unchanged. Operation-body profiles
+were not changed.
+
+Normal boundary-check passed in 545.92s and agent-context in 0.63s. The reviewer
+explicitly carries these gates across the subsequent fixture/data/prose-only
+changes: production code, facade authority, module registration and dependency
+topology are unchanged. The current scoped formatting, line caps, function
+scrutiny and whitespace checks pass on 30 Rust files, all within 400 lines.
+Function scrutiny has no scan errors and seven advisory candidates: declarative
+lowering, bootstrap installation, original-field projection and four extended
+archive vector courts. Compilation reports two inherited warnings in untouched
+structural-walk observation visibility/test accessors; this slice does not edit
+those owners.
+
+The installed artifact compiled successfully in 444.48s. Its first relation-law
+run passed 34/35 in 27.66s; the isolated-created case failed an unsupported raw
+key display assertion. Native admission normalizes the created key before the
+prepared cardinality scope, and the original typed `CreatedEntityRef` correctly
+retains that key. `canonical_text()` explicitly renders a symbol as `symbol:N`;
+only resolution through its owning interner promises the original spelling.
+Connectivity's post-apply created-binding recovery is a separate contract.
+The reviewer cleared removing that text equality while retaining the original
+typed Created witness, contract/count/limit, independent NodeKey absence read, atomicity and
+same-key lawful self-cycle creation. No production change or interner access
+door is needed. The certification-only rebuild passed in 148.04s, and the
+corrected court passed 1/1 in 1.26s. The other 34 cases and existing gates carry
+across this assertion-only repair with explicit reviewer clearance. This is
+34 original passes plus one corrected pass, not a green single full invocation;
+the failed original run remains recorded. All seven function advisories are
+accepted as cohesive registration, projection and complete vector courts.
+
+The final proof checks 256 distinct passing cases across these courts, current
+source fingerprints, historical byte preservation and all scoped/static gates.
+All builds use one coordinated build identity and the existing target cache.
+Both original worktree heads, branches and dirty-status hashes still match the
+Phase 3 preservation record.
+
+The persistent reviewer cleared this 39-file slice under qa-loop, qa-tests and
+code-quality-qa for commit and ordinary topic-branch publication. No additional
+build or suite is required by the accepted evidence and carry boundaries.
+
+Persistent identity, lineage, orbit readers, declared orbit shapes and consumer
+cutovers remain unfinished Phase 4 work. No Phase 4 default integration is due.

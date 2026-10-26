@@ -25,6 +25,7 @@ impl ApplicationRelationIntegrityRecord {
         [
             self.acyclic.then_some(("acyclic", 1)),
             self.symmetric.then_some(("symmetric", 1)),
+            self.orbit.then_some(("orbit", 1)),
             self.unique.map(|scope| ("unique", scope.canonical_value())),
             self.same_partition_endpoints
                 .then_some(("same_partition_endpoints", 1)),

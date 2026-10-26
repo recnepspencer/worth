@@ -39,3 +39,6 @@ mod minimum_nodes;
 
 #[path = "relation_laws/minimum_oracle.rs"]
 mod minimum_oracle;
+
+#[path = "relation_laws/orbit.rs"]
+mod orbit;

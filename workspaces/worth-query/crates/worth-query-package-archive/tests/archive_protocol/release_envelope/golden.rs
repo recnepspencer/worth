@@ -7,7 +7,8 @@ const RECORD_NINE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_
 const RECORD_TEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v10.hex");
 const RECORD_TWELVE_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v12.hex");
 const RECORD_THIRTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v13.hex");
-const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v14.hex");
+const RECORD_FOURTEEN_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v14.hex");
+const CURRENT_ENVELOPE_HEX: &str = include_str!("release_envelope_v1_record_v16.hex");
 
 pub(super) fn assert_current_envelope_and_unsupported_records() {
     for (version, vector) in [
@@ -17,6 +18,7 @@ pub(super) fn assert_current_envelope_and_unsupported_records() {
         (10_u16, RECORD_TEN_ENVELOPE_HEX),
         (12_u16, RECORD_TWELVE_ENVELOPE_HEX),
         (13_u16, RECORD_THIRTEEN_ENVELOPE_HEX),
+        (14_u16, RECORD_FOURTEEN_ENVELOPE_HEX),
     ] {
         let original = decode_hex(vector.trim());
         // A valid outer envelope/checksum does not admit an unsupported inner record.
@@ -57,7 +59,7 @@ pub(super) fn assert_current_envelope_and_unsupported_records() {
     );
     assert_eq!(
         u16::from_be_bytes(decoded.archive()[118..120].try_into().unwrap()),
-        14
+        16
     );
     let archive =
         decode_package_archive(decoded.archive(), WorthQueryPackageArchiveLimits::DEFAULT).unwrap();

@@ -37,6 +37,11 @@ Use `.same_partition_endpoints()` to declare endpoint partition isolation, and
 entity reference with `.name()`, or use its declared name directly. The completed
 schema rejects zero minima, empty kind sets and unknown entity names.
 
+Use `.orbit()` on a stored homogeneous relation to require exactly one
+successor and one predecessor for every live member of that kind. The completed
+schema rejects different source and target kinds. The law remains conjunctive
+with the relation's endpoint, cardinality and deletion policies.
+
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
 `WorthQueryRelationLawDenial`. Bootstrap publication refusals expose the same
@@ -91,6 +96,26 @@ kind or changing the minimum does.
 Law meaning participates in canonical schema and program identity. Changing
 the law is a schema/program change; reusing the same names does not authorize
 an installed application to acquire different meaning on restore.
+
+An orbit is a permutation, so initial publication must include every member's
+successor and predecessor. An isolated new member refuses; creating it with a
+self-edge is lawful when the independently declared endpoint policy allows
+self-edges. Duplicate physical edges violate the exactly-one constraint even
+when they connect the same pair. Rewire all affected successors in one mutation
+to split or merge cycles. These changes preserve the permutation law.
+
+The stored orbit law is available now. Orbit reads, persistent aggregate
+identity and lineage are the remaining work in milestone 9.18.1 Phase 4.
+The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
+exercises native refusals and atomic lawful mutations through the ordinary
+authenticated program.
+
+An orbit's cardinality refusal exposes
+`WorthQueryRelationLawDenial::Cardinality` with the original `member`,
+`boundary`, `count`, `limit` and `contract_id` (`relation:orbit`).
+`RelationCardinalityBoundary` is available through the host's
+`application_invariants` facade. Another independent policy may refuse first
+and retains its original cause, such as `SelfEdge` for a forbidden singleton.
 
 ## How It Executes
 
