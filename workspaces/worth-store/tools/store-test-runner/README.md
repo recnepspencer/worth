@@ -79,17 +79,19 @@ Schedules that reject a directive are now admitted before building that home.
 The final reopen declares the completed script's known schema, avoiding an
 unnecessary old-schema recovery/refusal.
 
-All four sweeps retain the ordinary 300-second/default and 600-second/CI
-guards. Checkpoint replacement measured 337 admitted cases (two seeds), versus
-176 for each commit matrix. Each seed discovers its actual media-operation
-count, and each sweep prints its counts and elapsed time. The loaded optimized
-checkpoint sweep passed in 164.81 seconds; its normal CI guard left 72.5%
-unused. No cuts, continuation steps or oracle checks are removed.
+The three 176-case commit matrices retain the ordinary 300-second/default and
+600-second/CI guards. Checkpoint replacement has 337 admitted cases (two
+seeds), so its allowance scales by 337/176: 574 seconds locally and 1,149 in
+CI, rounded to 600 and 1,200 seconds. Each seed discovers its actual
+media-operation count, and each sweep prints its counts and elapsed time.
+The budget funds the same per-cut workload allowance, rather than assuming
+that the fastest focused measurement predicts a full lane under build load.
+No cuts, continuation steps or oracle checks are removed.
 Measurements use Windows 11, Rust 1.94.0 and unoptimized `ci-test` on a
 32-logical-processor, 128-GiB host during continuous boundary-check rebuilds
 with `CARGO_BUILD_JOBS=8`.
 
-| Sweep | Admitted cases | Before wall seconds (approx.) | After seconds |
+| Sweep | Admitted cases | Before wall seconds (approx.) | Initial focused after seconds |
 | --- | ---: | ---: | ---: |
 | First commit | 176 | 316.3 | 83.92 |
 | First fork commit | 176 | 325.4 | 87.97 |
@@ -111,12 +113,35 @@ Mean seconds per admitted case, before / after:
 | Schema transition | 3.869 / 1.432 | 0.424 / 0.170 | 0.210 / 0.082 | 1.051 / 0.380 | 0.0056 / 0.0045 | 4.533 / 1.580 |
 | Checkpoint replacement | 2.434 / 1.257 | 0.326 / 0.197 | 0.277 / 0.163 | 0.363 / 0.205 | 0.0035 / 0.0031 | 3.732 / 1.943 |
 
-Checkpoint work is 337 * 3.77 / 8 = 159 seconds plus setup/teardown,
-matching 164.81 observed. Each commit matrix is 176 * about 3.8 / 8 = 84
-seconds plus setup/teardown. The ordinary 600-second CI budget leaves at
-least 72.5% unused in this measured run; no home timeout exception is needed.
-Phase profiling was temporary and is removed from both source and rebuilt
-CI executables.
+Checkpoint work in that focused run was 337 * 3.77 / 8 = 159 seconds plus
+setup/teardown, matching 164.81 observed. Each commit matrix was 176 * about
+3.8 / 8 = 84 seconds plus setup/teardown. That measurement did not establish
+a uniform full-lane cost: a later complete scenario run passed 936 tests but
+timed out checkpoint replacement at 600.35 seconds. This was a budget failure,
+not a symlink failure or a green scenario run.
+
+A second diagnostic kept the scenario runner's Cargo targets, features and
+profile during continuous builds. It passed all four sweeps, with the same
+865 admitted cuts. These mean seconds per case expose the changing cost of
+preparation and continuation; comparison remains milliseconds:
+
+| Sweep | Prepare | Open | Inject | Recover | Compare | Continue/reopen | Sweep seconds |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| First commit | 0.118 | 0.085 | 0.050 | 0.161 | 0.0012 | 1.726 | 49.05 |
+| First fork commit | 0.578 | 0.145 | 0.072 | 0.163 | 0.0025 | 1.517 | 57.55 |
+| Schema transition | 5.344 | 0.558 | 0.300 | 1.371 | 0.0036 | 5.735 | 305.95 |
+| Checkpoint replacement | 0.702 | 0.170 | 0.112 | 0.167 | 0.0028 | 0.987 | 94.84 |
+
+For example, the loaded schema matrix cost 176 * 13.31 / 8 = 293 seconds
+plus setup/teardown, against 305.95 observed. The checkpoint matrix cost
+337 * 2.14 / 8 = 90 seconds plus setup/teardown, against 94.84 observed.
+The shared host's build and I/O load varies during a lane; the checkpoint
+guard therefore uses its case count relative to the commit matrices, rather
+than this faster diagnostic alone. Each case still creates its own real home,
+executes the nine-commit script around one fault, recovers, finishes the script,
+reopens and verifies all history, branch states and fresh identities.
+Phase profiling is temporary; remove it and invalidate the compiled package
+before qualifying complete CI runs, then check the executed artifact for residue.
 
 The weekly `Store certificate roster scale` workflow runs the explicitly
 ignored `maximum_certificate_roster_checkpoints_recovers_and_rejoins` test.

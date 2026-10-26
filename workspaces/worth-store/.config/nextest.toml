@@ -47,12 +47,26 @@ threads-required = "num-test-threads"
 slow-timeout = { period = "60s", terminate-after = 30 }
 
 # Each home sweep owns eight independent case workers. Reserve all eight slots
-# so the four sweeps cannot multiply their pools. All four retain the normal
-# 300 s/default and 600 s/CI guards. Checkpoint replacement measured 164.8 s
-# under continuous builds for 337 admitted cases. See the runner README.
+# so the four sweeps cannot multiply their pools. The 176-case commit matrices
+# retain the normal 300 s/default and 600 s/CI guards. See the runner README
+# for phase costs and the larger checkpoint matrix's proportional allowance.
 [[profile.default.overrides]]
 filter = 'binary_id(=worth-store-relational::relational_home) & test(media_sweep::)'
 threads-required = "num-test-threads"
+
+# Checkpoint replacement has 337 admitted cuts versus 176 per commit matrix.
+# Keep the same per-cut allowance: 300 * 337 / 176 = 574 s locally and
+# 600 * 337 / 176 = 1,149 s in CI, rounded to whole minutes below. A full
+# loaded scenario exhausted the old 600 s guard; a focused loaded diagnostic
+# finished in 94.84 s. The runner README records the phase measurements and
+# their load context; neither measurement removes any cut or oracle assertion.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+slow-timeout = { period = "60s", terminate-after = 10 }
+
+[[profile.ci.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+slow-timeout = { period = "60s", terminate-after = 20 }
 
 # Scheduled maximum-roster proof: 64 chunks, 63 partial drops, one checkpoint,
 # one C8 recovery and a Serving rejoin/checkpoint (not an ordinary scenario).
