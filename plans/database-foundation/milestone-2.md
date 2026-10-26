@@ -268,12 +268,18 @@ not rewritten, while their content is unchanged.
   member is verified against its leaf when it loads.
   Leaves also carry separate head and history adjacency-kind commitments,
   captured from the admitted region projection and folded into the region
-  Merkle commitment checked against the canonical root descriptor. Admission
-  reconstructs current buckets from authenticated current adjacency and relation
-  metadata, and historical buckets from the authenticated history projection.
-  Locally owned relation claims are checked against the region's record history;
-  peer relation claims are bound by that canonical root commitment. Neither
-  verification requires loading a peer region. Supplied cache buckets must agree
+  Merkle commitment checked against the root descriptor in the manifest's commit
+  index. Admission reconstructs current buckets from authenticated current
+  adjacency and relation metadata, and historical buckets from the authenticated
+  history projection. Locally owned relation claims are checked against the
+  region's record history; peer relation claims are bound by that root
+  commitment. Neither verification requires loading a peer region.
+  The anchor is the manifest itself, protected by Store's record checksum and
+  each member's SHA-256 locator. That defends against the adversarial constraint
+  above, which is crashes and media faults. It does not resist a deliberately
+  forged manifest, because no journaled canonical artifact records the truth
+  root. Binding truth roots into the canonical journal is not in scope for this
+  milestone. Supplied cache buckets must agree
   with the reconstruction. Leaves
   naming the same member pair must agree on every fact, including counts and
   content and kind commitments; an inconsistent manifest is corrupt.
