@@ -24,6 +24,7 @@ pub(super) fn expand(
             crate::history::data::PositionedCanonicalCommit,
         >,
     >,
+    history_members: Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
     let mut envelopes = Vec::new();
     for entry in &manifest.commits {
@@ -109,6 +110,7 @@ pub(super) fn expand(
             &schemas,
             &symbols,
             &source,
+            &history_members,
         )?;
         root_kind_images.insert(root.commit_id, kinds);
         let partition_image_digest = branch_root_partition_image_digest(&partition_images)
@@ -136,6 +138,7 @@ pub(super) fn expand(
             &schemas,
             &symbols,
             &source,
+            &history_members,
         )?
     } else if manifest.mirror.is_empty() {
         (Vec::new(), Default::default())
@@ -211,6 +214,7 @@ fn expand_regions(
     schemas: &BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     source: &Arc<dyn RelationalDurableColdSource>,
+    history_members: &Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<
     (
         Vec<PartitionCheckpointImage>,
@@ -233,6 +237,7 @@ fn expand_regions(
                 partition_id: leaf.partition_id,
                 head: leaf.head,
                 history: leaf.history,
+                history_members: history_members.clone(),
                 schema: schema.clone(),
                 schema_carrier_digest: schema_digest,
                 symbols: symbols.clone(),

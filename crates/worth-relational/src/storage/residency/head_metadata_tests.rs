@@ -25,12 +25,12 @@ fn head_contains_current_metadata_and_history_contains_only_earlier_versions() {
     .unwrap();
     let history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
     assert_eq!(
-        history.entities[0].len() + head_rows.len(),
+        history.entities[0].earlier.len() + head_rows.len(),
         fixture.expected_history
     );
-    assert!(history.entities[0].last().unwrap().effective_at < head_rows[0].effective_at);
+    assert!(history.entities[0].earlier.last().unwrap().effective_at < head_rows[0].effective_at);
     assert!(
-        !history.relations[0].is_empty(),
+        !history.relations[0].earlier.is_empty(),
         "fixture has real earlier endpoint versions"
     );
     assert_eq!(
@@ -133,6 +133,7 @@ enum Tamper {
     MissingCurrent,
     ChangedCurrent,
     ExtraFrontier,
+    ExtraMetadataRow,
 }
 
 #[test]
@@ -141,6 +142,7 @@ fn malformed_current_metadata_and_frontier_coverage_are_sticky_typed_refusals() 
         Tamper::MissingCurrent,
         Tamper::ChangedCurrent,
         Tamper::ExtraFrontier,
+        Tamper::ExtraMetadataRow,
     ] {
         let fixture = region_with_history();
         let mut head = decode_head(&fixture);
@@ -156,6 +158,12 @@ fn malformed_current_metadata_and_frontier_coverage_are_sticky_typed_refusals() 
                 extra[0] = serde_json::Value::from(u64::MAX - 1);
                 entries.push(extra);
                 head.history_frontiers = serde_json::from_value(wire).unwrap();
+            }
+            Tamper::ExtraMetadataRow => {
+                head.partition
+                    .entity_arena
+                    .metadata_history
+                    .push(head.partition.entity_arena.metadata_history[0].clone());
             }
         }
         let (cell, source) = cell_with_head(fixture, head);

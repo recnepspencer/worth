@@ -24,6 +24,7 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) roots: Vec<RelationalCheckpointRoot>,
     pub(crate) mirror_schema: Option<[u8; 32]>,
     pub(crate) mirror: Vec<RelationalCheckpointRegion>,
+    pub(crate) history_dependencies: Vec<RelationalCheckpointHistoryDependency>,
     pub(crate) commits: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) symbols: Vec<RelationalCheckpointPage>,
     pub(crate) symbol_identity_frontier: u32,
@@ -31,6 +32,25 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) lineage: Vec<RelationalCheckpointPage>,
     pub(crate) lineage_basis: crate::lineage::data::LineageCheckpointDigestBasis,
     pub(crate) derived_indexes: RelationalDurableMemberLocator,
+}
+
+impl RelationalCheckpointManifest {
+    pub(crate) fn readmit_history_members(
+        &self,
+    ) -> Result<
+        std::sync::Arc<RelationalHistoryMemberDirectory>,
+        crate::storage::data::RelationalStorageUnavailableCause,
+    > {
+        RelationalHistoryMemberDirectory::readmit(
+            &self.history_dependencies,
+            self.roots
+                .iter()
+                .flat_map(|root| &root.regions)
+                .chain(&self.mirror)
+                .map(|leaf| leaf.history),
+        )
+        .map(std::sync::Arc::new)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

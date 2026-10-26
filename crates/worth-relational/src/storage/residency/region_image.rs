@@ -10,8 +10,8 @@ use crate::identity::data::{KindId, PartitionId, RelationId};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::PartitionHistoryFrontiers;
 
-const MAGIC: &[u8] = b"WORTH-REL-REG5\n";
-const VERSION: u16 = 5;
+const MAGIC: &[u8] = b"WORTH-REL-REG6\n";
+const VERSION: u16 = 6;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum RelationalRegionImageKind {
@@ -40,8 +40,38 @@ pub(crate) struct RegionHistoryImage {
     pub(crate) kind_projection: Vec<crate::storage::partition::RegionRelationProjection>,
     pub(crate) adjacency_kinds: Vec<RegionAdjacencyKinds>,
     pub(crate) reverse_adjacency_kinds: Vec<RegionAdjacencyKinds>,
-    pub(crate) entities: Vec<Vec<VersionedEntityMetadataImage>>,
-    pub(crate) relations: Vec<Vec<VersionedRelationMetadataImage>>,
+    pub(crate) entities: Vec<RegionHistoryRow<VersionedEntityMetadataImage>>,
+    pub(crate) relations: Vec<RegionHistoryRow<VersionedRelationMetadataImage>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct RegionHistoryBase {
+    pub(super) member: RelationalDurableMemberLocator,
+    pub(super) partition_id: PartitionId,
+    pub(super) schema_carrier_digest: [u8; 32],
+    pub(super) row_index: u64,
+    pub(super) kind_commitment: [u8; 32],
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(super) struct RegionHistoryRow<T> {
+    pub(super) prefix: Option<RegionHistoryBase>,
+    pub(super) earlier: Vec<T>,
+}
+
+impl RegionHistoryImage {
+    pub(super) fn direct_bases(&self) -> Vec<RelationalDurableMemberLocator> {
+        self.entities
+            .iter()
+            .filter_map(|row| row.prefix.as_ref())
+            .chain(self.relations.iter().filter_map(|row| row.prefix.as_ref()))
+            .map(|base| base.member)
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

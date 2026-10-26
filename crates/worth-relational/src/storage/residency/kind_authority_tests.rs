@@ -59,8 +59,8 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     )
     .unwrap();
     let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert!(!history.relations[0].is_empty());
-    history.relations[0].clear();
+    assert!(!history.relations[0].earlier.is_empty());
+    history.relations[0].earlier.clear();
     let member = RelationalRegionImage::encode(
         cold.partition_id,
         cold.schema_carrier_digest,

@@ -14,7 +14,7 @@ impl RelationalRegionResidency {
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         self.check_damage()?;
         match &*state {
-            ResidencyState::Full(region) => {
+            ResidencyState::Head { region } | ResidencyState::Full(region) => {
                 self.leases
                     .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
                         count.checked_add(1)

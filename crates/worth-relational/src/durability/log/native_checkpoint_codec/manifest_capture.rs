@@ -20,6 +20,7 @@ pub(crate) struct CapturedManifest {
     pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+    pub(crate) history_members: Arc<RelationalHistoryMemberDirectory>,
 }
 
 impl CapturedManifest {
@@ -151,6 +152,7 @@ impl CapturedManifest {
                 roots: Vec::new(),
                 mirror_schema: checkpoint.mirror_schema_digest,
                 mirror: Vec::new(),
+                history_dependencies: Vec::new(),
                 commits,
                 symbols: symbol_pages,
                 symbol_identity_frontier: checkpoint.symbol_identity_frontier,
@@ -163,6 +165,7 @@ impl CapturedManifest {
             envelopes,
             publications: Vec::new(),
             cold_source: None,
+            history_members: Arc::default(),
         })
     }
     #[cfg(test)]

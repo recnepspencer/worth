@@ -159,21 +159,23 @@ fn a_prefix_carries_its_authenticated_slot_opening_and_accounts_for_its_owner() 
 }
 
 #[test]
-fn flat_capture_refuses_a_cold_prefix_and_full_admission_replaces_it_with_complete_rows() {
+fn capture_preserves_a_cold_basis_and_full_admission_replaces_it_with_complete_rows() {
     let fixture = region_with_history();
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let head = region_load::load_head(&fixture.cold, execution, 1 << 24).unwrap();
     let symbols = fixture.cold.symbols.interner_snapshot();
-    assert!(matches!(
-        capture_region_members(
-            &head.partition,
-            head.commitment.as_ref().unwrap(),
-            &fixture.cold.schema,
-            fixture.cold.schema_carrier_digest,
-        ),
-        Err(Cause::SourceUnavailable)
-    ));
+    let layered = capture_region_members(
+        &head.partition,
+        head.commitment.as_ref().unwrap(),
+        &fixture.cold.schema,
+        fixture.cold.schema_carrier_digest,
+    )
+    .unwrap();
+    assert!(layered
+        .history_members
+        .members(layered.history.0)
+        .contains(&fixture.cold.history));
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
     let full = region_load::load_full(&fixture.cold, &head, execution, 1 << 24).unwrap();
     assert!(full

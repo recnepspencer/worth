@@ -25,6 +25,7 @@ pub(crate) struct RelationalColdRegion {
     pub(crate) partition_id: PartitionId,
     pub(crate) head: RelationalDurableMemberLocator,
     pub(crate) history: RelationalDurableMemberLocator,
+    pub(crate) history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
     pub(crate) schema: Arc<RelationalBranchRootSchemaAuthority>,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) symbols: crate::runtime::RuntimeSymbolTable,
@@ -57,9 +58,8 @@ enum ResidencyState {
 #[derive(Debug)]
 pub(crate) struct RelationalRegionResidency {
     pub(super) partition_id: PartitionId,
-    pub(super) checkpoint_bindings: Mutex<
-        std::collections::BTreeMap<[u8; 32], crate::durability::data::RelationalCheckpointRegion>,
-    >,
+    pub(super) checkpoint_bindings:
+        Mutex<std::collections::BTreeMap<[u8; 32], super::RecordedRegionCheckpoint>>,
     state: Mutex<ResidencyState>,
     damage: OnceLock<RelationalStorageUnavailable>,
     backing: Option<RelationalColdRegion>,
@@ -73,9 +73,11 @@ impl RelationalRegionResidency {
     pub(crate) fn cold(
         cold: RelationalColdRegion,
     ) -> Result<Arc<Self>, RelationalStorageUnavailable> {
+        let mut members = cold.history_members.members(cold.history);
+        members.insert(cold.head);
         let custody = cold
             .source
-            .retain_members(&[cold.head, cold.history])
+            .retain_members(&members.into_iter().collect::<Vec<_>>())
             .map_err(|cause| RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Region(cold.partition_id),
                 cause,
@@ -84,15 +86,18 @@ impl RelationalRegionResidency {
             partition_id: cold.partition_id,
             checkpoint_bindings: Mutex::new(std::collections::BTreeMap::from([(
                 cold.schema_carrier_digest,
-                crate::durability::data::RelationalCheckpointRegion {
-                    kind_authority: cold.kind_authority,
-                    partition_id: cold.partition_id,
-                    content_digest: cold.content_digest,
-                    entity_slots: cold.entity_slots,
-                    relation_slots: cold.relation_slots,
-                    unavailable_records: cold.unavailable_records,
-                    head: cold.head,
-                    history: cold.history,
+                super::RecordedRegionCheckpoint {
+                    history_members: cold.history_members.clone(),
+                    leaf: crate::durability::data::RelationalCheckpointRegion {
+                        kind_authority: cold.kind_authority,
+                        partition_id: cold.partition_id,
+                        content_digest: cold.content_digest,
+                        entity_slots: cold.entity_slots,
+                        relation_slots: cold.relation_slots,
+                        unavailable_records: cold.unavailable_records,
+                        head: cold.head,
+                        history: cold.history,
+                    },
                 },
             )])),
             backing: Some(cold),

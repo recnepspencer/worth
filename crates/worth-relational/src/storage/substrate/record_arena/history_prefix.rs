@@ -11,6 +11,7 @@ pub(crate) struct RecordHistoryPrefix {
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
     pub(crate) _placement_custody: crate::durability::medium::RelationalDurableMemberCustody,
     pub(crate) member: RelationalDurableMemberLocator,
+    pub(crate) history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
     pub(crate) partition_id: PartitionId,
     pub(crate) schema_carrier_digest: [u8; 32],
     pub(crate) row_index: usize,

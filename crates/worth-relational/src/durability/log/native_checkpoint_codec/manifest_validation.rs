@@ -9,9 +9,16 @@ use worth_foundational::FoundationalBranchTarget;
 #[path = "manifest_integrity_tests.rs"]
 mod tests;
 
+#[derive(Debug)]
+pub(super) struct ManifestDirectoryFacts {
+    pub(super) heads: BTreeSet<CommitId>,
+    pub(super) history_members:
+        std::sync::Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
+}
+
 pub(super) fn validate(
     manifest: &RelationalCheckpointManifest,
-) -> Result<BTreeSet<CommitId>, DurabilityError> {
+) -> Result<ManifestDirectoryFacts, DurabilityError> {
     let mut commits = BTreeSet::new();
     for (ordinal, entry) in manifest.commits.iter().enumerate() {
         if entry.position.0 != ordinal as u64 + 1
@@ -99,7 +106,13 @@ pub(super) fn validate(
         ));
     }
     validate_pages(&manifest.lineage)?;
-    Ok(heads)
+    let history_members = manifest
+        .readmit_history_members()
+        .map_err(|cause| corrupt(format!("history member dependencies: {cause:?}")))?;
+    Ok(ManifestDirectoryFacts {
+        heads,
+        history_members,
+    })
 }
 
 fn validate_shared_leaves(manifest: &RelationalCheckpointManifest) -> Result<(), DurabilityError> {

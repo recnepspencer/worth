@@ -1094,6 +1094,21 @@ Head observations promoted after later checkpoints. Head preparation stays
 disabled until the layered writer, bounded Full reader and publication custody
 are integrated together.
 
+The dependency directory lives as immutable member facts under durability data,
+exported through that facade. One constructor checks canonical order, reachability
+and cycles. Manifest admission carries that checked directory with its selected
+heads, eliminating the prior repeated manifest validation in cold recovery.
+Cells and prefixes share the directory and retain their closure through the
+existing custody port. CHK10 adds the directory; the layered row format will
+require REG6. Checkpoint selection and each recorded region leaf must carry the
+same directory facts used by publication.
+
+D9's requirement that writes append at Head deliberately retires the former
+flat-capture refusal claim once layered encoding is installed. Its existing
+court will become a no-load layered-capture/base-custody court and keep its
+independent Full-promotion and flat-recapture checks; no test is deleted or
+ignored. The Full verifier will continue to require complete reconstructed rows.
+
 The new cached-guard court exposed a product defect: after a valid Head was
 cached, a Full demand could prove its named History member missing, but a fresh
 Head guard returned success from the cached lease. The full lib run confirmed
@@ -1114,3 +1129,33 @@ tests (three unchanged ignored); its compile-time courts also compiled the REG5
 sources. Fresh contracts, World and the home oracle remain required for this
 format cut. Boundary and context passed before the cached-guard correction; the
 post-correction run is in progress. No outer preparation demand has changed.
+
+The post-correction boundary and context runs both passed. Fresh contracts pass
+203 tests (three unchanged ignored), and Store lib passes five. World completed
+its ordinary cases but its UI lane saw an overly wide private re-export from
+the in-progress directory edit (`RecordedRegionCheckpoint`, E0365); the private
+import fixes that product visibility error. Its fixtures and expected errors
+remain unchanged, and World must be rerun after native verification stabilizes.
+The sequential runner stopped there, so that run did not start the home oracle.
+
+CHK10/REG6 now encode per-row bases and resident earlier suffixes. Base references
+also carry their original authenticated historical-kind digest, so each ancestor
+projection is checked without loading its old Head. Supplied historical caches
+are checked against that projection before their rows enter the fold. Four-layer
+capture/reopen, Head append versus independent Full rows, acknowledgement/carry,
+ancestor corruption and aggregate-input refusal courts pass in the 45-test
+residency filter. The full lib run also includes iterative directory admission,
+undeclared-reference refusal and expanded-output bounds. Resident Head mutation
+and candidate publication custody are still not integrated; preparation remains
+Full and this format work is not phase-2 completion.
+
+The completed CHK10/REG6 owner run passes 1,942 library tests (31 existing
+ignored), including the directory and expansion courts; the focused residency
+run passes 47. All three CI clippy commands, formatting, dirty line caps and
+whitespace pass. The first expansion fixture was too small to amplify beyond
+its reference descriptors; producer-authored history now establishes the
+amplification precondition independently and the refusal assertion is unchanged.
+The test file exceeded 400 lines after extending its producer fixture; moving
+that fixture into its named region-fixture module restores the cap without
+removing tests. Fresh contracts, World, Store and home lanes are running serially;
+no completion claim is made for their pending results.

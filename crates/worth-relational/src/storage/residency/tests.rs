@@ -1,12 +1,10 @@
 use super::*;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
-use crate::history::data::BranchId;
 use crate::identity::data::KindId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause};
 use crate::storage::overlay::PartitionContentCommitment;
 use crate::tests::support::*;
-use crate::transactions::data::{MutationIntent, WorkerIntentBatch};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -17,8 +15,12 @@ mod cross_region_forgery;
 mod head_history_kind_tests;
 #[path = "head_metadata_tests.rs"]
 mod head_metadata_tests;
+#[path = "history_fold_refusals.rs"]
+mod history_fold_refusals;
 #[path = "history_prefix_tests.rs"]
 mod history_prefix_tests;
+#[path = "layered_history_tests.rs"]
+mod layered_history_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
 #[path = "member_custody_tests.rs"]
@@ -28,150 +30,9 @@ mod mixed_history_tests;
 #[path = "projection_corruption_tests.rs"]
 mod projection_corruption;
 
-#[derive(Debug)]
-struct CountedSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
-    reads: AtomicUsize,
-    history_reads: AtomicUsize,
-    history: RelationalDurableMemberLocator,
-    corrupt: AtomicBool,
-}
-
-impl RelationalDurableColdSource for CountedSource {
-    fn retain_members(
-        &self,
-        _members: &[RelationalDurableMemberLocator],
-    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
-        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
-    }
-
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        self.reads.fetch_add(1, Ordering::SeqCst);
-        if locator == self.history {
-            self.history_reads.fetch_add(1, Ordering::SeqCst);
-        }
-        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        let mut bytes = bytes.clone();
-        if self.corrupt.load(Ordering::SeqCst) {
-            bytes[0] ^= 1;
-        }
-        Ok(bytes)
-    }
-    fn read_commit(&self, _: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {
-        Err(Cause::SourceUnavailable)
-    }
-}
-
-struct RegionFixture {
-    cell: Arc<RelationalRegionResidency>,
-    cold: RelationalColdRegion,
-    source: Arc<CountedSource>,
-    entity: crate::identity::data::EntityId,
-    relation: crate::identity::data::RelationId,
-    expected_digest: [u8; 32],
-    expected_history: usize,
-}
-
-fn region_with_history() -> RegionFixture {
-    let request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "cold-first");
-    for label in ["cold-second", "cold-third", "cold-fourth"] {
-        update_entity_and_release_snapshot(execution, &runtime, entity, label);
-    }
-    let target = create_entity(execution, &runtime, "cold-target");
-    let relation_commit = create_relation_outcome(execution, &runtime, entity, target, "cold-edge");
-    let relation = changed_relations(&relation_commit)[0];
-    release_test_commit_snapshot(&runtime, &relation_commit);
-    let other = create_entity(execution, &runtime, "cold-other-target");
-    for target in [other, target] {
-        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-        transaction
-            .push_batch(
-                WorkerIntentBatch::new("relation-history").push(MutationIntent::Relation(
-                    crate::transactions::data::RelationMutationIntent::UpdateEndpoints(
-                        crate::transactions::data::UpdateRelationEndpointsIntent {
-                            relation_id: relation,
-                            kind_id: KindId(2),
-                            source: crate::transactions::data::EntityReference::Existing(entity),
-                            target: crate::transactions::data::EntityReference::Existing(target),
-                        },
-                    ),
-                )),
-                execution.allocation_policy(),
-            )
-            .unwrap();
-        let committed = transaction.commit(execution, &runtime).unwrap();
-        release_test_commit_snapshot(&runtime, &committed);
-    }
-    let root = runtime
-        .history
-        .branch_cell(&BranchId("main".into()))
-        .and_then(|cell| cell.root())
-        .unwrap();
-    let partition = root.partition_state(entity.partition_id).unwrap();
-    let symbols = Arc::new(runtime.services.symbols.interner_snapshot());
-    let (commitment, _) = PartitionContentCommitment::capture(partition, &symbols, None).unwrap();
-    let schema = Arc::new(root.schema_authority().clone());
-    let schema_digest = crate::durability::data::DurableBranchRootSchemaImage::capture(&schema)
-        .unwrap()
-        .carrier_digest();
-    let members = capture_region_members(partition, &commitment, &schema, schema_digest).unwrap();
-    let source = Arc::new(CountedSource {
-        history: members.history.0,
-        members: BTreeMap::from([members.head.clone(), members.history.clone()]),
-        reads: AtomicUsize::new(0),
-        history_reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-    });
-    let expected_digest = commitment.digest(partition.partition_id);
-    let expected_history = partition
-        .entity_arena
-        .metadata_history_at(entity.slot_index())
-        .unwrap()
-        .len();
-    assert!(
-        expected_history > 1,
-        "fixture must have real committed history"
-    );
-    let symbol_authority = crate::runtime::RuntimeSymbolTable::default();
-    symbol_authority.replace((*symbols).clone());
-    let cold = RelationalColdRegion {
-        kind_authority: members.kind_authority,
-        source: source.clone(),
-        partition_id: partition.partition_id,
-        head: members.head.0,
-        history: members.history.0,
-        schema,
-        schema_carrier_digest: schema_digest,
-        symbols: symbol_authority,
-        content_digest: expected_digest,
-        entity_slots: partition.entity_arena.slot_count(),
-        relation_slots: partition.relation_arena.slot_count(),
-        unavailable_records: partition.entity_arena.lifecycle_counts().unavailable
-            + partition.relation_arena.lifecycle_counts().unavailable,
-    };
-    RegionFixture {
-        cell: RelationalRegionResidency::cold(cold.clone()).unwrap(),
-        cold,
-        source,
-        entity,
-        relation,
-        expected_digest,
-        expected_history,
-    }
-}
+#[path = "region_fixture.rs"]
+mod region_fixture;
+use region_fixture::{region_with_history, CountedSource, RegionFixture};
 
 #[test]
 fn concurrent_head_demands_share_the_load_and_count_every_lease() {
@@ -258,7 +119,7 @@ fn intact_history_member_with_relabelled_content_is_refused_against_the_leaf() {
     )
     .unwrap();
     let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    history.entities[0][0].generation ^= 1;
+    history.entities[0].earlier[0].generation ^= 1;
     let (locator, bytes) = RelationalRegionImage::encode(
         cold.partition_id,
         cold.schema_carrier_digest,

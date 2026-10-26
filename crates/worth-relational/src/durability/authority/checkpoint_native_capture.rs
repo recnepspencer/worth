@@ -112,6 +112,7 @@ impl CapturedCheckpointBasis {
             );
         }
         let mut schemas = BTreeMap::new();
+        let mut history_dependencies = BTreeMap::new();
         for root in roots {
             policy.check_live()?;
             let schema = root.schema_authority();
@@ -130,11 +131,18 @@ impl CapturedCheckpointBasis {
                     || capture.leaf.entity_slots != region.entity_slots
                     || capture.leaf.relation_slots != region.relation_slots
                     || capture.leaf.unavailable_records != region.unavailable_records
+                    || capture.leaf.kind_authority != region.kind_commitment
                 {
                     return Err(
                         corrupt("captured region differs from its selected root leaf").into(),
                     );
                 }
+                merge_history_dependencies(
+                    &mut history_dependencies,
+                    capture.history_dependencies,
+                    capture.leaf.partition_id,
+                )
+                .map_err(storage_failure)?;
                 leaves.push(capture.leaf);
                 captured.publications.push(capture.publication);
                 for member in capture.members {
@@ -158,6 +166,12 @@ impl CapturedCheckpointBasis {
                     .cell()
                     .capture_checkpoint(&schema, digest, &symbols, current_members.as_ref())
                     .map_err(storage_failure)?;
+                merge_history_dependencies(
+                    &mut history_dependencies,
+                    capture.history_dependencies,
+                    capture.leaf.partition_id,
+                )
+                .map_err(storage_failure)?;
                 captured.manifest.mirror.push(capture.leaf);
                 captured.publications.push(capture.publication);
                 for member in capture.members {
@@ -231,8 +245,40 @@ impl CapturedCheckpointBasis {
                 .map(|entry| entry.commit.version_id);
         }
         captured.manifest.schemas = schemas.into_values().collect();
+        captured.manifest.history_dependencies = history_dependencies
+            .into_iter()
+            .map(|(member, bases)| RelationalCheckpointHistoryDependency { member, bases })
+            .collect();
+        captured.history_members = captured
+            .manifest
+            .readmit_history_members()
+            .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
         Ok(captured)
     }
+}
+
+fn merge_history_dependencies(
+    declarations: &mut BTreeMap<
+        crate::durability::medium::RelationalDurableMemberLocator,
+        Vec<crate::durability::medium::RelationalDurableMemberLocator>,
+    >,
+    incoming: Vec<RelationalCheckpointHistoryDependency>,
+    partition: crate::identity::data::PartitionId,
+) -> Result<(), crate::storage::data::RelationalStorageUnavailable> {
+    for declaration in incoming {
+        if let Some(prior) = declarations.get(&declaration.member) {
+            if prior != &declaration.bases {
+                return Err(crate::storage::data::RelationalStorageUnavailable {
+                    subject: crate::storage::data::RelationalStorageSubject::Region(partition),
+                    cause:
+                        crate::storage::data::RelationalStorageUnavailableCause::IntegrityMismatch,
+                });
+            }
+        } else {
+            declarations.insert(declaration.member, declaration.bases);
+        }
+    }
+    Ok(())
 }
 
 fn insert_member(captured: &mut CapturedManifest, member: RelationalCheckpointMember) {

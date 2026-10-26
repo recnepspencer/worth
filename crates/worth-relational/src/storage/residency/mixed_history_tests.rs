@@ -245,6 +245,7 @@ pub(super) fn recapture(
     });
     (
         RelationalColdRegion {
+            history_members: members.history_members,
             head: members.head.0,
             history: members.history.0,
             kind_authority: members.kind_authority,

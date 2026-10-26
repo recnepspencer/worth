@@ -26,12 +26,12 @@ pub(crate) fn decode_checkpoint_from_source(
     let payload = bytes.strip_prefix(super::CHECKPOINT_MAGIC).ok_or_else(|| {
         DurabilityError::new(
             RecoveryFailureClass::UnsupportedLegacySemantics,
-            "unsupported native checkpoint frame; CHK9 required",
+            "unsupported native checkpoint frame; CHK10 required",
         )
     })?;
     let wire: CheckpointWire<'_> = rmp_serde::from_slice(payload)
         .map_err(|error| corrupt(format!("native manifest: {error}")))?;
-    super::manifest_validation::validate(&wire.manifest)?;
+    let facts = super::manifest_validation::validate(&wire.manifest)?;
     let mut inline = None;
     let source: Arc<dyn RelationalDurableColdSource> = if wire.members.is_empty()
         && wire.envelopes.is_empty()
@@ -72,10 +72,14 @@ pub(crate) fn decode_checkpoint_from_source(
         Arc::new(InlineCheckpointSource { members, envelopes })
     };
     let checkpoint = match inline {
-        Some(envelopes) => {
-            super::expanded_checkpoint::expand(execution, wire.manifest, source, Some(envelopes))?
-        }
-        None => super::cold_checkpoint::readmit(execution, wire.manifest, source)?,
+        Some(envelopes) => super::expanded_checkpoint::expand(
+            execution,
+            wire.manifest,
+            source,
+            Some(envelopes),
+            facts.history_members,
+        )?,
+        None => super::cold_checkpoint::readmit(execution, wire.manifest, source, facts)?,
     };
     Ok(DecodedNativeCheckpoint { checkpoint })
 }

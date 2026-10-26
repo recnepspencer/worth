@@ -8,6 +8,9 @@ pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
 mod lease;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
 mod head_arena;
+mod history_capture;
+mod history_fold;
+mod history_kind_cache;
 mod region_capture;
 mod region_image;
 mod region_load;
@@ -28,6 +31,7 @@ pub(crate) use retention::RelationalRegionRetention;
 
 mod checkpoint_capture;
 mod checkpoint_kind_images;
+use checkpoint_capture::RecordedRegionCheckpoint;
 pub(crate) use checkpoint_capture::RelationalCheckpointRegionPublication;
 pub(crate) use checkpoint_kind_images::CheckpointRegionKindImages;
 

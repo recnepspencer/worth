@@ -5,6 +5,7 @@ use crate::storage::partition::RegionRelationProjection;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct RecordHistoryOpening {
     pub(crate) frontier: HistoryAppendFrontier,
+    pub(crate) kind_commitment: [u8; 32],
     pub(crate) historical_relations: Vec<RegionRelationProjection>,
 }
 

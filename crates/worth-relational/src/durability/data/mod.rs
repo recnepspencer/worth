@@ -7,6 +7,10 @@ mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;
 mod checkpoint_restore_work;
+mod history_member_directory;
+pub(crate) use history_member_directory::{
+    RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
+};
 mod native_checkpoint;
 mod native_checkpoint_capture_denial;
 mod recovery_branch_transitions;

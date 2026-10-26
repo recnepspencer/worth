@@ -8,6 +8,8 @@ use crate::storage::overlay::{PartitionContentCommitment, PartitionState};
 use crate::storage::partition::AdjacencyKindBasis;
 
 pub(crate) struct CapturedRegionMembers {
+    pub(crate) history_members:
+        std::sync::Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
     pub(crate) kind_authority: super::RelationalRegionKindCommitment,
     pub(crate) head: (RelationalDurableMemberLocator, Vec<u8>),
     pub(crate) history: (RelationalDurableMemberLocator, Vec<u8>),
@@ -19,18 +21,6 @@ pub(crate) fn capture_region_members(
     schema: &RelationalBranchRootSchemaAuthority,
     schema_carrier_digest: [u8; 32],
 ) -> Result<CapturedRegionMembers, Cause> {
-    if partition
-        .entity_arena
-        .history_prefixes
-        .iter()
-        .chain(partition.relation_arena.history_prefixes.iter())
-        .any(Option::is_some)
-    {
-        // Flat encoding cannot erase the cold basis of a resident suffix.
-        // Layered capture must carry that basis explicitly before Head writes
-        // can be published through this encoding boundary.
-        return Err(Cause::SourceUnavailable);
-    }
     let mut normalized = partition.clone();
     super::rebuild_region_history_kind_buckets(&mut normalized)?;
     let partition = &normalized;
@@ -52,28 +42,14 @@ pub(crate) fn capture_region_members(
             &partition.reverse_adjacency,
             AdjacencyKindBasis::Historical,
         ),
-        entities: image
-            .entity_arena
-            .metadata_history
-            .iter_mut()
-            .map(|rows| {
-                let current = rows.pop();
-                let earlier = std::mem::take(rows);
-                rows.extend(current);
-                earlier
-            })
-            .collect(),
-        relations: image
-            .relation_arena
-            .metadata_history
-            .iter_mut()
-            .map(|rows| {
-                let current = rows.pop();
-                let earlier = std::mem::take(rows);
-                rows.extend(current);
-                earlier
-            })
-            .collect(),
+        entities: super::history_capture::split_rows(
+            &partition.entity_arena,
+            &mut image.entity_arena.metadata_history,
+        )?,
+        relations: super::history_capture::split_rows(
+            &partition.relation_arena,
+            &mut image.relation_arena.metadata_history,
+        )?,
     };
     let head = RegionHeadImage {
         kind_projection: super::kind_projection::capture(partition, AdjacencyKindBasis::Current)?,
@@ -88,10 +64,19 @@ pub(crate) fn capture_region_members(
             AdjacencyKindBasis::Current,
         ),
     };
+    let bases = history.direct_bases();
+    let history = RelationalRegionImage::encode(
+        partition.partition_id,
+        schema_carrier_digest,
+        RelationalRegionImageKind::History,
+        &history,
+    )?;
+    let history_members = super::history_capture::directory(partition, history.0, bases)?;
     Ok(CapturedRegionMembers {
+        history_members,
         kind_authority: super::RelationalRegionKindCommitment {
             head: super::kind_commitment::digest(&head.kind_projection)?,
-            history: super::kind_commitment::digest(&history.kind_projection)?,
+            history: super::kind_commitment::digest(&head.history_kind_projection)?,
         },
         head: RelationalRegionImage::encode(
             partition.partition_id,
@@ -99,12 +84,7 @@ pub(crate) fn capture_region_members(
             RelationalRegionImageKind::Head,
             &head,
         )?,
-        history: RelationalRegionImage::encode(
-            partition.partition_id,
-            schema_carrier_digest,
-            RelationalRegionImageKind::History,
-            &history,
-        )?,
+        history,
     })
 }
 

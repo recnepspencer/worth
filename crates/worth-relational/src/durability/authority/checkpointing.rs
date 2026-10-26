@@ -36,10 +36,11 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         )?;
         let manifest_publication = if !artifact_policy.is_embedded() {
             artifact_policy.publication_source().map(|source| {
-                self.runtime
-                    .durability
-                    .checkpoint_selection()
-                    .prepare(captured.manifest.clone(), source)
+                self.runtime.durability.checkpoint_selection().prepare(
+                    captured.manifest.clone(),
+                    source,
+                    captured.history_members.clone(),
+                )
             })
         } else {
             None

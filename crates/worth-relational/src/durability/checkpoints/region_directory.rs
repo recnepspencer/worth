@@ -82,6 +82,7 @@ impl ReadmittedRegionDirectory {
                         partition_id: leaf.partition_id,
                         head: leaf.head,
                         history: leaf.history,
+                        history_members: self.directory.history_members.clone(),
                         schema: schema.clone(),
                         schema_carrier_digest: schema_digest,
                         symbols: self.symbols.clone(),
