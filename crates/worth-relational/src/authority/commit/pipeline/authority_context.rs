@@ -47,10 +47,10 @@ pub(super) struct PreparedAuthorityScope {
     pub(super) structural_summary:
         crate::authority::commit::structural_summary::CommitStructuralSummary,
     pub(super) working_state: crate::storage::overlay::WorkingState,
-    pub(super) mutation_proposal: Option<(
+    pub(super) mutation_proposal: (
         crate::mvcc::RelationalMutationProposalIdentity,
         crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
-    )>,
+    ),
     pub(super) phase_timing: CommitPhaseTiming,
 }
 
@@ -108,7 +108,7 @@ impl AuthoritativeCommitContext {
                 selected_branch_state: prepared.selected_branch_state.clone(),
                 structural_summary: prepared.structural_summary,
                 working_state: prepared.working_state,
-                mutation_proposal: Some((proposal_identity, proposed_mutation)),
+                mutation_proposal: (proposal_identity, proposed_mutation),
                 phase_timing: prepared.phase_timing,
             }),
             merge_execution_accounting: None,

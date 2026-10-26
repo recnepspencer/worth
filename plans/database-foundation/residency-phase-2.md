@@ -376,3 +376,36 @@ page owner directly for its cache-shape unit proof. No visibility was widened.
 Scoped review keeps capture's metadata orchestration and its three existing
 function advisories together; the new shape facts and cache transitions carry
 one page-admission responsibility.
+
+
+## Independent merge draft boundary review
+
+Validated transactions carry one applied draft and three judgments, but the
+independent merge context reaches draft preparation with no such scope. That
+fallback clones directly from the selected owner and then judges invariants in
+later phases, so a cold dependency can become a false absence. The fallback
+must instead run scope derivation, one live applied draft and all three
+judgments inside the same region/symbol probe round, with provisional counters
+and diagnostics. An accepted scope must always contain an applied draft; remove
+the optional unapplied scope state. Only after a miss-free round may its touched
+mirror set be demanded and its evidence settled. The existing later phases
+consume the carried judgments and applied draft. This extends the current Full
+round boundary to independent merge drafts; Head-only mutation layering and
+complete artifact/publication custody remain separate open requirements.
+
+
+Independent merge drafts now use the shared region/symbol discovery protocol,
+retain their accepted selected root and demand the touched mirror before any
+accepted evidence settles. `PreparedAuthorityScope` always owns its applied
+mutation and proposal identity; there is no unapplied fallback. Existing
+invariant phases consume the accepted judgments. Real reopened branch/journal
+proofs show a healthy merge adopts the feature record while preserving main's
+records, and a cold region failure during public merge preparation remains
+typed and sticky with no journal advance. Full-branch planning already warms
+its selected regions, so those public proofs do not claim to force a later
+region miss in the candidate draft. Transaction discovery proofs cover that
+shared miss ledger; a complete candidate/publication boundary remains open.
+Relational lib passes (1,885; 31 existing ignored), as do Relational lib clippy,
+formatting, dirty line caps and agent-context. Scoped function review keeps the
+merge round's one draft and its three coupled judgments together; the other
+reported functions retain their existing authority/fixture responsibilities.

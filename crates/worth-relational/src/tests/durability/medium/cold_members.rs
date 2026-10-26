@@ -8,6 +8,8 @@ mod cold_candidates;
 mod cold_envelopes;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
+#[path = "cold_merges.rs"]
+mod cold_merges;
 #[path = "cold_pins.rs"]
 mod cold_pins;
 #[path = "cold_symbols.rs"]

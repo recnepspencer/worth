@@ -1,10 +1,7 @@
 use super::authority_context::PreparedAuthorityScope;
 use super::draft_preparation_phase::record_draft_preparation_phase;
 use super::execution_admission::AdmittedCommitExecution;
-use crate::authority::commit::phases::applied_mutation::{
-    apply_mutation_draft, AppliedMutationDraft,
-};
-use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
+use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
     pub(super) admitted: AdmittedCommitExecution,
@@ -58,64 +55,18 @@ pub(super) fn prepare_commit_execution(
     mut admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Draft)?;
-    let merge_parent_count = admitted
-        .merge_history_plan()
-        .map(|plan| plan.requested_merge_parent_count)
-        .unwrap_or(admitted.validation_input().merge_parent_bases().len());
     let PreparedAuthorityScope {
         structural_summary,
         working_state,
-        mutation_proposal,
+        mutation_proposal: (proposal_identity, mutation),
         phase_timing: prepared_timing,
         ..
     } = match admitted.take_prepared_scope() {
         Some(scope) => scope,
         None => {
-            let selected = admitted.selected_branch_state();
-            let (structural_summary, working_state, phase_timing) =
-                prepare_authoritative_working_state_scope_for_base(
-                    runtime,
-                    selected.state(),
-                    admitted.merged_plan(),
-                    merge_parent_count,
-                    Some(admitted.validation_input().footprint()),
-                );
-            PreparedAuthorityScope {
-                selected_branch_state: selected.clone(),
-                structural_summary,
-                working_state,
-                mutation_proposal: None,
-                phase_timing,
-            }
+            let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;
+            admitted.accept_merge_draft(draft)
         }
-    };
-    let (proposal_identity, mutation) = match mutation_proposal {
-        Some(proposal) => proposal,
-        None => crate::authority::commit::preparation::probe_symbol_rounds(
-            execution,
-            runtime,
-            admitted.validation_input().basis(),
-            |symbols, round| {
-                let identity = runtime.issue_mutation_proposal_identity(
-                    admitted.transaction_id(),
-                    admitted.validation_input(),
-                )?;
-                let mutation = apply_mutation_draft(
-                    execution,
-                    round,
-                    &crate::branch::SelectedRelationalBranchRead::in_round(
-                        admitted.selected_branch_state(),
-                        admitted.selected_branch_state(),
-                    ),
-                    &working_state,
-                    admitted.merged_plan(),
-                    admitted.validation_input().schema_authority(),
-                    &identity,
-                    symbols,
-                )?;
-                Ok((identity, mutation))
-            },
-        )?,
     };
     admitted.phase_timing_mut().draft_structural_summary_micros =
         prepared_timing.draft_structural_summary_micros;
