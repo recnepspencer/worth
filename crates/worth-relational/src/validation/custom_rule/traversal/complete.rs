@@ -1,7 +1,7 @@
 //! Complete one-kind reads on the native candidate/before-image view.
 use crate::identity::data::{EntityId, KindId};
 
-use super::super::{CustomInvariantWorkMeter, CustomPreparationStop, StructuralReadError};
+use super::super::StructuralReadError;
 use super::breadth_first::{self, BreadthFirstRead};
 mod retention_extent;
 use super::complete_result::*;
@@ -39,7 +39,6 @@ impl StructuralRelationView<'_> {
     ) -> Result<CompleteStructuralWalk, StructuralWalkDenial> {
         let mut read = CompleteRead {
             view: self,
-            work: self.work_meter(),
             relation_kind,
             direction,
             result: CompleteStructuralWalk {
@@ -51,7 +50,7 @@ impl StructuralRelationView<'_> {
         };
         read.check_live()?;
         self.require_relation_kind(relation_kind)
-            .map_err(|error| read.refuse(error))?;
+            .map_err(|error| read.refusal(error))?;
         breadth_first::walk(seeds, &mut read)?;
         read.check_live()?;
         read.result
@@ -67,7 +66,6 @@ impl StructuralRelationView<'_> {
 
 struct CompleteRead<'read, 'runtime> {
     view: &'read StructuralRelationView<'runtime>,
-    work: CustomInvariantWorkMeter,
     relation_kind: KindId,
     direction: TraversalDirection,
     result: CompleteStructuralWalk,
@@ -76,30 +74,16 @@ struct CompleteRead<'read, 'runtime> {
 impl CompleteRead<'_, '_> {
     fn check_live(&self) -> Result<(), StructuralWalkDenial> {
         self.view
-            .check_walk_live()
-            .map_err(|stop| StructuralWalkDenial {
-                kind: StructuralWalkDenialKind::Interrupted(stop),
-                reads: self.result.reads,
-            })
+            .read_budget()
+            .check_live()
+            .map_err(|kind| self.denial(kind))
     }
 
-    fn refuse(&self, error: StructuralReadError) -> StructuralWalkDenial {
-        use super::super::CustomInvariantInterruption;
-        let kind = match self.work.leased_stop() {
-            Some(CustomPreparationStop::Cancelled) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::Cancelled)
-            }
-            Some(CustomPreparationStop::DeadlineElapsed) => {
-                StructuralWalkDenialKind::Interrupted(CustomInvariantInterruption::DeadlineElapsed)
-            }
-            Some(CustomPreparationStop::MemoryExhausted) => {
-                StructuralWalkDenialKind::MemoryBudgetExceeded
-            }
-            Some(CustomPreparationStop::MemoryAdmission(cause)) => {
-                StructuralWalkDenialKind::MemoryAdmission(cause)
-            }
-            _ => StructuralWalkDenialKind::Read(error),
-        };
+    fn refusal(&self, error: StructuralReadError) -> StructuralWalkDenial {
+        self.denial(self.view.read_budget().refusal(error))
+    }
+
+    fn denial(&self, kind: StructuralWalkDenialKind) -> StructuralWalkDenial {
         StructuralWalkDenial {
             kind,
             reads: self.result.reads,
@@ -107,26 +91,37 @@ impl CompleteRead<'_, '_> {
     }
 
     fn claim(&self, bytes: usize) -> Result<(), StructuralWalkDenial> {
-        if self.work.try_claim_bytes(bytes as u64) {
-            Ok(())
-        } else {
-            Err(self.refuse(StructuralReadError::WorkBudgetExceeded))
-        }
+        self.view
+            .read_budget()
+            .claim_retained(bytes as u64)
+            .map_err(|kind| self.denial(kind))
     }
 }
 
 impl BreadthFirstRead for CompleteRead<'_, '_> {
     type Error = StructuralWalkDenial;
 
+    fn seed(&mut self, entity: EntityId) -> Result<(), Self::Error> {
+        self.view
+            .read_budget()
+            .checkpoint(1)
+            .map_err(|kind| self.denial(kind))?;
+        #[cfg(test)]
+        self.view.record_walk_seed_for_test(entity);
+        #[cfg(not(test))]
+        let _ = entity;
+        self.check_live()
+    }
+
     fn retain(&mut self, _entity: EntityId, _distance: usize) -> Result<(), Self::Error> {
         self.check_live()?;
         // BTree visited/frontier entries and result Vec growth coexist. Use
         // the original structural payer before growing any of those owners.
         self.claim(retention_extent::vertex_bytes())?;
-        if !self.work.try_charge_work(1) {
-            return Err(self.refuse(StructuralReadError::WorkBudgetExceeded));
-        }
-        Ok(())
+        self.view
+            .read_budget()
+            .checkpoint(1)
+            .map_err(|kind| self.denial(kind))
     }
 
     fn expand(
@@ -141,7 +136,7 @@ impl BreadthFirstRead for CompleteRead<'_, '_> {
             .entity_kind_observed(entity, || {
                 self.result.reads.entity_records += 1;
             })
-            .map_err(|error| self.refuse(error))?;
+            .map_err(|error| self.refusal(error))?;
         self.result.steps.push(StructuralWalkStep {
             entity,
             kind,
@@ -154,11 +149,14 @@ impl BreadthFirstRead for CompleteRead<'_, '_> {
             TraversalDirection::Outgoing => self.view.outgoing_relations_for_entity(entity),
             TraversalDirection::Incoming => self.view.incoming_relations_for_entity(entity),
         }
-        .map_err(|_| self.refuse(StructuralReadError::WorkBudgetExceeded))?;
+        .map_err(|_| self.refusal(StructuralReadError::WorkBudgetExceeded))?;
         self.result.reads.adjacency_lists += 1;
         for id in ids {
             self.check_live()?;
-            let record = self.view.relation(id).map_err(|error| self.refuse(error))?;
+            let record = self
+                .view
+                .relation(id)
+                .map_err(|error| self.refusal(error))?;
             self.result.reads.relation_records += 1;
             if record.kind_id != self.relation_kind {
                 continue;

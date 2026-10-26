@@ -45,8 +45,8 @@ fn append_root_paths(
                 text(
                     format!("{path}.direction"),
                     match step.direction() {
-                        worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Forward => "forward",
-                        worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Reverse => "reverse",
+                        worth_query_declaration::facade::application_query::RelationDirection::Forward => "forward",
+                        worth_query_declaration::facade::application_query::RelationDirection::Reverse => "reverse",
                     },
                 ),
                 unsigned(format!("{path}.depth"), step.depth()),

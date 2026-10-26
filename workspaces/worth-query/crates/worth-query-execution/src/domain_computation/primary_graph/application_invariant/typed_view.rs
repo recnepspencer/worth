@@ -19,6 +19,11 @@ mod field_reads;
 mod interruption;
 mod relation_reads;
 mod touched_entities;
+mod walk;
+pub use walk::{
+    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
+    WorthQueryApplicationInvariantWalkStep,
+};
 
 pub struct WorthQueryApplicationInvariantEntity<Schema, Entity> {
     entity_id: EntityId,
@@ -124,18 +129,22 @@ impl<'borrow, 'runtime, Schema>
     pub(super) fn new(
         lower: &'borrow mut CustomInvariantScopePlanner<'runtime>,
         binding_identity: ApplicationSchemaBindingIdentity,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, WorthQueryInvariantAccessDenial> {
+        let admission = ApplicationInvariantAdmissionAccess::planning(lower.read_budget())?;
+        Ok(Self {
             lower,
             binding_identity,
-            admission: ApplicationInvariantAdmissionAccess::planning(),
+            admission,
             reads: InvariantReadObservation::default(),
             _schema: PhantomData,
-        }
+        })
     }
 
-    pub(super) fn freeze_admission(&self) -> std::sync::Arc<ApplicationInvariantAdmission> {
-        self.admission.freeze()
+    pub(super) fn freeze_admission(
+        &self,
+    ) -> Result<std::sync::Arc<ApplicationInvariantAdmission>, WorthQueryInvariantAccessDenial>
+    {
+        self.admission.freeze(self.lower.read_budget())
     }
 
     /// Actual reads made during preparation so far, across proposed and committed views.
@@ -245,6 +254,28 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> 
         entity: &WorthQueryApplicationInvariantEntity<Schema, Entity>,
         expected: worth_relational::facade::identity::KindId,
     ) -> Result<(), WorthQueryInvariantAccessDenial> {
+        self.check_entity_affinity(entity, expected)?;
+        let actual = self
+            .relations
+            .entity_kind(entity.entity_id)
+            .map_err(|error| map_structural_error(error, "entity kind"))?;
+        self.reads.endpoint();
+        if actual != expected {
+            return Err(denial(
+                WorthQueryInvariantAccessDenialKind::WrongEntityKind,
+                "native entity kind",
+            ));
+        }
+        self.admission
+            .entity(entity.entity_id, self.relations.read_budget())?;
+        Ok(())
+    }
+
+    fn check_entity_affinity<Entity>(
+        &self,
+        entity: &WorthQueryApplicationInvariantEntity<Schema, Entity>,
+        expected: worth_relational::facade::identity::KindId,
+    ) -> Result<(), WorthQueryInvariantAccessDenial> {
         self.check_binding(&entity.binding_identity)?;
         if entity.posture != self.posture || entity.proposal_affinity != self.proposal_affinity() {
             return Err(denial(
@@ -258,18 +289,6 @@ impl<'runtime, Schema> WorthQueryApplicationInvariantReadView<'runtime, Schema> 
                 "entity kind",
             ));
         }
-        let actual = self
-            .relations
-            .entity_kind(entity.entity_id)
-            .map_err(|error| map_structural_error(error, "entity kind"))?;
-        self.reads.endpoint();
-        if actual != expected {
-            return Err(denial(
-                WorthQueryInvariantAccessDenialKind::WrongEntityKind,
-                "native entity kind",
-            ));
-        }
-        self.admission.entity(entity.entity_id)?;
         Ok(())
     }
 
@@ -297,18 +316,10 @@ fn map_structural_error(
     error: StructuralReadError,
     subject: &str,
 ) -> WorthQueryInvariantAccessDenial {
-    let kind = match error {
-        StructuralReadError::WorkBudgetExceeded => {
-            WorthQueryInvariantAccessDenialKind::WorkBudgetExceeded
-        }
-        StructuralReadError::OutsideDeclaredAccess => {
-            WorthQueryInvariantAccessDenialKind::OutsideDeclaredAccess
-        }
-        StructuralReadError::RecordUnavailable => {
-            WorthQueryInvariantAccessDenialKind::EntityUnavailable
-        }
-    };
-    denial(kind, subject)
+    WorthQueryInvariantAccessDenial::from_native_read(
+        worth_relational::facade::runtime::StructuralWalkDenialKind::Read(error),
+        subject,
+    )
 }
 
 fn denial(

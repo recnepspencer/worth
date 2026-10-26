@@ -5,8 +5,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
-    application_query::ApplicationQueryRootPathDirection as PathDirection,
-    application_schema::ApplicationSchema,
+    application_query::RelationDirection as PathDirection, application_schema::ApplicationSchema,
 };
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalAdjacencyDirection as NativeDirection,

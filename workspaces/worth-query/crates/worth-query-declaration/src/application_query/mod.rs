@@ -90,8 +90,8 @@ pub use result_traversal::{
     ApplicationQueryResultTraversalEndpoints, ForwardResultTraversal, ReverseResultTraversal,
 };
 pub use root_selection::{
-    ApplicationQueryRootPath, ApplicationQueryRootPathDirection, ApplicationQueryRootPathGuard,
-    ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
+    ApplicationQueryRootPath, ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning,
+    ApplicationQueryRootPathStep, RelationDirection,
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };

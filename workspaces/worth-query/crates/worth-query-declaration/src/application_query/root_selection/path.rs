@@ -8,20 +8,14 @@ use crate::application_schema::{
 
 use super::ApplicationQueryRootPathGuard;
 
-#[derive(
-    Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, serde::Serialize, serde::Deserialize,
-)]
-pub enum ApplicationQueryRootPathDirection {
-    Forward,
-    Reverse,
-}
+pub use worth_foundational::facade::RelationDirection;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationQueryRootPathStep {
     relation: String,
     from: String,
     to: String,
-    direction: ApplicationQueryRootPathDirection,
+    direction: RelationDirection,
 }
 
 impl ApplicationQueryRootPathStep {
@@ -29,7 +23,7 @@ impl ApplicationQueryRootPathStep {
         relation: String,
         from: String,
         to: String,
-        direction: ApplicationQueryRootPathDirection,
+        direction: RelationDirection,
     ) -> Self {
         Self {
             relation,
@@ -51,21 +45,21 @@ impl ApplicationQueryRootPathStep {
         &self.to
     }
 
-    pub const fn direction(&self) -> ApplicationQueryRootPathDirection {
+    pub const fn direction(&self) -> RelationDirection {
         self.direction
     }
 
     pub fn parent_entity(&self) -> &str {
         match self.direction {
-            ApplicationQueryRootPathDirection::Forward => &self.from,
-            ApplicationQueryRootPathDirection::Reverse => &self.to,
+            RelationDirection::Forward => &self.from,
+            RelationDirection::Reverse => &self.to,
         }
     }
 
     pub fn child_entity(&self) -> &str {
         match self.direction {
-            ApplicationQueryRootPathDirection::Forward => &self.to,
-            ApplicationQueryRootPathDirection::Reverse => &self.from,
+            RelationDirection::Forward => &self.to,
+            RelationDirection::Reverse => &self.from,
         }
     }
 }
@@ -142,7 +136,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             relation: relation.name().to_owned(),
             from: relation.from().to_owned(),
             to: relation.to().to_owned(),
-            direction: ApplicationQueryRootPathDirection::Forward,
+            direction: RelationDirection::Forward,
         });
         ApplicationQueryRootPath {
             start_entity: self.start_entity,
@@ -161,7 +155,7 @@ impl<Schema, Start, Current> ApplicationQueryRootPath<Schema, Start, Current> {
             relation: relation.name().to_owned(),
             from: relation.from().to_owned(),
             to: relation.to().to_owned(),
-            direction: ApplicationQueryRootPathDirection::Reverse,
+            direction: RelationDirection::Reverse,
         });
         ApplicationQueryRootPath {
             start_entity: self.start_entity,

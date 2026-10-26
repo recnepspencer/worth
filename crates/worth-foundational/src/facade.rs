@@ -589,6 +589,7 @@ pub use crate::profiles::{
     RequestedFoundationalProfilePhase, RequestedFoundationalProfileSet, RetentionDeliveryProfile,
     SupportArtifactTarget, SupportPostureProfile, SupportProfiledArtifact,
 };
+pub use crate::relations::RelationDirection;
 pub use crate::transitions::{
     admit_current_basis_commit_receipt, admit_current_basis_committed_authority,
     attach_boundary_profiled_branch_candidate, attach_boundary_profiled_staged_branch,

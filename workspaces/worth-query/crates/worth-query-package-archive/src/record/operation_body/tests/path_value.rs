@@ -11,8 +11,8 @@ use worth_query_declaration::facade::{
 fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
     for direction in [
         None,
-        Some(ApplicationQueryRootPathDirection::Reverse),
-        Some(ApplicationQueryRootPathDirection::Forward),
+        Some(RelationDirection::Reverse),
+        Some(RelationDirection::Forward),
     ] {
         let terminal = if direction.is_none() { "Row" } else { "Parent" };
         let path = ApplicationQueryRootPathMeaning::from_untrusted_parts(
@@ -22,7 +22,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                 guards: vec![],
                 steps: direction
                     .map(|direction| match direction {
-                        ApplicationQueryRootPathDirection::Reverse => {
+                        RelationDirection::Reverse => {
                             ApplicationQueryRootPathStep::from_untrusted_fields(
                                 "ParentRows".into(),
                                 "Parent".into(),
@@ -30,7 +30,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                                 direction,
                             )
                         }
-                        ApplicationQueryRootPathDirection::Forward => {
+                        RelationDirection::Forward => {
                             ApplicationQueryRootPathStep::from_untrusted_fields(
                                 "RowParent".into(),
                                 "Row".into(),

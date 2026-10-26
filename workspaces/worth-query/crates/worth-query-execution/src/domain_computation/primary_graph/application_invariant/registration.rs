@@ -78,11 +78,12 @@ where
         let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
-        );
+        )
+        .map_err(preparation_denial)?;
         let rule_scope = self.rule.prepare_scope(&mut planner)?;
         Ok(InstalledApplicationInvariantScope {
             rule_scope,
-            admission: planner.freeze_admission(),
+            admission: planner.freeze_admission().map_err(preparation_denial)?,
             preparation_reads: planner.reads(),
         })
     }
@@ -96,17 +97,22 @@ where
         planner: &mut CustomInvariantScopePlanner<'_>,
         budget: &dyn CustomInvariantLeaseBudget,
     ) -> Option<Result<Self::Scope, CustomInvariantPreparationError>> {
-        let mut planner = super::WorthQueryApplicationInvariantScopePlanner::new(
+        let mut planner = match super::WorthQueryApplicationInvariantScopePlanner::new(
             planner,
             self.binding_identity.clone(),
-        );
+        ) {
+            Ok(planner) => planner,
+            Err(denial) => return Some(Err(preparation_denial(denial))),
+        };
         self.rule
             .prepare_scope_checked(&mut planner, budget)
             .map(|result| {
-                result.map(|rule_scope| InstalledApplicationInvariantScope {
-                    rule_scope,
-                    admission: planner.freeze_admission(),
-                    preparation_reads: planner.reads(),
+                result.and_then(|rule_scope| {
+                    Ok(InstalledApplicationInvariantScope {
+                        rule_scope,
+                        admission: planner.freeze_admission().map_err(preparation_denial)?,
+                        preparation_reads: planner.reads(),
+                    })
                 })
             })
     }
@@ -164,4 +170,10 @@ where
                 super::refusal::encode::<Rule::RefusalBinding>(verdict, refusal_budget)
             })
     }
+}
+
+fn preparation_denial(
+    denial: super::WorthQueryInvariantAccessDenial,
+) -> CustomInvariantPreparationError {
+    CustomInvariantPreparationError::new(denial.to_string())
 }

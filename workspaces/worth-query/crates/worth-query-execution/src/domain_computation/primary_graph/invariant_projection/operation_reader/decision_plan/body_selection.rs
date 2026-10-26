@@ -120,8 +120,12 @@ impl<Schema: ApplicationSchema, Operation>
                 to: step.to().into(),
             };
             let direction = match step.direction() {
-                worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Forward => Direction::Outgoing,
-                worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Reverse => Direction::Incoming,
+                worth_query_declaration::facade::application_query::RelationDirection::Forward => {
+                    Direction::Outgoing
+                }
+                worth_query_declaration::facade::application_query::RelationDirection::Reverse => {
+                    Direction::Incoming
+                }
             };
             let Some(selected) = self.body_directed_selection(
                 &current.identity,

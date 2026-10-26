@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
-use worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection;
+use worth_query_declaration::facade::application_query::RelationDirection;
 use worth_query_installation::facade::WorthQueryInstalledRootPath;
 use worth_relational::facade::identity::EntityId;
 
@@ -120,10 +120,10 @@ fn traverse_path(
             .ok_or_else(|| traversal_denial(step.relation()))?;
         let anchors = frontier.keys().copied().collect::<BTreeSet<_>>();
         let direction = match step.direction() {
-            ApplicationQueryRootPathDirection::Forward => {
+            RelationDirection::Forward => {
                 worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing
             }
-            ApplicationQueryRootPathDirection::Reverse => {
+            RelationDirection::Reverse => {
                 worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming
             }
         };
@@ -145,10 +145,18 @@ fn traverse_path(
         }
         work.checkpoint(step.relation())?;
         let read = match step.direction() {
-            ApplicationQueryRootPathDirection::Forward => runtime
-                .bounded_outgoing_relations_for_frontier(execution, &anchors, layout.kind, None),
-            ApplicationQueryRootPathDirection::Reverse => runtime
-                .bounded_incoming_relations_for_frontier(execution, &anchors, layout.kind, None),
+            RelationDirection::Forward => runtime.bounded_outgoing_relations_for_frontier(
+                execution,
+                &anchors,
+                layout.kind,
+                None,
+            ),
+            RelationDirection::Reverse => runtime.bounded_incoming_relations_for_frontier(
+                execution,
+                &anchors,
+                layout.kind,
+                None,
+            ),
         }
         .map_err(|stop| frontier_denial(stop, step.relation()))?;
         work.charge(
@@ -161,8 +169,8 @@ fn traverse_path(
         for record in read.into_records() {
             work.checkpoint(step.relation())?;
             let (anchor, endpoint) = match step.direction() {
-                ApplicationQueryRootPathDirection::Forward => (record.source, record.target),
-                ApplicationQueryRootPathDirection::Reverse => (record.target, record.source),
+                RelationDirection::Forward => (record.source, record.target),
+                RelationDirection::Reverse => (record.target, record.source),
             };
             if next.contains_key(&endpoint) {
                 continue;

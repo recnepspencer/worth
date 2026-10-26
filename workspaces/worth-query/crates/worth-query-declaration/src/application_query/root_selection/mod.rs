@@ -5,6 +5,6 @@ pub use guard::{
     ApplicationQueryRootPathGuard, WorthQueryPortableApplicationQueryRootPathGuardParts,
 };
 pub use path::{
-    ApplicationQueryRootPath, ApplicationQueryRootPathDirection, ApplicationQueryRootPathMeaning,
-    ApplicationQueryRootPathStep, WorthQueryPortableApplicationQueryRootPathParts,
+    ApplicationQueryRootPath, ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
+    RelationDirection, WorthQueryPortableApplicationQueryRootPathParts,
 };

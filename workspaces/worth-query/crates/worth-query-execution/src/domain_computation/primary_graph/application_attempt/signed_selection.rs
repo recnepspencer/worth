@@ -2,7 +2,7 @@
 use super::{
     WorthQueryApplicationObservedRelation as Edge, WorthQueryApplicationRealizedEffect as Effect,
 };
-use worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection as Direction;
+use worth_query_declaration::facade::application_query::RelationDirection as Direction;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     transactions::EntityReference,

@@ -7,9 +7,10 @@ pub use crate::domain_computation::primary_graph::application_invariant::{
     WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantRelationBinding,
     WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantVerdict, WorthQueryEmptyInvariantRefusal,
-    WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
-    WorthQueryInvariantRefusalDecodeDenial,
+    WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantWalk,
+    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
+    WorthQueryEmptyInvariantRefusal, WorthQueryInvariantAccessDenial,
+    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantRefusalDecodeDenial,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWork;
 pub use crate::domain_computation::primary_graph::{
@@ -26,3 +27,8 @@ pub use worth_relational::facade::transactions::EntityReference;
 
 /// Relational owns the cooperative budget supplied to installed application rules.
 pub use worth_relational::facade::runtime::CustomInvariantLeaseBudget;
+
+/// Original allocation refusal context carried by invariant read denials.
+pub use worth_execution::{MemoryLimitDenial, MemoryLimitLevel};
+/// Direction of traversal relative to a stored relation's source and target.
+pub use worth_foundational::facade::RelationDirection;

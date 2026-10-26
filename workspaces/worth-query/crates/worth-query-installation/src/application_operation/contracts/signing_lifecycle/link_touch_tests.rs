@@ -2,8 +2,8 @@
 use super::link_can_change_existing_anchor;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryRootPathDirection as Path, ApplicationQueryRootPathMeaning,
-        ApplicationQueryRootPathStep as Step, WorthQueryPortableApplicationQueryRootPathParts,
+        ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
+        RelationDirection as Path, WorthQueryPortableApplicationQueryRootPathParts,
     },
     application_schema::{
         ApplicationOperationBodyCreation as Creation, ApplicationOperationBodyCreationLink as Link,

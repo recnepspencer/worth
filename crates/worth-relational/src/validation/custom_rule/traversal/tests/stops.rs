@@ -68,7 +68,8 @@ fn complete_walk_keeps_original_serial_and_leased_in_progress_stops() {
             };
             let result = graph.read(&execution, work, |mut view| {
                 let visits = Arc::clone(&seen);
-                view.observe_walk_for_test(Arc::new(move |_| {
+                view.observe_walk_for_test(Arc::new(move |event| {
+                    let crate::validation::custom_rule::structural_views::StructuralWalkEventForTest::Entity(_entity) = event else { return; };
                     if visits.fetch_add(1, Ordering::SeqCst) == 2 {
                         match stop {
                             Some(CustomInvariantInterruption::Cancelled) => cancellation.cancel(),

@@ -295,6 +295,10 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
         super::interruption::check_live(self.execution)
     }
 
+    pub fn read_budget(&self) -> super::CustomInvariantReadBudget<'_> {
+        super::CustomInvariantReadBudget::new(self.execution, &self.work)
+    }
+
     pub fn observation_kind(&self) -> InvariantObservationKind {
         self.observation_kind
     }

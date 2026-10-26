@@ -1,9 +1,7 @@
 //! A certified source reuses native typed query paths, not a second path vocabulary.
 mod authoring;
 use crate::{
-    application_query::{
-        ApplicationQueryRootPathDirection as Direction, ApplicationQueryRootPathMeaning,
-    },
+    application_query::{ApplicationQueryRootPathMeaning, RelationDirection as Direction},
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationFieldPresence,
         ApplicationOperationDecisionReadTarget as Read,

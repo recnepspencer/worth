@@ -4,6 +4,8 @@ mod affected_record_filter;
 mod execution_context;
 mod interruption;
 pub use interruption::CustomInvariantInterruption;
+mod read_budget;
+pub use read_budget::CustomInvariantReadBudget;
 #[cfg(test)]
 mod provenance_decode_tests;
 mod registration;

@@ -313,11 +313,21 @@ match outcome {
     with its distance, in canonical breadth-first order;
   - `reaches(relation, from, to)`;
   - `closure(relation, direction, roots)` over a root set.
+- These reads repeat one endorelation (the same entity kind at both ends).
+  Roots are included once at distance zero; other visits use minimum distance
+  from any root. Canonical order is `(distance, native entity identity)`.
+  Forward follows stored source to target, reverse follows target to source,
+  and reachability is reflexive for a valid local entity. `RelationDirection`
+  is shared portable vocabulary, without read or mutation authority.
 - Declared queries gain a closure step on `ApplicationQueryRootPath`
   (`forward_closure`, `reverse_closure`). The receipt records the step and its
   reads.
-- All of them lower onto Relational's `walk_outgoing_from` and
-  `walk_incoming_from`, the traversal Query already uses to widen invariant scope.
+- Invariant views lower to complete, kind-filtered native
+  `walk_outgoing_from` / `walk_incoming_from` reads. Their native scope-widening
+  relative retains its own bounded policy. Snapshot/operation and declared
+  reads lower into the native pinned-query executor, preserving its visibility,
+  request, packet-memory and reduction authority. Query never implements a
+  competing loop of one-hop reads.
 - **No constant depth cap.**
   - A walk ends when its frontier is exhausted, or on cancellation.
   - Cancellation refuses with a typed denial; it never returns a partial walk.
@@ -328,6 +338,11 @@ match outcome {
 - **The footprint is complete.** Every edge and entity a walk visits enters the
   rule's read footprint, so a change anywhere along the walked path re-evaluates
   the rule.
+  - Include physical self, back and diamond edges that discover no new entity.
+  - Current native applicability uses declared-kind closure; Query's frozen
+    entity/relation sets enforce prepared read authority. This phase does not
+    introduce a retained per-rule verdict cache or a domain root-selection
+    policy. Preparation must identify affected roots honestly.
 
 ### Tests That Prove It
 
@@ -337,8 +352,14 @@ match outcome {
 - **Footprint court.**
   - An invariant that walks three hops must refuse a commit that changes only
     the third-hop edge into a violating state.
-  - Mutant: register only the first hop, so the court accepts a stale verdict.
-    It must die.
+    Require actual fresh preparation/evaluation, the exact typed custom
+    violation and unchanged committed truth, with a completing lawful twin.
+  - Mandatory mutants register only first-hop entities or first-hop relations
+    at the real prepared-admission handoff. Each must fail that exact violation
+    expectation; a generic access/execution refusal is not a passing court.
+    These expose incomplete prepared authority, not a fictitious cached verdict.
+    Separate root-only activation from deep-edge changes when touched endpoints
+    or root discovery would otherwise mask missing entity admission.
 - **Long walks.** A walk over 1,000 steps of history succeeds and matches the
   model.
 - **Growth.** With the walked subgraph held fixed, 10 and 10,000 unrelated
@@ -373,16 +394,18 @@ match outcome {
 ### Target DX
 
 ```rust,ignore
-let history = reader.walk(PreviousFeature::reference(), Direction::Reverse, &tip)?;
+// Installed invariant views use the resolver-issued endorelation binding.
+// PreviousFeature points from each feature to its previous feature.
+let history = view.walk(&previous, RelationDirection::Forward, &tip)?;
 for step in &history {
     let feature = step.entity();
     let distance = step.distance();
 }
-let depends = reader.reaches(PreviousFeature::reference(), &later, &earlier)?;
+let depends = view.reaches(&previous, &later, &earlier)?;
 
 // Declared query: today's typed path builder, with one new step kind.
 let ancestry = ApplicationQueryRootPath::from(Feature::reference())
-    .reverse_closure(PreviousFeature::reference());
+    .forward_closure(PreviousFeature::reference());
 ```
 
 ---

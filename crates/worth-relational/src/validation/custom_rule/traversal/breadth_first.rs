@@ -6,6 +6,8 @@ use crate::identity::data::EntityId;
 pub(super) trait BreadthFirstRead {
     type Error;
 
+    fn seed(&mut self, entity: EntityId) -> Result<(), Self::Error>;
+
     /// Admit retained frontier/visited storage before either collection grows.
     fn retain(&mut self, entity: EntityId, distance: usize) -> Result<(), Self::Error>;
 
@@ -26,6 +28,7 @@ pub(super) fn walk<Read: BreadthFirstRead>(
     let mut visited = BTreeSet::new();
     let mut frontier = VecDeque::new();
     for seed in seeds.iter().copied() {
+        read.seed(seed)?;
         enqueue(seed, 0, &mut visited, &mut frontier, read)?;
     }
     while let Some((distance, entity)) = frontier.pop_front() {

@@ -15,6 +15,13 @@ impl InvariantReadObservation {
         self.0.get()
     }
 
+    pub(super) fn walk(&self, reads: worth_relational::facade::runtime::StructuralWalkReads) {
+        self.record(|work| {
+            work.record_adjacencies(reads.adjacency_lists, reads.relation_records);
+            work.record_endpoints(reads.entity_records);
+        });
+    }
+
     pub(super) fn adjacency(&self) {
         self.record(|reads| reads.record_adjacencies(1, 0));
     }

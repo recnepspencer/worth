@@ -60,7 +60,7 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                                                 "ParentRows".into(),
                                                 "Parent".into(),
                                                 "Row".into(),
-                                                ApplicationQueryRootPathDirection::Forward,
+                                                RelationDirection::Forward,
                                             ),
                                         ],
                                         guards: vec![],

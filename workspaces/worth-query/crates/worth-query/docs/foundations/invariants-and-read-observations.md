@@ -35,7 +35,7 @@ installed rule APIs through `worth_query_host::facade::application_invariants`.
 | Bind the installed schema once | `setup.invariant(marker, execution_point, resolver_callback)`; `resolver.typed_field(..)` and `resolver.typed_relation(..)` |
 | Prepare the read scope | `WorthQueryApplicationInvariantRule::prepare_scope` or its checked counterpart; `planner.proposed()`, `planner.committed()`, `planner.reads()` |
 | Evaluate that scope | `evaluate` or `evaluate_checked`; `context.proposed()`, `context.committed()`, `context.reads()` |
-| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`; entity and relation handles retain their native identity and view affinity |
+| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`, `walk`, `reaches`, `closure`; entity and relation handles retain their native identity and view affinity |
 | Inspect a normal query result | `rows.receipt().inspect().read_work().reads()`; the lower host query receipt also exposes `receipt.reads()` |
 | Inspect a snapshot projection | `WorthQueryCompletedInvariantProjection::work()` or `into_parts()` |
 
@@ -56,11 +56,15 @@ evaluation will read. Evaluation cannot expand its prepared entity/relation
 scope. Declare every field and relation the rule needs; resolving a binding
 does not make undeclared access legal.
 
+For complete multi-hop reads, see [Invariant walks](invariant-walks.md). They
+admit every visited entity and physical edge and preserve the original request
+and payer through typed results and refusals.
+
 Native validation completes before custom scope preparation at the same
 execution point. A native failure that blocks that point prevents both custom
 callbacks; native passes and advisory evidence remain visible when custom work
-continues. Declare a prerequisite such as acyclicity on the relation when a
-commit-boundary rule needs to walk that relation safely. A law enforced only at
+continues. Declare a prerequisite such as acyclicity when the domain algorithm
+requires acyclic data; complete walks themselves handle cycles safely. A law enforced only at
 publication does not protect an earlier callback, and harness audits continue
 collecting evidence from both stages. Admission for parallel execution can
 still reject an unchecked custom kernel before either stage runs.

@@ -4,7 +4,7 @@ use super::{
     WorthQueryCanonicalWorkEvidence,
 };
 use worth_query_declaration::facade::{
-    application_query::ApplicationQueryRootPathDirection as Direction,
+    application_query::RelationDirection as Direction,
     application_schema::{
         ApplicationSigningEntityCoordinates as Coordinates,
         ApplicationSigningGraphSubjectDependency as Dependency,

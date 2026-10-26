@@ -64,7 +64,7 @@ impl Fixture {
                         "ParentRows".into(),
                         "Parent".into(),
                         "Row".into(),
-                        ApplicationQueryRootPathDirection::Reverse,
+                        RelationDirection::Reverse,
                     )],
                 },
             ),

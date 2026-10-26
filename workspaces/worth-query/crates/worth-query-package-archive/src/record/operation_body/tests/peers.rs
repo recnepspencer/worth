@@ -2,8 +2,8 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryRootPathDirection, ApplicationQueryRootPathMeaning,
-        ApplicationQueryRootPathStep, WorthQueryPortableApplicationQueryRootPathParts,
+        ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep, RelationDirection,
+        WorthQueryPortableApplicationQueryRootPathParts,
     },
     application_schema::{
         ApplicationOperationBodyCreationLink as Link,
@@ -23,7 +23,7 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
                     "Rows".into(),
                     "Parent".into(),
                     "Row".into(),
-                    ApplicationQueryRootPathDirection::Reverse,
+                    RelationDirection::Reverse,
                 )],
                 guards: vec![],
             },

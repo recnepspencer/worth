@@ -10,6 +10,9 @@ pub enum WorthQueryInvariantAccessDenialKind {
     InvalidValue,
     RelationNotInstalled,
     WorkBudgetExceeded,
+    Interrupted(worth_relational::facade::runtime::CustomInvariantInterruption),
+    MemoryBudgetExceeded,
+    MemoryAdmission(worth_execution::MemoryLimitDenial),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -19,6 +22,34 @@ pub struct WorthQueryInvariantAccessDenial {
 }
 
 impl WorthQueryInvariantAccessDenial {
+    pub(super) fn from_native_read(
+        cause: worth_relational::facade::runtime::StructuralWalkDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
+        use worth_relational::facade::runtime::{StructuralReadError, StructuralWalkDenialKind};
+        let kind = match cause {
+            StructuralWalkDenialKind::Read(StructuralReadError::WorkBudgetExceeded) => {
+                WorthQueryInvariantAccessDenialKind::WorkBudgetExceeded
+            }
+            StructuralWalkDenialKind::Read(StructuralReadError::OutsideDeclaredAccess) => {
+                WorthQueryInvariantAccessDenialKind::OutsideDeclaredAccess
+            }
+            StructuralWalkDenialKind::Read(StructuralReadError::RecordUnavailable) => {
+                WorthQueryInvariantAccessDenialKind::EntityUnavailable
+            }
+            StructuralWalkDenialKind::Interrupted(stop) => {
+                WorthQueryInvariantAccessDenialKind::Interrupted(stop)
+            }
+            StructuralWalkDenialKind::MemoryBudgetExceeded => {
+                WorthQueryInvariantAccessDenialKind::MemoryBudgetExceeded
+            }
+            StructuralWalkDenialKind::MemoryAdmission(cause) => {
+                WorthQueryInvariantAccessDenialKind::MemoryAdmission(cause)
+            }
+        };
+        Self::new(kind, subject)
+    }
+
     pub(super) fn new(
         kind: WorthQueryInvariantAccessDenialKind,
         subject: impl Into<String>,

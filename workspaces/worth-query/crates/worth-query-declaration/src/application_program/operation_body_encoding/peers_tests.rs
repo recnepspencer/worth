@@ -2,8 +2,8 @@
 use super::operation_body_record;
 use crate::{
     application_query::{
-        ApplicationQueryRootPathDirection as Path, ApplicationQueryRootPathMeaning,
-        ApplicationQueryRootPathStep as Step, WorthQueryPortableApplicationQueryRootPathParts,
+        ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
+        RelationDirection as Path, WorthQueryPortableApplicationQueryRootPathParts,
     },
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField as Field,

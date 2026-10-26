@@ -23,6 +23,7 @@ use super::complete_result::*;
 
 mod differential;
 mod proposed;
+mod raw_roots;
 mod stops;
 
 struct Graph {

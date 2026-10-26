@@ -1,7 +1,6 @@
 use worth_query_declaration::facade::application_query::{
-    ApplicationQueryRootPathDirection, ApplicationQueryRootPathGuard,
-    ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
-    WorthQueryPortableApplicationQueryRootPathGuardParts,
+    ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
+    RelationDirection, WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };
 
@@ -55,8 +54,8 @@ fn write_step(
     output.text(step.from())?;
     output.text(step.to())?;
     output.u16(match step.direction() {
-        ApplicationQueryRootPathDirection::Forward => 1,
-        ApplicationQueryRootPathDirection::Reverse => 2,
+        RelationDirection::Forward => 1,
+        RelationDirection::Reverse => 2,
     })
 }
 fn decode_step(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathStep, Denial> {
@@ -64,8 +63,8 @@ fn decode_step(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathSt
     let from = input.text()?.to_owned();
     let to = input.text()?.to_owned();
     let direction = match input.u16()? {
-        1 => ApplicationQueryRootPathDirection::Forward,
-        2 => ApplicationQueryRootPathDirection::Reverse,
+        1 => RelationDirection::Forward,
+        2 => RelationDirection::Reverse,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationQueryRootPathStep::from_untrusted_fields(

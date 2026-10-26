@@ -37,8 +37,8 @@ impl ApplicationOperationBodyCreationPathLink {
             part(step.from());
             part(step.to());
             part(match step.direction() {
-                crate::application_query::ApplicationQueryRootPathDirection::Forward => "forward",
-                crate::application_query::ApplicationQueryRootPathDirection::Reverse => "reverse",
+                crate::application_query::RelationDirection::Forward => "forward",
+                crate::application_query::RelationDirection::Reverse => "reverse",
             });
         }
         part(&self.link.canonical_record());

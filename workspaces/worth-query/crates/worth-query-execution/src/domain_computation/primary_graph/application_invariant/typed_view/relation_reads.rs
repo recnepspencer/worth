@@ -93,9 +93,12 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
                     "relation endpoint kind",
                 ));
             }
-            self.admission.relation(record.relation_id)?;
-            self.admission.entity(record.source)?;
-            self.admission.entity(record.target)?;
+            self.admission
+                .relation(record.relation_id, self.relations.read_budget())?;
+            self.admission
+                .entity(record.source, self.relations.read_budget())?;
+            self.admission
+                .entity(record.target, self.relations.read_budget())?;
             typed.push(WorthQueryApplicationInvariantRelation {
                 relation_id: record.relation_id,
                 from: self.entity(record.source, from_kind),

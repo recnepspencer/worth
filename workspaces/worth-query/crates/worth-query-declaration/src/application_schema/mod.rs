@@ -1,3 +1,5 @@
+pub use worth_foundational::facade::RelationDirection;
+
 mod application_capability_authoring;
 mod application_correction_authoring;
 mod application_mutation_authoring;

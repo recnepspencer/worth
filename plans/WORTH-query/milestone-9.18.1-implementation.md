@@ -1783,3 +1783,334 @@ with zero scan errors. Source, tests and composition are reviewed under qa-loop,
 qa-tests and code-quality-qa. Normal boundary-check also passes with valid Cargo
 topology. All slice checks are terminal and passing, and the persistent reviewer
 clears this native foundation slice to commit. Phase 3 is not complete.
+
+## Phase 3, slice 2: typed invariant reachability boundary review
+
+Slice 1 is committed at `8c3abc1bb6e8356400d4290f631b1b06846f0655`.
+The next complete surface is the installed invariant reader's walk, reaches and
+multi-root closure. The adversarial condition is a deep edit whose rule still
+appears healthy if any visited entity or physical relation is absent from
+prepared authority. A complete native traversal must not become an unfunded
+typed materialization, a partial answer, or a way to reuse another candidate's
+identity.
+
+Native structural views remain authoritative for candidate/before-image truth,
+declared kind access, the sealed original request, work and memory. The typed
+reader owns binding, candidate affinity, Proposed/Committed posture, expected
+kind checks, read observation and preparation/evaluation admission. Query will
+consume the complete native result, not rediscover its graph with one-hop calls.
+It will validate an endorelation and every root before disclosure, record native
+acquisitions even if later wrapping/admission fails, then admit every entity and
+every matching physical edge, including non-discovery edges. Evaluation checks
+the frozen admission before returning typed facts. A native-backed result owns
+the native result and materializes fixed-size typed entities/edges through
+borrowed iterators; it needs no second result Vec or detached payer.
+
+The existing Query planning and frozen BTree sets are distinct allocations.
+`freeze` currently clones them infallibly, and planning constructs its own Arc.
+Their backing must be admitted before growth on the original native payer,
+including coexistence during freezing. Native will expose a borrowed, typed
+read-budget view of that same meter/request, without a constructor, allowance,
+counter or graph mutation door. Its claims preserve interruption and memory
+causes rather than bool-only cause loss. Query admission construction, insertions
+and freezing become fallible; registration propagates failure without an empty
+scope or unchecked fallback. Existing one-hop admission sites use this same
+funded route. The native adapter already drops owned scope before its meter;
+public retained walks keep their own native custody.
+
+Review also found an input gap in the complete native driver: duplicate raw
+seeds bypass unique-entity retention, so their membership work and safe points
+are missing. Before exposing closure, add a required private input step before
+deduplication. Complete policy checks/charges every raw root. Bounded policy
+preserves its existing up-front raw-seed charge and uses a no-op input step.
+Input work must not masquerade as entity metadata reads.
+
+Direction is existing shared meaning, not new authority. There is no generic
+foundational relation direction. `ApplicationQueryRootPathDirection` already
+serves operation creation/path sources and signing in addition to declared
+queries (29 public repository files); its current name is narrower than its
+meaning. Move that single Forward/Reverse value to foundational
+`relations/direction.rs` as `RelationDirection`, migrate existing uses and
+exports, and leave no alias or parallel enum. Preserve variant order, serde
+spelling and canonical/signing bytes. Foundation owns portable meaning; Native
+and Query continue to own execution and authority. No private crate/doc use of
+the old name was found.
+
+Native custom applicability is declared-kind closure; Query's prepared sets
+enforce read authority. There is no retained per-rule verdict cache. The
+mandatory footprint mutant must therefore fail an exact fresh custom-violation
+expectation, usually by producing an OutsidePreparedScope execution refusal;
+it must not be described as accepting a stale cached verdict. Reverse discovery
+from deep touched endpoints followed by forward discovery can accidentally
+cover a three-edge chain even under a first-hop-only mutant. The court instead
+uses meaningful stored root membership of Node entities, on a distinct relation
+kind, to acquire a genuinely typed Node root without enumerating the tested
+path or rebinding identities. Authentication and membership edges are not the
+walked edges. One ordinary action changes only the third-hop path edge to a
+blocked endpoint. A separate activation-field action touches only the root, so
+deep entity admission cannot be supplied incidentally by touched endpoints.
+Separate entity and relation mutants test the actual admission handoff. Both
+hostile and lawful twins must reach the real deep evaluation; exact typed
+refusal, hook activity and independently observed committed truth distinguish
+correct behavior from generic denial or broken setup.
+
+The current account lease/refusal fixtures have heterogeneous relations and
+different responsibilities. A dedicated `application_attempt/invariant_walks`
+sibling is the proper installed court, reusing ordinary installation,
+authentication and action patterns. No new certification construction door,
+all-entity scan, fake identity, cached verdict or committed/proposed cast is
+needed. The persistent reviewer has accepted these boundaries and the input,
+budget and mutant refinements. The material facts required for planning are
+resolved; operation/declared reads retain their separate pinned-native owner.
+
+### Slice 2 implementation plan
+
+The installed rule's caller path is:
+
+```rust,ignore
+let history = view.walk(&self.previous, RelationDirection::Forward, &tip)?;
+for step in &history {
+    let feature = step.entity();
+    let distance = step.distance();
+}
+let depends = view.reaches(&self.previous, &later, &earlier)?;
+let ancestry = view.closure(&self.previous, RelationDirection::Forward, &roots)?;
+```
+
+`previous` is the resolver-issued endorelation binding. Forward follows stored
+source to target; reverse follows target to source. Walk and closure include
+unique roots at distance zero and order visits by minimum distance then native
+identity. Reachability is reflexive on a valid local entity. The owned result
+offers borrowed iteration, entities and physical relations; it retains native
+custody rather than exposing an unfunded owned collection.
+
+1. Repair native raw-root work/safe points before Query depends on closure.
+   Add the private driver input step, preserve bounded up-front charges, and
+   distinguish seed versus acquired-entity test events on the existing owned
+   observer. Prove duplicate-input work/cancellation refusal and funded twins
+   on real native graphs without inventing metadata reads.
+2. Add `custom_rule/read_budget.rs`: a borrowed original-meter/request handle
+   with typed checkpoint and retention admission. Only native view/planner
+   getters construct it. Share original cause classification with complete
+   reads; no new resource policy, counter, constructor or graph authority.
+3. Move the existing direction meaning into foundational
+   `relations/{mod,direction}.rs`, export `RelationDirection`, and mechanically
+   migrate the old declaration enum and its real users. Preserve exact variants,
+   order, serialized spelling and canonical encodings; delete the displaced
+   enum/export and add no compatibility alias. Compile current canonical,
+   signing, archive and external graph-input callers. The historical
+   foundational Phase 1 responsibility report is not a registry for every later
+   value family and does not acquire unrelated changes.
+4. Make Query prepared admission funded and fallible. Charge planning Arc and
+   BTree growth before allocation; admit frozen Arc plus cloned set backing
+   before copying. Pass the same native read budget at all existing admission
+   sites. Update scope-planner construction, `freeze_admission` and ordinary/
+   checked registration propagation together, with no empty or ordinary-hook
+   fallback. Name collection bounds in the owning admission module and preserve
+   nested scope/payer drop order.
+5. Add `application_invariant/typed_view/walk.rs` for orchestration and a
+   subordinate native-backed result/iterator owner. Check installed binding,
+   endorelation meaning, root binding/kind/candidate/posture, then lower once to
+   native direction-specific complete traversal. Record native observations on
+   both success and error before later admission can fail. Validate every kind
+   and register every visited entity and physical relation before exposing the
+   typed result. Add `walk`, multi-root `closure` and forward `reaches`; do not
+   loop one-hop methods or copy a graph. Mint result identities with the exact
+   binding, candidate affinity and view posture. Factor cheap identity checking
+   from existing metadata checking only where that preserves old read behavior.
+6. Carry typed interruption and original memory causes in the access-denial
+   surface; bulk-fold native boundary observations into the existing shared
+   `WorthQueryInvariantProjectionWork`. Export result and direction through the
+   existing audience facades. No observation becomes an allowance or grant.
+7. Build the cohesive `tests/application_attempt/invariant_walks/` family:
+   schema, installed world, ordinary action preparation, real checked rule,
+   footprint journeys and reader API/authority journeys as named children.
+   Root membership targets a root role of the same Node kind, with an explicit
+   domain-owned grouping relation, not a kind cast or a derived reachability
+   cache. The edge action unlinks its actual observed third-hop relation and
+   links the new target (the ordinary effect builder has no retarget shortcut).
+   The activation action edits only the root field. Require exact decoded
+   violation/subjects, preparation and evaluation activity, unchanged checkpoint
+   and fresh graph after denial, and lawful twins whose deep checks also ran.
+   Run separate entity-only and relation-only first-hop admission mutations at
+   the real handoff. Restore sources and invalidate/rebuild the affected target
+   before final proof; mutation artifacts are never final evidence.
+8. Protect the typed API with actual installed direction/closure/reflexive and
+   disconnected reachability, cyclic/diamond non-discovery scope, foreign
+   binding/view, original cancellation/resource refusal, 1,000-step and
+   fixed-walk 10/10,000-unrelated read observations. Keep read-only diagnostic
+   probes in their own rule/admission frame so they cannot mask the footprint
+   rule. Native independent random BFS proof remains its algorithm authority;
+   Query evidence tests the real typed handoff and prepared authority.
+9. Clarify Phase 3 specification root/direction/footprint semantics to match
+   these real owners; add feature guidance and a compiled real-rule snippet,
+   link it from the capability index and existing invariant guide. Document the
+   source API direction name change without implying a wire change. Operation,
+   declared closure and consumer migrations remain later slices of this phase.
+10. Verify with the real application-build wrapper and toolchain 1.94: focused
+    Native custom-rule tests; foundational direction and existing value tests;
+    declaration/installation/archive libraries; focused installed Query courts,
+    then the affected installed invariant, refusal, checked-hook, read-observation,
+    signing and root-path families from the emitted Query artifact; targeted
+    native graph-input guards and any actually affected public invariant example.
+    Use selected Cargo package/target builds, not the known overbroad Query
+    workspace portfolio. Run formatting, dirty line caps, function review,
+    whitespace, normal boundary-check and agent-context. Gate implementation,
+    both mutant kills and final results with the persistent reviewer under all
+    three QA skills; commit only the cleared slice.
+
+There is no undiscoverable product choice or new permission requirement. No
+operation-reader or declared-query walk, orbit, aggregate identity or phase
+merge is claimed by this slice. Any new material authority fact revises this
+brief and plan before dependent implementation continues.
+
+
+### Slice 2 verification refinement
+
+Compile time constrains proof selection. The current foundational suite (73),
+Native suite (1,820 passed; 31 existing ignored), and declaration (464),
+installation (343) and archive (122) suites are green on the current production
+source. Fixture-only corrections do not invalidate those owner results. Reuse
+that evidence and the actual emitted Query artifact; do not repeat the owner
+builds or expand to unrelated authority, Topology, Bank or private-CAD portfolios.
+The required normal boundary-check, agent-context and dirty-scope checks remain.
+
+The installed eight courts cover the new typed handoff. Select affected existing
+invariant preparation, typed refusal, checked-hook, read-observation, signing
+and root-path regressions from the actual binary inventory after the final
+restored build. Public native graph-input guards qualify the moved direction
+value. The real installed rule compiles the guide's callback; any additional
+consumer example must protect an actual changed consumer boundary.
+
+Use one temporary instrumented binary for the two independent admission faults,
+then one restored clean build. A cfg(test) mode belongs to each WalkSafety
+planning receiver. The entity fault omits only vertices at distance greater
+than one; the relation fault omits only edges beyond the roots' first hop.
+Native traversal, read observations, domain verdicts and frozen evaluation
+checks remain complete and unchanged. The original eight mode-zero courts must
+pass in that instrumented binary. Each separately selected faulty court must
+then fail its exact domain-verdict assertion through OutsidePreparedScope and
+NoDomainRefusal. No diagnostic admission frame may rescue either fault.
+
+All temporary fields, methods, branches, wrappers and debug output are restored
+byte-for-byte, without restoring file timestamps. Only the subsequent clean
+artifact qualifies final runtime evidence. The persistent reviewer accepted
+this receiver-owned fault design and the focused regression boundary under the
+three QA skills. No global, environment or thread-local mutation arm is added.
+
+
+### Slice 2 installed-fixture boundary correction
+
+The first complete executable exposed two setup refusals before the new API
+courts could run. Installation correctly refuses a dynamically extended
+declaration for the same WalkSchema marker: publication compares the installed
+schema against that marker's canonical declaration. Use one canonical schema
+that declares Safety and Probe, bind both factories, and give ordinary footprint
+worlds a permanently disabled Probe. Disabled preparation returns an empty scope
+before any view/read; disabled evaluation passes. Enabled diagnostics still own
+an independent frozen frame. Enablement is configuration; arming only controls
+observations/callbacks. No StaleInstalledSchema check or admission is bypassed.
+
+The edge action must seal the exact facts its opaque unlink read observes.
+Adjacency and pair-relation keys are distinct. Resolve the old endpoint inside
+the public projection and require_decision_relation for the exact source/old
+pair. Resolve and require the replacement entity as before. Remove manual
+entity observations that were absent from the sealed decision keys; retain the
+actual observe_relation call for the opaque unlink token. Completion replays the
+same sealed entity, identity and relation facts. This follows the existing
+public grant-revocation pattern and preserves exact decision-key equality.
+
+The persistent reviewer confirmed these boundaries from publication and
+read_set/completion owners. Apply both fixture fixes before the next build.
+Batch them with the accepted temporary admission instrumentation: that binary
+must pass all eight original mode-zero courts before either fault is considered
+meaningful. Restore and build the final source once after the independent fault
+failures. Reuse unaffected owner evidence.
+
+
+### Slice 2 proof recorded before final qualification
+
+The combined temporary build passed all eight original mode-zero installed
+courts in 40.19 seconds. They exercised exact deep edge/activation violations
+and lawful twins, typed cycle/diamond/direction/closure/reachability semantics,
+posture refusal, a real same-installation sibling candidate with local control,
+a 1,000-step chain, walk-only read deltas with 10 versus 10,000 other group
+members, and original serial/leased work and cancellation with funded twins.
+The preparation of the diagnostic rule enumerates all group members; its
+locality assertion concerns only the measured complete evaluation-walk call.
+
+The independently armed entity fault failed at OutsidePreparedScope(entity);
+the relation fault failed at OutsidePreparedScope(relation). Both failed the
+unchanged exact-domain-refusal assertion as NoDomainRefusal with test exit 101.
+They did not simulate stale cached acceptance or change native traversal.
+The seven temporary source files were restored byte-for-byte with SHA-256
+records and no conflicts. The subsequent clean build, restored positive courts,
+focused existing regressions and structural gates are still required.
+
+Current unchanged-owner evidence is 73 foundational tests, 1,820 Native tests
+with 31 existing ignored, 464 declaration tests, 343 installation tests, 122
+archive tests, and 41 public native graph-input guard tests, all green. The
+shared direction's spelling/order and current canonical/archive consumers are
+qualified. The guide's callback matches the actual rule's Rust tokens after
+excluding only its diagnostic observer, and all five local links resolve.
+
+Formatting, dirty line caps and whitespace pass across 80 Rust files. The
+persistent reviewer accepted all 39 function advisories in causal scope and
+conditionally cleared source under qa-loop, qa-tests and code-quality-qa.
+That is not final commit clearance; final runtime, selected regression,
+structural and documentation evidence remains pending.
+
+
+### Slice 2 restored runtime qualification
+
+The restored-source build succeeded in 414 seconds with Rust 1.94 incremental
+compilation disabled. All eight installed courts passed again on that clean
+artifact in 39.67 seconds, with no temporary fault fields, methods, wrappers or
+debug output. Fifty affected existing Query regressions then passed in 9.98
+seconds from the same artifact: invariant selection/installation, failure and
+validation transport, checked hooks, typed refusals, snapshot read observations,
+root selection and pinned root guards. No additional compilation was needed for
+that selection. Public signing/direction compatibility is also covered by the
+already-green declaration, installation, archive and graph-input owners.
+
+The combined instrumented build took 413 seconds and proved the two independent
+faults after its eight original mode-zero courts passed. Both source restoration
+and the final artifact are qualified; neither temporary artifact is substituted
+for clean-source proof. Rust 1.94's earlier evaluate_obligation incremental ICE
+was retained as a failed build log and resolved by disabling incremental
+compilation for these test builds, without altering production source or
+weakening tests. All builds used the real application-build wrapper; the two
+mutation-driver builds used --locked.
+
+The persistent reviewer cleared the implementation, both fault failures, all 39
+scoped function advisories and documentation under the three QA skills. The
+required normal boundary-check and agent-context are still running. Commit
+clearance remains pending those structural results and the final evidence pass.
+
+
+### Slice 2 structural qualification
+
+The normal boundary-check passed (602.47 seconds, Road 1 Cargo topology valid)
+and agent-context check passed (0.56 seconds) on the restored source. Final
+formatting, dirty line caps and whitespace were green across all 80 Rust files;
+the 39 function advisories are explicitly reviewed and accepted. The final
+qualification set is the clean eight installed courts, 50 affected Query
+regressions, two independently killed admission faults with exact restoration,
+73 foundational, 1,820 Native (31 existing ignored), 464 declaration, 343
+installation, 122 archive, 41 public graph-input tests, and callback/link proof.
+No unrelated full Query, Topology, Graph, Bank or private-CAD portfolio was rerun.
+
+Only final persistent-reviewer commit clearance remains. This closes the
+installed-invariant walk slice, not Phase 3: operation/snapshot/declared closure
+surfaces and downstream history adoption remain subsequent work. No Phase 3
+default-branch merge or private SDK-pin update is authorized by slice completion.
+
+
+### Slice 2 clearance
+
+The persistent reviewer granted final commit clearance under qa-loop, qa-tests
+and code-quality-qa after the restored runtime, independent faults, focused
+regressions, documentation and required structural evidence were complete.
+No material in-scope finding remains. Commit the installed-invariant walk slice
+on codex/worth-query-9.18.1. Phase 3 remains open; its default integration and
+private adoption follow the remaining operation/declared work and phase proof.

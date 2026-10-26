@@ -39,7 +39,8 @@ pub use typed_binding::{
 pub use typed_view::{
     WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
     WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
-    WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
+    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

@@ -50,12 +50,8 @@ fn append_root_paths(
                 text(
                     format!("{step_path}.direction"),
                     match step.direction() {
-                        crate::application_query::ApplicationQueryRootPathDirection::Forward => {
-                            "forward"
-                        }
-                        crate::application_query::ApplicationQueryRootPathDirection::Reverse => {
-                            "reverse"
-                        }
+                        crate::application_query::RelationDirection::Forward => "forward",
+                        crate::application_query::RelationDirection::Reverse => "reverse",
                     },
                 ),
             ]);

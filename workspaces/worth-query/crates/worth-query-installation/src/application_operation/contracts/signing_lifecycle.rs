@@ -255,7 +255,7 @@ fn link_can_change_existing_anchor(
     step: &worth_query_declaration::facade::application_query::ApplicationQueryRootPathStep,
 ) -> bool {
     use worth_query_declaration::facade::{
-        application_query::ApplicationQueryRootPathDirection as Path,
+        application_query::RelationDirection as Path,
         application_schema::ApplicationOperationBodyCreationLinkDirection as Link,
     };
     body.reference_inputs()

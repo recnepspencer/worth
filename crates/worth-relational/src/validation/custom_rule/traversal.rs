@@ -219,6 +219,11 @@ struct ScopeRead<'read, 'runtime> {
 impl breadth_first::BreadthFirstRead for ScopeRead<'_, '_> {
     type Error = CustomInvariantTraversalError;
 
+    fn seed(&mut self, _entity: EntityId) -> Result<(), Self::Error> {
+        // The bounded owner charged its complete raw seed list before entry.
+        Ok(())
+    }
+
     fn retain(&mut self, _entity: EntityId, distance: usize) -> Result<(), Self::Error> {
         // Legacy scope policy charges the raw seed list once, including duplicates.
         if distance != 0 {

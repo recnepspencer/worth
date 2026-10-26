@@ -30,7 +30,8 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
             };
             self.reads.endpoint();
             if kind == Some(entity.entity_kind) {
-                self.admission.entity(entity_id)?;
+                self.admission
+                    .entity(entity_id, self.relations.read_budget())?;
                 entities.push(self.entity(entity_id, entity.entity_kind));
             }
         }
@@ -60,7 +61,8 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
             };
             self.reads.endpoint();
             if kind == Some(field.entity_kind) {
-                self.admission.entity(entity_id)?;
+                self.admission
+                    .entity(entity_id, self.relations.read_budget())?;
                 entities.push(self.entity(entity_id, field.entity_kind));
             }
         }

@@ -84,10 +84,20 @@ pub struct StructuralRelationView<'runtime> {
     work: super::CustomInvariantWorkMeter,
     access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
     #[cfg(test)]
-    walk_observer: Option<std::sync::Arc<dyn Fn(EntityId) + Send + Sync>>,
+    walk_observer: Option<std::sync::Arc<dyn Fn(StructuralWalkEventForTest) + Send + Sync>>,
+}
+
+#[cfg(test)]
+pub(super) enum StructuralWalkEventForTest {
+    Seed(EntityId),
+    Entity(EntityId),
 }
 
 impl<'runtime> StructuralRelationView<'runtime> {
+    pub fn read_budget(&self) -> super::CustomInvariantReadBudget<'_> {
+        super::CustomInvariantReadBudget::new(self.execution, &self.work)
+    }
+
     pub(super) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
@@ -111,7 +121,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
     #[cfg(test)]
     pub(super) fn observe_walk_for_test(
         &mut self,
-        observer: std::sync::Arc<dyn Fn(EntityId) + Send + Sync>,
+        observer: std::sync::Arc<dyn Fn(StructuralWalkEventForTest) + Send + Sync>,
     ) {
         self.walk_observer = Some(observer);
     }
@@ -119,12 +129,15 @@ impl<'runtime> StructuralRelationView<'runtime> {
     #[cfg(test)]
     pub(super) fn record_walk_visit_for_test(&self, entity: EntityId) {
         if let Some(observer) = &self.walk_observer {
-            observer(entity);
+            observer(StructuralWalkEventForTest::Entity(entity));
         }
     }
 
-    pub(super) fn check_walk_live(&self) -> Result<(), super::CustomInvariantInterruption> {
-        super::interruption::check_live(self.execution)
+    #[cfg(test)]
+    pub(super) fn record_walk_seed_for_test(&self, entity: EntityId) {
+        if let Some(observer) = &self.walk_observer {
+            observer(StructuralWalkEventForTest::Seed(entity));
+        }
     }
 
     pub fn entity_kind(&self, entity_id: EntityId) -> Result<KindId, StructuralReadError> {

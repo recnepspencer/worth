@@ -6,7 +6,7 @@ use super::{
     ApplicationSigningEntityCoordinates, ApplicationSigningProvenanceParts,
     ApplicationSigningSubjectDependency,
 };
-use crate::application_query::ApplicationQueryRootPathDirection;
+use crate::application_query::RelationDirection;
 use crate::application_schema::{
     ApplicationFieldBindingLocus, ApplicationScalarValueBinding, ApplicationValueValidationDenial,
 };
@@ -51,7 +51,7 @@ pub struct ApplicationSigningSubjectSelectionDependency {
     pub anchor: ApplicationSigningEntityCoordinates,
     pub selected: ApplicationSigningEntityCoordinates,
     pub relation: String,
-    pub direction: ApplicationQueryRootPathDirection,
+    pub direction: RelationDirection,
     pub native_revision: u64,
 }
 impl ApplicationSigningSubjectSelectionDependency {
