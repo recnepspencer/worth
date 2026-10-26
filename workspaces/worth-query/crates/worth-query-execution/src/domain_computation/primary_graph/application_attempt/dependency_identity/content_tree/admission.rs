@@ -34,6 +34,16 @@ pub(super) fn leaf(
     // constructing the basis Vec. List elements produce <=8 entries; native
     // field paths and variable text are counted separately from inline data.
     let (elements, shared_text) = match fact {
+        Fact::StructuralWalk { observation } => (
+            observation
+                .key()
+                .roots()
+                .len()
+                .checked_add(observation.native().visits().len())
+                .and_then(|n| n.checked_add(observation.native().relations().len().checked_mul(2)?))
+                .ok_or(StoreDenial::Representability)?,
+            observation.key().relation().len(),
+        ),
         Fact::SourceAdjacencyRevision { endpoints, .. } => (endpoints.len(), 0),
         Fact::Relation {
             matching_relations, ..
@@ -97,7 +107,8 @@ pub(super) fn leaf(
     let held = control.policy().reserve_memory(quote);
     control.check_live()?;
     let _held = held?;
-    let (digest, work) = rule::leaf(ordinal, fact).map_err(|()| StoreDenial::ConflictingBody)?;
+    let (digest, work) = rule::leaf_with_poll(ordinal, fact, || control.check_live())?
+        .map_err(|()| StoreDenial::ConflictingBody)?;
     control.check_live()?;
     Ok((
         Summary {

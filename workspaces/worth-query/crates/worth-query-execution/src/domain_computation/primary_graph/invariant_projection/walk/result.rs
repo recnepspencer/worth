@@ -3,13 +3,14 @@ use super::super::{WorthQueryInvariantEntityIdentity, WorthQueryInvariantRelatio
 use std::{marker::PhantomData, sync::Arc};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
-    runtime::{PinnedStructuralWalk, PinnedStructuralWalkVisit},
+    runtime::PinnedStructuralWalkVisit,
 };
 
 /// Complete reachability on one pinned projection, with its original result payer.
 /// Borrowed iteration mints local typed identities without additional graph reads.
 pub struct WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
-    pub(super) native: PinnedStructuralWalk,
+    pub(in crate::domain_computation::primary_graph::invariant_projection) observation:
+        Arc<super::StructuralWalkObservation>,
     entity: Option<Arc<str>>,
     authority_identity: u64,
     kind: Option<KindId>,
@@ -30,11 +31,11 @@ pub struct WorthQueryInvariantProjectionWalkIter<'walk, Schema, Relation, Entity
 
 impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relation, Entity> {
     pub(super) fn new(
-        native: PinnedStructuralWalk,
+        observation: Arc<super::StructuralWalkObservation>,
         root: Option<&WorthQueryInvariantEntityIdentity<Schema, Entity>>,
     ) -> Self {
         Self {
-            native,
+            observation,
             entity: root.map(|r| Arc::clone(&r.entity)),
             authority_identity: root.map_or(0, |r| r.authority_identity),
             kind: root.map(|r| r.kind),
@@ -43,21 +44,22 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
     }
 
     pub fn len(&self) -> usize {
-        self.native.visits().len()
+        self.observation.native().visits().len()
     }
     pub fn is_empty(&self) -> bool {
-        self.native.visits().is_empty()
+        self.observation.native().visits().is_empty()
     }
     pub fn iter(&self) -> WorthQueryInvariantProjectionWalkIter<'_, Schema, Relation, Entity> {
         WorthQueryInvariantProjectionWalkIter {
             walk: self,
-            visits: self.native.visits().iter(),
+            visits: self.observation.native().visits().iter(),
         }
     }
     pub fn entities(
         &self,
     ) -> impl ExactSizeIterator<Item = WorthQueryInvariantEntityIdentity<Schema, Entity>> + '_ {
-        self.native
+        self.observation
+            .native()
             .visits()
             .iter()
             .map(|v| self.entity(v.entity.entity_id))
@@ -67,7 +69,8 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
         &self,
     ) -> impl ExactSizeIterator<Item = WorthQueryInvariantRelation<Schema, Relation, Entity, Entity>> + '_
     {
-        self.native
+        self.observation
+            .native()
             .relations()
             .iter()
             .map(|r| WorthQueryInvariantRelation {
@@ -151,7 +154,7 @@ impl<Schema, Relation, Entity> std::fmt::Debug
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("WorthQueryInvariantProjectionWalk")
-            .field("facts", &self.native)
+            .field("facts", &self.observation.native())
             .finish_non_exhaustive()
     }
 }

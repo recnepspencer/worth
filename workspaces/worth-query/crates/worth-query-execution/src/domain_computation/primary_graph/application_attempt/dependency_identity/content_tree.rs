@@ -27,6 +27,13 @@ pub(in crate::domain_computation::primary_graph) struct CompletedFactRoutes {
     routes: Arc<FactRoutes>,
 }
 impl CompletedFactRoutes {
+    pub(in crate::domain_computation::primary_graph) fn walk_touches_entity(
+        &self,
+        body: &FactPayload,
+        id: worth_relational::facade::identity::EntityId,
+    ) -> bool {
+        self.matches_body(body) && self.routes.walk_entity(id)
+    }
     pub(in crate::domain_computation::primary_graph) fn from_facts(
         body: FactPayload,
         control: StorageControl<'_, '_>,

@@ -4,6 +4,11 @@ use super::WorthQueryApplicationObservedFact;
 
 pub(super) fn evaluate(fact: &WorthQueryApplicationObservedFact, candidate: EntityId) -> bool {
     match fact {
+        WorthQueryApplicationObservedFact::StructuralWalk { observation } => observation
+            .native()
+            .visits()
+            .iter()
+            .any(|v| v.entity.entity_id == candidate),
         WorthQueryApplicationObservedFact::SourcePublication { observation } => {
             observation.touches_entity(candidate)
         }

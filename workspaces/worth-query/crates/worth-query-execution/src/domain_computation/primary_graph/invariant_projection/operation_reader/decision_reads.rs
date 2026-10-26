@@ -6,6 +6,7 @@ mod aspect_presence;
 mod computation_inputs;
 mod expected_keys;
 mod source_publications;
+pub(super) mod structural_walks;
 pub(in crate::domain_computation::primary_graph) use computation_inputs::ObservedComputationInputs;
 pub(in crate::domain_computation::primary_graph) use expected_keys::ExpectedFactKeys;
 
@@ -40,6 +41,15 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     /// Where that computation leaves its completed run, when a producer runs
     /// the projection.
     deposit: Option<ComputationDeposit>,
+    // Last: authoring collections must drop before their original reservation.
+    walks: structural_walks::IssuedWalkValues,
+    failed_walk: bool,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
+    Key(WorthQueryApplicationFactKey),
+    StructuralWalk,
 }
 
 /// A reader either has no producer, owns the handed prior, or has consumed it.
@@ -139,7 +149,7 @@ impl DecisionReads {
             ExpectedFactKeys,
             (ObservedComputationInputs, CompletedComputationRetention),
         ),
-        WorthQueryApplicationFactKey,
+        FailedDecisionRead,
     > {
         let Self {
             handler,
@@ -148,11 +158,17 @@ impl DecisionReads {
             mut computation,
             runs,
             deposit,
+            mut walks,
+            failed_walk,
             ..
         } = self;
         if let Some(failed) = failed {
-            return Err(failed);
+            return Err(FailedDecisionRead::Key(failed));
         }
+        if failed_walk {
+            return Err(FailedDecisionRead::StructuralWalk);
+        }
+        computation.retain_walk_memory(walks.take_memory());
         let handler = std::sync::Arc::new(handler);
         computation.retain_handler(std::sync::Arc::clone(&handler));
         let computation = std::sync::Arc::new(computation);
@@ -160,6 +176,7 @@ impl DecisionReads {
             handler,
             std::sync::Arc::clone(&computation),
             source_publications,
+            walks,
         );
         let result = match runs {
             ComputationRuns::None => (
@@ -270,7 +287,7 @@ impl<Schema, Operation>
 mod tests {
     use worth_relational::facade::identity::{EntityId, PartitionId};
 
-    use super::{DecisionReadOutcome, DecisionReads};
+    use super::{DecisionReadOutcome, DecisionReads, FailedDecisionRead};
     use crate::domain_computation::primary_graph::application_attempt::{
         ComputationRead, WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey,
     };
@@ -292,7 +309,10 @@ mod tests {
         reads.record(adjacency(2), DecisionReadOutcome::Failed);
         reads.reading = None;
         reads.record(adjacency(3), DecisionReadOutcome::Failed);
-        assert_eq!(reads.into_expected().err(), Some(adjacency(2)));
+        assert_eq!(
+            reads.into_expected().err(),
+            Some(FailedDecisionRead::Key(adjacency(2)))
+        );
     }
 
     #[test]

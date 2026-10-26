@@ -26,6 +26,7 @@ mod output_availability;
 pub(in crate::domain_computation::primary_graph) use indexed_selection::resolution_denial;
 mod prepared_selection;
 mod prior_member;
+mod structural_walk;
 
 impl<Schema, Binding> DecisionReader<'_, '_, '_, Schema, Binding>
 where

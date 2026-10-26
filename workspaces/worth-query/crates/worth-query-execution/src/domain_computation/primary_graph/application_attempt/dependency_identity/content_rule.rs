@@ -16,6 +16,23 @@ pub(super) fn leaf(ordinal: usize, fact: &Fact) -> Derived {
     super::super::super::fact_verification_observation::content_leaf();
     derive_identity(LEAF, fact_entries(ordinal, fact)?)
 }
+pub(super) fn leaf_with_poll<E>(
+    ordinal: usize,
+    fact: &Fact,
+    poll: impl FnMut() -> Result<(), E>,
+) -> Result<Derived, E> {
+    if let Fact::StructuralWalk { observation } = fact {
+        super::super::super::fact_verification_observation::content_leaf();
+        let entries = super::canonical_encoding::structural_walk::entries_checked(
+            ordinal,
+            observation,
+            poll,
+        )?;
+        Ok(derive_identity(LEAF, entries))
+    } else {
+        Ok(leaf(ordinal, fact))
+    }
+}
 
 pub(super) fn empty() -> Derived {
     let mut entries = Vec::with_capacity(1);

@@ -18,7 +18,11 @@ use super::{
 };
 
 pub(super) mod memory;
+mod observation;
 mod result;
+pub(in crate::domain_computation::primary_graph) use observation::{
+    StructuralWalkKey, StructuralWalkObservation,
+};
 #[cfg(test)]
 mod tests;
 pub use result::{
@@ -50,8 +54,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             self.realized_scope
                 .admit_walk(native.visits(), &execution, context)
                 .map_err(|cause| self.walk_stop(cause, relation.name()))?;
+            let observation =
+                StructuralWalkObservation::issue(native, relation.name(), direction, self, context)
+                    .map_err(|cause| self.walk_stop(cause, relation.name()))?;
             Ok(WorthQueryInvariantProjectionWalk::new(
-                native,
+                observation,
                 roots.first(),
             ))
         });
@@ -75,7 +82,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         let subject = relation.name();
         let result = execution.run_native_with_checkpoint(|context| {
             let walk = self.walk(relation, RelationDirection::Forward, from)?;
-            for visit in walk.native.visits() {
+            for visit in walk.observation.native().visits() {
                 self.walk_checkpoint(context, subject)?;
                 if visit.entity.entity_id == to.entity_id {
                     return Ok(true);
@@ -182,7 +189,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             .map_err(|stop| self.walk_stop(Cause::from(WorkCeilingDenial::Stopped(stop)), subject))
     }
 
-    fn walk_stop(&mut self, cause: Cause, subject: &str) -> Denial {
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn walk_stop(
+        &mut self,
+        cause: Cause,
+        subject: &str,
+    ) -> Denial {
         self.native_read_stop.get_or_insert(cause);
         Denial::new(
             Kind::ReadExecution(crate::facade::primary_graph::relational_execution_kind(

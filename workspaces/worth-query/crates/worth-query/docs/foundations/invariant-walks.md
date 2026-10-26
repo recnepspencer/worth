@@ -92,10 +92,51 @@ snapshot, original request and installed projection work budget. The
 opens real authenticated operation admissions and exercises these calls.
 
 These are inspection reads. They do not record decision dependencies or protect
-an operation's result against source changes before publication. Recorded walk
-dependencies for handler and computation decision readers are still pending.
-Keep publication decisions on the existing recorded decision-read APIs until
-that support is available.
+an operation's result against source changes before publication. Use the recorded
+decision APIs below when the walk determines an operation's result.
+
+## Recorded decision walks
+
+Handler `DecisionReader` and the lent `WorthQueryComputationReader` accept
+`walk`, `closure` and `reaches` with the same relation references and typed
+identities. The raw operation reader names these recorded methods
+`decision_walk`, `decision_closure` and `decision_reaches`. They require a real
+operation admission and the relation's declared decision-read capability.
+
+A handler can start from its supplied scope:
+
+```rust,ignore
+let root = reader.scope().clone();
+let history = reader.walk(Next::reference(), RelationDirection::Forward, &root)?;
+let last = history.entities().last().expect("the root is included");
+let reachable = reader.reaches(Next::reference(), &root, &last)?;
+```
+
+The [installed handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/handler.rs)
+and [retained-candidate tests](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/currentness.rs)
+exercise actual admission, sealing and publication. Sealing retains the exact
+performed Native observation. Repeating the same logical walk preserves one
+dependency with all its handler/computation attributions. Dropping the returned
+walk leaves that dependency's original allocation funded until its last owner
+drops. A swallowed failed decision read still prevents sealing, including a
+failure before a complete key or value exists.
+
+Publication compares each recorded logical walk with one complete Native walk
+at the selected current snapshot. Deep changes, a new child at an empty reached
+leaf, retirement and changes to nondiscovery edges can invalidate it. An
+unrelated field edit can leave the same retained candidate current.
+
+Walk metadata does not provide an explicit relation-pair observation for link or
+unlink authoring. Keep those operations' existing recorded pair reads. Field
+reads through returned identities also retain their own field dependencies.
+
+A partitioned computation that previously used a structural walk currently runs
+fresh under the current admission, in both accounted and unaccounted execution.
+With an unchanged computation basis, its reported full-run cause is
+`StructuralWalkRead`; an existing basis-drift cause retains priority. Carrying
+those old values between live invocations remains unqualified. Live structural
+facts are also deliberately unsupported for checkpoint reuse; decoding cannot reconstruct an
+issued observation from copied metadata.
 
 ## Preparing the rule's read scope
 
@@ -169,10 +210,9 @@ binding/view, undeclared access, wrong kind and unprepared scope from work,
 memory and interruption failures. `Interrupted` preserves cancellation versus
 deadline. `MemoryAdmission` carries the original native allocation refusal.
 
-Complete walks currently belong to installed invariant views, snapshot
-projection readers and raw operation projection readers. They follow one stored
-endorelation. Handler/computation decision readers and declared queries retain
-their separate read APIs.
+Complete walks currently belong to installed invariant views, snapshot and
+operation projection readers, and handler/computation decision readers. They
+follow one stored endorelation. Declared queries retain their separate read APIs.
 
 See [invariants and read observations](invariants-and-read-observations.md),
 [relation laws](../modeling/relation-laws.md), and

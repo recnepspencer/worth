@@ -100,9 +100,19 @@ impl<Schema, Operation, Input, Scope>
     {
         let observed = self
             .read_set
-            .facts
-            .iter()
-            .any(|fact| fact.touches_entity(target.entity_id));
+            .effect_routes
+            .walk_touches_entity(&self.read_set.facts, target.entity_id)
+            || self
+                .read_set
+                .facts
+                .iter()
+                .filter(|fact| {
+                    !matches!(
+                        fact,
+                        super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                    )
+                })
+                .any(|fact| fact.touches_entity(target.entity_id));
         if target.runtime_authority != self.read_set.admission.runtime_authority()
             || &target.binding_identity != self.read_set.admission.binding_identity()
             || target.admission_identity != self.read_set.admission.admission_identity()
@@ -129,9 +139,19 @@ impl<Schema, Operation, Input, Scope>
     {
         let observed = self
             .read_set
-            .facts
-            .iter()
-            .any(|fact| fact.touches_entity(identity.entity_id()));
+            .effect_routes
+            .walk_touches_entity(&self.read_set.facts, identity.entity_id())
+            || self
+                .read_set
+                .facts
+                .iter()
+                .filter(|fact| {
+                    !matches!(
+                        fact,
+                        super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                    )
+                })
+                .any(|fact| fact.touches_entity(identity.entity_id()));
         if identity.runtime_authority() != self.read_set.admission.runtime_authority()
             || identity.binding_identity() != self.read_set.admission.binding_identity()
             || !observed

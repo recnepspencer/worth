@@ -19,6 +19,23 @@ pub(in super::super) fn set_active_on_branch(
     active: bool,
     branch: Option<crate::basis::WorthQueryProductBranch>,
 ) -> WorthQueryApplicationEffectProgram<WalkSchema, SetActive, SetActiveInput, Node> {
+    set_node_on_branch(world, request, 0, active, branch)
+}
+pub(in super::super) fn set_node_active(
+    world: &World,
+    request: &WorthQueryRequestScope,
+    node: u64,
+    active: bool,
+) -> WorthQueryApplicationEffectProgram<WalkSchema, SetActive, SetActiveInput, Node> {
+    set_node_on_branch(world, request, node, active, None)
+}
+fn set_node_on_branch(
+    world: &World,
+    request: &WorthQueryRequestScope,
+    node: u64,
+    active: bool,
+    branch: Option<crate::basis::WorthQueryProductBranch>,
+) -> WorthQueryApplicationEffectProgram<WalkSchema, SetActive, SetActiveInput, Node> {
     world
         .application
         .with_host_advancement(|phase| {
@@ -31,7 +48,7 @@ pub(in super::super) fn set_active_on_branch(
                 &phase,
                 &execution,
                 request,
-                0,
+                node,
                 SetActive::reference(),
                 branch,
             );

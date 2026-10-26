@@ -14,6 +14,7 @@ mod canonical_digest;
 mod indexed_selection;
 mod observation_identity;
 mod source_publication;
+pub(super) mod structural_walk;
 pub(in crate::domain_computation::primary_graph::application_attempt) use observation_identity::authentication_observation_identity;
 mod workflow_fact;
 pub(super) use canonical_digest::derive_identity;
@@ -79,6 +80,9 @@ fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::StructuralWalk { observation } => {
+            structural_walk::append_values(entries, prefix, observation)
+        }
         WorthQueryApplicationObservedFact::SourcePublication { observation } => {
             source_publication::append(entries, prefix, observation)
         }

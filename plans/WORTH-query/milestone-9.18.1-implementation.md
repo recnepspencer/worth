@@ -2741,3 +2741,129 @@ three QA lenses, with no remaining material finding or additional build needed.
 Slice4a is complete and cleared for commit on the task branch. Slice4b still
 must implement the previously approved issued-body decision integration; this
 raw capability prerequisite does not complete Phase3 or authorize its merge.
+
+### Slice4b implementation boundary reconciliation
+
+Continue the already reviewed ten-step issued-value plan above from the clean
+Slice4a commit0d87e40653923dde338b1162c31ba7fe35100c1e. The persistent reviewer
+approved these concrete source decisions before implementation:
+
+- Retain the actual contracts Arc from admission in the operation reader and
+  issued registry; unadmitted capability readers cannot issue structural
+  decision facts. Two private Arc owners separate the funded logical query
+  signature from the already-funded Native result and original snapshot/cookie.
+  The public result remains move-only. Logical ordering/equality and canonical
+  graph truth exclude admission, snapshot identity, diagnostics and payment.
+- Registry insertion grows in place under the original extent, including its
+  actual new handler/call-attribution cells. Successful duplicates validate
+  origin and complete truth, then attribute the canonical first key. Failed
+  calls independently veto sealing even before a key exists. Original authoring
+  payment moves to the attribution until its authoring storage is consumed.
+- Both projected seal paths and compiled-body extension consume only the
+  original issued body under actual admission/contracts/snapshot/scope checks.
+  Descriptor-only observation refuses reconstruction. Physical visit/edge
+  routes are funded once, preserve first-match behavior, and do not create an
+  implicit explicit relation-pair fact.
+- Structural prior presence is derived while building the real computation
+  index, independently of optional accounting/work bounds. Reuse begins with
+  Full(StructuralWalkRead), after existing basis-drift priority and before
+  dirty/currentness shortcuts, in both accounting postures.
+- Storage/routing use their existing original allocation-control polls;
+  canonical work evidence is separate from request-charged logical work.
+  Review required fallible per-item polls in the new structural canonical leaf
+  and duplicate-body merge. Both preserve the original StoreDenial. The locator
+  byte bound is checked in constant time before any allocation/root formatting.
+- Postcommit producer rebase classifies this as an original source read. It
+  compares the actual committed snapshot and keeps the original value as
+  current or superseded. It never constructs a post-effect Native observation.
+  Live carried structural values and checkpoint reconstruction remain
+  deliberately unsupported.
+
+The new real installed handler retains a candidate across ordinary deep-edge,
+empty-leaf and nondiscovery-edge edits. At the actual compare-and-commit
+boundary the precise expected terminal is Stale with one changed fact; this is
+the native sealed-dependency equivalent of the plan's source-changed intent.
+The unrelated-field/global-head twin must let the same retained candidate
+commit. Separate owner courts cover original Arc consumption, another real
+admission's refusal, raw/descriptor-only refusal, failed-call vetoes, explicit
+pair requirements and actual retained-computation fresh issuance under both
+accounting postures. No fake Native result or injected structural-prior flag
+is used.
+
+Prebuild source review under all three QA lenses cleared these boundaries and
+the scoped corrections. Qualification is pending: one Query owner build, new
+courts plus focused existing snapshot/operation, canonical, merge, reuse and
+source-currentness regressions; required normal boundary/context and dirty
+static gates. Native is unchanged, so Slice3 Native evidence is reused.
+This is not Phase3 closeout, declared-query/wire work, or private adoption.
+
+### Slice4b qualification and handoff
+
+Current source implements the issued-value decision handoff for operation,
+handler and lent computation readers. A successful logical query retains one
+original complete body, with its actual original payer and attributions. Both
+seal paths reject copied descriptors and foreign admissions; publication reads
+current Native truth once per logical walk. The current handler courts prove
+actual deep-edge, empty-leaf and nondiscovery-edge changes produce one stale
+fact, while the same retained candidate survives an unrelated field edit that
+actually moved the graph head. The genuine retained-run court proves fresh
+gathers and current issuance in both actual accounting postures.
+
+Evidence prefix outside the checkout:
+`C:\programming\worth worktees\targets\query-9.18.1-phase3-slice4b-`.
+
+- Query owner build3 passed in458.26seconds with no compiler diagnostics, using
+  the real fresh-ID wrapper, locked Rust1.94 and the qualified nonincremental
+  setting. Its emitted binary ran35 focused tests in10.55seconds: all35 passed,
+  none ignored. This includes all6 new courts, the22 prior focused projection/
+  operation regressions,2 canonical content oracles,2 source-merge courts,
+  2 existing computation-reuse controls and the source-revision postcommit court.
+- One additional existing regression,
+  `unobservable::more_retained_keys_than_the_request_work_runs_in_full_uncompared`,
+  passed on build2. It constructs4,097 synthetic retained copies and dominated
+  that run. It uses IdentityExecutionSchema; its implementation, schema and
+  production owners did not change after build2. Persistent review explicitly
+  accepted carrying this evidence rather than repeating it for the later
+  CheckWalk fixture-only contract correction. The final evidence is35 current
+  passes plus that1 carried pass, not36 freshly rerun tests.
+- Normal boundary passed in354.90seconds (Road1 topology valid); agent-context
+  passed in0.51seconds. This run began before three small compiler corrections:
+  a unit-test enum import, the pure canonical helper's sibling-owner visibility,
+  and a test local's borrowed lifetime. The later fixture-only program flag
+  correction also changed no source-module, dependency, facade or production
+  authority topology. Persistent review explicitly accepted this limited gate
+  carry alongside the current corrected build/runtime and final static checks.
+  No checker edits or inventory snapshot updates were needed.
+- Final static gates passed:66 Rust files formatted and within400 lines and
+  whitespace clean. The initial dirty function scan saw65files/40advisories;
+  precommit inspection exposed Windows'270-character path limit on the provider
+  postcommit resolution file. The unchanged scanner's explicit-file mode with
+  Windows extended paths then scanned all66files:42advisories,0scan errors.
+  The extra2advisories are the existing prepare/resolve functions in that file;
+  the source change there is only the structural source-read match arm. All9
+  direct-guide links resolve. Persistent review accepted all42advisories and
+  reaffirmed commit clearance after this complete-coverage pass. Native
+  source did not change; the32 Slice3 Native passes remain the causal evidence.
+- Earlier failures are not green qualification. Build1 stopped in113.21seconds
+  on the three compiler wiring defects above. Build2 compiled in347.77seconds
+  and ran36 tests in280.62seconds:34 passed, but both new handler publication
+  courts were stopped before currentness by ApplicationProgramRequired. The
+  new fixture had copied `program required` from a different fixture while
+  actually using ordinary authenticated commit. Removing only that extraneous
+  flag makes its declaration match the ordinary handler contract used by the
+  existing OptionalOutput fixture. It changes no production program gate;
+  current tests retain actual admission/sealing/effects, exact stale counts and
+  the same-candidate unrelated-edit twin. Build3 replaces that failed evidence.
+
+The direct guide and capability index describe the recorded methods, actual
+compiled handler example, explicit pair/field obligations, fresh-computation
+policy with basis-drift priority, and unsupported live-carried/checkpoint reuse.
+Persistent final review cleared all three QA lenses, including these current
+results and the explicitly partitioned evidence carries. No remaining material
+finding, additional build or suite was required. Slice4b is complete and cleared
+for commit on the isolated task branch.
+
+Phase3 still requires declared-query `forward_closure` / `reverse_closure` with
+step/read receipts, the topology_entry hand-hop cutover, private history-reader
+adoption and phase closeout. Continue with the declared-query closure boundary;
+do not merge this incomplete phase or mark the six-phase goal complete.

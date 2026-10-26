@@ -49,6 +49,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationObservedRelation {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactKey {
+    StructuralWalk(super::super::invariant_projection::StructuralWalkKey),
     SourcePublication(SourcePublicationRead),
     Entity {
         entity: String,
@@ -79,6 +80,10 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Exact complete Native observation, issued under the original projection.
+    StructuralWalk {
+        observation: std::sync::Arc<super::super::invariant_projection::StructuralWalkObservation>,
+    },
     /// Owner-issued non-driving publication observation. The native slot and
     /// image custody remain live; descriptive state alone cannot create this.
     SourcePublication {

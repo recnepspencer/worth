@@ -19,6 +19,7 @@ mod field_presence;
 mod operation_body;
 mod predecode_admission;
 mod signed_evidence;
+mod structural_walk;
 use crate::domain_computation::application_contract_admission::graph_reads_admit_target;
 use crate::domain_computation::primary_graph::{
     application_attempt::{WorthQueryApplicationAdjacencyDirection, WorthQueryApplicationFactKey},
@@ -232,7 +233,7 @@ where
         locator: worth_foundational::facade::AspectFieldLocator,
     ) {
         if self.reader.layout.field_is_optional(entity, &locator)
-            && self.admitted_contracts.is_some_and(|contract| {
+            && self.admitted_contracts.as_deref().is_some_and(|contract| {
                 field_presence::may_write(contract.touches(), entity, &locator)
             })
         {
@@ -295,6 +296,7 @@ where
     ) -> Result<(), WorthQueryInvariantDecisionPlanDenial> {
         if self
             .admitted_contracts
+            .as_deref()
             .is_none_or(|contract| graph_reads_admit_target(contract.graph_reads(), target))
         {
             Ok(())

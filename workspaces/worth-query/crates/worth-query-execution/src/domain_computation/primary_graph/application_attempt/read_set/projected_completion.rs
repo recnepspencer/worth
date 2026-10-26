@@ -135,6 +135,19 @@ impl<Schema, Operation, Input, Scope>
         ),
         WorthQueryApplicationAttemptDenial,
     > {
+        if let WorthQueryApplicationFactKey::StructuralWalk(key) = key {
+            return super::structural_walk::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                None,
+            );
+        }
         if let WorthQueryApplicationFactKey::SourcePublication(read) = key {
             return self.lease.handle().with_runtime(execution, |_runtime| {
                 if !read.admits(self.admission.admission_identity()) {
@@ -172,6 +185,20 @@ impl<Schema, Operation, Input, Scope>
         key: &WorthQueryApplicationFactKey,
         scope: super::InstalledScopePosition,
     ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+        if let WorthQueryApplicationFactKey::StructuralWalk(key) = key {
+            return super::structural_walk::observe(
+                execution,
+                &self.admission,
+                &self.lease,
+                &self.read_scope,
+                self.expected_facts
+                    .as_ref()
+                    .expect("projected completion owns its expected keys"),
+                key,
+                Some(scope),
+            )
+            .map(|(_, fact)| fact);
+        }
         observe_scoped_dependency(
             execution,
             &self.admission,
@@ -319,6 +346,9 @@ fn key_entities_are_in_scope(
     scope: &super::super::read_scope::WorthQueryApplicationReadScope,
 ) -> bool {
     match key {
+        WorthQueryApplicationFactKey::StructuralWalk(key) => {
+            key.roots().iter().all(|id| scope.admits(*id))
+        }
         WorthQueryApplicationFactKey::SourcePublication(_) => false,
         WorthQueryApplicationFactKey::Entity { entity_id, .. }
         | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. }

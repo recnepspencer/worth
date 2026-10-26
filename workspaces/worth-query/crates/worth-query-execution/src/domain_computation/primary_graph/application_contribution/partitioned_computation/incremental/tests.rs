@@ -301,6 +301,7 @@ where
 }
 
 mod projected_attempt;
+mod structural_walk;
 use projected_attempt::attempt_placed;
 
 /// The prior a producer hands its next run from what `first` retained, with

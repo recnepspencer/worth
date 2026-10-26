@@ -10,6 +10,9 @@ impl WorthQueryApplicationObservedFact {
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
         match self {
+            Self::StructuralWalk { observation } => {
+                observation.remains_equal(runtime, execution, snapshot)
+            }
             Self::SourcePublication { observation } => {
                 observation.remains_equal(runtime, execution, snapshot)
             }

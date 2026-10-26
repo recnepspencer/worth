@@ -118,6 +118,7 @@ fn install_world(graph: Graph, probe: super::probe::Probe) -> World {
             )
             .unwrap();
         seed::graph(&mut bootstrap, graph);
+        super::decision_walks::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(

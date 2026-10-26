@@ -136,6 +136,7 @@ pub(super) fn is_output_currentness_fact(fact: &WorthQueryApplicationObservedFac
         fact,
         WorthQueryApplicationObservedFact::RetiredOutputEntity { .. }
             | WorthQueryApplicationObservedFact::SourcePublication { .. }
+            | WorthQueryApplicationObservedFact::StructuralWalk { .. }
             | WorthQueryApplicationObservedFact::SourceEntity { .. }
             | WorthQueryApplicationObservedFact::SourceAspectRevision { .. }
             | WorthQueryApplicationObservedFact::SourceFieldRevision { .. }

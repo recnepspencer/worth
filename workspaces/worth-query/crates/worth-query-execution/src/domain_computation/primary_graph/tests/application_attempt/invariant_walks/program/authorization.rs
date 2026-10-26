@@ -4,7 +4,7 @@ use crate::domain_computation::primary_graph::*;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::*;
 
-pub(in super::super) fn authorize<Operation, Input>(
+pub(in crate::domain_computation::primary_graph) fn authorize<Operation, Input>(
     world: &World,
     phase: &WorthQueryAdvancementPhase<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,

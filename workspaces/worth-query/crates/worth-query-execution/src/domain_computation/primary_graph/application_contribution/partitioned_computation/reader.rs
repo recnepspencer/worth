@@ -2,6 +2,7 @@
 //! runs the computation.
 
 mod output_availability;
+mod structural_walk;
 
 use worth_query_installation::facade::{
     ApplicationFieldRef, ApplicationFieldUnit, ApplicationReadableScalarValueBinding,

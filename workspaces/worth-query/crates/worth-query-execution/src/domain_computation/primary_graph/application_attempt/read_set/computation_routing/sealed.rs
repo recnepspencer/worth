@@ -18,6 +18,9 @@ pub(in crate::domain_computation::primary_graph::application_attempt::read_set) 
 }
 
 impl SealedComputationFacts {
+    pub(in crate::domain_computation::primary_graph) fn has_structural_walk(&self) -> bool {
+        self.index.structural_walk
+    }
     pub(in crate::domain_computation::primary_graph::application_attempt::read_set) fn retain_projection(
         &mut self,
         projection: Arc<super::super::CompletedFactProjection>,

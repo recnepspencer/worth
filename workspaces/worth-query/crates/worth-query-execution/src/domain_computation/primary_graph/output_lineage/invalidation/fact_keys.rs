@@ -49,6 +49,25 @@ where
     F: FnMut(Key) -> Result<(), E>,
 {
     match fact {
+        Fact::StructuralWalk { observation } => {
+            let query = observation.key();
+            let direction = match query.direction() {
+                worth_query_declaration::facade::application_schema::RelationDirection::Forward => {
+                    Direction::Outgoing
+                }
+                worth_query_declaration::facade::application_schema::RelationDirection::Reverse => {
+                    Direction::Incoming
+                }
+            };
+            for visit in observation.native().visits() {
+                projection.key(|| Key::EntityLifecycle(visit.entity.entity_id))?;
+                projection.key(|| Key::Adjacency {
+                    kind: query.relation_kind(),
+                    anchor: visit.entity.entity_id,
+                    direction,
+                })?;
+            }
+        }
         Fact::SourcePublication { observation } => {
             projection.key(|| Key::SourcePublication(observation.address()))?;
             for fact in observation.posting_facts() {

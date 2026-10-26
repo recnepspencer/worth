@@ -1,12 +1,13 @@
 //! Installed complete walks preserve deep prepared authority and atomic denial.
 mod api;
 mod branch;
+mod decision_walks;
 mod footprint;
 mod locality;
 mod observation;
 mod operation_projection;
 mod probe;
-mod program;
+pub(in crate::domain_computation::primary_graph) mod program;
 mod resources;
 mod rule;
 pub(in crate::domain_computation::primary_graph) mod schema;
