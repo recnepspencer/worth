@@ -13,6 +13,7 @@ pub(super) fn stale_validated_proposal(detail: &str) -> TransactionCommitError {
 pub(super) fn validate_proposed_state(
     runtime: &RelationalPreparationRuntime,
     prepared: &PreparedWorkingStateScope,
+    selected: &crate::branch::SelectedRelationalBranchRead<'_>,
     proposed: &crate::runtime::WorkingState,
     proposed_version: VersionId,
     proposal_identity: Option<&super::proposal_identity::RelationalMutationProposalIdentity>,
@@ -22,7 +23,7 @@ pub(super) fn validate_proposed_state(
     let mutation_sensitive = runtime
         .invariant_authority()
         .enforce_mutation_sensitive_for_working_state(
-            &prepared.selected_branch_state,
+            selected,
             proposed,
             proposed_version,
             &prepared.merged_plan,
@@ -33,7 +34,7 @@ pub(super) fn validate_proposed_state(
     let publication = runtime
         .invariant_authority()
         .enforce_snapshot_publication_for_working_state(
-            &prepared.selected_branch_state,
+            selected,
             proposed,
             proposed_version,
             &prepared.merged_plan,

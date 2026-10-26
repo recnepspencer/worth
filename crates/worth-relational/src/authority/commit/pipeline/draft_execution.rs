@@ -95,15 +95,18 @@ pub(super) fn prepare_commit_execution(
             execution,
             runtime,
             admitted.validation_input().basis(),
-            |symbols| {
+            |symbols, round| {
                 let identity = runtime.issue_mutation_proposal_identity(
                     admitted.transaction_id(),
                     admitted.validation_input(),
                 )?;
                 let mutation = apply_mutation_draft(
                     execution,
-                    runtime,
-                    admitted.selected_branch_state(),
+                    round,
+                    &crate::branch::SelectedRelationalBranchRead::in_round(
+                        admitted.selected_branch_state(),
+                        admitted.selected_branch_state(),
+                    ),
                     &working_state,
                     admitted.merged_plan(),
                     admitted.validation_input().schema_authority(),

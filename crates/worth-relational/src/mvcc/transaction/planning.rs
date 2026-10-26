@@ -6,16 +6,16 @@ use crate::transactions::data::{
 };
 
 impl super::BranchBoundRelationalTransaction {
+    /// Describe the currently authored keys without issuing text identities.
+    /// Call `prepare_merged_plan` first when naming admission requires interned
+    /// keys; that fallible preview retains the dictionary in this transaction.
     pub fn plan_bulk_mutation_batch(
         &self,
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<Option<PlannedBulkMutationBatch>, CommitConflict> {
         self.ensure_runtime_affinity_for_runtime(runtime)?;
-        let intents = crate::transactions::planning::bulk::canonical_bulk_mutation_intents(
-            self.batches(),
-            self.client_key_symbol_policy,
-            runtime.services.symbols.interner_snapshot(),
-        );
+        let intents =
+            crate::transactions::planning::bulk::canonical_bulk_mutation_intents(self.batches());
         if intents.is_empty() {
             return Ok(None);
         }

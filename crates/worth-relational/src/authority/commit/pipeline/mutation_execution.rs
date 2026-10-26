@@ -53,7 +53,7 @@ pub(super) fn mutate_commit_execution(
         None => runtime
             .invariant_authority()
             .enforce_mutation_sensitive_for_working_state(
-                &selected,
+                &crate::branch::SelectedRelationalBranchRead::in_round(&selected, &selected),
                 &working_state,
                 version,
                 merged_plan,

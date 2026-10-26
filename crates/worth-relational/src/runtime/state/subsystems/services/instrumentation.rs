@@ -11,6 +11,13 @@ pub(crate) struct RuntimeInstrumentation {
 }
 
 impl RuntimeInstrumentation {
+    pub(crate) fn preparation_round(&self) -> Self {
+        Self {
+            complexity_counters: Arc::default(),
+            basis_counters: Arc::default(),
+            external_retention_terminals: self.external_retention_terminals.clone(),
+        }
+    }
     pub(crate) fn new() -> Self {
         Self {
             complexity_counters: Arc::new(Mutex::new(RuntimeComplexityCounters::default())),

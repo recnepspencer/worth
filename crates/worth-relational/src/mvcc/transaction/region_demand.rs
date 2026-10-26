@@ -11,6 +11,19 @@ impl super::BranchBoundRelationalTransaction {
         indexes: &crate::runtime::IndexDefinitionReadBinding,
         mirror: &crate::runtime::MirrorResidencyDemandBinding,
     ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+        self.demand_preparation_metadata(execution, symbols, indexes)?;
+        self.demand_declared_regions(execution, mirror)
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)
+            })
+    }
+
+    pub(crate) fn demand_preparation_metadata(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        indexes: &crate::runtime::IndexDefinitionReadBinding,
+    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
         let mut raw = BTreeSet::new();
         if symbols.has_cold_pages() && self.client_key_symbol_policy.interns_requested_strings() {
             for intent in self.batches().iter().flat_map(|batch| &batch.intents) {
@@ -35,7 +48,7 @@ impl super::BranchBoundRelationalTransaction {
             for value in raw {
                 symbols.demand_text(execution, &value)?;
             }
-            self.demand_declared_regions(execution, mirror)
+            Ok(())
         })();
         admitted.map_err(|failure| {
             crate::authority::commit::preparation::storage_read_denial(&self.basis, failure)

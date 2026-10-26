@@ -211,6 +211,8 @@ mod tests {
 
     #[test]
     fn naming_admission_rejects_tampered_normalized_key_plan() {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         let runtime = runtime_with_test_schema();
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
         txn.push_batch(
@@ -226,10 +228,19 @@ mod tests {
         )
         .expect("test staging stays within configured resource budgets");
 
+        txn.prepare_merged_plan(execution, &runtime).unwrap();
         let mut planned = txn
             .plan_bulk_mutation_batch(&runtime)
             .expect("planning succeeds")
             .expect("planned batch");
+        assert!(planned.naming.normalized_client_keys[0]
+            .as_symbol()
+            .is_some());
+        validate_naming_plan(
+            &planned,
+            runtime.runtime_config().identity.client_key_symbol_policy,
+        )
+        .expect("real prepared naming is admitted before tampering");
         planned.naming.normalized_client_keys =
             std::sync::Arc::<[ClientKey]>::from(vec![ClientKey::raw("raw-key")]);
 

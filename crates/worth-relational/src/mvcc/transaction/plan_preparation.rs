@@ -1,4 +1,6 @@
 //! Fallible merge-plan preparation retains unpublished dictionary custody.
+mod round;
+
 use super::BranchBoundRelationalTransaction;
 use crate::transactions::data::{MergedCommitPlan, TransactionCommitError};
 
@@ -12,61 +14,24 @@ impl BranchBoundRelationalTransaction {
         runtime: &crate::runtime::RelationalRuntime,
     ) -> Result<&MergedCommitPlan, TransactionCommitError> {
         let preparation = runtime.preparation_runtime_snapshot();
-        let allocation = execution.allocation_policy();
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::PlanPreview,
         )?;
         self.ensure_current_basis(&preparation)
             .map_err(TransactionCommitError::conflict)?;
-        self.demand_preparation_regions(
+        self.demand_preparation_metadata(
             execution,
             &preparation.services.symbols,
             &preparation.index_definitions,
-            &preparation.mirror_residency,
         )?;
         if self.last_merged_plan.is_none() {
-            let basis = self.basis.clone();
-            let (plan, symbols, overlay, footprint) =
-                crate::authority::commit::preparation::probe_symbol_rounds(
-                    execution,
-                    &preparation,
-                    &basis,
-                    |mut symbols| {
-                        self.with_preparation_overlay(|transaction| {
-                            if let Some(prior) = &transaction.pending_symbols {
-                                symbols.adopt(prior);
-                            }
-                            let selected =
-                                crate::branch::SelectedRelationalBranchState::from_admitted_basis(
-                                    &basis,
-                                );
-                            transaction.validate_staged_branch_locality(
-                                selected.state(),
-                                symbols.interner(),
-                            )?;
-                            transaction.reserve_preparation_client_keys(
-                                &mut symbols,
-                                preparation.config.identity.client_key_symbol_policy,
-                                allocation,
-                            )?;
-                            let runtime = preparation.with_candidate_symbols(&symbols);
-                            let intents =
-                                transaction.normalized_intents_for_merge(&runtime, allocation)?;
-                            let plan = transaction.build_merged_plan_for_state(
-                                &runtime,
-                                selected.state(),
-                                intents,
-                            )?;
-                            Ok((
-                                plan,
-                                symbols,
-                                transaction.overlay.clone(),
-                                transaction.footprint.clone(),
-                            ))
-                        })
-                    },
-                )?;
+            let round::PreparedPlanRound {
+                plan,
+                symbols,
+                overlay,
+                footprint,
+            } = round::prepare(execution, &preparation, self)?;
             self.last_merged_plan = Some(plan);
             self.pending_symbols = Some(symbols);
             self.overlay = overlay;

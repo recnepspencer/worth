@@ -1,16 +1,14 @@
 use std::collections::BTreeSet;
 
 use crate::authority::mutation::BranchLocalDeleteAllowance;
-use crate::branch::SelectedRelationalBranchState;
 use crate::capabilities::StorageRead;
 use crate::transactions::data::{MergedCommitPlan, MutationIntent};
 
 pub(crate) fn branch_local_delete_allowance_for_plan(
-    selected_state: &SelectedRelationalBranchState,
+    selected_state: &impl StorageRead,
     working_state: &impl StorageRead,
     merged_plan: &MergedCommitPlan,
 ) -> BranchLocalDeleteAllowance {
-    let selected_state = selected_state.state();
     let mut entity_ids = BTreeSet::new();
     let mut relation_ids = BTreeSet::new();
 

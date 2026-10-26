@@ -11,8 +11,8 @@ use crate::symbols::data::{ClientKeySymbolPolicy, StringInterner, Symbol};
 use std::collections::BTreeSet;
 
 impl DetachedRelationalTransactionOverlay {
-    /// New symbol entries must still reach the symbol-table snapshot on backing
-    /// refusal, because the existing interner has already admitted those symbols.
+    /// Normalize inside the candidate's private symbol binding. A backing
+    /// refusal abandons this binding with its round, without publishing meaning.
     pub(crate) fn normalize_client_keys(
         &mut self,
         footprint: &mut RelationalTransactionFootprint,

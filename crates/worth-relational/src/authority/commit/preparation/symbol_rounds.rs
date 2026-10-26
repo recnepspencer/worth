@@ -13,7 +13,10 @@ pub(crate) fn probe_symbol_rounds<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
-    mut round: impl FnMut(PendingSymbolMeanings) -> Result<T, MutationApplyDenial>,
+    mut round: impl FnMut(
+        PendingSymbolMeanings,
+        &RelationalPreparationRuntime,
+    ) -> Result<T, MutationApplyDenial>,
 ) -> Result<T, TransactionCommitError> {
     let mut admitted_buckets = [false; 256];
     loop {
@@ -21,7 +24,18 @@ pub(crate) fn probe_symbol_rounds<T>(
             execution,
             crate::authority::commit::pipeline::CommitStage::PreparationRound,
         )?;
-        match round(runtime.services.symbols.begin_pending_meanings()) {
+        let effects = runtime.preparation_round();
+        let answer = round(runtime.services.symbols.begin_pending_meanings(), &effects);
+        if !matches!(
+            &answer,
+            Err(MutationApplyDenial::Symbols(
+                SymbolReservationDenial::ColdBucket(_)
+            ))
+        ) {
+            runtime.settle_preparation_round(&effects);
+        }
+        drop(effects);
+        match answer {
             Ok(accepted) => return Ok(accepted),
             Err(MutationApplyDenial::Commit(error)) => return Err(error),
             Err(MutationApplyDenial::Symbols(SymbolReservationDenial::IdentityExhausted)) => {

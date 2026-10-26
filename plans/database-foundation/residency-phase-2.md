@@ -260,3 +260,47 @@ The request court also names `PlanPreview` admission and each
 `Draft` stage: a warm round adds one exact visit, while a cold retry starts a
 fresh round visit. The existing stage-count court retains its exact complete
 order and one visit per warm stage, extended with the newly named round.
+
+## Transaction proposal rounds
+
+Transaction validation now runs locality, plan preparation, one live applied
+draft and all three invariant judgments inside the same bounded region round.
+A borrowed selected-branch read carries the explicit probing source; owning
+selection facts remain separate from record access. Invariant observations
+borrow that source, including their speculative before-image. A cold region's
+provisional conflict or invariant failure is discarded before its demand.
+The accepted proposal carries its applied draft and the retained root's counted
+leases into the existing candidate phases; those phases reuse its judgments.
+
+Each region and symbol round owns provisional complexity counters and a separate
+diagnostic store. Only a miss-free outcome settles those observations. Runtime
+identity sequences, record reservations and actual request work retain their
+live owners throughout. Schema reframing remains an explicit whole-root demand;
+the mirror write demands the accepted structural touched set before handoff.
+Plan preview uses the same explicit region view and overlay rollback, and
+strategy lowering consumes that preview before constructing bulk metadata.
+
+A genuine split checkpoint with two partitions warms only the mutation's
+partition. The installed global uniqueness rule discovers the other partition
+after application. Validation, candidate preparation and commit return the exact
+sticky region failure without publishing meaning, diagnostics, provisional
+scan counts or a journal position. The healthy cold path spends another applied
+record identity than the warmed reference, stays within headroom and settles
+one round of invariant evidence. These are production recovery/preparation
+proofs, not a fabricated partition-access double.
+
+This closes the transaction/validated-strategy proposal boundary at Full.
+Independent merge preparation, Head-only mutation/history layering, complete
+publication/pin witnesses and the remaining history/lineage cuts are still open.
+
+The bulk naming audit removes one more copied-frontier issuance lane:
+`plan_bulk_mutation_batch` is a pure description of already authored keys.
+It never interns into a cloned dictionary. A caller needing naming-stable symbol
+ids first prepares the transaction's fallible plan, which retains their meaning.
+Strategy lowering follows that order. D9 retires the former test claim that a
+pure bulk description may synthesize normalized ids. Its replacement proves no
+issuance during description, unchanged locality/provenance, and exact owned
+preview meaning without global publication after real normalization.
+The hostile naming-admission fixture now prepares through that owner and proves
+its initial naming is admitted before replacing the symbol with raw text;
+otherwise its old replacement would be a no-op rather than a hostile input.

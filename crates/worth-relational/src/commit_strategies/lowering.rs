@@ -15,7 +15,6 @@ pub(crate) fn lower_execution(
     transaction
         .ensure_current_basis_for_runtime(runtime)
         .map_err(StrategyLoweringError::mutation_conflict)?;
-    let preparation = runtime.preparation_runtime_snapshot();
     let selected_branch_state = runtime
         .selected_branch_state(transaction.basis())
         .map_err(StrategyLoweringError::preparation)?;
@@ -29,29 +28,13 @@ pub(crate) fn lower_execution(
             .push_batch(worker_batch, request_execution.allocation_policy())
             .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;
     }
-    transaction
-        .demand_preparation_regions(
-            request_execution,
-            &preparation.services.symbols,
-            &preparation.index_definitions,
-            &preparation.mirror_residency,
-        )
-        .map_err(StrategyLoweringError::Preparation)?;
-    runtime
-        .services
-        .symbols
-        .with_read(|symbols| {
-            transaction.validate_staged_branch_locality(selected_branch_state.state(), symbols)
-        })
-        .map_err(StrategyLoweringError::mutation_conflict)?;
-
+    let merged_plan = transaction
+        .prepare_merged_plan(request_execution, runtime)
+        .map_err(strategy_plan_preparation_denial)?
+        .clone();
     let bulk_mutation_batch = transaction
         .admit_provenance_complete_bulk_mutation_batch(runtime)
         .map_err(StrategyLoweringError::mutation_conflict)?;
-    let merged_plan = transaction
-        .prepare_merged_plan(request_execution, runtime)
-        .map_err(StrategyLoweringError::Preparation)?
-        .clone();
     transaction
         .footprint
         .derive_validation_dependencies(&merged_plan, request_execution.allocation_policy())
@@ -70,6 +53,17 @@ pub(crate) fn lower_execution(
         lowering_provenance,
         lowering_summary,
     ))
+}
+
+fn strategy_plan_preparation_denial(
+    error: crate::transactions::data::TransactionCommitError,
+) -> StrategyLoweringError {
+    match error {
+        crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {
+            StrategyLoweringError::mutation_conflict(error)
+        }
+        error => StrategyLoweringError::Preparation(error),
+    }
 }
 
 pub(crate) fn strategy_transaction_admission_error(

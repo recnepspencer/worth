@@ -30,7 +30,7 @@ pub(crate) struct CommittedInvariantView<'runtime> {
 #[derive(Clone)]
 enum CommittedInvariantState<'runtime> {
     Runtime(PartitionEdition),
-    Branch(&'runtime crate::branch::RelationalBranchRootState),
+    Branch(&'runtime dyn PartitionAccess),
 }
 
 impl<'runtime> CommittedInvariantView<'runtime> {
@@ -44,7 +44,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
     }
 
     pub(crate) fn from_branch_with_proposed(
-        state: &'runtime crate::branch::RelationalBranchRootState,
+        state: &'runtime dyn PartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
@@ -57,7 +57,7 @@ impl<'runtime> CommittedInvariantView<'runtime> {
         }
     }
 
-    pub(crate) fn from_branch(state: &'runtime crate::branch::RelationalBranchRootState) -> Self {
+    pub(crate) fn from_branch(state: &'runtime dyn PartitionAccess) -> Self {
         Self {
             committed: CommittedInvariantState::Branch(state),
             enforcement: None,
@@ -162,7 +162,7 @@ impl<'runtime> InvariantObservation<'runtime> {
     }
 
     pub(crate) fn committed_branch_with_proposed(
-        state: &'runtime crate::branch::RelationalBranchRootState,
+        state: &'runtime dyn PartitionAccess,
         proposed_working_state: &'runtime WorkingState,
         proposed_version_id: crate::identity::data::VersionId,
         proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
@@ -175,9 +175,7 @@ impl<'runtime> InvariantObservation<'runtime> {
         ))
     }
 
-    pub(crate) fn committed_branch(
-        state: &'runtime crate::branch::RelationalBranchRootState,
-    ) -> Self {
+    pub(crate) fn committed_branch(state: &'runtime dyn PartitionAccess) -> Self {
         Self::Committed(CommittedInvariantView::from_branch(state))
     }
 

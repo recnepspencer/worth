@@ -6,6 +6,7 @@ mod core_access;
 mod merge_authority;
 mod owner_lifecycle;
 mod partition_edition_access;
+mod preparation_round;
 mod preparation_runtime;
 mod publication_lifecycle;
 mod publication_settlement_registry;

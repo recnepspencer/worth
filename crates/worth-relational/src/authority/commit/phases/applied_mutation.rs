@@ -3,7 +3,7 @@ use crate::authority::commit::phases::mutation::branch_local_delete_allowance_fo
 use crate::authority::mutation::{
     apply_plan_to_working_state, MutationApplyDenial, MutationApplyOutcome,
 };
-use crate::branch::SelectedRelationalBranchState;
+use crate::branch::SelectedRelationalBranchRead;
 use crate::runtime::{
     PendingRecordAllocations, PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState,
 };
@@ -43,7 +43,7 @@ impl AppliedMutationDraft {
 pub(crate) fn apply_mutation_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    selected_state: &SelectedRelationalBranchState,
+    selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
     schema: &crate::branch::RelationalBranchRootSchemaAuthority,

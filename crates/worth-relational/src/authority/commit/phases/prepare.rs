@@ -1,5 +1,5 @@
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
-use crate::branch::SelectedRelationalBranchState;
+use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::summarize_entity_chunk_plan;
 use crate::storage::overlay::EntityWorkingSetLayout;
@@ -161,7 +161,7 @@ fn sparse_relation_overlay_partitions_for_plan(
 pub(crate) fn prepare_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &mut crate::mvcc::BranchBoundRelationalTransaction,
-    selected_branch_state: SelectedRelationalBranchState,
+    selected: SelectedRelationalBranchRead<'_>,
     allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
 ) -> Result<PreparedWorkingStateScope, TransactionCommitError> {
     let mut phase_timing = CommitPhaseTiming::default();
@@ -173,7 +173,7 @@ pub(crate) fn prepare_working_state_scope(
         normalization_started.elapsed().as_micros() as u64;
     let merge_plan_started = Instant::now();
     let (merged_plan, merged_plan_timing) = transaction
-        .build_merged_plan_for_state_with_timing(runtime, selected_branch_state.state(), intents)
+        .build_merged_plan_for_state_with_timing(runtime, &selected, intents)
         .map_err(TransactionCommitError::conflict)?;
     phase_timing.draft_merge_plan_micros = merge_plan_started.elapsed().as_micros() as u64;
     phase_timing.draft_intent_validation_micros = merged_plan_timing.validation_micros;
@@ -186,7 +186,7 @@ pub(crate) fn prepare_working_state_scope(
     let (structural_summary, working_state, prepare_phase_timing) =
         prepare_authoritative_working_state_scope_for_base(
             runtime,
-            selected_branch_state.state(),
+            &selected,
             &merged_plan,
             transaction.merge_parent_bases.len(),
             Some(&transaction.footprint),
@@ -197,7 +197,7 @@ pub(crate) fn prepare_working_state_scope(
         prepare_phase_timing.draft_working_state_clone_micros;
 
     Ok(PreparedWorkingStateScope {
-        selected_branch_state,
+        selected_branch_state: selected.selected().clone(),
         merged_plan,
         structural_summary,
         working_state,
@@ -210,20 +210,20 @@ pub(crate) fn prepare_working_state_scope(
 pub(crate) fn prepare_lowered_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &crate::mvcc::BranchBoundRelationalTransaction,
-    selected_branch_state: SelectedRelationalBranchState,
+    selected: SelectedRelationalBranchRead<'_>,
     merged_plan: MergedCommitPlan,
 ) -> PreparedWorkingStateScope {
     let (structural_summary, working_state, phase_timing) =
         prepare_authoritative_working_state_scope_for_base(
             runtime,
-            selected_branch_state.state(),
+            &selected,
             &merged_plan,
             transaction.merge_parent_bases.len(),
             Some(&transaction.footprint),
         );
 
     PreparedWorkingStateScope {
-        selected_branch_state,
+        selected_branch_state: selected.selected().clone(),
         merged_plan,
         structural_summary,
         working_state,

@@ -214,8 +214,7 @@ fn native_normalization_and_validation_footprint_retain_selected_policy() {
             &runtime,
         )
         .unwrap_err();
-    let crate::transactions::data::TransactionCommitError::Execution { denial, .. } =
-        failure
+    let crate::transactions::data::TransactionCommitError::Execution { denial, .. } = failure
     else {
         panic!("preview must preserve cancellation from its commit-stage consult");
     };
