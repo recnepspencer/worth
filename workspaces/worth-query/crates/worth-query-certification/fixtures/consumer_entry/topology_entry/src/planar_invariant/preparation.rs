@@ -1,5 +1,6 @@
-//! Prepare the affected planar triples, observing the reads actually made.
+//! Prepare affected geometry triples from one complete Native component read.
 use super::*;
+use worth_query_decl::facade::application_schema::RelationDirection;
 
 impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
     pub(super) fn prepare_with_budget(
@@ -30,104 +31,104 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         self.probe.fetch_add(1, Ordering::SeqCst);
         let view = planner.proposed();
         let mode = self.mode.load(Ordering::SeqCst);
-        let mut roots = Vec::new();
-        for entity in view.touched_entities(&self.x).map_err(preparation_error)? {
+        let touched = view.touched_entities(&self.x).map_err(preparation_error)?;
+        for entity in &touched {
             preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
             self.observe(PlanarInvariantReadEvent::Touched {
                 entity: entity.entity_id(),
             });
+            // Negative controls deliberately prepare no relation scope.
             if mode == INVARIANT_PROBE_UNDECLARED_ACCESS {
-                return match view.relations_from(&self.undeclared, &entity) {
+                return match view.relations_from(&self.undeclared, entity) {
                     Err(error)
                         if error.kind()
                             == WorthQueryInvariantAccessDenialKind::OutsideDeclaredAccess =>
                     {
                         Err(preparation_error(error))
                     }
-                    Ok(_) => Ok(Vec::new()),
-                    Err(_) => Ok(Vec::new()),
+                    _ => Ok(Vec::new()),
                 };
             }
             if mode == INVARIANT_PROBE_EVALUATION_EXPANSION {
-                claim_triangle::<Schema>(budget)?;
-                return Ok(vec![[entity.clone(), entity.clone(), entity]]);
-            }
-            insert_distinct(&mut roots, entity.clone(), budget)?;
-            let mut previous = entity;
-            for _ in 0..2 {
-                preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-                let predecessor = exactly_one(
-                    view.relations_to(&self.successor, &previous)
-                        .map_err(preparation_error)?,
-                    "predecessor",
-                )?;
-                previous = predecessor.from().clone();
-                insert_distinct(&mut roots, previous.clone(), budget)?;
+                return triples_storage::<Schema>(1, budget).map(|mut triples| {
+                    triples.push([entity.clone(), entity.clone(), entity.clone()]);
+                    triples
+                });
             }
         }
-        let mut triples = Vec::new();
-        for root in roots {
+        if touched.is_empty() {
+            return Ok(Vec::new());
+        }
+        let before = planner.reads();
+        let walk = view
+            .closure(&self.successor, RelationDirection::Reverse, &touched)
+            .map_err(preparation_error)?;
+        self.observe(PlanarInvariantReadEvent::CompleteWalk {
+            before,
+            after: planner.reads(),
+            visited: walk.len(),
+            physical_relations: walk.relations().len(),
+        });
+        // Native commit-boundary degree laws run before this custom rule. Its
+        // ordinary reached component is a ring. Keep explicit missing/duplicate
+        // lookup refusals for callers that do not inherit that ordering.
+        let successors = successors::Successors::from_walk(&walk, budget)?;
+        let mut root_count = 0usize;
+        for step in &walk {
             preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-            let before = planner.reads();
-            let first = exactly_one(
-                view.relations_from(&self.successor, &root)
-                    .map_err(preparation_error)?,
-                "successor",
-            )?;
-            let middle = first.to().clone();
-            let second = exactly_one(
-                view.relations_from(&self.successor, &middle)
-                    .map_err(preparation_error)?,
-                "successor",
-            )?;
-            self.observe(PlanarInvariantReadEvent::ForwardHops {
-                root: root.entity_id(),
-                before,
-                after: planner.reads(),
-            });
-            claim_triangle::<Schema>(budget)?;
-            triples.reserve_exact(1);
-            triples.push([root, middle, second.to().clone()]);
+            if step.distance() <= 2 {
+                root_count = root_count.checked_add(1).ok_or_else(|| {
+                    WorthQueryApplicationInvariantPreparationError::new(
+                        "planar root count overflow",
+                    )
+                })?;
+            }
         }
+        let mut triples = triples_storage::<Schema>(root_count, budget)?;
+        for step in &walk {
+            preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
+            // Two is the geometric window, never a Native traversal limit.
+            if step.distance() > 2 {
+                continue;
+            }
+            let root = step.entity();
+            let middle = successors.next(root, budget)?;
+            let next = successors.next(&middle, budget)?;
+            triples.push([root.clone(), middle, next]);
+        }
+        preparation_checkpoint(budget, 0)?;
         Ok(triples)
     }
 }
 
-fn insert_distinct<T: PartialEq>(
-    values: &mut Vec<T>,
-    value: T,
+fn triples_storage<Schema: TopologyModelBinding>(
+    count: usize,
     budget: Option<&dyn CustomInvariantLeaseBudget>,
-) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
-    for previous in values.iter() {
-        preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
-        if previous == &value {
-            return Ok(());
-        }
-    }
-    if budget.is_some_and(|budget| !budget.claim_scratch(std::mem::size_of::<T>() as u64)) {
-        return Err(WorthQueryApplicationInvariantPreparationError::new(
-            "planar root storage refused",
-        ));
-    }
-    values.reserve_exact(1);
-    values.push(value);
-    Ok(())
-}
-
-fn claim_triangle<Schema: TopologyModelBinding>(
-    budget: Option<&dyn CustomInvariantLeaseBudget>,
-) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
-    let bytes =
-        std::mem::size_of::<[WorthQueryApplicationInvariantEntity<Schema, Body>; 3]>() as u64;
+) -> Result<
+    Vec<[WorthQueryApplicationInvariantEntity<Schema, Body>; 3]>,
+    WorthQueryApplicationInvariantPreparationError,
+> {
+    let bytes = count
+        .checked_mul(std::mem::size_of::<
+            [WorthQueryApplicationInvariantEntity<Schema, Body>; 3],
+        >())
+        .and_then(|bytes| u64::try_from(bytes).ok())
+        .ok_or_else(|| {
+            WorthQueryApplicationInvariantPreparationError::new("planar triangle storage overflow")
+        })?;
     if budget.is_some_and(|budget| !budget.claim_result(bytes)) {
         return Err(WorthQueryApplicationInvariantPreparationError::new(
             "planar triangle storage refused",
         ));
     }
-    Ok(())
+    let mut triples = Vec::new();
+    triples.try_reserve_exact(count).map_err(|_| {
+        WorthQueryApplicationInvariantPreparationError::new("planar triangle allocation refused")
+    })?;
+    Ok(triples)
 }
 
-fn preparation_checkpoint(
+pub(super) fn preparation_checkpoint(
     budget: Option<&dyn CustomInvariantLeaseBudget>,
     work: u64,
 ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
@@ -138,28 +139,6 @@ fn preparation_checkpoint(
     }
     Ok(())
 }
-
-fn exactly_one<Schema: TopologyModelBinding>(
-    relations: Vec<WorthQueryApplicationInvariantRelation<Schema, PlanarSuccessor, Body, Body>>,
-    direction: &str,
-) -> Result<
-    WorthQueryApplicationInvariantRelation<Schema, PlanarSuccessor, Body, Body>,
-    WorthQueryApplicationInvariantPreparationError,
-> {
-    let mut relations = relations.into_iter();
-    let Some(relation) = relations.next() else {
-        return Err(WorthQueryApplicationInvariantPreparationError::new(
-            format!("planar {direction} absent"),
-        ));
-    };
-    if relations.next().is_some() {
-        return Err(WorthQueryApplicationInvariantPreparationError::new(
-            format!("multiple planar {direction} relations"),
-        ));
-    }
-    Ok(relation)
-}
-
 fn preparation_error(
     error: WorthQueryInvariantAccessDenial,
 ) -> WorthQueryApplicationInvariantPreparationError {

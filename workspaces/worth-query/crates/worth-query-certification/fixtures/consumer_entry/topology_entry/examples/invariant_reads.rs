@@ -12,12 +12,16 @@ use worth_query_host::facade::{
 };
 use worth_query_topology_entry::*;
 
+#[path = "invariant_reads/guard_refusals.rs"]
+mod guard_refusals;
+#[path = "invariant_reads/program.rs"]
+mod program;
 #[allow(
     dead_code,
     reason = "Reuse the complete reference program, including its output aliases."
 )]
 #[path = "required_feature/program.rs"]
-mod program;
+mod reference_program;
 #[allow(
     dead_code,
     reason = "Reuse real installation ports also exercised by the required-feature example."
@@ -60,6 +64,8 @@ fn observe(extra_rings: usize) -> Case {
     let events = Arc::new(Mutex::new(Vec::new()));
     let capture = Arc::clone(&events);
     let mut configuration = setup::configuration();
+    let guard_mode = Arc::clone(&configuration.topology.invariant_probe);
+    let preparation_calls = Arc::clone(&configuration.topology.invariant_calls);
     configuration.topology.invariant_read_observer = Some(Arc::new(move |event| {
         capture.lock().unwrap().push(event);
     }));
@@ -107,7 +113,7 @@ fn observe(extra_rings: usize) -> Case {
         assert_eq!(after.rows()[0].y, setup::length(2));
         let query = after.receipt().inspect().read_work().reads();
         let recorded = std::mem::take(&mut *events.lock().unwrap());
-        let (preparation, evaluation) = compare_forward_reads(&recorded, query);
+        let (preparation, evaluation) = compare_complete_reads(&recorded, query);
         assert!(
             evaluation.field_reads() > preparation.field_reads(),
             "the real evaluation read its coordinates"
@@ -139,11 +145,20 @@ fn observe(extra_rings: usize) -> Case {
         );
         let rejected = std::mem::take(&mut *events.lock().unwrap());
         let (refused_preparation, refused_evaluation) =
-            compare_forward_reads(&rejected, retained.receipt().inspect().read_work().reads());
+            compare_complete_reads(&rejected, retained.receipt().inspect().read_work().reads());
         assert_eq!(preparation, refused_preparation);
         assert!(
             refused_evaluation.field_reads() > refused_preparation.field_reads(),
             "ordinary violation retains acquired reads"
+        );
+        guard_refusals::verify(
+            &application,
+            &request,
+            guard_refusals::Controls {
+                mode: &guard_mode,
+                calls: &preparation_calls,
+                events: &events,
+            },
         );
         Case {
             preparation,
@@ -158,7 +173,7 @@ fn observe(extra_rings: usize) -> Case {
 }
 
 // compiled-example: begin
-fn compare_forward_reads(
+fn compare_complete_reads(
     events: &[PlanarInvariantReadEvent],
     query: WorthQueryInvariantProjectionWork,
 ) -> (
@@ -173,27 +188,44 @@ fn compare_forward_reads(
         })
         .collect();
     assert_eq!(touched.len(), 1, "this command edits one identified body");
-    let forward: Vec<_> = events
+    let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
-            PlanarInvariantReadEvent::ForwardHops {
-                root,
+            PlanarInvariantReadEvent::CompleteWalk {
                 before,
                 after,
-            } if *root == touched[0] => Some((*before, *after)),
+                visited,
+                physical_relations,
+            } => Some((*before, *after, *visited, *physical_relations)),
             _ => None,
         })
         .collect();
-    assert_eq!(forward.len(), 1, "compare the same directly touched root");
-    let (before, after) = forward[0];
-    assert!(query.adjacency_lists_read() > 0);
     assert_eq!(
-        after.adjacency_lists_read() - before.adjacency_lists_read(),
-        query.adjacency_lists_read()
+        complete.len(),
+        1,
+        "one Native closure, not one traversal per triple"
+    );
+    let (before, after, visited, physical_relations) = complete[0];
+    assert_eq!(
+        (visited, physical_relations),
+        (3, 3),
+        "the actual complete three-body component"
+    );
+    let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
+    let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
+    assert_eq!(complete_adjacencies, visited);
+    assert!(
+        complete_edges >= physical_relations,
+        "actual acquisitions include every physical successor"
     );
     assert_eq!(
-        after.adjacency_edges_inspected() - before.adjacency_edges_inspected(),
-        query.adjacency_edges_inspected()
+        query.adjacency_lists_read(),
+        2,
+        "the query keeps its fixed projection"
+    );
+    assert!(
+        complete_adjacencies > query.adjacency_lists_read(),
+        "the complete read is distinct from two projected hops"
     );
     let prepared: Vec<_> = events
         .iter()
@@ -254,6 +286,6 @@ fn require_planar_violation<Denial: std::fmt::Debug, Value: std::fmt::Debug>(
 }
 
 #[test]
-fn invariant_reads_match_query_edges_and_stay_local_through_refusal() {
+fn complete_invariant_reads_stay_local_and_preserve_real_refusals() {
     main();
 }

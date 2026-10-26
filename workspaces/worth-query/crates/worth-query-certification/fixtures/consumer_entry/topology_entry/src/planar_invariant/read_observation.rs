@@ -17,11 +17,13 @@ pub enum PlanarInvariantReadEvent {
     Touched {
         entity: EntityId,
     },
-    /// Two completed forward reads for this genuine native root.
-    ForwardHops {
-        root: EntityId,
+    /// One completed reverse closure. Sizes describe its actual Native result;
+    /// before/after are the platform's acquired-read observations.
+    CompleteWalk {
         before: WorthQueryInvariantProjectionWork,
         after: WorthQueryInvariantProjectionWork,
+        visited: usize,
+        physical_relations: usize,
     },
     Prepared {
         reads: WorthQueryInvariantProjectionWork,

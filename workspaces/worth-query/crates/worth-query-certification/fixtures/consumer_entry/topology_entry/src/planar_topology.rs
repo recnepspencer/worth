@@ -112,8 +112,9 @@ where
     const MINOR: u16 = 0;
 }
 
-// Eight rings of three bodies/successors; price root comparisons and six
-// coordinate reads per body (18 aspect + 18 kind visits), with 4x headroom.
+// Conservative work policy for eight triangle rings: complete component reads,
+// successor lookup and six coordinate reads per body, with 4x headroom.
+// This allowance refuses exhausted work; it never truncates traversal depth.
 const PLANAR_SCOPE_RINGS: u64 = 8;
 const PLANAR_SCOPE_BODIES: u64 = PLANAR_SCOPE_RINGS * 3;
 const PLANAR_SCOPE_SUCCESSORS: u64 = PLANAR_SCOPE_BODIES;

@@ -3205,3 +3205,159 @@ runtime evidence, final static checks and exact evidence carry. Slice 5b is comp
 Phase 3 remains open for topology-entry and private `basis/thread::live` reader
 cutovers, adoption and phase closeout. No default-branch merge or private SDK
 pin update is claimed by this slice.
+
+## Phase 3 Slice 6 — topology invariant walk consumer
+
+### Boundary brief
+
+The ordinary `topology_entry` consumer still acquires two predecessor hops per
+touched body, then two successor hops per affected root in
+`planar_invariant/preparation.rs`. Its domain rule evaluates the signed turn of
+three consecutive points. The two-edge geometry window is domain meaning; it
+must not become a traversal depth cap or a different whole-ring geometry rule.
+The existing undeclared-access and evaluation-expansion one-hop calls are
+intentional negative controls and remain intact. Fixed query projections and
+ring/orbit identity belong to other owners (or Phase 4).
+
+The installed `PlanarSuccessor` law requires one incoming and one outgoing edge,
+no self edge and two reachable targets. The persistent reviewer traced native
+ordering: Query lowers minimum enforcement to CommitBoundary; native endpoint,
+maxima and minima registrations block there; `execute_inner` reduces native
+violations and checks `prefix.prevents_custom(CommitBoundary)` before planning
+custom rules. Required blocking registrations are not omitted for cost. Thus an
+ordinary candidate reaching this rule consists of finite degree-one components,
+and one complete reverse closure contains the outgoing physical records needed
+for its affected triples. This premise does not generalize to direct/audit rule
+invocation; missing or duplicate lookup entries still refuse explicitly.
+
+The resolver-issued relation binding, candidate view, original checked budget
+and Native complete walk remain authority. The consumer may choose affected
+roots (minimum reverse distance <=2), build a domain successor lookup over actual
+returned physical records and evaluate the original triples. It cannot issue
+new read authority, fabricate counts, run another graph search or recover by
+looping graph one-hop calls. Complete Native observation widens structural
+preparation to each reached component; geometric evaluation remains restricted
+to the affected triple roots. Typed values keep their real view/proposal affinity.
+
+`invariant_reads` currently compares a recorded forward-hop interval with its
+fixed two-hop query. That equivalence becomes false after this cutover. Its
+caller-owned observer must record the actual complete walk instead. It can prove
+locality, complete acquisition, geometry refusal and unchanged committed truth;
+existing negative modes can cover the retained scope fences in the same real
+installed example. A native degree-breaking edit and completing lawful twin
+will qualify the ordinary native-before-custom premise without a broad consumer
+portfolio. Documentation's compiled example excerpt must change with its source.
+
+### Implementation plan
+
+1. Replace the ordinary hand-hop preparation path with one reverse `view.closure`
+   over the actual touched entities. Handle both existing negative modes before
+   any complete read, preserve caller checkpoints and skip an empty touched set.
+   Keep the Native owner alive while consuming its records. No second traversal
+   or one-hop fallback is added.
+2. Add a private `planar_invariant/successors.rs` owner for the geometry lookup.
+   It indexes actual physical edges by native source identity, refuses duplicate
+   and missing successors and returns only actual typed target identities. Fund
+   conservative BTree node backing from actual record count before allocation
+   through the original checked preparation budget; checkpoint bounded domain
+   work before insertions/lookups. This is temporary domain lookup, not traversal
+   or proof authority. It does not persist beyond preparation.
+3. Select roots directly from canonical Native visits at distance <=2. Pre-count
+   them with original checkpoints; claim all result bytes and reserve the triple
+   Vec once before filling it. Derive each fixed `[root,middle,next]` from the
+   funded lookup. Keep X/Y reads and determinant evaluation unchanged. Remove
+   the displaced root-dedup and ordinary one-hop acquisition helpers.
+4. Replace the observer's `ForwardHops` event with a descriptive complete-walk
+   event carrying actual before/after platform observations and actual result
+   sizes. Update `invariant_reads` to assert one complete read, a retained
+   two-hop query with its own distinct counts, unchanged unrelated-ring growth,
+   lawful geometry, exact custom violation and unchanged truth after refusal.
+   Exercise both existing negative access probes and the native degree-law
+   refusal/no-custom-contact with a real lawful repair in this same example.
+5. Update the direct guide and pinned `invariant_reads` excerpt, preserving the
+   original evaluation excerpt. Record that preparation is component-wide and
+   query projection remains a fixed shape. Do not use feature-doc-writer.
+6. Obtain persistent qa-loop/qa-tests/code-quality-qa source clearance. Run cheap
+   scoped fmt/line-cap/function/whitespace/document checks. First guard a narrow
+   `cargo check -p worth-query-topology-entry --example invariant_reads`; only
+   after it succeeds compile that example test artifact once with guarded
+   `cargo test ... --example invariant_reads --no-run`, incremental=false and
+   the existing Query target. Run only its changed real proof. No Native or
+   Execution unit rebuild/portfolio is requested by this consumer-only delta.
+7. Run normal boundary-check and agent-context on the coherent consumer/doc
+   topology, inspect any generated obligations, obtain final persistent review,
+   record honest evidence and commit this slice. Phase 3 still needs private
+   history-reader adoption and its phase closeout before default-branch merge.
+
+Out of scope: orbit laws/identity, component/derived relation work, fixed query
+shape redesign, generic path language, new SDK factories, private SDK pins and
+unrelated consumer test debt. No blocker remains after the native ordering trace;
+any contrary runtime evidence revises this brief before changing the plan.
+
+### Runtime boundary correction
+
+The first focused runtime attempt reached the new retarget control but refused
+at public request admission with `ApplicationProgramRequired`. The reference
+required-feature program declares `MutatePlanar` only as a conditional operation;
+an ordinary `PlanarEdit` request cannot inherit that conditional authority. This
+is a fixture integration failure, not evidence of Native degree-law refusal.
+
+The correction stays local to the runnable invariant example: retain the shared
+reference schema, contribution, required outputs and rules, and define its own
+program with an additional topology-edit feature. Declare `PlanarEditBinding`
+there as an ordinary action with `ApplicationSourceCompletion`, through the
+existing typed program authoring path. Reuse installation without changing its
+shared reference program or exposing a certification factory. Both hostile and
+lawful retarget controls must use that same installed action. Recheck the
+example's types before rebuilding its single test artifact, rerun the same proof,
+and obtain review of the final scope and evidence carry.
+
+### Qualification evidence
+
+The ordinary preparation path now acquires one complete reverse Native walk,
+indexes its actual physical records under the original checked budget, and
+derives the original affected geometry triples from canonical visits within
+distance two. Evaluation's coordinate reads and determinant rule are unchanged.
+The two intentional one-hop scope probes precede complete acquisition. The
+temporary successor lookup refuses missing or duplicate records; it never
+repairs the graph or traverses through one-hop reads.
+
+The persistent reviewer cleared the boundary, plan, production cutover and
+corrected local program source. Scoped static checks passed for all eight Rust
+files: formatting, dirty line caps, explicit function scan (8/8 files, four
+advisories, zero scan errors), and whitespace. The guide's changed compiled
+excerpt matches the formatted source exactly. Shared required-feature program
+and installation sources have no diff.
+
+Guarded compilation used the separate `consumer_entry/Cargo.toml` workspace,
+only `worth-query-topology-entry --example invariant_reads`, locked dependencies
+and incremental compilation disabled. Check2 passed in 290.06s; build1 passed in
+363.73s. After correcting the example's ordinary action declaration, check3
+passed in 3.56s and build2 in 24.04s. Each successful compilation had zero
+compiler errors and the existing structural-walk observation visibility warning;
+this is not a warning-free claim.
+
+Only the exact emitted example test was run. Runtime2 passed 1/1 in 1.40s,
+covering zero, one and six unrelated rings. It asserts actual complete Native
+walk/read sizes, the fixed query's distinct read counts, lawful geometry,
+the exact `PositivePlanarTurn` violation without publication, both genuine scope
+failures, a degree-breaking retarget refused as ProviderRejected at
+InvariantExecution before any custom preparation, and a lawful physical ABA
+retarget that commits and reaches complete custom preparation. Each refusal
+retains the committed basis and query truth. This degree control does not claim
+a public typed cardinality diagnostic that the public denial vocabulary lacks.
+
+Failed attempts remain diagnostic evidence: check1 selected the wrong workspace
+and stopped before compilation; runtime1 reached `ApplicationProgramRequired`
+before Native because its ordinary action was undeclared. Neither counts as a
+passing proof. Evidence files use the external prefix
+`targets/query-9.18.1-phase3-slice6-`.
+
+Fresh normal boundary-check passed in 431.63s and agent-context in 1.00s on the
+corrected local-program module topology. These supersede the initial normal
+439.73s/context 0.43s passes before that fixture correction. The reviewer
+verified build2/runtime2 evidence and accepted all four function advisories.
+No broad consumer portfolio, Native test binary or Execution test binary was
+rebuilt for this consumer-only slice. Phase 3 remains open for private history
+reader adoption and phase closeout; this slice does not merge a default branch
+or update private SDK pins.

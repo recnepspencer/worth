@@ -149,19 +149,28 @@ Run the public reference application from its consumer workspace:
 cargo run -p worth-query-topology-entry --example invariant_reads
 ```
 
-The example installs genuine topology declarations and a blocking planar rule,
-clears seed-time observations, then edits the body named `anchor-a`. It verifies
-that exactly that command's one directly touched body identifies the forward
-read interval. Its ordinary `PlanarRead` query starts at the same immutable body
-key and follows the same two successor edges.
+The example's program declares an ordinary topology-edit action alongside the
+reference application's source and output features. It installs genuine
+topology declarations and a blocking planar rule,
+clears seed-time observations, then edits the body named `anchor-a`. Preparation
+uses one complete reverse closure of the touched bodies. Native's blocking
+commit-boundary degree laws have already admitted a ring; the consumer derives
+its original affected three-point geometry windows from the actual returned
+physical successor records. Only roots within two incoming edges are evaluated.
+The complete traversal itself has no depth cap, and its structural preparation
+scope covers the reached component.
 
-The invariant also discovers predecessors and evaluates other affected triples.
-Those reads are outside this matching interval, so comparing the query with the
-invariant's whole cumulative observation would compare different operations.
+The ordinary `PlanarRead` query retains its fixed two-successor projection. Its
+reads therefore differ from the complete invariant read. The observer records
+actual before/after platform observations and actual walk sizes; it does not
+supply modeled counts. Unrelated rings change neither operation's observations.
+The same runnable proof checks exact geometry refusal without publication, both
+intentional access-scope failures, and a real degree-breaking candidate refused
+before custom preparation with a lawful physical unlink/link twin.
 
 <!-- compiled: invariant_reads.rs -->
 ```rust
-fn compare_forward_reads(
+fn compare_complete_reads(
     events: &[PlanarInvariantReadEvent],
     query: WorthQueryInvariantProjectionWork,
 ) -> (
@@ -176,27 +185,44 @@ fn compare_forward_reads(
         })
         .collect();
     assert_eq!(touched.len(), 1, "this command edits one identified body");
-    let forward: Vec<_> = events
+    let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
-            PlanarInvariantReadEvent::ForwardHops {
-                root,
+            PlanarInvariantReadEvent::CompleteWalk {
                 before,
                 after,
-            } if *root == touched[0] => Some((*before, *after)),
+                visited,
+                physical_relations,
+            } => Some((*before, *after, *visited, *physical_relations)),
             _ => None,
         })
         .collect();
-    assert_eq!(forward.len(), 1, "compare the same directly touched root");
-    let (before, after) = forward[0];
-    assert!(query.adjacency_lists_read() > 0);
     assert_eq!(
-        after.adjacency_lists_read() - before.adjacency_lists_read(),
-        query.adjacency_lists_read()
+        complete.len(),
+        1,
+        "one Native closure, not one traversal per triple"
+    );
+    let (before, after, visited, physical_relations) = complete[0];
+    assert_eq!(
+        (visited, physical_relations),
+        (3, 3),
+        "the actual complete three-body component"
+    );
+    let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
+    let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
+    assert_eq!(complete_adjacencies, visited);
+    assert!(
+        complete_edges >= physical_relations,
+        "actual acquisitions include every physical successor"
     );
     assert_eq!(
-        after.adjacency_edges_inspected() - before.adjacency_edges_inspected(),
-        query.adjacency_edges_inspected()
+        query.adjacency_lists_read(),
+        2,
+        "the query keeps its fixed projection"
+    );
+    assert!(
+        complete_adjacencies > query.adjacency_lists_read(),
+        "the complete read is distinct from two projected hops"
     );
     let prepared: Vec<_> = events
         .iter()
