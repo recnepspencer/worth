@@ -24,7 +24,10 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
         .collect::<Vec<_>>();
     assert!(matches!(
         registry.reserve(),
-        Err(WorthQueryProductActivationDenial::CapacityExhausted)
+        Err(WorthQueryProductActivationDenial::CapacityExhausted {
+            limit: 128,
+            occupancy: 128
+        })
     ));
 
     // Removing membership cannot reclaim backing still held by an operation.
@@ -38,13 +41,19 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     ));
     assert!(matches!(
         registry.reserve(),
-        Err(WorthQueryProductActivationDenial::CapacityExhausted)
+        Err(WorthQueryProductActivationDenial::CapacityExhausted {
+            limit: 128,
+            occupancy: 128
+        })
     ));
     drop(held_gate);
     let replacement = registry.reserve().unwrap();
     assert!(matches!(
         registry.reserve(),
-        Err(WorthQueryProductActivationDenial::CapacityExhausted)
+        Err(WorthQueryProductActivationDenial::CapacityExhausted {
+            limit: 128,
+            occupancy: 128
+        })
     ));
     drop(replacement);
 
@@ -54,7 +63,10 @@ fn activation_capacity_follows_reserved_and_retired_gate_allocations() {
     let second = registry.reserve().unwrap();
     assert!(matches!(
         registry.reserve(),
-        Err(WorthQueryProductActivationDenial::CapacityExhausted)
+        Err(WorthQueryProductActivationDenial::CapacityExhausted {
+            limit: 128,
+            occupancy: 128
+        })
     ));
     drop((first, second, pending));
     for _ in 0..(limit.get().expect("explicit finite branch policy") * 2) {

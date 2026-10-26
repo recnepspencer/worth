@@ -29,7 +29,14 @@ impl ActivationCapacity {
                     live.checked_add(1)
                 }
             })
-            .map_err(|_| WorthQueryProductActivationDenial::CapacityExhausted)?;
+            // fetch_update returns the value at the failed atomic reservation,
+            // rather than a later load that could race with a release.
+            .map_err(
+                |occupancy| WorthQueryProductActivationDenial::CapacityExhausted {
+                    limit: self.maximum.unwrap_or(usize::MAX),
+                    occupancy,
+                },
+            )?;
         Ok(ActivationCapacityReservation(Arc::clone(self)))
     }
 }
@@ -57,7 +64,10 @@ mod tests {
         owner.live.store(usize::MAX, Ordering::Release);
         assert!(matches!(
             owner.reserve(),
-            Err(WorthQueryProductActivationDenial::CapacityExhausted)
+            Err(WorthQueryProductActivationDenial::CapacityExhausted {
+                limit: usize::MAX,
+                occupancy: usize::MAX,
+            })
         ));
         assert_eq!(owner.live.load(Ordering::Acquire), usize::MAX);
         owner.live.store(0, Ordering::Release);

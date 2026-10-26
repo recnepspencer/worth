@@ -41,7 +41,6 @@ pub enum WorthQueryProductBranchCreateError {
     IdentityExhausted,
     SourceAdmission(super::WorthQueryProductBranchAdmissionDenial),
     Creation(WorthQueryProductBranchCreationDenial),
-    BranchCoordinationCapacityExhausted,
     ProductUnpublished(super::WorthQueryProductBranchCreationRecovery),
 }
 
@@ -112,6 +111,20 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             .components();
         let relational = component_plan(components.relational())?;
         let signal = component_plan(components.signal())?;
+        let source = runtime
+            .admit_product_occurrence(source.occurrence())
+            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
+        let source_program = source_program_resolver
+             .map(|resolver| {
+                let _read = runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::SourceProgramResolution);
+                resolver.source_program(execution, &source)
+            })
+            .transpose()
+            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?
+            .flatten();
+        let reservation = runtime
+            .reserve_product_branch_creation(&source, source_program.as_ref())
+            .map_err(WorthQueryProductBranchCreateError::Creation)?;
         let ordinal = runtime
             .reserve_public_branch_ordinal()
             .ok_or(WorthQueryProductBranchCreateError::IdentityExhausted)?;
@@ -144,25 +157,9 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             ProductBranchCreationPlans::new(relational, signal),
         )
         .expect("generated Query product branch names satisfy World limits");
-        let source = runtime
-            .admit_product_occurrence(source.occurrence())
-            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?;
-        let source_program = source_program_resolver
-             .map(|resolver| {
-                let _read = runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::SourceProgramResolution);
-                resolver.source_program(execution, &source)
-            })
-            .transpose()
-            .map_err(WorthQueryProductBranchCreateError::SourceAdmission)?
-            .flatten();
         let cancellation = RuntimeWorldCancellationSource::new();
-        match runtime
-            .create_product_branch(
-                &source,
-                source_program.as_ref(),
-                intent,
-                &cancellation.token(),
-            )
+        match reservation
+            .create(intent, &cancellation.token())
             .map_err(WorthQueryProductBranchCreateError::Creation)?
         {
             RuntimeWorldBranchCreationOutcome::Performed(observation) => {

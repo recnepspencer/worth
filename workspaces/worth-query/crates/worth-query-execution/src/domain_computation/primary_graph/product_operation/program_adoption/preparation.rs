@@ -28,7 +28,9 @@ use super::super::WorthQuerySelectedProductOperation;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryBranchAdoptionActivationDenial {
     /// The runtime's activation capacity is full. Retry later.
-    CapacityExhausted,
+    CapacityExhausted { limit: usize, occupancy: usize },
+    /// Activation coordination arithmetic could not represent another holder.
+    OccupancyOverflow,
     /// The activation registry could not allocate what the branch needs.
     AllocationRejected,
     /// The runtime has no activation for this product branch.
@@ -145,7 +147,8 @@ impl From<crate::domain_computation::execution_runtime::product_world::activatio
     ) -> Self {
         use crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationDenial;
         match denial {
-            WorthQueryProductActivationDenial::CapacityExhausted => Self::CapacityExhausted,
+            WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy } => Self::CapacityExhausted { limit, occupancy },
+            WorthQueryProductActivationDenial::OccupancyOverflow => Self::OccupancyOverflow,
             WorthQueryProductActivationDenial::AllocationRejected => Self::AllocationRejected,
             WorthQueryProductActivationDenial::UnknownProductBranch => Self::UnknownProductBranch,
             WorthQueryProductActivationDenial::RegistryUnavailable => Self::RegistryUnavailable,
@@ -264,8 +267,18 @@ mod tests {
     fn activation_denials_preserve_the_owner_cause() {
         let cases = [
             (
-                OwnerDenial::CapacityExhausted,
-                PublicDenial::CapacityExhausted,
+                OwnerDenial::CapacityExhausted {
+                    limit: 3,
+                    occupancy: 3,
+                },
+                PublicDenial::CapacityExhausted {
+                    limit: 3,
+                    occupancy: 3,
+                },
+            ),
+            (
+                OwnerDenial::OccupancyOverflow,
+                PublicDenial::OccupancyOverflow,
             ),
             (
                 OwnerDenial::AllocationRejected,

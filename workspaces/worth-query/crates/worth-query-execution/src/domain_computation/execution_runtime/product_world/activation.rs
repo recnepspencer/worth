@@ -4,4 +4,6 @@ mod gate;
 mod registry;
 
 pub(crate) use denial::WorthQueryProductActivationDenial;
-pub(crate) use registry::WorthQueryProductActivationRegistry;
+pub(crate) use registry::{
+    WorthQueryProductActivationRegistry, WorthQueryProductActivationReservation,
+};

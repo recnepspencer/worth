@@ -1,6 +1,7 @@
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum WorthQueryProductActivationDenial {
-    CapacityExhausted,
+    CapacityExhausted { limit: usize, occupancy: usize },
+    OccupancyOverflow,
     AllocationRejected,
     UnknownProductBranch,
     RegistryUnavailable,

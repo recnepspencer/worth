@@ -8,3 +8,6 @@ pub(in crate::domain_computation::primary_graph) use publication::WorthQueryProd
 
 #[cfg(test)]
 mod retention_tests;
+
+#[cfg(test)]
+mod capacity_evidence_tests;

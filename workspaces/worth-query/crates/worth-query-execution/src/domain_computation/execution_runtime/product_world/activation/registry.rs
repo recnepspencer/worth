@@ -98,7 +98,7 @@ impl WorthQueryProductActivationRegistry {
                     .copied()
                     .unwrap_or(0)
                     .checked_add(1)
-                    .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)
+                    .ok_or(WorthQueryProductActivationDenial::OccupancyOverflow)
             })
             .transpose()?;
         reserve_gate(&mut state)?;
@@ -308,7 +308,7 @@ fn reserve_gate(
     let reserved = state
         .reserved_gates
         .checked_add(1)
-        .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)?;
+        .ok_or(WorthQueryProductActivationDenial::OccupancyOverflow)?;
     state
         .gates
         .try_reserve(reserved)
