@@ -1915,3 +1915,30 @@ coverage. The weak cold cell fixes recovered query lifetime rather than masking
 those separate live retention owners.
 
 Envelope all-test clippy completes green (-D warnings -A dead-code).
+
+### Aspect-history guarded subject table
+
+Boundary review: direct entity/relation history (with and without traces) and
+lineage aspect history share branch-envelope demand, but the first envelope
+table covers patch/inspection/summary surfaces only. Their region and symbol
+Full demands also need explicit coverage. The current fixture already produces
+real entity/relation changes and a cold recovered journal; capture the producer's
+actual lineage ID before encoding, then keep recovery cold.
+
+Plan: table those six history doors against Head, history, symbol id-page and
+old envelope faults under all six classes. Require the same native execution
+storage failure, no journal/diagnostic publication, own-subject sticky damage,
+and genuine nonempty contents after retryable failure. Query source attempts
+are observed at the named failed member/position, independently of admission
+of other subjects. Retain the existing positive current/Full comparison courts.
+
+The first aspect-history invocation used the source filename as its test filter;
+the Rust module is named aspect_history_matrix, so Cargo selected zero tests.
+That log is not evidence for the table. The corrected invocation selects the
+exact residency_failure_matrix_aspect_history_doors test name.
+
+The corrected aspect-history table passes all 144 cells. The shared fixture
+family passes all four courts: current no-history, declared Head/symbol failure,
+retained-reference Full promotion and the new historical subject table. All-test
+owner clippy, formatting, dirty caps, context and whitespace checks pass. No
+product change was necessary for these added history doors.

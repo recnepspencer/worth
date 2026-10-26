@@ -7,6 +7,7 @@ pub(super) struct CurrentFixture {
     pub(super) source: Arc<MemberSource>,
     pub(super) entity: EntityId,
     pub(super) relation: RelationId,
+    pub(super) lineage: crate::identity::data::LineageId,
     pub(super) heads: BTreeSet<RelationalDurableMemberLocator>,
     pub(super) symbols: BTreeSet<RelationalDurableMemberLocator>,
     pub(super) history: BTreeSet<RelationalDurableMemberLocator>,
@@ -21,6 +22,13 @@ impl CurrentFixture {
         let relation = changed_relations(&linked)[0];
         release_test_commit_snapshot(&producer, &linked);
         update_entity_and_release_snapshot(execution, &producer, entity, "head-only-current");
+        let lineage = producer
+            .lineage
+            .nodes_snapshot()
+            .into_iter()
+            .find(|node| node.entity_id() == entity)
+            .unwrap()
+            .lineage_id();
         let (recovery, source, _) = checkpoint_fixture(execution, producer, entity, false);
         source.damaged.store(false, Ordering::Relaxed);
         #[derive(serde::Deserialize)]
@@ -81,6 +89,7 @@ impl CurrentFixture {
             source,
             entity,
             relation,
+            lineage,
             history,
             heads,
             symbols,
