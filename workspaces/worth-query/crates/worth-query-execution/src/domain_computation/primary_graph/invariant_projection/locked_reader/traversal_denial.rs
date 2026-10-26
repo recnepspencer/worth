@@ -16,6 +16,12 @@ pub enum WorthQueryInvariantProjectionTraversalDenialKind {
     NotOrbitRelation,
     /// Stored aggregate membership and complete successor topology disagree.
     InvalidOrbit,
+    /// The selected snapshot does not contain this aggregate definition.
+    AggregateDefinitionUnavailable,
+    /// The selected snapshot does not contain this aggregate identity.
+    AggregateIdentityUnavailable,
+    /// The stored identity or lineage is inconsistent, ambiguous or cyclic.
+    InvalidAggregateLineage,
     /// The operation does not declare this target as a decision read.
     UndeclaredDecisionTarget,
     /// The entity identity came from a different projection authority.

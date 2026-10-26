@@ -167,7 +167,27 @@ into a partial answer. Row and result-set sources retain the original Native
 aggregate and complete walk; portable record grammar 17 preserves this meaning
 and refuses older record grammars.
 
-Lineage reads and Proprietary adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
+Privileged snapshot projections can inspect a retained name with
+`reader.lineage(NextFin::reference(), &loop_identity)`. The operation-specific
+inspection reader additionally requires the relation's `OperationReads`
+contract. The installation-minted projection authority and freshly selected
+snapshot authorize the read; the name is only a selector. This performs a Native
+schema/occupied-slot scan followed by incident-lineage visits along merge hops.
+
+The owned `WorthQueryAggregateLineage` retains that actual Native result.
+`events()` borrows incident split and merge records; `resolution_steps()`
+borrows the ordered merge path. Each exposes the original commit `occurrence()`,
+`kind()` and typed `from()`/`to()` names. `latest_identity()` follows merges only:
+a split keeper remains current, and a retired terminal without a successor
+returns `None`. An identity absent from the selected snapshot instead refuses
+with `AggregateIdentityUnavailable`. `version()` describes the selected source
+and cannot rebind the retained body. See the compiled [lineage inspection court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/lineage.rs).
+
+These inspection reads grant no governed history disclosure and record no
+publication decision dependencies. A typed name can be retained across edits
+inside its installation; this API does not restore arbitrary portable names
+after a fresh installation. Scoped/governed lineage reads, tracked lineage
+decisions and Proprietary adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
 separate existing execution limitations and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
 exercises native refusals and atomic lawful mutations through the ordinary

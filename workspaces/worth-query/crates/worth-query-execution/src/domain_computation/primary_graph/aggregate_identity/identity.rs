@@ -7,7 +7,7 @@ use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity}
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::{
     identity::KindId,
-    runtime::{AggregateRead, PinnedAggregateRead},
+    runtime::{AggregateRead, PinnedAggregateLineageScope, PinnedAggregateRead},
 };
 
 /// Persistent aggregate name within an installed relation binding. This value
@@ -51,6 +51,25 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
     /// Portable name bytes for application naming and comparison, not authority.
     pub fn bytes(&self) -> &[u8; 32] {
         self.identity.bytes()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn lineage_selection(
+        &self,
+        binding: &ApplicationSchemaBindingIdentity,
+        relation: KindId,
+    ) -> Option<PinnedAggregateLineageScope<'static>> {
+        (self.binding == *binding && self.relation == relation)
+            .then(|| PinnedAggregateLineageScope::new(relation, self.definition, self.identity))
+    }
+
+    // Only the lineage body owner qualifies endpoints returned by Native.
+    pub(super) fn related(&self, identity: AggregateIdentity) -> Self {
+        Self::new(
+            self.definition,
+            identity,
+            self.binding.clone(),
+            self.relation,
+        )
     }
 }
 impl<Schema, Relation> Clone for WorthQueryAggregateIdentity<Schema, Relation> {

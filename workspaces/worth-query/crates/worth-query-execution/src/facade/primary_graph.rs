@@ -7,6 +7,10 @@ pub use crate::domain_computation::application_aftermath::{
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial;
+/// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
+pub use worth_foundational::facade::AggregateLineageKind;
+/// Original Native commit occurrence; lineage diagnostics grant no authority.
+pub use worth_relational::facade::history::CommitId;
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryExecutionLeaseDenial, WorthQueryPublicationFaultGuardForTest,
@@ -85,8 +89,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryAdmittedInboundOccurrence,
     WorthQueryAdmittedOutputDemand, WorthQueryAdmittedProgramMigration,
-    WorthQueryAggregateIdentity, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationAuthorizationExplanationCause,
+    WorthQueryAggregateIdentity, WorthQueryAggregateLineage, WorthQueryAggregateLineageEvent,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationAuthorizationExplanationCause,
     WorthQueryApplicationAuthorizationWorkEvidence, WorthQueryApplicationBasisObservation,
     WorthQueryApplicationBasisObserver, WorthQueryApplicationBasisReleaseOutcome,
     WorthQueryApplicationBasisSelectionIdentity, WorthQueryApplicationBatchReadDenial,

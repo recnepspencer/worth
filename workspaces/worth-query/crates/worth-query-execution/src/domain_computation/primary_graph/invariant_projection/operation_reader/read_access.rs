@@ -1,5 +1,7 @@
 use super::*;
 
+#[path = "read_access/lineage.rs"]
+mod lineage;
 #[path = "read_access/orbit.rs"]
 mod orbit;
 #[path = "read_access/walk.rs"]
