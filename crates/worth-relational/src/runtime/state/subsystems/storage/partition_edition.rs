@@ -104,6 +104,29 @@ impl PartitionEdition {
             .pin_lease()
     }
 
+    pub(crate) fn admitted_full_lease(
+        &self,
+        id: PartitionId,
+    ) -> Option<RelationalResidencyLease<Full>> {
+        self.partitions.get(&id)?.admitted_full_lease()
+    }
+
+    pub(crate) fn resident_head_lease(
+        &self,
+        id: PartitionId,
+    ) -> Result<
+        RelationalResidencyLease<crate::storage::residency::Head>,
+        crate::storage::data::RelationalStorageUnavailable,
+    > {
+        self.partitions
+            .get(&id)
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })?
+            .pin_head_lease()
+    }
+
     pub(super) fn demand_partition(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

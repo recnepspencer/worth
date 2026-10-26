@@ -70,7 +70,7 @@ impl StorageSubsystem {
             self.acquire().demand_all(execution, symbols)?;
             match self
                 .edit(instrumentation, PartitionEditionCopyLane::Ordinary)
-                .accept_resident()
+                .accept_resident(symbols)
             {
                 Ok(writer) => return Ok(writer),
                 Err(writer) => drop(writer),
@@ -117,7 +117,7 @@ impl RuntimeSubsystem for StorageSubsystem {
     }
 
     /// Share immutable cells; runtime pin counters detach at the first write.
-    /// Cold cells remain cold and copy-on-write requires an admitted Full lease.
+    /// Cold cells remain cold; current edits carry Head, history edits carry Full.
     fn fork(&self) -> Self {
         let partitions = self
             .acquire()

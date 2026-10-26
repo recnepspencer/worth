@@ -33,16 +33,24 @@ fn execute_partition(authority: &StorageAuthority<'_>, publication: PlannedParti
         PlannedPartitionPublication::Existing(mut publication) => {
             let target = publication.target.clone();
             let mut entity_chunks = None;
-            writer.transform_target(&target, |mut base| match publication.strategy {
-                PartitionPublicationStrategy::EntityOnly(layout) => {
-                    entity_chunks = merge_entity_slots(&mut base, &mut publication, layout);
-                    base
-                }
-                PartitionPublicationStrategy::HybridGraph { entity_layout } => {
-                    publish_hybrid_partition(authority.runtime, publication, base, entity_layout)
-                }
-                PartitionPublicationStrategy::WholePartition => {
-                    publish_whole_partition(publication, base)
+            let readmission = publication.readmission.clone();
+            writer.transform_target(&target, readmission, |mut base| {
+                match publication.strategy {
+                    PartitionPublicationStrategy::EntityOnly(layout) => {
+                        entity_chunks = merge_entity_slots(&mut base, &mut publication, layout);
+                        base
+                    }
+                    PartitionPublicationStrategy::HybridGraph { entity_layout } => {
+                        publish_hybrid_partition(
+                            authority.runtime,
+                            publication,
+                            base,
+                            entity_layout,
+                        )
+                    }
+                    PartitionPublicationStrategy::WholePartition => {
+                        publish_whole_partition(publication, base)
+                    }
                 }
             });
             drop(writer);

@@ -268,6 +268,19 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
     assert_eq!(failure.cause, Cause::SourceUnavailable);
     assert_eq!(cold.source.reads.load(Ordering::Relaxed), 0);
     create_entity_in_partition(execution, &cold.runtime, "warm-pin", PartitionId(1));
+    // A current write admits only Head. Pin mutation needs the explicit Full witness.
+    assert_eq!(
+        cold.runtime
+            .visibility_pins()
+            .resident_replay_pins(state.clone())
+            .unwrap_err()
+            .cause,
+        Cause::SourceUnavailable
+    );
+    cold.runtime
+        .acquire_partition_edition()
+        .demand_all(execution, &cold.runtime.services.symbols)
+        .unwrap();
     let leases = cold
         .runtime
         .visibility_pins()

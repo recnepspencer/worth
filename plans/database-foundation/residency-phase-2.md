@@ -1711,3 +1711,78 @@ They do not substitute for the final post-implementation lane list. The three
 owner-service clippy lanes are not the entire CI lint list: query_gate also
 names lint-lower, lint-query, lint-fixture, lint-bank and lint-ui-binding; final
 verification must include those actual command suites.
+
+### Head-only current-operation matrix
+
+Boundary review: current transaction reads already declare Head demand, but
+preparation's declared input demand and the stable mirror target still require
+Full. Root Head capture and authenticated layered folding are available; the
+publication target's owned edit currently accepts only Full leases. The next
+matrix must expose this dependency before changing the mechanisms.
+
+Plan: produce real entity/relation rows and old versions, capture and reopen a
+writer on the exact same canonical medium prefix, then fault every selected
+history member under each failure class. Current entity/relation transaction
+reads, validation, candidate preparation and commit must succeed without any
+history-member read. A committed update must advance only its normal journal
+position and remain readable through a Head transaction. Use the failing cells
+to cut preparation and publication to Head without adding an effect-time load;
+retain Full witnesses for explicit history, retention and replay-pin operations.
+Do not weaken the new matrix or the existing Full failure matrix.
+
+Candidate preparation now reaches the remaining Full-only mirror target. The
+implementation plan is to keep a single stable target core with a sealed
+Head-or-Full lease (no cold variant), consume that lease into the corresponding
+owned edit, and restore its level without effect-time I/O. Full maintenance
+continues to mint its wrapper only after the current edition has accepted Full
+custody and the demanding runtime's Full meanings. The current mirror's cached
+edition remains an owner projection, removed before COW; planned targets retain
+the stable core, not an extra payload observer.
+
+An owned Head edit is trusted newly produced state, like the existing owned
+Full edit, whose commitment cache is also optional. It retains the prepared
+root's schema and isolated dictionary for later Full readmission. If its derived
+commitment cache is absent, a Full demand first derives the expected digest
+from the resident Head/suffix and authenticated prefix openings, then folds cold
+bases independently and compares the complete result. This keeps publication
+load-free without adding a digest calculation that can fail after effects.
+Checkpoint admission still supplies the externally checked commitment; the
+owned-current constructor cannot turn unadmitted checkpoint bytes into a Head.
+
+The current-operation table now has six doors (entity/relation transaction
+reads, validation, candidate preparation, update commit and relation deletion)
+under all six source failure classes. Its positive companion retains the old
+observation, writes through Head, captures without I/O, observes a retryable
+Full history refusal without a journal effect, recovers, and compares current
+and retained entities/relations against an independently executed memory runtime.
+The repeated warm Full read performs no further member read.
+
+The first native run exposed four integration regressions in addition to a
+wrong new test assertion. Transaction reads retain retired record metadata;
+the deletion court now compares the old observation's absent retirement with
+the new observation's exact deletion version. The phase-1 replay pin court
+implicitly assumed a current write loaded Full: it now additionally proves
+that Head cannot supply its pin witness, explicitly demands Full, and retains
+all original pin-count assertions. The cold-fork court enumerated current
+relation identities through a Full-only test accessor; its enumeration now
+uses the demanded Head arena, preserving every record comparison.
+
+Removing no-op lifecycle edits exposed a genuine initialization coupling:
+new mirror targets shared the immutable branch root's cell, and the old
+post-publication no-op edit had detached that sharing. Preparation now gives
+a new target its own resident owned payload before effects. Existing targets
+still consume their exact stable Head/Full custody after dropping the mirror's
+owner projection; the unobserved-write and whole-mirror copy budgets remain
+unchanged. This phase-2 level-aware edit extends phase 1's Full-only mirror
+mechanism because the Residency section explicitly permits writes at either
+level. Full historical mutation and replay pin witnesses remain Full-only.
+
+The corrected native library is green: 1,962 passed, 31 existing ignores,
+including both coordinator regression tests, every preceding fault table and
+the new current/Full courts. Owner library clippy (-D warnings -A dead-code),
+fmt, dirty line caps, agent-context and diff whitespace checks pass. Composition
+scans 26 files with zero hard violations and 21 advisories. The new long test
+routines are explicit producer/fault/reference courts; the longer production
+writer functions consume or restore one target, and the existing preparation
+orchestrators retain their declared stages. No responsibility is split merely
+to meet the cap. Logs matrix-head-* record this intermediate dirty-tree epoch.

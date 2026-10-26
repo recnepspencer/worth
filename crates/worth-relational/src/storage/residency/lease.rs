@@ -22,6 +22,17 @@ pub(crate) struct RelationalResidencyLease<Level> {
 }
 
 impl<Level> RelationalResidencyLease<Level> {
+    pub(super) fn into_owned_contents(self) -> crate::storage::overlay::PartitionState {
+        let Self {
+            custody, region, ..
+        } = self;
+        drop(custody);
+        match Arc::try_unwrap(region) {
+            Ok(region) => region.partition,
+            Err(region) => region.partition.clone(),
+        }
+    }
+
     pub(super) fn resident_region(&self) -> &ResidentRegion {
         &self.region
     }
@@ -86,6 +97,13 @@ impl RelationalResidencyLease<Head> {
 }
 
 impl RelationalResidencyLease<Full> {
+    pub(crate) fn as_head(&self) -> RelationalResidencyLease<Head> {
+        RelationalResidencyLease {
+            custody: self.custody.clone(),
+            region: self.region.clone(),
+            level: PhantomData,
+        }
+    }
     pub(crate) fn symbol_admission_identity(
         &self,
     ) -> super::RelationalRegionSymbolAdmissionIdentity {
@@ -106,14 +124,7 @@ impl RelationalResidencyLease<Full> {
 
     /// Accepted Full custody supplies all rows. This never admits or loads.
     pub(crate) fn into_owned_partition(self) -> crate::storage::overlay::PartitionState {
-        let Self {
-            custody, region, ..
-        } = self;
-        drop(custody);
-        match Arc::try_unwrap(region) {
-            Ok(region) => region.partition,
-            Err(region) => region.partition.clone(),
-        }
+        self.into_owned_contents()
     }
 
     #[cfg(test)]

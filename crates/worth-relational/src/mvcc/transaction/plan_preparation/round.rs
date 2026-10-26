@@ -21,7 +21,7 @@ pub(super) fn prepare(
     let basis = transaction.basis.clone();
     let selected = SelectedRelationalBranchState::from_admitted_basis(&basis);
     let allocation = execution.allocation_policy();
-    let (answer, effects) = crate::storage::residency::probe_full(
+    let (answer, effects) = crate::storage::residency::probe_head(
         execution,
         &selected.with_symbol_admission(&preparation.services.symbols),
         |partitions| {

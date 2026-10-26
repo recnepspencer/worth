@@ -17,8 +17,8 @@ use crate::storage::partition::AdjacencyKindBasis;
 use crate::storage::substrate::{EntityRecordKind, RecordArena, RecordKind, RelationRecordKind};
 use std::sync::Arc;
 
-#[derive(Debug)]
-pub(super) struct ResidentHistoryReadmission {
+#[derive(Debug, Clone)]
+pub(crate) struct ResidentHistoryReadmission {
     schema: Arc<RelationalBranchRootSchemaAuthority>,
     symbols: RuntimeSymbolTable,
 }
@@ -27,7 +27,7 @@ impl ResidentHistoryReadmission {
     pub(super) fn symbols(&self) -> &RuntimeSymbolTable {
         &self.symbols
     }
-    pub(super) fn new(
+    pub(crate) fn new(
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &RuntimeSymbolTable,
     ) -> Self {
@@ -54,6 +54,24 @@ impl ResidentHistoryReadmission {
             self.schema.retained_aspect_contracts(),
         )
         .map_err(|_| refuse(Cause::Damaged))?;
+        // Owned current edits have no required acceleration cache. Derive
+        // their expected root from Head and authenticated prefix openings
+        // before reading any historical member, independently of folding.
+        self.symbols.demand_symbol_ids(
+            execution,
+            super::required_symbols::collect_head(&head.partition),
+        )?;
+        let expected = match &head.commitment {
+            Some(commitment) => commitment.clone(),
+            None => {
+                PartitionContentCommitment::capture_layered(
+                    &head.partition,
+                    &self.symbols.interner_snapshot(),
+                )
+                .map_err(|_| refuse(Cause::Damaged))?
+                .0
+            }
+        };
         let mut image = partition_to_image_with_contracts(
             head.partition.clone(),
             self.schema.aspect_plans(),
@@ -92,10 +110,6 @@ impl ResidentHistoryReadmission {
             None,
         )
         .map_err(|_| refuse(Cause::Damaged))?;
-        let expected = head
-            .commitment
-            .as_ref()
-            .ok_or_else(|| refuse(Cause::Damaged))?;
         if commitment.digest(partition_id) != expected.digest(partition_id) {
             return Err(refuse(Cause::IntegrityMismatch));
         }

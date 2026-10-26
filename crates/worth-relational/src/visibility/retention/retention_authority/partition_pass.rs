@@ -34,8 +34,11 @@ pub(super) fn refresh_entity_retention_state(
     retired_at: Option<VersionId>,
     retention_fence: VersionId,
 ) {
+    if retired_at.is_none() {
+        return;
+    }
     let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_mut(partition_id) {
+    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
         runtime
             .storage_authority()
             .refresh_retention_state::<EntityRecordKind>(
@@ -54,8 +57,11 @@ pub(super) fn refresh_relation_retention_state(
     retired_at: Option<VersionId>,
     retention_fence: VersionId,
 ) {
+    if retired_at.is_none() {
+        return;
+    }
     let mut writer = runtime.edit_partitions();
-    if let Some(partition) = writer.partition_mut(partition_id) {
+    if let Some(partition) = writer.partition_metadata_mut(partition_id) {
         runtime
             .storage_authority()
             .refresh_retention_state::<RelationRecordKind>(

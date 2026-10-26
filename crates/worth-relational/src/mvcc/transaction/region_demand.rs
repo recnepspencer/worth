@@ -73,13 +73,14 @@ impl super::BranchBoundRelationalTransaction {
         // A new schema carrier reframes every retained region, including
         // unchanged records. Admit those contents during the operation;
         // capture itself must never reconstruct a missing member.
-        if self.schema_authority_input.as_ref().is_some_and(|input| {
+        let reframes_schema = self.schema_authority_input.as_ref().is_some_and(|input| {
             crate::schema::data::schema_authority_snapshot_digest_bytes(
                 input.target_schema_authority(),
             ) != root.schema_authority().authority_digest()
                 || input.descriptor_semantics_version()
                     != root.schema_authority().descriptor_semantics_version()
-        }) {
+        });
+        if reframes_schema {
             partitions.extend(root.partition_ids_iter());
         }
         let mut relations = BTreeSet::new();
@@ -119,12 +120,22 @@ impl super::BranchBoundRelationalTransaction {
                 partitions.insert(endpoints.target.partition_id);
             }
         }
-        mirror.demand(
-            execution,
-            symbols,
-            self.basis.identity().branch_id(),
-            partitions.iter().copied(),
-        )?;
-        root.demand_regions_full(execution, symbols, partitions)
+        if reframes_schema {
+            mirror.demand_full(
+                execution,
+                symbols,
+                self.basis.identity().branch_id(),
+                partitions.iter().copied(),
+            )?;
+            root.demand_regions_full(execution, symbols, partitions)
+        } else {
+            mirror.demand_head(
+                execution,
+                symbols,
+                self.basis.identity().branch_id(),
+                partitions.iter().copied(),
+            )?;
+            root.demand_regions_head(execution, symbols, partitions)
+        }
     }
 }

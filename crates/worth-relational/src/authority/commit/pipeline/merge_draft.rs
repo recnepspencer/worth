@@ -29,7 +29,7 @@ pub(super) fn prepare_merge_draft(
         &admitted.merged_plan().merged_intents,
         Default::default(),
     )?;
-    let (answer, round) = crate::storage::residency::probe_full(
+    let (answer, round) = crate::storage::residency::probe_head(
         execution,
         &selected.with_symbol_admission(&runtime.services.symbols),
         |partitions| {
@@ -45,7 +45,7 @@ pub(super) fn prepare_merge_draft(
     if let Ok(accepted) = &answer {
         runtime
             .mirror_residency
-            .demand(
+            .demand_head(
                 execution,
                 &runtime.services.symbols,
                 basis.identity().branch_id(),

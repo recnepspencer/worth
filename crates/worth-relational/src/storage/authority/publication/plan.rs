@@ -22,6 +22,7 @@ pub(super) struct PlannedExistingPartitionPublication {
     pub(super) partition_state: PartitionState,
     pub(super) journal: PartitionMutationJournal,
     pub(super) strategy: PartitionPublicationStrategy,
+    pub(super) readmission: crate::storage::residency::ResidentHistoryReadmission,
 }
 
 pub(super) enum PartitionPublicationStrategy {
@@ -58,6 +59,7 @@ impl PreparedMirrorPublication {
         clone_mode: PartitionCloneMode,
         partition_state: PartitionState,
         journal: PartitionMutationJournal,
+        readmission: crate::storage::residency::ResidentHistoryReadmission,
     ) {
         let strategy = select_publication_strategy(clone_mode, &journal);
         self.partitions.push(PlannedPartitionPublication::Existing(
@@ -66,6 +68,7 @@ impl PreparedMirrorPublication {
                 partition_state,
                 journal,
                 strategy,
+                readmission,
             },
         ));
     }

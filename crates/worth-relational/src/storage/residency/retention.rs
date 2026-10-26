@@ -175,8 +175,30 @@ impl RelationalRegionRetention {
             })
     }
 
+    pub(crate) fn pin_head_lease(
+        &self,
+    ) -> Result<
+        RelationalResidencyLease<super::Head>,
+        crate::storage::data::RelationalStorageUnavailable,
+    > {
+        self.cell.check_damage()?;
+        self.head
+            .get()
+            .cloned()
+            .or_else(|| self.full.get().map(|lease| lease.as_head()))
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(
+                    self.cell.partition_id,
+                ),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })
+    }
+
     pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
         self.authority.clone()
+    }
+    pub(crate) fn admitted_full_lease(&self) -> Option<RelationalResidencyLease<Full>> {
+        self.full.get().cloned()
     }
     pub(crate) fn demand_head(
         &self,

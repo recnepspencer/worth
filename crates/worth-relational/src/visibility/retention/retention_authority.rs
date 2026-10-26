@@ -243,12 +243,13 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 crate::transactions::data::RecordRef::Entity(entity_id) => {
                     let retired_at = self
                         .runtime
-                        .partitions
-                        .partition(entity_id.partition_id)
-                        .and_then(|partition| {
-                            partition
-                                .entity_arena
-                                .retired_at_for_slot(entity_id.slot_index())
+                        .edit_partitions()
+                        .current_lease(entity_id.partition_id)
+                        .and_then(|lease| {
+                            lease
+                                .head_view()
+                                .entity(*entity_id)
+                                .and_then(|slot| slot.retired_at())
                         });
                     refresh_entity_retention_state(
                         self.runtime,
@@ -261,12 +262,13 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 crate::transactions::data::RecordRef::Relation(relation_id) => {
                     let retired_at = self
                         .runtime
-                        .partitions
-                        .partition(relation_id.partition_id)
-                        .and_then(|partition| {
-                            partition
-                                .relation_arena
-                                .retired_at_for_slot(relation_id.slot_index())
+                        .edit_partitions()
+                        .current_lease(relation_id.partition_id)
+                        .and_then(|lease| {
+                            lease
+                                .head_view()
+                                .relation(*relation_id)
+                                .and_then(|slot| slot.retired_at())
                         });
                     refresh_relation_retention_state(
                         self.runtime,

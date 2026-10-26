@@ -25,6 +25,6 @@ pub(crate) fn demand_mutation_inputs<'intent>(
     basis
         .inner
         .root
-        .demand_regions_full(execution, symbols, partitions)
+        .demand_regions_head(execution, symbols, partitions)
         .map_err(|failure| super::storage_read_denial(basis, failure))
 }

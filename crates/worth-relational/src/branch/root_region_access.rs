@@ -90,6 +90,17 @@ impl RelationalBranchRoot {
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         self.demand_regions_full(execution, symbols, self.partition_ids_iter())
     }
+    pub(crate) fn demand_regions_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        partitions: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        for partition in partitions {
+            self.demand_region_head_with_symbols(execution, partition, symbols)?;
+        }
+        Ok(())
+    }
     pub(crate) fn probe_full_region(
         &self,
         id: PartitionId,

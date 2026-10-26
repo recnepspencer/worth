@@ -7,7 +7,9 @@ mod kind_commitment;
 mod kind_projection;
 pub(crate) use kind_commitment::RelationalRegionKindCommitment;
 pub(crate) use kind_projection::rebuild_region_history_kind_buckets;
+mod current_edit;
 mod full_edit;
+pub(crate) use current_edit::{ResidentRegionEdit, ResidentRegionLease};
 mod lease;
 pub(crate) use full_edit::ResidentFullRegionEdit;
 pub(crate) use kind_authority::RelationalRegionKindAuthority;
@@ -21,6 +23,7 @@ mod region_load;
 mod region_publication;
 mod resident_history;
 pub(crate) use region_publication::{PreparedResidentRegion, RegionCaptureBasis};
+pub(crate) use resident_history::ResidentHistoryReadmission;
 #[cfg(test)]
 mod tests;
 mod views;
@@ -49,7 +52,6 @@ mod cell_load_cache;
 mod discovery_policy;
 mod head_probe;
 mod probe;
-#[cfg(test)]
 pub(crate) use head_probe::probe_head;
 pub(crate) use head_probe::{probe_head_sources, PartitionHeadProbe};
 mod required_symbols;

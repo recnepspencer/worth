@@ -111,24 +111,21 @@ fn cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint() {
                 .unwrap()
                 .root()
                 .unwrap();
-            let relations = root
-                .partition_state(PartitionId(4))
+            let lease = root
+                .demand_region_head(execution, PartitionId(4))
                 .unwrap()
-                .relation_arena
-                .occupied_slots()
-                .into_iter()
+                .unwrap();
+            let arena = lease.head_view().relation_arena();
+            let relations = arena
+                .occupied_slots_iter()
                 .filter_map(|slot| {
-                    root.partition_state(PartitionId(4))
-                        .unwrap()
-                        .relation_arena
-                        .get_slot(slot)
-                        .map(|view| {
-                            crate::identity::data::RelationId::new(
-                                PartitionId(4),
-                                slot as u64,
-                                view.generation(),
-                            )
-                        })
+                    arena.get_slot(slot).map(|view| {
+                        crate::identity::data::RelationId::new(
+                            PartitionId(4),
+                            slot as u64,
+                            view.generation(),
+                        )
+                    })
                 })
                 .collect::<Vec<_>>();
             assert!(relations.len() >= 2);

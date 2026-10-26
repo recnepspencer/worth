@@ -39,7 +39,10 @@ impl CurrentMirror {
     {
         let target = match self.regions.get(&id) {
             None => return Ok(None),
-            Some(MirrorRegion::Resident(target)) => return Ok(Some(target.clone())),
+            Some(MirrorRegion::Resident(target)) => {
+                target.promote_full(self.edition.resident_pin_lease(id)?);
+                return Ok(Some(target.clone()));
+            }
             Some(MirrorRegion::AwaitingResidentTarget(region)) => {
                 // The explicit guard admitted this edition under its root's
                 // kind authority. A copied directory retention has a separate
@@ -48,6 +51,29 @@ impl CurrentMirror {
                     self.edition.resident_pin_lease(id)?,
                     region.clears_pins_on_write(),
                 )
+            }
+        };
+        self.regions
+            .insert(id, MirrorRegion::Resident(target.clone()));
+        Ok(Some(target))
+    }
+
+    pub(super) fn admit_current_target(
+        &mut self,
+        id: PartitionId,
+    ) -> Result<Option<ResidentMirrorTarget>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        let target = match self.regions.get(&id) {
+            None => return Ok(None),
+            Some(MirrorRegion::Resident(target)) => return Ok(Some(target.clone())),
+            Some(MirrorRegion::AwaitingResidentTarget(region)) => {
+                match self.edition.admitted_full_lease(id) {
+                    Some(lease) => ResidentMirrorTarget::new(lease, region.clears_pins_on_write()),
+                    _ => ResidentMirrorTarget::from_head(
+                        self.edition.resident_head_lease(id)?,
+                        region.clears_pins_on_write(),
+                    )?,
+                }
             }
         };
         self.regions

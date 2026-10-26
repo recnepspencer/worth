@@ -56,10 +56,23 @@ impl MirrorResidencyDemandBinding {
         }
         let edition = self.partitions.read().edition.clone();
         for (id, (partition, journal)) in committed {
-            edition.demand_partition_with_symbols(execution, symbols, id)?;
-            let target = self.partitions.write().admit_target(id)?;
+            crate::storage::overlay::CurrentPartitionAccess::demand_head_partition(
+                &edition.with_symbol_admission(symbols),
+                execution,
+                id,
+            )?;
+            let target = self.partitions.write().admit_current_target(id)?;
             match target {
-                Some(target) => prepared.prepare_existing(target, clone_mode, partition, journal),
+                Some(target) => prepared.prepare_existing(
+                    target,
+                    clone_mode,
+                    partition,
+                    journal,
+                    crate::storage::residency::ResidentHistoryReadmission::new(
+                        root.retained_schema_authority(),
+                        symbols,
+                    ),
+                ),
                 None => {
                     let lease = root.resident_full_region_witness(id)?.ok_or(
                         crate::storage::data::RelationalStorageUnavailable {
@@ -67,14 +80,37 @@ impl MirrorResidencyDemandBinding {
                             cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
                         }
                     )?;
-                    prepared.prepare_new(super::ResidentMirrorTarget::new(lease, false), &journal);
+                    // The immutable branch root is a real reader. Give the mirror
+                    // its own owned payload now, rather than depending on a
+                    // later no-op lifecycle edit to detach this initial cell.
+                    let mirror = lease.into_edit().freeze();
+                    prepared.prepare_new(super::ResidentMirrorTarget::new(mirror, false), &journal);
                 }
             }
         }
         Ok(prepared)
     }
 
-    pub(crate) fn demand(
+    pub(crate) fn demand_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        branch: &crate::history::data::BranchId,
+        ids: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        if branch != &self.main_branch {
+            return Ok(());
+        }
+        let edition = self.partitions.read().edition.clone();
+        let source = edition.with_symbol_admission(symbols);
+        for id in ids {
+            crate::storage::overlay::CurrentPartitionAccess::demand_head_partition(
+                &source, execution, id,
+            )?;
+        }
+        Ok(())
+    }
+    pub(crate) fn demand_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         symbols: &crate::runtime::RuntimeSymbolTable,
