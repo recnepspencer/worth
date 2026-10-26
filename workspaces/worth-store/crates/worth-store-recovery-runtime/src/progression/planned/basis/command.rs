@@ -86,7 +86,7 @@ pub(super) fn exact_commands<'a>(
                     &mut commands,
                     artifact,
                     range.offset(),
-                    allowance.box_values(bytes)?,
+                    allowance.charge_boxed_slice(bytes)?,
                     shape.count,
                 )?;
             }
@@ -103,7 +103,7 @@ pub(super) fn exact_commands<'a>(
                 &mut commands,
                 artifact,
                 0,
-                allowance.box_values(bytes)?,
+                allowance.charge_boxed_slice(bytes)?,
                 shape.count,
             )?;
         }
@@ -119,7 +119,7 @@ pub(super) fn exact_commands<'a>(
     let span_heap = PlanningResidentAllowance::vector_bytes(&spans)?;
     drop(spans);
     allowance.release(span_heap);
-    allowance.box_values(commands).map_err(Into::into)
+    allowance.charge_boxed_slice(commands).map_err(Into::into)
 }
 
 fn push(

@@ -48,7 +48,9 @@ pub(super) fn run_subject_if_requested() -> bool {
         ArtifactProcessRole::RuntimeInspector => {
             let serving = super::production_open::open(&request.root, request.profile).unwrap();
             assert_eq!(serving.store_identity(), inventory.store);
-            let targets = inspection_targets(&inventory, &request);
+            let targets = inspection_targets(&inventory, &request)
+                .into_iter()
+                .map(|target| inventory.with_checkpoint_context(target));
             let declaration = ManagedPhysicalIntegrityScrubRequest::new(
                 inventory.store,
                 targets,

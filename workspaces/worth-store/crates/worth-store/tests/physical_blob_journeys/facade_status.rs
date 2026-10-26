@@ -34,6 +34,5 @@ fn constructed_serving_blob_facade_reports_only_installed_owners() {
         .unwrap_or_else(|_| panic!("an empty selected root must permit bounded issuance"));
     assert_eq!(object.store(), serving.store_identity());
     assert_ne!(object.bytes(), [0; 16]);
-
     serving.close();
 }

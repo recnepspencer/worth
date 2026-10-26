@@ -72,15 +72,27 @@ pub(crate) fn inspect_checkpoint_window(
             binding
         ),
         Family::CheckpointFooter => {
-            let Some(prior) = aggregate.take().filter(|prior| prior.accepts_scope(scope)) else {
-                return missing(scope, input.byte_count());
+            let certificates = window.checkpoint_certificates();
+            let byte_count = input.byte_count() + certificates.len() as u64;
+            let Some(prior) = aggregate
+                .take()
+                .filter(|prior| prior.accepts_footer(scope, certificates.len()))
+            else {
+                return missing(scope, byte_count);
             };
-            let (result, counters) =
-                super::footer::validate_with_expected(input, scope, || prior.expected(scope));
+            let (result, _) = super::footer::validate_with_expected(input, scope, || {
+                prior.expected(scope, certificates)
+            });
             match result {
-                CheckpointFooterIntegrityValidation::Intact(_) => intact(scope, counters),
+                CheckpointFooterIntegrityValidation::Intact(_) => intact(
+                    scope,
+                    PhysicalIntegrityObservationCounters::one_intact(
+                        scope.artifact_family(),
+                        byte_count,
+                    ),
+                ),
                 CheckpointFooterIntegrityValidation::Rejected(rejection) => {
-                    rejected(scope, input.byte_count(), rejection)
+                    rejected(scope, byte_count, rejection)
                 }
             }
         }

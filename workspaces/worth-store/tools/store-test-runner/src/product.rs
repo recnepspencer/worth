@@ -96,7 +96,7 @@ const SMOKE_CASES: &[SmokeCase] = &[
         smoke(
             "worth-store-certification",
             "layout_access",
-            "btree_lookup_authority::ordinary_runtime_selects_and_executes_separator_directed_page_lookup",
+            "layout_corruption_rebuild::root_manifest_rebuild_reaches_exact_parity_through_production_owners",
         ),
         smoke(
             "worth-store-certification",
@@ -110,11 +110,11 @@ const SMOKE_CASES: &[SmokeCase] = &[
         ),
         store_smoke("baseline_admission::empty_bootstrap_create_and_reopen_converge"),
         store_smoke("scan_journeys::scan_batch_widths_converge_to_one_physical_sequence"),
-        store_smoke("publication_faults::possible_catalog_cutover_is_typed_indeterminate_and_close_adds_no_publication_effect"),
+        store_smoke("physical_work::failure::indeterminate_write_obligation_survives_orderly_close_and_reopen"),
         store_smoke("physical_work::serving_frame_residency::pins_distinguish_faults_hits_overpin_and_refault_without_another_runtime"),
         store_smoke("record_chunk_views::borrowed_access::inline_view_exposes_only_the_record_payload_and_observational_basis"),
         store_smoke("record_chunk_views::bounded_copy::bounded_copies_and_views_share_one_cursor_with_exact_copy_evidence"),
-        store_smoke("ordinary_writeback_failures::ordinary_candidate_tail_no_effect_is_typed_and_discards_dirty_residency"),
+        store_smoke("physical_work::residency_writeback_retry::no_effect_writeback_retains_dirty_ownership_through_signal_retry"),
         store_smoke("physical_work::speculative_residency::outcomes::cold_hot_and_mixed_speculation_reconcile_work_media_and_residency_truth"),
 ];
 

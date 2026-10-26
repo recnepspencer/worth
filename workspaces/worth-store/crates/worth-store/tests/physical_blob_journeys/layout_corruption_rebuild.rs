@@ -59,7 +59,6 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
             .unwrap()
             .selected_record()
             .unwrap();
-
         serving.close();
         (object, published, original)
     };
@@ -116,7 +115,6 @@ fn damaged_catalog_leaf_denies_point_then_rebuilds_from_selected_blob_authority(
         .expect("selected D1 lookup issues exact damaged-node diagnostic target");
     let target_record = target.scope().btree_node_identity().unwrap().0;
     assert_eq!(index_identity(target_record), old_node_identity);
-
     drop(layouts);
     let request = ManagedPhysicalIntegrityScrubRequest::new(
         serving.store_identity(),

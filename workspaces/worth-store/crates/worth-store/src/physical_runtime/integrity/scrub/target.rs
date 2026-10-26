@@ -4,6 +4,10 @@ use worth_store_physical_format::{
 };
 use worth_store_physical_integrity::PhysicalArtifactScope;
 
+#[cfg(test)]
+#[path = "certificate_bounds.rs"]
+mod certificate_bounds;
+
 /// The source of one bounded diagnostic window. A selected record has no raw
 /// artifact address: its route and payload length come from a protected C.5 root.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,6 +57,37 @@ pub struct PhysicalIntegrityScrubTarget {
 }
 
 impl PhysicalIntegrityScrubTarget {
+    /// Inspects a checkpoint footer together with its contiguous custody
+    /// certificate prefix. Both ranges are descriptive, never read authority;
+    /// their combined length is charged to the request's acquisition bounds.
+    pub fn checkpoint_footer_with_certificates(
+        identity: worth_store_physical_format::PhysicalCheckpointIdentity,
+        footer: worth_store_physical_integrity::PhysicalByteRange,
+        certificates: worth_store_physical_integrity::PhysicalByteRange,
+    ) -> Result<Self, PhysicalIntegrityScrubRequestDenial> {
+        use PhysicalIntegrityScrubRequestDenial as Denial;
+        if certificates.end_exclusive() != footer.offset()
+            || certificates.length() > worth_store_physical_format::MAX_CHECKPOINT_CERTIFICATE_BYTES
+        {
+            return Err(Denial::TargetScopeMismatch);
+        }
+        let mut target = Self::new(
+            PhysicalArtifactReadTarget::Checkpoint(identity),
+            PhysicalArtifactScope::checkpoint_footer(identity, footer),
+        )?;
+        let length = u32::try_from(footer.end_exclusive() - certificates.offset())
+            .map_err(|_| Denial::WindowBoundExceeded)?;
+        target.source = PhysicalIntegrityScrubSource::Media(
+            PhysicalArtifactReadRange::new(
+                PhysicalArtifactReadTarget::Checkpoint(identity),
+                certificates.offset(),
+                length,
+            )
+            .ok_or(Denial::TargetScopeMismatch)?,
+        );
+        Ok(target)
+    }
+
     pub fn new(
         target: PhysicalArtifactReadTarget,
         scope: PhysicalArtifactScope,
@@ -158,8 +193,13 @@ impl PhysicalIntegrityScrubTarget {
     }
 
     pub fn declared_bytes(self) -> u32 {
-        u32::try_from(self.scope.byte_range().length())
-            .expect("admitted scrub target has a u32 window bound")
+        match self.source {
+            PhysicalIntegrityScrubSource::Media(range) => range.length(),
+            PhysicalIntegrityScrubSource::SelectedRecord(_) => {
+                u32::try_from(self.scope.byte_range().length())
+                    .expect("admitted scrub target has a u32 window bound")
+            }
+        }
     }
 
     /// Descriptive root selected by the Store issuer; not read authority.

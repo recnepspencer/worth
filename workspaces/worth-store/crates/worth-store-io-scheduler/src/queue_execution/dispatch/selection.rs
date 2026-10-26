@@ -242,9 +242,9 @@ mod tests {
         let selection = PhysicalDispatchSelection::new();
         let background = selection.begin_background();
         let mut order = Vec::new();
-        for _ in 0..3 {
+        for class in ["foreground"; 3] {
             selection.begin_foreground().unwrap().commit();
-            order.push("foreground");
+            order.push(class);
         }
         assert!(selection.begin_foreground().is_err());
         background.commit();

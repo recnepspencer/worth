@@ -99,7 +99,6 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
     let root_record = selected_publications[0].root_record();
     assert_record_binding(before[0].0, root_record);
     assert_eq!(published.object().bytes(), world.object);
-
     serving.close();
 
     let reopened = serving_from_open(&world.root);
@@ -129,7 +128,6 @@ fn killed_partial_finish_leaf_is_reused_as_published_root() {
         assert_eq!(*byte, expected, "fresh read byte {index}");
     }
     drop(read);
-
     reopened.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-resume", "selected-leaf");
@@ -209,7 +207,6 @@ fn non_prefix_selected_node_denies_before_any_resumed_write() {
         media_before.positioned_write_attempts(),
         "dry tree validation must not cross any C5 media-write boundary"
     );
-
     serving.close();
 }
 

@@ -287,7 +287,7 @@ fn assert_reopened(world: &KilledBlobWorld, published: bool, chunks: usize) {
         let latest = serving
             .certification_selected_latest_blob_publication()
             .unwrap()
-            .expect("C8 must restore the generation marker; prebuild the current physical_store_recover helper before this cross-package crash test");
+            .expect("C8 must restore the generation marker");
         assert!(
             matches!(
                 blobs.resolve_publication(world.object, 1, &scope, limits),
@@ -326,7 +326,6 @@ fn assert_reopened(world: &KilledBlobWorld, published: bool, chunks: usize) {
             Err(BlobReadOpenFailure::PublicationNotFound)
         ));
     }
-
     serving.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-crash", world.seam);

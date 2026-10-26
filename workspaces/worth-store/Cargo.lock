@@ -1381,6 +1381,7 @@ dependencies = [
  "worth-store-physical-isolation",
  "worth-store-recovery-physics",
  "worth-store-security",
+ "worth-store-test-support",
  "worth-store-wal",
 ]
 

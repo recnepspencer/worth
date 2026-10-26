@@ -1,6 +1,21 @@
 use super::ServingPhysicalRuntime;
 
+/// Holds this runtime's retirement owner before any intent or checkpoint.
+/// Dropping the handle restores ordinary retirement admission.
+#[must_use = "retain the handle while retirement must remain paused"]
+pub struct CertificationRetirementPause<'runtime> {
+    _owner: std::sync::MutexGuard<'runtime, ()>,
+}
+
 impl ServingPhysicalRuntime {
+    /// Returns `None` when another retirement already owns the runtime's lane.
+    pub fn certification_try_pause_retirement(&self) -> Option<CertificationRetirementPause<'_>> {
+        self.parts
+            .publication
+            .certification_try_hold_retirement_owner()
+            .map(|owner| CertificationRetirementPause { _owner: owner })
+    }
+
     /// Holds the retirement owner after the claim and before the intent append.
     pub fn certification_pause_before_retirement_intent(&self) {
         self.parts.publication.arm_retirement_intent_gate();

@@ -108,7 +108,6 @@ fn assert_killed_expiry(role: &'static str) {
         repeated.disposition(),
         BlobTerminalDisposition::AlreadyAbandoned
     );
-
     serving.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-expiry-crash", role);

@@ -12,24 +12,7 @@ use worth_store_offline_integrity_observer::{
 use worth_store_physical_format::{PersistedRecordIdentity, RootPublicationCell};
 
 pub(super) fn observe_selected(root: &Path) -> String {
-    let binary = std::env::var_os("WORTH_C9_OBSERVER_EXECUTABLE")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .and_then(Path::parent)
-                .unwrap()
-                .join(format!(
-                    "physical_store_integrity_observer{}",
-                    std::env::consts::EXE_SUFFIX
-                ))
-        });
-    assert!(
-        binary.is_file(),
-        "standalone observer missing: {}",
-        binary.display()
-    );
+    let binary = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let output = Command::new(&binary)
         .arg("observe-selected")
         .arg("--store-root")

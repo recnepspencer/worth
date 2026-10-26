@@ -1,4 +1,4 @@
-//! A recovery world with one explicitly narrower, still owner-admitted scope.
+//! Owner-admitted residency budgets for recovery worlds.
 
 use std::num::NonZeroU64;
 
@@ -7,6 +7,23 @@ use worth_store::physical_runtime::AdmittedPhysicalRecordFormat;
 use super::{PhysicalResidencyStoreWorld, PhysicalResidencyStoreWorldConstructionFailure};
 
 impl PhysicalResidencyStoreWorld {
+    pub fn initialize_for_recovery_with_operation_budget(
+        label: &str,
+        format: AdmittedPhysicalRecordFormat,
+        manifest_capacity: u16,
+        operation_bytes: NonZeroU64,
+    ) -> Result<Self, PhysicalResidencyStoreWorldConstructionFailure> {
+        Self::initialize_with_configuration(
+            label,
+            super::super::configuration::recovery_planning_configuration_with_operation_budget(
+                format,
+                manifest_capacity,
+                operation_bytes,
+            ),
+            NonZeroU64::new(16 * 1024 * 1024).unwrap(),
+        )
+    }
+
     pub fn initialize_for_recovery_with_recovery_scope(
         label: &str,
         format: AdmittedPhysicalRecordFormat,

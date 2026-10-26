@@ -43,8 +43,11 @@ pub(crate) fn request_with_configuration(
 /// root reads more manifest entries than those worlds ever route. The ingest
 /// also leaves about 140 root generations above the checkpoint, and recovery
 /// re-reads the manifest of each one to order the retirements among them.
-/// The first reopen is charged 998 manifest entries on every run; the bytes
-/// it reads, about 44 MiB, follow block sizes and vary a little.
+/// Fresh object/session identities can change durable index packing and the
+/// byte footprint between producers. Replanning fixed media is deterministic.
+/// This fixture chooses 128 MiB: twice its own 64 MiB ADMITTED_BYTES window,
+/// about three times the measured 43 MiB planning need. That headroom covers
+/// producer-dependent packing; it is not a bound declared by recovery.
 pub(crate) fn request_for_long_ingest(root: &Path) -> PhysicalRecoveryOpenRequest {
     request_for_long_ingest_with_manifest_entries(root, 18432)
 }
@@ -55,12 +58,12 @@ pub(crate) fn request_for_long_ingest_with_manifest_entries(
     root: &Path,
     manifest_entries: u64,
 ) -> PhysicalRecoveryOpenRequest {
-    declare(
-        root,
-        43 << 20,
-        manifest_entries,
-        PhysicalRecoveryStaticConfiguration::current(),
-    )
+    let mut limits = declaration(ADMITTED_BYTES, manifest_entries);
+    limits.recovery_memory_bytes = limits
+        .observation_bytes
+        .checked_add(limits.staging_bytes)
+        .expect("finite observation and planning headroom");
+    open(root, limits, PhysicalRecoveryStaticConfiguration::current())
 }
 
 /// The limits of the two-chunk worlds with exactly this many manifest entries.

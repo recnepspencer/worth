@@ -85,4 +85,3 @@ pub use staging::{
     PhysicalRecoveryStagingCommandStage, PhysicalRecoveryStagingMaterialization,
     PhysicalRecoveryStagingMaterializationEvidence,
 };
-pub use worth_store_buffer_pool::PhysicalResidencyDenial;

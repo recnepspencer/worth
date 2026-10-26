@@ -1,8 +1,4 @@
-use std::{
-    num::NonZeroU64,
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{num::NonZeroU64, path::Path, process::Command};
 
 #[cfg(not(feature = "certification-test-authority"))]
 use sha2::{Digest, Sha256};
@@ -240,24 +236,7 @@ pub(super) fn observe_closed_store_with_limits(
     maximum_report_bytes: u64,
     maximum_elapsed_milliseconds: u64,
 ) -> serde_json::Value {
-    let binary = std::env::var_os("WORTH_C9_OBSERVER_EXECUTABLE")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .and_then(Path::parent)
-                .unwrap()
-                .join(format!(
-                    "physical_store_integrity_observer{}",
-                    std::env::consts::EXE_SUFFIX
-                ))
-        });
-    assert!(
-        binary.is_file(),
-        "standalone observer missing: {}",
-        binary.display()
-    );
+    let binary = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let maximum_open_files = if cfg!(windows) { "6" } else { "5" };
     let output = Command::new(&binary)
         .arg("observe")

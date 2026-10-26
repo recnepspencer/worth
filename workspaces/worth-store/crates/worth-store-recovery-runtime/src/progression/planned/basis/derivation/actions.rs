@@ -50,7 +50,7 @@ pub(super) fn derive(
         steps.extend(grouped[start..end].iter().map(|row| row.3.clone()));
         actions.push(RecoveryStagingAction {
             ordinal: actions.len() as u64,
-            steps: allowance.box_values(steps)?,
+            steps: allowance.charge_boxed_slice(steps)?,
             source: source.clone(),
             destination_generation: staging_generation,
         });

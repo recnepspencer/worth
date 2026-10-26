@@ -8,7 +8,7 @@ use super::oracle::{
     LiteralChecksum, LiteralChecksumExpectation, LiteralVector,
 };
 
-pub(super) const OPERATION_3_HEX: &str = concat!(
+pub(crate) const OPERATION_3_HEX: &str = concat!(
     "575045464645435406060000000000000102030405060708090a0b0c0d0e0f10",
     "0100000000000000020000000000000003000000000000000000000000000000",
     "0000000000000000000000000000000000000000000000000000000000000000",
@@ -34,7 +34,7 @@ const DECLARATION_RANGES: &[(
     PhysicalIntegrityCoverageBoundary::Fixed(128),
 )];
 
-pub(super) fn verify() {
+pub(crate) fn verify() {
     assert_declaration(
         PHYSICAL_WORK_OBLIGATION_INTEGRITY_DECLARATION,
         PhysicalIntegrityArtifactFamily::PhysicalWorkObligation,

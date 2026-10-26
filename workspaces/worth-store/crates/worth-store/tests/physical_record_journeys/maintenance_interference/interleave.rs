@@ -57,6 +57,8 @@ pub(super) fn run_cold_extent(
     let foreground_finished = AtomicBool::new(false);
     let floor_finished = AtomicBool::new(false);
     thread::scope(|scope| {
+        // Release before the scope joins workers if any observation panics.
+        let _release_sync = super::sync::FileSyncPauseRelease::new(&gate);
         let mut cold = old
             .open(
                 extent_id,
@@ -117,9 +119,11 @@ pub(super) fn run_cold_extent(
             checkpoint(serving, ordinal_base + 30);
             checkpoint_finished.store(true, Ordering::Release);
         });
-        let deadline = Instant::now() + Duration::from_secs(5);
+        // The scaled reopened world may capture many frames before its first
+        // sync. Match the checkpoint's own deadline; the gate proves ordering.
+        let deadline = Instant::now() + Duration::from_secs(30);
         while gate.reached_context().is_none() && Instant::now() < deadline {
-            thread::yield_now();
+            thread::sleep(Duration::from_millis(1));
         }
         // Only the checkpoint runs after arming; the cold reader is parked
         // before its read call, so the held sync was issued by the checkpoint.
@@ -257,7 +261,6 @@ pub(super) fn run_cold_extent(
         Err(PhysicalRetirementDenial::Protected)
     );
     assert_eq!(serving.media_counters().deletions(), deletions);
-
     drop(inline);
     drop(second);
     assert_eq!(

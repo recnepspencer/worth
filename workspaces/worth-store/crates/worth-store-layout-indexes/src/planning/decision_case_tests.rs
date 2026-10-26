@@ -120,9 +120,9 @@ fn declared_selection_cases_equal_cases_emitted_by_ordinary_requests() {
                     .explicit_degraded_exact_scan(
                         crate::DegradedExactScanRequest::new().with_budget_rows(8),
                     )
-                    .expect("a nonempty degraded scan declares real pre-execution cost"),
+                    .expect("positive degraded scan demand must admit"),
             )
-            .expect("budget denial must follow ordinary request admission"),
+            .expect("budget denial must follow ordinary positive-cost request admission"),
         PreExecutionBudgetEnvelope::new(PreExecutionBudgetScope::Foreground, 0, 0, 0, 0, 0),
     ));
     observed.insert(select_case(

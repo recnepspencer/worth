@@ -18,7 +18,6 @@ const REOPENER: &str = "durability_admission::managed_mutation::extent_record_re
 const DIRECTORY: &str = "C11_ARENA_SCALE_DIRECTORY";
 const COUNT: &str = "C11_ARENA_SCALE_COUNT";
 const CAPACITY: &str = "C11_ARENA_SCALE_CAPACITY";
-const OBSERVER: &str = "WORTH_C9_OBSERVER_EXECUTABLE";
 const LARGE: usize = 256 * 1024;
 const SMALL: usize = 20 * 1024;
 const LARGE_BATCH: u64 = 16;
@@ -252,8 +251,7 @@ fn observe_offline_population(root: &Path, directory: &Path, count: u64) -> serd
     // Current and previous roots each read the selected frames; WAL and
     // manifest admission need additional room beyond those two payload walks.
     let observed_byte_budget = logical_bytes * 4 + (4_u64 << 30);
-    let executable = std::env::var_os(OBSERVER)
-        .unwrap_or_else(|| panic!("{OBSERVER} must name the Cargo-built independent observer"));
+    let executable = worth_store_test_support::OFFLINE_ROOT_OBSERVER.path();
     let report_path = directory.join("arena-scale-observation.json");
     let output = Command::new(executable)
         .args(["observe", "--store-root"])

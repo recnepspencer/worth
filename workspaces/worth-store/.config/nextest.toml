@@ -1,4 +1,5 @@
 [profile.default]
+test-threads = 8
 fail-fast = false
 slow-timeout = { period = "60s", terminate-after = 5 }
 
@@ -11,14 +12,77 @@ final-status-level = "slow"
 slow-timeout = { period = "60s", terminate-after = 10 }
 
 [test-groups.compiler-boundary]
-max-threads = 2
+# Trybuild fixtures share Cargo's artifact lock; concurrent fixtures spend
+# their timeout waiting for the same build and multiply Cargo's job budget.
+max-threads = 1
 
 [[profile.default.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
+platform = 'cfg(windows)'
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
 test-group = 'compiler-boundary'
+# A cold Windows dependency build alone can exceed twelve minutes before the
+# first pass/fail fixture starts. Keep a bounded aggregate compiler envelope.
+slow-timeout = { period = "60s", terminate-after = 30 }
+
+[[profile.default.overrides]]
+filter = 'binary(/compile_fail|_ui$|_compile$/)'
+test-group = 'compiler-boundary'
+slow-timeout = { period = "60s", terminate-after = 15 }
+
+# These proofs build scale worlds or enumerate every physical interruption.
+# Give each the whole fixture pool: their internal readers/writers still run
+# concurrently, while unrelated worlds cannot consume the same I/O budget.
+# Their aggregate work exceeds the ordinary ten-minute case limit on Windows;
+# individual Store operations retain their own deadlines and all proof checks.
+[[profile.default.overrides]]
+platform = 'cfg(windows)'
+filter = '''
+test(canonical_world_reopens_into_the_cold_extent_interleave) +
+test(held_readers_block_retirement_without_scanning_every_root) +
+test(every_media_operation_of_a_member_carrying_replacement_recovers_to_one_whole_value) +
+test(every_media_operation_of_an_anchored_publication_recovers_to_the_old_or_new_value) +
+test(pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_terminal_head)
+'''
+threads-required = "num-test-threads"
+slow-timeout = { period = "60s", terminate-after = 30 }
+
+# Each home sweep owns eight independent case workers. Reserve the full pool
+# so separate nextest processes cannot multiply their workers. Libtest also
+# serializes these sweeps within its process. All merged lifecycle cases stay.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(media_sweep::)'
+threads-required = "num-test-threads"
+
+# Residency member publication expands checkpoint replacement to 590 admitted
+# cuts (295 per seed), versus the 176-cut reference commit matrix. Preserve
+# its 300 s/default and 600 s/CI per-cut allowance: 1,006 / 2,012 s, rounded
+# to whole minutes. A loaded diagnostic took 894.77 s, leaving 56% of the
+# CI guard unused. Phase costs and qualification timings are in the README.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+slow-timeout = { period = "60s", terminate-after = 17 }
+
+[[profile.ci.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
+slow-timeout = { period = "60s", terminate-after = 34 }
+
+# This test runs archive, deletion-request and delete matrices under one timer:
+# 3 * 176 = 528 admitted cuts. Preserve the same allowance per cut, rather
+# than giving their combined work one ordinary case's guard. The loaded
+# diagnostic took 709.13 s across all three, leaving 61% of the CI guard unused.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
 slow-timeout = { period = "60s", terminate-after = 15 }
 
 [[profile.ci.overrides]]
-filter = 'binary(/compile_fail|_ui$/)'
-test-group = 'compiler-boundary'
-slow-timeout = { period = "60s", terminate-after = 15 }
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_archive_and_delete_transitions_recovers)'
+slow-timeout = { period = "60s", terminate-after = 30 }
+
+# Scheduled maximum-roster proof: 64 chunks, 63 partial drops, one checkpoint,
+# one C8 recovery and a Serving rejoin/checkpoint (not an ordinary scenario).
+# Under continuous builds it passed in 732.6 s (8.34 s/drop, 196 s ingest),
+# leaving 59% of this dedicated 1,800 s guard unused.
+[[profile.default.overrides]]
+filter = 'test(=certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'
+threads-required = "num-test-threads"
+slow-timeout = { period = "60s", terminate-after = 30 }

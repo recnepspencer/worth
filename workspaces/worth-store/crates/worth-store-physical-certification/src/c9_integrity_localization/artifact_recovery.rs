@@ -58,37 +58,7 @@ pub(super) fn observe(
         panic!("fresh C8 role");
     };
     observed.require_store_identity(store).unwrap();
-    if let Some(target) = target {
-        let expected = super::process_integrity_projection::project_integrity_scope(target.scope);
-        let matches = observed
-            .ingress
-            .iter()
-            .chain(&observed.wal)
-            .filter(|row| {
-                row.scope.family == expected.family
-                    && row.scope.identity == expected.identity
-                    && row.scope.byte_range.offset == expected.byte_range.offset
-            })
-            .collect::<Vec<_>>();
-        for row in &matches {
-            let ProcessIngressOutcome::Integrity(ProcessIntegrityRejection::Damaged(damage)) =
-                row.outcome
-            else {
-                panic!("C8 consumed checksum-poisoned artifact without rejecting it: {row:?}");
-            };
-            // Root-protocol B/S refusals have their own projection below;
-            // record/WAL ingress is exercised here by the covered-byte row.
-            assert_eq!(damage.cause, ProcessDamageCause::ChecksumMismatch);
-            assert_eq!(damage.scope.store_identity, store);
-        }
-        println!(
-            "C9 C8 family={} matching_rejections={} posture={:?} counters={:?}",
-            target.family,
-            matches.len(),
-            observed.posture,
-            observed.integrity_counters
-        );
-    } else {
+    let Some(target) = target else {
         assert_eq!(observed.posture, ProcessRecoveryPosture::Recovered);
         assert!(observed.integrity_counters.admitted > 0);
         assert!(
@@ -96,7 +66,37 @@ pub(super) fn observe(
                 + observed.integrity_counters.owner_projection_entries
                 > 0
         );
+        return observed.clone();
+    };
+    let expected = super::process_integrity_projection::project_integrity_scope(target.scope);
+    let matches = observed
+        .ingress
+        .iter()
+        .chain(&observed.wal)
+        .filter(|row| {
+            row.scope.family == expected.family
+                && row.scope.identity == expected.identity
+                && row.scope.byte_range.offset == expected.byte_range.offset
+        })
+        .collect::<Vec<_>>();
+    for row in &matches {
+        let ProcessIngressOutcome::Integrity(ProcessIntegrityRejection::Damaged(damage)) =
+            row.outcome
+        else {
+            panic!("C8 consumed checksum-poisoned artifact without rejecting it: {row:?}");
+        };
+        // Root-protocol B/S refusals have their own projection below;
+        // record/WAL ingress is exercised here by the covered-byte row.
+        assert_eq!(damage.cause, ProcessDamageCause::ChecksumMismatch);
+        assert_eq!(damage.scope.store_identity, store);
     }
+    println!(
+        "C9 C8 family={} matching_rejections={} posture={:?} counters={:?}",
+        target.family,
+        matches.len(),
+        observed.posture,
+        observed.integrity_counters
+    );
     observed.clone()
 }
 

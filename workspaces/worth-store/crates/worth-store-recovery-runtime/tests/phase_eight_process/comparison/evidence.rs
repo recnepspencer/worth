@@ -4,39 +4,75 @@ pub(super) fn same_physical_evidence(
     expected: &RecoveryObserverReport,
     observed: &RecoveryObserverReport,
 ) -> bool {
-    expected.artifact_count() == observed.artifact_count()
-        && expected.bytes_read() == observed.bytes_read()
-        && expected.generation_link_count() == observed.generation_link_count()
-        && expected.generation_link_digest() == observed.generation_link_digest()
-        && expected.artifact_identity_count() == observed.artifact_identity_count()
-        && expected.durable_selector_count() == observed.durable_selector_count()
-        && expected.linked_selector_count() == observed.linked_selector_count()
-        && expected.unpaired_selector_link_count() == observed.unpaired_selector_link_count()
-        && expected.selector_store_identity() == observed.selector_store_identity()
-        && expected.current_root_generation() == observed.current_root_generation()
-        && expected.durable_selector_digest() == observed.durable_selector_digest()
-        && expected.checkpoint_count() == observed.checkpoint_count()
-        && expected.checkpoint_page_count() == observed.checkpoint_page_count()
-        && expected.checkpoint_covered_lsn_start() == observed.checkpoint_covered_lsn_start()
-        && expected.checkpoint_covered_lsn_end() == observed.checkpoint_covered_lsn_end()
-        && expected.checkpoint_redo_lsn() == observed.checkpoint_redo_lsn()
-        && expected.durable_checkpoint_lsn() == observed.durable_checkpoint_lsn()
-        && expected.checkpoint_coverage_digest() == observed.checkpoint_coverage_digest()
-        && expected.wal_segment_count() == observed.wal_segment_count()
-        && expected.valid_wal_prefix_bytes() == observed.valid_wal_prefix_bytes()
-        && expected.observed_wal_bytes() == observed.observed_wal_bytes()
-        && expected.wal_frame_count() == observed.wal_frame_count()
-        && expected.wal_first_lsn() == observed.wal_first_lsn()
-        && expected.wal_last_lsn() == observed.wal_last_lsn()
-        && expected.valid_wal_prefix_digest() == observed.valid_wal_prefix_digest()
-        && expected.page_lsn_count() == observed.page_lsn_count()
-        && expected.page_lsn_minimum() == observed.page_lsn_minimum()
-        && expected.page_lsn_maximum() == observed.page_lsn_maximum()
-        && expected.page_lsn_digest() == observed.page_lsn_digest()
-        && expected.manifest_count() == observed.manifest_count()
-        && expected.manifest_member_count() == observed.manifest_member_count()
-        && expected.manifest_membership_digest() == observed.manifest_membership_digest()
-        && expected.residue_artifact_count() == observed.residue_artifact_count()
-        && expected.residue_bytes() == observed.residue_bytes()
-        && expected.residue_digest() == observed.residue_digest()
+    physical_evidence_key(expected) == physical_evidence_key(observed)
+}
+
+/// Every observer fact a fresh-process run must reproduce, grouped by artifact family.
+type PhysicalEvidenceKey = (
+    (u64, u64, u64, [u8; 32], u64),
+    (u64, u64, u64, Option<[u8; 16]>, Option<u64>, [u8; 32]),
+    (
+        u64,
+        u64,
+        Option<u64>,
+        Option<u64>,
+        Option<u64>,
+        Option<u64>,
+        [u8; 32],
+    ),
+    (u64, u64, u64, u64, Option<u64>, Option<u64>, [u8; 32]),
+    (u64, Option<u64>, Option<u64>, [u8; 32]),
+    (u64, u64, [u8; 32], u64, u64, [u8; 32]),
+);
+
+fn physical_evidence_key(report: &RecoveryObserverReport) -> PhysicalEvidenceKey {
+    (
+        (
+            report.artifact_count(),
+            report.bytes_read(),
+            report.generation_link_count(),
+            report.generation_link_digest(),
+            report.artifact_identity_count(),
+        ),
+        (
+            report.durable_selector_count(),
+            report.linked_selector_count(),
+            report.unpaired_selector_link_count(),
+            report.selector_store_identity(),
+            report.current_root_generation(),
+            report.durable_selector_digest(),
+        ),
+        (
+            report.checkpoint_count(),
+            report.checkpoint_page_count(),
+            report.checkpoint_covered_lsn_start(),
+            report.checkpoint_covered_lsn_end(),
+            report.checkpoint_redo_lsn(),
+            report.durable_checkpoint_lsn(),
+            report.checkpoint_coverage_digest(),
+        ),
+        (
+            report.wal_segment_count(),
+            report.valid_wal_prefix_bytes(),
+            report.observed_wal_bytes(),
+            report.wal_frame_count(),
+            report.wal_first_lsn(),
+            report.wal_last_lsn(),
+            report.valid_wal_prefix_digest(),
+        ),
+        (
+            report.page_lsn_count(),
+            report.page_lsn_minimum(),
+            report.page_lsn_maximum(),
+            report.page_lsn_digest(),
+        ),
+        (
+            report.manifest_count(),
+            report.manifest_member_count(),
+            report.manifest_membership_digest(),
+            report.residue_artifact_count(),
+            report.residue_bytes(),
+            report.residue_digest(),
+        ),
+    )
 }

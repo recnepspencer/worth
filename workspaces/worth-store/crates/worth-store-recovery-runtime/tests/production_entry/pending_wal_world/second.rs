@@ -102,7 +102,6 @@ pub(super) fn distinct_child(root: &Path, marker: &Path) {
         }
         Err(failure) => panic!("distinct blob publication: {failure:?}"),
     };
-
     super::selected_media::assert_distinct_ingest_step(
         &first_v3_result,
         &super::selected_media::read(root),

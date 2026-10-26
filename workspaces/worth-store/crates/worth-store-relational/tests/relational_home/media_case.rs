@@ -61,15 +61,11 @@ pub(crate) fn run_case(
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> Ended {
-    let prepared = PreparedHome::prepare(prefix, execution);
-    let Some((home, activations)) = media_faults::open_with_faults(
-        prepared.location(),
-        served_schema(prefix),
-        &[fault],
-        execution,
-    ) else {
+    let Some(media) = media_faults::FaultedMedia::admit(&[fault]) else {
         return Ended::Skipped;
     };
+    let prepared = PreparedHome::prepare(prefix, execution);
+    let (home, activations) = media.open(prepared.location(), served_schema(prefix), execution);
     apply(&home, execution, lead);
     let before = workload::artifacts_of(home.runtime());
     let mut acknowledged_transitions = super::branch_lifecycle::artifacts_of_home(&home);

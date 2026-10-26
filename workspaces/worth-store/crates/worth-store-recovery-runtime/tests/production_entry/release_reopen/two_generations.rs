@@ -85,7 +85,6 @@ pub(super) fn release_second_object(
         }
         Err(failure) => panic!("second publication failed: {failure:?}"),
     };
-
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()

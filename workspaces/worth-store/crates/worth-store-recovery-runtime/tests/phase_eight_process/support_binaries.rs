@@ -1,9 +1,16 @@
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
-const WRITER_ENV: &str = "WORTH_STORE_PHASE8_WRITER";
-const OBSERVER_ENV: &str = "WORTH_STORE_PHASE8_OBSERVER";
-const RECOVERY_ENV: &str = "WORTH_STORE_PHASE8_RECOVERY";
+use worth_store_test_support::{
+    IndependentExecutable, FRESH_PROCESS_RECOVERY as RECOVERY,
+    OFFLINE_RECOVERY_OBSERVER as OBSERVER,
+};
+
+// The writer is killed, never power-cut, so it skips the OS flush exactly as
+// the in-process suites do.
+const WRITER: IndependentExecutable =
+    IndependentExecutable::new("worth-store", "physical_store_c8_writer")
+        .with_features("volatile-sync-for-tests");
 
 static PHASE_EIGHT_BINARIES: OnceLock<PhaseEightProcessBinaries> = OnceLock::new();
 
@@ -39,9 +46,9 @@ impl PhaseEightProcessBinaries {
 
 pub(super) fn phase_eight_process_binaries() -> &'static PhaseEightProcessBinaries {
     PHASE_EIGHT_BINARIES.get_or_init(|| {
-        let writer = provided(WRITER_ENV);
-        let observer = provided(OBSERVER_ENV);
-        let recovery = provided(RECOVERY_ENV);
+        let writer = provided(WRITER);
+        let observer = provided(OBSERVER);
+        let recovery = provided(RECOVERY);
         assert_ne!(writer.path, observer.path, "writer and observer alias");
         assert_ne!(writer.path, recovery.path, "writer and recovery alias");
         assert_ne!(observer.path, recovery.path, "observer and recovery alias");
@@ -53,15 +60,14 @@ pub(super) fn phase_eight_process_binaries() -> &'static PhaseEightProcessBinari
     })
 }
 
-fn provided(name: &str) -> ProvidedProcessBinary {
-    let encoded = std::env::var_os(name)
-        .unwrap_or_else(|| panic!("Phase 8 suite owner omitted required environment `{name}`"));
-    let path = PathBuf::from(encoded)
+fn provided(executable: IndependentExecutable) -> ProvidedProcessBinary {
+    let path = executable
+        .path()
         .canonicalize()
-        .unwrap_or_else(|error| panic!("Phase 8 suite binary `{name}` is unavailable: {error}"));
+        .unwrap_or_else(|error| panic!("Phase 8 binary {executable:?} is unavailable: {error}"));
     assert!(
         path.is_file(),
-        "Phase 8 suite binary `{name}` is not a file"
+        "Phase 8 binary {executable:?} is not a file"
     );
     ProvidedProcessBinary { path }
 }

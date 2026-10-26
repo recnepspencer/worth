@@ -1,7 +1,7 @@
 //! A syntactically valid, durably WAL-bound expiry cannot invent a later
 //! completed checkpoint than the selected Store actually has.
 
-use std::{fs, path::Path, process::Command, time::Duration};
+use std::{fs, process::Command, time::Duration};
 
 use worth_store::physical_runtime::BlobResumeToken;
 
@@ -68,23 +68,5 @@ fn resealed_future_expiry_wal_blocks_before_any_recovery_effect() {
 }
 
 fn recovery_executable() -> std::path::PathBuf {
-    let binary = std::env::var_os("WORTH_C8_RECOVERY_EXECUTABLE")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|| {
-            std::env::current_exe()
-                .unwrap()
-                .parent()
-                .and_then(Path::parent)
-                .unwrap()
-                .join(format!(
-                    "physical_store_recover{}",
-                    std::env::consts::EXE_SUFFIX
-                ))
-        });
-    assert!(
-        binary.is_file(),
-        "standalone C8 binary missing: {}",
-        binary.display()
-    );
-    binary
+    worth_store_test_support::FRESH_PROCESS_RECOVERY.path()
 }

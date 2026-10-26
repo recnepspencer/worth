@@ -1,0 +1,30 @@
+name: Store certificate roster scale
+
+on:
+  schedule:
+    - cron: '31 8 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certificate-roster:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    env:
+      CARGO_BUILD_JOBS: '8'
+      CARGO_INCREMENTAL: '0'
+    defaults:
+      run:
+        working-directory: workspaces/worth-store
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.0
+      - uses: taiki-e/install-action@nextest
+      - name: Checkpoint and recover all 64 certificate records
+        run: >-
+          cargo nextest run --profile ci --cargo-profile ci-test
+          -p worth-store-recovery-runtime --features certification-test-authority
+          --test production_entry --run-ignored only --no-tests=fail
+          -E 'test(=certified_release_serving::certificate_roster_scale::maximum_certificate_roster_checkpoints_recovers_and_rejoins)'

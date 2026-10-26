@@ -21,10 +21,7 @@ fn partial_drop_checkpoints_on_its_standing_reservation_and_reopens() {
 }
 
 fn run() {
-    // One head closure for the release certificate, plus the drop's capture
-    // custody (its envelope carries the policy's pin-scan bound, about 2.3 MB
-    // here) and headroom.
-    let limit = numeric_one_head_closure() + (4 << 20);
+    let limit = funded_one_head_limit();
     let (world, proof, _) =
         release_reopen::published_world::create(false, None, NonZeroU64::new(limit));
     let source = (proof.object(), proof.generation());
@@ -80,8 +77,10 @@ fn run() {
     let gate =
         serving.pause_physical_checkpoint_at(PhysicalCheckpointStep::CandidateSynchronization);
     let handle = start(serving, 0x7b);
+    // The pause probe waits five seconds per call; the admitted checkpoint has
+    // thirty seconds. Observe that whole envelope without restarting its work.
     assert!(
-        gate.await_arrival(),
+        (0..6).any(|_| gate.await_arrival()),
         "a capture on the reservation must reach file synchronization"
     );
     assert_eq!(recovery_bytes(serving), limit - 1, "no fresh capture bytes");

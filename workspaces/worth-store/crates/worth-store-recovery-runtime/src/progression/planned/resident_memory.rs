@@ -170,7 +170,7 @@ impl PlanningResidentAllowance {
         )
     }
 
-    pub(crate) fn box_values<T>(
+    pub(crate) fn charge_boxed_slice<T>(
         &mut self,
         values: Vec<T>,
     ) -> Result<Box<[T]>, PlanningMemoryDenial> {

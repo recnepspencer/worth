@@ -150,7 +150,6 @@ fn selected_prefix_resumes_once_and_denials_do_not_publish() {
     assert_eq!(selected[0].2, first);
     assert_eq!(selected[1].2, patterned_chunk(1));
     assert_eq!(selected_root(&serving), final_root);
-
     serving.close();
 
     let reopened = serving_from_open(directory.path());
@@ -173,7 +172,6 @@ fn selected_prefix_resumes_once_and_denials_do_not_publish() {
     }
     assert_eq!(actual, [patterned_chunk(0), patterned_chunk(1)].concat());
     drop(read);
-
     reopened.close();
 }
 

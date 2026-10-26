@@ -7,7 +7,8 @@ use worth_store_physical_format::IndexedThroughBlobPublication;
 
 pub(in super::super) fn child(marker: &Path, shape: World) {
     let world = baseline(shape);
-    let (objects, first) = publish(&world, shape);
+    report_progress(marker, "baseline checkpoint");
+    let (objects, first) = publish(&world, shape, marker);
     fs::write(objects_path(marker), objects).unwrap();
     let root_path = world.root().to_string_lossy().into_owned();
     if shape.releases_first_object() {
@@ -69,7 +70,11 @@ fn baseline(shape: World) -> PhysicalResidencyStoreWorld {
 
 /// Publishes every object of the shape above the baseline checkpoint. Returns
 /// their identities in publication order and the first publication.
-fn publish(world: &PhysicalResidencyStoreWorld, shape: World) -> (Vec<u8>, FirstPublication) {
+fn publish(
+    world: &PhysicalResidencyStoreWorld,
+    shape: World,
+    marker: &Path,
+) -> (Vec<u8>, FirstPublication) {
     let scope = admitted_blob_scope("c11.recovery.pending-v3.scope");
     let blobs = world.serving().blobs().unwrap();
     let read = BlobReadLimits::new(NonZeroU64::new(128).unwrap());
@@ -91,8 +96,10 @@ fn publish(world: &PhysicalResidencyStoreWorld, shape: World) -> (Vec<u8>, First
             .unwrap();
         for ordinal in 0..*chunks {
             ingest.push(&chunk(index, ordinal)).unwrap();
+            report_progress(marker, &format!("object {index}, chunk {ordinal}"));
             if shape == World::ResumeFrontier && ordinal == 0 {
                 ingest.checkpoint().unwrap();
+                report_progress(marker, &format!("object {index}, explicit resume frontier"));
             }
         }
         let published = match ingest.finish() {
@@ -103,6 +110,7 @@ fn publish(world: &PhysicalResidencyStoreWorld, shape: World) -> (Vec<u8>, First
         };
         assert_eq!(published.object(), object);
         assert_eq!(published.generation().sequence(), 1);
+        report_progress(marker, &format!("object {index}, publication"));
         objects.extend(object.bytes());
         if first.is_none() {
             let publication = world
@@ -119,6 +127,14 @@ fn publish(world: &PhysicalResidencyStoreWorld, shape: World) -> (Vec<u8>, First
         }
     }
     (objects, first.expect("first published object"))
+}
+
+// A parent watchdog observes completed production operations, never a timer
+// heartbeat. This file is outside the Store and carries no recovery evidence.
+fn report_progress(marker: &Path, stage: &str) {
+    let pending = marker.with_extension("progress-pending");
+    fs::write(&pending, stage).unwrap();
+    fs::rename(pending, marker.with_extension("progress")).unwrap();
 }
 
 /// Announces the root and idles until the parent kills the process.

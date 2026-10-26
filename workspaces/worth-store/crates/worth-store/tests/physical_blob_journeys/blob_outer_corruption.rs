@@ -47,7 +47,6 @@ fn outer_crc_damage_is_one_selected_chunk_not_store_wide_health() {
             ingest.push(&vec![ordinal + 0x41; CHUNK_BYTES]).unwrap();
         }
         let published = ingest.finish().unwrap();
-
         serving.close();
         (published, object)
     };
@@ -124,7 +123,6 @@ fn resealed_selected_chunk_record_identity_mismatch_still_revokes_global_health(
             ingest.push(&vec![ordinal + 0x51; CHUNK_BYTES]).unwrap();
         }
         let published = ingest.finish().unwrap();
-
         serving.close();
         (published, object)
     };

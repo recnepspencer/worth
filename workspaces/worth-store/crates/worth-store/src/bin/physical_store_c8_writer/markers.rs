@@ -1,6 +1,19 @@
 use std::path::Path;
 use std::time::{Duration, Instant};
 
+pub(super) fn write_setup_progress(
+    start: &Path,
+    phase: &str,
+    completed: usize,
+    total: usize,
+) -> Result<(), String> {
+    std::fs::write(
+        start.with_extension("progress"),
+        format!("{phase}: {completed}/{total}"),
+    )
+    .map_err(|error| format!("write C8 setup progress: {error}"))
+}
+
 pub(super) fn write_runtime_identity(path: &Path, identity: String) -> Result<(), String> {
     std::fs::write(path.with_extension("runtime"), identity)
         .map_err(|error| format!("write C8 writer runtime identity: {error}"))

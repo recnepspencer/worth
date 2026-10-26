@@ -94,8 +94,10 @@ fn run() {
         serving.pause_physical_checkpoint_at(PhysicalCheckpointStep::CandidateSynchronization);
     let checkpoint = start(serving, 0x7e);
     let captured = checkpoint.source();
+    // The pause probe waits five seconds per call; the admitted checkpoint has
+    // thirty seconds. Observe that whole envelope without restarting its work.
     assert!(
-        gate.await_arrival(),
+        (0..6).any(|_| gate.await_arrival()),
         "A candidate must synchronize before B's drop"
     );
     let paused_funded = recovery_bytes(serving);
@@ -261,7 +263,6 @@ fn publish(
         .finish()
         .expect("publication must finish indexing; PublishedIndexPending is not fixture success");
     let generation = published.generation().sequence();
-
     let marker = world
         .serving()
         .certification_selected_latest_blob_publication()

@@ -197,7 +197,7 @@ pub(crate) fn decode_frame(
     if bytes[8] != expected_kind as u8 {
         return Err(DurableFrameDenial::IllegalKind(bytes[8]));
     }
-    if !admitted_schema(expected_kind, bytes[9]) {
+    if !expected_kind.supports_envelope_schema(bytes[9]) {
         return Err(DurableFrameDenial::UnsupportedSchema(bytes[9]));
     }
     let format = PhysicalRecordFormatDeclaration::decode(
@@ -252,21 +252,25 @@ fn write_page_lsn(bytes: &mut [u8], page_lsn: PhysicalPageLsn) {
     bytes[PAGE_LSN_OFFSET..PAGE_LSN_OFFSET + 8].copy_from_slice(&page_lsn.get().to_le_bytes());
 }
 
-fn admitted_schema(kind: DurableFrameKind, schema: u8) -> bool {
-    schema == FRAME_SCHEMA
-        || (kind == DurableFrameKind::RootRoutingBlock && schema == SELECTED_ROUTE_SCHEMA)
-        || (kind == DurableFrameKind::RootManifest
-            && matches!(
-                schema,
-                MAINTENANCE_ROOT_SCHEMA
-                    | DIRECTORY_BOUND_ROOT_SCHEMA
-                    | DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA
-                    | QUARANTINE_BOUND_ROOT_SCHEMA
-                    | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
-                    | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
-                    | 10
-                    | 11
-            ))
+impl DurableFrameKind {
+    /// Whether this codec recognizes an envelope schema for this physical kind.
+    /// Recognition does not validate framing, checksums, or payload semantics.
+    pub const fn supports_envelope_schema(self, schema: u8) -> bool {
+        schema == FRAME_SCHEMA
+            || (matches!(self, Self::RootRoutingBlock) && schema == SELECTED_ROUTE_SCHEMA)
+            || (matches!(self, Self::RootManifest)
+                && matches!(
+                    schema,
+                    MAINTENANCE_ROOT_SCHEMA
+                        | DIRECTORY_BOUND_ROOT_SCHEMA
+                        | DIRECTORY_BOUND_MAINTENANCE_ROOT_SCHEMA
+                        | QUARANTINE_BOUND_ROOT_SCHEMA
+                        | QUARANTINE_BOUND_MAINTENANCE_ROOT_SCHEMA
+                        | TIER_ANCHORED_MAINTENANCE_ROOT_SCHEMA
+                        | 10
+                        | 11
+                ))
+    }
 }
 
 /// Frame into a caller-reserved backing without allocating a payload copy.

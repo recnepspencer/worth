@@ -98,7 +98,6 @@ fn assert_killed_terminal(role: &'static str) {
         repeated.disposition(),
         BlobTerminalDisposition::AlreadyAbandoned
     );
-
     serving.close();
 
     let report = observe_closed_store_named(&world.root, "c11-blob-abort-crash", role);

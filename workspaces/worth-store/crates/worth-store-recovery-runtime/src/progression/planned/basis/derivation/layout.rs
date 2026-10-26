@@ -172,10 +172,10 @@ pub(super) fn assemble(
         source_generation: pending.source_generation,
         staging_generation: pending.staging_generation,
         base,
-        actions: allowance.box_values(actions.actions)?,
+        actions: allowance.charge_boxed_slice(actions.actions)?,
         commands,
-        source_copies: allowance.box_values(source_copies)?,
-        allocated_targets: allowance.box_values(actions.allocated_targets)?,
+        source_copies: allowance.charge_boxed_slice(source_copies)?,
+        allocated_targets: allowance.charge_boxed_slice(actions.allocated_targets)?,
         allocated_bytes: pending.allocated_bytes,
         write_bytes,
     })

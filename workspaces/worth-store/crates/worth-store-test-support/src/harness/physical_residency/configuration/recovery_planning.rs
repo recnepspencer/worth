@@ -34,6 +34,23 @@ pub(in crate::harness::physical_residency) fn recovery_planning_configuration_wi
     configuration(base, four_format_pages, four_format_pages)
 }
 
+pub(in crate::harness::physical_residency) fn recovery_planning_configuration_with_operation_budget(
+    format: AdmittedPhysicalRecordFormat,
+    manifest_capacity: u16,
+    operation_bytes: NonZeroU64,
+) -> PhysicalResidencyStoreConfiguration {
+    let base = admitted_store_base_with_format_and_manifest_capacity(format, manifest_capacity);
+    let four_pages = u64::from(format.declaration().page_size().bytes()) * 4;
+    configuration_with_scopes(
+        base,
+        four_pages,
+        four_pages,
+        operation_bytes.get(),
+        operation_bytes.get(),
+        operation_bytes.get(),
+    )
+}
+
 pub(in crate::harness::physical_residency) fn recovery_planning_configuration_with_maintenance_scope(
     format: AdmittedPhysicalRecordFormat,
     manifest_capacity: u16,
@@ -66,6 +83,7 @@ pub(in crate::harness::physical_residency) fn recovery_planning_configuration_wi
         four_format_pages,
         OPERATION_BYTES,
         recovery_bytes.get(),
+        OPERATION_BYTES,
     )
 }
 
@@ -126,7 +144,14 @@ fn configuration_with_maintenance(
     dirty: u64,
     maintenance_bytes: u64,
 ) -> PhysicalResidencyStoreConfiguration {
-    configuration_with_scopes(base, resident, dirty, maintenance_bytes, OPERATION_BYTES)
+    configuration_with_scopes(
+        base,
+        resident,
+        dirty,
+        maintenance_bytes,
+        OPERATION_BYTES,
+        OPERATION_BYTES,
+    )
 }
 
 fn configuration_with_scopes(
@@ -135,11 +160,12 @@ fn configuration_with_scopes(
     dirty: u64,
     maintenance_bytes: u64,
     recovery_bytes: u64,
+    operation_bytes: u64,
 ) -> PhysicalResidencyStoreConfiguration {
     let format = base.format();
     let mut residency = PhysicalRecordResidencyPolicy::builder()
         .total_bytes(bytes(
-            OPERATION_BYTES + FIXTURE_METADATA_BYTES + dirty + resident,
+            operation_bytes + FIXTURE_METADATA_BYTES + dirty + resident,
         ))
         .resident_bytes(bytes(resident))
         .metadata_bytes(bytes(FIXTURE_METADATA_BYTES))
@@ -148,7 +174,7 @@ fn configuration_with_scopes(
         .pin_leases(frames(64))
         .dirty_frames(frames(32))
         .dirty_replacement_bytes(bytes(dirty))
-        .operation_bytes(bytes(OPERATION_BYTES));
+        .operation_bytes(bytes(operation_bytes));
     for scope in [
         Scope::ForegroundRead,
         Scope::ForegroundWrite,
@@ -163,7 +189,7 @@ fn configuration_with_scopes(
             bytes(match scope {
                 Scope::Maintenance => maintenance_bytes,
                 Scope::Recovery => recovery_bytes,
-                _ => OPERATION_BYTES,
+                _ => operation_bytes,
             }),
         );
     }

@@ -41,31 +41,55 @@ pub(crate) fn open_with_faults(
     faults: &[Fault],
     execution: &ExecutionRequest<'_, '_>,
 ) -> Option<(RelationalStoreHome, Vec<CertificationMediaFaultActivation>)> {
-    let admission =
-        FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
-    let authority = admission.fault_schedule_authority();
-    let activations: Vec<_> = faults
-        .iter()
-        .map(|_| authority.one_shot_activation())
-        .collect();
-    let rules = faults
-        .iter()
-        .zip(&activations)
-        .map(|((role, nth, directive), activation)| {
-            authority
-                .rule(*role, 1, directive.clone())
-                .for_nth_identified_operation_after_activation(activation.clone(), *nth)
+    Some(FaultedMedia::admit(faults)?.open(location, schema, execution))
+}
+
+/// A validated schedule, admitted before constructing an expensive case home.
+pub(crate) struct FaultedMedia {
+    admission: FilesystemMediaAdmission,
+    activations: Vec<CertificationMediaFaultActivation>,
+}
+
+impl FaultedMedia {
+    pub(crate) fn admit(faults: &[Fault]) -> Option<Self> {
+        let admission = FilesystemMediaAdmission::certification(
+            FilesystemAccessPosture::CoordinatedServiceAccount,
+        );
+        let authority = admission.fault_schedule_authority();
+        let activations: Vec<_> = faults
+            .iter()
+            .map(|_| authority.one_shot_activation())
+            .collect();
+        let rules = faults
+            .iter()
+            .zip(&activations)
+            .map(|((role, nth, directive), activation)| {
+                authority
+                    .rule(*role, 1, directive.clone())
+                    .for_nth_identified_operation_after_activation(activation.clone(), *nth)
+            })
+            .collect();
+        let schedule = authority.schedule(rules).ok()?;
+        Some(Self {
+            admission: admission.with_fault_schedule(schedule),
+            activations,
         })
-        .collect();
-    let schedule = authority.schedule(rules).ok()?;
-    let request = RelationalStoreHomeRequest::new(location, workload::runtime_builder(schema));
-    let home = RelationalStoreHome::certification_open_with_media(
-        request,
-        admission.with_fault_schedule(schedule),
-        execution,
-    )
-    .unwrap_or_else(|refusal| panic!("a closed home opens with a fault schedule: {refusal:?}"));
-    Some((home, activations))
+    }
+
+    pub(crate) fn open(
+        self,
+        location: &Path,
+        schema: SchemaVersionId,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> (RelationalStoreHome, Vec<CertificationMediaFaultActivation>) {
+        let request = RelationalStoreHomeRequest::new(location, workload::runtime_builder(schema));
+        let home =
+            RelationalStoreHome::certification_open_with_media(request, self.admission, execution)
+                .unwrap_or_else(|refusal| {
+                    panic!("a closed home opens with a fault schedule: {refusal:?}")
+                });
+        (home, self.activations)
+    }
 }
 
 /// Rules that never fire, one per role, for counting operations.

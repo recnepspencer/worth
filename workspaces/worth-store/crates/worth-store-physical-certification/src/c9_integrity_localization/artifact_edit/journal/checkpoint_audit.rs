@@ -20,6 +20,9 @@ pub(super) fn audit(before: &[u8], after: &[u8], target: &ArtifactGranule, op: O
 
     let mut dirty = Sha256::new();
     let mut bindings = Sha256::new();
+    let mut certificates = Sha256::new();
+    let mut certificate_count = 0_u64;
+    let mut certificate_bytes = 0_u64;
     let mut dirty_count = 0;
     let mut binding_count = 0;
     let mut binding_bytes = 0;
@@ -60,11 +63,17 @@ pub(super) fn audit(before: &[u8], after: &[u8], target: &ArtifactGranule, op: O
                 binding_count += 1;
                 binding_bytes += width as u64;
             }
+            6 | 7 => {
+                certificates.update(frame);
+                certificate_count += 1;
+                certificate_bytes += width as u64;
+            }
             _ => {}
         }
     }
-    let footer = &after[after.len() - 156..];
-    let pristine_footer = &before[before.len() - 156..];
+    let footer_length = records.last().unwrap().1;
+    let footer = &after[after.len() - footer_length..];
+    let pristine_footer = &before[before.len() - footer_length..];
     if kind != 5 {
         if matches!(op, Op::CoveredByte | Op::SelectiveAggregate) {
             assert_eq!(
@@ -72,8 +81,11 @@ pub(super) fn audit(before: &[u8], after: &[u8], target: &ArtifactGranule, op: O
                 "this operator must not refresh its enclosing footer"
             );
         } else {
-            for index in 0..156 {
-                if !(48..88).contains(&index) && !(112..156).contains(&index) {
+            for index in 0..footer_length {
+                if !(48..88).contains(&index)
+                    && !(112..152).contains(&index)
+                    && !(footer_length - 4..footer_length).contains(&index)
+                {
                     assert_eq!(
                         footer[index], pristine_footer[index],
                         "unrelated footer byte {index}"
@@ -82,6 +94,18 @@ pub(super) fn audit(before: &[u8], after: &[u8], target: &ArtifactGranule, op: O
             }
         }
         assert!(valid_crc(footer));
+    }
+    if pristine_footer[8] == 3 {
+        assert_eq!(read64(footer, 152), certificate_count);
+        assert_eq!(read64(footer, 160), certificate_bytes);
+        assert_eq!(
+            &footer[168..200],
+            &certificates.finalize()[..],
+            "certificate selective summary remains exact"
+        );
+    } else {
+        assert_eq!(certificate_count, 0);
+        assert_eq!(certificate_bytes, 0);
     }
     assert_eq!(read64(footer, 40), dirty_count);
     assert_eq!(read64(footer, 104), binding_count);
@@ -166,7 +190,7 @@ fn target_bytes(
                 (old.len() - 20) as u32 + 1
             }
         ),
-        Op::EnvelopeVersion => assert_eq!(new[8], 3),
+        Op::EnvelopeVersion => assert_eq!(new[8], u8::MAX),
         Op::ScopeSubstitution if kind == 5 => assert_eq!(read64(new, 32), read64(old, 32) + 1),
         Op::ScopeSubstitution => {
             assert_eq!(new[9], 4);
@@ -181,15 +205,28 @@ fn baseline_records(bytes: &[u8]) -> Vec<(usize, usize, u8)> {
     let mut offset = 0;
     while offset < bytes.len() {
         assert_eq!(&bytes[offset..offset + 8], b"WCP7REC\0");
-        assert_eq!(bytes[offset + 8], 1);
+        assert!(matches!(bytes[offset + 8], 1..=3));
+        let kind = bytes[offset + 9];
+        assert!((1..=7).contains(&kind));
+        if matches!(kind, 6 | 7) {
+            assert_eq!(bytes[offset + 8], 3);
+        }
         let length = 20 + read32(bytes, offset + 12) as usize;
         assert!(valid_crc(&bytes[offset..offset + length]));
         records.push((offset, length, bytes[offset + 9]));
         offset += length;
     }
     assert_eq!(offset, bytes.len());
-    assert_eq!(records.last().unwrap().1, 156);
-    assert_eq!(records.last().unwrap().2, 5);
+    let &(footer_offset, footer_length, footer_kind) = records.last().unwrap();
+    assert_eq!(footer_kind, 5);
+    assert_eq!(
+        footer_length,
+        if bytes[footer_offset + 8] == 3 {
+            204
+        } else {
+            156
+        }
+    );
     records
 }
 fn read32(bytes: &[u8], offset: usize) -> u32 {

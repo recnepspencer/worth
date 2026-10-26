@@ -11,25 +11,25 @@ pub(crate) enum LiteralChecksum {
 
 #[derive(Clone, Copy)]
 pub(crate) struct LiteralChecksumExpectation<'ranges> {
-    pub(crate) checksum: LiteralChecksum,
-    pub(crate) ranges: &'ranges [(usize, usize)],
-    pub(crate) field: (usize, usize),
+    pub(super) checksum: LiteralChecksum,
+    pub(super) ranges: &'ranges [(usize, usize)],
+    pub(super) field: (usize, usize),
 }
 
 pub(crate) struct LiteralVector<'checksums, 'ranges> {
-    pub(crate) name: &'static str,
-    pub(crate) bytes: Vec<u8>,
-    pub(crate) checksums: &'checksums [LiteralChecksumExpectation<'ranges>],
+    pub(super) name: &'static str,
+    pub(super) bytes: Vec<u8>,
+    pub(super) checksums: &'checksums [LiteralChecksumExpectation<'ranges>],
 }
 
 #[derive(Clone, Copy)]
 pub(crate) struct DeclarationChecksumExpectation {
-    pub(crate) algorithm: PhysicalIntegrityAlgorithm,
-    pub(crate) ranges: &'static [(
+    pub(super) algorithm: PhysicalIntegrityAlgorithm,
+    pub(super) ranges: &'static [(
         PhysicalIntegrityCoverageBoundary,
         PhysicalIntegrityCoverageBoundary,
     )],
-    pub(crate) field: (
+    pub(super) field: (
         PhysicalIntegrityCoverageBoundary,
         PhysicalIntegrityCoverageBoundary,
     ),

@@ -30,7 +30,7 @@ pub(super) fn append_exact_writes(
             let reference = write.reference();
             let mut frame = build.allowance.reserve::<u8>(write.frame().len())?;
             frame.extend_from_slice(write.frame());
-            let frame = build.allowance.box_values(frame)?;
+            let frame = build.allowance.charge_boxed_slice(frame)?;
             build.push_owned(
                 RecordArtifactFile::ReleaseCustodyHeadBlock {
                     generation: reference.generation(),

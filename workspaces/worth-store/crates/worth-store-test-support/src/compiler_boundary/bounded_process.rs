@@ -2,14 +2,14 @@ use std::io::Read;
 use std::process::{Command, ExitStatus, Stdio};
 use std::time::{Duration, Instant};
 
-pub(super) struct BoundedProcessOutput {
+pub(crate) struct BoundedProcessOutput {
     pub status: ExitStatus,
     pub stdout: Vec<u8>,
     pub stderr: Vec<u8>,
     pub timed_out: bool,
 }
 
-pub(super) fn run(
+pub(crate) fn run(
     command: &mut Command,
     timeout: Duration,
     output_cap: usize,

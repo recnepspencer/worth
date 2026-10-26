@@ -1,8 +1,5 @@
-//! Independent checkpoint literal vectors shared by the reader courts.
-#[path = "../../tests/phase_4_literal_vectors/checkpoint_records.rs"]
-pub(super) mod checkpoint_records;
-#[path = "../../tests/phase_4_literal_vectors/oracle.rs"]
-pub(super) mod oracle;
+//! Independent checkpoint literal verification shared with the reader courts.
+use crate::literal_vectors::checkpoint_records;
 
 #[test]
 fn checkpoint_literals_match_their_independent_integrity_declarations() {

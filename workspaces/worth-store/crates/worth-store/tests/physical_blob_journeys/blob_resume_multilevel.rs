@@ -91,7 +91,6 @@ fn killed_interior_root_resumes_exact_selected_tree() {
     let root = &after.nodes[2];
     inventory::assert_record_binding(root.record, publication.root_record());
     assert_eq!(root.node.frame_digest(), publication.root_digest());
-
     serving.close();
 
     readback::assert_fresh_stream(&world.root, world.object, world.session, publication);

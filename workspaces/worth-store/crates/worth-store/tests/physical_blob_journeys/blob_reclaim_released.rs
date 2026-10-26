@@ -274,7 +274,6 @@ fn cancelled_pre_effect_release_restores_checkpoint_and_reclaim_admission() {
     ingest.push(&vec![0x31; CHUNK]).unwrap();
     ingest.push(&vec![0x52; CHUNK]).unwrap();
     let published = ingest.finish().unwrap();
-
     let marker = serving
         .certification_selected_latest_blob_publication()
         .unwrap()

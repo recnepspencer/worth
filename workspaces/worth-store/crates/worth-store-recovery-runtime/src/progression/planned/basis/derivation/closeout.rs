@@ -250,7 +250,7 @@ fn created_artifacts(
     artifacts.sort_unstable();
     artifacts.dedup();
     allowance
-        .box_values(artifacts)
+        .charge_boxed_slice(artifacts)
         .map_err(|denial| candidate_denial(denial.into()))
 }
 
@@ -280,7 +280,7 @@ fn publication_actions(
     actions.push(RecoveryPublicationAction::ReplaceRootProtocol);
     actions.push(RecoveryPublicationAction::SynchronizeStoreNamespace);
     allowance
-        .box_values(actions)
+        .charge_boxed_slice(actions)
         .map_err(|denial| candidate_denial(denial.into()))
 }
 

@@ -63,7 +63,7 @@ pub use admission::residency_policy::{
     AdmittedPhysicalRecordResidencyPolicy, PhysicalOperationAllocationScope,
     PhysicalRecordResidencyPolicy, PhysicalRecordResidencyPolicyBuilder,
     PhysicalRecordResidencyPolicyDenial, PhysicalRecordResidencyPolicyOutcome,
-    PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
+    PhysicalResidencyDenial, PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
@@ -93,6 +93,8 @@ pub use lifecycle::record_lifecycle::RecordServingCounterSnapshot;
 pub(in crate::physical_runtime) use lifecycle::record_lifecycle::RecordServingOwner;
 pub use lifecycle::record_observation::{PhysicalRecordObservation, PhysicalRecordObserver};
 pub(in crate::physical_runtime) use lifecycle::serving_health::ServingHealth;
+#[cfg(feature = "certification-test-authority")]
+pub use lifecycle::serving_runtime::CertificationRetirementPause;
 pub use lifecycle::serving_runtime::ServingPhysicalRuntime;
 pub use lifecycle::serving_shutdown::{
     RecordServingOwnerDisposition, RecordServingTerminalObservation, RecordServingTerminalPosture,
