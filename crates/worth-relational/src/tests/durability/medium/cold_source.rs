@@ -39,7 +39,7 @@ impl RelationalDurableColdSource for MemberSource {
             });
         }
         let mut bytes = bytes.to_vec();
-        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG2\n") {
+        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG") {
             bytes[0] ^= 1;
         }
         Ok(bytes)

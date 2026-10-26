@@ -36,12 +36,29 @@ impl RecordContentIndex {
             .collect()
     }
 
-    pub(super) fn from_history_frontiers(
+    pub(super) fn from_history_frontiers<K: RecordKind>(
         frontiers: &[(u64, super::digest_index::HistoryAppendFrontier)],
-    ) -> Option<Self> {
+        arena: &RecordArena<K>,
+    ) -> Option<Self>
+    where
+        K::Meta: serde::Serialize,
+    {
+        if !frontiers
+            .iter()
+            .map(|(slot, _)| *slot)
+            .eq(arena.occupied_slots_iter().map(|slot| slot as u64))
+        {
+            return None;
+        }
         let mut result = Self::default();
         for (slot, frontier) in frontiers {
             let history = DigestIndex::from_append_frontier(frontier)?;
+            let metadata = arena.metadata_history_at(usize::try_from(*slot).ok()?)?;
+            if metadata.len() != usize::from(history.next_history_index() > 0) {
+                return None;
+            }
+            let last = metadata.get(0).map(|value| hash_value(b"metadata", value));
+            history.append_frontier(last)?;
             result.history_bytes += history.allocation_bytes();
             if result.histories.contains_key(slot) {
                 return None;
@@ -69,6 +86,7 @@ impl RecordContentIndex {
             let physical = arena
                 .physical_index(slot)
                 .expect("journal-selected record exists");
+            let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
             let mut history = self
                 .histories
                 .get(&(slot as u64))
@@ -87,13 +105,18 @@ impl RecordContentIndex {
             } else {
                 0
             };
-            arena.metadata_history[physical].visit_changed_values(old, &mut |index, value, _| {
-                history.set(
-                    history_offset + index as u128,
-                    value.map(|value| hash_value(b"metadata", value)),
+            if !carried_head {
+                arena.metadata_history[physical].visit_changed_values(
+                    old,
+                    &mut |index, value, _| {
+                        history.set(
+                            history_offset + index as u128,
+                            value.map(|value| hash_value(b"metadata", value)),
+                        );
+                        hashed_values += u64::from(value.is_some());
+                    },
                 );
-                hashed_values += u64::from(value.is_some());
-            });
+            }
             let versions = resolve_aspect_versions(&arena.aspect_versions[physical], symbols)?;
             let digest = hash_value(
                 b"record",

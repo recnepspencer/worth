@@ -62,6 +62,9 @@ impl DigestIndex {
         let Some((key, value)) = frontier.last else {
             return frontier.siblings.is_empty().then(Self::default);
         };
+        // The cold prefix need not fit this process's address space, but its
+        // carried next position must be representable before any append.
+        key.checked_add(1)?;
         let mut node = Arc::new(Node {
             key,
             bit: 128,
@@ -125,13 +128,23 @@ mod tests {
         let mut full = DigestIndex::default();
         full.set(0, Some(value));
         let mut frontier = full.append_frontier(Some(value)).unwrap();
-        frontier.last.as_mut().unwrap().0 = u128::MAX;
+        frontier.last.as_mut().unwrap().0 = 1;
         let forged = DigestIndex::from_append_frontier(&frontier).unwrap();
         assert_ne!(
             forged.digest(),
             full.digest(),
             "a relabelled append frontier must fail the committed leaf check"
         );
+    }
+
+    #[test]
+    fn history_frontier_refuses_an_exhausted_carried_position() {
+        let value = sha2::Sha256::digest(b"one historical version").into();
+        let mut full = DigestIndex::default();
+        full.set(0, Some(value));
+        let mut frontier = full.append_frontier(Some(value)).unwrap();
+        frontier.last.as_mut().unwrap().0 = u128::MAX;
+        assert!(DigestIndex::from_append_frontier(&frontier).is_none());
     }
 
     #[test]

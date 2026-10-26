@@ -1,14 +1,18 @@
 use super::*;
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 use crate::history::data::BranchId;
+use crate::identity::data::KindId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause};
 use crate::storage::overlay::PartitionContentCommitment;
 use crate::tests::support::*;
+use crate::transactions::data::{MutationIntent, WorkerIntentBatch};
 use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+#[path = "head_metadata_tests.rs"]
+mod head_metadata_tests;
 #[path = "level_tests.rs"]
 mod level_tests;
 
@@ -71,6 +75,27 @@ fn region_with_history() -> RegionFixture {
     let relation_commit = create_relation_outcome(execution, &runtime, entity, target, "cold-edge");
     let relation = changed_relations(&relation_commit)[0];
     release_test_commit_snapshot(&runtime, &relation_commit);
+    let other = create_entity(execution, &runtime, "cold-other-target");
+    for target in [other, target] {
+        let mut transaction = test_owner_begin_transaction_for_main(&runtime);
+        transaction
+            .push_batch(
+                WorkerIntentBatch::new("relation-history").push(MutationIntent::Relation(
+                    crate::transactions::data::RelationMutationIntent::UpdateEndpoints(
+                        crate::transactions::data::UpdateRelationEndpointsIntent {
+                            relation_id: relation,
+                            kind_id: KindId(2),
+                            source: crate::transactions::data::EntityReference::Existing(entity),
+                            target: crate::transactions::data::EntityReference::Existing(target),
+                        },
+                    ),
+                )),
+                execution.allocation_policy(),
+            )
+            .unwrap();
+        let committed = transaction.commit(execution, &runtime).unwrap();
+        release_test_commit_snapshot(&runtime, &committed);
+    }
     let root = runtime
         .history
         .branch_cell(&BranchId("main".into()))

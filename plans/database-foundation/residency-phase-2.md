@@ -544,3 +544,78 @@ backend construction into the owning `bridge_backed/construction.rs` child,
 with identical methods and visibility, rather than compressing formatting or
 adding an exemption. Repeat Query compilation, formatting, caps and context
 checks for the corrected cut. No test or product behavior is weakened.
+
+
+## Head append boundary review
+
+Phase 1's Head/Full leases correctly restrict read APIs, but its head member
+removes every metadata row. Current payload is available through `extra`, while
+an append cannot retire the previous current metadata version without loading
+history. Phase 2 therefore needs a clean region-format cut: Head carries the
+last metadata row per slot; History carries earlier rows. Full admission joins
+them and verifies the unchanged complete content commitment.
+
+The carried Merkle right spine already opens its last metadata value. Head
+readmission must validate that exact last row, exact occupied-slot frontier
+coverage and representable history indices before accepting it. Seeded head
+capture retains those checked history commitments rather than treating the
+current row as history index zero. Incremental append then retires that resident
+last row at its carried offset and extends the same commitment. Prove this
+against a separately recomputed Full mutation, with no history read before the
+comparison. Keep historical access absent from the Head lease API.
+
+Use region framing version 3 for the changed split; no compatibility variant is
+retained. Strengthen the real producer fixture with relation endpoint history so
+its historical-membership tamper court still removes actual earlier versions.
+This is a required phase-2 change to phase 1's representation. Typed Head working
+states, layered history capture and candidate/publication custody remain the
+next integration work in this same phase.
+
+
+The first complete lib run passed 1,890 cases and exposed eight honest failures:
+the shared cold-source fixture corrupted only the old literal REG2 magic and
+therefore stopped injecting region damage after the clean REG3 cut. Keep every
+failure/no-effect/stickiness assertion and select the region framing family in
+the injector. The product's current-format reader still accepts REG3 only.
+Frontier readmission checks exhaustion of its u128 carried index, rather than
+requiring an opaque cold prefix to fit the reader's address space.
+
+
+The last-key binding court still proves that a finite relabelled position changes
+the commitment. An exhausted u128::MAX position is now covered separately by
+stronger structural rejection before next-position arithmetic; no claim is
+retired. All 18 focused residency cases and the complete 1,898-case lib pass
+(with 31 unchanged ignored) after restoring real fault injection.
+
+The next current-read cut must not reinterpret a partial PartitionState as Full.
+Preparation/invariant readers need a distinct current-partition interface that
+only lends Head views. Owned mutation buffers can retain their resident append
+suffix, while historical algorithms continue to require an actual Full witness.
+Construction of a Head working state must retain the admitted leases, and it
+must not implement a full-history access trait. Full replay/maintenance buffers
+need their own proven construction path. These are storage residency/custody
+states in the owning runtime, not new business authority markers.
+
+A changed Head also needs append history capture without loading its cold base.
+An immutable history layer can name the previous history member and serialize
+only newly historical resident rows. Its base-member closure must be carried in
+compact checkpoint metadata: Store's checkpoint_record.rs builds the new member
+set from the capture's explicit members, and StoreColdSource resolves only
+registered locators. Do not assume omitted old members remain readable. This
+closure contains locators, not historical payloads. Full admission must bound
+cumulative reads, reject cycles/unknown bases, join layers with the current head
+and verify the complete original content commitment.
+
+Candidate-wide rounds must cover artifacts as well as draft/invariant work.
+Every discarded candidate spends fresh real identities and drops provisional
+effects; accepted read leases travel with the candidate. Publication must consume
+resident target entries and owned write custody, rather than retain a generic
+cold-capable entry and merely assume its expects cannot run.
+
+
+The corrected head cut passes the full Relational lib (1,898; 31 unchanged
+ignored), all three CI owner/service clippy commands, formatting, dirty line
+caps, agent-context and a fresh plain boundary-check. Function review keeps the
+paired region codec, full readmission, canonical record commitment and real
+producer fixture together: their flagged orchestrations each implement one
+complete contract. No additional responsibility split is needed for this cut.

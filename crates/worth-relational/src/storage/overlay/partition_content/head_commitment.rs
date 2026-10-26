@@ -29,22 +29,15 @@ impl PartitionContentCommitment {
         symbols: &StringInterner,
         frontiers: &PartitionHistoryFrontiers,
     ) -> Option<Self> {
-        if !partition
-            .entity_arena
-            .metadata_history
-            .iter()
-            .all(|history| history.len() == 0)
-            || !partition
-                .relation_arena
-                .metadata_history
-                .iter()
-                .all(|history| history.len() == 0)
-        {
-            return None;
-        }
         let seed = Self {
-            entities: records::RecordContentIndex::from_history_frontiers(&frontiers.entities)?,
-            relations: records::RecordContentIndex::from_history_frontiers(&frontiers.relations)?,
+            entities: records::RecordContentIndex::from_history_frontiers(
+                &frontiers.entities,
+                &partition.entity_arena,
+            )?,
+            relations: records::RecordContentIndex::from_history_frontiers(
+                &frontiers.relations,
+                &partition.relation_arena,
+            )?,
             ..Self::default()
         };
         Self::capture_seeded(partition, symbols, None, seed)

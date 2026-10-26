@@ -94,8 +94,24 @@ pub(super) fn load_full(
         {
             return Err(Cause::Damaged);
         }
-        image.entity_arena.metadata_history = history.entities;
-        image.relation_arena.metadata_history = history.relations;
+        for (current, mut earlier) in image
+            .entity_arena
+            .metadata_history
+            .iter_mut()
+            .zip(history.entities)
+        {
+            earlier.append(current);
+            *current = earlier;
+        }
+        for (current, mut earlier) in image
+            .relation_arena
+            .metadata_history
+            .iter_mut()
+            .zip(history.relations)
+        {
+            earlier.append(current);
+            *current = earlier;
+        }
         let mut partition = partition_from_image(image, cold.schema.aspect_plans(), &contracts)
             .map_err(|_| Cause::Damaged)?;
         partition.adjacency = head.partition.adjacency.clone();

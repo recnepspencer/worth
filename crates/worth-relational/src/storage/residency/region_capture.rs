@@ -31,13 +31,23 @@ pub(crate) fn capture_region_members(
             .entity_arena
             .metadata_history
             .iter_mut()
-            .map(std::mem::take)
+            .map(|rows| {
+                let current = rows.pop();
+                let earlier = std::mem::take(rows);
+                rows.extend(current);
+                earlier
+            })
             .collect(),
         relations: image
             .relation_arena
             .metadata_history
             .iter_mut()
-            .map(std::mem::take)
+            .map(|rows| {
+                let current = rows.pop();
+                let earlier = std::mem::take(rows);
+                rows.extend(current);
+                earlier
+            })
             .collect(),
     };
     let head = RegionHeadImage {
