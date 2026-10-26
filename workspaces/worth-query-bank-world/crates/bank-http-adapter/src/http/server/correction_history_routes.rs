@@ -50,11 +50,14 @@ async fn dispatch(
     continuation: Option<String>,
 ) -> (StatusCode, Json<BankHttpCorrectionHistoryOutcome>) {
     let controls = request.controls;
-    if controls.maximum_entries == 0
-        || controls.maximum_entries == usize::MAX
-        || controls.maximum_history_work == 0
-        || controls.maximum_disclosure_results == 0
-    {
+    let (Some(page_width), Some(history_work), Some(disclosure)) = (
+        std::num::NonZeroUsize::new(controls.maximum_entries),
+        std::num::NonZeroUsize::new(controls.maximum_history_work),
+        std::num::NonZeroUsize::new(controls.maximum_disclosure_results),
+    ) else {
+        return response(denied(Some(request.request_id)));
+    };
+    if page_width.get() == usize::MAX {
         return response(denied(Some(request.request_id)));
     }
     let basis = match (super::request_admission::UnadmittedBankHttpControls {
@@ -78,7 +81,8 @@ async fn dispatch(
             .correction_history(AdmittedHistoryRequest {
                 request_id: basis.request_id,
                 credential: request.credential,
-                controls,
+                limits: worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimits::new(Some(history_work), disclosure),
+                page_width,
                 source: request.source,
                 deadline: basis.deadline,
                 continuation,

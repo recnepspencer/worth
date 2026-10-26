@@ -1,8 +1,6 @@
 //! Freshly authenticated traversal retains only the latest native page.
 use super::*;
-use crate::http::protocol::{
-    BankHttpCorrectionHistoryControls, BankHttpCorrectionHistoryOutcome, BankHttpCorrectionSource,
-};
+use crate::http::protocol::{BankHttpCorrectionHistoryOutcome, BankHttpCorrectionSource};
 use crate::http::server::continuation_registry::correction_history::HistoryResumeAdmission;
 use crate::http::server::mutation_construction::correction::correction_denial;
 use worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimits;
@@ -10,7 +8,8 @@ use worth_query_host::facade::application_entry::WorthQueryCorrectionHistoryLimi
 pub(in crate::http::server) struct AdmittedHistoryRequest {
     pub request_id: String,
     pub credential: BankHttpCredential,
-    pub controls: BankHttpCorrectionHistoryControls,
+    pub limits: WorthQueryCorrectionHistoryLimits,
+    pub page_width: NonZeroUsize,
     pub source: BankHttpCorrectionSource,
     pub deadline: Instant,
     pub continuation: Option<String>,
@@ -178,13 +177,6 @@ pub(super) async fn execute<A: BankHttpApplicationAuthenticator>(
         )
     })
 }
-fn limits(request: &AdmittedHistoryRequest) -> WorthQueryCorrectionHistoryLimits {
-    WorthQueryCorrectionHistoryLimits::new(
-        NonZeroUsize::new(request.controls.maximum_history_work),
-        NonZeroUsize::new(request.controls.maximum_disclosure_results)
-            .expect("admitted disclosure bound"),
-    )
-}
 fn disclose<A: BankHttpApplicationAuthenticator>(
     application: &A,
     principal: &bank_server::BankAuthenticatedPrincipal,
@@ -195,7 +187,7 @@ fn disclose<A: BankHttpApplicationAuthenticator>(
         .runtime()
         .request(principal, scope)
         .corrections()
-        .select_coordinates(&request.source.clone().into(), limits(request))
+        .select_coordinates(&request.source.clone().into(), request.limits)
         .map(|_| ())
         .map_err(correction_denial)
 }
@@ -212,12 +204,12 @@ fn read_page<A: BankHttpApplicationAuthenticator>(
     BankHttpDenial,
 > {
     let native_request = application.runtime().request(principal, scope);
-    let limits = limits(request);
+    let limits = request.limits;
     let selected = native_request
         .corrections()
         .select_coordinates(&request.source.clone().into(), limits)
         .map_err(correction_denial)?;
-    let width = NonZeroUsize::new(request.controls.maximum_entries).expect("admitted page width");
+    let width = request.page_width;
     let page = match previous {
         None => native_request
             .corrections()
@@ -226,9 +218,7 @@ fn read_page<A: BankHttpApplicationAuthenticator>(
             &selected,
             limits,
             width,
-            previous
-                .continuation()
-                .expect("registry admitted incomplete page"),
+            previous.continuation().ok_or_else(stale)?,
         ),
     }
     .map_err(correction_denial)?;
