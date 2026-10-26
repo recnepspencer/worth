@@ -57,13 +57,12 @@ pub mod runtime {
     pub use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};
     pub use worth_runtime_world::facade::{
         CompositeComponentChangePosture, CompositeSignalPublicationIdentity, NoEffectCause,
-        ProductUnpublishedCause, RuntimeWorldBranchAdmissionDenial,
-        RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
+        ProductUnpublishedCause, RuntimeWorldBranchBudgetInstallation, RuntimeWorldBudgetDenial,
         RuntimeWorldBudgetInstallation, RuntimeWorldBudgets, RuntimeWorldCancellationSource,
         RuntimeWorldCancellationToken, RuntimeWorldCustodyBudgetInstallation,
         RuntimeWorldHistoryBudgetInstallation, RuntimeWorldObservationBudgetInstallation,
         RuntimeWorldPublicationBudgetInstallation, RuntimeWorldRecoveryBudgetInstallation,
-        RuntimeWorldRetentionBudgetInstallation, RuntimeWorldServiceDenial,
+        RuntimeWorldRetentionBudgetInstallation,
     };
     pub use worth_signal::facade::branch::{
         validate_signal_branch_name, ValidatedSignalBranchName,

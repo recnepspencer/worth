@@ -460,6 +460,7 @@ explicit bootstrap request and capture policy. See [original-request transitions
 ## Branch creation capacity evidence
 
 Host branch creation returns `WorthQueryProductBranchCreateError::Creation`.
+The World denial types are public through `host::primary_graph`.
 Its `WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
 limit, occupancy }` reports the failed atomic activation reservation: the root,
 installed branches, in-flight reservations and still-retained retired gates,
