@@ -38,6 +38,9 @@ fn append_root_paths(
     for (path_index, root_path) in paths.iter().enumerate() {
         for (step_index, step) in root_path.steps().iter().enumerate() {
             let path = format!("root-path[{path_index}].step[{step_index}]");
+            if step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure {
+                entries.push(text(format!("{path}.traversal"), "closure"));
+            }
             entries.extend([
                 text(format!("{path}.relation"), step.relation()),
                 text(format!("{path}.from"), step.from()),

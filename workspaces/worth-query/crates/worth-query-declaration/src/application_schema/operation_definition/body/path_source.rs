@@ -1,7 +1,7 @@
 //! A certified source reuses native typed query paths, not a second path vocabulary.
 mod authoring;
 use crate::{
-    application_query::{ApplicationQueryRootPathMeaning, RelationDirection as Direction},
+    application_query::ApplicationQueryRootPathMeaning,
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationFieldPresence,
         ApplicationOperationDecisionReadTarget as Read,
@@ -40,9 +40,23 @@ impl ApplicationOperationBodyPathFieldSource {
             part(step.relation());
             part(step.from());
             part(step.to());
-            part(match step.direction() {
-                Direction::Forward => "forward",
-                Direction::Reverse => "reverse",
+            part(match (step.traversal(), step.direction()) {
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
+                    crate::application_query::RelationDirection::Forward,
+                ) => "forward",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
+                    crate::application_query::RelationDirection::Reverse,
+                ) => "reverse",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
+                    crate::application_query::RelationDirection::Forward,
+                ) => "forward-closure",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
+                    crate::application_query::RelationDirection::Reverse,
+                ) => "reverse-closure",
             });
         }
         part(&self.path.guards().len().to_string());
@@ -88,7 +102,9 @@ pub(super) fn supported_path(path: &ApplicationQueryRootPathMeaning) -> bool {
     }
     let mut current = path.start_entity();
     for step in path.steps() {
-        if current != step.parent_entity() {
+        if step.traversal() != crate::application_query::ApplicationQueryRootPathTraversal::OneHop
+            || current != step.parent_entity()
+        {
             return false;
         }
         current = step.child_entity();
@@ -110,4 +126,35 @@ pub(super) fn path_reads(path: &ApplicationQueryRootPathMeaning) -> Vec<Read> {
         });
     }
     reads.into_iter().collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::application_query::{
+        ApplicationQueryRootPathStep, ApplicationQueryRootPathTraversal as Mode, RelationDirection,
+        WorthQueryPortableApplicationQueryRootPathParts,
+    };
+    #[test]
+    fn operation_path_profile_refuses_both_closure_directions_without_weakening_one_hop() {
+        for direction in [RelationDirection::Forward, RelationDirection::Reverse] {
+            for mode in [Mode::OneHop, Mode::Closure] {
+                let path = ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                    WorthQueryPortableApplicationQueryRootPathParts {
+                        start_entity: "Node".into(),
+                        terminal_entity: "Node".into(),
+                        guards: vec![],
+                        steps: vec![ApplicationQueryRootPathStep::from_untrusted_fields(
+                            "Next".into(),
+                            "Node".into(),
+                            "Node".into(),
+                            direction,
+                            mode,
+                        )],
+                    },
+                );
+                assert_eq!(supported_path(&path), mode == Mode::OneHop);
+            }
+        }
+    }
 }

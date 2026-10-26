@@ -54,7 +54,7 @@ mod runtime_support;
 pub use access_context::WorthQueryApplicationQueryAccessContext;
 pub use access_receipt::{
     WorthQueryApplicationQueryAccessReceipt, WorthQueryApplicationQueryOmissionPosture,
-    WorthQueryApplicationQueryWorkEvidence,
+    WorthQueryApplicationQueryRootPathStepRead, WorthQueryApplicationQueryWorkEvidence,
 };
 pub(in crate::domain_computation::primary_graph) use admitted_result::WorthQueryApplicationQueryRequestAffinity;
 pub use admitted_result::{

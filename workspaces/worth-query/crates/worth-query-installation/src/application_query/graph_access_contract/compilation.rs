@@ -62,6 +62,7 @@ impl WorthQueryInstalledGraphReadContract {
                                 step.from(),
                                 step.to(),
                                 step.direction(),
+                                step.traversal(),
                                 index + 1,
                             )
                         })

@@ -17,7 +17,10 @@ use super::{
 };
 
 mod omission_posture;
+mod root_path;
 mod work_evidence;
+pub(in crate::domain_computation::primary_graph::application_query) use root_path::RootPathReadEvidence;
+pub use root_path::WorthQueryApplicationQueryRootPathStepRead;
 
 pub use omission_posture::WorthQueryApplicationQueryOmissionPosture;
 pub use work_evidence::WorthQueryApplicationQueryWorkEvidence;
@@ -51,6 +54,7 @@ pub struct WorthQueryApplicationQueryAccessReceipt {
     projected_record_count: usize,
     projected_field_count: usize,
     reads: WorthQueryInvariantProjectionWork,
+    root_path_steps: Option<std::sync::Arc<RootPathReadEvidence>>,
     ordering_comparison_count: usize,
     per_result_neighbor_lookup_count: usize,
     fallback_count: usize,
@@ -85,6 +89,7 @@ pub(super) struct WorthQueryApplicationQueryAccessReceiptParts {
     pub projected_record_count: usize,
     pub projected_field_count: usize,
     pub reads: WorthQueryInvariantProjectionWork,
+    pub root_path_steps: Option<std::sync::Arc<RootPathReadEvidence>>,
     pub ordering_comparison_count: usize,
     pub ordered_index_entry_count: usize,
     pub per_result_neighbor_lookup_count: usize,
@@ -147,6 +152,7 @@ impl WorthQueryApplicationQueryAccessReceipt {
             projected_record_count: raw.projected_records,
             projected_field_count: raw.projected_fields,
             reads: raw.reads,
+            root_path_steps: raw.root_path_steps,
             ordering_comparison_count: raw.ordering_comparisons,
             ordered_index_entry_count: raw.ordered_index_entries_examined,
             per_result_neighbor_lookup_count: 0,
@@ -250,6 +256,12 @@ impl WorthQueryApplicationQueryAccessReceipt {
         self.reads
     }
 
+    pub fn root_path_steps(&self) -> &[WorthQueryApplicationQueryRootPathStepRead] {
+        self.root_path_steps
+            .as_deref()
+            .map_or(&[], RootPathReadEvidence::values)
+    }
+
     pub const fn ordering_comparison_count(&self) -> usize {
         self.ordering_comparison_count
     }
@@ -314,6 +326,7 @@ impl WorthQueryApplicationQueryAccessReceipt {
             projected_record_count: parts.projected_record_count,
             projected_field_count: parts.projected_field_count,
             reads: parts.reads,
+            root_path_steps: parts.root_path_steps,
             ordering_comparison_count: parts.ordering_comparison_count,
             per_result_neighbor_lookup_count: parts.per_result_neighbor_lookup_count,
             fallback_count: parts.fallback_count,

@@ -122,6 +122,7 @@ pub(super) fn root_step_view(
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
         relation: step.relation(),
+        complete_closure: step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure,
         direction: match step.direction() {
             RelationDirection::Forward => WorthQueryReadGraphRelationDirection::Forward,
             RelationDirection::Reverse => WorthQueryReadGraphRelationDirection::Reverse,
@@ -136,6 +137,7 @@ pub(super) fn result_relation_view(
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
         relation: relation.relation(),
+        complete_closure: false,
         direction: match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => {
                 WorthQueryReadGraphRelationDirection::Forward

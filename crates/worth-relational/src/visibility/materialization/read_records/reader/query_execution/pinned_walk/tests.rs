@@ -182,6 +182,36 @@ fn original_work_cancellation_and_retained_memory_survive_handoff() {
     );
     assert_eq!(denial.reads.entity_records, 1);
     assert_eq!(denial.reads.adjacency_lists, 0);
+    let caller_stopped = std::cell::Cell::new(false);
+    let observer = |event| {
+        if let PinnedWalkEventForTest::Entity(_) = event {
+            caller_stopped.set(true);
+        }
+    };
+    let control = || {
+        if caller_stopped.get() {
+            Err(crate::execution::RelationalExecutionDenialCause::Cancelled)
+        } else {
+            Ok(())
+        }
+    };
+    let caller_denial = pin
+        .complete_relation_walk(
+            &request,
+            scope(&[a], RelationDirection::Forward)
+                .with_control(&control)
+                .observe_for_test(&observer),
+        )
+        .unwrap_err();
+    assert_eq!(
+        caller_denial.kind,
+        PinnedStructuralWalkDenialKind::Read(
+            crate::execution::RelationalExecutionDenialCause::Cancelled
+        )
+    );
+    assert_eq!(caller_denial.reads.entity_records, 1);
+    assert_eq!(caller_denial.reads.adjacency_lists, 0);
+    // The same original request succeeds when the separate caller control permits it.
     let walk = pin
         .complete_relation_walk(&request, scope(&roots, RelationDirection::Forward))
         .unwrap();

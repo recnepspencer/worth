@@ -18,6 +18,9 @@ pub struct PinnedStructuralWalkReads {
 pub struct PinnedStructuralWalkVisit {
     pub entity: RelationalEntityMetadata,
     pub distance: usize,
+    /// Actual discovery witness. Canonical seed ordering breaks root ties;
+    /// every visit is reached from this supplied root at its minimum distance.
+    pub root: crate::identity::data::EntityId,
 }
 
 /// Complete canonical structural facts, retaining their original allocation backing.

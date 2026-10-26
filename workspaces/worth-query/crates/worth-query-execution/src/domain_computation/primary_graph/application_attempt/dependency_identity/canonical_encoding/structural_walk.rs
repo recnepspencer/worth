@@ -68,6 +68,7 @@ pub(super) fn append<E>(
         poll()?;
         let item = format!("{prefix}.visit.{index}");
         entity(entries, &item, "entity", visit.entity.entity_id);
+        entity(entries, &item, "root", visit.root);
         number_u64(
             entries,
             &item,

@@ -854,6 +854,7 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-execution/src/publication_boundary.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_dependencies/cumulative_court.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_query/root_selection/declared_root_paths_retain_per_row_native_witnesses.rs",
+  "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/currentness.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/authorization/capability_governed_input/funded_capture.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/aftermath_causality/correction_history/page_allocation/tests.rs",
   "workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/fixture/correction_source.rs",

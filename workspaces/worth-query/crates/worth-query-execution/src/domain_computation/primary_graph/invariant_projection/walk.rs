@@ -149,6 +149,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 relation_kind: layout.kind,
                 direction,
                 maximum_work: self.work_budget.remaining(),
+                control: None,
             },
             context,
         );

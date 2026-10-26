@@ -28,7 +28,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                                 "Parent".into(),
                                 "Row".into(),
                                 direction,
-                            )
+                             worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)
                         }
                         RelationDirection::Forward => {
                             ApplicationQueryRootPathStep::from_untrusted_fields(
@@ -36,7 +36,7 @@ fn path_value_v33_roundtrips_and_old_version_cannot_consume_the_assignment() {
                                 "Row".into(),
                                 "Parent".into(),
                                 direction,
-                            )
+                             worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)
                         }
                     })
                     .into_iter()

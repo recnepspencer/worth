@@ -182,11 +182,13 @@ impl WorthQueryGraphReadAccessCostEstimate {
         supported: WorthQueryGraphReadSupportedCostEstimate,
         counters: WorthQueryGraphReadCostEstimateCounters,
         attribution_rows: Vec<WorthQueryGraphReadCostAttributionRow>,
+        complete_traversal: bool,
     ) -> Self {
         let complexity_contract = WorthQueryGraphReadComplexityContract::from_cost_dimensions(
             supported.index_bytes(),
             supported.result_bytes(),
             intrinsic.intermediate_set_size(),
+            complete_traversal,
         );
         let status = evidence.status().clone();
         let parts = vec![

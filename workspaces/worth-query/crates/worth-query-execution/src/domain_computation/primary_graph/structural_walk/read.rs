@@ -18,6 +18,8 @@ pub(in crate::domain_computation::primary_graph) struct StructuralWalkQuery<'a> 
     pub(in crate::domain_computation::primary_graph) relation_kind: KindId,
     pub(in crate::domain_computation::primary_graph) direction: RelationDirection,
     pub(in crate::domain_computation::primary_graph) maximum_work: Option<usize>,
+    pub(in crate::domain_computation::primary_graph) control:
+        Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 
 impl StructuralWalkObservation {
@@ -27,16 +29,17 @@ impl StructuralWalkObservation {
         query: StructuralWalkQuery<'_>,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<Arc<Self>, PinnedStructuralWalkDenial> {
-        let native = pin.complete_relation_walk(
-            execution,
-            PinnedStructuralWalkScope::new(
-                query.roots,
-                query.entity_kind,
-                query.relation_kind,
-                query.direction,
-            )
-            .with_work_limit(query.maximum_work),
-        )?;
+        let mut scope = PinnedStructuralWalkScope::new(
+            query.roots,
+            query.entity_kind,
+            query.relation_kind,
+            query.direction,
+        )
+        .with_work_limit(query.maximum_work);
+        if let Some(control) = query.control {
+            scope = scope.with_control(control);
+        }
+        let native = pin.complete_relation_walk(execution, scope)?;
         // These observations survive any later header or final-handoff failure.
         let reads = native.reads();
         let work = native.work_units();
@@ -61,6 +64,9 @@ impl StructuralWalkObservation {
         let mut count = 0usize;
         for visit in native.visits() {
             Self::checkpoint(context)?;
+            if let Some(control) = query.control {
+                control()?;
+            }
             if visit.distance != 0 {
                 break;
             }
@@ -79,8 +85,12 @@ impl StructuralWalkObservation {
             .map_err(|_| Cause::AllocationFailed)?;
         for visit in &native.visits()[..count] {
             Self::checkpoint(context)?;
+            if let Some(control) = query.control {
+                control()?;
+            }
             roots.push(visit.entity.entity_id);
         }
+        let control = query.control;
         let query = StructuralWalkKey(Arc::new(key::Parameters {
             relation: Arc::from(query.relation),
             entity_kind: query.entity_kind,
@@ -98,9 +108,14 @@ impl StructuralWalkObservation {
                 .ok_or(Cause::ChargedBytesOverflow)?,
         )?;
         Self::checkpoint(context)?;
+        if let Some(control) = control {
+            control()?;
+        }
+        let commitment = super::commitment::derive(&query, &native, context, control)?;
         Ok(Arc::new(Self {
             query,
             native,
+            commitment,
             snapshot: snapshot.clone(),
             _memory: memory,
         }))

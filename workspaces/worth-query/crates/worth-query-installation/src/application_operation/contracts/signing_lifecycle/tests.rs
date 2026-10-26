@@ -65,7 +65,7 @@ impl Fixture {
                         "Parent".into(),
                         "Row".into(),
                         RelationDirection::Reverse,
-                    )],
+                     worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],
                 },
             ),
             field,

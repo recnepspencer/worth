@@ -14,6 +14,9 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.validate_completeness(expected)?;
         source_fact_count(self, expected)?;
         let footprint = self.source_meaning.footprint();
+        if let Some(selection) = &footprint.root_selection {
+            selection.validate_walks(layout, request)?;
+        }
         // Temporary borrowed-key indexes remain outside payload custody. They
         // validate the same duplicate body rule without constructing a Fact or
         // cloning endpoints, field locators, or canonical identity material.

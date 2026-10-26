@@ -621,6 +621,7 @@ exports = [
     "WorthQueryApplicationQueryFreshness",
     "WorthQueryApplicationQueryOmissionPosture",
     "WorthQueryApplicationQueryResumeControls",
+    "WorthQueryApplicationQueryRootPathStepRead",
     "WorthQueryApplicationQueryWorkEvidence",
     "WorthQueryApplicationReadAttempt",
     "WorthQueryApplicationReadObservation",

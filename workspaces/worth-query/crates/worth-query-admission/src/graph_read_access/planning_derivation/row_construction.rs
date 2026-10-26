@@ -247,7 +247,11 @@ pub(super) fn build_row<Admission>(
             kind,
             basis,
         } => {
-            let (rebuild, invalidation, complexity, memory) = relation_dimensions(basis);
+            let (rebuild, invalidation, mut complexity, mut memory) = relation_dimensions(basis);
+            if matches!(basis, RelationRequirementBasis::TraversalWorkset) && *operator == crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure {
+                complexity = Complexity::CompleteTraversalWorkset;
+                memory = Memory::DiscoveredWorkset;
+            }
             // Relation name, direction, depth and schema authority metadata.
             admit(4, 0).map_err(Stop::Admission)?;
             let name = relation.relation_name();

@@ -15,6 +15,7 @@ impl ChargedBytes for RawNonLiveKernelOutcome {
             projected_records: _projected_records,
             projected_fields: _projected_fields,
             reads: _reads,
+            root_path_steps: _root_path_steps,
             ordering_comparisons: _ordering_comparisons,
             ordered_index_generation: _ordered_index_generation,
             ordered_index_entries_examined: _ordered_index_entries_examined,

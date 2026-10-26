@@ -77,6 +77,9 @@ impl<Query> WorthQueryObservedSource<Query> {
     ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         self.validate_completeness(expected_query_identifier)?;
         let footprint = self.source_meaning.footprint();
+        if let Some(selection) = &footprint.root_selection {
+            selection.validate_walks(layout, request)?;
+        }
         let fields = footprint
             .aspects
             .iter()
@@ -117,6 +120,14 @@ fn source_fact_count<Query>(
                 .len()
                 .checked_add(selection.aspects.len())
                 .and_then(|n| n.checked_add(selection.adjacencies.len()))
+                .and_then(|n| {
+                    n.checked_add(
+                        selection
+                            .walks
+                            .as_ref()
+                            .map_or(0, |walks| walks.values().len()),
+                    )
+                })
         })
         .unwrap_or(Some(0));
     footprint
@@ -166,6 +177,15 @@ impl<Query> PreparedSourceFactMaterialization<'_, Query> {
             })?);
         }
         if let Some(selection) = selection {
+            facts.extend(
+                selection
+                    .walks
+                    .iter()
+                    .flat_map(|walks| walks.values())
+                    .map(|body| Fact::StructuralWalk {
+                        observation: std::sync::Arc::clone(body),
+                    }),
+            );
             facts.extend(
                 selection
                     .entities

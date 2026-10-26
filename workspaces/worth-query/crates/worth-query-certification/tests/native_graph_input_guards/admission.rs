@@ -61,7 +61,7 @@ fn portable_path_guard_reconstructs_scope_and_refuses_missing_or_changed_corresp
                                                 "Parent".into(),
                                                 "Row".into(),
                                                 RelationDirection::Forward,
-                                            ),
+                                             worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,),
                                         ],
                                         guards: vec![],
                                     },

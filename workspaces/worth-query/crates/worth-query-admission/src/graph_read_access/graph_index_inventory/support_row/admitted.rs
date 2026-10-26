@@ -17,8 +17,17 @@ fn supported_row_without_digest(
     requirement: &WorthQueryGraphReadAccessRequirementRow,
 ) -> WorthQueryGraphIndexSupportRow {
     let kind = requirement.kind().clone();
-    let (rebuild_basis, invalidation_basis, complexity_contract) =
+    let (rebuild_basis, invalidation_basis, mut complexity_contract) =
         default_bases_for_requirement(&kind);
+    if matches!(
+        kind,
+        WorthQueryGraphReadAccessRequirementKind::TraversalWorkset
+            | WorthQueryGraphReadAccessRequirementKind::VisitedSet
+    ) && requirement.traversal_operator()
+        == Some(&crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure)
+    {
+        complexity_contract = crate::graph_read_access::WorthQueryGraphReadAccessComplexityContract::CompleteTraversalWorkset;
+    }
     let (lifecycle_owner, lifecycle_class, posture, support_state, owning_milestone) =
         if kind == WorthQueryGraphReadAccessRequirementKind::LiveMaintenanceSupport {
             (

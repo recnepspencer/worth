@@ -1,5 +1,7 @@
 use worth_foundational::facade::{AspectKey, AspectValue, FieldKey, ScalarAspectType};
-use worth_query_declaration::facade::application_query::RelationDirection;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryRootPathTraversal, RelationDirection,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledRootPathGuard {
@@ -64,6 +66,7 @@ pub struct WorthQueryInstalledRootPathStep {
     from: String,
     to: String,
     direction: RelationDirection,
+    traversal: ApplicationQueryRootPathTraversal,
     depth: usize,
 }
 
@@ -73,6 +76,7 @@ impl WorthQueryInstalledRootPathStep {
         from: impl Into<String>,
         to: impl Into<String>,
         direction: RelationDirection,
+        traversal: ApplicationQueryRootPathTraversal,
         depth: usize,
     ) -> Self {
         Self {
@@ -80,6 +84,7 @@ impl WorthQueryInstalledRootPathStep {
             from: from.into(),
             to: to.into(),
             direction,
+            traversal,
             depth,
         }
     }
@@ -98,6 +103,10 @@ impl WorthQueryInstalledRootPathStep {
 
     pub const fn direction(&self) -> RelationDirection {
         self.direction
+    }
+
+    pub const fn traversal(&self) -> ApplicationQueryRootPathTraversal {
+        self.traversal
     }
 
     pub const fn depth(&self) -> usize {

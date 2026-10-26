@@ -39,7 +39,14 @@ pub(super) fn leaf(
                 .key()
                 .roots()
                 .len()
-                .checked_add(observation.native().visits().len())
+                .checked_add(
+                    observation
+                        .native()
+                        .visits()
+                        .len()
+                        .checked_mul(2)
+                        .ok_or(StoreDenial::Representability)?,
+                )
                 .and_then(|n| n.checked_add(observation.native().relations().len().checked_mul(2)?))
                 .ok_or(StoreDenial::Representability)?,
             observation.key().relation().len(),

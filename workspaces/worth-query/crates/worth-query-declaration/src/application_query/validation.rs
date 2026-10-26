@@ -130,6 +130,10 @@ fn validate_result_and_root_selection(
     }
     if definition.root_paths().iter().any(|path| {
         path.steps().is_empty()
+            || path.steps().iter().any(|step| {
+                step.traversal() == super::ApplicationQueryRootPathTraversal::Closure
+                    && step.from() != step.to()
+            })
             || path.start_entity() != definition.scope_entity()
             || path.terminal_entity() != definition.root_entity()
             || path

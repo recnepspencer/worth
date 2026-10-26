@@ -22,12 +22,17 @@ impl<Query> WorthQueryObservedSource<Query> {
         &self,
     ) -> Option<WorthQueryObservedSourceSelection> {
         let footprint = self.source_meaning.footprint();
-        (footprint.complete && footprint.root_selection.is_some()).then(|| {
-            WorthQueryObservedSourceSelection {
-                runtime_authority: self.runtime_authority,
-                schema_binding: self.schema_binding.clone(),
-                meaning: Arc::clone(&self.source_meaning),
-            }
+        // Selective membership cutoff has no qualified complete-walk rule yet.
+        // Retained full source currentness still consumes the original bodies.
+        (footprint.complete
+            && footprint
+                .root_selection
+                .as_ref()
+                .is_some_and(|selection| selection.walks.is_none()))
+        .then(|| WorthQueryObservedSourceSelection {
+            runtime_authority: self.runtime_authority,
+            schema_binding: self.schema_binding.clone(),
+            meaning: Arc::clone(&self.source_meaning),
         })
     }
 }
@@ -113,6 +118,9 @@ fn same_root_selection(
     left: &WorthQueryObservedRootSelection,
     right: &WorthQueryObservedRootSelection,
 ) -> bool {
+    if left.walks.is_some() || right.walks.is_some() {
+        return false;
+    }
     same_entities(&left.entities, &right.entities)
         && same_fields(&left.aspects, &right.aspects)
         && same_adjacencies(&left.adjacencies, &right.adjacencies)
@@ -227,6 +235,8 @@ mod tests {
                 vec![entity(1)],
                 Vec::new(),
                 vec![adjacency.clone()],
+                None,
+                None,
             ))),
             adjacencies: vec![adjacency],
         }

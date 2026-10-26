@@ -34,3 +34,30 @@ pub(in crate::domain_computation::primary_graph) fn resize(
     }
     Ok(())
 }
+
+/// Conservatively admit a BTree insertion's possible new nodes before descent.
+pub(in crate::domain_computation::primary_graph) fn grow_tree<T>(
+    ticket: &mut Option<ExecutionMemoryReservation>,
+    bytes: &mut u64,
+    len: usize,
+    execution: &ExecutionRequest<'_, '_>,
+    accounted: bool,
+) -> Result<(), Cause> {
+    let after = len.checked_add(1).ok_or(Cause::ChargedBytesOverflow)?;
+    let levels = u64::from(usize::BITS - after.leading_zeros()) + 1;
+    let node = 11_u64
+        .checked_mul(size_of::<T>() as u64)
+        .and_then(|n| n.checked_add(14 * size_of::<usize>() as u64))
+        .ok_or(Cause::ChargedBytesOverflow)?;
+    let next = levels
+        .checked_mul(node)
+        .and_then(|n| bytes.checked_add(n))
+        .ok_or(Cause::ChargedBytesOverflow)?;
+    if ticket.is_some() {
+        resize(ticket, next)?;
+    } else {
+        *ticket = reserve(execution, accounted, next)?;
+    }
+    *bytes = next;
+    Ok(())
+}

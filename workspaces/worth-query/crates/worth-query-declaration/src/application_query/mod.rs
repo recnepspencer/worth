@@ -91,7 +91,7 @@ pub use result_traversal::{
 };
 pub use root_selection::{
     ApplicationQueryRootPath, ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning,
-    ApplicationQueryRootPathStep, RelationDirection,
+    ApplicationQueryRootPathStep, ApplicationQueryRootPathTraversal, RelationDirection,
     WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };

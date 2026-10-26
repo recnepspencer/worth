@@ -88,10 +88,14 @@ fn append_relations(
             },
             cardinality_name(relation.cardinality),
             relation.depth,
+            relation.complete_closure,
         )
     });
     for (index, relation) in relations.into_iter().enumerate() {
         let path = format!("relation[{index}]");
+        if relation.complete_closure {
+            entries.push(text(format!("{path}.traversal"), "closure"));
+        }
         entries.extend([
             text(format!("{path}.name"), relation.relation),
             text(

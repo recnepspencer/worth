@@ -35,12 +35,10 @@ pub(super) fn require_witnessed_output(
 }
 
 pub(super) fn require_current_facts(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    relational: &worth_relational::facade::runtime::RelationalRuntime,
-    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
     facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
 ) -> Result<(), WorthQueryOutputDemandDenial> {
-    match first_moved_fact(execution, relational, snapshot, facts.iter()) {
+    match first_moved_fact_in(verification, facts.iter()) {
         Ok(None) => Ok(()),
         Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
             stop,

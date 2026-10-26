@@ -44,6 +44,8 @@ pub(super) struct StableReceiptObservation {
     projected_record_count: usize,
     projected_field_count: usize,
     reads: WorthQueryInvariantProjectionWork,
+    root_path_steps:
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationQueryRootPathStepRead>,
     ordering_comparison_count: usize,
     per_result_neighbor_lookup_count: usize,
     fallback_count: usize,
@@ -156,6 +158,7 @@ impl StableReceiptObservation {
             projected_record_count: receipt.projected_record_count(),
             projected_field_count: receipt.projected_field_count(),
             reads: receipt.reads(),
+            root_path_steps: receipt.root_path_steps().to_vec(),
             ordering_comparison_count: receipt.ordering_comparison_count(),
             per_result_neighbor_lookup_count: receipt.per_result_neighbor_lookup_count(),
             fallback_count: receipt.fallback_count(),

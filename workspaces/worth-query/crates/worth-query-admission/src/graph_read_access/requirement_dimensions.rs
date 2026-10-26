@@ -75,6 +75,7 @@ pub enum WorthQueryGraphReadAccessComplexityContract {
     DirectionalRelationLookup,
     ReverseRelationLookup,
     BoundedTraversalWorkset,
+    CompleteTraversalWorkset,
     CandidatePredicateSupport,
     CandidateOrderingSupport,
     ProofEvidenceSupport,
@@ -86,6 +87,7 @@ pub enum WorthQueryGraphReadAccessComplexityContract {
 pub enum WorthQueryGraphReadAccessMemoryEstimateBasis {
     RelationDegreeBound,
     FrontierDepthBound,
+    DiscoveredWorkset,
     PredicateCandidateSet,
     OrderedCandidateSet,
     ProofEvidenceSet,
@@ -121,6 +123,7 @@ names!(WorthQueryGraphReadAccessComplexityContract, {
     WorthQueryGraphReadAccessComplexityContract::DirectionalRelationLookup => "directional_relation_lookup",
     WorthQueryGraphReadAccessComplexityContract::ReverseRelationLookup => "reverse_relation_lookup",
     WorthQueryGraphReadAccessComplexityContract::BoundedTraversalWorkset => "bounded_traversal_workset",
+    WorthQueryGraphReadAccessComplexityContract::CompleteTraversalWorkset => "complete_traversal_workset",
     WorthQueryGraphReadAccessComplexityContract::CandidatePredicateSupport => "candidate_predicate_support",
     WorthQueryGraphReadAccessComplexityContract::CandidateOrderingSupport => "candidate_ordering_support",
     WorthQueryGraphReadAccessComplexityContract::ProofEvidenceSupport => "proof_evidence_support",
@@ -130,6 +133,7 @@ names!(WorthQueryGraphReadAccessComplexityContract, {
 names!(WorthQueryGraphReadAccessMemoryEstimateBasis, {
     WorthQueryGraphReadAccessMemoryEstimateBasis::RelationDegreeBound => "relation_degree_bound",
     WorthQueryGraphReadAccessMemoryEstimateBasis::FrontierDepthBound => "frontier_depth_bound",
+    WorthQueryGraphReadAccessMemoryEstimateBasis::DiscoveredWorkset => "discovered_workset",
     WorthQueryGraphReadAccessMemoryEstimateBasis::PredicateCandidateSet => "predicate_candidate_set",
     WorthQueryGraphReadAccessMemoryEstimateBasis::OrderedCandidateSet => "ordered_candidate_set",
     WorthQueryGraphReadAccessMemoryEstimateBasis::ProofEvidenceSet => "proof_evidence_set",

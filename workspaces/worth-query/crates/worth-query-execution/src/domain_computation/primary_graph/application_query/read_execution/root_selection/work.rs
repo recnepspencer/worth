@@ -9,6 +9,12 @@ pub(super) struct RootSelectionWork<'a> {
     pub(super) predicate_records_examined: usize,
     pub(super) predicate_work_units: usize,
     pub(super) spent: Option<&'a OneShotReadWorkObservation<'a>>,
+    pub(super) steps:
+        Vec<super::super::super::access_receipt::WorthQueryApplicationQueryRootPathStepRead>,
+    pub(super) step_limit: usize,
+    pub(super) step_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(super) source_allocation:
+        Option<std::sync::Arc<super::super::super::observed_source::RootPathAllocation>>,
 }
 
 impl<'a> RootSelectionWork<'a> {
@@ -24,6 +30,10 @@ impl<'a> RootSelectionWork<'a> {
             predicate_records_examined: 0,
             predicate_work_units: 0,
             spent,
+            steps: Vec::new(),
+            step_memory: None,
+            step_limit: 0,
+            source_allocation: None,
         }
     }
 

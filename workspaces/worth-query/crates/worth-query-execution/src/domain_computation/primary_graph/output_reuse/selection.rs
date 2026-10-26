@@ -87,8 +87,16 @@ pub(in crate::domain_computation::primary_graph) fn first_moved_fact<'fact>(
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
 ) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
+    let mut extent = super::RetainedFactVerification::new(execution, runtime, snapshot, None);
+    first_moved_fact_in(&mut extent, facts)
+}
+
+pub(in crate::domain_computation::primary_graph) fn first_moved_fact_in<'fact>(
+    extent: &mut super::RetainedFactVerification<'_, '_, '_>,
+    facts: impl IntoIterator<Item = &'fact WorthQueryApplicationObservedFact>,
+) -> Result<Option<&'fact WorthQueryApplicationObservedFact>, RetainedFactStop<'fact>> {
     for fact in facts {
-        match fact.source_currentness_in(runtime, execution, snapshot) {
+        match extent.observe(fact) {
             Ok(Ok(movement)) if movement.movement() == Movement::Moved => return Ok(Some(fact)),
             Ok(Ok(_)) => {}
             Ok(Err(WorthQuerySourceCurrentnessFailure::OutputObservation(stop))) => {

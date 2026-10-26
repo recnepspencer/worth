@@ -103,6 +103,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn read_cont
             projected_records: tree.projected_records,
             projected_fields: tree.projected_fields,
             reads: selection.reads.combined(tree.reads),
+            root_path_steps: selection.root_path_steps,
             ordering_comparisons: tree.ordering_comparisons,
             ordered_index_generation: Some(progress.generation_id),
             ordered_index_entries_examined: tree.ordered_index_entries_examined,

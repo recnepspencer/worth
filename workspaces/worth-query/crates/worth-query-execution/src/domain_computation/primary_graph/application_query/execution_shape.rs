@@ -68,12 +68,13 @@ pub(in crate::domain_computation::primary_graph::application_query) fn prepare_o
     })
 }
 
-/// Admits only bounded one-shot root-selection shapes implemented by this lane.
+/// Admits the one-shot root-selection shapes implemented by this lane.
 ///
 /// Result relations and path-bound ordering are supported by the shared bounded
 /// tree materializer after their exact requirements have been admitted.
-/// Root enumeration must either remain the admitted scope or be a declared,
-/// bounded union of scope-to-root paths. Broader enumeration remains unsupported.
+/// Root enumeration remains the admitted scope or an installed union of
+/// scope-to-root paths. Complete steps use the original Native request; sharing
+/// an entity kind with the scope does not make a declared path an exact root.
 pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
@@ -85,11 +86,11 @@ pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Sc
         [predicate] => predicate.field().0 == root,
         _ => false,
     };
-    let bounded_path_selection = !graph.root_paths().is_empty() && graph.predicates().is_empty();
+    let declared_path_selection = !graph.root_paths().is_empty() && graph.predicates().is_empty();
     let declared_result = !graph.projections().is_empty() || !graph.relations().is_empty();
     if declared_result
         && ((exact_root_scope && graph.root_paths().is_empty() && bounded_exact_selection)
-            || (!exact_root_scope && bounded_path_selection))
+            || declared_path_selection)
     {
         return Ok(());
     }

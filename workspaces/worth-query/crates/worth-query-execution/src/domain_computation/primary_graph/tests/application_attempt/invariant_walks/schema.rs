@@ -101,7 +101,7 @@ fn members(
         .operation_write(SetActive::reference(), Active::reference())
         .invariant(super::rule::definition())
         .invariant(super::probe::definition());
-    super::decision_walks::binding::declare(schema)
+    super::declared_queries::declarations::declare(super::decision_walks::binding::declare(schema))
 }
 
 worth_query_entity!(pub ExternalMapping for WalkSchema);

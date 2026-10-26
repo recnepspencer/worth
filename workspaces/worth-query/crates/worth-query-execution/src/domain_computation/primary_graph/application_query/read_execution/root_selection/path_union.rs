@@ -1,7 +1,9 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
-use worth_query_declaration::facade::application_query::RelationDirection;
+use super::guards::apply_guards;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryRootPathTraversal, RelationDirection,
+};
 use worth_query_installation::facade::WorthQueryInstalledRootPath;
 use worth_relational::facade::identity::EntityId;
 
@@ -29,13 +31,21 @@ pub(super) fn select_root_path_union(
     let projection = runtime
         .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
-    let mut roots = BTreeMap::new();
     let mut work = RootSelectionWork::new(interruption, spent);
+    let mut step_count = 0usize;
+    for path in paths {
+        work.checkpoint(plan.name)?;
+        step_count = step_count
+            .checked_add(path.steps().len())
+            .ok_or_else(|| traversal_denial(plan.name))?;
+    }
+    work.reserve_steps(execution, step_count, plan.name)?;
+    let mut roots = BTreeMap::new();
     let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
     if let Some(source) = &mut set_source {
-        source.observe_entity(plan.root);
+        source.observe_entity(execution, plan.root)?;
     }
-    for path in paths {
+    for (path_index, path) in paths.iter().enumerate() {
         let terminal = traverse_path(
             execution,
             runtime,
@@ -43,32 +53,44 @@ pub(super) fn select_root_path_union(
             graph,
             plan,
             path,
+            path_index,
             &mut work,
             &mut set_source,
         )?;
         for (root, source) in terminal {
+            if !roots.contains_key(&root) {
+                work.admit_root_entry::<RootPathSourceBuilder>(execution, roots.len())?;
+            }
             roots.entry(root).or_insert(source);
         }
     }
     if let Some(set_source) = &mut set_source {
         for source in roots.values() {
             for entity in source.entities() {
-                if set_source.observe_entity(entity) {
+                if set_source.observe_entity(execution, entity)? {
                     work.charge_source_copy(1, plan.name)?;
                 }
             }
         }
     }
+    work.admit_candidates(execution, roots.len())?;
     let candidates = roots.keys().copied().collect();
-    let result_set_source = set_source.map(|source| source.finish()).transpose()?;
-    let root_path_source = (!roots.is_empty())
-        .then(|| {
-            roots
-                .into_iter()
-                .map(|(root, source)| source.finish().map(|source| (root, source)))
-                .collect::<Result<BTreeMap<_, _>, _>>()
-        })
+    let result_set_source = set_source
+        .map(|source| source.finish(execution))
         .transpose()?;
+    let root_path_source = if roots.is_empty() {
+        None
+    } else {
+        let mut sources = BTreeMap::new();
+        for (root, mut source) in roots {
+            if let Some(allocation) = &work.source_allocation {
+                source.protect(execution, allocation)?;
+            }
+            work.admit_root_entry::<std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>(execution, sources.len())?;
+            sources.insert(root, source.finish(execution)?);
+        }
+        Some(sources)
+    };
     Ok(BoundedRootSelection {
         candidates,
         selected_predicate_source: None,
@@ -79,6 +101,8 @@ pub(super) fn select_root_path_union(
         work_units: work.work_units,
         predicate_index_generation: None,
         reads: work.reads,
+        root_path_steps: work.take_steps(),
+        _source_allocation: work.source_allocation.clone(),
     })
 }
 
@@ -89,12 +113,18 @@ fn traverse_path(
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
     path: &WorthQueryInstalledRootPath,
+    path_index: usize,
     work: &mut RootSelectionWork,
     set_source: &mut Option<RootPathSourceBuilder>,
 ) -> Result<BTreeMap<EntityId, RootPathSourceBuilder>, WorthQueryApplicationReadExecutionDenial> {
     let mut seed = RootPathSourceBuilder::default();
-    seed.observe_entity(plan.root);
-    let mut frontier = BTreeMap::from([(plan.root, seed)]);
+    if let Some(allocation) = &work.source_allocation {
+        seed.protect(execution, allocation)?;
+    }
+    seed.observe_entity(execution, plan.root)?;
+    let mut frontier = BTreeMap::new();
+    work.admit_root_entry::<RootPathSourceBuilder>(execution, 0)?;
+    frontier.insert(plan.root, seed);
     apply_guards(
         execution,
         runtime,
@@ -109,7 +139,16 @@ fn traverse_path(
     )?;
     for (step_index, step) in path.steps().iter().enumerate() {
         if frontier.is_empty() {
-            break;
+            work.record_step(
+                execution,
+                path_index,
+                step_index,
+                step.traversal(),
+                step.direction(),
+                Default::default(),
+                step.relation(),
+            )?;
+            continue;
         }
         let layout = graph
             .relation(step.relation())
@@ -118,71 +157,95 @@ fn traverse_path(
                     && graph.entity_kind(step.to()) == Some(layout.to)
             })
             .ok_or_else(|| traversal_denial(step.relation()))?;
-        let anchors = frontier.keys().copied().collect::<BTreeSet<_>>();
-        let direction = match step.direction() {
-            RelationDirection::Forward => {
-                worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing
-            }
-            RelationDirection::Reverse => {
-                worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming
-            }
-        };
-        for (&anchor, source) in &mut frontier {
-            let observed = source.observe_adjacencies(
-                execution,
-                projection,
-                anchor,
-                layout.kind,
-                direction,
-                step.relation(),
-                work,
-            )?;
-            if let Some(set_source) = set_source
-                && set_source.record_adjacency(observed)
-            {
-                work.charge_source_copy(1, step.relation())?;
-            }
-        }
-        work.checkpoint(step.relation())?;
-        let read = match step.direction() {
-            RelationDirection::Forward => runtime.bounded_outgoing_relations_for_frontier(
-                execution,
-                &anchors,
-                layout.kind,
-                None,
-            ),
-            RelationDirection::Reverse => runtime.bounded_incoming_relations_for_frontier(
-                execution,
-                &anchors,
-                layout.kind,
-                None,
-            ),
-        }
-        .map_err(|stop| frontier_denial(stop, step.relation()))?;
-        work.charge(
-            read.adjacency_lists_read(),
-            read.relation_records_examined(),
-            read.endpoint_records_reserved(),
-            step.relation(),
-        )?;
-        let mut next = BTreeMap::new();
-        for record in read.into_records() {
-            work.checkpoint(step.relation())?;
-            let (anchor, endpoint) = match step.direction() {
-                RelationDirection::Forward => (record.source, record.target),
-                RelationDirection::Reverse => (record.target, record.source),
+        let next = if step.traversal() == ApplicationQueryRootPathTraversal::Closure {
+            super::closure::advance(
+                execution, runtime, layout, step, &frontier, work, set_source, path_index,
+                step_index,
+            )?
+        } else {
+            let anchors = frontier.keys().copied().collect::<BTreeSet<_>>();
+            let direction = match step.direction() {
+                RelationDirection::Forward => {
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Outgoing
+                }
+                RelationDirection::Reverse => {
+                    worth_relational::facade::runtime::RelationalAdjacencyDirection::Incoming
+                }
             };
-            if next.contains_key(&endpoint) {
-                continue;
+            for (&anchor, source) in &mut frontier {
+                let observed = source.observe_adjacencies(
+                    execution,
+                    projection,
+                    anchor,
+                    layout.kind,
+                    direction,
+                    step.relation(),
+                    work,
+                )?;
+                if let Some(set_source) = set_source
+                    && set_source.record_adjacency(execution, observed)?
+                {
+                    work.charge_source_copy(1, step.relation())?;
+                }
             }
-            let predecessor = frontier
-                .get(&anchor)
-                .ok_or_else(|| traversal_denial(step.relation()))?;
-            work.charge_source_copy(predecessor.copy_cost(), step.relation())?;
-            let mut source = predecessor.clone();
-            source.observe_entity(endpoint);
-            next.insert(endpoint, source);
-        }
+            work.checkpoint(step.relation())?;
+            let read = match step.direction() {
+                RelationDirection::Forward => runtime.bounded_outgoing_relations_for_frontier(
+                    execution,
+                    &anchors,
+                    layout.kind,
+                    None,
+                ),
+                RelationDirection::Reverse => runtime.bounded_incoming_relations_for_frontier(
+                    execution,
+                    &anchors,
+                    layout.kind,
+                    None,
+                ),
+            }
+            .map_err(|stop| frontier_denial(stop, step.relation()))?;
+            work.charge(
+                read.adjacency_lists_read(),
+                read.relation_records_examined(),
+                read.endpoint_records_reserved(),
+                step.relation(),
+            )?;
+            let mut step_reads = crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork::default();
+            step_reads.record_adjacencies(
+                read.adjacency_lists_read(),
+                read.relation_records_examined(),
+            );
+            work.record_step(
+                execution,
+                path_index,
+                step_index,
+                step.traversal(),
+                step.direction(),
+                step_reads,
+                step.relation(),
+            )?;
+            let mut next = BTreeMap::new();
+            for record in read.into_records() {
+                work.checkpoint(step.relation())?;
+                let (anchor, endpoint) = match step.direction() {
+                    RelationDirection::Forward => (record.source, record.target),
+                    RelationDirection::Reverse => (record.target, record.source),
+                };
+                if next.contains_key(&endpoint) {
+                    continue;
+                }
+                let predecessor = frontier
+                    .get(&anchor)
+                    .ok_or_else(|| traversal_denial(step.relation()))?;
+                work.charge_source_copy(predecessor.copy_cost(), step.relation())?;
+                work.admit_root_entry::<RootPathSourceBuilder>(execution, next.len())?;
+                let mut source =
+                    predecessor.copy_for_step(execution, work.source_allocation.as_ref())?;
+                source.observe_entity(execution, endpoint)?;
+                next.insert(endpoint, source);
+            }
+            next
+        };
         frontier = next;
         apply_guards(
             execution,
@@ -198,89 +261,6 @@ fn traverse_path(
         )?;
     }
     Ok(frontier)
-}
-
-fn apply_guards(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
-    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
-    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
-    plan: &ReadPlan<'_>,
-    path: &WorthQueryInstalledRootPath,
-    after_step: usize,
-    frontier: &mut BTreeMap<EntityId, RootPathSourceBuilder>,
-    work: &mut RootSelectionWork,
-    set_source: &mut Option<RootPathSourceBuilder>,
-) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
-    for guard in path
-        .guards()
-        .iter()
-        .filter(|guard| guard.after_step() == after_step)
-    {
-        if frontier.is_empty() {
-            break;
-        }
-        let layout = graph
-            .equality_field(
-                guard.entity(),
-                guard.aspect().as_str(),
-                guard.field().as_str(),
-            )
-            .ok_or_else(|| traversal_denial(guard.field().as_str()))?;
-        let computation = plan
-            .governance
-            .admit_internal_projection(
-                (
-                    guard.entity(),
-                    guard.aspect().as_str(),
-                    guard.field().as_str(),
-                ),
-                guard.field(),
-                ApplicationQueryObservableInfluence::RowPresence,
-            )
-            .ok_or_else(|| traversal_denial(guard.field().as_str()))?;
-        if !computation.admits_locator(&layout.locator) {
-            return Err(traversal_denial(guard.field().as_str()));
-        }
-        for (&entity, source) in &mut *frontier {
-            let observed = source.observe_guard_field(
-                execution,
-                projection,
-                graph,
-                entity,
-                guard.entity(),
-                guard.aspect(),
-                guard.field(),
-                work,
-            )?;
-            if let Some(set_source) = &mut *set_source
-                && set_source.record_field(observed)
-            {
-                work.charge_source_copy(1, guard.field().as_str())?;
-            }
-        }
-        let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();
-        work.checkpoint(guard.field().as_str())?;
-        let read = read_governed_root_guard(
-            execution,
-            runtime,
-            computation,
-            &candidates,
-            layout.entity_kind,
-            &layout.locator,
-            guard.expected(),
-        )
-        .map_err(|stop| frontier_denial(stop, guard.field().as_str()))?;
-        work.charge_predicate(
-            read.entity_records_examined(),
-            read.matching_entity_ids_reserved(),
-            read.field_reads(),
-            guard.field().as_str(),
-        )?;
-        let matching = read.into_matching_entity_ids();
-        frontier.retain(|entity, _| matching.contains(entity));
-    }
-    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -309,7 +289,7 @@ pub(super) fn read_governed_root_guard(
     )
 }
 
-fn traversal_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial {
+pub(super) fn traversal_denial(subject: &str) -> WorthQueryApplicationReadExecutionDenial {
     read_execution_denial(
         WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
         subject,

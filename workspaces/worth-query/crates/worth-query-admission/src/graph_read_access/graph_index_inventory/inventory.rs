@@ -28,13 +28,24 @@ impl WorthQueryGraphIndexInventory {
     }
 
     pub fn from_current_runtime_support() -> Self {
-        Self::from_rows(
-            WorthQueryGraphReadAccessRequirementKind::all()
-                .iter()
-                .cloned()
-                .map(WorthQueryGraphIndexSupportRow::for_requirement_kind)
-                .collect(),
-        )
+        Self::from_rows(Self::current_runtime_support_rows())
+    }
+
+    /// Compiled runtime support profiles before inventory digest preparation.
+    pub fn current_runtime_support_rows() -> Vec<WorthQueryGraphIndexSupportRow> {
+        let mut rows: Vec<_> = WorthQueryGraphReadAccessRequirementKind::all()
+            .iter()
+            .cloned()
+            .map(WorthQueryGraphIndexSupportRow::for_requirement_kind)
+            .collect();
+        for kind in [
+            WorthQueryGraphReadAccessRequirementKind::TraversalWorkset,
+            WorthQueryGraphReadAccessRequirementKind::VisitedSet,
+        ] {
+            rows.push(WorthQueryGraphIndexSupportRow::for_requirement_kind(kind)
+                .with_complexity_contract(crate::graph_read_access::WorthQueryGraphReadAccessComplexityContract::CompleteTraversalWorkset));
+        }
+        rows
     }
 
     pub fn from_rows(mut rows: Vec<WorthQueryGraphIndexSupportRow>) -> Self {

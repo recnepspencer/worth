@@ -3,9 +3,11 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::QueryCoverageStop;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::QueryFactCoverage;
-use crate::domain_computation::primary_graph::output_reuse::first_moved_fact;
 use crate::domain_computation::primary_graph::output_reuse::preflight_stop;
 use crate::domain_computation::primary_graph::output_reuse::retained_fact_denial;
+use crate::domain_computation::primary_graph::output_reuse::{
+    first_moved_fact_in, RetainedFactVerification,
+};
 use std::sync::Arc;
 
 pub(super) struct RetainedQuerySource {
@@ -59,6 +61,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let mut array = ExecutionArrayBuilder::allocate(count, execution.allocation_policy())
             .map_err(storage)?;
         let snapshot = self.application_basis().snapshot_handle();
+        let mut verification = RetainedFactVerification::new(execution, relational, snapshot, None);
         let owner = &self
             .application()
             .primary_provider
@@ -78,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 prepared.into_facts(StorageControl::new(execution.allocation_policy(), None))?;
             // Selector addresses do not certify the original query's truth. Its
             // native facts must answer at their exact original selected image.
-            let current = first_moved_fact(execution, relational, snapshot, facts.iter())
+            let current = first_moved_fact_in(&mut verification, facts.iter())
                 .map_err(|stop| {
                     WorthQueryRequiredSetCurrentnessDenial::from(retained_fact_denial(
                         stop,

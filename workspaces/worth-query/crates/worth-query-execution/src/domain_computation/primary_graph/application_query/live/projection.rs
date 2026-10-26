@@ -120,6 +120,7 @@ where
             projected_record_count: raw.projected_records,
             projected_field_count: raw.projected_fields,
             reads: raw.reads,
+            root_path_steps: raw.root_path_steps,
             ordering_comparison_count: raw.ordering_comparisons,
             ordered_index_entry_count: raw.ordered_index_entries_examined,
             per_result_neighbor_lookup_count: 0,

@@ -1,5 +1,5 @@
 //! One exhausted FIFO, with canonical output independent of seed order.
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::RelationDirection;
@@ -29,13 +29,22 @@ pub(super) fn execute(
     let mut frontier = BreadthFirstFrontier::new();
     let mut visits = BTreeMap::new();
     let mut relations = BTreeMap::new();
+    let mut roots = BTreeSet::new();
     for root in scope.roots {
+        checkpoint(context, scope, work, 1)?;
+        if !roots.contains(root) {
+            memory.claim_scratch(memory::tree_entry::<EntityId, ()>()?)?;
+            roots.insert(*root);
+        }
+    }
+    for root in roots {
         checkpoint(context, scope, work, 1)?;
         discover(
             projection,
             scope,
-            *root,
+            root,
             0,
+            root,
             &mut frontier,
             context,
             reads,
@@ -43,7 +52,7 @@ pub(super) fn execute(
             &mut memory,
         )?;
     }
-    while let Some((entity, distance)) = frontier.pop() {
+    while let Some((entity, distance, root)) = frontier.pop() {
         checkpoint(context, scope, work, 1)?;
         memory.claim_scratch(memory::tree_entry::<
             (usize, EntityId),
@@ -51,7 +60,11 @@ pub(super) fn execute(
         >()?)?;
         visits.insert(
             (distance, entity.entity_id),
-            PinnedStructuralWalkVisit { entity, distance },
+            PinnedStructuralWalkVisit {
+                entity,
+                distance,
+                root,
+            },
         );
         let direction = match scope.direction {
             RelationDirection::Forward => RelationalAdjacencyDirection::Outgoing,
@@ -127,6 +140,7 @@ pub(super) fn execute(
                                 scope,
                                 neighbor,
                                 next,
+                                root,
                                 &mut frontier,
                                 context,
                                 reads,
@@ -177,7 +191,8 @@ fn discover(
     scope: &PinnedStructuralWalkScope<'_>,
     id: EntityId,
     distance: usize,
-    frontier: &mut BreadthFirstFrontier<(RelationalEntityMetadata, usize)>,
+    root: EntityId,
+    frontier: &mut BreadthFirstFrontier<(RelationalEntityMetadata, usize, EntityId)>,
     context: &mut MapKernelContext<'_, '_>,
     reads: &mut PinnedStructuralWalkReads,
     work: &mut usize,
@@ -210,8 +225,8 @@ fn discover(
     if entity.lifecycle != RecordLifecycleState::Live {
         return Err(Denial::EndpointUnavailable);
     }
-    frontier.enqueue(entity.entity_id, (entity, distance), || {
-        let queue = memory::vector_bytes::<(RelationalEntityMetadata, usize)>(8)?;
+    frontier.enqueue(entity.entity_id, (entity, distance, root), || {
+        let queue = memory::vector_bytes::<(RelationalEntityMetadata, usize, EntityId)>(8)?;
         memory.claim_scratch(
             memory::tree_entry::<EntityId, ()>()?
                 .checked_add(queue)
@@ -233,6 +248,9 @@ pub(super) fn checkpoint(
         context.poll()
     };
     admitted.map_err(crate::execution::denial::kernel_stop)?;
+    if let Some(control) = scope.control {
+        control()?;
+    }
     let units = usize::try_from(units).map_err(|_| Cause::WorkCounterOverflow)?;
     let next = work.checked_add(units).ok_or(Cause::WorkCounterOverflow)?;
     if scope.maximum_work.is_some_and(|limit| next > limit) {

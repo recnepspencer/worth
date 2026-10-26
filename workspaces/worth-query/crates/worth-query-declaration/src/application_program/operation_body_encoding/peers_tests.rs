@@ -36,6 +36,7 @@ fn body(member: &str, relation: &str) -> Body {
                     "Parent".into(),
                     "Row".into(),
                     Path::Reverse,
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
                 )],
                 guards: vec![],
             },

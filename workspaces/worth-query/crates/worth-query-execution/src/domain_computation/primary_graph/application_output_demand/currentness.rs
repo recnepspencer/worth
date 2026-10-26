@@ -7,7 +7,7 @@ use facts::require_witnessed_output;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::output_lineage::RetainedOutputCurrentnessRead;
-use crate::domain_computation::primary_graph::output_reuse::first_moved_fact;
+use crate::domain_computation::primary_graph::output_reuse::first_moved_fact_in;
 use crate::domain_computation::primary_graph::output_reuse::RetainedFactStop;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
@@ -106,6 +106,24 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         read: &RetainedOutputCurrentnessRead,
         receipt: Option<&WorthQueryApplicationCommitReceipt>,
     ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let mut verification =
+            crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification::new(
+                execution,
+                relational,
+                self.application_basis().snapshot_handle(),
+                None,
+            );
+        self.require_current_read_in(execution, relational, read, receipt, &mut verification)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn require_current_read_in(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relational: &worth_relational::facade::runtime::RelationalRuntime,
+        read: &RetainedOutputCurrentnessRead,
+        receipt: Option<&WorthQueryApplicationCommitReceipt>,
+        verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(facts) = read.facts.as_ref().filter(|facts| !facts.is_empty()) else {
             // No computation comparison can replace the original factless
             // publication decision, including a rebase that could not compare.
@@ -140,7 +158,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 return Ok(());
             }
         }
-        require_current_facts(execution, relational, snapshot, facts).map_err(
+        require_current_facts(verification, facts).map_err(
             |error| match read.verification_requirement {
                 Some(crate::domain_computation::primary_graph::output_lineage::invalidation::FullVerificationReason::NativeFactRevisionUnavailable(ordinal)) => WorthQueryOutputDemandDenial::new(
                     error.kind(),

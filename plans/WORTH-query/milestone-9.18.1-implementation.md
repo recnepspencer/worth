@@ -2976,3 +2976,232 @@ vertical slice: typed steps and portable validation, canonical/archive/signing
 and planning semantics, governed pinned execution, receipt reads and retained
 row/set source currentness. No closure declaration API was introduced by this
 prerequisite. Topology/private consumer cutovers and phase closeout follow it.
+
+### Phase 3 Slice 5b — complete declared-query closure
+
+Boundary brief (before implementation):
+
+- The typed root-path declaration currently represents a single hop per step;
+  the installed ordinal named `depth` also places guards. Neither representation
+  can stand in for complete reachability. Explicit traversal meaning must reach
+  portable validation, canonical identity, archive decoding and planning.
+- Native's pinned complete walk remains the sole traversal authority. The
+  shared owner from 5a retains its actual immutable body and original payer.
+  Query must not implement BFS, issue a walk per frontier anchor, or fetch an
+  adjacency revision per reached entity after that complete read.
+- A multi-root closure must also identify a real predecessor witness for each
+  terminal row. Native currently discards its discovery origin. Carrying that
+  actual origin through its FIFO permits each row to inherit one real prior
+  source and share the complete body. Unioning every predecessor into each row
+  would instead create quadratic evidence. Canonically funded/deduplicated
+  seeds make the selected minimum-distance origin deterministic.
+- Query's admitted `ReadInterruption` can be distinct from the host execution
+  request. Native must accept a borrowed refusal-only caller checkpoint as an
+  additional narrowing control, while retaining its original execution lease,
+  checkpoints, work ceiling, memory and final handoff. No fresh request/budget.
+- Row/set source conversion must emit the existing structural-walk fact with
+  the exact original Arc. Actual bodies, not their commitment or query key,
+  establish truth. Original-source shortcuts require real pin admission first.
+- Required-set capture/currentness and source-meaning interning iterate rows.
+  They need funded verification/equivalence extents that share completed results
+  for the same actual immutable Arc (or actual Arc pair) in that one call.
+  No cross-request/snapshot cache is introduced. Query coverage continues its
+  existing unsupported-kind fallback; adding a whitelist alone would still
+  register a whole closure's addresses for every row.
+- Source commitments may summarize retained complete bodies once for canonical
+  identity and cheap negative comparisons. Equal commitments never replace
+  actual truth comparison, and no commitment can construct a walk body.
+- The public receipt currently has aggregate reads but no path-step record.
+  Small descriptive executed-step records must survive non-live, continuation
+  and live handoffs, retaining their original funding. They reveal authored
+  step meaning/ordinal/direction and actual reads, never Native IDs or origin
+  witnesses. Existing disclosure observations must include the new evidence.
+- Root paths also serve operation-body capture/input/value/creation paths.
+  Their existing profile requires one distinct identity per hop. This phase
+  explicitly rejects closure in that central portable shape predicate and at
+  the defensive runtime boundary; it does not invent multi-target mutation
+  semantics. Signing/canonical paths still preserve explicit traversal meaning.
+- Archive records have an exact-current grammar. Deliberately advance record
+  version 14 to 15 with closed combined step tags: 1/2 retain existing one-hop
+  directions and 3/4 mean closure directions. Preserve nested byte width and
+  one-hop canonical preimages where possible; closure gains explicit meaning.
+  Refuse old/unknown grammar rather than defaulting closure to one hop.
+- Persistent boundary review agreed on the Native origin/control seams,
+  query-only operation-body restriction, complete receipt handoff and scoped
+  verification extents. Physical owners and actual source facts were inspected;
+  remaining choices are implementation mechanics, not unresolved authority.
+
+Implementation plan (after boundary review):
+
+1. Add explicit one-hop/closure traversal vocabulary to root steps and typed
+   `forward_closure`/`reverse_closure`, accepting only Current-to-Current and
+   returning Self. Portable validation independently rejects non-endorelations.
+   Carry it through installation, planning and all canonical/signing encodings;
+   retain authored guard ordinals, with no sentinel or constant depth limit.
+2. Update the exact-current archive grammar/version and step codec. Refuse
+   unknown traversal tags and unsupported closure-bearing operation bodies;
+   preserve their lawful one-hop twins and fail closed before runtime looping.
+3. In Native, fund canonical seed ordering before growth, preserve original
+   per-input checkpoints, and carry actual discovery root through the frontier
+   and result visit. Update original scratch/result bounds and canonical fact
+   material quote/encoding for the additional complete fact.
+4. Add the borrowed refusal-only Native control seam at existing safe points
+   and final handoff. Thread it through the shared actual-read owner. Query
+   latches the exact first caller denial, records acquired reads/work even on
+   refusal, then polls again after header/source work before publication.
+5. Add one closure advance in root-selection that calls Native once over the
+   whole current frontier, chooses each row's real origin source, and shares
+   the complete observation Arc. Keep ordinary one-hop execution as one-hop;
+   guards apply at authored boundaries and can precede/follow either step.
+6. Extend root-selection source evidence, accounting and identity with shared
+   walk dependencies. Compute body commitments once under original controls;
+   retain full bodies. Materialization/layout validation and duplicate handling
+   consume exact existing structural-walk facts without resealing from metadata.
+7. Share actual body verification once per selected-pin extent across retained
+   row/set capture and required-set currentness. Share actual pair equivalence
+   once across row/set source interning. Fund temporary registries before
+   growth, retain their original bodies, poll original controls and discard the
+   extent after the call. Preserve existing non-walk fact behavior and coverage.
+   Audit cold source serialization/reconstruction: missing original walk custody
+   remains an explicit unsupported reuse refusal, never an empty dependency list.
+8. Carry funded executed-step read evidence from root selection through every
+   kernel/result/receipt lane and capacity boundary. Expose descriptive records
+   through the existing host receipt facade; aggregate actual reads remain
+   counted once per Native invocation. Update disclosure observation/proofs.
+9. Add proportionate evidence using existing fixture owners: portable identity/
+   codec/rejection twins; actual installed declared forward/reverse closure,
+   root-zero/cycle/diamond/multi-root witness and guard composition; long walk/
+   unrelated growth/shared-custody; original caller stop/lawful twin; exact row/
+   set source currentness and receipt/disclosure propagation. Extend Native's
+   existing model/permutation/control/custody cases rather than a broad suite.
+10. Before compilation, obtain persistent three-skill source QA and run scoped
+    formatting, all dirty Rust line caps, full explicit-file function scrutiny,
+    whitespace and guide-link checks. Split touched oversized files; no Cargo
+    feature expansion or unrelated debt cleanup.
+11. Batch Native and Query owner builds through guarded application-build with
+    fresh build identities, existing targets/Rust 1.94 and Query incremental=false.
+    Compile the affected declaration/installation/archive unit owners in the same Query
+    workspace invocation, then run only selected tests from emitted artifacts.
+    Run normal boundary-check and agent-context once on the coherent topology.
+12. Update the direct feature guide/capability index with a compiled declared
+    closure example and its query-only body restriction. Never invoke the
+    prohibited feature-doc-writer skill. Record exact evidence, obtain final
+    persistent qa-loop/qa-tests/code-quality-qa clearance and commit this slice.
+
+Phase 3 remains open until topology/private consumer cutovers and closeout.
+No Phase 4 work, default-branch merge or private SDK pin change belongs to 5b.
+
+Implementation boundary revision: inspecting actual admission derivation found
+that both ordinary and admitted application-query shapes always select the
+`DirectEdge` operator, even when the installed view now describes closure.
+Changing the installed digest/view alone would therefore omit traversal-workset
+and visited-set requirements. Step 1 also covers those two admission owners and
+their downstream requirement/support/cost meaning. Add explicit complete-closure
+vocabulary rather than using a bounded operator or ordinal-as-depth surrogate;
+qualify actual admitted requirement rows and their dynamic resource posture.
+The persistent reviewer independently found the same gap. This repair must be
+resolved before source/runtime clearance or compilation.
+
+That admission trace is resolved: these estimates are exported unknown-
+conservative heuristics, not Native funding bounds. Complete closure therefore
+gets its own operator, complete-workset complexity and discovered-workset memory
+basis, matching runtime support rows in both constructors. Its heuristic size
+must ignore the authored ordinal. Actual backing still grows under the original
+Native request. A focused admission court must cover the real requirement rows,
+support match and ordinal-independent unknown estimate.
+
+Source-allocation revision: logical copy charges and post-return capacity quotes
+do not pre-admit new closure row/index allocations. Add a conservative original
+per-read metadata grant activated by closure. Claim before root-map insertion,
+source-map/name copying or mutation, candidates, final Vecs and witness Arcs.
+Work/selection retain it until transient buffers drop; immutable source witnesses
+retain it through result handoff. Already-paid metadata is not charged again by
+the result capacity seam; Native bodies/descriptors retain their separate
+payments. Pure one-hop reads keep their existing allocation path. This grant is
+conservative grouped custody, not a measurement of resident bytes.
+
+Runtime-discovered integration revision: the real installed closure courts were
+all refused by `validate_one_shot_shape` because its declared-path branch
+required the root entity kind to differ from the scope kind. The actual root
+selector already dispatches nonempty installed paths before exact-scope
+selection. Remove only this kind-inequality restriction; retain the installed
+path roster, empty graph-predicate requirement and declared result. The
+persistent reviewer confirmed the boundary. This is an implementation defect
+found by runtime evidence, not a fixture bypass. The original build3 passed all
+six affected unit owners; its runtime batch passed 65 tests and exposed this
+same admission refusal in all five new closure courts.
+
+Boundary rulings for the added courts are exact-file registrations: installed
+metadata lookup in the declared-query read fixture and admission-owner closure
+fixture, plus program-publication access in the actual query currentness court.
+Each preserves real admission, actual output-demand source custody and ordinary
+commits; no broader factory or production exception was added. Temporary
+comparison keys are symmetric membership lookups and establish no address-based
+semantic order. Receipt descriptors reserve their finite authored roster once.
+
+### Phase 3 Slice 5b closeout
+
+Built complete declared-query forward/reverse endorelation paths with ordinary
+hop/guard composition, actual Native discovery origins, shared original walk
+bodies, funded source/receipt backing and full row/set dependency currentness.
+Admission now requests complete workset/visited support with truthful unknown
+cost posture; runtime kind-wide support configuration covers both bounded and
+complete profiles. RecordFrame 15 carries the closed step discriminator while
+one-hop preimages remain unchanged. Operation-body closure remains refused.
+The direct consumer guide and capability index describe these contracts.
+
+Verification (artifact prefix `query-9.18.1-phase3-slice5b-` under the task's
+external targets directory):
+
+- Native build1 passed in 274.20s; 11 focused complete-walk/pin courts passed.
+- Query build4 compiled all six affected unit owners in 540.17s with zero
+  compiler errors. Its runtime batch passed 69 tests and exposed one fixture
+  lifecycle error: it tried to re-capture old output after an unrelated commit.
+- The fixture now preserves its original dependency capture across edits and
+  retains only fresh output at its current occurrence. Production retention
+  checks were unchanged. Execution-only build5 passed in 387.00s with zero
+  compiler errors; the exact corrected currentness court passed in 0.44s, including
+  both hostile edits and the unrelated-current control. Thus 70 distinct Query
+  courts pass using retained build4 evidence plus the corrected court, not one
+  final 70-test invocation. Native's separate 11 passes also carry.
+- Actual tests cover long 1,001-node traversal and repeated semantic interning
+  under a generous measured original-work envelope, 10,006-node unrelated growth,
+  cycle/diamond/guard origins, root-zero and empty-frontier receipts, caller
+  cancellation/live twin, original source/body memory release and a real policy
+  memory refusal at `closure source backing` with a funded twin. The finite
+  refusal used limit 58,095 and reported requested 56,456/admitted 55,871 at that
+  allocation boundary, then released all original charges.
+- Final formatting, dirty line caps, whitespace and explicit long-path function
+  scrutiny passed for all 117 Rust files. The persistent reviewer accepted all
+  84 composition advisories in this causal scope; there were zero scan errors.
+  The new guide's source link resolves. Both edited consumer documents preserve
+  original UTF-8 prose outside their intended additions.
+- The final audience audit added the promised step-read type to the outer
+  Execution/Host facade, with a direct public-path annotation in the actual
+  receipt court. It also narrowed the internal source constructor to its Query
+  owner and removed newly unused/redundant syntax. Guarded Execution library/test
+  checking passed in 282.44s and Host library checking in 21.26s, with zero errors.
+  Remaining compiler warnings are the pre-existing private structural-walk fact
+  type and unused observation methods; this is not a warning-free claim.
+- The public export required its stable rustdoc and governed facade inventory.
+  The supported snapshot updater passed in 369.00s and changed exactly one
+  export line in `tools/boundary-check/snapshots/facades.toml`; no doc-debt waiver
+  was added. Subsequent normal boundary-check passed in 381.44s and agent-context
+  in 0.69s on the final code/snapshot state. These fresh normal gates supersede
+  the earlier build3 carry approved for the private shape/fixture-only change.
+  The reviewer accepted the prior runtime results across this static export,
+  visibility, import, annotation and documentation-only delta; no additional
+  runtime suite was run.
+
+Earlier failed attempts are retained as diagnostic evidence. Query build1 was
+stopped after a child test-module path error; build2 exposed fixture imports,
+visibility, projection bounds and borrowed-plan lifetime errors. Build3 compiled
+successfully but its runtime batch exposed the same-kind admission defect
+recorded above. None of those failures is counted as passing verification.
+
+The persistent reviewer granted final qa-loop, qa-tests and code-quality-qa
+commit clearance after inspecting the corrected currentness result, accumulated
+runtime evidence, final static checks and exact evidence carry. Slice 5b is complete.
+Phase 3 remains open for topology-entry and private `basis/thread::live` reader
+cutovers, adoption and phase closeout. No default-branch merge or private SDK
+pin update is claimed by this slice.

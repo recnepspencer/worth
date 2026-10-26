@@ -25,7 +25,7 @@ fn path_input_v32_roundtrips_identity_and_reverse_paths_and_cannot_fully_downgra
                         "Parent".into(),
                         "Row".into(),
                         Direction::Reverse,
-                    )]
+                     worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
                 },
                 guards: vec![],
             }),

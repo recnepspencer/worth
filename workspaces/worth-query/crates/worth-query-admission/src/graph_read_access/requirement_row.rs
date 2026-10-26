@@ -85,6 +85,7 @@ impl WorthQueryGraphReadAccessRequirementRow {
         self.relation_direction.as_ref()
     }
 
+    /// Authored planning metadata. CompleteClosure is never limited by this ordinal.
     pub fn relation_depth(&self) -> Option<usize> {
         self.relation_depth
     }

@@ -6,16 +6,24 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
+mod dependencies;
+pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
+mod commitment;
+mod equivalence;
 mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
 mod read;
+mod verification;
+pub(in crate::domain_computation::primary_graph) use equivalence::StructuralWalkEquivalence;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;
 pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
+pub(in crate::domain_computation::primary_graph) use verification::StructuralWalkVerification;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
+    commitment: [u8; 32],
     snapshot: SnapshotHandle,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -27,6 +35,9 @@ impl StructuralWalkObservation {
         mut poll: impl FnMut() -> Result<(), E>,
     ) -> Result<bool, E> {
         poll()?;
+        if self.commitment != other.commitment {
+            return Ok(false);
+        }
         let (a, b) = (self.key(), other.key());
         if a.relation() != b.relation()
             || a.entity_kind() != b.entity_kind()
@@ -65,6 +76,9 @@ impl StructuralWalkObservation {
     pub(in crate::domain_computation::primary_graph) fn native(&self) -> &PinnedStructuralWalk {
         &self.native
     }
+    pub(in crate::domain_computation::primary_graph) fn commitment(&self) -> [u8; 32] {
+        self.commitment
+    }
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.snapshot
     }
@@ -81,7 +95,8 @@ impl StructuralWalkObservation {
 }
 impl PartialEq for StructuralWalkObservation {
     fn eq(&self, other: &Self) -> bool {
-        self.query == other.query
+        self.commitment == other.commitment
+            && self.query == other.query
             && self.native.visits() == other.native.visits()
             && self.native.relations() == other.native.relations()
     }

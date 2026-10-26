@@ -90,8 +90,10 @@ impl WorthQueryGraphReadComplexityContract {
         index_bytes: usize,
         result_bytes: usize,
         intermediate_set_size: usize,
+        complete_traversal: bool,
     ) -> Self {
-        let kind = if index_bytes > DEFAULT_INLINE_EPHEMERAL_INDEX_BYTES
+        let kind = if complete_traversal
+            || index_bytes > DEFAULT_INLINE_EPHEMERAL_INDEX_BYTES
             || result_bytes > DEFAULT_INLINE_EPHEMERAL_RESULT_BYTES
             || intermediate_set_size > DEFAULT_BROAD_TRAVERSAL_INTERMEDIATE_SET_SIZE
         {

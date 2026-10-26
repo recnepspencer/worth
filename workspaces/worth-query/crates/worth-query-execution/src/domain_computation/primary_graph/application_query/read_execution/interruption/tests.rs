@@ -167,3 +167,5 @@ fn deadline_is_checked_at_kernel_safe_points() {
         super::WorthQueryApplicationReadExecutionDenialKind::DeadlineExceeded
     );
 }
+
+mod closure;

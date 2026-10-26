@@ -9,8 +9,12 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 
+mod closure;
 mod evidence;
+mod guards;
 mod path_union;
+mod source_allocation;
+mod step_reads;
 
 use evidence::RootPathSourceBuilder;
 
@@ -31,6 +35,11 @@ pub(super) struct BoundedRootSelection {
     pub(super) work_units: usize,
     pub(super) predicate_index_generation: Option<DerivedIndexGenerationId>,
     pub(super) reads: WorthQueryInvariantProjectionWork,
+    pub(super) root_path_steps:
+        Option<std::sync::Arc<super::super::access_receipt::RootPathReadEvidence>>,
+    // Last: every candidate/root map drops before its original metadata grant.
+    pub(super) _source_allocation:
+        Option<std::sync::Arc<super::super::observed_source::RootPathAllocation>>,
 }
 
 mod work;
@@ -69,8 +78,8 @@ pub(super) fn select_bounded_roots(
             }
             let result_set_source = if capture_result_set {
                 let mut source = RootPathSourceBuilder::default();
-                source.observe_entity(plan.root);
-                Some(source.finish()?)
+                source.observe_entity(execution, plan.root)?;
+                Some(source.finish(execution)?)
             } else {
                 None
             };
@@ -84,6 +93,8 @@ pub(super) fn select_bounded_roots(
                 work_units: 1,
                 predicate_index_generation: None,
                 reads: WorthQueryInvariantProjectionWork::default(),
+                root_path_steps: None,
+                _source_allocation: None,
             })
         }
         [predicate] => select_scoped_root(
@@ -164,7 +175,7 @@ fn select_scoped_root(
     // Observe both matching and filtered subjects: a later guard change can
     // change row presence even when the current result is empty.
     let observed = {
-        set_source.observe_entity(plan.root);
+        set_source.observe_entity(execution, plan.root)?;
         set_source.observe_guard_field(
             execution,
             &projection,
@@ -198,7 +209,7 @@ fn select_scoped_root(
     let scoped = lookup.into_matching_entity_ids().into_iter().next();
     let selected_predicate_source = scoped.map(|_| observed);
     let result_set_source = capture_result_set
-        .then(|| set_source.finish())
+        .then(|| set_source.finish(execution))
         .transpose()?;
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),
@@ -210,5 +221,7 @@ fn select_scoped_root(
         work_units: work.work_units,
         predicate_index_generation: None,
         reads: work.reads,
+        root_path_steps: work.take_steps(),
+        _source_allocation: work.source_allocation.clone(),
     })
 }

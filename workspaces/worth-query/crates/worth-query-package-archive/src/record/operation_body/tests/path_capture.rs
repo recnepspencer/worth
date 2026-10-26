@@ -29,7 +29,7 @@ fn capture(identity_path: bool) -> ApplicationOperationBodyCreatedField {
                         "Lot".into(),
                         "Row".into(),
                         Direction::Reverse,
-                    )]
+                     worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)]
                 },
             }),
             field: ApplicationFieldBindingLocus::new(entity, "Facts", "Comment"),

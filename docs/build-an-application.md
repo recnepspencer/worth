@@ -5294,3 +5294,8 @@ work. A subsequent advancement uses a fresh authorized request; explicit finite
 step controls preserve their limit. Keep original unpublished-idempotency and
 branch-commit owners through recovery and cleanup, then release their backing
 when their obligations are complete.
+
+Declared query roots can traverse complete endorelation reachability with
+`ApplicationQueryRootPath::forward_closure` and `reverse_closure`, composed with
+ordinary hops and guards. See [declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md)
+for reflexive selection, source currentness and per-step receipt observations.

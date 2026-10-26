@@ -22,6 +22,8 @@ pub struct PinnedStructuralWalkScope<'input> {
     relation_kind: KindId,
     direction: RelationDirection,
     maximum_work: Option<usize>,
+    control:
+        Option<&'input dyn Fn() -> Result<(), crate::execution::RelationalExecutionDenialCause>>,
     #[cfg(test)]
     observer: Option<&'input dyn Fn(PinnedWalkEventForTest)>,
 }
@@ -39,6 +41,7 @@ impl<'input> PinnedStructuralWalkScope<'input> {
             relation_kind,
             direction,
             maximum_work: None,
+            control: None,
             #[cfg(test)]
             observer: None,
         }
@@ -47,6 +50,16 @@ impl<'input> PinnedStructuralWalkScope<'input> {
     /// An optional caller read limit, independent of observations and request work.
     pub fn with_work_limit(mut self, maximum: Option<usize>) -> Self {
         self.maximum_work = maximum;
+        self
+    }
+
+    /// Borrow an additional caller refusal checkpoint. It can only narrow the
+    /// original request's controls; it supplies no execution or success authority.
+    pub fn with_control(
+        mut self,
+        control: &'input dyn Fn() -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Self {
+        self.control = Some(control);
         self
     }
 
@@ -100,7 +113,16 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             )
         });
         match result {
-            Ok((Ok(walk), _physical)) => Ok(walk),
+            Ok((Ok(walk), _physical)) => {
+                if let Some(control) = scope.control {
+                    control().map_err(|cause| PinnedStructuralWalkDenial {
+                        kind: PinnedStructuralWalkDenialKind::Read(cause),
+                        reads,
+                        work,
+                    })?;
+                }
+                Ok(walk)
+            }
             Ok((Err(kind), _physical)) => Err(PinnedStructuralWalkDenial { kind, reads, work }),
             Err(stop) => Err(PinnedStructuralWalkDenial {
                 kind: PinnedStructuralWalkDenialKind::Read(

@@ -179,6 +179,7 @@ fn planning_relation<'a>(
     let traversal = validated.query().traversal().get(index)?;
     Some(WorthQueryReadGraphRelationView {
         relation: traversal.relation_name().as_str(),
+        complete_closure: false,
         direction: relation_direction(operators),
         cardinality: ApplicationQueryCardinality::Many,
         depth: usize::from(traversal.depth()),

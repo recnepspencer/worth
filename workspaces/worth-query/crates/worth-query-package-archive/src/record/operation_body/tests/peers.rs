@@ -24,7 +24,7 @@ fn v38_preserves_independent_root_and_existing_anchor_without_changing_old_profi
                     "Parent".into(),
                     "Row".into(),
                     RelationDirection::Reverse,
-                )],
+                 worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop,)],
                 guards: vec![],
             },
         ),

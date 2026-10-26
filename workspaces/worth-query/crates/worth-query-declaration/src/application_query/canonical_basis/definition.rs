@@ -43,6 +43,11 @@ fn append_root_paths(
         ]);
         for (step_index, step) in root_path.steps().iter().enumerate() {
             let step_path = format!("{path}.step[{step_index}]");
+            if step.traversal()
+                == crate::application_query::ApplicationQueryRootPathTraversal::Closure
+            {
+                entries.push(text(format!("{step_path}.traversal"), "closure"));
+            }
             entries.extend([
                 text(format!("{step_path}.relation"), step.relation()),
                 text(format!("{step_path}.from"), step.from()),

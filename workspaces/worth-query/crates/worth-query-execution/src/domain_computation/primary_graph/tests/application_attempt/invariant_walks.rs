@@ -2,6 +2,7 @@
 mod api;
 mod branch;
 mod decision_walks;
+pub(in crate::domain_computation::primary_graph) mod declared_queries;
 mod footprint;
 mod locality;
 mod observation;

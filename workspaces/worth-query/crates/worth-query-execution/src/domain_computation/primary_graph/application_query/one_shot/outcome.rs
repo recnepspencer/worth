@@ -119,18 +119,49 @@ where
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
+    let mut source_comparisons = crate::domain_computation::primary_graph::structural_walk::StructuralWalkEquivalence::default();
+    let source_control = || {
+        match request.interruption() {
+        None => Ok(()),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::Cancelled) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled),
+        Some(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption::DeadlineExceeded) => Err(worth_relational::facade::transactions::RelationalExecutionDenialCause::DeadlineElapsed),
+    }
+    };
+    let mut compare_source =
+        |left: &super::super::observed_source::WorthQueryObservedSourceFootprint,
+         right: &super::super::observed_source::WorthQueryObservedSourceFootprint| {
+            super::super::observed_source::comparison::equal(
+                left,
+                right,
+                &mut source_comparisons,
+                execution,
+                &source_control,
+            )
+            .map_err(|cause| {
+                super::map_authorized_read_denial(
+                    super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial::Read(
+                        super::super::read_execution::relational_read_denial(
+                            cause,
+                            plan.query.name(),
+                        ),
+                    ),
+                    plan.query.name(),
+                )
+            })
+        };
     let mut observed_sources = Vec::with_capacity(source_footprints.len());
     for footprint in source_footprints {
         admit_request(request, plan.query.name())?;
         let selection = basis_identity.selection().clone();
         let source_meaning = application
             .source_meanings
-            .intern(
+            .intern_compared(
                 plan.query.identity().as_bytes(),
                 parameter_binding_identity.bytes(),
                 footprint,
                 &selection,
-            )
+                &mut compare_source,
+            )?
             .ok_or_else(|| {
                 denial(
                     WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,
@@ -157,12 +188,13 @@ where
     }
     let result_set_meaning = application
         .source_meanings
-        .intern_result_set(
+        .intern_result_set_compared(
             plan.query.identity().as_bytes(),
             parameter_binding_identity.bytes(),
             result_set_footprint,
             basis_identity.selection(),
-        )
+            &mut compare_source,
+        )?
         .ok_or_else(|| {
             denial(
                 WorthQueryApplicationOneShotDenialKind::SourceIdentityExhausted,

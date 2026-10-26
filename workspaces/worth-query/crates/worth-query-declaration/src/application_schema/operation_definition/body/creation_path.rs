@@ -36,9 +36,23 @@ impl ApplicationOperationBodyCreationPathLink {
             part(step.relation());
             part(step.from());
             part(step.to());
-            part(match step.direction() {
-                crate::application_query::RelationDirection::Forward => "forward",
-                crate::application_query::RelationDirection::Reverse => "reverse",
+            part(match (step.traversal(), step.direction()) {
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
+                    crate::application_query::RelationDirection::Forward,
+                ) => "forward",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
+                    crate::application_query::RelationDirection::Reverse,
+                ) => "reverse",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
+                    crate::application_query::RelationDirection::Forward,
+                ) => "forward-closure",
+                (
+                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
+                    crate::application_query::RelationDirection::Reverse,
+                ) => "reverse-closure",
             });
         }
         part(&self.link.canonical_record());

@@ -90,7 +90,8 @@ impl<Schema: ApplicationSchema, Operation>
         execution: &QueryRequestExecution<'_>,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<Option<PreparedBodySelection<Schema>>, HandlerExecutionDenial> {
-        if !path.guards().is_empty() || root.entity.as_ref() != path.start_entity() {
+        if !path.guards().is_empty() || root.entity.as_ref() != path.start_entity()
+            || path.steps().iter().any(|step| step.traversal() != worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::OneHop) {
             return Err(HandlerExecutionDenial::new(Denial::new(
                 Kind::MissingAuthoritativeFact,
                 path.start_entity(),

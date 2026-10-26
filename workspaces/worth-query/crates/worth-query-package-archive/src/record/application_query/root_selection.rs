@@ -1,6 +1,7 @@
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathGuard, ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep,
-    RelationDirection, WorthQueryPortableApplicationQueryRootPathGuardParts,
+    ApplicationQueryRootPathTraversal as Traversal, RelationDirection,
+    WorthQueryPortableApplicationQueryRootPathGuardParts,
     WorthQueryPortableApplicationQueryRootPathParts,
 };
 
@@ -53,22 +54,26 @@ fn write_step(
     output.text(step.relation())?;
     output.text(step.from())?;
     output.text(step.to())?;
-    output.u16(match step.direction() {
-        RelationDirection::Forward => 1,
-        RelationDirection::Reverse => 2,
+    output.u16(match (step.traversal(), step.direction()) {
+        (Traversal::OneHop, RelationDirection::Forward) => 1,
+        (Traversal::OneHop, RelationDirection::Reverse) => 2,
+        (Traversal::Closure, RelationDirection::Forward) => 3,
+        (Traversal::Closure, RelationDirection::Reverse) => 4,
     })
 }
 fn decode_step(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathStep, Denial> {
     let relation = input.text()?.to_owned();
     let from = input.text()?.to_owned();
     let to = input.text()?.to_owned();
-    let direction = match input.u16()? {
-        1 => RelationDirection::Forward,
-        2 => RelationDirection::Reverse,
+    let (traversal, direction) = match input.u16()? {
+        1 => (Traversal::OneHop, RelationDirection::Forward),
+        2 => (Traversal::OneHop, RelationDirection::Reverse),
+        3 => (Traversal::Closure, RelationDirection::Forward),
+        4 => (Traversal::Closure, RelationDirection::Reverse),
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     Ok(ApplicationQueryRootPathStep::from_untrusted_fields(
-        relation, from, to, direction,
+        relation, from, to, direction, traversal,
     ))
 }
 
@@ -97,3 +102,6 @@ fn decode_guard(input: &mut BinaryInput<'_>) -> Result<ApplicationQueryRootPathG
         },
     ))
 }
+
+#[cfg(test)]
+mod tests;
