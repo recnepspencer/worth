@@ -5748,9 +5748,7 @@ milestone, as defined by the governing 9.18 specification.
 
 **Progress, 2026-10-26:** Phases 1–3 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
-query closure steps and qualified Proprietary history-reader adoption. The
-[Phase 3 closeout](milestone-9.18.1-implementation.md#phase-3-closeout) records
-owner-specific evidence, merged consumer qualification and integration status.
+query closure steps and qualified Proprietary history-reader adoption.
 Phases 4–6 remain unfinished; orbit relations and persistent aggregate identity
 are next.
 

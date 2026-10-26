@@ -1,7 +1,6 @@
 # Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
 
 > **Status:** Phases 1–3 accepted on 2026-10-26; Phases 4–6 remain unfinished.
-> [Phase 3 acceptance and integration record](milestone-9.18.1-implementation.md#phase-3-closeout).
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -127,8 +126,7 @@ example.
 **Depends on:** nothing.
 
 **Accepted.** The common actual-read surface, compiled planar differential,
-public facade and guide, and Proprietary SDK adoption are verified. See the
-[Phase 1 closeout evidence](milestone-9.18.1-implementation.md#phase-1-closeout).
+public facade and guide, and Proprietary SDK adoption are verified.
 
 ### Requirements
 
