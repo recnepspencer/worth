@@ -1,6 +1,5 @@
 use super::*;
 use worth_query_declaration::facade::application_query::*;
-use worth_query_declaration::facade::application_schema::*;
 
 worth_query_declaration::worth_query_application_query!(
     pub(super) HistoryQuery for MutationSchema, identity "fixture.history.v1",

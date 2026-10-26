@@ -187,7 +187,9 @@ mod tests {
                 Stage::ProviderCommit,
                 "commit request executor stopped",
             );
-            let commit = crate::domain_computation::primary_graph::application_contribution::producer::execution::commit_receipt("producer", Outcome::Denied(commit)).err().expect("native commit stopped");
+            let Err(commit) = crate::domain_computation::primary_graph::application_contribution::producer::execution::commit_receipt("producer", Outcome::Denied(commit)) else {
+                panic!("native commit unexpectedly succeeded");
+            };
             assert_eq!(source.kind(), expected);
             assert_eq!(commit.kind(), expected);
             assert_eq!(
