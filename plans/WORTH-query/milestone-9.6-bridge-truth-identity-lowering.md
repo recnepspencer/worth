@@ -202,6 +202,15 @@ by manual scan.
 
 **Phase 1A closeout system**
 
+This section records the original identity hard-break planning contract.
+Relational's three Phase 1 catalogs were retired by
+[9.18.1 Phase 11](milestone-9.18.1.md#phase-11-batched-obsolete-catalog-and-facade-cleanup):
+their string inventories and proposed fixture paths are not current identity
+authority or executed tests. Use the
+[current Relational source-identity contract](../../crates/worth-relational/API_OVERVIEW.md#exact-source-identity-and-receipt-authority)
+for actual selection, receipt issuance and the surviving authority/kind types.
+The table below retains the historical plan's terminology for its other owners.
+
 Phase 1 is complete only when the authority design exists in four coordinated
 manifests, not as scattered marker names:
 

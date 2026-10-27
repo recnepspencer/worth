@@ -5758,9 +5758,11 @@ source commit identity, application managed async resources, receipt-rooted caus
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
 Phase 7 is accepted: the existing World/Bridge request route binds the actual
 native source commit, refuses empty sources before Signal admission and preserves
-request custody through completion and revalidation. Phases 8–11 remain unfinished;
-the application resource endpoint is Phase 8. These additions do not reopen the
-original phases.
+request custody through completion and revalidation. Phase 11 is accepted: the
+three obsolete Relational planning catalogs and three hidden Bridge facade aliases
+are removed, preserving actual identity issuance and the standalone root facade.
+Phases 8–10 remain unfinished; the application resource endpoint is Phase 8.
+These additions do not reopen the original phases.
 
 ### Goal
 

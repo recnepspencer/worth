@@ -96,6 +96,20 @@ The Bridge carries Query-installed semantic correspondence. It reads this
 publication through `facade::change_source`, which checks the publication
 before minting a change receipt.
 
+#### Exact source identity and receipt authority
+
+Use `facade::change_source` to retain the actual admitted observation, select
+an exact or reachable native commit, and consume that `RelationalSelectedCommit`
+with `mint_change_receipt`. The runtime that selected the commit must mint the
+receipt; descriptive identifiers cannot recreate that authority. Read the
+[source contract](src/facade/change_source.rs) for the executable entry sequence.
+
+`facade::identity_authority` retains the concrete authority-category and family
+kind types. The former Phase 1 family, root-break and future-test catalogs have
+been removed: they were planning inventories, not issuance or executed compiler
+proofs. Actual selection, receipt issuance and existing compile-boundary tests
+remain their authorities.
+
 ### Past truth
 
 - `runtime.history()`
