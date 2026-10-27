@@ -31,15 +31,16 @@ pub use crate::basis::AdmittedCompositeRuntimeWorldBasis;
 pub use crate::branch::{
     ComponentBranchTarget, CurrentProductHead, CustodyComponent, NoEffectRuntimeWorldBootstrap,
     OwnerCreatedComponentCustodyRecord, OwnerRetirementWork, PerformedRuntimeWorldBootstrap,
-    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
-    ProductBranchCreationIntent, ProductBranchCreationPlans, ProductBranchCurrentnessFailure,
-    ProductBranchHistoryTraversal, ProductBranchName, ProductBranchNameDenial,
-    ProductBranchObservation, ProductBranchObservationMismatch,
+    PreparedProductExactHistoryPage, ProductBranchAncestorSelection,
+    ProductBranchAncestorSelectionDenial, ProductBranchCreationIntent, ProductBranchCreationPlans,
+    ProductBranchCurrentnessFailure, ProductBranchHistoryTraversal, ProductBranchName,
+    ProductBranchNameDenial, ProductBranchObservation, ProductBranchObservationMismatch,
     ProductBranchObservationMismatchAxis, ProductBranchReferenceSnapshot,
-    ProductBranchRetirementReport, RecoveredRuntimeWorldRootAuthority,
-    RelationalBranchCreationPlan, RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause,
-    RuntimeWorldBootstrapOutcome, RuntimeWorldBranchAdmissionDenial,
-    RuntimeWorldBranchRetirementDenial, SignalBranchCreationPlan,
+    ProductBranchRetirementReport, ProductExactHistoryCursor, ProductExactHistoryDenial,
+    ProductExactHistoryPage, RecoveredRuntimeWorldRootAuthority, RelationalBranchCreationPlan,
+    RuntimeWorldBootstrapIntent, RuntimeWorldBootstrapNoEffectCause, RuntimeWorldBootstrapOutcome,
+    RuntimeWorldBranchAdmissionDenial, RuntimeWorldBranchRetirementDenial,
+    SignalBranchCreationPlan,
 };
 
 pub use crate::budget::{

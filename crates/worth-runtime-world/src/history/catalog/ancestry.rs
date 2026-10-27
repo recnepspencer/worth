@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::history::retention::CompositeHistoryProtectionObligation;
 use crate::identity::CompositeCommitIdentity;
 
-use super::support::{effective_parent, lock_state, validate_owner};
+use super::support::{lock_state, validate_owner};
 use super::traversal::{protect_installed, HistoryTraversalControl};
 use super::{CompositeHistoryCatalog, CompositeHistoryCatalogDenial, CompositeRuntimeWorldCommit};
 
@@ -47,6 +47,7 @@ pub enum CompositeAncestorSelectionDenial {
     NotAncestor,
     SelectionLimitReached,
     RetiredHistoryGap,
+    Allocation(worth_execution::ExecutionAllocationDenial),
     Catalog(CompositeHistoryCatalogDenial),
 }
 
@@ -111,9 +112,12 @@ impl CompositeHistoryCatalog {
             visited = visited
                 .checked_add(1)
                 .ok_or(CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
-            current = effective_parent(&state, entry.commit())
-                .map(|(parent, _)| parent)
-                .ok_or(CompositeAncestorSelectionDenial::NotAncestor)?;
+            current = match entry.commit().parent() {
+                crate::history::CompositeCommitParent::Ordinary(parent) => parent.commit().clone(),
+                crate::history::CompositeCommitParent::Root => {
+                    return Err(CompositeAncestorSelectionDenial::NotAncestor)
+                }
+            };
         }
     }
 }

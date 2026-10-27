@@ -105,6 +105,11 @@ pub mod history {
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
+        RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
+        RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
+        RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+    };
+    pub use crate::history::{
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
         RelationalCommitCatalogEntry, RelationalCommitIdentity, RelationalCommitParentage,
         RelationalCommitParentageDenial, RelationalCommitRootDescriptor,

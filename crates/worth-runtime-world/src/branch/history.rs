@@ -1,6 +1,11 @@
 use std::sync::Arc;
 mod ancestor;
+mod exact_cursor;
 pub use ancestor::{ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial};
+pub use exact_cursor::{
+    PreparedProductExactHistoryPage, ProductExactHistoryCursor, ProductExactHistoryDenial,
+    ProductExactHistoryPage,
+};
 
 use crate::history::{CompositeHistoryTraversal, CompositeRuntimeWorldCommit};
 use crate::identity::{

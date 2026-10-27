@@ -119,6 +119,44 @@ remain their authorities.
 These are canonical history, maintenance, and reconstruction lanes. They are
 not alternate branch-head selection or publication doors.
 
+### Bounded record and aspect history
+
+Native consumers import the page types from `facade::history` and use the
+runtime's `retain_record_history_subject(execution, &basis, record)` to resolve
+an exact entity or relation generation in a genuinely admitted root. Retained
+tombstones are valid subjects; zero-generation wildcards, unavailable subjects
+and foreign owners are refused. The subject retains that original observation.
+
+Select a commit with `select_exact_commit`, then pass the sealed selection,
+retained subjects and selected aspect keys to
+`record_aspect_history_cursor(execution, selected, &subjects, &aspects)`.
+The selected commit is independent of each subject's original observation, so a
+composition owner can inspect older component commits without substituting the
+subject's provenance. The native cursor establishes no World product ancestry
+or application disclosure permission.
+
+`next_page(&runtime, execution, limits)` bounds entries, canonical record-patch
+visits and newly owned page backing. It can stop inside a large commit or return
+an empty incomplete page. Only selected keys are exposed; structural occurrences
+remain observable even when no selected aspect changed. A retained native
+`Updated` record with no canonical aspect operations also remains an occurrence,
+including retained equal-value writes. Its changed-aspect list is empty: the
+canonical source no longer attributes it to any authored aspect, so no selected
+aspect is claimed to have changed. Nonempty unrelated-aspect patches stay
+filtered. The immutable canonical envelope stays shared and
+retained; its existing storage is not covered by the new-page byte limit.
+Cancellation, deadline, allocation and owner refusals leave the accepted position
+unchanged. A composition owner can use `prepare_next_page` to stage native work,
+then `accept_page` after fresh authorization/disclosure. It returns the page and
+a sealed successor cursor while leaving the original unchanged. Install the
+aggregate continuation only after the composition's final original-request
+handoff; dropping a prepared page or uninstalled successor declines advancement.
+Acceptance rejects another cursor's proof or a stale position and uses its stored
+originating request at handoff. Drop the
+cursor, subjects and returned entries/pages to release their
+native retention leases and charged backing. The older eager branch-wide history
+selectors retain their existing contract.
+
 ## Contained real lanes
 
 These are real public capabilities, but not the default first-contact story:

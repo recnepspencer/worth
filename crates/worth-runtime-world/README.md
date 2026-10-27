@@ -57,6 +57,27 @@ World close does not close component owners.
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
+## Exact retained product history
+
+`observation_port().open_exact_product_history(execution, &observation)` retains
+that genuine product occurrence. `prepare_exact_product_history_page` follows
+one authoritative parent step and retains its exact component bases, including
+inherited fork ancestry. It reads no current head or reconstructed historical
+branch generation. Missing/retired raw parents return a typed history gap;
+retirement splices remain confined to the older inspection traversal.
+
+Accept the prepared page through its originating cursor to receive `(page,
+successor)` under the stored original request. The original cursor stays intact
+until the composition owner installs the complete successor state. Drop a staged
+page or uninstalled successor to decline advancement. Opening performs one catalog
+admission; each page inspects one product-parent step with constant additional
+position storage. Pages, cursors and their pinned source observations release
+their genuine history/component custody on drop. Component publication evidence
+distinguishes new native changes from `RetainExact` reuse; this owner does not
+invent a native event for every product occurrence. See the
+[exact history courts](tests/runtime_world_certification/court/exact_history.rs).
+The declared application history query and fresh disclosure remain Phase 10 work.
+
 ## Owned async source binding
 
 `RuntimeWorldOwner::admit_owned_async_request` first checks the World owner and
