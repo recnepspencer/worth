@@ -5775,12 +5775,12 @@ with finite provider/ingress/result custody and genuine owned-effect recovery.
 Its combined workflow qualifies populated forks, burned prepared adoptions and
 sibling publications against the actual Native source. Phase 9 remains unfinished.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
-report against SDK `ba86433627` adds required Phases 12–18: retained spatial
-range reads for preparation and candidate validation, honest compiler and
-unobserved-write refusals, large-body invariant locality, cell-version/live-at-k
-qualification, fresh ordinary proposal acceptance, and mandatory Rust 1.99.x
-qualification with adoption of the current qualified stable toolchain. All
-eighteen phases are required; the report's pin is provenance, not a pin update.
+report against SDK `ba86433627` adds compiler and unobserved-write refusals,
+cell-version/live-at-k qualification, fresh ordinary proposal acceptance and
+mandatory current Rust qualification. Index implementation and its dependent CAD
+locality findings (numbers 12 and 15) are transferred, not completed, to 9.19.
+Sixteen implementation phases remain required in 9.18.1, preserving the other
+numbers; the report's pin is provenance, not a pin update.
 
 ### Goal
 
@@ -5793,9 +5793,10 @@ source identity, expose bounded native record/aspect history, and remove the two
 identified obsolete catalog/alias surfaces in one cleanup batch. All of it is
 domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
-The Proprietary follow-through adds basis-bound spatial range reads, honest
-failure causes, demonstrated cell/invariant locality and storage cost, fresh
-proposal acceptance, and qualification on the current stable Rust toolchain.
+The retained Proprietary follow-through adds honest failure causes, measured
+cell-version/history cost, fresh proposal acceptance and current stable Rust
+qualification. The general index extension and spatial-dependent locality are
+governed by 9.19 with its final integrated private cutover.
 
 ### Specification
 
@@ -5825,12 +5826,10 @@ The governing milestone spec is
 - one cleanup batch deleting the three stale Relational identity catalogs and
   Bridge's unused `everyday`, `advanced` and `specialist` facade aliases; surviving
   identity authority and standalone Bridge APIs remain supported
-- one retained spatial range view available on the committed preparation basis
-  and candidate invariant basis, maintained from changes and published atomically
 - typed compiler-qualification and unobserved-field-write causes preserved to
   ordinary callers instead of accounting overflow or cause-erased rejection
-- real CAD locality at 50,000 faces and cell-version/storage/live-at-k evidence
-  at 1, 100 and 10,000 features, without private platform workarounds
+- cell-version/storage/live-at-k evidence at 1, 100 and 10,000 features, without
+  private platform workarounds; spatial-dependent locality is required in 9.19
 - proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
 - mandatory exact-release Rust 1.99.x sort qualification and current qualified
   stable workspace/CI/Proprietary toolchains
@@ -5853,12 +5852,8 @@ The eager-scan/truncate and branch-version-as-commit mutants must fail the dispu
 assertions. Exact caller/export inventory qualifies the single cleanup batch.
 Reuse existing grouped targets; a spec-only revision checks links and path claims.
 
-The added Proprietary courts compare 1,000/2,000-vertex local edits in both
-spatial readers, reject new non-incident contact without changing committed
-truth or index state, and discover only touched pairs beside 50,000 unrelated
-faces. Independent references expose stale roots, absent-range dependency loss
-and global rebuilds. Installed write and compiler probes preserve their exact
-causes; proposal acceptance refuses revoked/stale authority through ordinary
+The retained installed write and compiler probes preserve their exact causes;
+proposal acceptance refuses revoked/stale authority through ordinary
 admission. Exact official Rust release/commit qualification preserves canonical
 ordering, work/storage bounds and versioned digest meaning; adding an allowlist
 entry or retaining Rust 1.98 alone cannot satisfy this milestone.
@@ -5868,15 +5863,19 @@ without delaying the original graph dependencies. Existing 9.4 async and older
 causal-inspection implementations move into the split owners; they are not rebuilt
 as parallel engines. 9.18 keeps correction/pre-image authority, 9.21 keeps new
 decision attachments/summaries, and Store-backed archives/restart remain successor
-work. All eighteen phases must close before 9.18.1 closes.
+work. All sixteen retained implementation phases must close before 9.18.1 closes;
+the index/locality transfer references do not require completion of 9.19 first.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 
 ### Goal
 
-Add installed-query-bound managed search and access products, complete positive
-and negative membership, exact refinement, and verified realized footprints
-through the existing Milestone 9.10 and 9.16 authority paths.
+Let applications install their own typed managed indexes and access providers
+through the existing 9.10/9.16 authority paths. Query owns exact-basis lifecycle,
+candidate staging, dependency routing and verified footprints; providers own
+their data structures and algorithms. Geometry boxes and nonspatial name-prefix
+queries must use the same extension. Real CAD adoption follows public qualification
+in one final cutover, rather than a private SDK refactor after each phase.
 
 ### Specification
 
@@ -5885,19 +5884,33 @@ The governing milestone spec is
 
 ### Must Ship
 
-- provider-backed access-product lifecycle with honest memory and work evidence
-- typed search and spatial strategies bound to the existing graph-read plan
+- one general declared/installed provider extension with honest memory/work
+  evidence, extending the existing managed-view and graph-read owners
+- committed preparation reads and isolated candidate invariant reads, maintained
+  incrementally and published with matching graph truth
 - complete membership across insertion, deletion, motion, maintenance,
   rebuild, eviction, authorization, and disclosure change
 - verified footprints that narrow but never widen declared authority
-- bank/compliance and geometry public-facade adoption, executable docs,
-  independent full-scan/resource courts, and workaround deletion
+- local source-to-index and index-to-query dependency routing, including empty
+  results and later entrants; no scan-all-source or scan-all-query workaround
+- six self-contained required phases: provider lifecycle; incremental/candidate
+  roots; complete membership/refinement/disclosure; verified footprints; public
+  consumer/facade qualification; final Proprietary cutover and CAD acceptance
+- bank/compliance, public geometry and nonspatial provider qualification with
+  executable docs and independent full-scan/resource courts before private cutover
+- one final SDK adoption deleting displaced CAD discovery/validation paths and
+  qualifying 1,000/2,000-vertex and 50,000-face locality on the actual installation
 
 ### Acceptance Evidence
 
 Independent oracles expose incomplete candidates, protected-fact leaks,
 underreported resource work, stale lifecycle use, and lying footprints while
 alternate providers converge on canonical semantics.
+Both providers use both read contexts without provider-specific framework
+branches. Final CAD acceptance exposes stale roots, missing incident/absence
+dependencies, global scope work and refusal leaks. The transferred 9.18.1 Phase
+12/15 findings remain required here. Public phase closure does not claim private
+or milestone closure; no repeated private cutover is required in public phases.
 
 ## Milestone 9.20: Correlated Paths And Conflict-Proof Set Execution
 
