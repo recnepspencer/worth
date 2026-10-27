@@ -22,12 +22,20 @@ pub(super) fn source_generated_manifest(
         return Err(RelationalMaterializationError::SourceIsNotCompleteCreatePublication);
     }
     let mut unique = BTreeSet::new();
+    let mut selected_native_metadata = BTreeSet::new();
     let mut incident_relations = BTreeSet::new();
     for entity_id in &generated {
-        unique.insert(live_record_manifest(
+        let record = live_record_manifest(
             root,
             &crate::transactions::data::RecordRef::Entity(*entity_id),
-        )?);
+        )?;
+        let RelationalMaterializationRecord::Entity { kind_id, .. } = record else {
+            unreachable!("entity manifest requested");
+        };
+        if native_metadata.contains(&kind_id) {
+            selected_native_metadata.insert(*entity_id);
+        }
+        unique.insert(record);
         if let Some(partition) = root.partition_state(entity_id.partition_id) {
             let slot = entity_id.slot_index();
             for adjacency in [
@@ -43,12 +51,22 @@ pub(super) fn source_generated_manifest(
     }
     for relation_id in incident_relations {
         if let Some(record) = live_relation_manifest(root, relation_id)? {
-            let RelationalMaterializationRecord::Relation { kind_id, .. } = record else {
+            let RelationalMaterializationRecord::Relation {
+                kind_id,
+                source,
+                target,
+                ..
+            } = record
+            else {
                 unreachable!("relation manifest requested");
             };
-            // Native membership and lineage are truth metadata, not authored
-            // generated payload. Their owner retains them during suspension.
-            if !native_metadata.contains(&kind_id) {
+            // Authored payload suspension leaves Native metadata materialized.
+            // A Native storage owner explicitly selecting its private entity
+            // still owns the complete incident metadata closure it must restore.
+            if !native_metadata.contains(&kind_id)
+                || selected_native_metadata.contains(&source)
+                || selected_native_metadata.contains(&target)
+            {
                 unique.insert(record);
             }
         }
