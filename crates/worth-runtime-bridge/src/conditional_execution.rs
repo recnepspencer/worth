@@ -1,4 +1,5 @@
 mod authoritative_delivery;
+mod causal_observation;
 mod compatibility;
 mod contract;
 mod decision_evidence;
@@ -55,6 +56,7 @@ mod signal_port;
 mod source_projection;
 mod successor_reconstitution;
 
+pub use causal_observation::BridgeConditionalCausalObservation;
 pub use compatibility::{
     BridgeConditionalComparisonWork, BridgeConditionalContinuityDenial,
     BridgeConditionalContinuityMismatch, BridgeConditionalExecutionAffinity,

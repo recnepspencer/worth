@@ -1173,6 +1173,15 @@ Bridge/Signal/Relational evidence owners. Use Phase 8 evidence when inspecting a
 async resource; ordinary query/source inspection does not depend on Phase 8 or
 unfinished graph phases.
 
+The Native observation handoff prerequisite is implemented: output-readiness
+delivery privately retains the actual immutable Bridge/Signal observation rather
+than counters alone. Read-only custody preserves the actual invalidation backing
+and its original reservation while the unique performed receipt transfers once;
+it does not retain a snapshot reader or operational reentry core. See
+[Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
+Fresh Host admission, connected producer-chain references and the application
+inspection journey remain required below; this prerequisite does not close Phase 9.
+
 ### Requirements
 
 - A fresh application request can select an actual declared-query observation or

@@ -14,6 +14,9 @@ pub struct WorthQueryOutputReadinessDeliveryEvidence {
     slots_touched: usize,
     signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision,
     semantic_observation_reads: usize,
+    // The native owner issued this handle during the actual readiness evaluation.
+    // Counters and test fixtures cannot construct it or grant inspection access.
+    causal_observation: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
 }
 
 impl WorthQueryOutputReadinessDeliveryEvidence {
@@ -27,6 +30,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             slots_touched: 0,
             signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 0,
+            causal_observation: None,
         }
     }
 
@@ -41,6 +45,7 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             slots_touched: 0,
             signal_decision: crate::domain_computation::primary_graph::WorthQueryConditionalSignalDecision::DependencyUnchanged,
             semantic_observation_reads: 1,
+            causal_observation: None,
         }
     }
 
@@ -57,7 +62,14 @@ impl WorthQueryOutputReadinessDeliveryEvidence {
             slots_touched: delivery.map_or(0, |receipt| receipt.slots_touched()),
             signal_decision: crate::domain_computation::primary_graph::conditional_operation::classify_bridge_signal(execution),
             semantic_observation_reads: execution.semantic_observation_reads(),
+            causal_observation: Some(execution.retain_causal_observation()),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn causal_observation(
+        &self,
+    ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalCausalObservation> {
+        self.causal_observation.as_ref()
     }
 
     pub const fn producer_contact_count(&self) -> usize {

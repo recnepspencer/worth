@@ -3,6 +3,7 @@ mod decision;
 mod definition_candidate;
 #[cfg(test)]
 pub(crate) mod definition_candidate_oracle;
+mod identity;
 pub(super) use decision::{
     reserve_context, reserve_decision, reserve_reentry, DecisionReservations,
 };

@@ -25,8 +25,8 @@ pub use frontier_admission::{
     FrontierValidationDecision, InvalidationSeed, InvalidationSeedBatch,
 };
 pub use performed_receipt::{
-    InvalidationExecutionSummary, SignalInvalidationExecutionObservation,
-    SignalInvalidationExecutionReceipt,
+    InvalidationExecutionSummary, SignalInvalidationCausalObservation,
+    SignalInvalidationExecutionObservation, SignalInvalidationExecutionReceipt,
 };
 pub(crate) use plan::FrontierPlan;
 pub use plan::InvalidationPlanningEstimate;
