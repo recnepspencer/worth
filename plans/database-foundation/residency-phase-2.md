@@ -3155,3 +3155,27 @@ aborted log remains preserved and the restarted focused lane passes. World
 then finished green: 265 unit tests, 41 court tests, one doctest, 3 scheduled
 court tests ignored, and the publication example. Relational contracts finished
 green: 203 passed, 3 scheduled ignored.
+
+### Bank storage denial cutover repair
+
+Bank compilation found duplicate payload/unit StorageUnavailable variants and
+a stale tuple match against Query's unit category. Keep the Bank category as a
+unit diagnostic projection, but carry the original failure once in a dedicated
+BankCommitPreparationDenial::StorageUnavailable variant. Conversion inspects
+Query's retained typed storage cause before category adaptation, including
+execution-wrapped storage errors. Expose category and typed-cause inspection
+without adding an Option payload to every authored denial or allocating on
+refusal. HTTP estate adaptation consumes that variant through its existing
+native execution disposition. Preserve and strengthen the category test with
+all six actual typed causes and a complete Query-to-Bank conversion.
+
+The mapping file is 395 lines, so extract its exhaustive category mapping into
+`preparation_denial/application_attempt_kind.rs` before adding behavior. Add
+serde_json only as an existing-workspace dev dependency to read diagnostic
+subject data through its public serialized representation; the consumer tests
+need no native runtime construction door or additional production dependency.
+No test is deleted and no compatibility variant remains.
+
+The next strict Bank compile exposed the same stale tuple assumption in HTTP commit-denial dispatch. The direct commit StorageUnavailable retains the native evidence; a signing-observation category has no payload and continues through the explicit operator disposition. This is a downstream product match repair.
+
+Verification for this repair: `repair-bank-storage-clippy-second.log` passes strict whole-workspace/all-target clippy; `repair-bank-final-line-caps.log`, `repair-bank-final-agent-context.log` and `repair-bank-final-lock-alignment.log` pass on the dirty change. The strengthened runtime court is compiled by clippy; execution remains in the sequential bank test lane after the running Server lane.
