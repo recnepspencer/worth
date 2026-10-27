@@ -39,7 +39,6 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
     DerivedSourceUnavailable(String),
-    ProjectedMemberDomainUnavailable(String),
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
@@ -79,13 +78,6 @@ where
 {
     validate_installed_contribution_members(input.declaration.erased())
         .map_err(ApplicationSchemaCompilationDenial::Contribution)?;
-    for member in input.declaration.erased().members() {
-        if let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::ProjectedMemberDomain { definition } = member {
-            return Err(ApplicationSchemaCompilationDenial::ProjectedMemberDomainUnavailable(
-                definition.parts().domain.clone(),
-            ));
-        }
-    }
     derived_sources::validate(input.declaration.erased().members())
         .map_err(ApplicationSchemaCompilationDenial::DerivedSourceUnavailable)?;
     let binding_identity = ApplicationSchemaBindingIdentity::from_installed_parts(

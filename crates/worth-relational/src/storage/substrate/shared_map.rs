@@ -59,6 +59,24 @@ impl<K: Ord + Copy, V: Clone> SharedMap<K, V> {
         None
     }
 
+    /// Borrow the first entry at or above a key without allocating traversal
+    /// backing. The existing navigation bound covers this single AVL path.
+    pub(crate) fn lower_bound(&self, key: &K) -> Option<(&K, &V)> {
+        let mut current = self.root.as_deref();
+        let mut selected = None;
+        while let Some(node) = current {
+            match key.cmp(&node.key) {
+                std::cmp::Ordering::Less => {
+                    selected = Some((&node.key, &*node.value));
+                    current = node.left.as_deref();
+                }
+                std::cmp::Ordering::Equal => return Some((&node.key, &node.value)),
+                std::cmp::Ordering::Greater => current = node.right.as_deref(),
+            }
+        }
+        selected
+    }
+
     pub(crate) fn get_mut(&mut self, key: &K) -> Option<&mut V> {
         if !self.contains_key(key) {
             return None;

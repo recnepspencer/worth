@@ -1,5 +1,7 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
+# Logical source court observes only real closed-count retention lifecycle.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
 # Closed Resource source comparison; actual Host actions retain ordinary admission.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs
@@ -10,6 +12,7 @@ crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_cert
 crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/owned_async/wake_observation_for_test.rs
 crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
 crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
+
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_adoption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_cleanup.rs
@@ -571,3 +574,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 # 9.18: exact family/locality courts observe native owner work and selected roots.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/correction.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/locality.rs
+
+# Native inherited-accounting refusal leaves exactly the SDK-owned outer frame.
+crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs

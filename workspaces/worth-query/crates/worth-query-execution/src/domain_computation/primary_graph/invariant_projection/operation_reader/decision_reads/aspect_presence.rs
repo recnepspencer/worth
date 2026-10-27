@@ -71,7 +71,12 @@ mod tests {
         let other_entity = presence(2, "facts", "note");
         reads.record(other_aspect.clone(), DecisionReadOutcome::Observed);
         reads.record(other_entity.clone(), DecisionReadOutcome::Observed);
-        let (keys, _) = reads.into_expected().ok().unwrap();
+        let (keys, _) = reads
+            .into_expected(&worth_execution::ExecutionRequest::serial(
+                &crate::test_request_policy::serial_request(),
+            ))
+            .ok()
+            .unwrap();
         assert_eq!(
             keys.iter().cloned().collect::<BTreeSet<_>>(),
             BTreeSet::from([first, other_aspect, other_entity])

@@ -7,6 +7,9 @@ pub(crate) struct RecordSlotDirectory {
 }
 
 impl RecordSlotDirectory {
+    pub(super) fn navigation_work_bound(&self) -> usize {
+        self.physical_by_logical.navigation_work_bound()
+    }
     pub(super) fn try_occupied_entries<Stop>(
         &self,
         prepare: impl FnMut(u64, u64) -> Result<(), Stop>,

@@ -1,5 +1,6 @@
 //! Conservative coexistence bounds for the closed aggregate record grammar.
 use super::{AggregateAssignment, AggregateLineageEvent};
+use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, PartitionId, RelationId};
 use crate::transactions::data::{EntityReference, MutationIntent};
 use std::collections::{BTreeMap, BTreeSet};
@@ -36,13 +37,13 @@ pub(super) fn successor_edge() -> u64 {
     tree_entry::<(RelationId, EntityId), ()>()
 }
 pub(super) fn membership() -> u64 {
-    tree_entry::<EntityId, (RelationId, AggregateIdentity)>()
+    tree_entry::<Member, (RelationId, AggregateIdentity)>()
 }
 pub(super) fn identity_target() -> u64 {
     tree_entry::<AggregateIdentity, EntityReference>() + 64
 }
 pub(super) fn assignment_member() -> u64 {
-    tree_entry::<EntityId, AggregateIdentity>()
+    tree_entry::<Member, AggregateIdentity>()
 }
 pub(super) fn demand() -> u64 {
     tree_entry::<EntityId, ()>() + tree_entry::<RelationId, ()>() + tree_entry::<PartitionId, ()>()
@@ -53,9 +54,9 @@ pub(super) fn demands(entities: usize, relations: usize, partitions: usize) -> u
         + partitions as u64 * tree_entry::<PartitionId, ()>()
 }
 pub(super) fn transition_member() -> u64 {
-    4 * tree_entry::<EntityId, usize>()
+    4 * tree_entry::<Member, usize>()
         + 2 * tree_entry::<AggregateIdentity, ()>()
-        + 2 * tree_entry::<usize, EntityId>()
+        + 2 * tree_entry::<usize, Member>()
         + 2 * tree_entry::<AggregateLineageEvent, ()>()
         + seed()
         + vector_entry::<AggregateAssignment>()
@@ -66,7 +67,10 @@ pub(super) fn transition_member() -> u64 {
 // their locator strings, field-path backing, B-tree and boxed patch vector.
 const FIXED_KEY_CAPACITY: u64 = 64;
 pub(super) fn record_fields() -> u64 {
-    let fields = super::record::AGGREGATE_FIELDS.len() as u64;
+    scalar_fields(super::record::AGGREGATE_FIELDS.len())
+}
+pub(super) fn scalar_fields(count: usize) -> u64 {
+    let fields = count as u64;
     fields
         * (tree_entry::<AspectFieldLocator, AspectValue>()
             + vector_entry::<(AspectFieldLocator, AspectValue)>()

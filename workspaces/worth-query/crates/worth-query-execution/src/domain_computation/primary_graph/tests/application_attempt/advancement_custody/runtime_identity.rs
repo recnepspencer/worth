@@ -60,6 +60,17 @@ fn foreign_runtime_phase_refuses_query_and_commit_before_source_read() {
             a.application.with_application_advancement(&request, |phase| {
             let before = reads();
             if foreign {
+                let denied = b.application.try_reclaim_retired_storage(&phase).unwrap_err();
+                assert!(matches!(denied.stop,
+                    crate::facade::primary_graph::WorthQueryStorageRetentionStop::ForeignPhase(_)));
+                assert_eq!(denied.progress,
+                    crate::facade::primary_graph::WorthQueryStorageRetentionProgress::default());
+                assert_eq!(reads(), before, "foreign maintenance cannot contact B");
+            }
+            let maintenance = a.application.try_reclaim_retired_storage(&phase).unwrap();
+            assert!(maintenance.slots_scanned > 0, "same-owner pass reaches actual storage");
+            let before = reads();
+            if foreign {
             let denial = b_product.require_current_output_settlements(
                 &phase,
                 std::iter::empty(),

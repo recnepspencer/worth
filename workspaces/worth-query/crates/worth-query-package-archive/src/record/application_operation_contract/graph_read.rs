@@ -13,6 +13,12 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, scope: &Scope) -> Result<(), Denial> {
     match scope {
+        Scope::DerivedSource { schema, relation } => {
+            output.u16(5)?;
+            output.u16(1)?;
+            output.text(schema)?;
+            output.text(relation)
+        }
         Scope::Components { schema, definition } => {
             output.u16(4)?;
             output.text(schema)?;
@@ -57,6 +63,15 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<Scope, Denial> {
     Ok(match input.u16()? {
+        5 => {
+            if input.u16()? != 1 {
+                return Err(Denial::new(Kind::UnsupportedRecordVariant));
+            }
+            Scope::DerivedSource {
+                schema: input.text()?.to_owned(),
+                relation: input.text()?.to_owned(),
+            }
+        }
         4 => Scope::Components {
             schema: input.text()?.to_owned(),
             definition: super::super::operation_component_read::decode(input, budget)?,
@@ -87,6 +102,16 @@ pub(super) fn canonical_order(left: &Scope, right: &Scope) -> Ordering {
     rank(left)
         .cmp(&rank(right))
         .then_with(|| match (left, right) {
+            (
+                Scope::DerivedSource {
+                    schema: ls,
+                    relation: lr,
+                },
+                Scope::DerivedSource {
+                    schema: rs,
+                    relation: rr,
+                },
+            ) => (ls, lr).cmp(&(rs, rr)),
             (
                 Scope::Components {
                     schema: left_schema,
@@ -151,6 +176,7 @@ pub(super) fn canonical_order(left: &Scope, right: &Scope) -> Ordering {
 const fn rank(scope: &Scope) -> u8 {
     match scope {
         Scope::Components { .. } => 4,
+        Scope::DerivedSource { .. } => 5,
         Scope::Entity { .. } => 1,
         Scope::NativeProjection { .. } => 2,
         Scope::Relation { .. } => 3,

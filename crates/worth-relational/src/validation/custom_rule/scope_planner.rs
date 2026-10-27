@@ -260,7 +260,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
                     observation.aggregate_invocation(),
                     observation.custom_uses_suspension_source(),
                 )
-                .with_derived_source(runtime, observation, false);
+                .with_structural_source(runtime, observation, false);
         let committed_relations = StructuralRelationView::new(
             committed_state_view.clone(),
             execution,
@@ -268,7 +268,7 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             access.clone(),
         )
         .with_aggregate(observation.aggregate_invocation(), true)
-        .with_derived_source(runtime, observation, true);
+        .with_structural_source(runtime, observation, true);
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),

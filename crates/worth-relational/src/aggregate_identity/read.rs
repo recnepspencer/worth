@@ -3,11 +3,16 @@ use super::projection::AggregateProjection;
 use super::proposal::{binding_error, AggregateInvocation};
 use super::stored_read::StoredAggregateRead;
 mod census;
+mod members;
 mod port;
+use crate::graph_member::NativeMemberKey;
 use crate::identity::data::EntityId;
 use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
 use crate::validation::data::{StructuralRelationView, StructuralWalkDenialKind};
-pub use census::AggregateReadCollection;
+pub use census::{
+    AggregateCensusRead, AggregateCensusReadIdentity, AggregateReadCollection,
+    PreparedAggregateCensus,
+};
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use worth_foundational::facade::{
@@ -21,13 +26,14 @@ pub struct AggregateReadPort<'view, 'runtime> {
 }
 
 /// Why a scoped aggregate read refused. A refusal never contains a partial group.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum AggregateReadDenial {
     Budget(StructuralWalkDenialKind),
     SourceUnavailable,
     NotAggregateRelation,
     WrongMemberKind,
     PreparationRefused,
+    Derived(crate::derived_relation::DerivedRelationReadDenial),
     Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
@@ -35,8 +41,9 @@ pub enum AggregateReadDenial {
 /// Members are in canonical identity order, not successor order. This value
 /// holds the original admitted payer and contains no mutation authority.
 #[derive(Clone)]
-pub struct AggregateRead {
+pub struct AggregateRead<Member = EntityId> {
     backing: ReadBacking,
+    _member: std::marker::PhantomData<fn() -> Member>,
 }
 #[derive(Clone)]
 enum ReadBacking {
@@ -62,7 +69,14 @@ impl<'read> AggregateReadLineageEvent<'read> {
     }
 }
 
-impl AggregateRead {
+impl<Member> AggregateRead<Member> {
+    fn from_backing(backing: ReadBacking) -> Self {
+        Self {
+            backing,
+            _member: std::marker::PhantomData,
+        }
+    }
+
     pub fn definition(&self) -> AggregateDefinitionIdentity {
         match &self.backing {
             ReadBacking::Proposed {
@@ -91,27 +105,12 @@ impl AggregateRead {
             ReadBacking::Stored(stored) => stored.identity,
         }
     }
-    pub fn anchor(&self) -> EntityId {
-        *self
-            .member_set()
-            .first()
-            .expect("complete nonempty aggregate")
-    }
     pub fn len(&self) -> usize {
         self.member_set().len()
     }
     pub fn is_empty(&self) -> bool {
         false
     }
-    pub fn members(&self) -> impl ExactSizeIterator<Item = EntityId> + '_ {
-        self.member_set().iter().copied()
-    }
-
-    /// Membership in this complete owned group, without another graph read.
-    pub fn contains(&self, member: EntityId) -> bool {
-        self.member_set().contains(&member)
-    }
-
     /// Only events incident to this identity in the actual proposed transition.
     /// Committed/before-image reads contribute no new transition events.
     pub fn transition_lineage(&self) -> impl Iterator<Item = AggregateReadLineageEvent<'_>> {
@@ -138,7 +137,7 @@ impl AggregateRead {
             .map(|event| AggregateReadLineageEvent { event })
     }
 
-    fn member_set(&self) -> &BTreeSet<EntityId> {
+    fn member_set(&self) -> &BTreeSet<NativeMemberKey> {
         match &self.backing {
             ReadBacking::Proposed {
                 projection,
@@ -192,13 +191,13 @@ impl std::fmt::Display for AggregateReadDenial {
     }
 }
 impl std::error::Error for AggregateReadDenial {}
-impl std::fmt::Debug for AggregateRead {
+impl<Member> std::fmt::Debug for AggregateRead<Member> {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
             .debug_struct("AggregateRead")
             .field("definition", &self.definition())
             .field("identity", &self.identity())
-            .field("anchor", &self.anchor())
+            .field("anchor", &self.member_set().first())
             .field("members", &self.len())
             .finish_non_exhaustive()
     }

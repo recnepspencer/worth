@@ -4,6 +4,7 @@ use super::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
 use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle};
 use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
 use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
 use crate::runtime::RelationalPinnedRead;
 use crate::storage::data::RecordLifecycleState;
@@ -18,6 +19,8 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelCon
 /// no later source, decision, mutation or disclosure authority.
 pub struct PinnedDerivedRelationRead {
     data: Data,
+    steps: Vec<super::DerivedRelationWalkStep>,
+    shape: super::DerivedRelationReadShape,
     work: usize,
     _memory: Option<ExecutionMemoryReservation>,
 }
@@ -29,6 +32,12 @@ impl PinnedDerivedRelationRead {
     pub const fn work_units(&self) -> usize {
         self.work
     }
+    pub fn steps(&self) -> &[super::DerivedRelationWalkStep] {
+        &self.steps
+    }
+    pub const fn shape(&self) -> super::DerivedRelationReadShape {
+        self.shape
+    }
 }
 
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
@@ -38,15 +47,32 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         definition: &Handle,
-        root: EntityId,
+        root: impl Into<NativeMemberKey>,
+        maximum_work: Option<usize>,
+    ) -> Result<PinnedDerivedRelationRead, Denial> {
+        self.derived_source(
+            execution,
+            definition,
+            root,
+            super::DerivedRelationReadShape::Adjacency { reverse: false },
+            maximum_work,
+        )
+    }
+
+    /// Read one exact interpretation through the same registered evaluator and
+    /// physical source. Returned coordinates never issue later read authority.
+    pub fn derived_source(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        definition: &Handle,
+        root: impl Into<NativeMemberKey>,
+        shape: super::DerivedRelationReadShape,
         maximum_work: Option<usize>,
     ) -> Result<PinnedDerivedRelationRead, Denial> {
         execution
             .check_live()
             .map_err(|cause| Denial::Request(cause.into()))?;
-        if !self.schema().admits_derived_relation(definition) {
-            return Err(DefinitionDenial::ForeignDefinition.into());
-        }
+        let root = root.into();
         let projection = VisibilityProjectionView::from_pinned(self);
         let mut inner_denial = None;
         let result = execution.run_native_with_checkpoint(|context| {
@@ -63,10 +89,14 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
                     work: 0,
                     maximum_work,
                 };
-                let data = super::evaluation::evaluate(self.schema(), definition, root, &mut read)?;
+                super::evaluation::admit_definition(self.schema(), definition, &mut read)?;
+                let (data, steps) =
+                    super::source::acquire(self.schema(), definition, root, shape, &mut read)?;
                 read.checkpoint(0)?;
                 Ok(PinnedDerivedRelationRead {
                     data,
+                    steps,
+                    shape,
                     work: read.work,
                     _memory: read.memory,
                 })

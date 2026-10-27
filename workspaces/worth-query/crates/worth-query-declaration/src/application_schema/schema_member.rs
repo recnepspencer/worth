@@ -132,6 +132,9 @@ pub enum ApplicationSchemaMember {
     ComponentSet {
         definition: super::ApplicationComponentSetMeaning,
     },
+    DerivedComponentSet {
+        definition: super::ApplicationDerivedComponentSetMeaning,
+    },
     OperationComponentRead {
         definition: super::ApplicationOperationComponentReadMeaning,
     },

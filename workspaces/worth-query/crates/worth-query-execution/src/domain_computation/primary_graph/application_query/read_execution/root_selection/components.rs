@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::{
         RootPathOrientation, RootPathReadBasis, RootPathSelection, RootPathSelectionRequest,
     },
     schema_layout::ComponentSetLayout,
-    source_facts::{SourceFacts, SourceFactsBuilder},
+    source_facts::{SourceFacts, SourceFactsAllocation, SourceFactsBuilder},
 };
 use std::{collections::BTreeMap, sync::Arc};
 use worth_query_declaration::facade::application_query::{
@@ -64,7 +64,10 @@ pub(super) fn select(
         {
             return Err(path_union::traversal_denial(meaning.set()));
         }
+        let allocation = SourceFactsAllocation::open(execution)
+            .map_err(|cause| super::super::denial::relational_read_denial(cause, meaning.set()))?;
         let mut reader = QueryComponentAcquisition {
+            allocation: Arc::clone(&allocation),
             basis: RootPathReadBasis {
                 execution,
                 runtime,
@@ -80,6 +83,8 @@ pub(super) fn select(
             .then_some(plan.root);
         acquisition::acquire(
             &mut reader,
+            execution,
+            &allocation,
             plan.root,
             member,
             CohortSourceCapture::PerCohort,
@@ -101,6 +106,7 @@ pub(super) fn select(
     sources::complete(acquired, meaning, execution, graph, plan, work)
 }
 struct QueryComponentAcquisition<'frame, 'plan, 'work, 'execution, 'request> {
+    allocation: Arc<SourceFactsAllocation>,
     basis: RootPathReadBasis<'frame, 'execution, 'request>,
     plan: &'frame ReadPlan<'plan>,
     work: &'frame mut RootSelectionWork<'work>,
@@ -120,6 +126,7 @@ impl ComponentAcquisitionReader for QueryComponentAcquisition<'_, '_, '_, '_, '_
             self.plan,
             self.work,
             RootPathSelectionRequest {
+                allocation: Some(&self.allocation),
                 paths: self.plan.contract.root_paths(),
                 start,
                 orientation,
@@ -130,12 +137,16 @@ impl ComponentAcquisitionReader for QueryComponentAcquisition<'_, '_, '_, '_, '_
         .inspect_err(|error| self.interruption.remember(error))
     }
     fn aggregate(&mut self, member: EntityId) -> Result<Arc<AggregateObservation>, Self::Error> {
+        crate::domain_computation::primary_graph::component_selection::storage::aggregate::<EntityId>(
+            self.basis.execution, &self.allocation, self.plan.name,
+        ).map_err(|cause| self.native_denial(cause))?;
         super::super::entry_observation::record_component_native_acquisition();
         super::aggregate::read(
             self.basis.execution,
             self.basis.runtime,
             self.work,
             AggregateQuery {
+                allocation: Some(&self.allocation),
                 subject: self.plan.name,
                 entity_kind: self.layout.member_kind,
                 selection: AggregateSelection::ComponentDefinition(self.layout.definition),
@@ -151,7 +162,7 @@ impl ComponentAcquisitionReader for QueryComponentAcquisition<'_, '_, '_, '_, '_
         body: &AggregateObservation,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<SourceFacts, Self::Error> {
-        acquisition::observe_coupling(self.basis.execution,self.basis.runtime,self.layout,body,context).map_err(|stop|match stop {
+        acquisition::observe_coupling(self.basis.execution,self.basis.runtime,&self.allocation,self.layout,body,context).map_err(|stop|match stop {
             CouplingObservationDenial::Unavailable=>path_union::traversal_denial(self.plan.name),
             CouplingObservationDenial::Execution(cause)=>self.native_denial(cause),
             CouplingObservationDenial::Source(crate::domain_computation::primary_graph::source_facts::SourceFactReadDenial::Execution(cause))=>self.native_denial(cause),

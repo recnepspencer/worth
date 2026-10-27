@@ -39,7 +39,7 @@ impl ParallelReads {
         }
     }
 
-    fn enter(&self, id: usize) {
+    pub(in super::super) fn enter(&self, id: usize) {
         if !self.enabled {
             return;
         }
@@ -59,7 +59,7 @@ impl ParallelReads {
         }
     }
 
-    fn finish(&self, id: usize) {
+    pub(in super::super) fn finish(&self, id: usize) {
         if !self.enabled {
             return;
         }

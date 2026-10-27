@@ -22,7 +22,11 @@ pub(super) use current_output::CertifiedOutputCorrespondence;
 mod decision_plan;
 mod decision_reads;
 mod derived_relation;
-pub use derived_relation::WorthQueryInvariantDerivedRelation;
+pub use derived_relation::{
+    WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
+    WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
+    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
+};
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

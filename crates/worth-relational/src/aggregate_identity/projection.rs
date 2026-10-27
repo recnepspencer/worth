@@ -6,16 +6,17 @@ use worth_foundational::facade::AggregateIdentity;
 
 use super::retention_extent as extent;
 use super::transition::AggregateTransition;
-use crate::identity::data::{EntityId, RelationId};
+use crate::graph_member::NativeMemberKey as Member;
+use crate::identity::data::RelationId;
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 
 pub(super) struct ChangedProjection {
     pub(super) transition: AggregateTransition,
-    pub(super) member_assignments: BTreeMap<EntityId, usize>,
+    pub(super) member_assignments: BTreeMap<Member, usize>,
     // Complete prior membership is the proof that an absent assignment is
     // affected/deleted rather than permission to fall back to old identity.
-    pub(super) prior_memberships: BTreeMap<EntityId, (RelationId, AggregateIdentity)>,
+    pub(super) prior_memberships: BTreeMap<Member, (RelationId, AggregateIdentity)>,
 }
 
 pub(super) struct DefinitionProjection {
@@ -61,14 +62,13 @@ impl ChangedProjection {
             (self.transition.assignments.capacity()
                 * std::mem::size_of::<super::AggregateAssignment>()) as u64,
             |bytes, group| {
-                bytes.saturating_add(
-                    group.members.len() as u64 * extent::tree_entry::<EntityId, ()>(),
-                )
+                bytes
+                    .saturating_add(group.members.len() as u64 * extent::tree_entry::<Member, ()>())
             },
         ) + self.transition.retired.len() as u64 * extent::tree_entry::<AggregateIdentity, ()>()
             + self.transition.lineage.len() as u64
                 * extent::tree_entry::<super::AggregateLineageEvent, ()>()
-            + self.member_assignments.len() as u64 * extent::tree_entry::<EntityId, usize>()
+            + self.member_assignments.len() as u64 * extent::tree_entry::<Member, usize>()
             + self.prior_memberships.len() as u64 * extent::membership()
     }
 }

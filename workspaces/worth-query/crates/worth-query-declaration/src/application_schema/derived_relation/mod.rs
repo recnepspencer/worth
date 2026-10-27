@@ -8,7 +8,10 @@ mod expression_validation;
 mod recipe;
 mod reference;
 mod source_closure;
-pub use source_closure::application_derived_relation_physical_sources;
+pub use source_closure::{
+    application_derived_relation_physical_sources, application_derived_relation_source_closure,
+    ApplicationDerivedRelationSourceClosure,
+};
 mod validation;
 pub(super) use validation::{validate_closure, validate_member_identifiers};
 

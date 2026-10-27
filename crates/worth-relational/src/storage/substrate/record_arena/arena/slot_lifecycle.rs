@@ -217,7 +217,7 @@ impl<K: RecordKind> RecordArena<K> {
         let physical = self
             .physical_index(slot)
             .expect("record reset requires a materialized slot");
-        self.kind_ids[physical] = None;
+        self.kind_ids.set(physical, None);
         self.extra.set(physical, K::empty_extra());
         self.aspect_versions.set(physical, Default::default());
         self.field_revisions.set(physical, None);
@@ -226,7 +226,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.branch_pins.set(physical, 0);
         self.replay_pins.set(physical, 0);
         self.snapshot_pins.set(physical, 0);
-        self.retired_at[physical] = None;
+        self.retired_at.set(physical, None);
     }
 
     pub(crate) fn set_lifecycle_for_slot(
@@ -237,7 +237,7 @@ impl<K: RecordKind> RecordArena<K> {
         let Some(physical) = self.physical_index(slot) else {
             return false;
         };
-        self.lifecycle[physical] = lifecycle;
+        self.lifecycle.set(physical, lifecycle);
         true
     }
 }

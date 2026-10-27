@@ -67,7 +67,7 @@ impl BreadthFirstRead for CouplingRead<'_, '_, '_, '_, '_, '_> {
                     continue;
                 };
                 self.work.acquired(Acquisition::Relation)?;
-                if !self.contract.source.contains_relation(edge.kind_id) {
+                if !self.contract.source.contains_stored_relation(edge.kind_id) {
                     continue;
                 }
                 let neighbor = if outgoing { edge.target } else { edge.source };

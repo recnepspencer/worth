@@ -125,6 +125,7 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
                 matches!(
                     scope,
                     crate::package::WorthQueryPortableOperationGraphReadScope::Components { .. }
+                    | crate::package::WorthQueryPortableOperationGraphReadScope::DerivedSource { .. }
                 )
             })
         {

@@ -6,6 +6,7 @@ use worth_query_installation::facade::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum ComponentSelectionOrigin {
     Operation(WorthQueryOperationComponentReadScope),
+    Derived(worth_query_installation::facade::WorthQueryOperationDerivedSourceReadScope),
     Query {
         binding: ApplicationSchemaBindingIdentity,
         graph: worth_foundational::facade::CanonicalDigestId,
@@ -21,6 +22,7 @@ impl ComponentSelection {
         subject: ComponentSelectionSubject,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::super::source_facts::SourceFactsAllocation>,
         poll: impl FnMut() -> Result<
             (),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -41,7 +43,16 @@ impl ComponentSelection {
             graph: *installed.digest(),
         };
         let key = ComponentSelectionKey::for_query(installed, layout.definition, root, subject);
-        Self::from_parts(origin, key, layout.clone(), source, aggregates, facts, poll)
+        Self::from_parts(
+            origin,
+            key,
+            layout.clone(),
+            source,
+            aggregates,
+            facts,
+            allocation,
+            poll,
+        )
     }
     pub(in crate::domain_computation::primary_graph) fn has_query_origin(
         &self,

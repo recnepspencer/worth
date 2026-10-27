@@ -1,8 +1,8 @@
-//! Exact observation custody, independent of wrappers, payers and caches.
-use crate::validation::engine::InvariantObservationIdentity;
+//! Exact view posture shared by physical and logical structural sources.
+use super::InvariantObservationIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct DerivedSourceAffinity {
+pub(crate) struct InvariantSourceAffinity {
     pub(crate) observation: InvariantObservationIdentity,
     pub(crate) committed: bool,
     pub(crate) version: crate::identity::data::VersionId,

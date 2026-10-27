@@ -2,7 +2,10 @@
 use super::*;
 use crate::domain_computation::primary_graph::component_selection::ComponentSelection;
 use std::sync::Arc;
-use worth_execution::{ExecutionAllocationPolicy as Allocation, ExecutionRequest};
+use worth_execution::{
+    CancellationSource, ExecutionAllocationPolicy as Allocation, ExecutionRequest,
+    SerialMemoryBudget, SerialRequest,
+};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 pub(super) fn body<Q>(
     world: &World,
@@ -31,7 +34,45 @@ fn component_rows_share_cohort_custody_and_census_retains_complete_set_truth() {
         crate::domain_computation::primary_graph::tests::fixture::isolated_request_owner();
     let world = interleaved_world();
     let request = crate::domain_computation::primary_graph::tests::fixture::live_scope();
-    let result = read::run(&world, Census::reference(), 0);
+    let denied_payer = SerialMemoryBudget::new(Some(0));
+    let denied_host = SerialRequest::from_memory(
+        denied_payer.clone(),
+        CancellationSource::new().token(),
+        None,
+    );
+    let denied = read::execute(
+        &world,
+        &ExecutionRequest::serial(&denied_host),
+        &request,
+        Census::reference(),
+        0,
+    );
+    let Err(read::Stop::Execution(denial)) = denied else {
+        panic!("zero original memory must refuse without a completed result");
+    };
+    use worth_execution::{LeaseDenial, MemoryLimitDenial, MemoryLimitLevel, WorkCeilingDenial};
+    assert!(matches!(
+        denial,
+        WorkCeilingDenial::Admission(LeaseDenial::MemoryExhausted(MemoryLimitDenial::Capacity {
+            requested,
+            admitted: 0,
+            level: MemoryLimitLevel::Policy { ancestor: 0 },
+        })) if requested > 0
+    ));
+    assert_eq!(denied_payer.charged_memory_bytes(), 0);
+    // This is the earliest actual read allocation, not a particular later
+    // material-member allocation or a fitted byte ceiling.
+    let payer = SerialMemoryBudget::new(None);
+    let host = SerialRequest::from_memory(payer.clone(), CancellationSource::new().token(), None);
+    let result = read::execute(
+        &world,
+        &ExecutionRequest::serial(&host),
+        &request,
+        Census::reference(),
+        0,
+    )
+    .unwrap();
+    let retained_source = result.observed_sources()[0].clone();
     let full = body(&world, result.result_set_observation().source(), &request);
     assert_eq!(full.aggregates().len(), 2);
     assert!(
@@ -54,6 +95,27 @@ fn component_rows_share_cohort_custody_and_census_retains_complete_set_truth() {
         offset += count;
     }
     assert!(!Arc::ptr_eq(&rows[0], rows.last().unwrap()));
+    // Keep both independently funded Native payloads constant while releasing
+    // the Query wrappers and their material-selection backing.
+    let native = [
+        full.aggregates()[0].native().clone(),
+        full.aggregates()[1].native().clone(),
+    ];
+    drop(result);
+    drop(retained_source);
+    let with_material_selections = payer.charged_memory_bytes();
+    assert!(with_material_selections > 0);
+    drop(full);
+    drop(rows);
+    let native_only = payer.charged_memory_bytes();
+    assert!(native_only > 0);
+    assert!(
+        native_only < with_material_selections,
+        "last material selection releases its own original-request storage"
+    );
+    drop(native);
+    assert_eq!(payer.charged_memory_bytes(), 0);
+
     let result = read::run(&world, Of::reference(), 0);
     let full = body(&world, result.result_set_observation().source(), &request);
     assert_eq!(full.aggregates().len(), 1);

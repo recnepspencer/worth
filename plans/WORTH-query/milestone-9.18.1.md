@@ -685,13 +685,20 @@ let count = reader.component_count(FaceIslands::reference())?;
 
 ## Phase 6: Derived Relations Readable By Rules
 
-**Status: open.** The first runtime vertical connects genuine Native endpoint
-sources to frozen proposed/committed invariant reads, declared decision reads and
-a framework-owned managed endpoint count. Six focused courts qualify unbounded
-laws with same-context physical leaves, proposed-state refusal, exact read
-access, managed-cache invalidation/rebuild and genuine Native/Query recovery.
-Full law/walk/orbit/component composition, logical member domains, differential
-and growth evidence, and CAD adoption remain required below.
+**Status: open.** The public logical-source substrate is qualified by 35
+runtime courts and a Host compile-pass/compile-fail pair. Genuine Native sources
+feed proposed/committed rule reads, declared decisions, ordinary committed
+projection and framework-owned managed counts. The evidence covers derived
+laws, walks, orbits, complete component/census reads and Native identity/lineage;
+exact audience/posture/currentness, original-request refusal and retained
+material custody; cache invalidation/discard/rebuild; and the real grant-authority
+adversary. Legacy bytes, durable recovery, independent seeded membership/heir
+oracles, cert-only replay and actual one/two/eight-worker execution are qualified.
+The 10/10,000 courts compare actual maintenance and business-read acquisition
+category totals. Equal totals do not claim fixed work or an acquisition-identity
+roster. Private CAD adoption, the current-generation production-maintenance
+prerequisite and combined Phase 5/6 acceptance remain required; this public
+qualification does not close either phase.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
@@ -758,19 +765,20 @@ let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face
 
 ## CAD Shell Member Domain
 
-This contract governs the unfinished CAD shell adoption in Phases 5–6. It does
-not advertise an implemented projected-member API. The existing component
-declaration and Native membership storage accept physical entities; the first
-derived-relation runtime slice also has physical entity endpoints. Those are
-necessary foundations, not sufficient representations of the CAD shell domain.
+This contract governs the unfinished CAD shell adoption in Phases 5–6. The
+qualified public substrate supports finite carrier/case members through the same
+Native evaluator and aggregate coordinator, including actual logical component,
+lineage and committed-projection reads. Generic projected membership and public
+fixtures are insufficient evidence of CAD shell adoption.
 
 The finite projected-domain meaning prerequisite provides typed carrier/case
 declaration, canonical portable readmission and Archive tag44/v1 transport.
 Existing entity-domain member bytes and absent-domain schema identities remain
 unchanged; older Frame18 readers reject tag44 as an unsupported variant. Actual
-schema binding still refuses `ProjectedMemberDomainUnavailable` until Native
-can issue these members. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
-This prerequisite does not close the runtime or CAD obligations below.
+schema binding now resolves the registered Native domain/case owner; only a
+genuine selected view can issue member observations. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
+Neither the meaning prerequisite nor the qualified public logical-source
+substrate closes the CAD obligations below.
 
 ### Actual Consumer And Decisive Proof
 
@@ -1042,6 +1050,7 @@ worth-query-installation/src/
 worth-query-package-archive/src/record/
   application_schema/member/inspection.rs                   N additive member45/v1
   application_query/disclosure/inspection.rs                N additive selector8/v1
+
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
 worth-query-execution/src/domain_computation/

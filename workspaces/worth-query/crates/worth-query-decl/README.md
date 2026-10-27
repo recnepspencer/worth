@@ -177,11 +177,16 @@ Cases have canonical names independent of authoring order. Empty/duplicate
 cases, foreign case selectors, missing stored carriers and entity/domain name
 collisions refuse through typed declaration/readmission outcomes.
 
-This is a portable meaning prerequisite. Installation currently returns
-`ProjectedMemberDomainUnavailable` because the Native member issuer and actual
-Query consumers are not installed yet. It is not CAD shell adoption. The
+The logical-source extension binds this meaning to registered Native domain and
+case handles. Genuine proposed/committed invariant views, admitted operation
+reads and installation-owned committed projection readers issue the live
+observations; descriptive coordinates cannot construct them. See the
+[privileged logical component reader](../worth-query/docs/modeling/relation-laws.md#privileged-logical-component-inspection)
+for source affinity and retained ownership. Its broad stored-snapshot observation
+does not issue tracked decision facts or a feature-history-prefix view.
+The
 [actual typed authoring and transport court](../worth-query-package-archive/src/record/application_schema/tests/projected_member_domain.rs)
-and [installed refusal court](../worth-query-installation/src/application_schema_tests/projected_member_domain.rs)
+and [installed binding court](../worth-query-installation/src/application_schema_tests/projected_member_domain.rs)
 exercise these boundaries.
 
 Archive member tag44 carries its own v1 subgrammar under the existing Frame18
@@ -189,8 +194,9 @@ contract. Existing member bytes and absent-domain schema identities are
 unchanged. Older Frame18 readers reject the unknown tag as
 `UnsupportedRecordVariant`; Frame18 does not imply support for every producer's
 variant subset. Unknown tag44 subversions refuse before field allocation.
-The [shell member-domain contract](../../../../plans/WORTH-query/milestone-9.18.1.md#cad-shell-member-domain)
-defines the remaining Native, Query and CAD work; Phases 5–6 remain open.
+Use a projected domain when two cases of one carrier are distinct members.
+Domain context belongs in the derived source's actual incidence reads, so it can
+change without replacing the carrier/case identity.
 
 ## Related Docs
 

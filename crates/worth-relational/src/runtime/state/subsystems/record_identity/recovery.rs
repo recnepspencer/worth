@@ -78,7 +78,7 @@ impl RecordIdentitySubsystem {
     }
 
     pub(crate) fn reusable_snapshot(&self) -> Vec<RecordSlotKey> {
-        self.lock().reusable.iter().copied().collect()
+        self.lock().reusable.iter().map(|(key, ())| *key).collect()
     }
 
     pub(crate) fn frontier_snapshot(&self) -> Vec<(RecordAllocationClass, PartitionId, usize)> {
@@ -188,7 +188,7 @@ impl RecordIdentitySubsystem {
                 }
             }
             RecordAllocationOrigin::Reclaimed { .. } => {
-                if state.reusable.contains(&key) {
+                if state.reusable.contains_key(&key) {
                     return Err("durable reclaimed reservation is also reusable");
                 }
             }
@@ -254,7 +254,7 @@ impl RecordIdentitySubsystem {
         }
         let reservation_origin = match origin {
             RecordAllocationOrigin::Reclaimed { .. } => {
-                if !state.reusable.remove(&(class, partition_id, slot)) {
+                if !state.reusable.remove(&(class, partition_id, slot)).0 {
                     return Err(RecordAllocationDenial::ReplaySlotUnavailable {
                         ordinal,
                         class,

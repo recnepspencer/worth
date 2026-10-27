@@ -25,6 +25,8 @@ pub(in crate::application_schema) fn validate_closure(
         matches!(member,
         Member::ComponentSet { definition }
             if definition.name() == meaning.set() && definition.member() == meaning.member())
+        || matches!(member, Member::DerivedComponentSet { definition }
+            if definition.name == meaning.set() && definition.member.entity() == Some(meaning.member()))
     });
     let operation_matches = members.iter().any(|member| {
         matches!(member,

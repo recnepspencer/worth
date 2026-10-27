@@ -195,6 +195,11 @@ fn encode_read_scope(
     scope: &WorthQueryOperationGraphReadScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationGraphReadScope::DerivedSource(scope) => {
+            basis.text(format!("{prefix}.kind"), "derived-source-v1")?;
+            encode_binding(basis, prefix, scope.schema())?;
+            basis.text(format!("{prefix}.relation"), scope.relation())?;
+        }
         WorthQueryOperationGraphReadScope::Components(scope) => {
             basis.text(format!("{prefix}.kind"), "components")?;
             encode_binding(basis, prefix, scope.schema())?;

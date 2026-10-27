@@ -52,7 +52,16 @@ pub(super) fn find(
                         return work.invalid(PlanDenial::InvalidStoredIdentity);
                     }
                     let entity = EntityId::new(partition_id, logical as u64, slot.generation());
-                    let row = super::super::stored_record::decode(view, entity, kind, work)?;
+                    let Some(row) = super::super::stored_record::decode(
+                        view,
+                        entity,
+                        contract,
+                        root.schema_authority().registry(),
+                        work,
+                    )?
+                    else {
+                        return Ok(());
+                    };
                     if row.definition == contract.definition
                         && row.identity == identity
                         && found

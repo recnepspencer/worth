@@ -18,26 +18,36 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         pin: &RelationalPinnedRead,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         subject: &str,
+        allocation: &Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
     ) -> Result<(Vec<Arc<AggregateObservation>>, Vec<SourceFacts>), Denial> {
+        let execution = *self.reader.execution;
         let mut reader = OperationComponentAcquisition::<Schema, Operation, Entity> {
             reader: self,
+            allocation: Arc::clone(allocation),
             scope,
             layout,
             pin,
             subject,
             _entity: std::marker::PhantomData,
         };
-        acquisition::acquire(
+        let answer = acquisition::acquire(
             &mut reader,
+            &execution,
+            allocation,
             root,
             member,
             CohortSourceCapture::SelectionOnly,
             context,
-        )
-        .map(|answer| answer.into_operation_parts())
+        )?;
+        answer
+            .into_operation_parts(&execution)
+            .map_err(|cause| reader.native_denial(cause))
     }
 }
 struct OperationComponentAcquisition<'frame, 'reader, 'runtime, Schema, Operation, Entity> {
+    allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
     reader: &'frame mut WorthQueryApplicationOperationInvariantProjectionReader<
         'reader,
         'runtime,
@@ -68,14 +78,19 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             capture,
             self.pin,
             self.subject,
+            &self.allocation,
         )
     }
     fn aggregate(&mut self, member: EntityId) -> Result<Arc<AggregateObservation>, Denial> {
+        crate::domain_computation::primary_graph::component_selection::storage::aggregate::<EntityId>(
+            self.reader.reader.execution, &self.allocation, self.subject,
+        ).map_err(|cause| self.native_denial(cause))?;
         self.reader.reader.read_aggregate_identity(
             self.layout.member_kind,
             AggregateSelection::ComponentDefinition(self.layout.definition),
             member,
             self.subject,
+            Some(&self.allocation),
         )
     }
     fn observe_cohort(
@@ -92,6 +107,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         acquisition::observe_coupling(
             self.reader.reader.execution,
             self.pin,
+            &self.allocation,
             self.layout,
             body,
             context,

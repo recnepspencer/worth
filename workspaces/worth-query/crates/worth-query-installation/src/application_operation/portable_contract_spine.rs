@@ -66,7 +66,7 @@ pub(crate) fn compile_portable_operation_contract_record(
     input_type: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,
 ) -> SpineResult<WorthQueryPortableApplicationOperationContractRecord> {
     let mut reads = operation_decision_reads_from_members(members, operation, input_type.as_str());
-    derived_reads::append(members, operation, &mut reads)?;
+    let derived_sources = derived_reads::append(members, operation, &mut reads)?;
     let mut graph_reads = compile_reads(schema, native_contracts, reads)?;
     graph_reads.extend(members.iter().filter_map(|member| match member {
         ApplicationSchemaMember::OperationComponentRead { definition }
@@ -78,6 +78,12 @@ pub(crate) fn compile_portable_operation_contract_record(
             })
         }
         _ => None,
+    }));
+    graph_reads.extend(derived_sources.into_iter().map(|relation| {
+        WorthQueryPortableOperationGraphReadScope::DerivedSource {
+            schema: schema.to_owned(),
+            relation,
+        }
     }));
     let program = operation_program_from_members(members, operation, input_type.as_str());
     let touches = compile_touches(schema, native_contracts, &program)?;

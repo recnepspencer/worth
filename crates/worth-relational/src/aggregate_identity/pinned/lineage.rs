@@ -138,7 +138,13 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             |root, view, work| {
                 let contract = contract::resolve(root, scope.selection, work)?;
                 let selected = lookup::find(root, view, contract, scope.identity, work)?;
-                let resolved = resolution::resolve(view, selected, contract, work)?;
+                let resolved = resolution::resolve(
+                    view,
+                    selected.clone(),
+                    contract,
+                    root.schema_authority().registry(),
+                    work,
+                )?;
                 work.checkpoint(0)?;
                 Ok(Value {
                     definition: contract.definition,

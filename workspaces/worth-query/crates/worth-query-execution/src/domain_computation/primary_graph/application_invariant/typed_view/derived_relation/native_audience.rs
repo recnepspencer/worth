@@ -61,7 +61,7 @@ impl Reader {
                 view.read_prepared_derived_relations(&proof)
                     .unwrap()
                     .endpoints(),
-                [self.control.expected.lock().unwrap().unwrap()]
+                [self.control.expected.lock().unwrap().unwrap().into()]
             );
         }
         proof
@@ -130,7 +130,7 @@ impl CustomInvariantRule for Reader {
                 view.read_prepared_derived_relations(proof)
                     .unwrap()
                     .endpoints(),
-                [self.control.expected.lock().unwrap().unwrap()]
+                [self.control.expected.lock().unwrap().unwrap().into()]
             );
             self.control.evaluated.store(true, Ordering::SeqCst);
         } else {

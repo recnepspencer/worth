@@ -54,13 +54,14 @@ pub(super) fn registry_with_source(first: u32) -> RelationalSchemaRegistry {
                 .into_iter()
                 .map(|kind| DerivedRelationDefinitionParts {
                     identity: identity(kind),
-                    from: KindId::new(1),
-                    to: KindId::new(1),
+                    from: KindId::new(1).into(),
+                    to: KindId::new(1).into(),
                     nodes: vec![DerivedRelationNode::Stored {
                         relation: KindId::new(if kind == 2 { first } else { kind }),
                         from: KindId::new(1),
                         to: KindId::new(1),
                     }],
+                    laws: None,
                 })
                 .collect(),
         )

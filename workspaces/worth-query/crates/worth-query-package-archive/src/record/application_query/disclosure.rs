@@ -185,8 +185,9 @@ fn decode_selector(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
-        8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
         7 => ApplicationQueryDisclosureSelector::Resource(resource::decode(input)?),
+        8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
+
         5 => {
             use worth_query_declaration::facade::application_query::{
                 ApplicationHistoryMetadataFacet as Facet, ApplicationHistoryMetadataMeaning,

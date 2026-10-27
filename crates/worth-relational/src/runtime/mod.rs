@@ -38,7 +38,10 @@ pub use crate::visibility::materialization::read_records::{
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,
 };
-pub use crate::visibility::retention::VisibilityRetentionAuthority;
+pub use crate::visibility::retention::{
+    RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalStoppedRetentionPass,
+    VisibilityRetentionAuthority,
+};
 pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
 pub(crate) use initial_schema_installation::{
     codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
@@ -85,7 +88,8 @@ pub(crate) use state::{
     RelationalRuntimeConfigurationSnapshot, RelationalRuntimeOwnerBinding,
     RelationalRuntimePublicationBinding, ReplayRetentionState, RuntimeInstrumentation,
     RuntimeServices, RuntimeSubsystem, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
-    StorageSubsystem, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    StorageSubsystem, TryPartitionMutationDenied, ValidatedLineageEventBatch, VisibilityResidency,
+    VisibilitySubsystem,
 };
 pub(crate) use state::{
     DeferredRelationalSettlement, PendingRelationalPublicationSettlement,

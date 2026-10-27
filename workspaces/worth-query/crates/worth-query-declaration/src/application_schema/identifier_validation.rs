@@ -45,6 +45,7 @@ pub(super) fn validate_member_identifiers(
                 super::projected_member_domain::validate_member_identifiers(definition)?;
             }
             ApplicationSchemaMember::DerivedRelation { .. }
+            | ApplicationSchemaMember::DerivedComponentSet { .. }
             | ApplicationSchemaMember::RuleReadableCollection { .. }
             | ApplicationSchemaMember::OperationDerivedRead { .. } => {
                 super::derived_relation::validate_member_identifiers(member)?;

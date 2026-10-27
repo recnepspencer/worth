@@ -24,8 +24,10 @@ impl DeclaredComponentSelection {
         &self,
         rows: impl IntoIterator<Item = EntityId>,
     ) -> bool {
-        self.body
-            .aggregates()
+        let Some(aggregates) = self.body.physical_aggregates() else {
+            return false;
+        };
+        aggregates
             .iter()
             .flat_map(|aggregate| aggregate.native().members())
             .eq(rows)

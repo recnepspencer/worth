@@ -6,11 +6,24 @@ pub(super) fn planning_arc_bytes() -> u64 {
     std::mem::size_of::<(usize, usize, std::sync::Mutex<PlanningAdmission>)>() as u64
 }
 
-pub(super) fn frozen_bytes(entities: usize, relations: usize, derived: usize) -> u64 {
+pub(super) fn frozen_bytes(
+    entities: usize,
+    relations: usize,
+    derived: usize,
+    censuses: usize,
+) -> u64 {
     (std::mem::size_of::<(usize, usize, ApplicationInvariantAdmission)>() as u64)
         .saturating_add((entities as u64).saturating_mul(entity_entry_bytes()))
         .saturating_add((relations as u64).saturating_mul(relation_entry_bytes()))
         .saturating_add((derived as u64).saturating_mul(derived_entry_bytes()))
+        .saturating_add((censuses as u64).saturating_mul(census_entry_bytes()))
+}
+
+pub(super) fn census_entry_bytes() -> u64 {
+    conservative_entry_bytes::<(
+        worth_relational::facade::runtime::AggregateCensusReadIdentity,
+        super::PreparedComponentCensus,
+    )>()
 }
 
 pub(super) fn derived_entry_bytes() -> u64 {

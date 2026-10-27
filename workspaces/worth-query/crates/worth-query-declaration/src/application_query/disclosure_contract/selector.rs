@@ -59,6 +59,7 @@ impl ApplicationQueryDisclosureSelector {
                 super::super::inspection::validation::binding_is_valid(metadata.binding())
             }
             Self::Resource(meaning) => meaning.resource_identity().is_valid(),
+
             Self::HistoryMetadata(metadata) => metadata.history_identity().is_valid(),
             Self::InternalField { .. } => true,
             Self::Components(selection) => {
@@ -97,6 +98,7 @@ impl ApplicationQueryDisclosureSelector {
         match self {
             Self::InspectionMetadata(metadata) => Some(metadata.slot_key()),
             Self::Resource(meaning) => Some(meaning.slot_key()),
+
             Self::HistoryMetadata(metadata) => Some(metadata.slot_key()),
             Self::Orbit(orbit) => Some(orbit.slot_key()),
             Self::Components(selection) => Some(selection.slot_key()),
@@ -157,6 +159,7 @@ impl ApplicationQueryDisclosureSelector {
         match self {
             Self::InspectionMetadata(metadata) => metadata.slot_type(),
             Self::Resource(meaning) => meaning.slot_type(),
+
             Self::HistoryMetadata(metadata) => metadata.slot_type(),
             Self::Orbit(orbit) => orbit.slot_type(),
             Self::Components(selection) => selection.slot_type(),
@@ -169,6 +172,7 @@ impl ApplicationQueryDisclosureSelector {
         match self {
             Self::InspectionMetadata(metadata) => metadata.query_type(),
             Self::Resource(meaning) => meaning.resource_type(),
+
             Self::HistoryMetadata(metadata) => metadata.history_type(),
             Self::Orbit(orbit) => orbit.query_type(),
             Self::Components(selection) => selection.query_type(),
@@ -183,6 +187,7 @@ impl ApplicationQueryDisclosureSelector {
         match self {
             Self::InspectionMetadata(metadata) => metadata.facet().name(),
             Self::Resource(meaning) => meaning.facet().name(),
+
             Self::HistoryMetadata(metadata) => metadata.facet().name(),
             Self::Orbit(orbit) => orbit.output_name(),
             Self::Components(selection) => selection.output_name(),

@@ -7,6 +7,7 @@ mod plan_revision;
 
 pub use aggregate::{
     AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    AggregateProjectedMemberStorage,
 };
 pub use contract_id::ContractId;
 pub use declarations::{

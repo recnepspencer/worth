@@ -15,6 +15,7 @@ pub enum ApplicationDerivedRelationDefinitionDenial {
     CyclicDefinitions,
     InvalidCollectionAssociation,
     MissingOperation,
+    ForeignCase,
 }
 
 impl std::fmt::Display for ApplicationDerivedRelationDefinitionDenial {

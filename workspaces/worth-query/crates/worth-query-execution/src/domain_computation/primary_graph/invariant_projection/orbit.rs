@@ -43,6 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(layout.kind),
                 member.entity_id,
                 relation.name(),
+                None,
             )?;
             let anchor = WorthQueryInvariantEntityIdentity {
                 entity_id: aggregate.native().anchor(),

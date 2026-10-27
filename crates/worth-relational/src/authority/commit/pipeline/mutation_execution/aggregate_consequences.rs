@@ -19,15 +19,25 @@ impl MutatedCommitExecution {
         let (_, validation, business, _, _, _) = admitted.phase_view().into_parts();
         let authority = validation.schema_authority();
         if validation.intent().materialization_mode().is_none() {
-            let prepared = match aggregate_source {
+            let (prepared, reads) = match aggregate_source {
                 Some(source) => source.take_for_commit(
                     execution,
                     runtime.commit_work_budget.as_ref(),
                     business,
                     occurrence,
                 )?,
-                None => None,
+                None => (
+                    None,
+                    crate::aggregate_identity::AggregateReadObservations::default(),
+                ),
             };
+            let performance = crate::performance::PerformanceAccess::from_instrumentation(
+                &runtime.services.instrumentation,
+            );
+            // Consumption is single-use even when no consequence was needed.
+            // The report includes the one preparation already shared with rules.
+            performance.count_aggregate_maintenance_reads(reads);
+            let mut consequences_applied = false;
             if let Some(prepared) = prepared {
                 let mut prepared = prepared;
                 prepared.materialize(
@@ -61,6 +71,22 @@ impl MutatedCommitExecution {
                     .append_owned(applied.created_relations)?;
                 self.effect.accumulate(applied.effect);
                 self.aggregate_admission = Some(prepared.admission);
+                consequences_applied = true;
+            }
+            // Metadata-dependent recipes see actual Native membership/lineage
+            // writes. They cannot be checked early against a degree-zero birth,
+            // and still require validation when no consequence was necessary.
+            let final_reads = crate::aggregate_identity::validate_final_derived_laws(
+                execution,
+                runtime.commit_work_budget.as_ref(),
+                authority,
+                &selected,
+                working,
+                &self.effect,
+                self.version_id,
+            )?;
+            performance.count_aggregate_maintenance_reads(final_reads);
+            if consequences_applied {
                 // Earlier publication evidence described only the business graph.
                 admitted.take_prevalidated_snapshot_publication();
             }

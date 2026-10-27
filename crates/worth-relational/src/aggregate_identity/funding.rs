@@ -80,6 +80,32 @@ pub(super) fn run<T: ChargedBytes>(
     run_core(execution, budget, &mut |_| Ok(()), None, build).map_err(FundingFailure::into_commit)
 }
 
+/// Report successful acquisitions from one completed preparation stage. A
+/// stopped stage returns its original error, never a purported complete report.
+pub(super) fn run_observed<T: ChargedBytes>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    budget: Option<&crate::execution::RequestWorkBudget>,
+    build: impl FnOnce(&mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<T>,
+) -> Result<
+    (
+        T,
+        Option<ExecutionMemoryReservation>,
+        AggregateReadObservations,
+    ),
+    TransactionCommitError,
+> {
+    let mut observations = AggregateReadObservations::default();
+    run_core(
+        execution,
+        budget,
+        &mut |_| Ok(()),
+        Some(&mut observations),
+        build,
+    )
+    .map(|(value, retention)| (value, retention, observations))
+    .map_err(FundingFailure::into_commit)
+}
+
 pub(super) fn run_custom_read<T: ChargedBytes>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,

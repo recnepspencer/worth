@@ -48,20 +48,24 @@ impl AggregateProposal {
         effect: MutationEffect,
         materialization: Option<RelationalMaterializationTransactionMode>,
     ) -> Option<Self> {
-        authority
-            .registry()
+        let registry = authority.registry();
+        let aggregate = registry
             .relation_kinds
             .values()
-            .any(|kind| kind.relation_integrity.aggregate_identity.is_some())
-            .then(|| Self {
-                identity: identity.clone(),
-                authority: authority.clone(),
-                selected: selected.clone(),
-                changes: materialization
-                    .is_none()
-                    .then(|| AggregateChanges::from_applied(effect)),
-                state: Mutex::new(ArtifactState::Uninitialized),
-            })
+            .any(|kind| kind.relation_integrity.aggregate_identity.is_some());
+        let derived_laws = registry
+            .derived_relations
+            .values()
+            .any(|entry| entry.parts.laws.is_some());
+        (aggregate || derived_laws).then(|| Self {
+            identity: identity.clone(),
+            authority: authority.clone(),
+            selected: selected.clone(),
+            changes: materialization
+                .is_none()
+                .then(|| AggregateChanges::from_applied(effect)),
+            state: Mutex::new(ArtifactState::Uninitialized),
+        })
     }
 
     pub(crate) fn borrow<'a>(&'a self, after: &'a WorkingState) -> AggregateProposalBorrow<'a> {
@@ -161,7 +165,13 @@ impl<'a> AggregateProposalBorrow<'a> {
         budget: Option<&crate::execution::RequestWorkBudget>,
         business: &MergedCommitPlan,
         occurrence: crate::history::data::CommitId,
-    ) -> Result<Option<PreparedConsequences>, TransactionCommitError> {
+    ) -> Result<
+        (
+            Option<PreparedConsequences>,
+            super::AggregateReadObservations,
+        ),
+        TransactionCommitError,
+    > {
         if occurrence != self.owner.identity.commit_id() {
             return Err(binding_error(
                 "aggregate final occurrence differs from its proposal",
@@ -171,7 +181,7 @@ impl<'a> AggregateProposalBorrow<'a> {
             return Err(error);
         }
         if self.owner.changes.is_none() {
-            return Ok(None);
+            return Ok((None, super::AggregateReadObservations::default()));
         }
         self.owner
             .projection(execution, budget, self.after, business)?;
@@ -184,8 +194,9 @@ impl<'a> AggregateProposalBorrow<'a> {
             ArtifactState::Ready(artifact) => {
                 let projection = Arc::clone(&artifact.projection);
                 let consequences = artifact.consequences.take();
+                let reads = artifact.reads;
                 *state = ArtifactState::Consumed(projection);
-                Ok(consequences)
+                Ok((consequences, reads))
             }
             ArtifactState::Failed(error) => Err(error.clone()),
             _ => Err(binding_error("aggregate consequences already consumed")),
@@ -194,6 +205,23 @@ impl<'a> AggregateProposalBorrow<'a> {
 }
 
 impl AggregateInvocation<'_> {
+    pub(super) fn registry(
+        &self,
+        committed: bool,
+    ) -> &crate::schema::data::RelationalSchemaRegistry {
+        if committed {
+            self.source
+                .owner
+                .selected
+                .state()
+                .root()
+                .schema_authority()
+                .registry()
+        } else {
+            self.source.owner.authority.registry()
+        }
+    }
+
     pub(super) fn contract_count(&self, committed: bool) -> u64 {
         if committed {
             self.source

@@ -336,8 +336,15 @@ for whole-slot disclosure and source currentness.
 The [public topology island consumer](../modeling/relation-laws.md#public-topology-island-consumer)
 uses these reads with actual coupling edits, independent seeded union-find
 identity/lineage comparison and 10/10,000 unrelated-ring business-read locality.
-Full Phase 5 replay/worker and CAD acceptance remain open. Proposed-state derived-relation
-reads remain unfinished in Phase 6.
+Derived relations supply proposed/committed endpoint reads, tracked decisions
+and framework-owned managed counts; see
+[derived relation meaning](../domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+Finite projected sources compose with laws, walks, orbits and components. The
+[privileged logical reader](../modeling/relation-laws.md#privileged-logical-component-inspection)
+retains actual sources and component bodies at a stored snapshot. Its members
+cannot enter entity writers or grant operation authority. Domain-specific
+connectivity and context must be declared through the actual source incidences;
+the generic component reader does not infer them from carrier identity.
 These counts describe Query boundary operations, not storage-engine I/O,
 allocation, elapsed time or unique entities.
 

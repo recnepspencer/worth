@@ -15,6 +15,7 @@ pub(in crate::domain_computation::primary_graph) enum CouplingObservationDenial 
 pub(in crate::domain_computation::primary_graph) fn observe_coupling(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     pin: &RelationalPinnedRead,
+    allocation: &Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
     layout: &ComponentSetLayout,
     aggregate: &AggregateObservation,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
@@ -23,6 +24,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_coupling(
         .project_snapshot(pin.snapshot())
         .ok_or(CouplingObservationDenial::Unavailable)?;
     let mut facts = SourceFactsBuilder::default();
+    facts
+        .protect(execution, allocation)
+        .map_err(CouplingObservationDenial::Source)?;
     for member in aggregate.native().members() {
         AggregateObservation::checkpoint(context).map_err(CouplingObservationDenial::Execution)?;
         facts

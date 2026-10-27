@@ -1,4 +1,5 @@
 //! Immutable complete derivation facts, separate from source authority.
+use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
 use crate::validation::data::{StructuralRelationRecord, StructuralWalkDenialKind};
 
@@ -21,7 +22,7 @@ pub struct DerivedRelationReads {
 /// A complete endpoint set plus all physical support and negative reads.
 #[derive(Debug)]
 pub struct DerivedRelationData {
-    pub(super) endpoints: Vec<EntityId>,
+    pub(super) endpoints: Vec<NativeMemberKey>,
     pub(super) entities: Vec<(EntityId, KindId)>,
     pub(super) relations: Vec<StructuralRelationRecord>,
     pub(super) adjacency: Vec<DerivedRelationAdjacency>,
@@ -29,7 +30,7 @@ pub struct DerivedRelationData {
 }
 
 impl DerivedRelationData {
-    pub fn endpoints(&self) -> &[EntityId] {
+    pub fn endpoints(&self) -> &[NativeMemberKey] {
         &self.endpoints
     }
     pub fn entity_dependencies(&self) -> &[(EntityId, KindId)] {

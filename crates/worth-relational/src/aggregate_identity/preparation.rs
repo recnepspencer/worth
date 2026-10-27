@@ -14,6 +14,7 @@ pub(super) use super::funding::{AggregateWork, BuildResult, PlanDenial};
 use super::projection::{AggregateProjection, DefinitionProjection, ProjectionData};
 use super::{cohorts, consequence_plan};
 use std::sync::Arc;
+pub(super) mod derived_laws;
 
 pub(crate) struct AggregateAdmission {
     pub(crate) plan: MergedCommitPlan,
@@ -28,6 +29,7 @@ pub(crate) struct PreparedConsequences {
 pub(super) struct PreparedAggregateArtifact {
     pub(super) projection: Arc<AggregateProjection>,
     pub(super) consequences: Option<PreparedConsequences>,
+    pub(super) reads: super::AggregateReadObservations,
 }
 struct PreparedValue {
     apply: AuthoritativeApplyPlan,
@@ -72,7 +74,18 @@ pub(super) fn prepare(
     let before = InvariantStateView::new(selected, selected.version_id());
     let overlay = OverlayStateView::new(selected, working);
     let after = InvariantStateView::new(&overlay, version);
-    let (value, retention) = super::funding::run(execution, budget, |work| {
+    let (value, retention, reads) = super::funding::run_observed(execution, budget, |work| {
+        // Canonical derived laws are independent of aggregate registrations and
+        // must name their real source failure before any identity allocation.
+        derived_laws::validate(
+            authority.registry(),
+            &before,
+            &after,
+            &effect.adjacency,
+            &effect.records,
+            derived_laws::LawStage::Business,
+            work,
+        )?;
         let mut plan = consequence_plan::ConsequencePlan::default();
         let mut projection = ProjectionData::default();
         let source_bytes = effect.retained_bytes();
@@ -93,13 +106,26 @@ pub(super) fn prepare(
                 >()
                 .saturating_add(contract.source.owned_bytes()),
             )?;
-            let changed =
-                match cohorts::collect(execution, contract, &before, &after, effect, work)? {
-                    Some(cohorts) => Some(consequence_plan::append(
-                        &mut plan, contract, occurrence, cohorts, &after, work,
-                    )?),
-                    None => None,
-                };
+            let changed = match cohorts::collect(
+                execution,
+                contract,
+                authority.registry(),
+                &before,
+                &after,
+                effect,
+                work,
+            )? {
+                Some(cohorts) => Some(consequence_plan::append(
+                    &mut plan,
+                    contract,
+                    authority.registry(),
+                    occurrence,
+                    cohorts,
+                    &after,
+                    work,
+                )?),
+                None => None,
+            };
             projection.definitions.insert(
                 contract.definition,
                 DefinitionProjection {
@@ -185,5 +211,6 @@ pub(super) fn prepare(
     Ok(PreparedAggregateArtifact {
         projection,
         consequences,
+        reads,
     })
 }

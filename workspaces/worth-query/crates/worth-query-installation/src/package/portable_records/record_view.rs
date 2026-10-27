@@ -48,7 +48,8 @@ impl WorthQueryPortableApplicationOperationContractRecord {
             match read {
                 // Component scope has its own installed grant and original
                 // selection evidence. It is never an atomic relation target.
-                WorthQueryPortableOperationGraphReadScope::Components { .. } => {}
+                WorthQueryPortableOperationGraphReadScope::Components { .. }
+                | WorthQueryPortableOperationGraphReadScope::DerivedSource { .. } => {}
                 WorthQueryPortableOperationGraphReadScope::Entity { entity, .. } => {
                     targets.push(ApplicationOperationDecisionReadTarget::Entity {
                         entity: entity.clone(),

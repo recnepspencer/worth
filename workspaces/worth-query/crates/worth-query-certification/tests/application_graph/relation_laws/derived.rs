@@ -18,7 +18,9 @@ mod operation;
 #[path = "derived/rule.rs"]
 mod rule;
 pub(super) use collection::{Artifact, CountCollection, CountComputation};
+pub(super) use handler::Handler as CountHandler;
 pub(super) use operation::{CountBinding, CountTwoSteps};
+pub(super) use operation::{Input as CountInput, Intent as CountIntent};
 
 #[derive(Clone, Debug)]
 pub(super) struct Derived;

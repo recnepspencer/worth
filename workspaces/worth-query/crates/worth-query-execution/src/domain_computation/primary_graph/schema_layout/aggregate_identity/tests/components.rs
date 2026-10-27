@@ -96,8 +96,22 @@ fn mixed_orbit_and_normalized_component_sets_install_one_private_identity_owner(
         actual[0].source,
         AggregateIdentitySource::Orbit(_)
     ));
-    assert_eq!(actual[1].source.relations().len(), 1);
-    assert_eq!(actual[2].source.relations().len(), 2);
+    assert_eq!(
+        actual[1]
+            .source
+            .stored_relations()
+            .expect("this literal layout fixture declares physical sources")
+            .len(),
+        1
+    );
+    assert_eq!(
+        actual[2]
+            .source
+            .stored_relations()
+            .expect("this literal layout fixture declares physical sources")
+            .len(),
+        2
+    );
     assert_eq!(
         actual
             .iter()
@@ -120,7 +134,8 @@ fn mixed_orbit_and_normalized_component_sets_install_one_private_identity_owner(
         assert!(!layout.is_application_relation_kind(contract.membership_kind));
         assert!(contract
             .source
-            .relations()
+            .stored_relations()
+            .expect("this literal layout fixture declares physical sources")
             .iter()
             .all(|kind| layout.is_application_relation_kind(*kind)));
     }

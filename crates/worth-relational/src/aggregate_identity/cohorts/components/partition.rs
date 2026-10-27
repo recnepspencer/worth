@@ -1,14 +1,11 @@
 //! Bootstrap only the affected before-image, then apply real coupling/vertex deltas.
 use super::*;
-use worth_execution::{
-    ComponentEdit, ComponentPartitioner, ExecutionRequest, MapKernelFailure, PartitionItemId,
-    PartitionUpdateDenial,
-};
+use worth_execution::{ComponentEdit, ExecutionRequest, MapKernelFailure, PartitionItemId};
 use worth_foundational::PartitionIdentity;
 
 type Pair = (EntityId, EntityId);
 struct Candidate {
-    graph: ComponentPartitioner,
+    graph: super::super::checked_components::CheckedComponents,
     items: BTreeMap<EntityId, PartitionItemId>,
     physical: BTreeMap<RelationId, Pair>,
     multiplicities: BTreeMap<Pair, usize>,
@@ -45,7 +42,7 @@ impl Candidate {
     ) -> BuildResult<()> {
         for members in prior {
             for &member in members {
-                self.edit(
+                self.graph.edit(
                     execution,
                     ComponentEdit::UpsertItem(self.items[&member]),
                     work,
@@ -60,7 +57,7 @@ impl Candidate {
                         continue;
                     };
                     work.acquired(Acquisition::Relation)?;
-                    if !contract.source.contains_relation(edge.kind_id)
+                    if !contract.source.contains_stored_relation(edge.kind_id)
                         || self
                             .items
                             .get(&edge.target)
@@ -86,7 +83,7 @@ impl Candidate {
         // updated relation. A transient business edge absent before needs no removal.
         for delta in &effect.adjacency {
             work.checkpoint(1)?;
-            if contract.source.contains_relation(delta.kind_id)
+            if contract.source.contains_stored_relation(delta.kind_id)
                 && matches!(delta.kind, AdjacencyDeltaKind::Deleted { .. })
             {
                 self.remove(execution, delta.relation_id, work)?;
@@ -117,7 +114,7 @@ impl Candidate {
             } else {
                 ComponentEdit::RemoveItem(item)
             };
-            self.edit(execution, edit, work)?;
+            self.graph.edit(execution, edit, work)?;
         }
         Ok(())
     }
@@ -131,7 +128,7 @@ impl Candidate {
     ) -> BuildResult<()> {
         for delta in &effect.adjacency {
             work.checkpoint(1)?;
-            if !contract.source.contains_relation(delta.kind_id)
+            if !contract.source.contains_stored_relation(delta.kind_id)
                 || !matches!(delta.kind, AdjacencyDeltaKind::Created { .. })
             {
                 continue;
@@ -171,39 +168,11 @@ impl Candidate {
             items.insert(entity, PartitionItemId(index));
         }
         Ok(Self {
-            graph: ComponentPartitioner::new(),
+            graph: super::super::checked_components::CheckedComponents::new(),
             items,
             physical: BTreeMap::new(),
             multiplicities: BTreeMap::new(),
         })
-    }
-    fn edit(
-        &mut self,
-        execution: &ExecutionRequest<'_, '_>,
-        edit: ComponentEdit,
-        work: &mut AggregateWork<'_, '_, '_, '_>,
-    ) -> BuildResult<()> {
-        work.poll()?;
-        self.graph
-            .edit_with_request(execution, edit)
-            .map_err(|denial| match denial {
-                PartitionUpdateDenial::Stop(stop) => {
-                    MapKernelFailure::Domain(PlanDenial::Execution(stop.into()))
-                }
-                PartitionUpdateDenial::Admission(denial) => MapKernelFailure::Domain(
-                    PlanDenial::Execution(crate::execution::denial::lease_denial(denial)),
-                ),
-                PartitionUpdateDenial::Components(_) | PartitionUpdateDenial::Bisection(_) => {
-                    MapKernelFailure::Domain(PlanDenial::InvalidComponentGraph)
-                }
-                PartitionUpdateDenial::KernelPanic => MapKernelFailure::Panic,
-                PartitionUpdateDenial::ResultCapacityExceeded => {
-                    MapKernelFailure::ResultCapacityExceeded
-                }
-            })?;
-        // Checked edits have already charged the original request. Never charge
-        // their PartitionWork again through this preparation's measured frame.
-        work.poll()
     }
     fn add(
         &mut self,
@@ -232,7 +201,7 @@ impl Candidate {
             .checked_add(1)
             .ok_or(MapKernelFailure::ResultCapacityExceeded)?;
         if count == 0 {
-            self.edit(
+            self.graph.edit(
                 execution,
                 ComponentEdit::AddEdge(self.items[&a], self.items[&b]),
                 work,
@@ -253,7 +222,7 @@ impl Candidate {
         };
         let count = self.multiplicities[&pair];
         if count == 1 {
-            self.edit(
+            self.graph.edit(
                 execution,
                 ComponentEdit::RemoveEdge(self.items[&pair.0], self.items[&pair.1]),
                 work,

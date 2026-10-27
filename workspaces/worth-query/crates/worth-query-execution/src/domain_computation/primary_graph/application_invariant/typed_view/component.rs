@@ -10,7 +10,7 @@ use super::{
 use worth_relational::facade::runtime::{
     AggregateRead, AggregateReadDenial, StructuralReadError, StructuralWalkDenialKind,
 };
-mod result;
+pub(super) mod result;
 pub use result::{
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
 };
@@ -27,13 +27,31 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
         WorthQueryInvariantAccessDenial,
     > {
         self.check_binding(&binding.binding_identity)?;
+        if binding.member_domain.entity_kind().is_none() {
+            return Err(invalid("entity-only component read"));
+        }
         self.check_entity_affinity(member, binding.member_kind)?;
+        let prepared = binding
+            .source
+            .as_ref()
+            .map(|source| {
+                self.prepared_derived_source(
+                    source,
+                    member.entity_id.into(),
+                    worth_relational::facade::runtime::DerivedRelationReadShape::Component,
+                )
+            })
+            .transpose()?;
         let native = self
             .relations
             .aggregates()
             .of_definition(binding.definition, member.entity_id)
             .map_err(aggregate_denial)?;
-        self.admit_component(binding, &native)?;
+        if let Some(prepared) = &prepared {
+            self.check_derived_cohort(native.members().map(Into::into), prepared)?;
+        } else {
+            self.admit_component(binding, &native)?;
+        }
         Ok(WorthQueryApplicationInvariantComponent::new(
             native,
             result::ComponentContext::new(self, binding.member_kind),
@@ -50,6 +68,12 @@ impl<Schema> WorthQueryApplicationInvariantReadView<'_, Schema> {
         WorthQueryInvariantAccessDenial,
     > {
         self.check_binding(&binding.binding_identity)?;
+        if binding.member_domain.entity_kind().is_none() {
+            return Err(invalid("entity-only component census"));
+        }
+        if binding.source.is_some() {
+            return self.derived_entity_components(binding);
+        }
         let native = self
             .relations
             .aggregates()
@@ -145,7 +169,9 @@ fn invalid(subject: &str) -> WorthQueryInvariantAccessDenial {
         subject,
     )
 }
-fn aggregate_denial(cause: AggregateReadDenial) -> WorthQueryInvariantAccessDenial {
+pub(in crate::domain_computation::primary_graph::application_invariant) fn aggregate_denial(
+    cause: AggregateReadDenial,
+) -> WorthQueryInvariantAccessDenial {
     use WorthQueryInvariantAccessDenialKind as Kind;
     let kind = match cause {
         AggregateReadDenial::Budget(cause) => {
@@ -156,6 +182,9 @@ fn aggregate_denial(cause: AggregateReadDenial) -> WorthQueryInvariantAccessDeni
         AggregateReadDenial::WrongMemberKind => Kind::WrongEntityKind,
         AggregateReadDenial::PreparationRefused => Kind::AggregatePreparationRefused,
         AggregateReadDenial::Execution(cause) => Kind::Execution(cause),
+        AggregateReadDenial::Derived(cause) => {
+            return super::derived_relation::native_denial(cause)
+        }
     };
     denial(kind, "component read")
 }

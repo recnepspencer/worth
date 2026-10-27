@@ -1,5 +1,6 @@
 //! One body per cohort, one full census body, and roots in original Native order.
 use super::*;
+use crate::domain_computation::primary_graph::component_selection::storage;
 use acquisition::AcquiredComponents;
 pub(super) fn complete(
     mut selected: AcquiredComponents,
@@ -11,7 +12,7 @@ pub(super) fn complete(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     selected
         .cohorts
-        .sort_by_key(|cohort| cohort.aggregate.native().identity());
+        .sort_unstable_by_key(|cohort| cohort.aggregate.native().identity());
     let count = selected
         .cohorts
         .iter()
@@ -27,14 +28,45 @@ pub(super) fn complete(
     }
     let is_census = meaning.selection() == ApplicationQueryComponentSelection::Census;
     let mut of_source = None;
+    let allocation = Arc::clone(&selected.allocation);
+    let denied = |cause| super::super::super::denial::relational_read_denial(cause, plan.name);
+    let fact_count = selected
+        .cohorts
+        .iter()
+        .try_fold(usize::from(selected.census.is_some()), |n, cohort| {
+            n.checked_add(cohort.visibility.len())?.checked_add(1)
+        })
+        .ok_or_else(|| denied(Cause::ChargedBytesOverflow))?;
+    let meaning_bytes = [
+        meaning.query_type(),
+        meaning.slot_type(),
+        meaning.set(),
+        meaning.member(),
+        meaning.output_name(),
+    ]
+    .iter()
+    .try_fold(
+        size_of::<ApplicationQueryComponentMeaning>() + 2 * size_of::<usize>(),
+        |n, text| n.checked_add(text.len()),
+    )
+    .and_then(|n| u64::try_from(n).ok())
+    .ok_or_else(|| denied(Cause::ChargedBytesOverflow))?;
+    allocation.claim(execution, meaning_bytes).map_err(denied)?;
     let meaning = Arc::new(meaning.clone());
-    let mut roots = Vec::new();
-    roots.try_reserve_exact(count).map_err(|_| {
-        super::super::super::denial::relational_read_denial(Cause::AllocationFailed, plan.name)
-    })?;
+    let mut roots = storage::vector(execution, &allocation, count).map_err(denied)?;
     let mut row_sources = BTreeMap::new();
-    let mut all_bodies = Vec::new();
-    let mut all_facts = Vec::new();
+    let mut all_bodies = storage::vector(
+        execution,
+        &allocation,
+        if is_census { selected.cohorts.len() } else { 0 },
+    )
+    .map_err(denied)?;
+    let mut all_facts = storage::vector(
+        execution,
+        &allocation,
+        if is_census { fact_count } else { 0 },
+    )
+    .map_err(denied)?;
     all_facts.extend(selected.census);
     for cohort in selected.cohorts {
         work.checkpoint(plan.name)?;
@@ -52,13 +84,16 @@ pub(super) fn complete(
         } else {
             ComponentSelectionSubject::Of(cohort.aggregate.native().anchor())
         };
+        let mut bodies = storage::vector(execution, &allocation, 1).map_err(denied)?;
+        bodies.push(Arc::clone(&cohort.aggregate));
         let body = make_body(
             execution,
             graph,
             plan,
             subject,
-            vec![Arc::clone(&cohort.aggregate)],
+            bodies,
             facts,
+            Arc::clone(&allocation),
             work,
         )?;
         let source = make_source(execution, plan, &meaning, body)?;
@@ -68,9 +103,17 @@ pub(super) fn complete(
         for member in cohort.aggregate.native().members() {
             work.checkpoint(plan.name)?;
             roots.push(member);
+            allocation
+                .claim_tree::<(EntityId, Arc<WorthQueryObservedRootSelection>)>(
+                    execution,
+                    row_sources.len(),
+                )
+                .map_err(denied)?;
             row_sources.insert(member, Arc::clone(&source));
         }
-        all_bodies.push(cohort.aggregate);
+        if is_census {
+            all_bodies.push(cohort.aggregate);
+        }
     }
     let subject = if meaning.selection() == ApplicationQueryComponentSelection::OfScopeMember {
         ComponentSelectionSubject::Of(plan.root)
@@ -78,7 +121,16 @@ pub(super) fn complete(
         ComponentSelectionSubject::Census
     };
     let result_set_source = if is_census {
-        let full = make_body(execution, graph, plan, subject, all_bodies, all_facts, work)?;
+        let full = make_body(
+            execution,
+            graph,
+            plan,
+            subject,
+            all_bodies,
+            all_facts,
+            Arc::clone(&allocation),
+            work,
+        )?;
         Some(make_source(execution, plan, &meaning, full)?)
     } else {
         of_source
@@ -103,8 +155,11 @@ fn make_body(
     subject: ComponentSelectionSubject,
     aggregates: Vec<Arc<AggregateObservation>>,
     facts: Vec<SourceFacts>,
+    allocation: Arc<SourceFactsAllocation>,
     work: &mut RootSelectionWork<'_>,
 ) -> Result<Arc<ComponentSelection>, WorthQueryApplicationReadExecutionDenial> {
+    storage::body(execution, &allocation)
+        .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
     let interruption = NativeReadInterruption::new(work.interruption, plan.name);
     let result = execution.run_native_with_checkpoint(|context| {
         ComponentSelection::from_query(
@@ -116,6 +171,7 @@ fn make_body(
             subject,
             aggregates,
             facts,
+            allocation,
             || {
                 AggregateObservation::checkpoint(context)?;
                 interruption.checkpoint()
@@ -141,11 +197,18 @@ fn make_source(
     body: Arc<ComponentSelection>,
 ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial> {
     let mut facts = SourceFactsBuilder::default();
+    facts.protect(execution, body.allocation()).map_err(|cause| match cause {
+        crate::domain_computation::primary_graph::source_facts::SourceFactReadDenial::Execution(cause) => super::super::super::denial::relational_read_denial(cause, plan.name),
+        _ => path_union::traversal_denial(plan.name),
+    })?;
     facts
         .observe_entity(execution, plan.root)
         .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
     let facts = facts
         .finish(execution)
+        .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
+    facts
+        .admit_container::<WorthQueryObservedRootSelection>(execution)
         .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
     Ok(Arc::new(WorthQueryObservedRootSelection::with_components(
         facts,

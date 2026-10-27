@@ -92,6 +92,7 @@ impl<'a> ClosureIndex<'a> {
         member: &ApplicationSchemaMember,
     ) -> Result<(), ApplicationSchemaDeclarationDenial> {
         match member {
+            ApplicationSchemaMember::DerivedComponentSet { definition } => definition.validate_closure(self.members),
             ApplicationSchemaMember::ComponentSet { definition } => {
                 super::component_set::validate_closure(definition, &self.entities, &self.relations)
             }

@@ -36,7 +36,9 @@ pub use crate::domain_computation::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    bound_advancement_requests_on_this_thread_for_test, conditional_intent_read_is_active_for_test,
+    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
+    bound_advancement_requests_on_this_thread_for_test,
+    caller_pass_reports_on_this_thread_for_test, conditional_intent_read_is_active_for_test,
     fact_verification_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     inexact_native_deliveries_on_this_thread_for_test, native_marking_on_this_thread_for_test,
@@ -46,7 +48,9 @@ pub use crate::domain_computation::primary_graph::{
     principal_target_reads_on_this_thread_for_test,
     query_read_kernel_entries_by_root_on_this_thread_for_test,
     query_read_kernel_entries_on_this_thread_for_test, query_test_execution_authority_for_test,
-    test_execution_workers_for_test, WorthQueryDiscoveredRetentionControlDenial,
+    test_execution_workers_for_test, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest, WorthQueryDiscoveredRetentionControlDenial,
     WorthQueryDiscoveredRetentionReservationForTest, WorthQueryExecutionPlacementForTest,
     WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
     WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
@@ -243,15 +247,17 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantAggregate,
     WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind,
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryInvariantDerivedRelation, WorthQueryInvariantEntityIdentity,
-    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionComponent,
-    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
-    WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenial,
-    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
-    WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
-    WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
-    WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
-    WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
+    WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
+    WorthQueryInvariantEntityIdentity, WorthQueryInvariantGraphComponent,
+    WorthQueryInvariantGraphMember, WorthQueryInvariantMutationTarget,
+    WorthQueryInvariantProjectionComponent, WorthQueryInvariantProjectionDenial,
+    WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionOrbit,
+    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
+    WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
+    WorthQueryInvariantProjectionWalkStep, WorthQueryInvariantProjectionWork,
+    WorthQueryInvariantRelation, WorthQueryManagedApplicationRecoveryDenial,
+    WorthQueryManagedApplicationRecoveryOutcome, WorthQueryManagedApplicationRecoveryPerformed,
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
     WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
@@ -308,17 +314,18 @@ pub use crate::domain_computation::primary_graph::{
     WorthQuerySelectedCorrectionSource, WorthQuerySelectedProductOperation,
     WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial,
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
-    WorthQueryStoppedBranchSetAdoption, WorthQuerySuspendedGeneratedOutput,
-    WorthQueryTemporalInvocationFailure, WorthQueryTemporalInvocationFailureKind,
-    WorthQueryTemporalOperationAuthorization, WorthQueryTemporalOperationExecution,
-    WorthQueryTemporalOperationInvoker, WorthQueryTemporalPrincipalAdmission,
-    WorthQueryTemporalPrincipalFailure, WorthQueryTemporalPrincipalFailureKind,
-    WorthQueryTemporalPrincipalSource, WorthQueryTemporalQueryAuthorization,
-    WorthQueryTemporalQueryAuthorizationDenial, WorthQueryTemporalReconstructionAccess,
-    WorthQueryTouchedRecordIdentity, WorthQueryUnpublishedBranchAdoption,
-    WorthQueryUnpublishedGeneratedOutputRestoration, WorthQueryValueDecodeDenial,
-    WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowDispositions,
-    WorthQueryWorkflowInstanceDisposition,
+    WorthQueryStoppedBranchSetAdoption, WorthQueryStorageRetentionDenial,
+    WorthQueryStorageRetentionProgress, WorthQueryStorageRetentionStop,
+    WorthQuerySuspendedGeneratedOutput, WorthQueryTemporalInvocationFailure,
+    WorthQueryTemporalInvocationFailureKind, WorthQueryTemporalOperationAuthorization,
+    WorthQueryTemporalOperationExecution, WorthQueryTemporalOperationInvoker,
+    WorthQueryTemporalPrincipalAdmission, WorthQueryTemporalPrincipalFailure,
+    WorthQueryTemporalPrincipalFailureKind, WorthQueryTemporalPrincipalSource,
+    WorthQueryTemporalQueryAuthorization, WorthQueryTemporalQueryAuthorizationDenial,
+    WorthQueryTemporalReconstructionAccess, WorthQueryTouchedRecordIdentity,
+    WorthQueryUnpublishedBranchAdoption, WorthQueryUnpublishedGeneratedOutputRestoration,
+    WorthQueryValueDecodeDenial, WorthQueryWorkflowDefinitionDisposition,
+    WorthQueryWorkflowDispositions, WorthQueryWorkflowInstanceDisposition,
 };
 pub use crate::domain_computation::runtime_time::WorthQueryRuntimeTimeSample;
 pub use crate::domain_computation::{
@@ -339,13 +346,6 @@ pub use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 pub use crate::domain_computation::primary_graph::relational_execution_kind;
 pub use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind, WorthQueryProviderSessionDenialKind,
-};
-
-pub use crate::domain_computation::primary_graph::{
-    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
 };
 
 pub use worth_signal::facade::{

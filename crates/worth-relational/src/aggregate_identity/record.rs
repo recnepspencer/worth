@@ -6,8 +6,10 @@ use worth_foundational::facade::{
 };
 
 use super::AggregateLineageKind;
+use crate::graph_member::NativeMemberKey;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, PartitionId};
+mod projected;
 #[cfg(test)]
 mod tests;
 
@@ -33,13 +35,13 @@ pub(crate) const LINEAGE_FIELDS: &[(&str, ScalarAspectType)] = &[
     ("kind", ScalarAspectType::UInt8),
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AggregateRecord {
     pub(crate) identity: AggregateIdentity,
     pub(crate) definition: AggregateDefinitionIdentity,
     pub(crate) born: CommitId,
-    pub(crate) seed: EntityId,
-    pub(crate) current_anchor: Option<EntityId>,
+    pub(crate) seed: NativeMemberKey,
+    pub(crate) current_anchor: Option<NativeMemberKey>,
     pub(crate) retired: Option<CommitId>,
 }
 
@@ -75,7 +77,7 @@ pub(crate) fn locator(aspect: &str, field: &str) -> AspectFieldLocator {
 }
 
 impl AggregateRecord {
-    pub(crate) fn fields(&self) -> BTreeMap<AspectFieldLocator, AspectValue> {
+    pub(crate) fn base_fields(&self) -> BTreeMap<AspectFieldLocator, AspectValue> {
         let mut fields = BTreeMap::new();
         put_digest(&mut fields, "identity", self.identity.bytes());
         put_digest(&mut fields, "definition", self.definition.bytes());
@@ -83,11 +85,11 @@ impl AggregateRecord {
             locator(AGGREGATE_ASPECT, "born"),
             AspectValue::UInt64(self.born.0),
         );
-        put_entity(&mut fields, "seed", self.seed);
+        put_entity(&mut fields, "seed", self.seed.carrier());
         put_entity(
             &mut fields,
             "current",
-            self.current_anchor.unwrap_or(self.seed),
+            self.current_anchor.as_ref().unwrap_or(&self.seed).carrier(),
         );
         fields.insert(
             locator(AGGREGATE_ASPECT, "active"),
@@ -124,8 +126,8 @@ impl AggregateRecord {
                 "definition",
             )?),
             born: CommitId(u64_value(values["born"])?),
-            seed,
-            current_anchor: active.then_some(current),
+            seed: seed.into(),
+            current_anchor: active.then(|| current.into()),
             retired: (!active).then_some(CommitId(retired)),
         })
     }

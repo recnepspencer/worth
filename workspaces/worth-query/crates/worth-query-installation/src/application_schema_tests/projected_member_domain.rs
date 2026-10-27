@@ -1,4 +1,4 @@
-//! Descriptive logical members cannot bypass an absent Native domain issuer.
+//! Installed projected-domain meaning binds through the real schema index.
 use super::*;
 use worth_query_declaration::facade::application_schema::{
     ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
@@ -35,7 +35,7 @@ impl ApplicationSchema for ProjectedSchema {
 }
 
 #[test]
-fn projected_member_meaning_refuses_installed_binding_until_actual_native_issuer_exists() {
+fn projected_member_meaning_binds_through_the_installed_schema_index() {
     let declaration = ProjectedSchema::declaration().unwrap();
     let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
         "typed-test",
@@ -54,15 +54,7 @@ fn projected_member_meaning_refuses_installed_binding_until_actual_native_issuer
         [admitted],
     )
     .unwrap();
-    let denial = index
-        .bind_application_schema(declaration)
-        .err()
-        .expect("pure domain meaning cannot issue Native members");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryInstalledApplicationSchemaDenialKind::ProjectedMemberDomainUnavailable
-    );
-    assert_eq!(denial.subject(), "Uses");
+    index.bind_application_schema(declaration).unwrap();
     installed_index()
         .bind_application_schema(TestSchema::declaration().unwrap())
         .unwrap();

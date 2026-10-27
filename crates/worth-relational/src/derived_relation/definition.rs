@@ -1,7 +1,9 @@
 //! Descriptive recipes and the separate registry-issued executable handle.
 use std::sync::Arc;
 
+use crate::graph_member::NativeMemberDomain;
 use crate::identity::data::KindId;
+use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 use crate::schema::data::{SchemaId, SchemaVersionId};
 use serde::{Deserialize, Serialize};
 
@@ -32,20 +34,41 @@ pub enum DerivedRelationNode {
     WithoutSelfEdges {
         input: usize,
     },
+    CarrierLift {
+        domain: ProjectedMemberDomainIdentity,
+        case: String,
+    },
+    Union {
+        left: usize,
+        right: usize,
+    },
+    Intersection {
+        left: usize,
+        right: usize,
+    },
 }
 
 /// Portable Native meaning, never a registered binding or prepared read.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DerivedRelationDefinitionParts {
     pub identity: DerivedRelationIdentity,
-    pub from: KindId,
-    pub to: KindId,
+    pub from: NativeMemberDomain,
+    pub to: NativeMemberDomain,
     pub nodes: Vec<DerivedRelationNode>,
+    /// Absent for the existing statically proved unbounded contract. The
+    /// optional tail changes no legacy physical recipe's serialized meaning.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub laws: Option<super::DerivedRelationGraphLaws>,
 }
 
 impl DerivedRelationDefinitionParts {
     pub(crate) fn owned_capacity_bytes(&self) -> usize {
-        self.identity.schema.0.capacity()
+        self.laws
+            .as_ref()
+            .map_or(0, super::DerivedRelationGraphLaws::owned_bytes)
+            + self.from.owned_bytes()
+            + self.to.owned_bytes()
+            + self.identity.schema.0.capacity()
             + self.identity.name.capacity()
             + self.nodes.capacity() * std::mem::size_of::<DerivedRelationNode>()
             + self
@@ -54,6 +77,9 @@ impl DerivedRelationDefinitionParts {
                 .map(|node| match node {
                     DerivedRelationNode::Derived(identity) => {
                         identity.schema.0.capacity() + identity.name.capacity()
+                    }
+                    DerivedRelationNode::CarrierLift { domain, case } => {
+                        domain.owned_bytes() + case.capacity()
                     }
                     _ => 0,
                 })
@@ -78,6 +104,9 @@ impl Eq for DerivedRelationHandle {}
 pub(crate) struct RegisteredDerivedRelation {
     pub(crate) parts: DerivedRelationDefinitionParts,
     pub(crate) leaves: Vec<(KindId, KindId, KindId)>,
+    pub(crate) domains: Vec<ProjectedMemberDomainIdentity>,
+    pub(crate) carriers: Vec<KindId>,
+    pub(crate) endpoints: Vec<(NativeMemberDomain, NativeMemberDomain)>,
 }
 
 impl DerivedRelationHandle {
@@ -88,6 +117,11 @@ impl DerivedRelationHandle {
     /// Every physical source, including sources of named recipes.
     pub fn physical_sources(&self) -> &[(KindId, KindId, KindId)] {
         &self.entry.leaves
+    }
+
+    /// Every finite carrier domain, including named and Boolean branches.
+    pub fn projected_domains(&self) -> &[ProjectedMemberDomainIdentity] {
+        &self.entry.domains
     }
 }
 
@@ -106,4 +140,7 @@ pub enum DerivedRelationDenial {
     OutsideDeclaredAccess,
     RecordUnavailable,
     WorkBudgetExceeded,
+    InvalidMemberDomain,
+    InvalidMemberCase,
+    InvalidGraphLaws,
 }

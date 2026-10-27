@@ -1,7 +1,9 @@
 //! Typed authoring of the same portable relation expression used by installation.
 use std::marker::PhantomData;
 
-use crate::application_schema::ApplicationRelationRef;
+use crate::application_schema::{
+    ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainRef, ApplicationRelationRef,
+};
 
 use super::expression::{
     ApplicationDerivedRelationExpression, ApplicationDerivedRelationSource,
@@ -64,6 +66,41 @@ impl<S, F, T> ApplicationDerivedRelation<S, F, T> {
             marker: PhantomData,
         }
     }
+
+    /// Unions complete endpoint sets while retaining both physical supports.
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            expression: self.expression.union(other.expression),
+            marker: PhantomData,
+        }
+    }
+    /// Intersects endpoint sets; empty and nonempty support on both sides remains relevant.
+    pub fn intersection(self, other: Self) -> Self {
+        Self {
+            expression: self.expression.intersection(other.expression),
+            marker: PhantomData,
+        }
+    }
+
+    /// Lifts a stored carrier to one actual case in its declared finite domain.
+    pub fn carrier_case<Case>(
+        domain: ApplicationProjectedMemberDomainRef<S, T, F>,
+        case: ApplicationProjectedMemberCaseRef<S, T, Case>,
+    ) -> Result<Self, super::ApplicationDerivedRelationDefinitionDenial> {
+        if domain.name() != case.domain() {
+            return Err(super::ApplicationDerivedRelationDefinitionDenial::ForeignCase);
+        }
+        Ok(Self {
+            expression: ApplicationDerivedRelationExpression {
+                nodes: vec![super::ApplicationDerivedRelationNode::CarrierLift {
+                    domain: domain.name().to_owned(),
+                    carrier: domain.carrier().to_owned(),
+                    case: case.name().to_owned(),
+                }],
+            },
+            marker: PhantomData,
+        })
+    }
 }
 
 impl<S, E> ApplicationDerivedRelation<S, E, E> {
@@ -89,8 +126,8 @@ impl<S, R, F, T> ApplicationDerivedRelationOperand<S, F, T> for ApplicationRelat
         ApplicationDerivedRelationExpression::source(ApplicationDerivedRelationSource {
             kind: ApplicationDerivedRelationSourceKind::Stored,
             relation: self.name().to_owned(),
-            from: self.from().to_owned(),
-            to: self.to().to_owned(),
+            from: self.from().into(),
+            to: self.to().into(),
         })
     }
 }
@@ -103,8 +140,8 @@ impl<S, R, F, T> ApplicationDerivedRelationOperand<S, F, T>
         ApplicationDerivedRelationExpression::source(ApplicationDerivedRelationSource {
             kind: ApplicationDerivedRelationSourceKind::Derived,
             relation: self.name().to_owned(),
-            from: self.from().to_owned(),
-            to: self.to().to_owned(),
+            from: self.from_member().into_meaning(),
+            to: self.to_member().into_meaning(),
         })
     }
 }

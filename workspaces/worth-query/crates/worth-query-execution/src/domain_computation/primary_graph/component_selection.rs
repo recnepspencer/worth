@@ -8,7 +8,11 @@ use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_query_installation::facade::WorthQueryOperationComponentReadScope;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 pub(in crate::domain_computation::primary_graph) mod acquisition;
+mod aggregates;
 mod commitment;
+mod derived;
+pub(in crate::domain_computation::primary_graph) mod storage;
+pub(in crate::domain_computation::primary_graph) use aggregates::ComponentAggregateBodies;
 mod currentness;
 mod key;
 mod origin;
@@ -23,8 +27,9 @@ pub(in crate::domain_computation) struct ComponentSelection {
     origin: ComponentSelectionOrigin,
     layout: ComponentSetLayout,
     source: SnapshotHandle,
-    aggregates: Vec<Arc<AggregateObservation>>,
+    aggregates: ComponentAggregateBodies,
     facts: Vec<SourceFacts>,
+    allocation: Arc<super::source_facts::SourceFactsAllocation>,
     commitment: [u8; 32],
 }
 impl ComponentSelection {
@@ -36,6 +41,7 @@ impl ComponentSelection {
         source: SnapshotHandle,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::source_facts::SourceFactsAllocation>,
         poll: impl FnMut() -> Result<
             (),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -51,6 +57,7 @@ impl ComponentSelection {
             source,
             aggregates,
             facts,
+            allocation,
             poll,
         )
     }
@@ -61,6 +68,7 @@ impl ComponentSelection {
         source: SnapshotHandle,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::source_facts::SourceFactsAllocation>,
         poll: impl FnMut() -> Result<
             (),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -79,8 +87,9 @@ impl ComponentSelection {
             origin,
             layout,
             source,
-            aggregates,
+            aggregates: ComponentAggregateBodies::Physical(aggregates),
             facts,
+            allocation,
             commitment,
         }))
     }
@@ -93,21 +102,42 @@ impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.source
     }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn operation_scope(
         &self,
     ) -> Option<&WorthQueryOperationComponentReadScope> {
         match &self.origin {
             ComponentSelectionOrigin::Operation(scope) => Some(scope),
-            ComponentSelectionOrigin::Query { .. } => None,
+            ComponentSelectionOrigin::Query { .. } | ComponentSelectionOrigin::Derived(_) => None,
         }
     }
     pub(in crate::domain_computation::primary_graph) fn layout(&self) -> &ComponentSetLayout {
         &self.layout
     }
+    pub(in crate::domain_computation::primary_graph) fn aggregate_bodies(
+        &self,
+    ) -> &ComponentAggregateBodies {
+        &self.aggregates
+    }
+    pub(in crate::domain_computation::primary_graph) fn physical_aggregates(
+        &self,
+    ) -> Option<&[Arc<AggregateObservation>]> {
+        match &self.aggregates {
+            ComponentAggregateBodies::Physical(values) => Some(values),
+            _ => None,
+        }
+    }
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn aggregates(
         &self,
     ) -> &[Arc<AggregateObservation>] {
-        &self.aggregates
+        self.physical_aggregates()
+            .expect("physical-only component fixture")
+    }
+    pub(in crate::domain_computation::primary_graph) fn allocation(
+        &self,
+    ) -> &Arc<super::source_facts::SourceFactsAllocation> {
+        &self.allocation
     }
     pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &[SourceFacts] {
         &self.facts
@@ -118,17 +148,19 @@ impl ComponentSelection {
         mut poll: impl FnMut() -> Result<(), E>,
     ) -> Result<bool, E> {
         poll()?;
+        self.key.checkpoint_subject(&mut poll)?;
+        other.key.checkpoint_subject(&mut poll)?;
         if self.key != other.key
             || self.origin != other.origin
-            || self.aggregates.len() != other.aggregates.len()
             || self.facts.len() != other.facts.len()
         {
             return Ok(false);
         }
-        for (a, b) in self.aggregates.iter().zip(&other.aggregates) {
-            if !a.same_truth_with_poll(b, &mut poll)? {
-                return Ok(false);
-            }
+        if !self
+            .aggregates
+            .same_truth_with_poll(&other.aggregates, &mut poll)?
+        {
+            return Ok(false);
         }
         for (a, b) in self.facts.iter().zip(&other.facts) {
             poll()?;

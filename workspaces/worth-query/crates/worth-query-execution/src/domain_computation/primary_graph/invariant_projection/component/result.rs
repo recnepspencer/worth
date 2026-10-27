@@ -11,6 +11,9 @@ use worth_relational::facade::identity::KindId;
 /// Retention preserves the original Native request custody, not read authority.
 pub struct WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
     aggregate: Arc<AggregateObservation>,
+    _selection: Option<
+        Arc<crate::domain_computation::primary_graph::component_selection::ComponentSelection>,
+    >,
     identity: WorthQueryAggregateIdentity<Schema, Set>,
     member: Arc<str>,
     member_kind: KindId,
@@ -27,11 +30,21 @@ impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, En
         Self {
             identity: WorthQueryAggregateIdentity::from_component_read(aggregate.native(), binding),
             aggregate,
+            _selection: None,
             member: Arc::clone(&layout.member),
             member_kind: layout.member_kind,
             authority,
             _entity: PhantomData,
         }
+    }
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn with_selection(
+        mut self,
+        selection: Arc<
+            crate::domain_computation::primary_graph::component_selection::ComponentSelection,
+        >,
+    ) -> Self {
+        self._selection = Some(selection);
+        self
     }
     pub fn identity(&self) -> &WorthQueryAggregateIdentity<Schema, Set> {
         &self.identity

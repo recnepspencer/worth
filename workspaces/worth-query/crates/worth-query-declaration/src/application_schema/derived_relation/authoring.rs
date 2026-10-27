@@ -23,8 +23,8 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
             definition: ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
                 WorthQueryPortableDerivedRelationParts {
                     relation: relation.name().to_owned(),
-                    from: relation.from().to_owned(),
-                    to: relation.to().to_owned(),
+                    from: relation.from_member().into_meaning(),
+                    to: relation.to_member().into_meaning(),
                     expression: recipe.expression,
                     laws,
                 },

@@ -2,8 +2,8 @@
 use super::super::operation::GraphDenial;
 use super::operation::*;
 use super::*;
-pub(super) struct Handler<L: LawPolicy, Owner>(
-    pub(super)  WorthQueryInstalledPartitionedComputation<
+pub(in crate::relation_laws) struct Handler<L: LawPolicy, Owner>(
+    pub(in crate::relation_laws)  WorthQueryInstalledPartitionedComputation<
         GraphSchema<L>,
         GraphFeature,
         collection::CountComputation,

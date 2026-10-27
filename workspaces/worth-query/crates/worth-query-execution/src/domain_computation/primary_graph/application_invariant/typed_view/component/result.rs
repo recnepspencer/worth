@@ -10,7 +10,10 @@ use worth_relational::facade::{
     runtime::{AggregateRead, AggregateReadCollection},
 };
 
-pub(super) struct ComponentContext<Schema, Entity> {
+pub(in crate::domain_computation::primary_graph::application_invariant::typed_view) struct ComponentContext<
+    Schema,
+    Entity,
+> {
     binding: ApplicationSchemaBindingIdentity,
     proposal: Option<(u64, u64)>,
     posture: ViewPosture,
@@ -18,7 +21,7 @@ pub(super) struct ComponentContext<Schema, Entity> {
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 impl<Schema, Entity> ComponentContext<Schema, Entity> {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph::application_invariant::typed_view) fn new(
         view: &WorthQueryApplicationInvariantReadView<'_, Schema>,
         kind: KindId,
     ) -> Self {
@@ -89,9 +92,21 @@ impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponent<Schema, Set, E
 }
 /// Complete set in Native aggregate identity order; no copied membership cache.
 pub struct WorthQueryApplicationInvariantComponents<Schema, Set, Entity> {
-    native: AggregateReadCollection,
+    native: ComponentCollection,
     context: ComponentContext<Schema, Entity>,
     _set: PhantomData<fn() -> Set>,
+}
+enum ComponentCollection {
+    Direct(AggregateReadCollection),
+    Prepared(worth_relational::facade::runtime::AggregateCensusRead),
+}
+impl ComponentCollection {
+    fn collection(&self) -> &AggregateReadCollection {
+        match self {
+            Self::Direct(native) => native,
+            Self::Prepared(native) => native.collection(),
+        }
+    }
 }
 impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponents<Schema, Set, Entity> {
     pub(super) fn new(
@@ -99,23 +114,33 @@ impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponents<Schema, Set, 
         context: ComponentContext<Schema, Entity>,
     ) -> Self {
         Self {
-            native,
+            native: ComponentCollection::Direct(native),
             context,
             _set: PhantomData,
         }
     }
     pub fn len(&self) -> usize {
-        self.native.len()
+        self.native.collection().len()
     }
     pub fn is_empty(&self) -> bool {
-        self.native.is_empty()
+        self.native.collection().len() == 0
     }
     pub fn iter(
         &self,
     ) -> impl ExactSizeIterator<Item = WorthQueryApplicationInvariantComponent<Schema, Set, Entity>> + '_
     {
-        self.native.iter().map(|native| {
+        self.native.collection().iter().map(|native| {
             WorthQueryApplicationInvariantComponent::new(native.clone(), self.context.clone())
         })
+    }
+    pub(in crate::domain_computation::primary_graph::application_invariant::typed_view) fn from_prepared(
+        native: worth_relational::facade::runtime::AggregateCensusRead,
+        context: ComponentContext<Schema, Entity>,
+    ) -> Self {
+        Self {
+            native: ComponentCollection::Prepared(native),
+            context,
+            _set: PhantomData,
+        }
     }
 }

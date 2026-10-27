@@ -1,12 +1,13 @@
 //! Genuine proposed/committed source admission and frozen proof consumption.
-use super::affinity::DerivedSourceAffinity;
 use super::evaluation::SourceRead;
 use super::proof::{
     DerivedRelationReadIdentity as Identity, PreparedBody, PreparedDerivedRelationRead as Prepared,
 };
+use super::DerivedRelationReadShape as Shape;
 use super::{DerivedRelationAdjacency as Adjacency, DerivedRelationData as Data};
 use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as Handle};
 use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
+use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
 use crate::validation::data::{
     StructuralReadError, StructuralRelationRecord, StructuralRelationView,
@@ -14,39 +15,82 @@ use crate::validation::data::{
 use std::sync::Arc;
 
 impl<'runtime> StructuralRelationView<'runtime> {
-    pub(crate) fn with_derived_source(
-        mut self,
-        runtime: &crate::validation::engine::InvariantRuntimeView<'_>,
-        observation: &crate::validation::engine::InvariantObservation<'_>,
-        committed: bool,
-    ) -> Self {
-        let version = self.aggregate_read_parts().0.version_id();
-        self.derived_source = Some((
-            runtime.selected_registry.clone(),
-            DerivedSourceAffinity {
-                observation: observation.observation_identity(),
-                committed,
-                version,
-                proposal: observation.proposal_identity().cloned(),
-            },
-        ));
-        self
-    }
-
     /// Creates only a sealed lookup key, without reading graph data. Evaluation
     /// can therefore reject an unprepared root before any source acquisition.
     pub fn derived_read_identity(
         &self,
         definition: &Handle,
-        root: EntityId,
+        root: impl Into<NativeMemberKey>,
     ) -> Result<Identity, Denial> {
+        self.derived_source_identity(definition, root, Shape::Adjacency { reverse: false })
+    }
+
+    /// Issues a lookup identity for one exact interpretation without acquiring data.
+    pub fn derived_source_identity(
+        &self,
+        definition: &Handle,
+        root: impl Into<NativeMemberKey>,
+        shape: Shape,
+    ) -> Result<Identity, Denial> {
+        self.require_derived_relation(definition)?;
+        if !matches!(shape, Shape::Adjacency { .. }) {
+            let names = definition
+                .parts()
+                .from
+                .name_bytes()
+                .and_then(|n| n.checked_add(definition.parts().to.name_bytes()?))
+                .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
+            self.read_budget()
+                .checkpoint(names as u64)
+                .map_err(Denial::Structural)?;
+            if definition.parts().from != definition.parts().to {
+                return Err(DefinitionDenial::DiscontinuousEndpoints.into());
+            }
+        }
+        let (_, source) = self.structural_source.as_ref().expect("source admitted");
+        Ok(Identity {
+            source: source.clone(),
+            definition: definition.clone(),
+            root: root.into(),
+            shape,
+        })
+    }
+
+    /// Admit only the actual registered source and this view's full audience.
+    /// This does not create a root, observed member or prepared read proof.
+    pub(crate) fn require_derived_relation(&self, definition: &Handle) -> Result<(), Denial> {
         self.read_budget()
             .check_live()
             .map_err(Denial::Structural)?;
-        let (registry, source) = self
-            .derived_source
+        let (registry, _) = self
+            .structural_source
             .as_ref()
             .ok_or(DefinitionDenial::ForeignObservation)?;
+        let names = definition
+            .parts()
+            .identity
+            .schema
+            .0
+            .len()
+            .checked_add(definition.parts().identity.name.len())
+            .ok_or(DefinitionDenial::WorkBudgetExceeded)?;
+        let levels = u64::from(
+            usize::BITS
+                - registry
+                    .registry()
+                    .derived_relations
+                    .len()
+                    .max(1)
+                    .leading_zeros(),
+        );
+        self.read_budget()
+            .checkpoint(
+                (names as u64)
+                    .checked_mul(11)
+                    .and_then(|n| n.checked_mul(levels))
+                    .ok_or(DefinitionDenial::WorkBudgetExceeded)?,
+            )
+            .map_err(Denial::Structural)?;
         if !registry.registry().admits_derived_relation(definition) {
             return Err(DefinitionDenial::ForeignDefinition.into());
         }
@@ -60,11 +104,13 @@ impl<'runtime> StructuralRelationView<'runtime> {
             self.require_entity_kind(*to)
                 .map_err(|error| self.derived_refusal(error))?;
         }
-        Ok(Identity {
-            source: source.clone(),
-            definition: definition.clone(),
-            root,
-        })
+        // A carrier-only recipe may have no physical relation leaves. Its
+        // existence and empty-result reads still require the actual carrier.
+        for &carrier in &definition.entry.carriers {
+            self.require_entity_kind(carrier)
+                .map_err(|error| self.derived_refusal(error))?;
+        }
+        Ok(())
     }
 
     /// Evaluates the genuine current view and seals all positive and negative
@@ -72,18 +118,31 @@ impl<'runtime> StructuralRelationView<'runtime> {
     pub fn prepare_derived_relations_from(
         &self,
         definition: &Handle,
-        root: EntityId,
+        root: impl Into<NativeMemberKey>,
     ) -> Result<Prepared, Denial> {
-        let identity = self.derived_read_identity(definition, root)?;
+        self.prepare_derived_source(definition, root, Shape::Adjacency { reverse: false })
+    }
+
+    /// Preparation is the only source-data acquisition door. The resulting
+    /// proof cannot be consumed as a different interpretation after freeze.
+    pub fn prepare_derived_source(
+        &self,
+        definition: &Handle,
+        root: impl Into<NativeMemberKey>,
+        shape: Shape,
+    ) -> Result<Prepared, Denial> {
+        let root = root.into();
+        let identity = self.derived_source_identity(definition, root.clone(), shape)?;
         let (registry, _) = self
-            .derived_source
+            .structural_source
             .as_ref()
             .expect("identity admitted source");
         let mut read = StructuralSource {
             view: self,
             reads: Reads::default(),
         };
-        let data = super::evaluation::evaluate(registry.registry(), definition, root, &mut read)?;
+        let (data, steps) =
+            super::source::acquire(registry.registry(), definition, root, shape, &mut read)?;
         self.read_budget()
             .claim_retained((size_of::<PreparedBody>() + 2 * size_of::<usize>()) as u64)
             .map_err(Denial::Structural)?;
@@ -94,6 +153,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             identity,
             body: Arc::new(PreparedBody {
                 data,
+                steps,
                 _retention: self.work_meter(),
             }),
         })
@@ -105,12 +165,43 @@ impl<'runtime> StructuralRelationView<'runtime> {
         &'borrow self,
         prepared: &'borrow Prepared,
     ) -> Result<&'borrow Data, Denial> {
-        let expected =
-            self.derived_read_identity(&prepared.identity.definition, prepared.identity.root)?;
+        if prepared.identity.shape != (Shape::Adjacency { reverse: false }) {
+            return Err(DefinitionDenial::InvalidExpression.into());
+        }
+        self.read_prepared_derived_source(prepared, Shape::Adjacency { reverse: false })
+    }
+
+    /// Checks actual source currency for exactly the shape carried by this proof.
+    pub fn read_prepared_derived_source<'borrow>(
+        &'borrow self,
+        prepared: &'borrow Prepared,
+        shape: Shape,
+    ) -> Result<&'borrow Data, Denial> {
+        if prepared.identity.shape != shape {
+            return Err(DefinitionDenial::InvalidExpression.into());
+        }
+        let expected = self.derived_source_identity(
+            &prepared.identity.definition,
+            prepared.identity.root.clone(),
+            prepared.identity.shape,
+        )?;
         if expected != prepared.identity || expected.source != prepared.identity.source {
             return Err(DefinitionDenial::ForeignObservation.into());
         }
         Ok(&prepared.body.data)
+    }
+
+    /// Returns actual breadth-first order only from a current traversal proof.
+    pub fn read_prepared_derived_steps<'borrow>(
+        &'borrow self,
+        prepared: &'borrow Prepared,
+        shape: Shape,
+    ) -> Result<&'borrow [super::DerivedRelationWalkStep], Denial> {
+        if matches!(shape, Shape::Adjacency { .. }) {
+            return Err(DefinitionDenial::InvalidExpression.into());
+        }
+        self.read_prepared_derived_source(prepared, shape)?;
+        Ok(&prepared.body.steps)
     }
 
     fn derived_refusal(&self, error: StructuralReadError) -> Denial {

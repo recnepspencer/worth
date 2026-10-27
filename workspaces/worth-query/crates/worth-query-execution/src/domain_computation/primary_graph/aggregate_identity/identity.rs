@@ -14,6 +14,7 @@ use worth_relational::facade::{
 enum AggregateSource {
     Orbit(KindId),
     Component,
+    DerivedOrbit,
 }
 
 /// Persistent aggregate name within an installed definition binding. This value
@@ -50,8 +51,8 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
             AggregateSource::Orbit(relation),
         )
     }
-    pub(in crate::domain_computation::primary_graph) fn from_component_read(
-        native: &PinnedAggregateRead,
+    pub(in crate::domain_computation::primary_graph) fn from_component_read<Member>(
+        native: &PinnedAggregateRead<Member>,
         binding: ApplicationSchemaBindingIdentity,
     ) -> Self {
         Self::new(
@@ -62,8 +63,8 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
         )
     }
 
-    pub(in crate::domain_computation::primary_graph) fn from_invariant_component_read(
-        native: &AggregateRead,
+    pub(in crate::domain_computation::primary_graph) fn from_invariant_component_read<Member>(
+        native: &AggregateRead<Member>,
         binding: ApplicationSchemaBindingIdentity,
     ) -> Self {
         Self::new(
@@ -71,6 +72,19 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
             native.identity(),
             binding,
             AggregateSource::Component,
+        )
+    }
+    pub(in crate::domain_computation::primary_graph) fn from_invariant_derived_orbit_read<
+        Member,
+    >(
+        native: &AggregateRead<Member>,
+        binding: ApplicationSchemaBindingIdentity,
+    ) -> Self {
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::DerivedOrbit,
         )
     }
 

@@ -18,6 +18,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         selection: AggregateSelection,
         member: worth_relational::facade::identity::EntityId,
         subject: &str,
+        allocation: Option<
+            &std::sync::Arc<
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+            >,
+        >,
     ) -> Result<std::sync::Arc<AggregateObservation>, Denial> {
         let pin = self
             .runtime
@@ -34,6 +39,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             &pin,
             self.execution,
             AggregateQuery {
+                allocation,
                 subject,
                 entity_kind,
                 selection,
@@ -42,6 +48,46 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 control: None,
             },
         );
+        self.finish_aggregate_read(result, selection, subject)
+    }
+
+    pub(super) fn read_member_aggregate_identity(
+        &mut self,
+        pin: &worth_relational::facade::runtime::RelationalPinnedRead,
+        member_kind: worth_relational::facade::identity::KindId,
+        definition: worth_foundational::facade::AggregateDefinitionIdentity,
+        member: worth_relational::facade::schema::NativeMemberKey,
+        subject: &str,
+        allocation: &std::sync::Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+    ) -> Result<
+        std::sync::Arc<AggregateObservation<worth_relational::facade::schema::NativeMemberKey>>,
+        Denial,
+    > {
+        let result = AggregateObservation::read_member(
+            pin,
+            self.execution,
+            subject,
+            member_kind,
+            definition,
+            member,
+            self.work_budget.remaining().map(|n| n as u64),
+            Some(allocation),
+        );
+        self.finish_aggregate_read(
+            result,
+            AggregateSelection::ComponentDefinition(definition),
+            subject,
+        )
+    }
+
+    fn finish_aggregate_read<Member>(
+        &mut self,
+        result: Result<std::sync::Arc<AggregateObservation<Member>>, PinnedAggregateReadDenial>,
+        selection: AggregateSelection,
+        subject: &str,
+    ) -> Result<std::sync::Arc<AggregateObservation<Member>>, Denial> {
         let work = match &result {
             Ok(value) => value.native().work_units(),
             Err(denial) => denial.work,

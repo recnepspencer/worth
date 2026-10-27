@@ -24,6 +24,9 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         capture_set: bool,
         pin: &RelationalPinnedRead,
         subject: &str,
+        allocation: &Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
     ) -> Result<RootPathSelection, Denial> {
         let execution = *self.reader.execution;
         let graph = self.reader.layout;
@@ -50,6 +53,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
                 projection,
             },
             RootPathSelectionRequest {
+                allocation: Some(allocation),
                 paths: scope.paths(),
                 start,
                 orientation,

@@ -7,6 +7,8 @@ mod admission_denial;
 mod aggregate;
 mod aggregate_read;
 mod component;
+mod graph_member;
+mod logical_projection;
 pub use component::WorthQueryInvariantProjectionComponent;
 pub(in crate::domain_computation::primary_graph) mod consumed_output;
 mod entity_resident;
@@ -24,8 +26,11 @@ mod operation_projection_denial;
 mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
-    WorthQueryInvariantDerivedRelation, WorthQueryObservedOutputAvailability,
-    WorthQueryOutputAvailabilityDenial, WorthQueryOutputAvailabilityState,
+    WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
+    WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
+    WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
+    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
+    WorthQueryOutputAvailabilityState,
 };
 mod realized_scope;
 mod relation_field;

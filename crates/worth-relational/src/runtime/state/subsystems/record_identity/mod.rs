@@ -4,6 +4,7 @@ pub use observation::{
 };
 mod pending_allocations;
 mod reclaimed;
+mod reclamation;
 mod record_ref;
 mod recovery;
 mod reservation;
@@ -11,13 +12,14 @@ mod reservation;
 #[cfg(test)]
 mod tests;
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
 use crate::history::data::{
     CanonicalRecordAllocation, RecordAllocationClass, RecordAllocationOrigin,
 };
 use crate::identity::data::PartitionId;
+use crate::storage::substrate::SharedMap;
 use crate::transactions::data::RecordAllocationDenial;
 
 pub(crate) use pending_allocations::PendingRecordAllocations;
@@ -31,8 +33,8 @@ type RecordFrontierKey = (RecordAllocationClass, PartitionId);
 
 #[derive(Debug, Clone, Default)]
 struct RecordIdentityState {
-    reusable: BTreeSet<RecordSlotKey>,
-    next_slots: BTreeMap<RecordFrontierKey, usize>,
+    reusable: SharedMap<RecordSlotKey, ()>,
+    next_slots: SharedMap<RecordFrontierKey, usize>,
     generation_high_water: BTreeMap<RecordSlotKey, u32>,
     pending: BTreeMap<RecordSlotKey, PendingRecordReservation>,
     staged_replay_allocations: Option<Vec<CanonicalRecordAllocation>>,
@@ -64,17 +66,7 @@ impl RecordIdentitySubsystem {
     }
 
     pub(crate) fn admit_reclaimed(&self, reclaimed: ReclaimedRecordSlot) {
-        let mut state = self.lock();
-        state
-            .reusable
-            .insert((reclaimed.class, reclaimed.partition_id, reclaimed.slot));
-        if let Some(next) = reclaimed.slot.checked_add(1) {
-            let frontier = state
-                .next_slots
-                .entry((reclaimed.class, reclaimed.partition_id))
-                .or_default();
-            *frontier = (*frontier).max(next);
-        }
+        self.lock().admit_reclaimed(reclaimed);
     }
 
     fn reserve(
@@ -85,9 +77,9 @@ impl RecordIdentitySubsystem {
         let mut state = self.lock();
         let reusable = state
             .reusable
-            .range((class, partition_id, 0)..=(class, partition_id, usize::MAX))
-            .next()
-            .copied();
+            .lower_bound(&(class, partition_id, 0))
+            .map(|(key, ())| *key)
+            .filter(|key| key.0 == class && key.1 == partition_id);
         let (slot, origin) = reusable
             .map(|key| (key.2, ReservationOrigin::Reclaimed))
             .unwrap_or_else(|| {

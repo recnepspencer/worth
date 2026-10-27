@@ -36,6 +36,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 AggregateSelection::ComponentDefinition(layout.definition),
                 member.entity_id,
                 set.name(),
+                None,
             )?;
             self.admit_component_members::<Entity>(&layout, &aggregate, context, set.name())?;
             Ok(WorthQueryInvariantProjectionComponent::new(
@@ -51,8 +52,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         }
     }
 
-    /// Inspect the actual stored lineage under this privileged projection authority.
-    /// Historical selection does not require the identity to remain live.
+    /// Inspect stored lineage for an entity or logical component set under this
+    /// privileged projection authority. Historical selection does not require
+    /// the identity or any issuing member to remain live.
     pub fn component_lineage<Set, Entity>(
         &mut self,
         set: ApplicationComponentSetRef<Schema, Set, Entity>,
@@ -64,7 +66,28 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         crate::domain_computation::primary_graph::WorthQueryAggregateLineage<Schema, Set>,
         Denial,
     > {
-        let layout = self.component_layout(set)?;
+        let layout = self
+            .layout
+            .component_set(set.name())
+            .ok_or_else(|| Denial::new(Kind::ComponentSetNotInstalled, set.name()))?;
+        use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding;
+        use worth_relational::facade::schema::NativeMemberDomain;
+        let domain_matches = match (
+            self.layout.member_binding(set.member_selector()),
+            &layout.member_domain,
+        ) {
+            (Some(MemberDomainBinding::Entity(actual)), NativeMemberDomain::Entity(expected)) => {
+                actual == *expected
+            }
+            (
+                Some(MemberDomainBinding::Projected(actual)),
+                NativeMemberDomain::Projected { projected },
+            ) => actual.parts().identity == *projected,
+            _ => false,
+        };
+        if layout.member.as_ref() != set.member_selector().name() || !domain_matches {
+            return Err(Denial::new(Kind::ForeignIdentity, set.name()));
+        }
         let scope = identity
             .component_lineage_selection(self.binding_identity, layout.definition)
             .ok_or_else(|| Denial::new(Kind::ForeignIdentity, set.name()))?;

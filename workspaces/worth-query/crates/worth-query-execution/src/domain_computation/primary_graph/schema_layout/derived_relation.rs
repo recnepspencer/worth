@@ -3,8 +3,7 @@ use super::{invalid_member, required_kind, WorthQueryPrimaryGraphInstallationDen
 use std::collections::BTreeMap;
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::{
-    application_derived_relation_physical_sources, ApplicationDerivedRelationNode as Node,
-    ApplicationDerivedRelationSourceKind as SourceKind,
+    application_derived_relation_source_closure, ApplicationGraphMemberMeaning,
 };
 use worth_query_installation::facade::{
     ApplicationSchemaMember as Member, ErasedApplicationSchemaDeclaration,
@@ -12,17 +11,23 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     DerivedRelationDefinitionParts, DerivedRelationHandle, DerivedRelationIdentity,
-    DerivedRelationNode, RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
+
+mod expression;
+mod laws;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct DerivedRelationLayout {
-    pub(in crate::domain_computation::primary_graph) from: Arc<str>,
-    pub(in crate::domain_computation::primary_graph) to: Arc<str>,
+    pub(in crate::domain_computation::primary_graph) orbit_definition:
+        Option<worth_foundational::facade::AggregateDefinitionIdentity>,
+    pub(in crate::domain_computation::primary_graph) from: ApplicationGraphMemberMeaning,
+    pub(in crate::domain_computation::primary_graph) to: ApplicationGraphMemberMeaning,
     pub(in crate::domain_computation::primary_graph) handle: DerivedRelationHandle,
     pub(in crate::domain_computation::primary_graph) sources:
         Arc<[(Arc<str>, KindId, KindId, KindId)]>,
     pub(in crate::domain_computation::primary_graph) operations: Arc<[Arc<str>]>,
+    pub(in crate::domain_computation::primary_graph) carriers: Arc<[(Arc<str>, KindId)]>,
 }
 
 pub(super) fn lower(
@@ -31,6 +36,7 @@ pub(super) fn lower(
     basis: (&SchemaId, SchemaVersionId),
     entities: &BTreeMap<String, KindId>,
     relations: &BTreeMap<String, KindId>,
+    domains: &BTreeMap<String, super::projected_member_domain::ProjectedMemberDomainLayout>,
 ) -> Result<
     (
         RelationalSchemaRegistry,
@@ -49,38 +55,12 @@ pub(super) fn lower(
             continue;
         };
         let parts = definition.parts();
-        let nodes = parts
-            .expression
-            .nodes
-            .iter()
-            .map(|node| {
-                Ok(match node {
-                    Node::Source(source) => match source.kind {
-                        SourceKind::Stored => DerivedRelationNode::Stored {
-                            relation: required_kind(relations, &source.relation)?,
-                            from: required_kind(entities, &source.from)?,
-                            to: required_kind(entities, &source.to)?,
-                        },
-                        SourceKind::Derived => {
-                            DerivedRelationNode::Derived(identity(&source.relation))
-                        }
-                    },
-                    Node::Compose { left, right } => DerivedRelationNode::Compose {
-                        left: *left,
-                        right: *right,
-                    },
-                    Node::Reverse { input } => DerivedRelationNode::Reverse { input: *input },
-                    Node::WithoutSelfEdges { input } => {
-                        DerivedRelationNode::WithoutSelfEdges { input: *input }
-                    }
-                })
-            })
-            .collect::<Result<Vec<_>, Denial>>()?;
         definitions.push(DerivedRelationDefinitionParts {
             identity: identity(&parts.relation),
-            from: required_kind(entities, &parts.from)?,
-            to: required_kind(entities, &parts.to)?,
-            nodes,
+            from: super::projected_member_domain::member_domain(&parts.from, entities, domains)?,
+            to: super::projected_member_domain::member_domain(&parts.to, entities, domains)?,
+            nodes: expression::lower(parts, &identity, entities, relations, domains)?,
+            laws: laws::lower(parts, schema, entities, relations, domains, &registry)?,
         });
     }
     let registry = registry
@@ -92,24 +72,56 @@ pub(super) fn lower(
             continue;
         };
         let parts = definition.parts();
-        let sources =
-            application_derived_relation_physical_sources(schema.members(), &parts.relation)
-                .map_err(|_| invalid_member(&parts.relation))?
-                .into_iter()
-                .map(|source| {
-                    Ok((
-                        Arc::from(source.relation.as_str()),
-                        required_kind(relations, &source.relation)?,
-                        required_kind(entities, &source.from)?,
-                        required_kind(entities, &source.to)?,
-                    ))
-                })
-                .collect::<Result<Arc<[_]>, Denial>>()?;
+        let closure =
+            application_derived_relation_source_closure(schema.members(), &parts.relation)
+                .map_err(|_| invalid_member(&parts.relation))?;
+        let carriers = closure
+            .projected_domains
+            .iter()
+            .map(|domain| {
+                Ok((
+                    Arc::from(domain.carrier.as_str()),
+                    required_kind(entities, &domain.carrier)?,
+                ))
+            })
+            .collect::<Result<Arc<[_]>, Denial>>()?;
+        let sources = closure
+            .physical
+            .into_iter()
+            .map(|source| {
+                Ok((
+                    Arc::from(source.relation.as_str()),
+                    required_kind(relations, &source.relation)?,
+                    required_kind(
+                        entities,
+                        source
+                            .from
+                            .entity()
+                            .ok_or_else(|| invalid_member(&parts.relation))?,
+                    )?,
+                    required_kind(
+                        entities,
+                        source
+                            .to
+                            .entity()
+                            .ok_or_else(|| invalid_member(&parts.relation))?,
+                    )?,
+                ))
+            })
+            .collect::<Result<Arc<[_]>, Denial>>()?;
         layouts.insert(
             parts.relation.clone(),
             DerivedRelationLayout {
-                from: Arc::from(parts.from.as_str()),
-                to: Arc::from(parts.to.as_str()),
+                orbit_definition: parts.laws.orbit.then(|| {
+                    super::aggregate_identity::derived_orbit_identity(
+                        schema,
+                        &parts.relation,
+                        parts.from.borrowed(),
+                    )
+                }),
+                from: parts.from.clone(),
+                to: parts.to.clone(),
+                carriers,
                 sources,
                 operations: schema
                     .members()

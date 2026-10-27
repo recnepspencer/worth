@@ -46,6 +46,7 @@ worth_query_application_schema! {
         owner: identity_installation_test,
         version: (1, 0),
         members: |schema| { schema_members::declare(schema) }
+
     }
 }
 

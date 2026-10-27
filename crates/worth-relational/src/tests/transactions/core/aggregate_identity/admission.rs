@@ -14,7 +14,7 @@ fn ordinary_author_cannot_rewrite_a_valid_platform_identity_record() {
             WorkerIntentBatch::new("hostile-private-write").push(MutationIntent::Entity(
                 EntityMutationIntent::UpdateFields(UpdateEntityFieldsIntent {
                     entity_id: rows[0].0,
-                    fields: AspectFieldPatch::new(rows[0].1.fields()),
+                    fields: AspectFieldPatch::new(rows[0].1.base_fields()),
                 }),
             )),
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,

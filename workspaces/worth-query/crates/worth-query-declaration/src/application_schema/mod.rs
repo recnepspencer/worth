@@ -25,12 +25,17 @@ mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
 mod declared_operation;
+mod derived_component_set;
 mod derived_relation;
+pub use derived_component_set::{
+    ApplicationDerivedComponentSetDefinition, ApplicationDerivedComponentSetMeaning,
+};
 pub use derived_relation::{
-    application_derived_relation_physical_sources, ApplicationDerivedRelation,
-    ApplicationDerivedRelationDefinitionDenial, ApplicationDerivedRelationExpression,
-    ApplicationDerivedRelationNode, ApplicationDerivedRelationOperand,
-    ApplicationDerivedRelationRef, ApplicationDerivedRelationSource,
+    application_derived_relation_physical_sources, application_derived_relation_source_closure,
+    ApplicationDerivedRelation, ApplicationDerivedRelationDefinitionDenial,
+    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode,
+    ApplicationDerivedRelationOperand, ApplicationDerivedRelationRef,
+    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceClosure,
     ApplicationDerivedRelationSourceKind, ApplicationRuleReadableCollectionAssociation,
     ErasedApplicationDerivedRelationDefinition, WorthQueryPortableDerivedRelationParts,
 };
@@ -41,6 +46,8 @@ mod external_effect_correlation_family;
 mod external_effect_protocol;
 mod field_presence;
 mod field_reference;
+mod graph_member;
+pub use graph_member::{ApplicationGraphMemberMeaning, ApplicationGraphMemberSelector};
 mod identifier_validation;
 mod inbound_occurrence;
 mod invariant;

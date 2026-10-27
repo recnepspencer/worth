@@ -13,10 +13,6 @@ pub(super) fn map_compilation_denial(
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
     let (kind, subject) = match denial {
-        ApplicationSchemaCompilationDenial::ProjectedMemberDomainUnavailable(subject) => (
-            WorthQueryInstalledApplicationSchemaDenialKind::ProjectedMemberDomainUnavailable,
-            subject,
-        ),
         ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject) => (
             WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
             subject,

@@ -16,6 +16,10 @@ proptest! {
             prop_assert!(retained.iter().eq(before.iter()));
             prop_assert_eq!(map.len(), expected.len());
             prop_assert_eq!(map.last_key_value(), expected.last_key_value());
+            for probe in [0, key, key.saturating_add(1), 200] {
+                prop_assert_eq!(map.lower_bound(&probe), expected.range(probe..).next());
+                prop_assert_eq!(retained.lower_bound(&probe), before.range(probe..).next());
+            }
             assert_balanced(&map.root);
             assert_balanced(&retained.root);
         }

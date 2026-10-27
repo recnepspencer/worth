@@ -3,7 +3,7 @@ mod edition_writer;
 mod partition_edition;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
-pub(crate) use edition_writer::PartitionEditionWriter;
+pub(crate) use edition_writer::{PartitionEditionWriter, TryPartitionMutationDenied};
 pub(crate) use partition_edition::{PartitionEdition, PartitionMap};
 
 use crate::identity::data::PartitionId;

@@ -19,6 +19,7 @@ pub(super) fn descriptor() -> AggregateIdentityContractDeclaration {
             lineage_kind: KindId(4),
             aggregate_aspect: AspectIdentity(3001),
             lineage_aspect: AspectIdentity(3002),
+            projected: None,
         },
     }
 }
@@ -170,7 +171,7 @@ pub(super) fn identity(
     anchor: EntityId,
 ) -> AggregateIdentity {
     rows.iter()
-        .find(|(_, row)| row.current_anchor == Some(anchor))
+        .find(|(_, row)| row.current_anchor == Some(anchor.into()))
         .unwrap()
         .1
         .identity
