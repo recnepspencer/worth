@@ -26,13 +26,16 @@ pub enum SignalOwnedAsyncManagedProgress {
     TimedOut,
 }
 
-/// Sole custody of the current managed native occurrence and its bounded cleanup.
-/// Reports and local request selectors cannot construct or replace this owner.
+/// Retains this entry's current Native occurrence and bounded cleanup. Genuine
+/// coalesced entries may share a winner; they do not gain exclusive ownership.
+/// Reports and local request selectors cannot construct or replace this carrier.
 pub struct SignalOwnedAsyncManagedAdmission {
     pub(super) origin: SignalOwnedAsyncSourceBinding,
     pub(super) admitted: AdmittedResourceRequest,
     pub(super) in_flight: Option<InFlightResourceRequest>,
     pub(super) queue: Option<SignalOwnedAsyncManagedQueueBinding>,
+    pub(super) requires_queue: bool,
+    pub(super) admitted_current_occurrence: bool,
     pub(super) report: SignalOwnedAsyncManagedReport,
     pub(super) cleanup: Option<SignalOwnedAsyncManagedWakeCleanup>,
     pub(super) refusal: Option<SignalOwnedAsyncQueueDenial>,
@@ -80,27 +83,32 @@ impl SignalOwnedAsyncManagedAdmission {
     pub(super) fn from_initial(
         origin: SignalOwnedAsyncSourceBinding,
         state: SignalOwnedAsyncManagedAdmissionState,
+        requires_queue: bool,
     ) -> Self {
-        let (report, in_flight, queue, refusal) = match state {
+        let (report, in_flight, queue, cleanup, refusal) = match state {
             SignalOwnedAsyncManagedAdmissionState::Ready { request, queue } => {
-                (request.report, Some(request.in_flight), Some(queue), None)
+                (request.report, Some(request.in_flight), queue, None, None)
             }
             SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
                 report,
+                in_flight,
                 queue,
+                cleanup,
                 cause,
-            } => (report, None, queue, Some(cause)),
+            } => (report, in_flight, queue, cleanup, Some(cause)),
         };
         Self {
             admitted: report.admitted_request(),
+            admitted_current_occurrence: report.intent_equivalence_coalescing().is_none(),
             in_flight,
             queue: queue.map(|binding| SignalOwnedAsyncManagedQueueBinding {
                 origin: origin.clone(),
                 binding,
             }),
+            requires_queue,
             origin,
             report: SignalOwnedAsyncManagedReport::Admission(report),
-            cleanup: None,
+            cleanup,
             refusal,
         }
     }
@@ -133,6 +141,16 @@ impl SignalOwnedAsyncManagedAdmission {
         self.cleanup.is_some()
     }
 
+    /// This entry created the current occurrence. A coalesced admission only
+    /// joins its winner; it does not acquire exclusive lifecycle ownership.
+    pub fn admitted_current_occurrence(&self) -> bool {
+        self.admitted_current_occurrence
+    }
+
+    pub fn requires_managed_queue(&self) -> bool {
+        self.requires_queue
+    }
+
     pub(super) fn retain_handoff(
         &mut self,
         origin: &SignalOwnedAsyncSourceBinding,
@@ -140,6 +158,10 @@ impl SignalOwnedAsyncManagedAdmission {
     ) -> SignalOwnedAsyncManagedProgress {
         self.origin = origin.clone();
         if let Some(admitted) = handoff.admitted {
+            if admitted.handle() != self.admitted.handle() {
+                self.admitted_current_occurrence =
+                    handoff.progress != SignalOwnedAsyncManagedProgress::Coalesced;
+            }
             self.admitted = admitted;
         }
         if handoff.admitted.is_some() || handoff.in_flight.is_some() {

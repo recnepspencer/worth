@@ -47,7 +47,7 @@ impl BridgeOwnedSignalRuntime {
             authority: Arc::clone(&self.async_observation_authority),
             port: bound.port,
             native,
-            business: bound.request,
+            business: Some(bound.request),
             request: None,
             refusal: None,
         };
@@ -58,19 +58,25 @@ impl BridgeOwnedSignalRuntime {
     pub(super) fn refresh_managed_owned_async_receipt(&self, owner: &mut Custodian) {
         owner.request = None;
         owner.refusal = None;
+        let Some(business) = &owner.business else {
+            owner.refusal = Some(Denial::ProvenanceUnavailable);
+            return;
+        };
         if let Some(in_flight) = owner.native.in_flight().cloned() {
             match crate::source::admit_from_owned_signal_request(
                 self.bridge.signal_runtime_key,
-                owner.business.clone(),
+                business.clone(),
                 owner.native.admitted_request(),
                 in_flight,
             ) {
                 Ok(request) => {
-                    owner.request = Some(super::super::BridgeOwnedAsyncRequestAdmission::new(
-                        &self.async_observation_authority,
-                        request,
-                        owner.port.clone(),
-                        owner.native.source_binding().clone(),
+                    owner.request = Some(Arc::new(
+                        super::super::BridgeOwnedAsyncRequestAdmission::new(
+                            &self.async_observation_authority,
+                            request,
+                            owner.port.clone(),
+                            owner.native.source_binding().clone(),
+                        ),
                     ))
                 }
                 Err(cause) => owner.refusal = Some(Denial::Request(cause)),

@@ -44,4 +44,23 @@ where
                 )
             })
     }
+
+    pub(super) fn require_owned_async_request_instance(
+        &mut self,
+        node: ResourceNodeId,
+        handle: ResourceRequestHandle,
+    ) -> Result<InFlightResourceRequest, SignalConditionalServiceExecutionDenial> {
+        self.admit_owned_async_source(node)?;
+        self.require_owned_async_handle(node, handle)?;
+        let actual = self.require_in_flight(handle)?;
+        let descriptor = self
+            .derived
+            .resource
+            .descriptor_for_node(node)
+            .ok_or(SignalConditionalServiceExecutionDenial::DefinitionMismatch)?;
+        if actual.descriptor_id() != descriptor.descriptor_id() {
+            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
+        }
+        Ok(actual)
+    }
 }

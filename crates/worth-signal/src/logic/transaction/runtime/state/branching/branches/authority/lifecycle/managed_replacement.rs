@@ -3,7 +3,7 @@ use crate::branch::owner_services::conditional_execution::{
     SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedProgress,
     SignalOwnedAsyncManagedQueueHandoff, SignalOwnedAsyncQueueDenial as Denial,
 };
-use crate::data::resource::ResourceManagedQueueBinding;
+use crate::data::resource::{ResourceManagedQueueBinding, ResourceRequestHandle};
 
 impl<D, I, T> BranchState<D, I, T>
 where
@@ -14,31 +14,36 @@ where
     pub(crate) fn advance_managed_owned_async_retry(
         &mut self,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         schedule: &SignalOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncManagedHandoff, Denial> {
-        self.require_managed_replacement_queue(node, queue)?;
+        self.require_replacement_custody(node, handle, queue)?;
         let handoff = self
-            .advance_owned_async_retry_handoff(node, queue.request(), schedule, coordinate)
+            .advance_owned_async_retry_handoff(node, handle, schedule, coordinate)
             .map_err(Denial::Service)?;
-        Ok(self.bind_managed_replacement_queue(queue.queue_capacity(), handoff))
+        Ok(match queue {
+            Some(queue) => self.bind_managed_replacement_queue(queue.queue_capacity(), handoff),
+            None => handoff,
+        })
     }
 
     pub(crate) fn revalidate_managed_owned_async_request(
         &mut self,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         intent: ResourceRevalidationIntent,
     ) -> Result<SignalOwnedAsyncManagedHandoff, Denial> {
-        self.require_managed_replacement_queue(node, queue)?;
+        self.require_replacement_custody(node, handle, queue)?;
         let active = self.derived.resource.active_request_handle_for_node(node);
-        if active.is_some_and(|active| active != queue.request()) {
+        if active.is_some_and(|active| active != handle) {
             return Err(Denial::Service(
                 SignalConditionalServiceExecutionDenial::DefinitionMismatch,
             ));
         }
-        if intent.expected_active() != Some(queue.request()) {
+        if intent.expected_active() != Some(handle) {
             return Err(Denial::Service(
                 SignalConditionalServiceExecutionDenial::DefinitionMismatch,
             ));
@@ -54,28 +59,25 @@ where
         let handoff = self
             .revalidate_owned_async_request_handoff(node, intent)
             .map_err(Denial::Service)?;
-        Ok(self.bind_managed_replacement_queue(queue.queue_capacity(), handoff))
+        Ok(match queue {
+            Some(queue) => self.bind_managed_replacement_queue(queue.queue_capacity(), handoff),
+            None => handoff,
+        })
     }
 
-    fn require_managed_replacement_queue(
+    fn require_replacement_custody(
         &mut self,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
     ) -> Result<(), Denial> {
-        self.admit_owned_async_source(node)
-            .map_err(Denial::Service)?;
-        self.require_owned_async_handle(node, queue.request())
-            .map_err(Denial::Service)?;
         let prior = self
-            .require_in_flight(queue.request())
+            .require_owned_async_request_instance(node, handle)
             .map_err(Denial::Service)?;
-        let descriptor = self
-            .derived
-            .resource
-            .descriptor_for_node(node)
-            .expect("source admission retains the current descriptor");
-        if prior.attempt() != queue.attempt() || prior.descriptor_id() != descriptor.descriptor_id()
-        {
+        let Some(queue) = queue else {
+            return Ok(());
+        };
+        if queue.request() != handle || prior.attempt() != queue.attempt() {
             return Err(Denial::Service(
                 SignalConditionalServiceExecutionDenial::DefinitionMismatch,
             ));

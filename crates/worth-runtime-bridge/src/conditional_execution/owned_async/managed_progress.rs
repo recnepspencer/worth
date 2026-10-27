@@ -15,7 +15,7 @@ impl BridgeOwnedSignalRuntime {
         owner.port = port;
         owner.request = None;
         if let Some(business) = business {
-            owner.business = business;
+            owner.business = Some(business);
         }
         self.refresh_managed_owned_async_receipt(owner);
         match owner.refusal() {

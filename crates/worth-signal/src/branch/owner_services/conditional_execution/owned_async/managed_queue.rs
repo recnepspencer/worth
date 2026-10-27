@@ -3,18 +3,6 @@ use crate::data::resource::{
     ResourceManagedQueueBinding, ResourceManagedQueueDenial, ResourceManagedQueueMutationReport,
 };
 
-pub(crate) enum SignalOwnedAsyncManagedAdmissionState {
-    Ready {
-        request: SignalOwnedAsyncRequestAdmission,
-        queue: ResourceManagedQueueBinding,
-    },
-    CleanupRequired {
-        report: ResourceRequestAdmissionReport,
-        queue: Option<ResourceManagedQueueBinding>,
-        cause: SignalOwnedAsyncQueueDenial,
-    },
-}
-
 /// Exact native queue custody, bound to its original live service/source.
 /// Local request selectors alone cannot reconstruct this owner.
 pub struct SignalOwnedAsyncManagedQueueBinding {
@@ -90,6 +78,7 @@ where
         Ok(SignalOwnedAsyncManagedAdmission::from_initial(
             binding.clone(),
             state,
+            true,
         ))
     }
 

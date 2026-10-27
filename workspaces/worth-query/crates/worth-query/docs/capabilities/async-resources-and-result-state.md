@@ -34,9 +34,37 @@ For the installed owned-request engine path,
 `admit_owned_bridge_async_request` and `revalidate_owned_bridge_async_request`
 delegate source qualification to Runtime World. Its immutable admitted
 Relational reference supplies the exact source commit, even on a populated
-fork whose branch truth version is zero. Empty targets return
-`WorthQueryOwnedAsyncRuntimeDenial::NoCommittedSource` before Signal admission;
-refused revalidation preserves the original request's cleanup custody.
+fork whose branch truth version is zero. Empty targets return an admission
+`NoCommittedSource` cause before Signal admission. The entry returns
+`WorthQueryOwnedAsyncRequestCustody`; a refused entry returns any actual admitted
+custodian through `WorthQueryOwnedAsyncRuntimeStop::into_parts()`. Run
+`cleanup_owned_bridge_async_entry` on that retained owner, preserving it if cleanup
+refuses. It cleans only work created by this entry, without implicitly cancelling
+a shared winner or claiming external-provider cleanup.
+
+The read-only UI presentation backend uses the separate
+`admit_owned_bridge_async_request_at_branch_head` entrance. World checks the same
+genuine observation and Relational lease, and retains their observed snapshot as
+`BranchHead`, with no commit identity or fresh-currentness claim. This posture
+does not grant authoritative writeback. The committed-source entrance above
+still refuses an empty source; no record or commit is invented to open a UI.
+
+Timeout, retry and revalidation take `&mut WorthQueryOwnedAsyncRequestCustody`.
+The same owner retains genuine progressed reports, temporal cleanup and exact
+replacement source even when a later handoff refuses. `retained_witness()` retains
+the genuinely assembled immutable Bridge witness; it remains bound to its old
+occurrence after progression. Completion admission still precedes the existing
+LiveView result transition and does not claim native completion commit. Explicit
+retirement names that exact immutable occurrence. The single operational owner
+lives in Execution's `application_resource/legacy_bridge`; the older engine
+modules translate the supported authoring and workspace audience only.
+
+The installed Bridge request-response profile currently uses initial
+supersession. Native's separately authored coalescing profile retains its shared
+winner and disposes only the new unused timeout. The raw Native-host legacy
+signature still cannot return a post-admission cleanup carrier; new Query/UI
+routes do not consume that stripping adapter. Its remaining compatibility
+limitation is not certified as a complete resource lifecycle.
 See the [native source contract](../../../../../../crates/worth-runtime-world/README.md#owned-async-source-binding)
 and [compiled lifecycle courts](../../tests/installed_operating_world/product_owned_async.rs).
 The managed Decl/Host resource endpoint remains the separate Phase 8 requirement

@@ -53,33 +53,14 @@ where
                 ),
             ));
         }
-        let report = self.admit_owned_async_request_report(node, false)?;
+        let state = self.admit_owned_async_request_handoff(node, false)?;
         let capture = self.captures_telemetry();
-        let queue = match self.derived.resource.bind_managed_queue(
-            report.admitted_request(),
+        let queue = self.derived.resource.bind_managed_queue(
+            state.admitted_request(),
             capacity,
             capture.then_some(&mut self.derived.telemetry.resource),
-        ) {
-            Ok(queue) => queue,
-            Err(cause) => {
-                return Ok(SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
-                    report,
-                    queue: None,
-                    cause: SignalOwnedAsyncQueueDenial::Queue(cause),
-                })
-            }
-        };
-        match self.require_in_flight(report.admitted_request().handle()) {
-            Ok(in_flight) => Ok(SignalOwnedAsyncManagedAdmissionState::Ready {
-                request: SignalOwnedAsyncRequestAdmission::new(report, in_flight),
-                queue,
-            }),
-            Err(cause) => Ok(SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
-                report,
-                queue: Some(queue),
-                cause: SignalOwnedAsyncQueueDenial::Service(cause),
-            }),
-        }
+        );
+        Ok(state.with_queue(queue.map_err(SignalOwnedAsyncQueueDenial::Queue)))
     }
 
     pub(crate) fn mutate_owned_async_queue(

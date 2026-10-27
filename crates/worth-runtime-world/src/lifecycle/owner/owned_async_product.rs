@@ -117,6 +117,58 @@ where
             .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
     }
 
+    pub(crate) fn admit_unqueued_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        let truth = self
+            .validate_owned_async_product(observation, relational_source)
+            .map_err(request_product_denial)?;
+        bridge
+            .admit_unqueued_owned_async_request_identity(
+                declaration,
+                observation.basis().signal_basis(),
+                truth,
+            )
+            .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
+    }
+
+    /// Selects the genuinely observed head snapshot without claiming a commit
+    /// or fresh currentness. The committed entrance remains separate.
+    pub(crate) fn admit_unqueued_owned_async_request_at_branch_head(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.require_owned_async_source(observation, relational_source)
+            .map_err(request_product_denial)?;
+        let relational = observation.basis().relational_basis().observation();
+        let truth = worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis::branch_head(
+            worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
+                relational.identity().branch_id().0.clone(),
+            ),
+            relational_source.snapshot_identity().clone(),
+        );
+        bridge
+            .admit_unqueued_owned_async_request_identity(
+                declaration,
+                observation.basis().signal_basis(),
+                truth,
+            )
+            .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
+    }
+
     pub(crate) fn revalidate_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -157,12 +209,7 @@ where
         worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis,
         RuntimeWorldOwnedAsyncProductValidationDenial,
     > {
-        if observation.owner_identity() != self.owner_identity() {
-            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner);
-        }
-        if !relational_source.admits_basis(observation.basis().relational_basis()) {
-            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch);
-        }
+        self.require_owned_async_source(observation, relational_source)?;
         let relational = observation.basis().relational_basis().observation();
         let commit = relational
             .commit_id()
@@ -178,6 +225,20 @@ where
                 relational_source.snapshot_identity().clone(),
             ),
         )
+    }
+
+    fn require_owned_async_source(
+        &self,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<(), RuntimeWorldOwnedAsyncProductValidationDenial> {
+        if observation.owner_identity() != self.owner_identity() {
+            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner);
+        }
+        if !relational_source.admits_basis(observation.basis().relational_basis()) {
+            return Err(RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch);
+        }
+        Ok(())
     }
 }
 

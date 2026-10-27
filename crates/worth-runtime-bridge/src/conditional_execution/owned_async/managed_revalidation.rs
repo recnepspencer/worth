@@ -21,7 +21,11 @@ impl BridgeOwnedSignalRuntime {
         truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
     ) -> Result<BridgeOwnedAsyncManagedRevalidation, Denial> {
         owner.require_owner(&self.async_observation_authority)?;
-        if owner.business.basis_binding().truth_view_basis().digest() == truth_basis.digest() {
+        let business = owner
+            .business
+            .as_ref()
+            .ok_or(Denial::ProvenanceUnavailable)?;
+        if business.basis_binding().truth_view_basis().digest() == truth_basis.digest() {
             return Err(Denial::ProgressDenied);
         }
         let prior = owner
@@ -29,11 +33,10 @@ impl BridgeOwnedSignalRuntime {
             .as_ref()
             .map(|request| request.request().clone());
         let bound = self
-            .bind_owned_async_basis(owner.business.lowered(), signal_basis, truth_basis)
+            .bind_owned_async_basis(business.lowered(), signal_basis, truth_basis)
             .map_err(Denial::Request)?;
         let intent = worth_signal::facade::ResourceRevalidationIntent::with_expected_active(
-            owner
-                .business
+            business
                 .lowered()
                 .resource_descriptor()
                 .expect("the installed managed declaration retains its resource descriptor")

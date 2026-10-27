@@ -65,7 +65,7 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 | Finding | Existing boundary | Required destination |
 | --- | --- | --- |
 | Exact async source binding | World derives `TruthCommitIdentity` from the admitted immutable native reference; populated forks preserve their actual commit despite a reset branch version. Empty targets refuse before Signal admission | Phase 7 courts cover native equality, sibling publication, reserved occurrence gaps and cleanup; the Decl/Host resource endpoint remains Phase 8 |
-| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
+| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; Execution owns the legacy occurrence-custody integration, with directional older engine/UI adapters | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
 | Native record/aspect history has no bounded application endpoint | `worth-relational/src/history/access/aspect_history_queries.rs` selects canonical changes but collects a branch-wide scan into `Vec` | Phase 10 supplies native continuation and a disclosed record/aspect history query on an exact retained product observation |
 | Relational identity planning inventories retired | The three string-only Phase 1 catalogs and their module/export declarations have been removed | Phase 11 preserves actual identity authority, selection/receipt issuance and real compile-boundary tests |
@@ -937,10 +937,18 @@ clock progress and acquired or retired wakes remain in a bounded cleanup handoff
 which blocks overlapping progression and cannot clear a successor's pending retry.
 Timeout admission precedes fallible wake retirement, so cleanup cannot discard a
 timeout transition. Bridge installs the matching port and invalidates its stale
-receipt before fallible descriptive assembly. The legacy unmanaged post-admission
-error handoff can lose successor custody and is not certified by this prerequisite; its migration,
-the real application control handoff, provider verification and fresh authorization
-and disclosure remain required before this phase can close.
+receipt before fallible descriptive assembly. The internal Query/UI route now
+retains the actual unqueued custodian through entry, progression and refused
+opening cleanup. Its immutable witnesses preserve their original occurrences.
+The read-only UI explicitly selects the genuine observed `BranchHead` snapshot,
+without a committed-source or fresh-currentness claim. The separate authoritative
+source entrance still refuses an empty target before native admission.
+Initial default supersession retires the prior timeout; the separate Native
+coalescing policy retires only its new unused timeout. Raw Native-host legacy
+return signatures still cannot carry every post-admission cleanup obligation;
+new Query/UI consumers do not use that stripping adapter. The real application
+control handoff, provider verification, fresh authorization/disclosure and this
+remaining compatibility boundary still require qualification before phase closure.
 
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4

@@ -71,6 +71,43 @@ where
         )
     }
 
+    pub fn admit_unqueued_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.root.admit_unqueued_owned_async_request(
+            bridge,
+            declaration,
+            observation,
+            relational_source,
+        )
+    }
+
+    /// Uses an observed branch-head snapshot, without asserting a committed source.
+    pub fn admit_unqueued_owned_async_request_at_branch_head(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.root.admit_unqueued_owned_async_request_at_branch_head(
+            bridge,
+            declaration,
+            observation,
+            relational_source,
+        )
+    }
+
     pub fn revalidate_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,

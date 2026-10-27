@@ -14,11 +14,46 @@ impl WorthQueryWorkspace {
         declaration: &super::super::WorthQueryInstalledOwnedAsyncDeclaration,
         selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        super::super::WorthQueryOwnedAsyncRuntimeDenial,
+        super::super::WorthQueryOwnedAsyncRequestCustody,
+        super::super::WorthQueryOwnedAsyncRuntimeStop,
     > {
         self.runtime
             .admit_owned_bridge_async_request(declaration, selected)
+    }
+
+    /// Selects the genuine observed head snapshot of a read-only source.
+    pub fn admit_owned_bridge_async_request_at_branch_head(
+        &self,
+        declaration: &super::super::WorthQueryInstalledOwnedAsyncDeclaration,
+        selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
+    ) -> Result<
+        super::super::WorthQueryOwnedAsyncRequestCustody,
+        super::super::WorthQueryOwnedAsyncRuntimeStop,
+    > {
+        self.runtime
+            .admit_owned_bridge_async_request_at_branch_head(declaration, selected)
+    }
+
+    pub fn cleanup_owned_bridge_async_entry(
+        &self,
+        owner: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
+    ) -> Result<(), super::super::WorthQueryOwnedAsyncRuntimeCause> {
+        self.runtime.cleanup_owned_bridge_async_entry(owner)
+    }
+
+    pub fn cancel_custodied_owned_bridge_async_request(
+        &self,
+        owner: &super::super::WorthQueryOwnedAsyncRequestCustody,
+    ) -> Result<(), super::super::WorthQueryOwnedAsyncRuntimeCause> {
+        self.runtime
+            .cancel_custodied_owned_bridge_async_request(owner)
+    }
+
+    pub fn finish_owned_bridge_async_wake_cleanup(
+        &self,
+        owner: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
+    ) -> Result<(), super::super::WorthQueryOwnedAsyncRuntimeCause> {
+        self.runtime.finish_owned_bridge_async_wake_cleanup(owner)
     }
 
     pub fn retire_owned_bridge_async_request(
@@ -30,11 +65,11 @@ impl WorthQueryWorkspace {
 
     pub fn advance_owned_bridge_async_request_to_timeout(
         &self,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        request: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
         coordinate: u64,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncTimeoutAdmission,
-        super::super::WorthQueryOwnedAsyncRuntimeDenial,
+        super::super::WorthQueryOwnedAsyncRuntimeCause,
     > {
         self.runtime
             .advance_owned_bridge_async_request_to_timeout(request, coordinate)
@@ -42,11 +77,11 @@ impl WorthQueryWorkspace {
 
     pub fn schedule_owned_bridge_async_retry(
         &self,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        request: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
         timeout: &worth_runtime_bridge::facade::BridgeOwnedAsyncTimeoutAdmission,
     ) -> Result<
         worth_runtime_bridge::facade::BridgeOwnedAsyncRetrySchedule,
-        super::super::WorthQueryOwnedAsyncRuntimeDenial,
+        super::super::WorthQueryOwnedAsyncRuntimeCause,
     > {
         self.runtime
             .schedule_owned_bridge_async_retry(request, timeout)
@@ -54,12 +89,12 @@ impl WorthQueryWorkspace {
 
     pub fn advance_owned_bridge_async_retry(
         &self,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        request: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
         schedule: &worth_runtime_bridge::facade::BridgeOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRetryAdmission,
-        super::super::WorthQueryOwnedAsyncRuntimeDenial,
+        worth_runtime_bridge::facade::BridgeAsyncRetryLineage,
+        super::super::WorthQueryOwnedAsyncRuntimeCause,
     > {
         self.runtime
             .advance_owned_bridge_async_retry(request, schedule, coordinate)
@@ -67,11 +102,11 @@ impl WorthQueryWorkspace {
 
     pub fn revalidate_owned_bridge_async_request(
         &self,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
+        request: &mut super::super::WorthQueryOwnedAsyncRequestCustody,
         selected: &worth_query_execution::facade::primary_graph::WorthQueryProductBranchLease,
     ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
-        super::super::WorthQueryOwnedAsyncRuntimeDenial,
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
+        super::super::WorthQueryOwnedAsyncRuntimeCause,
     > {
         self.runtime
             .revalidate_owned_bridge_async_request(request, selected)

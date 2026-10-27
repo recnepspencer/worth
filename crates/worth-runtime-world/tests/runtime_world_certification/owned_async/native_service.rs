@@ -19,18 +19,22 @@ pub(super) struct NativeServiceCourt {
 
 impl NativeServiceCourt {
     pub(super) fn new() -> Self {
-        Self::build(false).0
+        Self::build(false, false).0
+    }
+
+    pub(super) fn coalescing() -> Self {
+        Self::build(false, true).0
     }
 
     pub(super) fn two_nodes() -> (Self, ResourceNodeId) {
-        let (court, additional) = Self::build(true);
+        let (court, additional) = Self::build(true, false);
         (
             court,
             additional.expect("the requested second real node was declared"),
         )
     }
 
-    fn build(with_second_node: bool) -> (Self, Option<ResourceNodeId>) {
+    fn build(with_second_node: bool, coalescing: bool) -> (Self, Option<ResourceNodeId>) {
         let claimant = SignalAspectLoweringOwner::fresh();
         let mut graph = SignalGraph::new();
         graph.claim_aspect_lowering_owner(&claimant).unwrap();
@@ -51,6 +55,11 @@ impl NativeServiceCourt {
                         },
                     )
                     .with_retry_max_attempts(2)
+                    .with_supersession_policy(if coalescing {
+                        worth_signal::facade::ResourceSupersessionPolicyDeclaration::IntentEquivalentCoalescesToActive
+                    } else {
+                        worth_signal::facade::ResourceSupersessionPolicyDeclaration::NewGenerationSupersedesPrior
+                    })
                     .with_timeout_policy(
                         ResourceTimeoutPolicyDeclaration::PerAttemptTimeout {
                             timeout: TemporalDuration::temporal_duration(5).unwrap(),
@@ -73,9 +82,13 @@ impl NativeServiceCourt {
             .issue_conditional_execution_service(&basis, &claimant, &authority)
             .unwrap();
         let source = port.bind_owned_async_source(&basis, node).unwrap();
-        let owner = port.admit_managed_owned_async_request(&source, 1).unwrap();
+        let owner = if coalescing {
+            port.admit_unqueued_owned_async_request(&source).unwrap()
+        } else {
+            port.admit_managed_owned_async_request(&source, 1).unwrap()
+        };
         assert!(owner.refusal().is_none());
-        assert!(owner.queue().is_some());
+        assert_eq!(owner.queue().is_some(), !coalescing);
         (
             Self {
                 _runtime: runtime,
