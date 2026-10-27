@@ -8,7 +8,7 @@ The corrected read boundary separates a raw edition from a resident edition hold
 
 Envelope demand captures envelope and positioned custody under one lock. Missing performed positions and canonical digests refuse explicitly. Recovered catalog comparisons use the retained journal commitment when bodies are cold, and admitted indexed artifacts validate their body against that commitment. Checked commit successors, head binding custody, positioned settlement input and the actual envelope cell are carried across publication. Replay continuity returns its existing rejection. Cold history trie edits, native metadata construction, serialization and inventory arithmetic failures return refusals. Savepoint capacity zero represents disabled savepoints, continuation construction validates normalized length, and invalid invariant execution points refuse native runtime construction.
 
-Both doctests extract the construction Result. Positive test and certification fixtures extract new Results without weakening assertions. Bridge forwards occupied lock-observation refusal; Query's fresh-source test observer extracts that Option.
+The four passing runtime-construction doctests and the affected compile-fail twin extract the construction Result. Positive test and certification fixtures extract new Results without weakening assertions. Bridge forwards occupied lock-observation refusal; Query's fresh-source test observer extracts that Option.
 
 Inline `Proof:` comments are authoritative. The [proof audit](CUTOVER_PANIC_PROOFS.md) describes how to regenerate the complete inventory rather than copying source line numbers into a permanent table. Verification and exact counts are recorded in `target/lane-evidence/INDEX.md`.
 

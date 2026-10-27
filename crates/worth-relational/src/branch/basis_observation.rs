@@ -57,7 +57,8 @@ impl RelationalRuntime {
     ///
     /// let runtime = RelationalRuntimeApi::builder()
     ///     .schema_registry(RelationalSchemaRegistry::new())
-    ///     .build();
+    ///     .build()
+    ///     .expect("valid native runtime configuration");
     ///
     /// let identity = runtime.main_branch_identity();
     /// let (_descriptor, basis) = runtime
