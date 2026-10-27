@@ -1,13 +1,20 @@
-# Milestone 9.18.1: Structural Graph Laws, Walks And Persistent Aggregate Identity
+# Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–3 accepted on 2026-10-26; Phases 4–6 remain unfinished.
 > [Phase 3 acceptance and integration record](milestone-9.18.1-implementation.md#phase-3-closeout).
+> Phases 7–11 were added on 2026-10-26 and are not yet accepted.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
 > phases with no dependency on each other may run in parallel.
+> The added application-runtime phases consume the completed composite-world,
+> request, inbound-completion and history contracts; they do not block the
+> original graph phases or reopen their accepted evidence.
 
 ## Why This Milestone Exists
+
+The following graph boundary records the original discovery against
+`b56db81af6`. Phases 1–6 retain their existing meaning and numbering.
 
 Relational already evaluates acyclicity, symmetry, uniqueness, minimum
 connectivity and partition isolation at commit. It already walks the graph with
@@ -48,6 +55,29 @@ read surfaces. It adds no domain types. A face, a loop and a shell stay
 application meaning. The platform supplies laws, walks, orbits, components,
 derived relations and the identity of aggregates.
 
+### Additional Runtime Discovery — 2026-10-26
+
+A read-only audit against `100dcd1eee` found two application integrations that
+remain on the older Query surface, a native history capability worth carrying
+through, one incorrect identity conversion, and two small cleanup opportunities.
+All six findings are now required scope. The two cleanup findings share one
+batch in Phase 11; this does not authorize a general legacy-code purge.
+
+| Finding | Existing boundary | Required destination |
+| --- | --- | --- |
+| Async source names a branch version as a commit | `worth-runtime-world/src/lifecycle/owner/owned_async_product.rs` converts `RelationalBranchVersion` into `TruthCommitIdentity`; a fork resets the former while retaining a committed target | Phase 7 derives the actual selected commit from the admitted observation and handles an empty target explicitly |
+| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
+| Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
+| Native record/aspect history has no bounded application endpoint | `worth-relational/src/history/access/aspect_history_queries.rs` selects canonical changes but collects a branch-wide scan into `Vec` | Phase 10 supplies native continuation and a disclosed record/aspect history query on an exact retained product observation |
+| Stale Relational identity planning catalogs remain exported | `identity_authority/phase_one_{family_map,compile_fail_targets,root_break_targets}.rs` have no discovered callers; listed UI paths do not exist | Phase 11 deletes those three catalogs and their exports, preserving actual identity authority and tests |
+| Bridge has unused duplicate facade names | `facade::{everyday,advanced,specialist}` each wildcard-re-exports the same parent | Phase 11 removes the three aliases; the standalone `worth_runtime_bridge::facade` remains supported |
+
+This extension completes existing runtime capabilities at their application
+boundary. It does not add a second async engine, causal evidence store, history
+authority or application-owned retry machine. Native aspect history is an audit
+projection, not an inverse/pre-image source or correction permission. Phase 10
+does not replace 9.18's composite operation/correction history.
+
 ## Placement
 
 - **Consumes.**
@@ -66,6 +96,13 @@ derived relations and the identity of aggregates.
   that split an orbit is a merge with ordinary lineage. Restoring the earlier
   identity is a correspondence binding that the application installs, through
   9.18's correspondence contract.
+- **Runtime integration follow-through.** Phase 8 carries the implemented 9.4
+  async/resource lifecycle into the current two-facade application SDK. Phase 9
+  carries existing causal inspection, not 9.21's new decision attachments or
+  incremental summaries. Phase 10 adds retained record/aspect audit queries,
+  preserving 9.18's correction ownership and fresh disclosure. Durable archives,
+  restart-stable async custody and Store-backed historical reconstruction remain
+  successor contracts; unavailable evidence must be reported explicitly.
 - **Proprietary.** The CAD kernel's Extrude needs Phases 1 to 4 first, then
   Phase 5 for shells. Phase 6 is needed by tessellation and by derived adjacency.
   Proprietary's `cad/docs/plans/platform-gaps.md` lists these gaps and is updated
@@ -105,16 +142,27 @@ derived relations and the identity of aggregates.
    - Identities and lineage depend only on committed history, never on worker
      count, evaluation order or cache state.
    - Cert-only replay reproduces them exactly.
-8. **Performance is tested, not contracted.**
+8. **Performance and bounded observation.**
+   The original graph-read policy remains unchanged for Phases 1–6:
    - Equivalent-read comparisons, growth tests and timing are welcome.
    - Exact read counts are observations, not fixed performance expectations
      (MENTALITY section 7).
    - No signature carries cost.
    - No phase adds a work budget, a ceiling or an exhaustion matrix.
    - A walk ends when its frontier is exhausted, or on cancellation.
+   Phases 7–11 preserve original request controls and existing resource owners.
+   Async queues and retained inspection/history pages have explicit finite
+   admission and pagination limits. A history page bounds source visits as well
+   as returned entries, so an empty-match query cannot scan an entire branch in
+   one call. These limits do not introduce fixed read-cost promises, a second
+   work-accounting system or extra meters for the original graph reads.
 9. **Consumers delete their workarounds in the same phase.** A phase is not
    done while a public fixture or the Proprietary CAD entry still carries the
    hand-written version of what that phase supplies.
+   For the added capabilities, a real two-facade application fixture is required;
+   a domain feature need not be invented in Proprietary merely to exercise it.
+   Migrated orchestration and its displaced executable path are cut over in the
+   same integration phase, not deferred to Phase 11's unrelated small cleanup.
 
 Code and test files stay within 400 lines. Planned syntax is marked
 `rust,ignore` until it compiles; each phase turns its DX into a compiled
@@ -652,9 +700,449 @@ let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face
 
 ---
 
+## Runtime Integration Courtroom (Phases 7–11)
+
+The plausible defective implementation re-exports older Query/Bridge types,
+invents an observation receipt from display fields, calls native history and
+truncates its returned vector, or records an async source using a convenient
+counter. It passes a single-branch demonstration while losing provenance,
+disclosure, bounded work and cleanup. The following real journeys must expose it
+before the added phases can close.
+
+- **Async source and lifecycle.** Start from an actual committed product, fork
+  it, publish on a sibling and burn a prepared occurrence before starting an
+  installed asynchronous resource. Its source commit must equal the native
+  selected target, independently of branch-local version and allocator counters.
+  Complete one request; timeout and retry another; deliver the older completion
+  after supersession. Observe actual result state, provider contacts and native
+  active requests. A duplicate cannot publish again, a stale completion cannot
+  fulfill its successor, and refusal/cancellation retains the exact cleanup
+  owner. Inspect and close through fresh authorized application requests.
+- **Causal explanation.** An ordinary application source operation changes an
+  input used by a real managed producer and declared query. Retain its actual
+  application receipt, then explain the observation through Host. References
+  must identify the actual source change, invalidation/evaluation and observation;
+  an independent equal-output case must explain suppression without inventing a
+  changed output. Substitute a sibling receipt, change the principal's disclosure,
+  retire optional evidence and cancel materialization. Require original typed
+  mismatch, denial, unavailable/omission or cancellation outcomes as applicable.
+  No inspection may execute a business effect, re-run the source or manufacture
+  missing evidence. Compare the source operation's own outcome and charged work
+  with optional explanation off and on. Later inspection runs on a separately
+  admitted fresh request and pays for its actual reads/materialization there.
+- **Record/aspect history.** Through ordinary handlers, change one selected
+  aspect, change another aspect, make a retained equal-value edit and delete the
+  record; fork and edit a sibling independently. Query the exact selected product
+  history through only Decl/Host. Compare emitted occurrences and aspect/structural
+  facts with the independently recorded authored sequence. Page across both
+  matching and nonmatching changes, including an empty result page with remaining
+  ancestry, and one commit with more matching records than a page can hold.
+  Revocation, foreign continuation, cancellation and retention expiry cannot
+  disclose protected entries or turn an incomplete traversal into complete history.
+  Ten and 10,000 unrelated retained changes exercise the same finite page bounds;
+  total traversal may grow with ancestry, but one page must not eagerly scan or
+  clone it all. Drop pages and continuations and observe release of their actual
+  retention and allocation custody.
+- **Cleanup.** Use source/export/caller inventory and surviving owner checks,
+  rather than a fabricated runtime journey, to prove deletion of only the three
+  Relational planning catalogs and three Bridge alias modules. Existing real
+  identity issuance, foreign-selection refusal and standalone facade consumers
+  must still compile and work.
+
+Use existing grouped certification targets and shared honest fixtures. Old-facade
+compile examples or lower-runtime unit tests alone cannot qualify a two-facade
+application claim. No fixed test count, duplicate compiler portfolio or new proof
+ledger is required. These are process-local runtime claims, not restart/durable
+transport claims.
+
+## Runtime Integration Destination
+
+The tree below fixes responsibility and dependency direction, not empty modules
+to create in advance. `E` means extend an existing owner, `N` a new populated
+responsibility, `M` migrate the named existing responsibility, and `D` delete.
+Query crate paths below are under `workspaces/worth-query/crates/`.
+
+```text
+crates/worth-relational/src/
+  branch/{basis,target}.rs                                  E selected commit truth
+  history/access/aspect_history_queries.rs                  E existing selectors
+  history/access/aspect_history/                            N retained native paging
+    {cursor,page,selection}.rs
+  identity_authority/
+    phase_one_family_map.rs                                 D stale catalog
+    phase_one_compile_fail_targets.rs                       D stale catalog
+    phase_one_root_break_targets.rs                         D stale catalog
+    mod.rs                                                  E remove catalog exports
+crates/worth-runtime-world/src/lifecycle/owner/
+  owned_async_product.rs                                    E exact async source
+crates/worth-runtime-bridge/src/
+  conditional_execution/owned_async/                         E lifecycle authority
+  diagnostics/causal_envelope/                               E evidence assembly
+  facade.rs                                                 E remove alias modules
+worth-query-declaration/src/application_query/
+  async_resource/                                           M typed resource meaning
+  history/                                                  N target/aspect selection
+worth-query-installation/src/application_query/
+  async_resource/                                           M installed declarations
+  history/                                                  N schema/disclosure binding
+worth-query-admission/src/domain_computation/
+  basis_lifecycle/                                          E original scoped inspection
+worth-query-execution/src/domain_computation/primary_graph/
+  async_resource/                                           M live resource orchestration
+  causal_inspection/                                        M application evidence binding
+  application_query/history/                                N native page adapter
+worth-query-publication/src/application_entry/
+  resource/                                                 N governed retained requests
+  inspection/                                               N receipt-rooted inspection
+  query/                                                    E ordinary history query entry
+worth-query/src/
+  runtime/owned_async_{source,lifecycle}.rs                  M displaced orchestration
+  runtime/inspection/causal/                                 M existing inspection owner
+worth-query-{decl,host}/src/facade.rs                        E audience exports only
+worth-query-certification/tests/application_graph/           E grouped public journeys
+```
+
+Declaration owns portable resource and history meaning; Installation owns their
+schema/provider bindings; Admission owns fresh scope/disclosure; Execution owns
+live retained resources and observation binding; Publication owns ordinary entry
+and refusal-preserving progression. Relational owns canonical change selection;
+World owns exact composite correspondence; Bridge owns causal translation; Signal
+owns asynchronous scheduling and settlement. There is no peer-runtime dependency
+on Query. Required portable descriptions and legality proofs stay in the existing
+Foundational/Proof owners under the repository's type-placement rules.
+
+The older `worth-query` crate depends on the split owners. Execution therefore
+cannot import its inspector or async runtime. Migrate their actual reusable meaning
+and orchestration down to the owners above; update existing internal callers and
+remove the displaced implementation in the same phase. Keep a facade-only export
+only where the existing supported audience requires the same contract. Do not
+duplicate the implementation or introduce a reverse dependency to avoid this move.
+Runtime observation/cursor/resource families enter as children of their named
+owner; no flat integration bag or shared cross-runtime state machine is allowed.
+
+---
+
+## Phase 7: Exact Async Source Commit Identity
+
+**Depends on:** the completed admitted Relational/Signal bases and Runtime World
+publication owners. No dependency on unfinished graph phases. Must precede Phase 8.
+
+### Requirements
+
+- Repair `validate_owned_async_product` to derive the actual selected commit
+  from the already-admitted immutable Relational observation. A branch truth
+  version, root identity, global allocator preview or display digest is never a
+  commit ID. Preserve the existing World-owner and source-observation checks.
+- An empty selected target has no authoritative source commit. Return a typed
+  no-committed-source denial before Signal request admission; never synthesize
+  commit zero or silently change authoritative admission to branch-head meaning.
+- Admission, revalidation, completion and writeback consume that same exact
+  source binding. This repair does not create a new identity allocator or grant
+  authority to a descriptor supplied by a caller.
+
+### Tests That Prove It
+
+- At the actual World/Bridge owned-async entry, start a request on a populated
+  fork whose branch version is zero. Compare its admitted commit with the native
+  reference target; exercise sibling publication and reserved occurrence gaps.
+- An empty target refuses before an active Signal request exists; its lawful
+  committed twin starts. Preserve foreign owner/source mismatch and exact-request
+  retirement courts. Observe writeback causality where that declared family uses it.
+- The mutant that substitutes `truth_version().as_u64()` must fail the native
+  commit-equality assertion, not merely fail earlier during setup.
+
+### How We Know It's Done
+
+The existing owned-async production route retains the exact source commit through
+its lifecycle and cleanup, with no branch-counter conversion remaining. Phase 8
+may rely on this binding; its application endpoint is not qualified by this local
+repair alone.
+
+---
+
+## Phase 8: Managed Async Resources Through Decl And Host
+
+**Depends on:** Phase 7 and the completed application entry, provider, conditional
+runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
+resource machinery into the current application SDK; it does not reopen 9.4's
+entire lower-runtime portfolio.
+
+### Requirements
+
+- Applications declare a resource's typed input/result bindings, semantic
+  identity, provider role, supported lifecycle and installed finite queue/retention
+  limits through Decl. Host installs the real provider on the existing runtime;
+  validation rejects incompatible declarations before resource effects.
+- One retained application owner binds the original input, request occurrence,
+  installed declaration and exact selected product. Fresh authenticated requests
+  govern start, inspection, advancement, retry/revalidation and close. Query
+  delegates transitions to Signal/Bridge/World, preserving their original request
+  controls, timeout/retry policy and typed result-state distinctions.
+- Preserve Pending, fulfilled/domain failure, cancellation, timeout, stale and
+  superseded meaning where the installed native family supports them. Admission,
+  cancellation and completion are different evidence. Refused progression retains
+  the original owner; close reports outstanding cleanup rather than abandoning it.
+- Provider completion enters through an installed verifier/adapter bound to that
+  exact request. A payload, transport acknowledgement or copied observation cannot
+  complete a successor or grant capability. Effects-indeterminate remains distinct;
+  timeout/cancellation cannot imply rollback or authorize redispatch. Reuse 9.17.7
+  when the request participates in an owned external effect.
+- Admission, optional derived output publication and external effects retain their
+  actual separate postures. Scope is process-local custody, with typed unavailable
+  recovery where restart support is absent; no durable-job claim is implied.
+
+### Tests That Prove It
+
+The async courtroom above runs through only Decl/Host with a real installed
+provider and owner-controlled completion ingress. Include one pending-to-result
+journey, timeout/retry with delayed obsolete completion, disclosure revocation and
+refused close followed by successful cleanup. Observe actual request identity,
+result and native active-request release. Existing inbound completion and temporal
+operations retain their separate semantics. Forged completion and stale request
+twins must reach the disputed admission and refuse before result publication.
+
+### Target DX
+
+```rust,ignore
+// Planned syntax; the retained owner delegates the existing native lifecycle.
+let mut resource = request.resources()
+    .start(Assessment::reference(), input)?;
+let state = resource.inspect(&fresh_request)?;
+let progress = resource.advance(&fresh_request)?;
+// A close refusal keeps resource custody available for a later funded retry.
+let closed = resource.close(&fresh_request)?;
+```
+
+### How We Know It's Done
+
+One compiled facade-only resource example starts, observes, completes, retries and
+closes through the existing installed runtime. Its old Query orchestration has
+been migrated without a duplicate lifecycle, native handle exposure or extra
+Signal graph. The capability index and application guide explain its distinction
+from external-input capture, temporal operations and authenticated inbound effects.
+
+---
+
+## Phase 9: Causal Inspection From Ordinary Application Receipts
+
+**Depends on:** existing application receipts, scoped inspection and the retained
+Bridge/Signal/Relational evidence owners. Use Phase 8 evidence when inspecting an
+async resource; ordinary query/source inspection does not depend on Phase 8 or
+unfinished graph phases.
+
+### Requirements
+
+- A fresh application request can select an actual declared-query observation or
+  performed source-operation receipt and request a causal explanation through Host.
+  Bind exact runtime, product occurrence, installed query/operation, result shape
+  and retained evidence. Extend actual producers to carry genuine references when
+  needed; never reconstruct authority or reference identity from display fields.
+- Migrate/reuse `CausalInspection`'s anchoring, reference resolution, typed
+  admission, Bridge assembly, materialization and omission contracts. A receipt
+  supplies observation evidence only. Current principal, purpose, scope and field
+  disclosure must freshly admit inspection and any continuation/materialization.
+- Planning, admission and optional rich materialization remain distinct. Expose
+  admitted, advisory, denied, unavailable/expired and cancelled postures with the
+  original typed cause. Missing evidence is explicit; no invented causal narrative,
+  re-executed source or success inferred from an empty evidence set.
+- Reference-only and richer views use the existing evidence owners and policies.
+  Protected contents cannot leak through links, counts, family availability or
+  explanations. References and retained pages have bounded, explicit release/close
+  custody. Optional materialization is demand-driven and original-request funded;
+  it cannot become synchronous ordinary commit work or alter its charged bill.
+- Source changes, invalidation, producer evaluation, equivalent-output suppression
+  and query observation keep distinct meanings. The result is structured evidence
+  for an application explanation, not automatic author attribution or domain prose.
+- No new causal archive, graph truth store or correction permission. 9.21 retains
+  ownership of new governed decision attachments and incremental summaries; this
+  phase connects evidence that already exists to its real application audience.
+
+### Tests That Prove It
+
+Use the causal courtroom above through current application receipts and two
+facades, with independent source/evaluation observations. A sibling/foreign receipt
+or matching-looking display digest cannot substitute. A revoked inspection cannot
+expose retained fields; expired evidence returns its actual availability posture.
+Cancelling optional materialization leaves the business result and its cleanup
+unchanged. Substituting a synthesized receipt or bypassing fresh disclosure must
+turn these same assertions red. Do not count the older facade signature test as
+proof that the new receipt acquisition and authorization path is complete.
+
+### Target DX
+
+```rust,ignore
+// Planned syntax; receipt is returned by an actual ordinary application query.
+let explanation = request.inspections()
+    .for_observation(result.receipt())?
+    .why_changed()
+    .reference_only()
+    .execute()?;
+```
+
+### How We Know It's Done
+
+A compiled ordinary query/source journey obtains and explains its genuine receipt
+using only Decl/Host. The old implementation is moved into the split owners rather
+than copied, and optional materialization, disclosure, availability and cleanup
+are documented with the ordinary receipt path. Raw Bridge or Signal access is not
+required from an application.
+
+---
+
+## Phase 10: Bounded Record And Aspect Change History
+
+**Depends on:** retained native canonical changes, exact World product ancestry,
+ordinary installed query/disclosure and request controls. Independent of Phases
+7–9 and unfinished graph phases. Previously optional in the audit, this capability
+is now required milestone scope by the 2026-10-26 extension.
+
+### Requirements
+
+- Declare a typed entity/relation history query with selected aspect references
+  through the ordinary query declaration/installation owners. Execute at an exact
+  retained product observation through Host. Relational selects canonical native
+  changes; World supplies ancestry/component correspondence; Query controls schema
+  interpretation and fresh disclosure. This is not a second correction history.
+- Return genuine commit/version/branch and record identity, changed aspects and
+  structural/opacity facts. Preserve retained equal-value write events; absence
+  from a value diff is not absence from authored history. An unchanged component
+  retained by several product commits must not duplicate one native change event.
+  Native events outside the selected product ancestry must not appear.
+- Direct record identity includes generation. Automatic entity-successor or
+  aggregate-lineage traversal is not implied; an explicit future lineage selection
+  must use its existing owner. No before-images, actor attribution or inverse are
+  fabricated from aspect-change metadata.
+  Resolve the typed subject in an owner-retained disclosed observation or retained
+  canonical tombstone/history target. A deleted record remains inspectable only
+  through such fresh admission; a raw identifier cannot recreate its provenance
+  or borrow disclosure from a later entity occupying the same slot.
+- Add a native retained cursor/page over canonical changes before application
+  carriage. Bound returned entries, scanned canonical source items and owned page
+  memory using explicit page limits and original request controls. A cursor can
+  stop inside a large commit. Never materialize the full branch vector and slice
+  it, or restart the ancestry scan for every page.
+- Follow actual retained ancestry/publication order, not numeric commit-ID order.
+  A continuation retains exact runtime, product observation, query/target/filter
+  and cursor position; it grants no new read authority. Fresh request admission
+  applies on every page. New commits do not silently move a pinned history basis.
+- Incomplete, complete, cancellation, expiry/unavailability, foreign cursor and
+  disclosure refusal remain typed. An empty page may carry remaining work; it is
+  not evidence of no change. No hidden entries, protected counts or cursor metadata
+  leak. Cancellation preserves the last accepted continuation, and Drop/close
+  releases the actual native/World pins and page storage.
+  Installed history disclosure must explicitly cover occurrence existence,
+  selected ancestry and continuation/completion metadata, independently of payload
+  visibility. Refuse before traversal when that metadata cannot be disclosed;
+  do not claim a complete history by silently dropping protected source events.
+- Initial total work may grow with retained ancestry and examined change items;
+  say so in the API/guide. No record-local cost or constant-time claim is made.
+  Optional indexing must remain derived and governed by the existing native owner,
+  not a Query-maintained canonical event log or an unrequested search product.
+
+### Tests That Prove It
+
+Use the record/aspect courtroom above, with a full unpaginated reference result
+from the independently recorded authored sequence. Concatenating lawful pages
+matches that sequence with no duplication, omission or sibling event. Check
+reverse occurrence/publication order, unchanged composite components, deletion
+and generational replacement. A scan-all-then-truncate mutant must fail the finite
+page-work condition; an empty-page-is-complete mutant must lose an expected later
+event. Wrong basis/filter and revoked disclosure must refuse with no protected
+output. Check cancellation, expiry and final retention release at their real owners.
+
+### Target DX
+
+```rust,ignore
+// Planned installed query shape; bounds are pagination limits, not fixed costs.
+let page = request.at(&retained_observation)
+    .query(RecordChanges::for_entity(&entity).aspect(Geometry::reference()))
+    .page_size(32)
+    .maximum_source_visits(256)
+    .execute()?;
+let next = page.continuation(); // None only when the selected history is complete.
+```
+
+### How We Know It's Done
+
+One compiled facade-only audit-panel fixture selects a real record, reads and
+continues its aspect history, handles denial/expiry and releases all retained
+custody. Native bounded paging replaces the eager collection on this application
+route. Existing historical state reads, product ancestry and 9.18 corrections
+remain supported by their original owners.
+
+---
+
+## Phase 11: Batched Obsolete Catalog And Facade Cleanup
+
+**Depends on:** the surviving identity issuance and standalone Bridge facade.
+Independent of the new runtime integrations; implement both cleanup findings in
+one reviewed batch. Cleanup of orchestration displaced by Phases 8–9 belongs to
+those integration phases, not this batch.
+
+### Requirements
+
+- Remove Relational's `phase_one_family_map.rs`,
+  `phase_one_compile_fail_targets.rs` and `phase_one_root_break_targets.rs`, with
+  their module/export declarations. These are stale textual planning inventories,
+  not identity authority or mechanically executed compile-fail tests. Preserve
+  `authority.rs`, `categories.rs`, `kinds.rs`, actual source selection/receipt
+  issuance and real compile-boundary tests.
+- Remove only Bridge's hidden `everyday`, `advanced` and `specialist` wildcard
+  alias modules. Preserve the supported standalone root facade and substantive
+  specialist capabilities. Migrate any newly discovered real callers to the
+  surviving root import in the same batch; retain no compatibility forwarding bag.
+- Reconfirm callers, exports, documentation and supported compatibility before
+  deletion. Remove stale catalog/alias references and refresh affected facade
+  snapshots. This batch does not retire Signal's expressly supported deprecated
+  admission aliases, low-level resource owner, isolated tests or other engines.
+
+### Tests That Prove It / How We Know It's Done
+
+The deleted symbols have no implementation or executable callers left; the old
+catalog's nonexistent test paths are no longer advertised. Existing native
+selection/receipt and foreign-owner tests plus the supported standalone facade
+consumers preserve the real boundary. Use focused existing grouped compile/runtime
+checks and a residue search, not a new catalogue-validation or getter test suite.
+Both cleanup findings ship together with corrected public import guidance.
+
+## Documentation And Successor Handoff For The Added Phases
+
+- Revise `docs/capability-index.md` and `docs/build-an-application.md` for
+  application authors: declared async resources, actual receipt-rooted causal
+  inspection, record/aspect query declarations, finite pages, fresh disclosure,
+  original cleanup and the distinctions from inbound completion and corrections.
+  Link compiled two-facade examples in the existing certification/example owners.
+- Revise `workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md`
+  with the resource, inspection and history entry/cleanup sequence. Keep
+  `docs/execution/recorded-source-correction.md` within that same Query docs tree
+  authoritative for inverse, pre-image and correction history; link audit
+  history without conflating it.
+- Revise `plans/WORTH-query/causal-inspection-dx.md` to point at the current
+  application path and clearly identify any remaining platform-only audience.
+  Update the Bridge API overview/README and Relational identity documentation
+  where cleanup or migrated caller paths make their statements false. Do not
+  create a competing status ledger or speculative feature guide.
+- Retained artifacts continue to obey their existing protocol identity/version,
+  classification, retention and compatibility owners. Store-backed archive,
+  durable restart and multi-parent history remain successor contracts. 9.19–9.20
+  consume the same query/provider admission; 9.21 can consume the exposed causal
+  references without acquiring authority over their source records.
+
+QA must review real receipt acquisition and request authority, exact source/product
+binding, disclosure and metadata leakage, refused-progress/close custody, retained
+history availability, bounded source traversal and the single-owner migration.
+Compilation of an old facade, a mock provider result or a complete-looking truncated
+page cannot stand in for those contracts. Batch affected grouped builds; a pure
+specification change checks links, scope and path claims without compiling runtimes.
+
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
+- All eleven phases are required. Phases 1–6 retain their original acceptance
+  and Proprietary consumer obligations; the additional application-runtime work
+  is proved through the current two-facade public composition and grouped courts.
+  No added finding is satisfied by a raw re-export, a future-work note or an old
+  lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
 - WORTH Proprietary builds against the candidate revision through a reviewed pin
   update, with its workarounds deleted.
 - Platform certification alone is platform evidence. The Proprietary adoption
