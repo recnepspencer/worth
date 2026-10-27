@@ -140,11 +140,35 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
                             reader.field(&anchor, BodyKey::reference()),
                             Some(installation::ANCHOR.to_owned())
                         );
+                        anchor
                     },
                     worth_execution::ExecutionAllocationPolicy::SystemAllocation,
                 )
                 .unwrap();
-            completed.into_parts().0
+            let retained_selector = completed.into_parts().0;
+            let runtime_selector = restored
+                .mutation_projection
+                .project(
+                    &phase,
+                    |reader| {
+                        reader
+                            .resolve_entity(BodyKey::reference(), installation::ANCHOR.to_owned())
+                            .unwrap()
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+                .into_parts()
+                .0;
+            assert_eq!(
+                retained_selector.entity_id(),
+                runtime_selector.entity_id(),
+                "both readers observe the same restored row"
+            );
+            assert_ne!(
+                retained_selector, runtime_selector,
+                "retained projection must own a distinct selector authority namespace"
+            );
         })
         .unwrap();
     let after = restored
