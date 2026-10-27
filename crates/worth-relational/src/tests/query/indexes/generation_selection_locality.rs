@@ -41,7 +41,8 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
         let before = runtime.index_access().generation_selection_counters();
         let selected = runtime
             .index_access()
-            .published_generation_for_commit(index.index_id, &receipt)
+            .read_published_generation_for_commit(execution, index.index_id, &receipt)
+            .unwrap()
             .unwrap();
         let outcome = runtime
             .index_access()

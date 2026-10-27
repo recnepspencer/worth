@@ -65,7 +65,8 @@ fn derived_index_contract_success_branch_scoped_build_keeps_storage_read() {
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &BranchId("feature".to_string()))
+            .read_latest_generation(execution, index.index_id, &BranchId("feature".to_string()))
+            .unwrap()
             .unwrap()
             .source_branch_id,
         BranchId("feature".to_string())
@@ -145,7 +146,8 @@ fn derived_index_contract_unscoped_generation_is_rejected_for_unsupported_scope(
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &BranchId("main".to_string()))
+            .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+            .unwrap()
             .unwrap()
             .source_branch_id,
         BranchId("feature".to_string())

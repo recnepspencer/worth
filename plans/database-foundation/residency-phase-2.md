@@ -2864,3 +2864,54 @@ matrix, keep sticky classification and successful retry meaning checks, run
 native all-target checks, focused index/Query proofs and required enforcement.
 This slice changes no generation selection policy, does not reconstruct truth
 from a cache, and does not introduce another optional post-publication load.
+
+Inspection boundary refinement: the existing Query certification observer must
+remain a no-load residency observation. Warming the deferred image in that
+observer would invalidate its read-stop evidence. Add an explicit three-way
+DerivedIndexGenerationResidency observation (image deferred, generation
+absent, generation published) through native facades; it exposes no payload and
+cannot substitute for a demanded read or pin. Query's existing observer consumes
+that status and keeps its no-I/O behavior. The four ordinary payload getters
+still cut over fully to fallible read_* operations. This is cache lifecycle
+observation, not a compatibility payload getter or another admission authority.
+
+Composition refinement: the pinning module deliberately keeps the runtime field
+private to its child orchestrators; moving getters into access siblings would
+weaken that boundary. Split its former inspection child by cost and truth:
+fallible generation_reads, no-load generation_observation, eager
+ definition_inventory, and cfg(test) resident_index_inspection. Keep the owner
+field private and preserve each body and consumer. The changed request signatures
+also push maintenance_admission to 408 lines; its exact seed/fork/predecessor
+court moves intact into a selected_seed child, retaining all assertions.
+
+Generation inspection reproducer returned Ok(false) for a missing named image.
+The four payload APIs now require the original request and return typed failure;
+replay index-artifact auditing carries the same Result. Query currency, workflow,
+entity resolution and bootstrap verification propagate native causes. The
+certification observer remains a no-load three-way serving-catalog observation.
+Public residency vocabulary is exported through the native facade and recorded
+in the capability index. Privileged orchestrators remain below pinning so sibling
+algorithms cannot borrow the live runtime; definitions, reads, observations and
+unit resident inspection now have separate named files.
+
+Mechanical cutover checks exposed eight internal resident-catalog test calls
+that must remain owner observations, reference/value request borrows, a missing
+example request, a fallible map closure, and three Query fixture request names.
+These were corrected without removing assertions. A broad Python source scan
+stopped on a cp1252 decoding error before Query edits; the corrected pass uses
+rg-selected source paths, ignores generated targets and reads/writes UTF-8.
+Rustfmt found trailing space inside a skipped block; stripping dirty Rust trailing
+space restored formatting. Scoped caps found maintenance_admission at 408 lines;
+its selected seed/fork/predecessor court moved intact to its named child.
+
+The full native lane then caught a stale cancellation assertion: a new read was
+issued through the already-cancelled request and unwrapped. The corrected court
+requires the exact Cancelled read denial and separately observes Absent without
+I/O, preserving the no-partial-generation claim and the original request payer.
+The expanded 84-cell index table and complete native library pass (2,006 passed,
+31 ignored); Query execution all-target checking, owner clippy, caps, context and
+composition pass. Composition scans 45 Rust files with 44 advisories and zero
+scan errors; the moved seed court retains its single causal scenario. Focused
+Query currency execution passes five tests (1,939 filtered), and boundary-check
+passes. An extraction-script assertion initially had a Python variable typo and
+made no source edits; it was corrected before the named module cutover.

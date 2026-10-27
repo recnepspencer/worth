@@ -122,6 +122,13 @@ custody and this runtime's aspect-name meanings, performs no source read, and
 returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
 kind, aspect revision and retirement only; historical reads require Full custody.
 
+Native generation payload inspection uses request-aware `read_latest_generation`,
+`read_published_generation_for_commit`, `read_published_generation_for_observation`
+and `read_generations_for_version`; a deferred index image is never reported as
+an absent generation. The no-load `generation_residency_for_observation` observer
+returns `DerivedIndexGenerationResidency::{DeferredImage, Absent, Published}`.
+That cache status carries no payload or read authority and does not warm an image.
+
 Native storage statistics, partition statistics, chunk summaries and chunk
 diagnostics take the caller's execution request and return a fallible result.
 They explicitly demand the whole mirror and retain that resident edition for

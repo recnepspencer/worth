@@ -31,7 +31,8 @@ pub(super) fn read(
             .unwrap();
         return Ok(receiving
             .index_access()
-            .latest_generation(expected.index_id, &expected.source_branch_id)
+            .read_latest_generation(execution, expected.index_id, &expected.source_branch_id)
+            .unwrap()
             .as_deref()
             == Some(expected));
     }

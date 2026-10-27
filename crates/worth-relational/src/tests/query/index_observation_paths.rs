@@ -192,7 +192,8 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
     );
     let index_access = runtime.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("main".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+        .unwrap()
         .expect("latest generation");
 
     assert!(build.failed_indexes.is_empty());
@@ -282,7 +283,8 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
     );
     let index_access = runtime.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("main".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+        .unwrap()
         .expect("latest generation");
 
     assert!(build.failed_indexes.is_empty());

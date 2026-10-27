@@ -121,7 +121,8 @@ fn index_result_capacity_reaches_application_caller() {
             assert_eq!(
                 runtime
                     .index_access()
-                    .latest_generation(index.index_id, &build_request.branch_id)
+                    .read_latest_generation(execution, index.index_id, &build_request.branch_id)
+                    .unwrap()
                     .unwrap()
                     .generation_id,
                 published

@@ -9,7 +9,11 @@ pub(crate) trait ReplayRead {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         version_id: VersionId,
     ) -> Result<ReplaySnapshotSurface, crate::execution::RelationalExecutionDenialCause>;
-    fn index_generations_at_version(&self, version_id: VersionId) -> Vec<DerivedIndexGeneration>;
+    fn read_index_generations_at_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        version_id: VersionId,
+    ) -> Result<Vec<DerivedIndexGeneration>, crate::execution::RelationalExecutionDenialCause>;
 }
 
 impl ReplayRead for RelationalRuntime {
@@ -26,7 +30,12 @@ impl ReplayRead for RelationalRuntime {
         })
     }
 
-    fn index_generations_at_version(&self, version_id: VersionId) -> Vec<DerivedIndexGeneration> {
-        self.index_access().generations_for_version(version_id)
+    fn read_index_generations_at_version(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        version_id: VersionId,
+    ) -> Result<Vec<DerivedIndexGeneration>, crate::execution::RelationalExecutionDenialCause> {
+        self.index_access()
+            .read_generations_for_version(execution, version_id)
     }
 }

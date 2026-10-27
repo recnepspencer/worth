@@ -49,7 +49,8 @@ pub(super) fn reopened_with_source(
     );
     let generation = producer
         .index_access()
-        .latest_generation(index, &branch)
+        .read_latest_generation(execution, index, &branch)
+        .unwrap()
         .unwrap();
     assert_eq!(generation.source_commit_id, head.commit_id);
     let (recovery, source, entity) = checkpoint_fixture(execution, producer, entity, false);

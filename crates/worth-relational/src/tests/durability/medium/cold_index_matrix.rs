@@ -8,6 +8,10 @@ use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailabl
 
 #[derive(Debug, Clone, Copy)]
 enum IndexDoor {
+    Latest,
+    CommitGeneration,
+    ObservationGeneration,
+    VersionGenerations,
     Build,
     BasisBuild,
     MemoryCheckpoint,
@@ -20,7 +24,11 @@ enum IndexDoor {
     Commit,
 }
 impl IndexDoor {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 14] = [
+        Self::Latest,
+        Self::CommitGeneration,
+        Self::ObservationGeneration,
+        Self::VersionGenerations,
         Self::Build,
         Self::BasisBuild,
         Self::MemoryCheckpoint,
@@ -50,6 +58,49 @@ impl IndexDoor {
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
         match self {
+            Self::Latest
+            | Self::CommitGeneration
+            | Self::ObservationGeneration
+            | Self::VersionGenerations => {
+                let access = runtime.index_access();
+                let genuine = |generation: &crate::indexes::data::DerivedIndexGeneration| {
+                    generation.index_id == index
+                        && generation.source_commit_id == expected_generation.source_commit_id
+                        && generation.entries == expected_generation.entries
+                };
+                let found = match self {
+                    Self::Latest => access.read_latest_generation(
+                        execution,
+                        index,
+                        &expected_generation.source_branch_id,
+                    )?,
+                    Self::CommitGeneration => access.read_published_generation_for_commit(
+                        execution,
+                        index,
+                        &runtime
+                            .history()
+                            .immutable_commit_receipt(expected_generation.source_commit_id)
+                            .unwrap(),
+                    )?,
+                    Self::ObservationGeneration => access
+                        .read_published_generation_for_observation(
+                            execution,
+                            index,
+                            &basis.observation(),
+                        )?,
+                    Self::VersionGenerations => {
+                        return Ok(access
+                            .read_generations_for_version(
+                                execution,
+                                expected_generation.applicability.version_id,
+                            )?
+                            .iter()
+                            .any(genuine))
+                    }
+                    _ => unreachable!("selected generation inspection"),
+                };
+                Ok(found.as_deref().is_some_and(genuine))
+            }
             Self::MemoryCheckpoint | Self::EmbeddedCheckpoint => {
                 super::cold_index_checkpoint_door::read(
                     execution,
@@ -64,10 +115,14 @@ impl IndexDoor {
                 } else {
                     super::cold_index_build_door::IndexBuildDoor::Basis
                 };
-                door.read(runtime, execution, index).map(|_| {
+                door.read(runtime, execution, index).and_then(|_| {
                     let successor = runtime
                         .index_access()
-                        .latest_generation(index, &expected_generation.source_branch_id)
+                        .read_latest_generation(
+                            execution,
+                            index,
+                            &expected_generation.source_branch_id,
+                        )?
                         .unwrap();
                     assert!(successor.generation_id > expected_generation.generation_id);
                     assert!(
@@ -75,7 +130,7 @@ impl IndexDoor {
                         "successor generation growth has headroom"
                     );
                     assert_eq!(successor.entries, expected_generation.entries);
-                    true
+                    Ok(true)
                 })
             }
             Self::SnapshotPin => {
@@ -179,8 +234,27 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
                 .visible_entity_at_version(execution, entity, runtime.current_version_id())
                 .unwrap()
                 .is_some());
+            let (_, observation_basis) = runtime
+                .observe_branch(&runtime.main_branch_identity())
+                .unwrap();
+            let observed_reads = source.reads.load(Ordering::Relaxed);
+            assert_eq!(
+                runtime
+                    .index_access()
+                    .generation_residency_for_observation(index, &observation_basis.observation()),
+                crate::indexes::data::DerivedIndexGenerationResidency::DeferredImage
+            );
+            assert_eq!(
+                runtime.index_access().generation_residency_for_observation(
+                    DerivedIndexId(0),
+                    &observation_basis.observation()
+                ),
+                crate::indexes::data::DerivedIndexGenerationResidency::Absent
+            );
+            assert_eq!(source.reads.load(Ordering::Relaxed), observed_reads);
             let frontier = runtime.history().latest_patch_stream_position();
             let offered = attached_test_medium(&runtime).offered().len();
+            let reservations = runtime.patch_position_reservation_counters();
             source
                 .failures
                 .lock()
@@ -197,6 +271,11 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
             );
             assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
             assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
+            assert_eq!(
+                runtime.patch_position_reservation_counters(),
+                reservations,
+                "index refusal is pre-position"
+            );
             source.failures.lock().unwrap().clear();
             let reads = source.reads.load(Ordering::Relaxed);
             let failed_reads = || {

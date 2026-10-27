@@ -260,10 +260,14 @@ pub(super) fn compare_replay_surfaces(
     }
     if compared_surfaces.contains(&DERIVED_INDEX_SURFACE) {
         let original_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            runtime.index_generations_at_version(envelope.commit.version_id),
+            runtime
+                .read_index_generations_at_version(execution, envelope.commit.version_id)
+                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
         );
         let replayed_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            replay_runtime.index_generations_at_version(envelope.commit.version_id),
+            replay_runtime
+                .read_index_generations_at_version(execution, envelope.commit.version_id)
+                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
         );
         compare_replay_surface(
             runtime,

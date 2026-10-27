@@ -102,7 +102,8 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
         assert!(
             runtime
                 .index_access()
-                .published_generation_for_commit(retired, &head)
+                .read_published_generation_for_commit(request_execution, retired, &head)
+                .unwrap()
                 .is_none(),
             "nothing maintains the retired index"
         );

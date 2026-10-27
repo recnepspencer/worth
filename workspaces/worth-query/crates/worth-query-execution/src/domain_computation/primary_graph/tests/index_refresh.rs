@@ -26,9 +26,9 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
     handle.with_runtime_mut(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
-        assert!(runtime.index_access().published_generation_for_observation(
+        assert!(runtime.index_access().read_published_generation_for_observation(&execution,
             transition.identity_index_id, &basis.observation(),
-        ).is_some(), "bootstrap must seed the exact installed transition index");
+        ).unwrap().is_some(), "bootstrap must seed the exact installed transition index");
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
         let request = BoundedEntityFieldLookupRequest::new(
             snapshot.clone(), transition.identity_index_id, transition.entity_kind,
@@ -73,7 +73,8 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
             assert!(index_ids.iter().any(|index_id| {
                 runtime
                     .index_access()
-                    .published_generation_for_commit(*index_id, &feature)
+                    .read_published_generation_for_commit(execution, *index_id, &feature)
+                    .unwrap()
                     .is_none()
             }));
             Ok::<_, &'static str>((feature, main))
@@ -87,7 +88,8 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                 assert!(
                     runtime
                         .index_access()
-                        .published_generation_for_commit(*index_id, committed)
+                        .read_published_generation_for_commit(execution, *index_id, committed)
+                        .unwrap()
                         .is_some(),
                     "index {index_id:?} must be current for exact commit {:?} on branch {:?}",
                     committed.commit_id,
@@ -128,7 +130,8 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
             for index_id in &index_ids {
                 assert!(runtime
                     .index_access()
-                    .published_generation_for_commit(*index_id, commit)
+                    .read_published_generation_for_commit(execution, *index_id, commit)
+                    .unwrap()
                     .is_some());
             }
         }

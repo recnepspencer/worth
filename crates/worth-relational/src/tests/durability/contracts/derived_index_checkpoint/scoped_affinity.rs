@@ -88,7 +88,8 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     assert_ne!(artifact.identity().authoring_branch(), &branch);
     let admitted = restored
         .index_access()
-        .published_generation_for_observation(index, &basis.observation())
+        .read_published_generation_for_observation(execution, index, &basis.observation())
+        .unwrap()
         .unwrap();
     assert_eq!(admitted.generation_id, generation);
     assert_eq!(admitted.source_branch_id, branch);

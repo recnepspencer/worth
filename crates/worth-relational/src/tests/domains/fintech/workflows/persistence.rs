@@ -302,7 +302,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     let (recovered, _outcome) = recover_persisted_world(execution, &world).unwrap();
     let index_access = recovered.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("analysis".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("analysis".to_string()))
+        .unwrap()
         .expect("analysis index generation should recover");
 
     assert!(build.failed_indexes.is_empty());

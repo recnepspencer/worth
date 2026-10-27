@@ -29,8 +29,8 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
-lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 264, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390: 1,992 refusal cells. Positive current and
+lineage node 54, lineage events 66, index cache/build/export/inspection 84, current Head/ID symbol 264, intern bucket 30,
+remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390: 2,016 refusal cells. Positive current and
 remote-invariant unavailable-history families add 150 cells; adjacency adds another 258 untouched-subject positives. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
@@ -96,7 +96,7 @@ post-publication optional witness sealing consumes this no-load capability.
 Projection adjacency now has nine explicit doors and both exact/historical
 selection, against anchor and remote Head/history/ID-symbol pages in all six
 failure classes. The 648-cell table contributes 390 typed refusals and 258
-untouched-subject positives. Total refusal inventory is 1,992; positive table
+untouched-subject positives. Total refusal inventory is 2,016; positive table
 inventory is 408. Failed admitted reads expose no callbacks, and failed reads
 advance no journal position or offered artifact count. Sticky page assertions
 measure the failed page itself, preserving region/page damage isolation.
@@ -116,3 +116,18 @@ Native and projection cold/warm courts also prove abandoned discovery rounds
 settle no extra materialization or adjacency lease instrumentation. An exhausted
 frontier opens no source member. The full native run at this slice passes
 2,006 tests with 31 ignored; final clean-tree lanes are still outstanding.
+
+Generation payload inspection now adds latest, exact commit, exact observation
+and version inventory doors to the index table: 14 doors by six failure classes,
+84 refusal cells. The first row reproduced MissingMember becoming Ok(false).
+All four request-free payload getters are retired; their read_* replacements
+admit the existing image and preserve the exact native execution cause.
+Every index refusal also checks that no journal position was reserved.
+
+The public no-load generation_residency_for_observation status distinguishes
+DeferredImage, Absent and Published without exposing a payload or granting read
+authority. The same fault table checks DeferredImage and a genuinely absent
+definition with zero further reads. Query's existing certification observer uses
+that explicit cache status, preserving its no-warming claim. Fresh Query currency,
+bootstrap and principal reads propagate typed image failures; a native refresh
+execution failure is no longer flattened into generic index absence.

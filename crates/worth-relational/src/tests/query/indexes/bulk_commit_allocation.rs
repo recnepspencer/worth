@@ -103,7 +103,8 @@ fn bulk_commit(rows_per_key: usize) {
     let second = runtime.settle_performed_publication(performed).unwrap();
     let generation = runtime
         .index_access()
-        .latest_generation(index, &BranchId("main".into()))
+        .read_latest_generation(&execution, index, &BranchId("main".into()))
+        .unwrap()
         .unwrap();
     assert_eq!(generation.source_commit_id, second.commit.commit_id);
     let crate::facade::indexes::DerivedIndexEntries::EntityField(entries) = &generation.entries

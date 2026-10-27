@@ -27,7 +27,12 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     );
     let generation = runtime
         .index_access()
-        .published_generation_for_observation(fixture.index.index_id, &basis.observation())
+        .read_published_generation_for_observation(
+            execution,
+            fixture.index.index_id,
+            &basis.observation(),
+        )
+        .unwrap()
         .unwrap();
     let discarded = runtime
         .index_authority()
@@ -56,7 +61,8 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     );
     assert!(restored
         .index_access()
-        .latest_generation(fixture.index.index_id, &BranchId("main".into()))
+        .read_latest_generation(execution, fixture.index.index_id, &BranchId("main".into()))
+        .unwrap()
         .is_none());
     let (_, restored_basis) = restored
         .observe_branch(&restored.main_branch_identity())

@@ -269,7 +269,8 @@ fn durability_contract_checkpoint_recovers_index_metadata() {
 
     let index_access = recovered.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("main".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+        .unwrap()
         .unwrap();
     assert_eq!(generation.generation_id, build.generations[0].generation_id);
     assert_eq!(generation.source_commit_id, commit.commit.commit_id);
