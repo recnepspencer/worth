@@ -1,5 +1,7 @@
 //! A real non-correctable handler retains inspection parameters, not its business input.
 use super::*;
+#[path = "source_disclosure/compiler_qualification.rs"]
+mod compiler_qualification;
 #[path = "source_disclosure/native_funding.rs"]
 mod native_funding;
 use crate::domain_computation::primary_graph::{
