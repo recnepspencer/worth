@@ -1,5 +1,6 @@
 //! Carries verified native recovery lineage across one validated, settled commit.
 mod outcome;
+mod snapshot_closeout;
 #[cfg(test)]
 mod tests;
 pub use outcome::{
@@ -80,12 +81,7 @@ impl DurabilityRecoveryAuthority<'_> {
         let successor = performed.next_basis().descriptor().clone();
         match self.runtime.settle_performed_publication(performed) {
             Ok(committed) => {
-                self.runtime
-                    .snapshots()
-                    .release_snapshot(&committed.snapshot)
-                    .expect(/* Proof: This operation minted and exclusively owns this snapshot handle; the consuming release occurs exactly once before the handle escapes or drops. */
-                        "checkpoint transition releases its settled native snapshot exactly once",
-                    );
+                snapshot_closeout::release(self.runtime, &committed)?;
                 self.install_acknowledged_codec_target(&mut recovered);
                 Ok(acknowledged(recovered, successor, committed.commit.clone()))
             }

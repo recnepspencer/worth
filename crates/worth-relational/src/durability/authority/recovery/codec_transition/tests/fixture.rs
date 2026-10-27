@@ -152,7 +152,12 @@ pub(super) fn activation_proof(
 
 pub(super) fn protected_payload(runtime: &RelationalRuntime, id: EntityId) -> Vec<u8> {
     let basis = basis(runtime);
-    let partition = basis.inner.root.partition_state(id.partition_id).unwrap();
+    let partition = basis
+        .inner
+        .root
+        .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let record = partition.entity_arena.get(&id).unwrap();
     // This reads actual native stored bytes and identity independently of the
     // codec transition's comparison and its semantic Query projection.

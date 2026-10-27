@@ -87,8 +87,7 @@ impl PartitionEdition {
         let Some(region) = self.partitions.get(&id) else {
             return Ok(None);
         };
-        region.cell().check_damage()?;
-        region.admitted_partition().map(Some).ok_or(
+        region.try_admitted_partition()?.map(Some).ok_or(
             crate::storage::data::RelationalStorageUnavailable {
                 subject: crate::storage::data::RelationalStorageSubject::Region(id),
                 cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
@@ -186,6 +185,25 @@ impl PartitionEdition {
                 )
             })
             .transpose()
+    }
+
+    pub(crate) fn demand_selected(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+        ids: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<ResidentPartitionEdition, crate::storage::residency::RelationalResidencyDemandFailure>
+    {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        let mut leases = BTreeMap::new();
+        for id in ids {
+            if let Some(lease) = self.demand_partition(execution, id)? {
+                lease.admit_symbols(execution, symbols)?;
+                leases.insert(id, lease);
+            }
+        }
+        Ok(ResidentPartitionEdition::new(self.clone(), leases))
     }
 
     /// A scan declares the whole immutable edition before visiting any row.

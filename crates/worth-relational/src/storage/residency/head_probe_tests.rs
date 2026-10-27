@@ -63,12 +63,9 @@ fn invariant_current_rows_and_aspects_succeed_when_history_is_unavailable() {
     assert_eq!(answer.3, vec![fixture.relation]);
     assert!(rounds > 1 && rounds < 4);
     assert_eq!(fixture.source.history_reads.load(Ordering::SeqCst), 0);
-    let failure = crate::storage::overlay::PartitionAccess::demand_full_partition(
-        &edition,
-        &execution,
-        fixture.entity.partition_id,
-    )
-    .unwrap_err();
+    let failure = edition
+        .demand_partition(&execution, fixture.entity.partition_id)
+        .unwrap_err();
     assert!(matches!(
         failure,
         RelationalResidencyDemandFailure::StorageUnavailable(_)

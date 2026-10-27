@@ -87,7 +87,7 @@ fn relation_birth(
     let partition = basis
         .inner
         .root
-        .partition_state(relation_id.partition_id)
+        .partition_state(relation_id.partition_id)?
         .ok_or("incident producer relation partition absent")?;
     let created = partition
         .relation_arena

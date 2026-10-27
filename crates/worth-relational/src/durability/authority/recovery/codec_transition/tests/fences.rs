@@ -152,6 +152,7 @@ fn actual_incident_relation_refuses_retirement_without_cascading_protected_paylo
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     assert_eq!(
         partition

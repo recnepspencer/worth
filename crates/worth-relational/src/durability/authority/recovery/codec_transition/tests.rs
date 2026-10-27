@@ -128,6 +128,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         .inner
         .root
         .partition_state(world.output.partition_id)
+        .expect("fixture root has admitted Full custody")
         .unwrap()
         .entity_arena
         .get(&world.output)

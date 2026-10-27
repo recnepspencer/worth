@@ -41,7 +41,7 @@ pub(super) fn capture(
                 crate::history::data::CodecRetirementClosureStop::Request(cause) => Denial::request(cause),
                 crate::history::data::CodecRetirementClosureStop::Payload(detail) => Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, detail),
             })?;
-            let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id)
+            let activation_kind = source.inner.root.partition_state(activation.entity_id.partition_id).map_err(|failure| Denial::request(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)))?
                 .and_then(|partition| partition.entity_arena.get(&activation.entity_id))
                 .filter(|row| row.is_live()).and_then(|row| row.kind_id())
                 .ok_or_else(|| Denial::new(crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected, "codec activation actual native kind is absent"))?;

@@ -223,6 +223,10 @@ fn branch_digest(bit: u32, children: &[Arc<Node>; 2]) -> [u8; 32] {
     )
 }
 
+fn direction(key: u128, bit: u32) -> usize {
+    ((key >> (127 - bit)) & 1) as usize
+}
+
 fn hash(tag: u8, chunks: &[&[u8]]) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash.update(b"worth.relational.content-index.v1\0");

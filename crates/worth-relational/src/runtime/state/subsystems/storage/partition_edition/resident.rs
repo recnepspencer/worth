@@ -19,6 +19,13 @@ impl ResidentPartitionEdition {
             leases,
         }
     }
+    #[cfg(test)]
+    pub(crate) fn resident_pin_lease(
+        &self,
+        id: PartitionId,
+    ) -> Option<RelationalResidencyLease<Full>> {
+        self.leases.get(&id).cloned()
+    }
     pub(crate) fn partition(&self, id: PartitionId) -> Option<&PartitionState> {
         self.leases
             .get(&id)

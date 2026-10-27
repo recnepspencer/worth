@@ -79,7 +79,7 @@ pub(super) fn validate_member(
     let partition = basis
         .inner
         .root
-        .partition_state(id.partition_id)
+        .partition_state(id.partition_id)?
         .ok_or("output partition absent")?;
     let row = partition
         .entity_arena

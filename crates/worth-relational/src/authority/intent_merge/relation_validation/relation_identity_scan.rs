@@ -176,14 +176,32 @@ mod tests {
             })
             .collect::<Vec<_>>();
         let mut adjacency = vec![AdjacencySet::new(&adjacency_policy); 3];
-        adjacency[source_slot].insert(KindId(9), relation_id);
-        adjacency[source_slot].insert(KindId(9), decoy_id);
+        adjacency
+            .get_mut(source_slot)
+            .expect("fixture adjacency is materialized")
+            .insert(KindId(9), relation_id);
+        adjacency
+            .get_mut(source_slot)
+            .expect("fixture adjacency is materialized")
+            .insert(KindId(9), decoy_id);
         let mut reverse_adjacency = vec![AdjacencySet::new(&adjacency_policy); 3];
-        reverse_adjacency[left_slot].insert(KindId(9), relation_id);
-        reverse_adjacency[right_slot].insert(KindId(9), decoy_id);
+        reverse_adjacency
+            .get_mut(left_slot)
+            .expect("fixture adjacency is materialized")
+            .insert(KindId(9), relation_id);
+        reverse_adjacency
+            .get_mut(right_slot)
+            .expect("fixture adjacency is materialized")
+            .insert(KindId(9), decoy_id);
         for (kind, other_source_id) in other_source_ids {
-            adjacency[right_slot].insert(kind, other_source_id);
-            reverse_adjacency[left_slot].insert(kind, other_source_id);
+            adjacency
+                .get_mut(right_slot)
+                .expect("fixture adjacency is materialized")
+                .insert(kind, other_source_id);
+            reverse_adjacency
+                .get_mut(left_slot)
+                .expect("fixture adjacency is materialized")
+                .insert(kind, other_source_id);
         }
 
         let mut partitions = BTreeMap::new();

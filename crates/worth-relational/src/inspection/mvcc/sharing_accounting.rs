@@ -33,10 +33,11 @@ impl RelationalAuthoritativeAllocationAccounting {
         root: &RelationalBranchRoot,
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
-    ) {
-        self.observe_partition_allocations(runtime_instance_id, root);
+    ) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
+        self.observe_partition_allocations(runtime_instance_id, root)?;
         self.observe_root_allocations(runtime_instance_id, root);
         self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes);
+        Ok(())
     }
 
     pub(super) fn allocations(&self) -> Vec<RelationalAuthoritativeAllocationObservation> {
@@ -110,7 +111,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         &mut self,
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
-    ) {
+    ) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
         for region in root.storage_regions() {
             self.logical_partition_bytes = self
                 .logical_partition_bytes
@@ -120,8 +121,8 @@ impl RelationalAuthoritativeAllocationAccounting {
                 .saturating_add(region.root_region_bytes)
                 .saturating_add(region.partition_state_bytes);
             let partition = root
-                .partition_state(region.partition_id)
-                .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
+                .partition_state(region.partition_id).map_err(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
+                .ok_or(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
             for allocation in
                 crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,
@@ -175,6 +176,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                     .insert((2 + lane as u8, allocation.id), bytes);
             }
         }
+        Ok(())
     }
 
     fn observe_root_allocations(&mut self, runtime_instance_id: u64, root: &RelationalBranchRoot) {

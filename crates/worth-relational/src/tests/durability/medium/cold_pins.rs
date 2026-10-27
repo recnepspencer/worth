@@ -124,7 +124,9 @@ fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> PinFixture
     assert!(
         matches!(
             crate::storage::overlay::PartitionAccess::probe_full_partition(
-                &runtime.acquire_partition_edition(),
+                &runtime
+                    .acquire_partition_edition()
+                    .with_symbol_admission(&runtime.services.symbols),
                 entity.partition_id
             ),
             crate::storage::residency::PartitionProbe::Cold

@@ -75,7 +75,7 @@ impl HistorySubsystem {
         branch_id: &BranchId,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<(), RelationalRetentionAcquisitionDenial> {
-        let cell = self
+        let mut cell = self
             .branch_cell(branch_id)
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
         let identity = cell.identity().clone();

@@ -118,9 +118,11 @@ mod tests {
         let slots = [0, 1, 64, 127];
         let mut cold = AdjacencyContentIndex::default();
         let mut incremental = AdjacencyContentIndex::default();
-        assert_eq!(cold.update(&table, None, slots), 2);
+        assert_eq!(cold.update(&table, None, slots).unwrap(), 2);
         assert_eq!(
-            incremental.update(&table, Some(&SparseAdjacencyTable::default()), slots),
+            incremental
+                .update(&table, Some(&SparseAdjacencyTable::default()), slots)
+                .unwrap(),
             2
         );
         assert_eq!(cold.digest(), incremental.digest());

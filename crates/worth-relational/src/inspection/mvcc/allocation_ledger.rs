@@ -123,7 +123,15 @@ impl RelationalRuntime {
                 commit_id,
                 digest: artifact
                     .canonical_payload_digest()
-                    .map_err(|_| RelationalBranchSharingInspectionDenial::RootUnavailable)?,
+                    .map_err(|_| {
+                        match artifact.envelope_residency().journal_index() {
+                            Some(entry) => RelationalBranchSharingInspectionDenial::StorageUnavailable(crate::storage::data::RelationalStorageUnavailable {
+                                subject: crate::storage::data::RelationalStorageSubject::Envelope(entry.position),
+                                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+                            }),
+                            None => RelationalBranchSharingInspectionDenial::RootUnavailable,
+                        }
+                    })?,
             });
             let derived_cache_bytes = self
                 .indexes
@@ -136,7 +144,7 @@ impl RelationalRuntime {
                 derived_cache_bytes,
                 &mut authoritative_allocations,
                 &mut excluded_allocations,
-            );
+            )?;
         }
         Ok(RelationalOwnerAllocationLedgerObservation {
             authoritative_allocations,
@@ -153,10 +161,10 @@ fn inventory_root(
     derived_cache_bytes: u64,
     authoritative: &mut Vec<RelationalAuthoritativeAllocationObservation>,
     excluded: &mut Vec<RelationalOwnerExcludedAllocationObservation>,
-) {
+) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
     for region in root.storage_regions() {
         let partition = root
-            .partition_state(region.partition_id)
+            .partition_state(region.partition_id).map_err(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
             .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
         let mut payload = PayloadLedger {
             runtime_instance_id,
@@ -220,6 +228,7 @@ fn inventory_root(
         authoritative,
         excluded,
     );
+    Ok(())
 }
 
 struct PayloadLedger<'a> {

@@ -213,7 +213,7 @@ mod tests {
     use serde::Serialize;
     use sha2::{Digest, Sha256};
 
-    use super::hash_value;
+    use super::{hash_value, PartitionContentDigestError};
     use crate::config::data::{AdjacencyBackend, AdjacencyPolicy};
     use crate::identity::data::{KindId, PartitionId, RelationId};
     use crate::storage::overlay::PartitionState;

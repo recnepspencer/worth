@@ -9,6 +9,7 @@ impl RelationalMaterializationPort {
     /// of the retained entity.
     pub fn retained_entity_kind(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &AdmittedRelationalBranchBasis,
         custody: &RelationalMaterializationCustody,
         entity: EntityId,
@@ -33,17 +34,21 @@ impl RelationalMaterializationPort {
         {
             return Err(RelationalMaterializationError::CandidateManifestMismatch);
         }
-        match live_record_manifest(
-            &basis.inner.root,
-            &crate::transactions::data::RecordRef::Entity(entity),
-        )? {
-            RelationalMaterializationRecord::Entity { kind_id, .. } => Ok(kind_id),
-            RelationalMaterializationRecord::Relation { .. } => {
-                unreachable!(
-                    /* Proof: The private entity-only packet builder supplies Entity references exclusively; relation packets use their separate dispatch path. */
-                    "entity record requested"
-                )
-            }
-        }
+        basis
+            .inner
+            .root
+            .demand_regions_head(execution, &runtime.services.symbols, [entity.partition_id])
+            .map_err(|failure| RelationalMaterializationError::Read(failure.into()))?;
+        let partition = basis
+            .inner
+            .root
+            .accepted_head_region_view(entity.partition_id)
+            .ok_or_else(|| missing_entity(entity))?;
+        partition
+            .entity_arena()
+            .get(&entity)
+            .filter(|row| row.is_live())
+            .and_then(|row| row.kind_id())
+            .ok_or_else(|| missing_entity(entity))
     }
 }

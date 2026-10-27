@@ -264,7 +264,7 @@ impl PendingSymbolMeanings {
         let reservations = meanings
             .entries
             .iter()
-            .filter_map(|(symbol, text)| self.reserved.remove(symbol))
+            .filter_map(|(symbol, _)| self.reserved.remove(symbol))
             .collect();
         Ok(PreparedSymbolPublication {
             owner: self.owner,

@@ -347,8 +347,11 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
         cold.runtime
             .partitions
             .acquire()
-            .partition(PartitionId(1))
+            .shared_partition(PartitionId(1))
             .unwrap()
+            .unwrap()
+            .full_view()
+            .partition()
             .entity_arena
             .replay_pin_count(cold.entities[0].slot_index())
     };

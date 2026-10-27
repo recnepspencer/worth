@@ -219,6 +219,7 @@ pub(super) fn assert_values(
             .inner
             .root
             .partition_state(id.partition_id)
+            .expect("fixture root has admitted Full custody")
             .unwrap()
             .entity_arena
             .get(id)
@@ -246,6 +247,7 @@ pub(super) fn relation_payload(runtime: &RelationalRuntime, id: RelationId) -> V
         .inner
         .root
         .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
         .unwrap()
         .relation_arena
         .get(&id)

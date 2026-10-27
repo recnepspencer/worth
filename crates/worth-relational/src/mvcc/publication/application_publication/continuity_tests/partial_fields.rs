@@ -96,6 +96,7 @@ fn genuine_whole_clear_can_leave_a_live_member_without_stored_payload() {
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     let cleared = partition.entity_arena.get(&ids[0]).unwrap();
     assert!(cleared.is_live());
@@ -198,6 +199,7 @@ fn cold_succession_applies_partial_field_clear_without_requiring_a_full_rewrite(
         .inner
         .root
         .partition_state(PartitionId::main())
+        .expect("fixture root has admitted Full custody")
         .unwrap();
     for (index, id) in ids.iter().enumerate() {
         let row = partition.entity_arena.get(id).unwrap();

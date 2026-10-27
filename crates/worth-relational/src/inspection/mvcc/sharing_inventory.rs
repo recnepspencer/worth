@@ -22,13 +22,13 @@ pub(super) struct BranchSharingInventory {
 pub(super) fn inventory_sharing_scope(
     runtime: &RelationalRuntime,
     scope: &[BranchSharingScopeEntry],
-) -> BranchSharingInventory {
+) -> Result<BranchSharingInventory, RelationalBranchSharingInspectionDenial> {
     let mut inventory = empty_inventory(scope.len());
     for entry in scope {
-        observe_entry(runtime, entry, &mut inventory);
+        observe_entry(runtime, entry, &mut inventory)?;
     }
     inventory.coordination_cells.sort_unstable();
-    inventory
+    Ok(inventory)
 }
 
 fn empty_inventory(branch_count: usize) -> BranchSharingInventory {
@@ -49,7 +49,7 @@ fn observe_entry(
     runtime: &RelationalRuntime,
     entry: &BranchSharingScopeEntry,
     inventory: &mut BranchSharingInventory,
-) {
+) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
     let first_root_observation = inventory.root_ids.insert(entry.root.id());
     let commit_id = entry
         .root
@@ -68,7 +68,7 @@ fn observe_entry(
         &entry.root,
         entry.artifact.as_ref(),
         derived_cache_bytes,
-    );
+    )?;
     inventory
         .coordination_cells
         .push(entry.coordination_cell.clone());
@@ -78,6 +78,7 @@ fn observe_entry(
     inventory.coordination_waits = inventory
         .coordination_waits
         .saturating_add(entry.coordination_waits);
+    Ok(())
 }
 
 fn observe_root(entry: &BranchSharingScopeEntry, inventory: &mut BranchSharingInventory) {

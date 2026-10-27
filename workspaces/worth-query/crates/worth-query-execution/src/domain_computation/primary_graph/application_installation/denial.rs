@@ -24,6 +24,11 @@ pub enum WorthQueryInMemoryApplicationDenial {
     CheckpointTransitionSettlementFailed(
         Box<worth_relational::facade::transactions::TransactionCommitError>,
     ),
+    /// Native publication settled, but closing its temporary snapshot refused.
+    CheckpointTransitionSnapshotCloseoutFailed {
+        commit_id: worth_relational::facade::history::CommitId,
+        denial: worth_relational::facade::snapshots::RelationalSnapshotReleaseDenial,
+    },
     /// Native target settlement acknowledged, but checkpoint capture stopped.
     CheckpointTransitionCaptureStopped(Box<super::WorthQueryCheckpointTransitionRecovery>),
     /// Native settlement acknowledged; final installation refused with its
@@ -64,7 +69,8 @@ impl std::error::Error for WorthQueryInMemoryApplicationDenial {
             Self::WorkflowAuthorityRequiresProgram => None,
             Self::CheckpointTransitionCaptureStopped(_)
             | Self::CheckpointTransitionFinalizationStopped(_)
-            | Self::CheckpointTransitionSettlementFailed(_) => None,
+            | Self::CheckpointTransitionSettlementFailed(_)
+            | Self::CheckpointTransitionSnapshotCloseoutFailed { .. } => None,
             Self::CheckpointTransitionAcknowledged { cause, .. } => Some(cause.as_ref()),
             Self::CheckpointTransitionPolicyStopped(error) => Some(error),
             Self::Schema(error) => Some(error),

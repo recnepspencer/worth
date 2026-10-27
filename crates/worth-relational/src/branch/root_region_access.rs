@@ -201,10 +201,19 @@ impl RelationalBranchRoot {
             .map(|region| region.partition.demand_head(execution, 1 << 30))
             .transpose()
     }
-    pub(crate) fn partition_state(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.regions
-            .get(partition_id)
-            .map(|region| region.partition.as_ref())
+    pub(crate) fn partition_state(
+        &self,
+        partition_id: PartitionId,
+    ) -> Result<Option<&PartitionState>, crate::storage::data::RelationalStorageUnavailable> {
+        let Some(region) = self.regions.get(partition_id) else {
+            return Ok(None);
+        };
+        region.partition.try_admitted_partition()?.map(Some).ok_or(
+            crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(partition_id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            },
+        )
     }
 
     pub(crate) fn visit_content_cache_allocations(

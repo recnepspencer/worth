@@ -96,12 +96,21 @@ impl RelationalRegionRetention {
     /// Lend only a previously admitted full view. A probe records `None` as a
     /// miss and discards its provisional result before any demand can run.
     pub(crate) fn admitted_partition(&self) -> Option<&PartitionState> {
-        self.cell.check_damage().ok()?;
-        if self.full.get().is_none() {
-            let lease = self.cell.lease_resident_full().ok().flatten()?;
+        // A probe turns every unavailable state into a discovered demand. The
+        // round discards this provisional absence before the typed demand runs.
+        self.try_admitted_partition().ok().flatten()
+    }
+
+    pub(crate) fn try_admitted_partition(
+        &self,
+    ) -> Result<Option<&PartitionState>, super::super::data::RelationalStorageUnavailable> {
+        self.cell.check_damage()?;
+        if self.full.get().is_none()
+            && let Some(lease) = self.cell.lease_resident_full()?
+        {
             let _ = self.full.set(lease);
         }
-        self.full.get().map(|lease| lease.full_view().partition())
+        Ok(self.full.get().map(|lease| lease.full_view().partition()))
     }
 
     /// Borrow custody already accepted by this immutable root. Fresh operations

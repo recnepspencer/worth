@@ -12,7 +12,7 @@ pub use subscriber_checkpoint::SubscriberCheckpoint;
 pub(crate) use subscriber_checkpoint::SubscriberCheckpointBasis;
 pub use subscriber_contract::{
     SubscriberContinuationClassSet, SubscriberContinuationSummary, SubscriberContractDeclaration,
-    SubscriberStrataSet, MAX_NORMALIZED_CONTINUATION_BOUNDARIES,
+    SubscriberStrataSet,
 };
 pub use subscriber_decision::{
     SubscriberRecoveryDecision, SubscriberRecoveryDisposition, SubscriberRecoverySource,

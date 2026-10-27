@@ -18,7 +18,10 @@ impl PartitionAccess for RelationalBranchRootState {
         self.root.demand_full_partition(execution, id)
     }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.root.partition_state(partition_id)
+        match self.root.probe_full_region(partition_id) {
+            crate::storage::residency::PartitionProbe::Resident(partition) => Some(partition),
+            _ => None,
+        }
     }
 }
 
@@ -80,7 +83,10 @@ impl PartitionAccess for RelationalBranchRoot {
         self.demand_full_region_cached(execution, id)
     }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.partition_state(partition_id)
+        match self.probe_full_region(partition_id) {
+            crate::storage::residency::PartitionProbe::Resident(partition) => Some(partition),
+            _ => None,
+        }
     }
 }
 

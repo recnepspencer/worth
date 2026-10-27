@@ -11,7 +11,7 @@ impl RelationalRuntime {
         branches: &[RelationalBranchIdentity],
     ) -> Result<RelationalBranchSharingObservation, RelationalBranchSharingInspectionDenial> {
         let scope = resolve_sharing_scope(self, branches)?;
-        let inventory = inventory_sharing_scope(self, &scope);
+        let inventory = inventory_sharing_scope(self, &scope)?;
         let branch_ids = scope
             .iter()
             .map(|entry| entry.branch_id.clone())

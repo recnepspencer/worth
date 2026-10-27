@@ -301,7 +301,7 @@ impl ResidentTargetEditor for PartitionEditionWriter<'_> {
         if let Some(entry) = self.edits.get(&target.partition_id()) {
             return Ok(entry.edit.partition());
         }
-        self.mirror.edition.try_full_partition(target.partition_id())?
+        self.mirror.edition.try_full_partition(target.partition_id()).map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)?
             .ok_or_else(|| crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
                 crate::storage::data::RelationalStorageUnavailable {
                     subject: crate::storage::data::RelationalStorageSubject::Region(target.partition_id()),
