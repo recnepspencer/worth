@@ -14,7 +14,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 }
 
 /// The native storage case owns its category; authored refusals retain theirs.
-/// Keep storage failures inline without inflating every authored cause.
+/// Native execution and storage causes stay inline without duplicating their kind.
 #[derive(Debug)]
 enum AttemptDenialMeaning {
     Authored {
@@ -22,6 +22,7 @@ enum AttemptDenialMeaning {
         cause: AttemptDenialCause,
     },
     NativeStorage(worth_relational::facade::storage::RelationalStorageUnavailable),
+    NativeExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
 /// Rich causes own their original box; native memory refusals stay inline.
@@ -31,7 +32,6 @@ enum AttemptDenialCause {
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
-    RelationalExecution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     NativeQueryRead(Box<worth_relational::facade::runtime::QueryReadExecutionStop>),
     RetainedSource(Box<super::retained_decision_facts::StoreDenial>),
     Expression(Box<worth_foundational::expression_api::ExpressionDenial>),
@@ -56,14 +56,16 @@ impl WorthQueryApplicationAttemptDenial {
     const fn cause(&self) -> Option<&AttemptDenialCause> {
         match &self.meaning {
             AttemptDenialMeaning::Authored { cause, .. } => Some(cause),
-            AttemptDenialMeaning::NativeStorage(_) => None,
+            AttemptDenialMeaning::NativeStorage(_) | AttemptDenialMeaning::NativeExecution(_) => {
+                None
+            }
         }
     }
     pub(in crate::domain_computation) fn relational_execution_cause(
         &self,
     ) -> Option<worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        match self.cause() {
-            Some(AttemptDenialCause::RelationalExecution(cause)) => Some(*cause),
+        match &self.meaning {
+            AttemptDenialMeaning::NativeExecution(cause) => Some(*cause),
             _ => None,
         }
     }
@@ -138,7 +140,6 @@ impl WorthQueryApplicationAttemptDenial {
     pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
         match self.cause() {
             Some(AttemptDenialCause::Allocation(denial)) => Some(denial.as_ref()),
-            Some(AttemptDenialCause::RelationalExecution(_)) => None,
             Some(AttemptDenialCause::RetainedSource(denial)) => match denial.as_ref() {
                 super::retained_decision_facts::StoreDenial::Allocation(denial) => Some(denial),
                 _ => None,
@@ -147,9 +148,12 @@ impl WorthQueryApplicationAttemptDenial {
         }
     }
 
-    pub const fn kind(&self) -> WorthQueryApplicationAttemptDenialKind {
+    pub fn kind(&self) -> WorthQueryApplicationAttemptDenialKind {
         match &self.meaning {
             AttemptDenialMeaning::Authored { kind, .. } => *kind,
+            AttemptDenialMeaning::NativeExecution(cause) => {
+                request_read::relational_read_kind(*cause)
+            }
             AttemptDenialMeaning::NativeStorage(_) => {
                 WorthQueryApplicationAttemptDenialKind::StorageUnavailable
             }
@@ -227,7 +231,6 @@ impl std::error::Error for WorthQueryApplicationAttemptDenial {
             Some(AttemptDenialCause::RetainedSource(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::Allocation(denial)) => Some(denial.as_ref()),
             Some(AttemptDenialCause::RequestAuthority(denial)) => Some(denial.as_ref()),
-            Some(AttemptDenialCause::RelationalExecution(_)) => None,
             _ => None,
         }
     }

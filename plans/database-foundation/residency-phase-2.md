@@ -3119,3 +3119,39 @@ selected Query targets with -D warnings. Both obsolete Copy clones are gone;
 the denial court uses an explicit Err pattern and preserves every assertion.
 Owner formatting, dirty caps and agent-context pass. Resume clean-tree Query
 clippy and the remaining final lanes after this corrective commit.
+
+### Final consumer error-layout and fixture lint repair
+
+Strict external-consumer clippy exposes an actual layout failure: attempt
+denials retain a large classified kind beside the same native execution cause,
+inflating consumer Results to 128/136 bytes. The original native cause is the
+truth; its kind is derived by the existing native execution mapper. Move native
+execution into its own inline AttemptDenialMeaning variant, removing it from
+the authored-cause union. This preserves original native memory/storage causes
+without adding a heap allocation on memory refusal, and shrinks authored
+denials and their request wrappers. The public kind accessor becomes a pure
+non-const projection through the one mapper; no classification is duplicated.
+Update charged-heap inspection (native cause still owns no heap), preserve
+all cause/storage accessors, and run existing native cause/storage tests plus
+strict consumer clippy. Remove the unused fixture partition helper/imports and
+replace its single-pattern match with if-let; keep all courts/assertions.
+
+The Store-wide cargo fmt invocation fails before formatting with Windows error
+206 (argument length). Format/check the touched Store package by manifest and
+package selection, avoiding an all-workspace/path-dependency argument list.
+The failed clean logs are preserved with the failed-* prefix.
+
+Denial-layout repair verification: strict external-consumer clippy passes all
+three fixture packages (`repair-fixture-clippy.log`), and strict Query all-target
+clippy passes (`repair-denial-layout-query-clippy.log`). Existing denial cause
+tests pass 4/4, preserving allocation error sources, native query causes, and
+storage category/subject/original cause. Owner/fixture formatting, dirty caps
+and agent-context pass. Store package fmt check passes; its full-workspace
+command had hit Windows argv length before formatting.
+
+The first focused Query test command was stopped during compilation to keep
+workspace test execution sequential with the World lane. It ran no tests; its
+aborted log remains preserved and the restarted focused lane passes. World
+then finished green: 265 unit tests, 41 court tests, one doctest, 3 scheduled
+court tests ignored, and the publication example. Relational contracts finished
+green: 203 passed, 3 scheduled ignored.
