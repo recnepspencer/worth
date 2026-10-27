@@ -587,8 +587,15 @@ drop. It retains the canonical envelope without copying
 its patches. This native cursor does not establish World product ancestry or
 application disclosure. World's `open_exact_product_history` and staged one-parent
 pages supply genuine retained product ancestry, fork inheritance and exact
-component evidence, with typed refusal at retired gaps. They retain the pinned
-source instead of reading a newer live head; see
+component evidence, with typed refusal at retired gaps. The existing
+`select_product_branch_ancestor` also requires an unbroken raw-parent path.
+For endpoint ancestry without missing intermediate contents, use World's explicit
+`select_retained_product_branch_ancestor`: the same owner follows only its recorded
+retirement splices, retains the actual source, rejects siblings/foreign owners and
+honors the original request and finite selection bound. Query's recorded-source
+correction uses this endpoint proof alongside independent Native evidence and
+disclosure checks. Exact selectors and pages keep refusing retired gaps.
+They retain the pinned source instead of reading a newer live head; see
 [exact product history](../crates/worth-runtime-world/README.md#exact-retained-product-history).
 The installed Decl/Host route declares an
 `ApplicationHistoryQueryDefinition` over a real `SubjectRead`, captures only its

@@ -102,7 +102,34 @@ where
         crate::branch::ProductBranchAncestorSelection,
         crate::branch::ProductBranchAncestorSelectionDenial,
     > {
-        super::history::select_ancestor(self, execution, target, source, maximum)
+        super::history::select_ancestor(
+            self,
+            crate::history::AncestorSelectionPath::Exact,
+            execution,
+            target,
+            source,
+            maximum,
+        )
+    }
+
+    fn select_retained_product_branch_ancestor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &ProductBranchObservation,
+        source: &crate::identity::CompositeCommitIdentity,
+        maximum: Option<NonZeroUsize>,
+    ) -> Result<
+        crate::branch::ProductBranchAncestorSelection,
+        crate::branch::ProductBranchAncestorSelectionDenial,
+    > {
+        super::history::select_ancestor(
+            self,
+            crate::history::AncestorSelectionPath::Retained,
+            execution,
+            target,
+            source,
+            maximum,
+        )
     }
 
     fn open_exact_product_history(

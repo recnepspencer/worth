@@ -28,7 +28,8 @@ fn check_retained_splice(length: usize) {
     drop(retired);
     assert!(catalog.lookup(commits[length - 2].identity()).is_none());
     let selected = catalog
-        .select_retained_ancestor(
+        .select_ancestor(
+            crate::history::AncestorSelectionPath::Retained,
             &execution,
             target,
             commits[0].identity(),
@@ -43,7 +44,8 @@ fn check_retained_splice(length: usize) {
         "one retained parent edge is followed"
     );
     assert!(matches!(
-        catalog.select_retained_ancestor(
+        catalog.select_ancestor(
+            crate::history::AncestorSelectionPath::Retained,
             &execution,
             target,
             commits[0].identity(),
@@ -62,7 +64,13 @@ fn check_retained_splice(length: usize) {
         "ancestry proof does not disclose a retired intermediate occurrence"
     );
     assert!(matches!(
-        catalog.select_retained_ancestor(&execution, target, commits[length - 2].identity(), None),
+        catalog.select_ancestor(
+            crate::history::AncestorSelectionPath::Retained,
+            &execution,
+            target,
+            commits[length - 2].identity(),
+            None
+        ),
         Err(Denial::SourceUnavailable)
     ));
     let sibling = fixture.child_of(&commits[0]);
@@ -70,7 +78,13 @@ fn check_retained_splice(length: usize) {
         .append(sibling.clone(), fixture.history_pins(&sibling))
         .unwrap();
     assert!(matches!(
-        catalog.select_retained_ancestor(&execution, target, sibling.identity(), None),
+        catalog.select_ancestor(
+            crate::history::AncestorSelectionPath::Retained,
+            &execution,
+            target,
+            sibling.identity(),
+            None
+        ),
         Err(Denial::NotAncestor)
     ));
     drop((selected, exact, held));

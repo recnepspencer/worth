@@ -88,7 +88,8 @@ impl RuntimeWorldObservationPort {
     }
 
     /// Selects one retained source on this exact target's inherited ancestry.
-    /// Traversal follows parent links under the original execution request.
+    /// Every intervening commit must remain retained; a raw-parent gap refuses.
+    /// Traversal stays under the original execution request.
     pub fn select_product_branch_ancestor(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -103,6 +104,26 @@ impl RuntimeWorldObservationPort {
     > {
         self.service()?
             .select_product_branch_ancestor(execution, target, source, maximum)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    /// Proves ancestry between retained endpoints using owner-recorded retirement
+    /// splices. This selects no retired contents and grants no exact-history page.
+    /// Work is bounded by retained edges under the original execution request.
+    pub fn select_retained_product_branch_ancestor(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        target: &crate::branch::ProductBranchObservation,
+        source: &crate::identity::CompositeCommitIdentity,
+        maximum: Option<std::num::NonZeroUsize>,
+    ) -> Result<
+        crate::branch::ProductBranchAncestorSelection,
+        super::super::RuntimeWorldServiceDenial<
+            crate::branch::ProductBranchAncestorSelectionDenial,
+        >,
+    > {
+        self.service()?
+            .select_retained_product_branch_ancestor(execution, target, source, maximum)
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 

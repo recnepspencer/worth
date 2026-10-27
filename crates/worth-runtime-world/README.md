@@ -65,8 +65,12 @@ one authoritative parent step and retains its exact component bases, including
 inherited fork ancestry. It reads no current head or reconstructed historical
 branch generation. Missing/retired raw parents return a typed history gap;
 exact pages never substitute retirement splices for missing raw commits.
-The separate retained-ancestor selector can follow owner-recorded splices to
-prove ancestry between retained endpoints, without disclosing retired contents.
+`select_product_branch_ancestor` likewise requires the complete raw-parent path.
+The explicit `select_retained_product_branch_ancestor` selector can instead follow
+owner-recorded splices to prove ancestry between retained endpoints. It discloses
+no retired contents and grants no exact-history page. Both selectors retain the
+source under the original request and bound the visited ancestry positions;
+`parent_links_followed` counts the selected raw or retained edges separately.
 
 Accept the prepared page through its originating cursor to receive `(page,
 successor)` under the stored original request. The original cursor stays intact
