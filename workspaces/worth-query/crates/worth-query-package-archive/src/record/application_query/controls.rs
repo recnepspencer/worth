@@ -33,7 +33,7 @@ pub(in crate::record) fn decode_cardinality(
     }
 }
 
-pub(super) fn write_authorization(
+pub(in crate::record) fn write_authorization(
     output: &mut dyn BinaryEncodingSink,
     value: &ApplicationQueryAuthorizationRequirement,
 ) -> Result<(), Denial> {
@@ -50,7 +50,7 @@ pub(super) fn write_authorization(
     }
 }
 
-pub(super) fn decode_authorization(
+pub(in crate::record) fn decode_authorization(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryAuthorizationRequirement, Denial> {
     match input.u16()? {

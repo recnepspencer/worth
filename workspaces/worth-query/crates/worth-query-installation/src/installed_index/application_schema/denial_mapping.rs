@@ -13,6 +13,10 @@ pub(super) fn map_compilation_denial(
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
     let (kind, subject) = match denial {
+        ApplicationSchemaCompilationDenial::Resource(denial) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::ResourceInstallationDenied,
+            denial.subject().to_string(),
+        ),
         ApplicationSchemaCompilationDenial::Capability(denial) => {
             let kind = match denial.kind() {
                 crate::application_capability::WorthQueryApplicationCapabilityInstallationDenialKind::CanonicalEntryLimitExceeded => {

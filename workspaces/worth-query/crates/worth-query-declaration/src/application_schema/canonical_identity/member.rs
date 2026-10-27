@@ -10,6 +10,7 @@ mod mutation_description;
 mod operation;
 mod principal_binding;
 mod relation_aspect;
+mod resource;
 pub(super) use relation_aspect::append_relation_field;
 mod schema;
 mod vocabulary;
@@ -21,6 +22,9 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::ApplicationResource { definition } => {
+            resource::append(basis, &prefix, definition)
+        }
         ApplicationSchemaMember::RelationAspect { definition } => {
             relation_aspect::append(basis, &prefix, definition)
         }

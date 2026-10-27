@@ -65,6 +65,9 @@ pub enum ApplicationOperationDecisionReadTarget {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationSchemaMember {
+    ApplicationResource {
+        definition: crate::application_resource::ErasedApplicationResourceDefinition,
+    },
     ApplicationMutation {
         description: crate::application_operation::ApplicationMutationDescription,
     },

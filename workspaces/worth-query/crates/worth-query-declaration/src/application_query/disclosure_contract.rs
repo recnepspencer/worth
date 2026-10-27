@@ -13,6 +13,7 @@ use crate::application_schema::{
 
 mod history;
 mod influence;
+mod resource;
 mod selector;
 pub use influence::{ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence};
 pub use selector::ApplicationQueryDisclosureSelector;
@@ -76,6 +77,9 @@ pub struct WorthQueryPortableApplicationQueryDisclosureParts {
 }
 
 impl ApplicationQueryDisclosureContract {
+    pub(crate) fn canonical_basis(&self) -> super::ApplicationQueryCanonicalArtifact {
+        super::canonical_basis::prepare_disclosure_basis(self)
+    }
     pub fn from_untrusted_parts(parts: WorthQueryPortableApplicationQueryDisclosureParts) -> Self {
         Self {
             posture: parts.posture,

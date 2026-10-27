@@ -553,6 +553,14 @@ predicate over the declared field dependencies.
 
 ### Managed asynchronous resources
 
+`decl::application_resource` declares process-local resource input/result/failure
+codecs, provider role, finite capacities, retry/timeout profile, four independent
+action requirements and explicit disclosure slots. `schema.installed_resource`
+resolves this meaning against actual typed recipes and the installed principal
+and scope binding. A transported codec description grants no provider, action or
+completion authority. These contracts are a Phase 8 prerequisite; the ordinary
+Host resource lifecycle remains unfinished.
+
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
 whose branch version is zero. Empty targets return typed `NoCommittedSource`

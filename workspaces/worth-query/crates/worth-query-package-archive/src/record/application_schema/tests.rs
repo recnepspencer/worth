@@ -7,6 +7,7 @@ mod mutation_description;
 mod operation_body;
 mod query_context;
 mod relation_integrity;
+mod resource;
 mod resource_path;
 mod retired_fact_budget;
 

@@ -14,6 +14,7 @@ mod application_operation;
 mod application_principal_binding;
 mod application_program;
 mod application_query;
+mod application_resource;
 mod application_schema;
 mod authority_cryptography;
 mod canonical_digest_derivation;
@@ -80,6 +81,11 @@ mod package_validation_tests;
 /// Inspection accessors describe retained installed meaning; they do not grant
 /// execution, correction, recovery, or external-effect authority.
 pub mod facade {
+    pub use crate::application_resource::{
+        WorthQueryApplicationResourceInstallationDenial,
+        WorthQueryApplicationResourceInstallationDenialKind,
+        WorthQueryInstalledApplicationResource,
+    };
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
         AspectIdentity, AspectKey, AspectMask, AspectValue, AuthoritativeAspectChangeKind,
