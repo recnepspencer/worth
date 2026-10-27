@@ -7,7 +7,7 @@ use worth_foundational::facade::{
     AspectValue, AuthoritativeRecordAspectState, ContractValidatedAspectValueView, InternedString,
 };
 
-pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
+pub(super) fn collect_head(partition: &PartitionState) -> BTreeSet<Symbol> {
     let mut symbols = BTreeSet::new();
     for versions in partition
         .entity_arena
@@ -22,7 +22,37 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
             symbols.insert(fingerprint.family);
         }
     }
+    for revisions in partition
+        .entity_arena
+        .field_revisions
+        .iter()
+        .chain(partition.relation_arena.field_revisions.iter())
+        .flatten()
+    {
+        for (aspect, field) in revisions.keys() {
+            symbols.insert(*aspect);
+            symbols.insert(*field);
+        }
+    }
     let entities = partition
+        .entity_arena
+        .extra
+        .iter()
+        .map(|extra| extra.authoritative_aspect_state.as_ref());
+    let relations = partition
+        .relation_arena
+        .extra
+        .iter()
+        .map(|extra| extra.authoritative_aspect_state.as_ref());
+    for state in entities.chain(relations).flatten() {
+        visit_state(state, &mut symbols);
+    }
+    symbols
+}
+
+pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
+    let mut symbols = collect_head(partition);
+    for state in partition
         .entity_arena
         .metadata_history
         .iter()
@@ -33,28 +63,17 @@ pub(super) fn collect(partition: &PartitionState) -> BTreeSet<Symbol> {
         })
         .chain(
             partition
-                .entity_arena
-                .extra
-                .iter()
-                .map(|extra| extra.authoritative_aspect_state.as_ref()),
-        );
-    let relations = partition
-        .relation_arena
-        .metadata_history
-        .iter()
-        .flat_map(|history| {
-            history
-                .iter()
-                .map(|metadata| metadata.authoritative_aspect_state.as_ref())
-        })
-        .chain(
-            partition
                 .relation_arena
-                .extra
+                .metadata_history
                 .iter()
-                .map(|extra| extra.authoritative_aspect_state.as_ref()),
-        );
-    for state in entities.chain(relations).flatten() {
+                .flat_map(|history| {
+                    history
+                        .iter()
+                        .map(|metadata| metadata.authoritative_aspect_state.as_ref())
+                }),
+        )
+        .flatten()
+    {
         visit_state(state, &mut symbols);
     }
     symbols

@@ -109,6 +109,31 @@ its values and native targets through `CandidateWriter`. Propagate preparation
 or publication denials; a successful commit publishes the validated candidate
 atomically. See [prepared decisions and typed effects](build-an-application.md#prepared-decisions-and-typed-effects).
 
+Committed-storage read failures retain `StorageUnavailable` with their subject
+and cause through Query's execution denials. The Host `primary_graph` facade
+exports `RelationalStorageUnavailable`, `RelationalStorageSubject`, and
+`RelationalStorageUnavailableCause`. Preserve that refusal when handling a
+provider-session failure; an unavailable record is not an absent record.
+
+Native platform owners read exact snapshot kind/aspect and retirement metadata
+through request-aware `read_*` operations. Post-publication optional proof
+sealing uses `pin_resident_entity_metadata`: it requires already accepted Head
+custody and this runtime's aspect-name meanings, performs no source read, and
+returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
+kind, aspect revision and retirement only; historical reads require Full custody.
+
+Native generation payload inspection uses request-aware `read_latest_generation`,
+`read_published_generation_for_commit`, `read_published_generation_for_observation`
+and `read_generations_for_version`; a deferred index image is never reported as
+an absent generation. The no-load `generation_residency_for_observation` observer
+returns `DerivedIndexGenerationResidency::{DeferredImage, Absent, Published}`.
+That cache status carries no payload or read authority and does not warm an image.
+
+Native storage statistics, partition statistics, chunk summaries and chunk
+diagnostics take the caller's execution request and return a fallible result.
+They explicitly demand the whole mirror and retain that resident edition for
+the computation; a cold-storage refusal must remain a typed read failure.
+
 Platform owners can borrow the existing targets of a validated native mutation
 with `ValidatedMutationFootprint::records()`. Iterate its borrowed records to
 inspect each target, preserving multiplicity and the footprint's field and scope

@@ -34,6 +34,13 @@ impl RelationalBranchRootCheckpoint {
     pub(crate) fn regions(&self) -> Vec<RelationalRootRegionCheckpoint> {
         self.root.checkpoint_regions()
     }
+    pub(crate) fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.root.demand_all_full(execution, symbols)
+    }
     pub(crate) fn partitions(&self) -> Vec<PartitionState> {
         self.root
             .partition_ids_iter()

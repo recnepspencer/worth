@@ -15,7 +15,17 @@ use crate::transactions::data::RecordRef;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BranchTouchedRecordDelta {
     pub(crate) target: RecordRef,
-    pub(crate) commit_ids: Arc<[CommitId]>,
+    pub(crate) envelopes: Arc<[Arc<crate::history::data::CanonicalCommitEnvelope>]>,
+}
+
+impl BranchTouchedRecordDelta {
+    pub(crate) fn commit_ids(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = CommitId> + ExactSizeIterator + '_ {
+        self.envelopes
+            .iter()
+            .map(|envelope| envelope.commit.commit_id)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -174,7 +184,12 @@ pub enum MergePlanningError {
         source_branch: BranchId,
         target_branch: BranchId,
     },
-    MissingMergeBaseEnvelope {
+    /// The selected common ancestor has no indexed canonical commit receipt.
+    MissingMergeBaseCommit {
+        commit_id: CommitId,
+    },
+    /// A selected branch delta names a commit with no canonical history entry.
+    MissingDeltaCommit {
         commit_id: CommitId,
     },
     MissingConflictSourceRecord {
@@ -232,9 +247,9 @@ impl From<crate::history::data::RelationalMergeBranchBasisDenial> for MergePlann
                 source_branch,
                 target_branch,
             },
-            crate::history::data::RelationalMergeBranchBasisDenial::MissingMergeBaseEnvelope {
+            crate::history::data::RelationalMergeBranchBasisDenial::MissingMergeBaseCommit {
                 commit_id,
-            } => Self::MissingMergeBaseEnvelope { commit_id },
+            } => Self::MissingMergeBaseCommit { commit_id },
         }
     }
 }

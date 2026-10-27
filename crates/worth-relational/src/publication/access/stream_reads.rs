@@ -6,11 +6,13 @@ use crate::publication::patch::data::{PatchStreamBatch, PatchStreamReadError, Pa
 use super::{PublicationPatchStreamAccess, PublicationSubscriberStreamAccess};
 
 impl<'runtime> PublicationPatchStreamAccess<'runtime> {
+    /// Read one bounded canonical batch under the caller's borrowed request.
     pub fn read(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: PatchStreamRequest,
     ) -> Result<PatchStreamBatch, PatchStreamReadError> {
-        crate::publication::patch::read_patch_stream(self.runtime, request)
+        crate::publication::patch::read_patch_stream(execution, self.runtime, request)
     }
 }
 

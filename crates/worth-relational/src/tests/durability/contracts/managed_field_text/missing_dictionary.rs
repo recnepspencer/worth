@@ -18,7 +18,7 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
     medium.rewrite_artifact_envelope(&execution, tail_position, |tail| {
         assert!(
             crate::symbols::data::StringInterner::default()
-                .commit_texts(&tail.merged_plan, &tail.patch)
+                .commit_texts(&tail.merged_plan, &tail.patch, [])
                 .is_err(),
             "producer must refuse unresolved references, never omit their rows"
         );

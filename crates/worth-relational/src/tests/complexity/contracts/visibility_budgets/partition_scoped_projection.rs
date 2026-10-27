@@ -15,7 +15,8 @@ fn complexity_budget_partition_scoped_historical_entity_scans_are_partition_boun
     runtime.performance_access().reset_counters();
     let records = runtime
         .read_truth()
-        .project_historical_version(historical_version)
+        .try_project_historical_version(historical_version)
+        .unwrap()
         .authoritative_entity_records_in(execution, PartitionId(7), KindId(1))
         .expect("read request remains live");
     let counters = runtime.performance_access().counters();
@@ -59,7 +60,8 @@ fn complexity_budget_partition_scoped_historical_relation_scans_are_partition_bo
     runtime.performance_access().reset_counters();
     let records = runtime
         .read_truth()
-        .project_historical_version(historical_version)
+        .try_project_historical_version(historical_version)
+        .unwrap()
         .authoritative_relation_records_in(execution, PartitionId(7), KindId(2))
         .expect("read request remains live");
     let counters = runtime.performance_access().counters();

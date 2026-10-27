@@ -53,12 +53,11 @@ impl<'runtime> HistoryAccess<'runtime> {
                 source_branch: source_branch.clone(),
                 target_branch: target_branch.clone(),
             })?;
-        let merge_base = self
-            .commit_envelope(merge_base_commit_id)
-            .map(|envelope| envelope.commit.clone())
-            .ok_or(RelationalMergeBranchBasisDenial::MissingMergeBaseEnvelope {
+        let merge_base = self.immutable_commit_receipt(merge_base_commit_id).ok_or(
+            RelationalMergeBranchBasisDenial::MissingMergeBaseCommit {
                 commit_id: merge_base_commit_id,
-            })?;
+            },
+        )?;
         Ok(RelationalMergeBranchBasis {
             source_head,
             target_head,
@@ -114,10 +113,7 @@ impl<'runtime> HistoryAccess<'runtime> {
         let FoundationalBranchTarget::Basis(target) = binding.reference().target() else {
             return Err(missing(branch_id));
         };
-        self.runtime
-            .history
-            .canonical_envelope(crate::history::data::CommitId(target.selected_commit_id()))
-            .map(|envelope| envelope.commit.clone())
+        self.immutable_commit_receipt(crate::history::data::CommitId(target.selected_commit_id()))
             .ok_or_else(|| missing(branch_id))
     }
 

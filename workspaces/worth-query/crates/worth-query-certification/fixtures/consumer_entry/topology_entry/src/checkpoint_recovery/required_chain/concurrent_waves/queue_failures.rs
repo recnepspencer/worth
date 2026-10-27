@@ -211,7 +211,7 @@ fn queued_phase_failures_and_caught_denials_agree_across_widths() {
             _ => panic!("unknown phase"),
         };
         println!(
-            "WORTH_QUEUE_HISTORY:{:?}",
+            "\nWORTH_QUEUE_HISTORY:{:?}",
             run(workers.parse().unwrap(), failure, caught)
         );
         return;

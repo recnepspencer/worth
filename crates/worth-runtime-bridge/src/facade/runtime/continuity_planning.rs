@@ -32,6 +32,7 @@ impl RuntimeBridge {
     pub fn plan_historical_lineage_packet(
         &self,
         requests: &BridgeEligibleContinuityRequestSet,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineagePacket, BridgeContinuityError> {
         let source = self.continuity_lineage_source().ok_or_else(|| {
             BridgeContinuityError::new(
@@ -42,10 +43,13 @@ impl RuntimeBridge {
         let mut entries = Vec::with_capacity(requests.requests().len());
         for request in requests.requests() {
             let lineage_authority = source
-                .historical_lineage(BridgeHistoricalLineageRequest::new(
-                    requests.authority_basis().clone(),
-                    request.prior_slice().clone(),
-                ))
+                .historical_lineage(
+                    BridgeHistoricalLineageRequest::new(
+                        requests.authority_basis().clone(),
+                        request.prior_slice().clone(),
+                    ),
+                    execution,
+                )
                 .map_err(|error| map_lineage_source_error(request, error))?;
             ensure_lineage_authority_matches_request_set(requests, request, &lineage_authority)?;
             entries.push(crate::continuity::BridgeHistoricalLineagePacketEntry::new(
@@ -63,6 +67,7 @@ fn map_lineage_source_error(
     error: BridgeLineageSourceError,
 ) -> BridgeContinuityError {
     match error.kind() {
+        BridgeLineageSourceErrorKind::ObservationRead(denial) => BridgeContinuityError::new(BridgeContinuityErrorKind::ObservationRead(denial), error.to_string()),
         BridgeLineageSourceErrorKind::UnsupportedContinuityClass => BridgeContinuityError::new(
             BridgeContinuityErrorKind::UnsupportedContinuityClass,
             format!(

@@ -18,7 +18,7 @@ pub(super) fn evaluate_max_snapshot_entities(
             if !context.checkpoint(1) {
                 return None;
             }
-            let Some(partition) = state_view.state().get_partition(partition_id) else {
+            let Some(partition) = state_view.state().get_current_partition(partition_id) else {
                 return Some(storage_inconsistency_violation(
                     class,
                     format!(
@@ -30,17 +30,17 @@ pub(super) fn evaluate_max_snapshot_entities(
                         .with_scan(StorageInconsistencyScan::MaxSnapshotEntities),
                 ));
             };
-            if !context.checkpoint(partition.entity_arena.slot_count() as u64) {
+            if !context.checkpoint(partition.entity_arena().slot_count() as u64) {
                 return None;
             }
-            visible_entities += partition.entity_arena.live_bitset.count_ones();
+            visible_entities += partition.entity_arena().live_count();
         }
     } else {
         for partition_id in state_view.state().partition_ids_iter() {
             if !context.checkpoint(1) {
                 return None;
             }
-            let Some(partition) = state_view.state().get_partition(partition_id) else {
+            let Some(partition) = state_view.state().get_current_partition(partition_id) else {
                 return Some(storage_inconsistency_violation(
                     class,
                     format!(
@@ -54,13 +54,13 @@ pub(super) fn evaluate_max_snapshot_entities(
             };
             context
                 .metrics()
-                .count_entity_slot_scans(partition.entity_arena.slot_count());
-            for slot in partition.entity_arena.occupied_slots_iter() {
+                .count_entity_slot_scans(partition.entity_arena().slot_count());
+            for slot in partition.entity_arena().occupied_slots_iter() {
                 if !context.checkpoint(1) {
                     return None;
                 }
                 visible_entities += usize::from(
-                    state_view.entity_visible_at_version(&partition.entity_arena, slot),
+                    state_view.entity_visible_at_version(&partition.entity_arena(), slot),
                 );
             }
         }

@@ -45,10 +45,12 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     // for main is not current for the fork.
     assert_eq!(fork_observation.commit_id(), Some(anchor.commit.commit_id));
     assert!(access
-        .published_generation_for_observation(scoped, &fork_observation)
+        .read_published_generation_for_observation(execution, scoped, &fork_observation)
+        .unwrap()
         .is_none());
     let shared = access
-        .published_generation_for_observation(global, &fork_observation)
+        .read_published_generation_for_observation(execution, global, &fork_observation)
+        .unwrap()
         .unwrap();
     assert!(main_build
         .generations
@@ -81,7 +83,8 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
     assert_eq!(fork_build.work.seeded_generations, 1);
     assert_eq!(fork_build.work.cold_record_slots, 0);
     let fork_generation = access
-        .published_generation_for_observation(scoped, &fork_observation)
+        .read_published_generation_for_observation(execution, scoped, &fork_observation)
+        .unwrap()
         .unwrap();
     assert!(fork_build
         .generations
@@ -93,7 +96,8 @@ fn a_fresh_fork_needs_its_own_branch_scoped_generation() {
         .observe_branch(&runtime.branch_identity(&main).unwrap())
         .unwrap();
     let main_generation = access
-        .published_generation_for_observation(scoped, &main_basis.observation())
+        .read_published_generation_for_observation(execution, scoped, &main_basis.observation())
+        .unwrap()
         .unwrap();
     assert_eq!(main_generation.source_branch_id, main);
     assert_ne!(main_generation.generation_id, fork_generation.generation_id);
@@ -152,7 +156,8 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
     );
     assert!(runtime
         .index_access()
-        .published_generation_for_observation(index, &basis.observation())
+        .read_published_generation_for_observation(execution, index, &basis.observation())
+        .unwrap()
         .is_none());
     let (funded, report) = execution
         .run(ExecutionWorkCeiling::new(None), |_| {
@@ -165,7 +170,8 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
     assert!(report.charged_work() > 0);
     let fork_generation = runtime
         .index_access()
-        .published_generation_for_observation(index, &basis.observation())
+        .read_published_generation_for_observation(execution, index, &basis.observation())
+        .unwrap()
         .unwrap();
     assert_eq!(fork_generation.source_branch_id, fork);
     assert_eq!(fork_generation.entries, main_build.generations[0].entries);
@@ -181,7 +187,8 @@ fn selected_fork_currency_uses_original_request_work_and_never_cold_population()
     assert_eq!(
         runtime
             .index_access()
-            .published_generation_for_observation(index, &basis.observation())
+            .read_published_generation_for_observation(execution, index, &basis.observation())
+            .unwrap()
             .unwrap()
             .generation_id,
         fork_generation.generation_id

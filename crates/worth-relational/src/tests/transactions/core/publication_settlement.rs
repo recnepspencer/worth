@@ -38,7 +38,7 @@ fn direct_publication_settles_before_a_child_can_acknowledge() {
     assert_eq!(
         runtime
             .publication()
-            .read_patch_stream(PatchStreamRequest::default())
+            .read_patch_stream(execution, PatchStreamRequest::default())
             .expect("direct parent is stream-visible")
             .latest_commit_id,
         Some(parent_id)

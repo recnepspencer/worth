@@ -1,3 +1,5 @@
+mod resident_basis;
+pub(crate) use resident_basis::ResidentVisibilitySnapshotBasis;
 mod exact_state_building;
 mod historical_basis;
 mod historical_state_building;

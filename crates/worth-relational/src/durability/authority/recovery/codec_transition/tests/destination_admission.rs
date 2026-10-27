@@ -194,7 +194,8 @@ fn published_destination_keeps_raw_source_exact_basis_and_usable_snapshot_after_
     assert_eq!(
         target
             .read_truth()
-            .exact_snapshot_live_entity_kind(&snapshot, authored),
+            .read_exact_snapshot_live_entity_kind(execution, &snapshot, authored)
+            .unwrap(),
         Some(crate::identity::data::KindId(1))
     );
     target.snapshots().release_snapshot(&snapshot).unwrap();

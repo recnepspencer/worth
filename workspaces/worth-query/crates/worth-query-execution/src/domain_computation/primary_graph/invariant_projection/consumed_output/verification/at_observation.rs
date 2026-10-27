@@ -71,7 +71,7 @@ impl ConsumedOutputEvidence {
                 .get()
                 .ok_or(ConsumedOutputVerificationStop::Unavailable)?;
             if !witness
-                .unchanged_in(runtime, snapshot)
+                .unchanged_in(runtime, snapshot, execution)
                 .map_err(map_admission_stop)?
             {
                 return Ok(Some(ConsumedOutputVerification::ChangedOutput));
@@ -113,7 +113,7 @@ impl ConsumedOutputEvidence {
             }
         }
         witness
-            .unchanged_in(runtime, snapshot)
+            .unchanged_in(runtime, snapshot, execution)
             .map_err(map_admission_stop)
     }
 

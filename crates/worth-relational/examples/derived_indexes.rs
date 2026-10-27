@@ -35,7 +35,12 @@ fn main() {
 
     let indexes = runtime.index_access();
     let generation = indexes
-        .latest_generation(index.index_id, &BranchId("main".to_string()))
+        .read_latest_generation(
+            request_execution,
+            index.index_id,
+            &BranchId("main".to_string()),
+        )
+        .expect("generation read")
         .expect("latest generation");
 
     println!(

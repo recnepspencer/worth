@@ -121,7 +121,6 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     drop(birth.required_output_publication(&installed));
     release_test_commit_snapshot(&runtime, &birth);
     let services = runtime.owner_component_services();
-    let mut restored_version = birth.commit.version_id;
     for _ in 0..if changed == 0 && owned && !fieldless {
         2
     } else {
@@ -188,18 +187,9 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
             )
             .unwrap();
         release_test_commit_snapshot(&runtime, &restored);
-        restored_version = restored.commit.version_id;
     }
     if fieldless {
-        runtime
-            .storage_authority()
-            .trim_live_history::<crate::storage::substrate::RelationRecordKind>(
-                std::collections::BTreeMap::from([(
-                    relation.partition_id,
-                    std::collections::BTreeSet::from([relation.slot_index()]),
-                )]),
-                restored_version,
-            );
+        runtime.retention().run_pass(execution).unwrap();
         let edition = runtime.acquire_partition_edition();
         let partition = edition.partition(relation.partition_id).unwrap();
         assert!(

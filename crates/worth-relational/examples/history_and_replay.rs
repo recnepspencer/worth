@@ -27,8 +27,9 @@ fn main() {
 
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(feature_commit.commit.commit_id)
-        .expect("replay envelope");
+        .canonical_commit_envelope(execution, feature_commit.commit.commit_id)
+        .expect("replay envelope storage remains available")
+        .expect("the performed commit has its replay envelope");
 
     println!("commits={}", runtime.history().immutable_commit_count());
     println!(

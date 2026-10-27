@@ -142,7 +142,11 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
     let runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "reservation-exhaustion-baseline");
     let baseline_head = baseline.commit.clone();
-    let baseline_entities = runtime.storage_access().storage_stats().live_entities;
+    let baseline_entities = runtime
+        .storage_access()
+        .storage_stats(execution)
+        .unwrap()
+        .live_entities;
     let (lineage_frontier, _) = runtime.lineage.identity_frontiers();
     runtime
         .lineage
@@ -178,7 +182,11 @@ fn multi_event_reservation_exhaustion_denies_before_public_effects() {
         baseline_head
     );
     assert_eq!(
-        runtime.storage_access().storage_stats().live_entities,
+        runtime
+            .storage_access()
+            .storage_stats(execution)
+            .unwrap()
+            .live_entities,
         baseline_entities
     );
 }
@@ -209,7 +217,8 @@ fn branch_local_sparse_slot_create_publishes_and_recovers_exact_lineage() {
         .lineage_id();
     let event_targets = runtime
         .history()
-        .commit_envelope(feature_create.commit.commit_id)
+        .demand_commit_envelope(execution, feature_create.commit.commit_id)
+        .unwrap()
         .expect("feature create envelope")
         .lineage_events()[0]
         .targets()

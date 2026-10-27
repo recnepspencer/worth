@@ -58,7 +58,8 @@ pub struct ValidatedRelationalProposal {
     pub(crate) transaction_id: crate::transactions::data::TransactionId,
     pub(crate) validation_input: crate::mvcc::RelationalTransactionValidationInput,
     pub(crate) prepared: PreparedWorkingStateScope,
-    pub(crate) proposed_working_state: crate::runtime::WorkingState,
+    pub(crate) proposed_mutation:
+        crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
     pub(crate) commit_boundary: InvariantExecutionResult,
     pub(crate) mutation_sensitive: InvariantExecutionResult,
     pub(crate) snapshot_publication: InvariantExecutionResult,

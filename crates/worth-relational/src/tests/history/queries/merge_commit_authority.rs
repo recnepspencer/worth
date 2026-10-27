@@ -53,7 +53,9 @@ fn merge_commit_uses_deterministic_parent_order_and_advances_target_branch() {
     );
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(merge_outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, merge_outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert_eq!(
         envelope.merge_parent_branches,

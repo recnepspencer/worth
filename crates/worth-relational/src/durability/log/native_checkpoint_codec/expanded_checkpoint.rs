@@ -24,6 +24,7 @@ pub(super) fn expand(
             crate::history::data::PositionedCanonicalCommit,
         >,
     >,
+    history_members: Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
     let mut envelopes = Vec::new();
     for entry in &manifest.commits {
@@ -75,9 +76,20 @@ pub(super) fn expand(
         )?;
         let payload = member_frame::decode(&bytes, page.member, MemberKind::Symbols)
             .map_err(|cause| corrupt(format!("symbol member frame: {cause:?}")))?;
-        let page = crate::symbols::data::SymbolTableSnapshot::readmit_current(execution, payload)?;
-        symbol_table.entries.extend(page.entries);
+        let snapshot =
+            crate::symbols::data::SymbolTableSnapshot::readmit_current(execution, payload)?;
+        if RelationalCheckpointPage::from_ids(
+            snapshot.entries.iter().map(|(id, _)| u64::from(id.0)),
+            page.member,
+        )
+        .as_ref()
+            != Some(page)
+        {
+            return Err(corrupt("symbol page membership mismatch").into());
+        }
+        symbol_table.entries.extend(snapshot.entries);
     }
+    symbol_table.entries.sort_by_key(|(id, _)| *id);
     let mut symbols = crate::symbols::data::StringInterner::default();
     symbols.restore_snapshot(symbol_table.clone());
     let admitted_symbols = crate::runtime::RuntimeSymbolTable::default();
@@ -109,6 +121,7 @@ pub(super) fn expand(
             &schemas,
             &symbols,
             &source,
+            &history_members,
         )?;
         root_kind_images.insert(root.commit_id, kinds);
         let partition_image_digest = branch_root_partition_image_digest(&partition_images)
@@ -136,6 +149,7 @@ pub(super) fn expand(
             &schemas,
             &symbols,
             &source,
+            &history_members,
         )?
     } else if manifest.mirror.is_empty() {
         (Vec::new(), Default::default())
@@ -154,10 +168,20 @@ pub(super) fn expand(
         )?;
         let payload = member_frame::decode(&bytes, page.member, MemberKind::Lineage)
             .map_err(|cause| corrupt(format!("lineage member frame: {cause:?}")))?;
-        let page: Vec<crate::lineage::data::LineageNode> =
+        let nodes: Vec<crate::lineage::data::LineageNode> =
             rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
-        lineage_nodes.extend(page);
+        if RelationalCheckpointPage::from_ids(
+            nodes.iter().map(|node| node.lineage_id().0),
+            page.member,
+        )
+        .as_ref()
+            != Some(page)
+        {
+            return Err(corrupt("lineage page membership mismatch").into());
+        }
+        lineage_nodes.extend(nodes);
     }
+    lineage_nodes.sort_by_key(|node| node.lineage_id());
     let bytes = read(
         &*source,
         manifest.derived_indexes,
@@ -199,6 +223,7 @@ pub(super) fn expand(
         derived_index_checkpoint,
         derived_index_checkpoint_format,
         symbol_table,
+        symbol_identity_frontier: manifest.symbol_identity_frontier,
         runtime_name: manifest.runtime_name,
     })
 }
@@ -210,6 +235,7 @@ fn expand_regions(
     schemas: &BTreeMap<[u8; 32], Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     source: &Arc<dyn RelationalDurableColdSource>,
+    history_members: &Arc<RelationalHistoryMemberDirectory>,
 ) -> Result<
     (
         Vec<PartitionCheckpointImage>,
@@ -232,6 +258,7 @@ fn expand_regions(
                 partition_id: leaf.partition_id,
                 head: leaf.head,
                 history: leaf.history,
+                history_members: history_members.clone(),
                 schema: schema.clone(),
                 schema_carrier_digest: schema_digest,
                 symbols: symbols.clone(),
@@ -239,29 +266,30 @@ fn expand_regions(
                 entity_slots: leaf.entity_slots,
                 relation_slots: leaf.relation_slots,
                 unavailable_records: leaf.unavailable_records,
-            });
-            (leaf.partition_id, cell)
+            })?;
+            Ok((leaf.partition_id, cell))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, crate::storage::data::RelationalStorageUnavailable>>()?;
     authority
         .bind(cells.iter().cloned())
         .map_err(|cause| corrupt(format!("region authority: {cause:?}")))?;
-    let mut admitted = Vec::new();
-    let images = cells
-        .iter()
+    let admitted = cells
+        .into_iter()
         .map(|(_, cell)| {
             let lease = cell.demand_full(execution, MEMBER_LIMIT, Some(&authority))?;
-            admitted.push(lease.full_view().partition().clone());
-            partition_to_image_with_contracts(
-                lease.full_view().partition().clone(),
-                schema.aspect_plans(),
-                &contracts,
-            )
-            .map_err(Into::into)
+            drop(cell);
+            Ok(lease.into_owned_partition())
         })
         .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
     let kinds = crate::storage::residency::CheckpointRegionKindImages::capture(&admitted)
         .map_err(|cause| corrupt(format!("expanded kind projection: {cause:?}")))?;
+    let images = admitted
+        .into_iter()
+        .map(|partition| {
+            partition_to_image_with_contracts(partition, schema.aspect_plans(), &contracts)
+                .map_err(Into::into)
+        })
+        .collect::<Result<Vec<_>, RelationalRecoveryStop>>()?;
     Ok((images, kinds))
 }
 

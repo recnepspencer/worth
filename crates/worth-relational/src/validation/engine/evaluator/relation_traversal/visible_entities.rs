@@ -26,13 +26,13 @@ fn collect_state_view_entities(
         if !context.checkpoint(1) {
             return;
         }
-        let Some(partition) = state_view.state().get_partition(partition_id) else {
+        let Some(partition) = state_view.state().get_current_partition(partition_id) else {
             continue;
         };
         if state_view.version_id() == context.current_version_id() {
             collect_current_version_entities(context, kind_ids, partition_id, partition, entities);
         } else {
-            collect_historical_entities(context, kind_ids, partition_id, partition, entities);
+            collect_selected_root_entities(context, kind_ids, partition_id, partition, entities);
         }
     }
 }
@@ -41,15 +41,15 @@ fn collect_current_version_entities(
     context: &InvariantExecutionContext<'_, '_>,
     kind_ids: &[crate::identity::data::KindId],
     partition_id: crate::identity::data::PartitionId,
-    partition: &crate::storage::overlay::PartitionState,
+    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
     entities: &mut Vec<EntityReference>,
 ) {
-    for slot in partition.entity_arena.live_bitset.set_slots() {
+    for slot in partition.entity_arena().live_slots() {
         if !context.checkpoint(1) {
             return;
         }
         context.metrics().count_entity_slot_scans(1);
-        let Some(slot_view) = partition.entity_arena.get_slot(slot) else {
+        let Some(slot_view) = partition.entity_arena().get_slot(slot) else {
             continue;
         };
         let Some(kind_id) = slot_view.kind_id() else {
@@ -70,20 +70,20 @@ fn collect_current_version_entities(
     }
 }
 
-fn collect_historical_entities(
+fn collect_selected_root_entities(
     context: &InvariantExecutionContext<'_, '_>,
     kind_ids: &[crate::identity::data::KindId],
     partition_id: crate::identity::data::PartitionId,
-    partition: &crate::storage::overlay::PartitionState,
+    partition: crate::storage::residency::RelationalRegionHeadView<'_>,
     entities: &mut Vec<EntityReference>,
 ) {
     let state_view = context.state_view();
-    for slot in partition.entity_arena.occupied_slots_iter() {
+    for slot in partition.entity_arena().occupied_slots_iter() {
         if !context.checkpoint(1) {
             return;
         }
         let Some(metadata) =
-            state_view.entity_metadata_at(&partition.entity_arena, partition_id, slot)
+            state_view.entity_metadata_at(&partition.entity_arena(), partition_id, slot)
         else {
             continue;
         };

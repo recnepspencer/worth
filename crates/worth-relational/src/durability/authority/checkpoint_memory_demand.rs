@@ -1,0 +1,64 @@
+//! The portable image operation explicitly demands every selected cold subject.
+use super::checkpoint_capture::CapturedCheckpointBasis;
+use crate::durability::data::RelationalRecoveryStop;
+use crate::runtime::RelationalRuntime;
+
+impl CapturedCheckpointBasis {
+    pub(super) fn demand_memory_image(
+        mut self,
+        runtime: &RelationalRuntime,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalRecoveryStop> {
+        // Hold the selection's bodies through image construction. Demand the exact
+        // captured roots and mirror rather than consulting a later branch head.
+        self.envelopes = self
+            .envelope_cells
+            .iter()
+            .map(|cell| cell.demand_positioned(execution, 1 << 30))
+            .collect::<Result<_, _>>()?;
+        self.envelopes.sort_by_key(|commit| commit.position());
+        let _mirror = self
+            .partitions
+            .demand_all(execution, &runtime.services.symbols)?;
+        for root in &self.branch_roots {
+            root.demand_all_full(execution, &runtime.services.symbols)?;
+        }
+        if let Some(directory) = &self.selected_directory {
+            runtime.services.symbols.demand_symbol_ids(
+                execution,
+                directory
+                    .manifest
+                    .symbols
+                    .iter()
+                    .map(|page| crate::symbols::data::Symbol(page.first as u32)),
+            )?;
+            for page in &directory.manifest.lineage {
+                runtime
+                    .lineage
+                    .demand_node(execution, crate::identity::data::LineageId(page.first))?;
+            }
+        }
+        self.lineage_event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
+        self.lineage_events = runtime
+            .lineage
+            .published_rows()
+            .into_iter()
+            .map(|(event, publication_commit_id)| {
+                crate::durability::data::RelationalCheckpointLineageEventRow {
+                    event,
+                    publication_commit_id,
+                }
+            })
+            .collect();
+        self.lineage_event_pages_resident = true;
+        self.index_state.demand_checkpoint_image(execution)?;
+        self.derived_index_checkpoint =
+            super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+                self.index_state
+                    .retained_generations(&self.retained_indexes),
+            )?;
+        self.symbol_table = runtime.services.symbols.snapshot();
+        self.lineage_nodes = runtime.lineage_access().resident_nodes_snapshot();
+        Ok(self)
+    }
+}

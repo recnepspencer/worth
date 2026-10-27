@@ -221,7 +221,8 @@ fn exercise_unrelated_branch_reads_and_validation(
         let inspection = world
             .runtime
             .read_truth()
-            .inspect_snapshot(&snapshot)
+            .inspect_snapshot(execution, &snapshot)
+            .expect("snapshot inspection keeps the original execution request")
             .expect("unrelated branch read stays branch-qualified");
         assert_eq!(&inspection.branch_id, branch_id);
         if let Some(delta) = validation_delta {

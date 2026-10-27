@@ -33,7 +33,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
     let stream_before = world
         .runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(request_execution, PatchStreamRequest::default())
         .unwrap();
     let replay_before = world.runtime.publication().latest_replay();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
@@ -84,7 +84,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         world
             .runtime
             .publication()
-            .read_patch_stream(PatchStreamRequest::default())
+            .read_patch_stream(request_execution, PatchStreamRequest::default())
             .unwrap(),
         stream_before
     );

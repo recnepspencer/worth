@@ -14,13 +14,21 @@ pub(super) fn native_metadata(
     runtime: &RelationalRuntime,
     snapshot: &SnapshotHandle,
     entity: EntityId,
-) -> Option<RetirementMetadata> {
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<Option<RetirementMetadata>, CompanionPreflightStop> {
     let read = runtime.read_truth();
-    let view = read.project_snapshot(snapshot)?;
-    let record = view.entity_retirement(entity)?;
-    Some(RetirementMetadata {
+    let Some(view) = read.project_snapshot(snapshot) else {
+        return Ok(None);
+    };
+    let Some(record) = view
+        .read_entity_retirement(execution, entity)
+        .map_err(CompanionPreflightStop::Execution)?
+    else {
+        return Ok(None);
+    };
+    Ok(Some(RetirementMetadata {
         kind: record.kind_id(),
         created_at: record.created_at_version(),
         deleted_at: record.deleted_at_version(),
-    })
+    }))
 }

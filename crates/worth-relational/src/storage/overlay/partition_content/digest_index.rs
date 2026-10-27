@@ -6,7 +6,6 @@ use sha2::{Digest, Sha256};
 mod append_frontier;
 #[cfg(test)]
 mod tests;
-pub(crate) use append_frontier::HistoryAppendFrontier;
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct DigestIndex {

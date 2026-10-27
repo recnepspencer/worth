@@ -99,6 +99,8 @@ fn wake_and_reconsideration_keep_bits_and_order_with_exact_width_work() {
 }
 
 fn capture(resource_request: worth_execution::ExecutionRequest<'_, '_>, placement: Placement) {
+    // Single-thread libtest writes its test-name prefix before the first record.
+    println!();
     let _observer = worth_query_execution::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
     let _restore = Restore(place(placement), bound(None));
     for reconsider in [false, true] {

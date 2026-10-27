@@ -51,7 +51,7 @@ fn bridge_deliver_continuity_returns_delivered_result_and_canonical_record() {
         .expect("route record should be retained");
 
     let delivered = runtime
-        .deliver_continuity(&route_record)
+        .deliver_continuity(&route_record, execution)
         .expect("continuity should deliver as a single bridge-owned result");
 
     assert_eq!(
@@ -155,10 +155,10 @@ fn bridge_continuity_truth_is_invariant_across_diagnostics_tiers() {
         .expect("forensic route record should be retained");
 
     let standard = standard_runtime
-        .deliver_continuity(&standard_route_record)
+        .deliver_continuity(&standard_route_record, execution)
         .expect("standard continuity should deliver");
     let forensic = forensic_runtime
-        .deliver_continuity(&forensic_route_record)
+        .deliver_continuity(&forensic_route_record, execution)
         .expect("forensic continuity should deliver");
 
     assert_eq!(

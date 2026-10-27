@@ -121,6 +121,26 @@ pub(super) fn transaction_commit(
     error: TransactionCommitError,
 ) -> RelationalEffectExecutionFailure {
     match error {
+        TransactionCommitError::Preparation { ref error, .. }
+            if matches!(
+                error.reason(),
+                worth_relational::facade::transactions::CommitPreparationReason::StorageUnavailable(
+                    _
+                )
+            ) =>
+        {
+            let worth_relational::facade::transactions::CommitPreparationReason::StorageUnavailable(
+                failure,
+            ) = error.reason()
+            else {
+                unreachable!()
+            };
+            execution_denial(worth_relational::facade::transactions::CommitExecutionDenial {
+                    kind: worth_relational::facade::transactions::CommitExecutionDenialKind::Cause(
+                        worth_relational::facade::transactions::RelationalExecutionDenialCause::StorageUnavailable(failure)),
+                    partition_identity: None,
+                })
+        }
         TransactionCommitError::Execution { denial, .. } => execution_denial(denial),
         TransactionCommitError::Conflict { error, .. } => {
             if let Some(allocation) = error.allocation_denial() {
@@ -153,6 +173,29 @@ pub(super) fn transaction_commit(
         other @ (TransactionCommitError::Publication { .. }
         | TransactionCommitError::Preparation { .. }
         | TransactionCommitError::PublicationDenied { .. }) => denied(&other),
+    }
+}
+
+pub(super) fn strategy_lowering(
+    error: worth_relational::facade::commit_strategies::StrategyLoweringError,
+) -> RelationalEffectExecutionFailure {
+    use worth_relational::facade::commit_strategies::StrategyLoweringError;
+    match error {
+        StrategyLoweringError::Preparation(error) => transaction_commit(error),
+        StrategyLoweringError::MutationConflict(ref conflict)
+            if conflict.allocation_denial().is_some() =>
+        {
+            allocation_failure(
+                conflict
+                    .allocation_denial()
+                    .expect("matched allocation refusal"),
+            )
+        }
+        other => super::execution::lower_runtime_error(
+            other,
+            EffectExecutionDenialKind::RelationalStrategyAuthorityLoweringFailed,
+        )
+        .into(),
     }
 }
 

@@ -91,6 +91,17 @@ impl VisibilityProjectionView {
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        self.demand_adjacency(
+            execution,
+            entity_ids.iter().copied(),
+            super::adjacency_demand::AdjacencyDemand {
+                kind: kind_id,
+                direction,
+                maximum: maximum_work_units,
+                frontier: true,
+                include_audit,
+            },
+        )?;
         super::super::read_request::checked(execution, || {
             let Some(root) = self.basis.root() else {
                 let mut lists = 0;
@@ -117,14 +128,22 @@ impl VisibilityProjectionView {
                     return Err(exceeded);
                 }
                 lists += 1;
-                let relation_ids = ledger.lease(
-                    root.get_partition(entity_id.partition_id)
-                        .and_then(|partition| {
-                            direction.table(partition).get(entity_id.slot_index())
-                        }),
-                    adjacency_basis,
-                    kind_id,
-                );
+                let relation_ids = if self.is_exact_basis() {
+                    ledger.lease_current(
+                        self.admitted_head_region(entity_id.partition_id)
+                            .and_then(|head| head.adjacency(direction).get(entity_id.slot_index())),
+                        kind_id,
+                    )
+                } else {
+                    ledger.lease(
+                        root.get_partition(entity_id.partition_id)
+                            .and_then(|partition| {
+                                direction.table(partition).get(entity_id.slot_index())
+                            }),
+                        adjacency_basis,
+                        kind_id,
+                    )
+                };
                 for relation_id in relation_ids.iter().copied() {
                     if let Err(exceeded) =
                         charge(maximum_work_units, lists, examined, records.len())

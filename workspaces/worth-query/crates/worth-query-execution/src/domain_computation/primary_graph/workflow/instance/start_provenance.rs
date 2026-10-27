@@ -113,7 +113,7 @@ pub(in crate::domain_computation::primary_graph) fn read<Schema>(
         .read_truth()
         .pin_read_capability(snapshot, &[], execution)
         .map_err(|cause| match cause {
-            RelationalPinnedReadAdmissionDenial::Request(stop) => Denial::Execution(stop.into()),
+            RelationalPinnedReadAdmissionDenial::Request(cause) => Denial::Execution(cause),
             _ => Denial::Corrupt,
         })?;
     let text = pin

@@ -143,7 +143,7 @@ pub(super) fn apply_operation(
             );
         }
         ScenarioOperation::RunRetentionPass => {
-            let _ = runtime.retention().run_pass();
+            let _ = runtime.retention().run_pass(execution).unwrap();
             refresh_live_world(execution, runtime, entities, relations);
         }
         ScenarioOperation::DurableCheckpoint => {}

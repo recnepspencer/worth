@@ -29,7 +29,7 @@ impl WorthQueryApplicationObservedFact {
                     super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded, "source publication comparison"),
                     super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact, "source publication comparison"),
                 })?,
-            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, snapshot, *entity_id, *kind, *created_at, *deleted_at),
+            Self::RetiredOutputEntity { entity_id, kind, created_at, deleted_at, .. } => super::retirement_equality::remains_equal(runtime, execution, snapshot, *entity_id, *kind, *created_at, *deleted_at).map_err(|cause| SelfDenial::relational_read_stopped(cause, "retirement comparison"))?,
             Self::SourceEntity { entity_id } => match runtime.read_truth().project_snapshot(snapshot) {
                 Some(view) => {
                     view.entity_record_with_projection_scope(execution,
@@ -51,7 +51,8 @@ impl WorthQueryApplicationObservedFact {
                 native_revision,
             } => runtime
                 .read_truth()
-                .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
+                 .read_exact_snapshot_entity_aspect_version(execution, snapshot, *entity_id, aspect)
+                .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source aspect comparison"))?
                 == Some(*native_revision),
             Self::SourceFieldRevision { entity_id, locator, native_revision } =>
                 if let Some(expected) = native_revision {
@@ -94,7 +95,8 @@ impl WorthQueryApplicationObservedFact {
                 entity_id, kind, ..
             } => runtime
                 .read_truth()
-                .exact_snapshot_live_entity_kind_status(snapshot, *entity_id)
+                 .read_exact_snapshot_live_entity_kind_status(execution, snapshot, *entity_id)
+                .map_err(|cause| SelfDenial::relational_read_stopped(cause, "source entity comparison"))?
                 == Some(Some(*kind)),
             Self::Field {
                 entity_id,

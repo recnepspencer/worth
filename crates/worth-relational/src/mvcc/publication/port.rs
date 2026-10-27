@@ -25,6 +25,7 @@ pub struct RelationalPublicationPort {
 
 pub(crate) struct PreparedCanonicalBranchMovement {
     record_allocations: crate::runtime::PendingRecordAllocations,
+    symbol_meanings: crate::runtime::PreparedSymbolPublication,
     next_cell: RelationalBranchReferenceCell,
     root: Arc<RelationalBranchRoot>,
     canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
@@ -217,14 +218,20 @@ impl RelationalPublicationPort {
 
 impl PreparedCanonicalBranchMovement {
     pub(crate) fn new(
-        record_allocations: crate::runtime::PendingRecordAllocations,
+        identities: crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         mut next_cell: RelationalBranchReferenceCell,
         root: Arc<RelationalBranchRoot>,
         canonical_publication_route: crate::runtime::PreparedCanonicalPublicationRoute,
     ) -> Self {
         next_cell.install_root(Arc::clone(&root));
         Self {
-            record_allocations,
+            record_allocations: identities.records,
+            symbol_meanings: identities.symbols.seal_for_publication(
+                &root
+                    .canonical_envelope()
+                    .expect("prepared root has its canonical envelope")
+                    .symbol_texts,
+            ),
             next_cell,
             root,
             canonical_publication_route,

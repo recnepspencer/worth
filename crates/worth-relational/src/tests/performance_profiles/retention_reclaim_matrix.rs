@@ -28,10 +28,10 @@ fn perf_retention_reclaim_matrix() {
 
             runtime.performance_access().reset_counters();
             let inspect_started_at = Instant::now();
-            let plan = runtime.retention().inspect_plan();
+            let plan = runtime.retention().inspect_plan(execution).unwrap();
             let inspect_plan_micros = inspect_started_at.elapsed().as_micros();
             let pass_started_at = Instant::now();
-            let pass = runtime.retention().run_pass();
+            let pass = runtime.retention().run_pass(execution).unwrap();
             let run_pass_micros = pass_started_at.elapsed().as_micros();
             let elapsed_micros = inspect_plan_micros + run_pass_micros;
             let counters = runtime.performance_access().counters();
@@ -114,7 +114,7 @@ fn perf_retention_reclaim_matrix() {
 
             runtime.performance_access().reset_counters();
             let inspect_started_at = Instant::now();
-            let pinned = runtime.retention().inspect_plan();
+            let pinned = runtime.retention().inspect_plan(execution).unwrap();
             let inspect_pinned_micros = inspect_started_at.elapsed().as_micros();
             let release_started_at = Instant::now();
             assert!(runtime
@@ -122,7 +122,7 @@ fn perf_retention_reclaim_matrix() {
                 .release_version_replay_retention(created.version_id));
             let release_replay_pin_micros = release_started_at.elapsed().as_micros();
             let inspect_released_started_at = Instant::now();
-            let released = runtime.retention().inspect_plan();
+            let released = runtime.retention().inspect_plan(execution).unwrap();
             let inspect_released_micros = inspect_released_started_at.elapsed().as_micros();
             let elapsed_micros =
                 inspect_pinned_micros + release_replay_pin_micros + inspect_released_micros;

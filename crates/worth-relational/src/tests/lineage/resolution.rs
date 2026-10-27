@@ -24,7 +24,8 @@ fn historical_lineage_resolution_follows_replace_events() {
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -49,14 +50,17 @@ fn historical_lineage_resolution_follows_replace_events() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(resolution.start, start_lineage);
     assert_eq!(
@@ -89,6 +93,7 @@ fn historical_lineage_resolution_follows_replace_events() {
                     traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
                 }
             )
+            .unwrap()
             .events
             .iter()
             .filter(|event| event.commit.commit_id == outcome.commit.commit_id)
@@ -107,17 +112,21 @@ fn refused_durable_publication_leaves_no_replacement_lineage_behind() {
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .expect("source lineage")
         .lineage_id();
     let graph = |runtime: &crate::runtime::RelationalRuntime| {
-        runtime.lineage_access().graph(
-            execution,
-            LineageGraphRequest {
-                branch_id: BranchId("main".to_owned()),
-                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-            },
-        )
+        runtime
+            .lineage_access()
+            .graph(
+                execution,
+                LineageGraphRequest {
+                    branch_id: BranchId("main".to_owned()),
+                    traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+                },
+            )
+            .unwrap()
     };
     let before = graph(&runtime);
     let head_before = runtime.history().branch_head(&BranchId("main".to_owned()));
@@ -162,14 +171,17 @@ fn refused_durable_publication_leaves_no_replacement_lineage_behind() {
         runtime.history().branch_head(&BranchId("main".to_owned())),
         head_before
     );
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_owned()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     assert_eq!(resolution.resolved, vec![start_lineage]);
     assert!(resolution.traversed_event_ids.is_empty());
 }
@@ -184,7 +196,8 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -224,17 +237,21 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
                 traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
             },
         )
+        .unwrap()
         .metrics
         .event_count;
 
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(resolution.metrics.traversed_event_count, 1);
     assert_eq!(resolution.metrics.event_visit_count, 1);
@@ -251,7 +268,8 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -279,6 +297,20 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
     let history = runtime
         .lineage_access()
         .entity_aspect_history(
+            execution,
+            HistoricalResolutionRequest {
+                branch_id: BranchId("main".to_string()),
+                lineage_id: start_lineage,
+                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
+            },
+            None,
+        )
+        .unwrap()
+        .unwrap();
+    let traced = runtime
+        .lineage_access()
+        .entity_aspect_history_with_trace(
+            execution,
             HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
@@ -287,14 +319,6 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
             None,
         )
         .unwrap();
-    let traced = runtime.lineage_access().entity_aspect_history_with_trace(
-        HistoricalResolutionRequest {
-            branch_id: BranchId("main".to_string()),
-            lineage_id: start_lineage,
-            boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-        },
-        None,
-    );
     let artifact = traced.trace.diagnostic_artifact();
     let digest = traced.lineage_aspect_resolution_digest();
 

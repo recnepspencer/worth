@@ -110,7 +110,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
             assert_eq!(
                 runtime
                     .index_access()
-                    .latest_generation(index, &BranchId("main".into()))
+                    .read_latest_generation(&execution, index, &BranchId("main".into()))
+                    .unwrap()
                     .unwrap()
                     .source_commit_id,
                 first.commit.commit_id
@@ -136,7 +137,8 @@ fn a_two_row_commit_prices_its_paths_in_a_two_thousand_row_index() {
         let second = runtime.settle_performed_publication(performed).unwrap();
         let generation = runtime
             .index_access()
-            .latest_generation(index, &BranchId("main".into()))
+            .read_latest_generation(&execution, index, &BranchId("main".into()))
+            .unwrap()
             .unwrap();
         let crate::facade::indexes::DerivedIndexEntries::EntityField(entries) = &generation.entries
         else {

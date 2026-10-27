@@ -364,7 +364,8 @@ fn repeated_closed_branches_leave_no_latest_generation_residue() {
         assert!(runtime.indexes.generation(generation).is_none());
         assert!(runtime
             .index_access()
-            .latest_generation(index.index_id, &branch)
+            .read_latest_generation(execution, index.index_id, &branch)
+            .unwrap()
             .is_none());
         assert_eq!(runtime.history.retired_branch_binding_count(), 0);
     }

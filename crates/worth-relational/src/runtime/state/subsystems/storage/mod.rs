@@ -1,19 +1,27 @@
 mod edition_copy_lane;
 mod edition_writer;
+mod mirror_state;
 mod partition_edition;
 mod residency_demand;
+mod resident_target;
+use mirror_state::{CurrentMirror, MirrorRegion};
 pub(crate) use residency_demand::MirrorResidencyDemandBinding;
+pub(crate) use resident_target::ResidentMirrorTarget;
 
 pub(crate) use edition_copy_lane::PartitionEditionCopyLane;
-pub(crate) use edition_writer::PartitionEditionWriter;
-pub(crate) use partition_edition::{PartitionEdition, PartitionMap};
+pub(crate) use edition_writer::{
+    PartitionEditionWriter, ResidentPartitionEditionWriter, ResidentPartitionEntry,
+};
+pub(crate) use partition_edition::{PartitionEdition, PartitionMap, ResidentPartitionEdition};
 
 use crate::identity::data::PartitionId;
 use crate::runtime::state::subsystems::{
     RuntimeInstrumentation, RuntimeOwnedState, RuntimeSubsystem,
 };
 use crate::storage::overlay::PartitionState;
-use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
+use crate::storage::residency::RelationalRegionRetention;
+#[cfg(test)]
+use crate::storage::residency::{Full, RelationalResidencyLease};
 
 /// The runtime's record substrate, owned behind its own lock.
 ///
@@ -27,17 +35,17 @@ use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResid
 /// partition only when a reader still holds the previous edition of it.
 #[derive(Debug, Default)]
 pub(crate) struct StorageSubsystem {
-    partitions: RuntimeOwnedState<PartitionEdition>,
+    partitions: RuntimeOwnedState<CurrentMirror>,
 }
 
 impl StorageSubsystem {
     pub(crate) fn install_cells(&self, cells: PartitionMap) {
-        *self.partitions.write() = PartitionEdition::new(cells);
+        *self.partitions.write() = CurrentMirror::from_cells(cells);
     }
     /// One structurally shared edition of the substrate. O(1): one atomic
     /// increment, no allocation, no retained lock.
     pub(crate) fn acquire(&self) -> PartitionEdition {
-        self.partitions.read().clone()
+        self.partitions.read().edition.clone()
     }
 
     /// Exclusive authority to install the next edition, charged to `lane`.
@@ -49,16 +57,43 @@ impl StorageSubsystem {
         PartitionEditionWriter::new(self.partitions.write(), instrumentation, lane)
     }
 
-    pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
-        use crate::storage::overlay::PartitionAccess;
-        self.partitions.read().partition_ids()
+    /// Demand outside the write lock, then seal the current edition. Publication
+    /// installs resident entries; only an exclusive recovery can install cold ones.
+    pub(crate) fn demand_resident_edit<'subsystem>(
+        &'subsystem self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        instrumentation: &'subsystem RuntimeInstrumentation,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<
+        ResidentPartitionEditionWriter<'subsystem>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        loop {
+            self.acquire().demand_all(execution, symbols)?;
+            match self
+                .edit(instrumentation, PartitionEditionCopyLane::Ordinary)
+                .accept_resident(symbols)
+            {
+                Ok(writer) => return Ok(writer),
+                Err(writer) => drop(writer),
+            }
+        }
     }
 
+    pub(crate) fn partition_ids(&self) -> Vec<PartitionId> {
+        use crate::storage::overlay::CurrentPartitionAccess;
+        self.partitions.read().edition.partition_ids()
+    }
+
+    #[cfg(test)]
     pub(crate) fn partition(
         &self,
         partition_id: PartitionId,
     ) -> Option<RelationalResidencyLease<Full>> {
-        self.partitions.read().shared_partition(partition_id)
+        self.partitions
+            .read()
+            .edition
+            .shared_partition(partition_id)
     }
 
     pub(crate) fn install_owned(
@@ -85,7 +120,7 @@ impl RuntimeSubsystem for StorageSubsystem {
     }
 
     /// Share immutable cells; runtime pin counters detach at the first write.
-    /// Cold cells remain cold and copy-on-write requires an admitted Full lease.
+    /// Cold cells remain cold; current edits carry Head, history edits carry Full.
     fn fork(&self) -> Self {
         let partitions = self
             .acquire()
@@ -93,7 +128,7 @@ impl RuntimeSubsystem for StorageSubsystem {
             .map(|(id, region)| (id, region.fork()))
             .collect();
         Self {
-            partitions: RuntimeOwnedState::new(PartitionEdition::new(partitions)),
+            partitions: RuntimeOwnedState::new(CurrentMirror::from_cells(partitions)),
         }
     }
 }

@@ -2,7 +2,9 @@ use crate::facade::transactions::MutationIntent;
 use crate::tests::support::*;
 
 #[test]
-fn client_key_symbol_policy_interns_client_keys_before_merge() {
+fn client_key_symbol_policy_retains_preview_meaning_until_publication() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
@@ -14,9 +16,11 @@ fn client_key_symbol_policy_interns_client_keys_before_merge() {
     )
     .expect("test staging stays within configured resource budgets");
     let plan = txn
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone();
@@ -27,7 +31,16 @@ fn client_key_symbol_policy_interns_client_keys_before_merge() {
         }
         other => panic!("expected create entity intent, got {other:?}"),
     }
-    assert!(!runtime.config().identity.symbol_table.entries.is_empty());
+    assert!(runtime.config().identity.symbol_table.entries.is_empty());
+    let committed = txn.commit(execution, &runtime).unwrap();
+    assert!(runtime
+        .config()
+        .identity
+        .symbol_table
+        .entries
+        .iter()
+        .any(|(_, text)| text == "intern-me"));
+    release_test_commit_snapshot(&runtime, &committed);
 }
 
 #[test]
@@ -69,6 +82,6 @@ fn client_key_symbol_policy_incrementally_merges_new_snapshot_entries_in_sorted_
             .iter()
             .map(|(_, value)| value.as_str())
             .collect::<Vec<_>>(),
-        vec!["alpha", "beta"]
+        vec!["alpha", "beta", "lifecycle", "name"]
     );
 }

@@ -73,6 +73,7 @@ pub(super) fn certify_dense_fanout_compile_wave_rich_diagnostics(
             let artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     commit.commit_id,
                     vec![
                         PartitionId(7),

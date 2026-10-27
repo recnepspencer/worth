@@ -11,7 +11,8 @@ pub(super) struct SnapshotValidatedCommitExecution {
     effect: crate::authority::mutation::MutationEffect,
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
     created_relations: crate::transactions::data::CommitCreatedRelationBindings,
-    record_allocations: crate::runtime::PendingRecordAllocations,
+    mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     merge_parent_branches: Vec<crate::history::data::BranchId>,
     additional_diagnostics_entries: Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
@@ -34,7 +35,7 @@ impl SnapshotValidatedCommitExecution {
         crate::authority::mutation::MutationEffect,
         crate::transactions::data::CommitCreatedEntityBindings,
         crate::transactions::data::CommitCreatedRelationBindings,
-        crate::runtime::PendingRecordAllocations,
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         Vec<crate::history::data::BranchId>,
         Vec<crate::diagnostics::data::RelationalDiagnosticsEntry>,
@@ -52,7 +53,7 @@ impl SnapshotValidatedCommitExecution {
             self.effect,
             self.created_entities,
             self.created_relations,
-            self.record_allocations,
+            self.mutation_identities,
             self.history,
             self.merge_parent_branches,
             self.additional_diagnostics_entries,
@@ -82,17 +83,10 @@ fn enforce_snapshot_invariant(
 ) -> Result<(), crate::transactions::data::TransactionCommitError> {
     let mutated = history_bound.mutated_mut();
     let version_id = mutated.version_id();
-    let selected_branch_state = mutated
-        .validated_mut()
-        .prepared_mut()
-        .selected_branch_state()
-        .clone();
-    let proposal_identity = mutated
-        .validated_mut()
-        .prepared_mut()
-        .proposal_identity()
-        .clone();
-    let (admitted, working_state) = mutated.validated_mut().prepared_mut().mutation_parts();
+    let selected_branch_state = mutated.prepared.selected_branch_state().clone();
+    let proposal_identity = mutated.prepared.proposal_identity.clone();
+    let admitted = &mut mutated.prepared.admitted;
+    let working_state = &mut mutated.working_state;
     let prevalidated_snapshot_publication = admitted.take_prevalidated_snapshot_publication();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
     let invariant = enforce_snapshot_publication_phase(
@@ -108,7 +102,7 @@ fn enforce_snapshot_invariant(
         execution,
         control,
     )?;
-    mutated.validated_mut().push_invariant(invariant);
+    mutated.invariant_executions.push(invariant);
     Ok(())
 }
 
@@ -117,11 +111,26 @@ fn into_snapshot_validated_execution(
 ) -> SnapshotValidatedCommitExecution {
     let (mutated, history, merge_parents, diagnostics, merge_authority, continuity, deferred) =
         history_bound.into_parts();
-    let (validated, version_id, effect, created_entities, created_relations, record_allocations) =
-        mutated.into_parts();
-    let (prepared, invariant_executions) = validated.into_parts();
-    let selected_branch_state = prepared.selected_branch_state().clone();
-    let (admitted, public_structural_summary, working_state) = prepared.into_parts();
+    let version_id = mutated.version_id();
+    let selected_branch_state = mutated.prepared.selected_branch_state().clone();
+    let super::mutation_execution::MutatedCommitExecution {
+        prepared,
+        working_state,
+        invariant_executions,
+        outcome,
+        mutation_identities,
+    } = mutated;
+    let super::draft_execution::PreparedCommitState {
+        admitted,
+        public_structural_summary,
+        ..
+    } = prepared;
+    let crate::authority::mutation::MutationApplyOutcome {
+        effect,
+        created_entities,
+        created_relations,
+        ..
+    } = outcome;
     SnapshotValidatedCommitExecution {
         admitted,
         selected_branch_state,
@@ -132,7 +141,7 @@ fn into_snapshot_validated_execution(
         effect,
         created_entities,
         created_relations,
-        record_allocations,
+        mutation_identities,
         history,
         merge_parent_branches: merge_parents,
         additional_diagnostics_entries: diagnostics,

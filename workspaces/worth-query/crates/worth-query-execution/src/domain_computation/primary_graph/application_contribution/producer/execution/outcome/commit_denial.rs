@@ -26,6 +26,9 @@ pub(super) fn stopped(
             stage,
         })),
         (Some((_, cause)), _) => commit_execution_stopped(identity, detail, cause),
+        (None, Kind::StorageUnavailable(failure)) => {
+            commit_execution_stopped(identity, detail, Ok(Native::StorageUnavailable(failure)))
+        }
         (None, Kind::IdempotencyIntentDrift) => denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
             format!("{identity}: {detail:?}"),

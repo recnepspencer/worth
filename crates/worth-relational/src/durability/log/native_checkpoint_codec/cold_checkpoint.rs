@@ -1,17 +1,18 @@
 //! Readmit only the directory and the envelopes of its distinct heads.
 use std::sync::Arc;
 
-use super::{manifest_capture::corrupt, manifest_validation};
+use super::{manifest_capture::corrupt, manifest_validation::ManifestDirectoryFacts};
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactRefusal;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableColdSource;
 
-pub(crate) fn readmit(
+pub(super) fn readmit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     manifest: RelationalCheckpointManifest,
     source: Arc<dyn RelationalDurableColdSource>,
+    facts: ManifestDirectoryFacts,
 ) -> Result<DurableCheckpoint, RelationalRecoveryStop> {
-    let heads = manifest_validation::validate(&manifest)?;
+    let heads = facts.heads;
     let mut envelopes = Vec::new();
     let mut symbols = crate::symbols::data::StringInterner::default();
     for entry in manifest
@@ -31,7 +32,7 @@ pub(crate) fn readmit(
     }
     let checkpoint = DurableCheckpoint {
         root_kind_images: Default::default(), mirror_kind_images: Default::default(),
-        directory: Some(Arc::new(RelationalCheckpointDirectory { manifest: manifest.clone(), source })),
+        directory: Some(Arc::new(RelationalCheckpointDirectory { manifest: manifest.clone(), source, history_members: facts.history_members })),
         coverage: manifest.coverage,
         commit_descriptors: manifest.commits.iter().map(|entry| (entry.commit.commit_id, entry.root.clone())).collect(),
         mirror_schema_digest: manifest.mirror_schema,
@@ -45,7 +46,8 @@ pub(crate) fn readmit(
         index_definitions: manifest.index_definitions, derived_index_artifacts: Default::default(),
         derived_index_checkpoint: None,
         derived_index_checkpoint_format: crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,
-        symbol_table: symbols.snapshot(), runtime_name: manifest.runtime_name,
+        symbol_table: symbols.snapshot(), symbol_identity_frontier: manifest.symbol_identity_frontier,
+        runtime_name: manifest.runtime_name,
     };
     Ok(checkpoint)
 }

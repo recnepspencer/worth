@@ -1,11 +1,11 @@
 use std::collections::BTreeSet;
 
-use crate::capabilities::StorageRead;
 use crate::runtime::RuntimeInstrumentation;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::EntityReference;
 
 pub(super) fn existing_relation_targets_for_source(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     instrumentation: &RuntimeInstrumentation,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
@@ -16,21 +16,16 @@ pub(super) fn existing_relation_targets_for_source(
     let EntityReference::Existing(source_entity) = source else {
         return false;
     };
-    let Some(source_partition) = state.get_partition(source_entity.partition_id) else {
+    let Some(source_partition) = state.get_current_partition(source_entity.partition_id) else {
         return false;
     };
-    let Some(outgoing_relations) = source_partition.adjacency.get(source_entity.slot_index())
-    else {
-        return false;
-    };
-    let outgoing = outgoing_relations.current_ids();
+    let outgoing = source_partition.outgoing_candidates(*source_entity);
     let incoming = targets
         .iter()
         .filter_map(|target| match target {
             EntityReference::Existing(target) => state
-                .get_partition(target.partition_id)
-                .and_then(|partition| partition.reverse_adjacency.get(target.slot_index()))
-                .map(|adjacency| adjacency.current_ids()),
+                .get_current_partition(target.partition_id)
+                .map(|partition| partition.incoming_candidates(*target)),
             EntityReference::Created(_) => None,
         })
         .collect::<Vec<_>>();
@@ -61,7 +56,7 @@ pub(super) fn existing_relation_targets_for_source(
 }
 
 fn relation_candidate_matches_target_identity(
-    state: &impl StorageRead,
+    state: &impl CurrentPartitionAccess,
     partition_id: crate::identity::data::PartitionId,
     kind_id: crate::identity::data::KindId,
     source_entity: &crate::identity::data::EntityId,
@@ -72,10 +67,10 @@ fn relation_candidate_matches_target_identity(
     if excluded_relation_ids.contains(&relation_id) || relation_id.partition_id != partition_id {
         return false;
     }
-    let Some(relation_partition) = state.get_partition(relation_id.partition_id) else {
+    let Some(relation_partition) = state.get_current_partition(relation_id.partition_id) else {
         return false;
     };
-    let Some(relation_slot) = relation_partition.relation_arena.get(&relation_id) else {
+    let Some(relation_slot) = relation_partition.relation_arena().get(&relation_id) else {
         return false;
     };
     if relation_slot.kind_id() != Some(kind_id) {

@@ -56,7 +56,12 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         assert!(
             reopened
                 .index_access()
-                .published_generation_for_observation(index.index_id, &basis.observation())
+                .read_published_generation_for_observation(
+                    execution,
+                    index.index_id,
+                    &basis.observation()
+                )
+                .unwrap()
                 .is_none(),
             "retained lagging cache is not current index authority"
         );

@@ -7,17 +7,6 @@ pub(super) struct BoundaryValidatedCommitExecution {
 }
 
 impl BoundaryValidatedCommitExecution {
-    pub(super) fn prepared_mut(&mut self) -> &mut PreparedCommitExecution {
-        &mut self.prepared
-    }
-
-    pub(super) fn push_invariant(
-        &mut self,
-        invariant: crate::validation::engine::InvariantExecutionResult,
-    ) {
-        self.invariant_executions.push(invariant);
-    }
-
     pub(super) fn into_parts(
         self,
     ) -> (

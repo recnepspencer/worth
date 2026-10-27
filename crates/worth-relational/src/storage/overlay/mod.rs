@@ -1,4 +1,6 @@
 mod access;
+mod current_access;
+pub(crate) use current_access::CurrentPartitionAccess;
 mod partition;
 mod partition_allocation_delta;
 mod partition_allocation_walk;
@@ -7,7 +9,8 @@ mod publication;
 mod slot_resolution;
 mod working_state;
 pub(crate) use slot_resolution::{
-    entity_partition_source_for_slot, relation_partition_source_for_slot, PartitionSource,
+    current_entity_partition_source_for_slot, current_relation_partition_source_for_slot,
+    PartitionSource,
 };
 
 pub(crate) use access::{

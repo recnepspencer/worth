@@ -86,7 +86,8 @@ fn one_large_index_packet_stops_at_its_declared_ceiling_without_publication() {
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &request.branch_id)
+            .read_latest_generation(execution, index.index_id, &request.branch_id)
+            .unwrap()
             .expect("prior index remains")
             .generation_id,
         published

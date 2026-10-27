@@ -7,6 +7,8 @@ use crate::truth_identity_fixtures::{truth_branch, truth_snapshot};
 
 #[test]
 fn build_accepts_optional_continuity_lineage_source() {
+    let serial_request = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
     let runtime = RuntimeBridgeBuilder::new()
         .with_relational_source(TestSource)
         .with_signal_sink(TestSink)
@@ -21,10 +23,13 @@ fn build_accepts_optional_continuity_lineage_source() {
         .continuity_lineage_source()
         .expect("continuity lineage source should be present");
     let authority = source
-        .historical_lineage(BridgeHistoricalLineageRequest::new(
-            authority_basis,
-            native_prior_field_slice("entity:test", "aspect.test", "field_test"),
-        ))
+        .historical_lineage(
+            BridgeHistoricalLineageRequest::new(
+                authority_basis,
+                native_prior_field_slice("entity:test", "aspect.test", "field_test"),
+            ),
+            execution,
+        )
         .expect("test lineage source should answer");
 
     assert!(authority
@@ -47,6 +52,8 @@ fn build_accepts_optional_writeback_authority() {
 
 #[test]
 fn continuity_lineage_source_can_return_typed_unsupported_class_failure() {
+    let serial_request = crate::snapshot::test_serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&serial_request);
     let runtime = RuntimeBridgeBuilder::new()
         .with_relational_source(TestSource)
         .with_signal_sink(TestSink)
@@ -59,10 +66,13 @@ fn continuity_lineage_source_can_return_typed_unsupported_class_failure() {
         .continuity_lineage_source()
         .expect("continuity lineage source should be present");
     let error = source
-        .historical_lineage(BridgeHistoricalLineageRequest::new(
-            BridgeContinuityAuthorityBasis::new(truth_branch("main"), truth_snapshot(1, 1)),
-            native_prior_field_slice("relation:test", "aspect.test", "field_test"),
-        ))
+        .historical_lineage(
+            BridgeHistoricalLineageRequest::new(
+                BridgeContinuityAuthorityBasis::new(truth_branch("main"), truth_snapshot(1, 1)),
+                native_prior_field_slice("relation:test", "aspect.test", "field_test"),
+            ),
+            execution,
+        )
         .expect_err("unsupported continuity class should be typed");
 
     assert_eq!(

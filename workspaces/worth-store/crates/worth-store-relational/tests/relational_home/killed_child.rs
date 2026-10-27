@@ -9,7 +9,7 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
-const PARK_DEADLINE: Duration = Duration::from_secs(240);
+pub(super) const PARK_DEADLINE: Duration = Duration::from_secs(240);
 
 /// How a child ended.
 #[derive(Debug, PartialEq, Eq)]

@@ -8,11 +8,55 @@ use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 #[derive(Debug, Clone)]
 pub struct ReadmittedCanonicalCommit {
     positioned: PositionedCanonicalCommit,
+    journal: Option<JournalReadmission>,
+}
+
+#[derive(Debug, Clone)]
+enum JournalReadmission {
+    Verified([u8; 32]),
+    Placed {
+        digest: [u8; 32],
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    },
 }
 
 impl ReadmittedCanonicalCommit {
     pub(crate) fn exact(positioned: PositionedCanonicalCommit) -> Self {
-        Self { positioned }
+        Self {
+            positioned,
+            journal: None,
+        }
+    }
+
+    pub(in crate::durability) fn with_verified_journal_payload(mut self, digest: [u8; 32]) -> Self {
+        self.journal = Some(JournalReadmission::Verified(digest));
+        self
+    }
+
+    pub(in crate::durability) fn bind_journal_source(
+        mut self,
+        source: std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Result<Self, crate::durability::data::DurabilityError> {
+        let Some(JournalReadmission::Verified(digest)) = self.journal.take() else {
+            return Err(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCanonicalArtifact,
+                "journal placement requires verified canonical frame readmission",
+            ));
+        };
+        self.journal = Some(JournalReadmission::Placed { digest, source });
+        Ok(self)
+    }
+
+    pub(in crate::durability) fn journal_placement(
+        &self,
+    ) -> Option<(
+        [u8; 32],
+        std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    )> {
+        match &self.journal {
+            Some(JournalReadmission::Placed { digest, source }) => Some((*digest, source.clone())),
+            _ => None,
+        }
     }
 
     pub(crate) fn readmit_current(
@@ -44,6 +88,7 @@ impl ReadmittedCanonicalCommit {
 
     #[cfg(test)]
     pub(crate) fn envelope_mut_for_test(&mut self) -> &mut CanonicalCommitEnvelope {
+        self.journal = None;
         self.positioned.envelope_mut_for_test()
     }
 }

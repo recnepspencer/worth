@@ -16,8 +16,8 @@ pub(crate) fn branch_for_version(
 ) -> Option<BranchId> {
     runtime
         .history()
-        .committed_version(version_id)
-        .map(|summary| summary.commit().branch_id.clone())
+        .immutable_commit_receipt_for_version(version_id)
+        .map(|receipt| receipt.branch_id)
         .or_else(|| {
             (version_id == VersionId(0)).then(|| runtime.config().history.main_branch.clone())
         })

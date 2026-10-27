@@ -11,8 +11,10 @@ pub struct VisibilityProjectionView {
     pub(super) runtime_identity: u64,
     pub(super) current_version: VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
-    pub(super) symbols: crate::symbols::data::StringInterner,
+    pub(super) symbols: crate::runtime::RuntimeSymbolTable,
     pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
+    pub(super) resident:
+        Option<crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis>,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
 }
 
@@ -152,14 +154,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                 crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis),
             )
         }))
-    }
-
-    pub(crate) fn project_historical_version(
-        &self,
-        version_id: VersionId,
-    ) -> VisibilityProjectionView {
-        self.try_project_historical_version(version_id)
-            .expect("internal historical projection requires retained MVCC coverage")
     }
 
     /// Projects the exact state at `version_id` on the branch that committed

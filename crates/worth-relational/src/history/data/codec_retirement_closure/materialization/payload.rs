@@ -3,8 +3,8 @@ use super::*;
 use crate::history::data::CanonicalRequiredOutputMaterializationRecord;
 use crate::publication::patch::data::RecordStructuralChange;
 use crate::storage::overlay::{
-    entity_partition_source_for_slot, relation_partition_source_for_slot, OverlayStateView,
-    WorkingState,
+    current_entity_partition_source_for_slot, current_relation_partition_source_for_slot,
+    OverlayStateView, WorkingState,
 };
 use worth_execution::ExecutionResourceLease;
 
@@ -40,11 +40,14 @@ pub(super) fn candidate_matches(
                 let expected = super::super::membership::reconstruct(
                     runtime, original, id, plan, context, lease,
                 )?;
-                let (_, partition) =
-                    entity_partition_source_for_slot(&after, id.partition_id, id.slot_index())
-                        .ok_or("maintenance entity partition absent")?;
+                let (_, partition) = current_entity_partition_source_for_slot(
+                    &after,
+                    id.partition_id,
+                    id.slot_index(),
+                )
+                .ok_or("maintenance entity partition absent")?;
                 let row = partition
-                    .entity_arena
+                    .entity_arena()
                     .get(&id)
                     .filter(|row| row.is_live())
                     .ok_or("maintenance entity generation absent")?;
@@ -73,11 +76,14 @@ pub(super) fn candidate_matches(
                 let expected = super::super::relation_payload::reconstruct(
                     runtime, original, id, plan, context, lease,
                 )?;
-                let (_, partition) =
-                    relation_partition_source_for_slot(&after, id.partition_id, id.slot_index())
-                        .ok_or("maintenance relation partition absent")?;
+                let (_, partition) = current_relation_partition_source_for_slot(
+                    &after,
+                    id.partition_id,
+                    id.slot_index(),
+                )
+                .ok_or("maintenance relation partition absent")?;
                 let row = partition
-                    .relation_arena
+                    .relation_arena()
                     .get(&id)
                     .filter(|row| row.is_live())
                     .ok_or("maintenance relation generation absent")?;

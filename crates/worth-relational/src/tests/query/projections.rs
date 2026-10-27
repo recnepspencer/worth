@@ -78,7 +78,8 @@ fn entity_projections_collapse_kind_and_partition_threading() {
     let right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
     let view = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id());
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap();
 
     let projected = view
         .entities::<NamedEntityProjection>(execution)
@@ -161,7 +162,8 @@ fn projection_record_refuses_aspect_reads_outside_declared_scope() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .entities::<EmptyScopeProjection>(execution)
         .expect("read request remains live");
 
@@ -178,7 +180,8 @@ fn dynamic_projection_scope_reads_aspects_without_raw_record_escape() {
     let entity_id = create_entity(execution, &runtime, "scope-carried");
     let view = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id());
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap();
     let name_key = AspectKey::new("name").unwrap();
 
     let projected = view
@@ -231,7 +234,10 @@ fn projection_raw_record_escape_hatches_preserve_full_visible_record_sets() {
     let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let relation = create_relation(execution, &runtime, left, right, "r0");
     let version_id = runtime.current_version_id();
-    let view = runtime.read_truth().project_historical_version(version_id);
+    let view = runtime
+        .read_truth()
+        .try_project_historical_version(version_id)
+        .unwrap();
     let read = runtime
         .read_truth()
         .read_version(execution, version_id)
@@ -268,7 +274,8 @@ fn projection_rejects_undeclared_required_aspects() {
     create_entity_outcome(execution, &runtime, "visible");
     let _ = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .entities::<UndeclaredAspectProjection>(execution)
         .expect("read request remains live");
 }

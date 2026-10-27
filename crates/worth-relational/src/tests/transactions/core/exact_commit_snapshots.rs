@@ -56,7 +56,8 @@ fn exact_commit_snapshot_survives_later_update_and_delete_without_reconstruction
     assert_eq!(read_entity_name(&updated_record), Some("after".to_owned()));
     assert!(runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .all_authoritative_entity_records(execution,)
         .expect("read request remains live")
         .into_iter()

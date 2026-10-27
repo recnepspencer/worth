@@ -14,8 +14,10 @@ use crate::transactions::data::RecordRef;
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn plan_history_scope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<HistoryScopedMergePlan, MergePlanningError> {
+        crate::execution::check_request(execution).map_err(MergePlanningError::Execution)?;
         let history = self.runtime.history();
         let (target_binding, source_binding) = request
             .owner_bindings()
@@ -41,58 +43,66 @@ impl<'runtime> MergeAccess<'runtime> {
             request: request.clone(),
             basis,
             target_delta: self.branch_commit_delta(
+                execution,
                 request.target_branch().clone(),
                 target_delta_commits.as_slice(),
-            ),
+            )?,
             source_delta: self.branch_commit_delta(
+                execution,
                 request.source_branch().clone(),
                 source_delta_commits.as_slice(),
-            ),
+            )?,
         })
     }
 
     #[cfg(test)]
     pub(crate) fn plan_history_scope_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: MergePlanningRequest,
     ) -> Result<HistoryScopedMergePlan, MergePlanningError> {
         let normalized_request = self
             .normalize_merge_planning_request(request)
             .map_err(MergePlanningError::from)?;
-        self.plan_history_scope(normalized_request)
+        self.plan_history_scope(execution, normalized_request)
     }
 
     fn branch_commit_delta(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch_id: crate::history::data::BranchId,
         commits: &[CommitId],
-    ) -> BranchCommitDelta {
+    ) -> Result<BranchCommitDelta, MergePlanningError> {
         let history = self.runtime.history();
         let mut touched_records = BTreeMap::new();
         for commit_id in commits {
-            if let Some(envelope) = history.commit_envelope(*commit_id) {
-                for target in envelope.touched_record_refs() {
-                    touched_records
-                        .entry(target)
-                        .or_insert_with(Vec::new)
-                        .push(*commit_id);
-                }
+            let envelope = history
+                .demand_commit_envelope(execution, *commit_id)
+                .map_err(MergePlanningError::Execution)?
+                .ok_or(MergePlanningError::MissingDeltaCommit {
+                    commit_id: *commit_id,
+                })?;
+            for target in envelope.touched_record_refs() {
+                touched_records
+                    .entry(target)
+                    .or_insert_with(Vec::new)
+                    .push(envelope.clone());
             }
         }
 
         let touched_records = touched_records
             .into_iter()
-            .map(|(target, commit_ids)| BranchTouchedRecordDelta {
+            .map(|(target, envelopes)| BranchTouchedRecordDelta {
                 target,
-                commit_ids: Arc::from(commit_ids),
+                envelopes: Arc::from(envelopes),
             })
             .collect::<Vec<_>>();
 
-        BranchCommitDelta {
+        Ok(BranchCommitDelta {
             branch_id,
             commits: Arc::from(commits.to_vec()),
             touched_records: Arc::from(touched_records),
-        }
+        })
     }
 
     fn branch_local_unique_commit_closure_by_commit_id_order(
@@ -112,8 +122,8 @@ impl<'runtime> MergeAccess<'runtime> {
             .filter(|commit_id| !merge_base_ancestors.contains(commit_id))
             .filter(|commit_id| {
                 history
-                    .commit_envelope(*commit_id)
-                    .map(|envelope| envelope.commit.branch_id == branch_id)
+                    .immutable_commit_receipt(*commit_id)
+                    .map(|receipt| receipt.branch_id == branch_id)
                     .unwrap_or(false)
             })
             .collect()

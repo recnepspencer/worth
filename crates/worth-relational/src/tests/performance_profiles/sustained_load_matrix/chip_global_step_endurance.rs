@@ -89,6 +89,7 @@ pub(super) fn certify_chip_global_step_endurance(
                 let artifact = runtime
                     .compiled_artifacts_authority()
                     .compile_execution_artifact(
+                        execution,
                         commit.commit_id,
                         vec![
                             PartitionId(930),

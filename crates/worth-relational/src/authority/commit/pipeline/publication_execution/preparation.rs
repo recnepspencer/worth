@@ -1,7 +1,7 @@
+mod preparation_denial;
 use std::sync::Arc;
 
 use super::super::artifact_execution::preparation::PublicationPreparation;
-use crate::authority::mutation::apply_adjacency_deltas;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::publication::bundle::PublicationStage;
@@ -10,15 +10,9 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::{CommitLog, TransactionCommitError};
 
 pub(super) struct PreparedPublicationPhase {
-    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublication,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -37,14 +31,7 @@ pub(super) struct PreparedPublicationPhase {
 }
 
 pub(super) struct PreparedPublicationCompletion {
-    pub(super) clone_mode: crate::storage::overlay::PartitionCloneMode,
-    pub(super) committed_partitions: std::collections::BTreeMap<
-        crate::identity::data::PartitionId,
-        (
-            crate::storage::overlay::PartitionState,
-            crate::storage::overlay::PartitionMutationJournal,
-        ),
-    >,
+    pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history: crate::mvcc::PreparedRelationalPublicationAccelerators,
     pub(super) validated_lineage_events: crate::runtime::ValidatedLineageEventBatch,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
@@ -73,7 +60,7 @@ impl PreparedPublicationPhase {
     }
 
     pub(super) fn reservation_count(&self) -> usize {
-        self.record_allocations.reservation_count()
+        self.mutation_identities.records.reservation_count()
     }
 
     pub(super) fn prepared_root(&self) -> &Arc<crate::branch::RelationalBranchRoot> {
@@ -94,14 +81,13 @@ impl PreparedPublicationPhase {
         let (next_cell, root, _envelope, prepared_history) =
             self.prepared_history.into_canonical_parts();
         let movement = crate::mvcc::PreparedCanonicalBranchMovement::new(
-            self.record_allocations,
+            self.mutation_identities,
             next_cell,
             root,
             self.canonical_publication_route,
         );
         let completion = PreparedPublicationCompletion {
-            clone_mode: self.clone_mode,
-            committed_partitions: self.committed_partitions,
+            mirror_publication: self.mirror_publication,
             prepared_history,
             validated_lineage_events: self.validated_lineage_events,
             lineage_nodes: self.lineage_nodes,
@@ -130,7 +116,8 @@ pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
     pub(super) commit_log: &'a mut CommitLog,
     pub(super) working_state: crate::storage::overlay::WorkingState,
-    pub(super) record_allocations: crate::runtime::PendingRecordAllocations,
+    pub(super) mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     pub(super) selected_branch_state: crate::branch::SelectedRelationalBranchState,
     pub(super) publication: PublicationPreparation,
     pub(super) version_id: VersionId,
@@ -156,7 +143,7 @@ pub(super) fn prepare_publication_phase(
         created_relations,
         commit_log,
         working_state,
-        record_allocations,
+        mutation_identities,
         selected_branch_state,
         publication,
         version_id,
@@ -172,7 +159,7 @@ pub(super) fn prepare_publication_phase(
         artifacts,
         changed_records,
         mut canonical_commit_envelope,
-        adjacency_deltas,
+        _adjacency_deltas,
         lineage_nodes,
         deferred_diagnostic_artifacts,
         target_schema_registry,
@@ -210,8 +197,6 @@ pub(super) fn prepare_publication_phase(
         None
     };
     let canonical_commit_envelope = Arc::new(canonical_commit_envelope);
-    let mut working_state = working_state;
-    apply_adjacency_deltas(&mut working_state, &adjacency_deltas, version_id);
     let clone_mode = working_state.clone_mode();
     let committed_partitions = working_state.into_partition_commits().1;
     runtime
@@ -247,12 +232,8 @@ pub(super) fn prepare_publication_phase(
             publication_schema_registry.as_ref(),
             output_positions,
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-            .with_commit_log(commit_log.clone())
+        .map_err(|denial| {
+            preparation_denial::transaction_error(denial, &branch_basis, commit_log.clone())
         })?;
     runtime
         .validate_reserved_lineage_events(canonical_commit_envelope.lineage_events())
@@ -269,7 +250,7 @@ pub(super) fn prepare_publication_phase(
     let canonical_publication_route = runtime
         .history
         .reserve_canonical_publication_route(
-            Arc::clone(&canonical_commit_envelope),
+            prepared_history.envelope_residency(),
             Arc::clone(prepared_history.root()),
         )
         .map_err(|detail| {
@@ -280,10 +261,22 @@ pub(super) fn prepare_publication_phase(
             .with_commit_log(commit_log.clone())
         })?;
 
+    let mirror_publication = runtime
+        .mirror_residency
+        .prepare_publication(
+            execution,
+            &runtime.services.symbols,
+            &branch_id,
+            prepared_history.root(),
+            clone_mode,
+            committed_partitions,
+        )
+        .map_err(|failure| {
+            crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+        })?;
     Ok(PreparedPublicationPhase {
-        record_allocations,
-        clone_mode,
-        committed_partitions,
+        mutation_identities,
+        mirror_publication,
         prepared_history,
         validated_lineage_events,
         lineage_nodes,

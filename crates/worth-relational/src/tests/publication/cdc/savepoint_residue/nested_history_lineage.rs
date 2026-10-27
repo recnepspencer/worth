@@ -12,7 +12,8 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     let target = create_entity(execution, &runtime, "target");
     let start_lineage = runtime
         .lineage_access()
-        .for_record(anchor)
+        .for_record(execution, anchor)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let checkpoint = checkpoint_for_schema_version(
@@ -146,20 +147,19 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
 
     assert_subscriber_stream_omits_detail(&runtime, checkpoint, "abandoned");
 
-    let direct_history =
-        runtime
-            .history()
-            .entity_aspect_history(&BranchId("main".to_string()), anchor, None);
-    let direct_traced = runtime.history().entity_aspect_history_with_trace(
-        &BranchId("main".to_string()),
-        anchor,
-        None,
-    );
+    let direct_history = runtime
+        .history()
+        .entity_aspect_history(execution, &BranchId("main".to_string()), anchor, None)
+        .unwrap();
+    let direct_traced = runtime
+        .history()
+        .entity_aspect_history_with_trace(execution, &BranchId("main".to_string()), anchor, None)
+        .unwrap();
     assert_eq!(direct_history.len(), 2);
     assert_eq!(direct_traced.aspect_history_digest().entry_count, 2);
     assert_direct_history_origin_invariants(&direct_history, RecordRef::Entity(anchor));
 
-    let lineage_traced = runtime.lineage_access().entity_aspect_history_with_trace(
+    let lineage_traced = runtime.lineage_access().entity_aspect_history_with_trace(execution,
         crate::facade::lineage::HistoricalResolutionRequest {
             branch_id: BranchId("main".to_string()),
             lineage_id: start_lineage,
@@ -167,7 +167,7 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
                 crate::facade::lineage::HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
         },
         None,
-    );
+    ).unwrap();
     let lineage_history = lineage_traced
         .history
         .as_ref()
@@ -200,7 +200,9 @@ fn nested_savepoint_abandoned_aspect_work_leaves_zero_patch_cdc_history_and_line
     assert_eq!(read.relations().len(), 1);
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert!(!envelope
         .lineage_decision_log()

@@ -7,7 +7,12 @@ pub enum RelationalReplayRetentionDenial {
 
 impl From<crate::execution::RelationalExecutionDenialCause> for RelationalReplayRetentionDenial {
     fn from(cause: crate::execution::RelationalExecutionDenialCause) -> Self {
-        Self::Request(cause)
+        match cause {
+            crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure) => {
+                Self::StorageUnavailable(failure)
+            }
+            cause => Self::Request(cause),
+        }
     }
 }
 

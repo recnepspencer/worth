@@ -5,6 +5,18 @@ use crate::execution::RelationalExecutionDenialCause as Cause;
 use worth_execution::{ChargedBytes, MapKernelContext, MapKernelFailure};
 use worth_foundational::PartitionIdentity;
 
+/// Discard provisional values and denials on a cold miss before loading the
+/// discovered footprint. All loads run under the original request.
+pub(crate) fn with_full_residency<T>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &crate::runtime::PartitionEdition,
+    symbols: &crate::runtime::RuntimeSymbolTable,
+    read: impl FnMut(&dyn crate::storage::overlay::PartitionAccess) -> Result<T, Cause>,
+) -> Result<T, Cause> {
+    crate::storage::residency::probe_full(execution, &source.with_symbol_admission(symbols), read)
+        .map_err(Cause::from)?
+}
+
 struct MaterializedRead<T> {
     value: T,
     owned_bytes: u64,

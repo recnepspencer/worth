@@ -3,14 +3,12 @@ use worth_foundational::facade::{
 };
 
 use crate::authority::mutation::canonical_deltas::{
-    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta,
-    EvaluatedAspectBinding,
+    AuthoritativePatchDeltaOperation, CanonicalAspectDeltaEvidence, EvaluatedAspectBinding,
 };
 use crate::identity::data::VersionId;
 use crate::storage::data::{RelationalFieldPresence, RelationalFieldRevision};
 use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
-use crate::symbols::data::StringInterner;
 use crate::transactions::data::RecordRef;
 
 /// Stamp owner-native field transitions on the same staged root that receives
@@ -18,16 +16,16 @@ use crate::transactions::data::RecordRef;
 /// checkpoint image version can carry their prior revisions.
 pub(super) fn write_field_versions_for_delta(
     staged: &mut WorkingState,
-    delta: &CanonicalRecordAspectDelta,
+    admitted: &super::delta_symbols::AdmittedDeltaSymbols<'_, '_>,
     version: VersionId,
-    symbols: &mut StringInterner,
 ) {
+    let delta = admitted.delta();
     for binding in &delta.evaluated_bindings {
         let fields = changed_fields(binding, delta.structural_change);
         if fields.is_empty() {
             continue;
         }
-        let aspect = symbols.intern(binding.aspect_key.as_str());
+        let aspect = admitted.aspect(&binding.aspect_key);
         match delta.target {
             RecordRef::Entity(entity) => {
                 let partition = staged.get_partition_mut(partition_of::<EntityRecordKind>(&entity));
@@ -40,7 +38,7 @@ pub(super) fn write_field_versions_for_delta(
                 };
                 for (field, presence) in fields {
                     revisions.insert(
-                        (aspect, symbols.intern(field.as_str())),
+                        (aspect, admitted.field(&field)),
                         RelationalFieldRevision::new(version, presence),
                     );
                 }
@@ -57,7 +55,7 @@ pub(super) fn write_field_versions_for_delta(
                 };
                 for (field, presence) in fields {
                     revisions.insert(
-                        (aspect, symbols.intern(field.as_str())),
+                        (aspect, admitted.field(&field)),
                         RelationalFieldRevision::new(version, presence),
                     );
                 }

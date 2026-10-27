@@ -1,8 +1,6 @@
-use crate::authority::mutation::aspect_versions::write_aspect_versions_for_delta;
 use crate::authority::mutation::canonical_deltas::{
     authoritative_patch_with_delta_supplements, canonical_delta_for_mutation,
 };
-use crate::authority::mutation::field_versions::write_field_versions_for_delta;
 use crate::authority::mutation::patch_details::{
     patch_detail_for_entity, patch_detail_for_relation, EntityPatchDetailKind,
     RelationPatchDetailKind,
@@ -19,28 +17,12 @@ pub(crate) fn record_publication_effect_for_mutation(
     change: RecordMutation,
     workspace: &mut MutationWorkspace<'_>,
     version_id: VersionId,
-) -> Result<(), crate::transactions::data::CommitConflict> {
+) -> Result<(), super::MutationApplyDenial> {
     let canonical_delta = canonical_delta_for_mutation(&change, workspace)
         .map_err(|error| error.to_commit_conflict())?;
-    workspace
-        .with_context(|context| {
-            write_aspect_versions_for_delta(
-                context.state,
-                &canonical_delta,
-                version_id,
-                context.symbols,
-            )?;
-            write_field_versions_for_delta(
-                context.state,
-                &canonical_delta,
-                version_id,
-                context.symbols,
-            );
-            Ok::<(), crate::authority::mutation::canonical_deltas::CanonicalDeltaError>(())
-        })
-        .map_err(|error| error.to_commit_conflict())?;
+    workspace.write_delta_revision_stamps(&canonical_delta, version_id)?;
 
-    match change {
+    let publication = match change {
         RecordMutation::EntityCreated {
             entity_id,
             authoritative_patch,
@@ -204,7 +186,8 @@ pub(crate) fn record_publication_effect_for_mutation(
                 authoritative_patch,
             )
         }
-    }
+    };
+    publication.map_err(Into::into)
 }
 
 fn record_entity_publication_fragment(

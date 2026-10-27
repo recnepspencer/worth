@@ -101,7 +101,10 @@ pub(in crate::domain_computation::primary_graph::application_query) fn managed_r
     match cause {
         Cause::SnapshotUnavailable => Ok(Denial::Read(plan.snapshot_unavailable_denial())),
         Cause::IndexNotInstalled(_) => Ok(Denial::Read(plan.predicate_unavailable_denial())),
-        Cause::RequestStop(stop) => Err(stop),
+        Cause::RequestStop(cause) => match cause.as_kernel_stop() {
+            Some(stop) => Err(stop),
+            None => Ok(Denial::Read(relational_read_denial(cause, plan.name))),
+        },
         Cause::MutationSession
         | Cause::ForeignBasis
         | Cause::ForeignGraph

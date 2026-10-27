@@ -53,7 +53,8 @@ fn main_advances_before_child_read_keeps_child_snapshot_on_fork_root() {
     let child_snapshot_inspection = world
         .runtime
         .read_truth()
-        .inspect_snapshot(&child_snapshot)
+        .inspect_snapshot(execution, &child_snapshot)
+        .expect("snapshot inspection keeps the original execution request")
         .expect("child snapshot remains inspectable through the production read path");
     assert_eq!(
         child_snapshot_inspection.branch_id,

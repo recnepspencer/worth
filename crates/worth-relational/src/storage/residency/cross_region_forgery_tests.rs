@@ -19,6 +19,13 @@ struct ForgedSource {
 }
 
 impl RelationalDurableColdSource for ForgedSource {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,

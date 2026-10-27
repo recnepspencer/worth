@@ -87,7 +87,8 @@ fn reconstruct(n: usize, memory: u64, succeeds: bool) -> u64 {
         ));
         assert!(runtime
             .index_access()
-            .latest_generation(index, &BranchId("main".into()))
+            .read_latest_generation(&execution, index, &BranchId("main".into()))
+            .unwrap()
             .is_none());
     }
     release_test_commit_snapshot(&runtime, &advanced);

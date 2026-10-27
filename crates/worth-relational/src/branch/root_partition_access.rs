@@ -3,8 +3,44 @@ use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
 
 impl PartitionAccess for RelationalBranchRootState {
+    fn probe_full_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        self.root.probe_full_partition(id)
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.root.demand_full_partition(execution, id)
+    }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.root.partition_state(partition_id)
+    }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRootState {
+    fn get_current_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.root.get_current_partition(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: crate::identity::data::PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.root.probe_head_partition(id)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: crate::identity::data::PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.root.demand_head_partition(execution, id)
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {
@@ -29,8 +65,46 @@ impl PartitionAccess for RelationalBranchRootState {
 }
 
 impl PartitionAccess for RelationalBranchRoot {
+    fn probe_full_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        self.probe_full_region(id)
+    }
+
+    fn demand_full_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.demand_full_region_cached(execution, id)
+    }
     fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
         self.partition_state(partition_id)
+    }
+}
+
+impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRoot {
+    fn get_current_partition(
+        &self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        // Fresh admission belongs to probe_head_partition; a paid read consumes
+        // the immutable counted custody already retained by this root.
+        self.accepted_head_region_view(id)
+    }
+    fn probe_head_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        self.probe_head_region(id)
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        self.demand_region_head_cached(execution, id)
     }
 
     fn partition_ids(&self) -> Vec<PartitionId> {

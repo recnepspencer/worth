@@ -25,8 +25,26 @@ pub(super) fn may_carry_metadata(
             .iter()
             .flat_map(|bucket| &bucket.pages)
             .all(|page| members.contains(page))
+        && prior
+            .lineage_events
+            .iter()
+            .all(|page| members.contains(&page.member))
     {
         return Ok(true);
+    }
+    if !basis.lineage_event_pages_resident {
+        let missing = prior
+            .lineage_events
+            .iter()
+            .find(|page| !members.contains(&page.member));
+        if let Some(page) = missing {
+            return Err(unavailable(
+                crate::storage::data::RelationalStorageSubject::Lineage {
+                    first: crate::identity::data::LineageId(page.first_node),
+                    last: crate::identity::data::LineageId(page.last_node),
+                },
+            ));
+        }
     }
     if !basis.symbol_pages_resident {
         return Err(unavailable(
@@ -40,7 +58,7 @@ pub(super) fn may_carry_metadata(
         let nodes = basis
             .lineage_nodes
             .iter()
-            .filter(|node| (page.first..=page.last).contains(&node.lineage_id.0))
+            .filter(|node| page.contains(node.lineage_id.0))
             .collect::<Vec<_>>();
         let encoded = member_frame::encode(MemberKind::Lineage, &nodes).map_err(|_| {
             unavailable(crate::storage::data::RelationalStorageSubject::Lineage {

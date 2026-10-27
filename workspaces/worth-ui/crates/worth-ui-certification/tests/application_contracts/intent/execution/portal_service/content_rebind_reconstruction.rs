@@ -68,7 +68,7 @@ fn native_content_retry_after_reconstruction_preserves_the_open_portal_projectio
         .publish_source(
             worth_ui::facade::query_binding::WorthUiScalarProjectionSourceRecord::new("ONLINE", 1)
                 .expect("the successor source record is valid"),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .expect("the Query owner advances to a real successor fact")
         .into_projection_observation()

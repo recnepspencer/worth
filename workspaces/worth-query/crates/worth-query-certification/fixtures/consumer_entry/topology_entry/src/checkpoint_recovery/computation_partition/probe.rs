@@ -101,9 +101,8 @@ impl WorthQueryPartitionedComputationOwner<CheckpointSchema, PlanarFinalOutputFe
         let mut seen = vec![partition.key().entry];
         for entry in partition.gathered() {
             checkpoint.advance(1)?;
-            match entry.fault {
-                Some(RegionFault::Probe(ProbeFault::PoisonReducer)) => seen.push(POISON),
-                _ => {}
+            if let Some(RegionFault::Probe(ProbeFault::PoisonReducer)) = entry.fault {
+                seen.push(POISON);
             }
         }
         Ok(seen)

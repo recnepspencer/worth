@@ -1,16 +1,81 @@
 //! Faults cross the production manifest recovery and transaction read doors.
+#[path = "cold_source.rs"]
+mod cold_source;
+use cold_source::MemberSource;
+#[path = "cold_candidates.rs"]
+mod cold_candidates;
+#[path = "cold_current_matrix.rs"]
+mod cold_current_matrix;
+#[path = "cold_envelope_lifetime.rs"]
+mod cold_envelope_lifetime;
+#[path = "cold_envelope_matrix.rs"]
+mod cold_envelope_matrix;
+#[path = "cold_envelopes.rs"]
+mod cold_envelopes;
+#[path = "cold_historical_index_matrix.rs"]
+mod cold_historical_index_matrix;
+#[path = "cold_index_build_door.rs"]
+mod cold_index_build_door;
+#[path = "cold_index_checkpoint_door.rs"]
+mod cold_index_checkpoint_door;
+#[path = "cold_index_custody.rs"]
+mod cold_index_custody;
+#[path = "cold_index_fixture.rs"]
+mod cold_index_fixture;
+#[path = "cold_index_matrix.rs"]
+mod cold_index_matrix;
+#[path = "cold_invariants.rs"]
+mod cold_invariants;
+#[path = "cold_lineage_custody.rs"]
+mod cold_lineage_custody;
+#[path = "cold_lineage_event_fixture.rs"]
+mod cold_lineage_event_fixture;
+#[path = "cold_lineage_event_integrity.rs"]
+mod cold_lineage_event_integrity;
+#[path = "cold_lineage_event_matrix.rs"]
+mod cold_lineage_event_matrix;
+#[path = "cold_lineage_events.rs"]
+mod cold_lineage_events;
+#[path = "cold_lineage_fixture.rs"]
+mod cold_lineage_fixture;
+#[path = "cold_lineage_matrix.rs"]
+mod cold_lineage_matrix;
+#[path = "cold_lineage_nodes.rs"]
+mod cold_lineage_nodes;
+#[path = "cold_merge_history_matrix.rs"]
+mod cold_merge_history_matrix;
+#[path = "cold_merges.rs"]
+mod cold_merges;
+#[path = "cold_observation_reads.rs"]
+mod cold_observation_reads;
+#[path = "cold_pins.rs"]
+mod cold_pins;
+#[path = "cold_projection_scan_door.rs"]
+mod cold_projection_scan_door;
+#[path = "cold_read_door.rs"]
+mod cold_read_door;
+#[path = "cold_read_matrix.rs"]
+mod cold_read_matrix;
+#[path = "cold_reserved_checkpoint.rs"]
+mod cold_reserved_checkpoint;
+#[path = "cold_symbols.rs"]
+mod cold_symbols;
+#[path = "cold_tail_matrix.rs"]
+mod cold_tail_matrix;
+#[path = "cold_visibility.rs"]
+mod cold_visibility;
+#[path = "replay_pin_concurrency.rs"]
+mod replay_pin_concurrency;
 use crate::durability::data::{
     RecoveryFailureClass, RecoveryVerificationMode, RelationalCheckpointArtifactPolicy,
     RelationalCheckpointMember, RelationalRecoveryStop,
 };
 use crate::durability::medium::{
-    RelationalDurableCheckpointSource, RelationalDurableColdSource, RelationalDurableMemberLocator,
+    RelationalDurableCheckpointSource, RelationalDurableMemberLocator,
     RelationalDurableRecoverySource,
 };
-use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::tests::support::*;
-use std::collections::BTreeMap;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Arc,
@@ -19,107 +84,11 @@ use std::sync::{
 #[path = "cold_isolation.rs"]
 mod isolation;
 
-#[derive(Debug)]
-struct MemberSource {
-    members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
-    commits: BTreeMap<PatchStreamPosition, Vec<u8>>,
-    damaged: AtomicBool,
-    reads: AtomicUsize,
-}
-
-impl RelationalDurableColdSource for MemberSource {
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
-        self.reads.fetch_add(1, Ordering::Relaxed);
-        let bytes = self.members.get(&locator).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        let mut bytes = bytes.to_vec();
-        if self.damaged.load(Ordering::Relaxed) && bytes.starts_with(b"WORTH-REL-REG4\n") {
-            bytes[0] ^= 1;
-        }
-        Ok(bytes)
-    }
-    fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
-        let bytes = self.commits.get(&position).ok_or(Cause::MissingMember)?;
-        if bytes.len() as u64 > limit {
-            return Err(Cause::LimitExceeded {
-                length: bytes.len() as u64,
-                limit,
-            });
-        }
-        Ok(bytes.clone())
-    }
-}
-
-fn fixture(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    with_tail: bool,
-) -> (
-    RelationalDurableRecoverySource,
-    Arc<MemberSource>,
-    crate::identity::data::EntityId,
-) {
-    let runtime = durable_runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "member-before");
-    let native = runtime
-        .durability_authority()
-        .native_checkpoint_with_policy(
-            execution.allocation_policy(),
-            RelationalCheckpointArtifactPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
-        )
-        .unwrap();
-    let covered = native.covered_position().unwrap();
-    let transitions = native.covered_branch_transitions().unwrap();
-    if with_tail {
-        update_entity_and_release_snapshot(execution, &runtime, entity, "member-after");
-    }
-    let artifacts = attached_test_medium(&runtime).offered();
-    let tail = artifacts
-        .iter()
-        .filter(|artifact| artifact.position() > covered)
-        .cloned()
-        .collect();
-    let source = Arc::new(MemberSource {
-        members: native
-            .members()
-            .iter()
-            .map(|member| match member {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                RelationalCheckpointMember::Carried { .. } => {
-                    panic!("first capture owns every member")
-                }
-            })
-            .collect(),
-        commits: artifacts
-            .iter()
-            .map(|artifact| (artifact.position(), artifact.as_bytes().to_vec()))
-            .collect(),
-        damaged: AtomicBool::new(true),
-        reads: AtomicUsize::new(0),
-    });
-    let recovery = RelationalDurableRecoverySource::new(
-        Some(RelationalDurableCheckpointSource::new(
-            covered,
-            transitions,
-            native,
-        )),
-        tail,
-        Vec::new(),
-        source.clone(),
-    );
-    (recovery, source, entity)
-}
+#[path = "cold_recovery_fixture.rs"]
+mod cold_recovery_fixture;
+use cold_recovery_fixture::{
+    checkpoint_fixture, fixture, fixture_from_runtime, fixture_with_history,
+};
 
 #[test]
 fn a_damaged_cold_member_is_a_sticky_typed_transaction_read_refusal() {
@@ -275,6 +244,11 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
             .collect(),
         damaged: AtomicBool::new(false),
         reads: AtomicUsize::new(0),
+        member_reads: std::sync::Mutex::new(Vec::new()),
+        commit_reads: std::sync::Mutex::new(Vec::new()),
+        commits_damaged: AtomicBool::new(false),
+        failed_member: std::sync::Mutex::new(None),
+        failures: std::sync::Mutex::new(Default::default()),
     });
     let recovery = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

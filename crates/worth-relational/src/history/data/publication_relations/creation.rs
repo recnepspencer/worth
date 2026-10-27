@@ -2,14 +2,14 @@
 use super::{charge, writes, CanonicalCommitEnvelope, CanonicalRequiredOutputOrigin, Stop};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
 use crate::publication::patch::data::RecordStructuralChange;
-use crate::storage::overlay::{relation_partition_source_for_slot, PartitionAccess};
+use crate::storage::overlay::{current_relation_partition_source_for_slot, CurrentPartitionAccess};
 use crate::transactions::data::RecordRef;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn validate(
-    state: &dyn PartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelope>,
@@ -24,7 +24,7 @@ pub(super) fn validate(
 
 /// Cold claims require ownership at the actual creation, not merely current incidence.
 pub(in super::super) fn validate_owned(
-    state: &dyn PartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     lookup: &mut impl FnMut(VersionId) -> Option<Arc<CanonicalCommitEnvelope>>,
@@ -37,7 +37,7 @@ pub(in super::super) fn validate_owned(
 }
 
 fn ownership_at_creation(
-    state: &dyn PartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     id: RelationId,
     selected: &CanonicalRequiredOutputOrigin,
     current: Option<&CanonicalCommitEnvelope>,
@@ -46,30 +46,22 @@ fn ownership_at_creation(
 ) -> Result<bool, Stop> {
     charge(context, 3)?;
     let (_, partition) =
-        relation_partition_source_for_slot(state, id.partition_id, id.slot_index())
+        current_relation_partition_source_for_slot(state, id.partition_id, id.slot_index())
             .ok_or("relation creation partition absent")?;
     let row = partition
-        .relation_arena
+        .relation_arena()
         .get(&id)
         .filter(|row| row.is_live())
         .ok_or("relation creation generation absent")?;
     let version = partition
-        .relation_arena
+        .relation_arena()
         .created_at_for_slot(id.slot_index())
         .ok_or("relation native creation position absent")?;
-    let history = partition
-        .relation_arena
-        .metadata_history_at(id.slot_index())
-        .ok_or("relation metadata history absent")?;
-    let latest = history
-        .get(
-            history
-                .len()
-                .checked_sub(1)
-                .ok_or("relation write position absent")?,
-        )
-        .ok_or("relation write metadata absent")?
-        .effective_at;
+    let metadata = partition
+        .relation_arena()
+        .current_metadata_at(id.slot_index())
+        .ok_or("relation current metadata absent")?;
+    let latest = metadata.effective_at;
     if latest != version {
         let held;
         charge(context, 1)?;
@@ -84,28 +76,15 @@ fn ownership_at_creation(
             return Err("relation latest native write is unexplained".into());
         }
     }
-    // Birth metadata may be trimmed; actual canonical Created endpoint operations
-    // can supply those native facts. A membership claim never supplies its own proof.
-    // Native metadata is indexed by version; never search canonical ancestry for a convenient create.
-    let (mut low, mut high) = (0, history.len());
-    while low < high {
-        charge(context, 1)?;
-        let middle = low + (high - low) / 2;
-        if history
-            .get(middle)
-            .ok_or("relation metadata absent")?
-            .effective_at
-            < version
-        {
-            low = middle + 1;
-        } else {
-            high = middle;
-        }
-    }
-    let birth = history
-        .get(low)
-        .filter(|m| m.effective_at == version && m.generation == id.generation_value())
-        .map(|m| (m.kind_id, m.endpoints.source, m.endpoints.target));
+    // The exact creation position selects its canonical allocation and Created
+    // operation below. Head can corroborate native metadata only when creation
+    // is still current; historical payload is never a preparation prerequisite.
+    let birth = (metadata.effective_at == version && metadata.generation == id.generation_value())
+        .then_some((
+            metadata.kind_id,
+            metadata.endpoints.source,
+            metadata.endpoints.target,
+        ));
     let held;
     charge(context, 1)?;
     let envelope = match current.filter(|e| e.commit.version_id == version) {

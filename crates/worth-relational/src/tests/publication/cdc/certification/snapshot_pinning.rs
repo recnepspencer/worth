@@ -132,7 +132,7 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
         Some("right-rewrite-47".into())
     );
 
-    let retention = pinned_runtime.retention().inspect_plan();
+    let retention = pinned_runtime.retention().inspect_plan(execution).unwrap();
     assert!(retention.active_snapshot_count >= 2);
     assert_eq!(retention.snapshot_pinned_entities, 0);
     assert!(pinned_runtime

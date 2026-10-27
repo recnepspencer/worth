@@ -37,14 +37,14 @@ fn retention_plan_reports_active_root_obligations_without_per_record_snapshot_pi
     };
     let deleted_relation_snapshot = runtime.visibility_authority().snapshot();
 
-    let plan = runtime.retention().inspect_plan();
+    let plan = runtime.retention().inspect_plan(execution).unwrap();
 
     assert!(plan.active_snapshot_count >= 4);
     assert_eq!(plan.snapshot_pinned_entities, 0);
     assert_eq!(plan.snapshot_pinned_relations, 0);
     assert!(plan.reclaimable_entities >= 1);
 
-    let _maintenance = runtime.retention().run_pass();
+    let _maintenance = runtime.retention().run_pass(execution).unwrap();
     let retained_entity_view = runtime
         .read_truth()
         .read_snapshot(&entity_created_snapshot, execution)
@@ -97,8 +97,8 @@ fn retention_plan_turns_deleted_records_reclaimable_after_snapshot_release() {
         .release_snapshot(&deleted_snapshot)
         .is_ok());
 
-    let plan = runtime.retention().inspect_plan();
-    let pass = runtime.retention().run_pass();
+    let plan = runtime.retention().inspect_plan(execution).unwrap();
+    let pass = runtime.retention().run_pass(execution).unwrap();
 
     assert_eq!(plan.active_snapshot_count, 0);
     assert_eq!(plan.snapshot_pinned_entities, 0);
@@ -145,13 +145,13 @@ fn lagging_sibling_root_survives_without_per_record_branch_pins() {
         .release_snapshot(&deleted.snapshot)
         .is_ok());
 
-    let plan = runtime.retention().inspect_plan();
+    let plan = runtime.retention().inspect_plan(execution).unwrap();
 
     assert_eq!(plan.snapshot_pinned_entities, 0);
     assert_eq!(plan.snapshot_pinned_relations, 0);
     assert_eq!(plan.branch_pinned_entities, 0);
     assert_eq!(plan.branch_pinned_relations, 0);
-    let _ = runtime.retention().run_pass();
+    let _ = runtime.retention().run_pass(execution).unwrap();
     let feature = runtime
         .branch_identity(&BranchId("feature".to_owned()))
         .unwrap();
@@ -206,10 +206,12 @@ fn retention_inspection_keeps_legacy_branch_pin_counts_zero() {
 
     let inspection = runtime.inspect_what_happened();
     let entity_retention = inspection
-        .inspect_record_retention(RecordRef::Entity(source_entity))
+        .inspect_record_retention(execution, RecordRef::Entity(source_entity))
+        .unwrap()
         .expect("deleted entity retention");
     let relation_retention = inspection
-        .inspect_record_retention(RecordRef::Relation(relation))
+        .inspect_record_retention(execution, RecordRef::Relation(relation))
+        .unwrap()
         .expect("retained relation retention");
 
     assert_eq!(entity_retention.pins.snapshot_pins, 0);
@@ -255,14 +257,14 @@ fn retention_plan_reports_explicit_replay_pins_until_released() {
         .retain_version_for_replay(execution, created.version_id)
         .unwrap());
 
-    let pinned = runtime.retention().inspect_plan();
+    let pinned = runtime.retention().inspect_plan(execution).unwrap();
     assert!(pinned.replay_pinned_entities >= 1);
     assert_eq!(pinned.reclaimable_entities, 0);
 
     assert!(runtime
         .history_authority()
         .release_version_replay_retention(created.version_id));
-    let released = runtime.retention().inspect_plan();
+    let released = runtime.retention().inspect_plan(execution).unwrap();
     assert_eq!(released.replay_pinned_entities, 0);
     assert!(released.reclaimable_entities >= 1);
 }
@@ -339,7 +341,7 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
         .retain_version_for_replay(execution, created.version_id)
         .unwrap());
 
-    let pinned = runtime.retention().inspect_plan();
+    let pinned = runtime.retention().inspect_plan(execution).unwrap();
     let diagnostics = runtime.publication().diagnostics();
     let retention_artifacts = diagnostics.by_scope(DiagnosticsScope::Retention);
     let latest_retention = retention_artifacts.last().unwrap();
@@ -367,7 +369,7 @@ fn retention_plan_reports_explicit_replay_pins_for_deleted_relations_until_relea
     assert!(runtime
         .history_authority()
         .release_version_replay_retention(created.version_id));
-    let released = runtime.retention().inspect_plan();
+    let released = runtime.retention().inspect_plan(execution).unwrap();
     assert_eq!(released.replay_pinned_relations, 0);
     assert_eq!(released.branch_pinned_relations, 0);
 }

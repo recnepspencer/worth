@@ -10,7 +10,7 @@ use crate::merge::data::{
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::RelationalReadView;
 
-use super::contexts::{PolicyReadViewContext, PolicyReadViewIndex};
+use super::contexts::{PolicyBaseReadViewContext, PolicyReadViewContext, PolicyReadViewIndex};
 use super::decisions::{
     aggregate_record_resolution, decision_boundary_for_aspect, effective_merge_policies_for_record,
     ownership_surface_for_policies, summarize_policy_records,
@@ -27,8 +27,9 @@ pub(super) fn resolve_policy_scope(
 ) -> Result<PolicyResolvedMergePlan, MergePlanningError> {
     let history = runtime.history();
     let base_envelope = history
-        .commit_envelope(causal_plan.basis.merge_base.commit.commit_id)
-        .ok_or(MergePlanningError::MissingMergeBaseEnvelope {
+        .demand_commit_envelope(execution, causal_plan.basis.merge_base.commit.commit_id)
+        .map_err(MergePlanningError::Execution)?
+        .ok_or(MergePlanningError::MissingMergeBaseCommit {
             commit_id: causal_plan.basis.merge_base.commit.commit_id,
         })?;
     let source_view = runtime
@@ -64,6 +65,10 @@ pub(super) fn resolve_policy_scope(
         .iter()
         .map(|annotation| (annotation.record.clone(), annotation))
         .collect::<BTreeMap<_, _>>();
+    let mut record_base_envelopes = BTreeMap::<
+        crate::history::data::CommitId,
+        Arc<crate::history::data::CanonicalCommitEnvelope>,
+    >::new();
     let mut record_base_views =
         BTreeMap::<crate::history::data::CommitId, RelationalReadView>::new();
     let mut record_base_view_indices =
@@ -88,17 +93,29 @@ pub(super) fn resolve_policy_scope(
                 annotation,
                 causal_plan.basis.merge_base.commit.commit_id,
             );
+            let record_base_envelope =
+                if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {
+                    base_envelope.clone()
+                } else {
+                    match record_base_envelopes.entry(base_commit_id) {
+                        std::collections::btree_map::Entry::Occupied(entry) => entry.get().clone(),
+                        std::collections::btree_map::Entry::Vacant(entry) => entry
+                            .insert(
+                                history
+                                    .demand_commit_envelope(execution, base_commit_id)
+                                    .map_err(MergePlanningError::Execution)?
+                                    .ok_or(MergePlanningError::MissingMergeBaseCommit {
+                                        commit_id: base_commit_id,
+                                    })?,
+                            )
+                            .clone(),
+                    }
+                };
             let record_base_view =
                 if base_commit_id == causal_plan.basis.merge_base.commit.commit_id {
                     &base_view
                 } else {
-                    let version_id = history
-                        .commit_envelope(base_commit_id)
-                        .ok_or(MergePlanningError::MissingMergeBaseEnvelope {
-                            commit_id: base_commit_id,
-                        })?
-                        .commit
-                        .version_id;
+                    let version_id = record_base_envelope.commit.version_id;
                     match record_base_views.entry(base_commit_id) {
                         std::collections::btree_map::Entry::Occupied(entry) => entry.into_mut(),
                         std::collections::btree_map::Entry::Vacant(entry) => entry.insert(
@@ -117,8 +134,11 @@ pub(super) fn resolve_policy_scope(
                         .entry(base_commit_id)
                         .or_insert_with(|| PolicyReadViewIndex::new(record_base_view))
                 };
-            let record_base_view_context =
-                PolicyReadViewContext::new(record_base_view, record_base_view_index);
+            let record_base_view_context = PolicyBaseReadViewContext::new(
+                record_base_view,
+                record_base_view_index,
+                &record_base_envelope,
+            );
             let aspect_resolutions = resolve_aspects_for_record(
                 runtime,
                 record,
@@ -190,7 +210,7 @@ fn resolve_aspects_for_record(
     base_commit_id: crate::history::data::CommitId,
     source_view: &PolicyReadViewContext<'_>,
     target_view: &PolicyReadViewContext<'_>,
-    base_view: &PolicyReadViewContext<'_>,
+    base_view: &PolicyBaseReadViewContext<'_>,
 ) -> Result<Vec<AspectPolicyResolutionRecord>, MergePlanningError> {
     let Some(lowered_plan) = lowered_plan_for_record(runtime, record) else {
         return Ok(Vec::new());
@@ -272,7 +292,7 @@ fn policy_value_basis_for_aspect(
     base_commit_id: crate::history::data::CommitId,
     source_view: &PolicyReadViewContext<'_>,
     target_view: &PolicyReadViewContext<'_>,
-    base_view: &PolicyReadViewContext<'_>,
+    base_view: &PolicyBaseReadViewContext<'_>,
 ) -> Option<super::value_strategy::PolicyAspectValueBasis> {
     if !matches!(
         applied_policy,
@@ -286,7 +306,6 @@ fn policy_value_basis_for_aspect(
         | Err(ScalarPolicyBindingDenial::InvalidBuiltInPolicyValueShape) => return None,
     };
     let basis = resolve_policy_aspect_value_basis(
-        runtime,
         record,
         classification,
         binding,

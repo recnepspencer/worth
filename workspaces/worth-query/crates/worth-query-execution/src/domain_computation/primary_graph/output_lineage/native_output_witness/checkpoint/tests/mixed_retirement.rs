@@ -46,6 +46,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
+            let execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 let before = snapshot(runtime);
                 let prepare = || {
@@ -88,7 +89,9 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     "matching entity and revisions cannot erase a retirement posture"
                 );
                 changed.roles[1].posture = WorthQueryApplicationOutputPosture::Retire;
-                let metadata = retirement::native_metadata(runtime, &committed, retired).unwrap();
+                let metadata = retirement::native_metadata(runtime, &committed, retired, execution)
+                    .unwrap()
+                    .unwrap();
                 assert_ne!(metadata.created_at, metadata.deleted_at);
                 changed.roles[1].retirement.as_mut().unwrap().created_at = metadata.deleted_at;
                 assert!(
@@ -98,20 +101,25 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 assert_eq!(metadata.deleted_at, committed.version_id());
                 assert!(runtime
                     .read_truth()
-                    .exact_snapshot_live_entity_kind(&committed, retired)
+                    .read_exact_snapshot_live_entity_kind(execution, &committed, retired)
+                    .unwrap()
                     .is_none());
                 assert_eq!(
                     runtime
                         .read_truth()
-                        .exact_snapshot_live_entity_kind(&committed, live),
+                        .read_exact_snapshot_live_entity_kind(execution, &committed, live)
+                        .unwrap(),
                     Some(metadata.kind)
                 );
-                assert!(witness.unchanged_in(runtime, &committed).unwrap());
-                assert!(!witness.unchanged_in(runtime, &before).unwrap());
+                assert!(witness
+                    .unchanged_in(runtime, &committed, execution)
+                    .unwrap());
+                assert!(!witness.unchanged_in(runtime, &before, execution).unwrap());
                 assert!(!witness
                     .unchanged_in(
                         runtime,
-                        foreign_selected.application_basis().snapshot_handle()
+                        foreign_selected.application_basis().snapshot_handle(),
+                        execution
                     )
                     .unwrap());
 
@@ -192,7 +200,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 change_label(request_execution, runtime, live, label.clone());
                 let later = snapshot(runtime);
                 assert_eq!(
-                    retirement::native_metadata(runtime, &later, retired),
+                    retirement::native_metadata(runtime, &later, retired, execution).unwrap(),
                     Some(metadata),
                     "original tuple persists at later observations"
                 );
@@ -201,7 +209,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                     "later version cannot issue an old retirement anew"
                 );
                 assert!(
-                    !witness.unchanged_in(runtime, &later).unwrap(),
+                    !witness.unchanged_in(runtime, &later, execution).unwrap(),
                     "live aspects still invalidate the mixed proof"
                 );
                 publish(
@@ -219,16 +227,18 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
                 );
                 let aba = snapshot(runtime);
                 assert!(
-                    !witness.unchanged_in(runtime, &aba).unwrap(),
+                    !witness.unchanged_in(runtime, &aba, execution).unwrap(),
                     "same-value ABA keeps its changed revision"
                 );
                 assert!(
-                    witness.unchanged_in(runtime, &committed).unwrap(),
+                    witness
+                        .unchanged_in(runtime, &committed, execution)
+                        .unwrap(),
                     "the original held native observation remains exact after ABA"
                 );
                 runtime.snapshots().release_snapshot(&aba).unwrap();
                 assert!(
-                    !witness.unchanged_in(runtime, &aba).unwrap(),
+                    !witness.unchanged_in(runtime, &aba, execution).unwrap(),
                     "released basis cannot authorize a witness"
                 );
                 for snapshot in [&before, &committed, &later] {

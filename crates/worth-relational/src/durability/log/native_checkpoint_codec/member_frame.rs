@@ -12,6 +12,7 @@ pub(crate) enum MemberKind {
     Symbols = 0,
     Lineage = 1,
     DerivedIndex = 2,
+    LineageEvents = 3,
 }
 
 pub(crate) fn encode(

@@ -31,24 +31,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         )
     }
 
-    pub(crate) fn authoritative_entity_record_at_version(
-        &self,
-        entity_id: crate::identity::data::EntityId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<EntityReadRecord> {
-        let state = self.runtime.storage_access().current_edition();
-        self.authoritative_entity_record_for_id_at_version(&state, entity_id, version_id)
-    }
-
-    pub(crate) fn authoritative_relation_record_at_version(
-        &self,
-        relation_id: crate::identity::data::RelationId,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<RelationReadRecord> {
-        let state = self.runtime.storage_access().current_edition();
-        self.authoritative_relation_record_for_id_at_version(&state, relation_id, version_id)
-    }
-
     pub(crate) fn authoritative_entity_record_for_id_at_version(
         &self,
         state: &(impl PartitionAccess + ?Sized),

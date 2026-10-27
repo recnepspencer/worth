@@ -272,7 +272,8 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     assert_eq!(
         runtime
             .index_access()
-            .latest_generation(index.index_id, &request.branch_id)
+            .read_latest_generation(execution, index.index_id, &request.branch_id)
+            .unwrap()
             .expect("earlier successful generation remains")
             .generation_id,
         latest_generation

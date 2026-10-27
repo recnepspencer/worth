@@ -26,7 +26,7 @@ struct FakeHistorySource {
 }
 
 impl CommitEnvelopeSource for FakeHistorySource {
-    fn commit_envelope(&self, commit_id: CommitId) -> Option<CanonicalCommitEnvelope> {
+    fn resident_commit_envelope(&self, commit_id: CommitId) -> Option<CanonicalCommitEnvelope> {
         self.envelopes
             .get(&commit_id)
             .map(|envelope| envelope.as_ref().clone())

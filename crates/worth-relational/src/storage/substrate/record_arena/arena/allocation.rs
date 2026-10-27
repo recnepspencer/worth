@@ -1,5 +1,6 @@
 use super::payload_allocation::{
-    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, metadata_history_bytes,
+    aspect_version_bytes, diagnostic_enrichment_bytes, field_revision_bytes, history_prefix_bytes,
+    metadata_history_bytes,
 };
 use super::{RecordArena, RecordKind};
 
@@ -37,6 +38,8 @@ impl<K: RecordKind> RecordArena<K> {
             self.lifecycle.allocation_bytes(),
             self.kind_ids.allocation_bytes(),
             self.metadata_history.allocation_bytes(),
+            self.history_prefixes.allocation_bytes(),
+            self.history_prefixes.iter().map(history_prefix_bytes).sum(),
             self.created_at.allocation_bytes(),
             self.retired_at.allocation_bytes(),
             self.extra.allocation_bytes(),

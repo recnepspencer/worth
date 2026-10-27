@@ -26,14 +26,17 @@ fn lineage_branch_divergence_is_queryable() {
         "feature",
         BranchId("feature".to_string()),
     );
-    let divergence = runtime.lineage_access().divergence_between_branches(
-        execution,
-        LineageDivergenceRequest {
-            left_branch: BranchId("main".to_string()),
-            right_branch: BranchId("feature".to_string()),
-            traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-        },
-    );
+    let divergence = runtime
+        .lineage_access()
+        .divergence_between_branches(
+            execution,
+            LineageDivergenceRequest {
+                left_branch: BranchId("main".to_string()),
+                right_branch: BranchId("feature".to_string()),
+                traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         divergence.traversal_basis,

@@ -3,7 +3,7 @@ use worth_foundational::facade::PortablePatchReadmissionPurpose;
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::stale_targets::ensure_relation_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::RelationExtra;
 use crate::transactions::data::{
     ApplyRelationAspectPatchIntent, CommitConflict, ConflictClass, RecordAspectPatchTarget,
@@ -21,10 +21,10 @@ pub(super) fn apply(
         ensure_relation_target_is_current(context.state, intent.relation_id)?;
         let partition = context
             .state
-            .get_partition(intent.relation_id.partition_id)
+            .get_current_partition(intent.relation_id.partition_id)
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Partition))?;
         let slot_view = partition
-            .relation_arena
+            .relation_arena()
             .get_slot(slot)
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
         let kind_id = slot_view

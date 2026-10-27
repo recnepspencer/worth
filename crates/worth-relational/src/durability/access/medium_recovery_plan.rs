@@ -39,7 +39,10 @@ pub(super) fn medium_recovery_plan(
         .as_ref()
         .map_or(PatchStreamPosition(0), |(_, covered)| *covered);
     let checkpoint = checkpoint.map(|(checkpoint, _)| checkpoint);
-    let tail = readmit_contiguous_tail(execution, covered, &parts.tail)?;
+    let tail = readmit_contiguous_tail(execution, covered, &parts.tail)?
+        .into_iter()
+        .map(|commit| commit.bind_journal_source(parts.cold_source.clone()))
+        .collect::<Result<Vec<_>, _>>()?;
     let bounds = super::medium_transition_tail::TransitionTailBounds {
         covered_transitions: checkpoint.as_ref().map_or(
             crate::branch::RelationalBranchTransitionSequence(0),

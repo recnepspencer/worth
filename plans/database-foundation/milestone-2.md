@@ -369,6 +369,9 @@ history accessors, so a historical read against a head-only region is
 unrepresentable rather than silently answered from the latest version.
 Writes append history in memory to a resident region of either level, and
 capture writes the changed head and history members.
+Publication reconciles current record lifecycle only. Trimming older live
+versions belongs to the explicit Full retention pass, after its whole-mirror
+demand succeeds; publication never opens history for implicit maintenance.
 
 **Typed failures** (`RelationalStorageUnavailable{subject, cause}`, with
 subject region, envelope, symbols, lineage or index, and cause source

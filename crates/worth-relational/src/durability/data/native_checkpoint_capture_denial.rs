@@ -38,3 +38,39 @@ impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
         }
     }
 }
+
+impl
+    From<
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    > for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(
+        error: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    ) -> Self {
+        use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Encode;
+        match error {
+            Encode::Allocation(error) => Self::Allocation(error),
+            Encode::StorageUnavailable(failure) => {
+                let super::RelationalRecoveryStop::Durability(error) = failure.into() else {
+                    unreachable!()
+                };
+                Self::Durability(error)
+            }
+            error => Self::Durability(super::DurabilityError::new(
+                super::RecoveryFailureClass::CorruptCheckpoint,
+                format!("inline canonical artifact encoding: {error}"),
+            )),
+        }
+    }
+}
+
+impl From<crate::storage::data::RelationalStorageUnavailable>
+    for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        let super::RelationalRecoveryStop::Durability(error) = failure.into() else {
+            unreachable!()
+        };
+        Self::Durability(error)
+    }
+}

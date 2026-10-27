@@ -13,17 +13,23 @@ fn patch_stream_resume_batches_commits_without_duplication() {
 
     let first_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 2,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 2,
+            },
+        )
         .unwrap();
     let resumed = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: first_batch.next_position,
-            max_commits: 2,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: first_batch.next_position,
+                max_commits: 2,
+            },
+        )
         .unwrap();
 
     assert_eq!(first_batch.patches.len(), 2);
@@ -44,10 +50,13 @@ fn patch_stream_rejects_unknown_resume_position() {
 
     let error = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(99)),
-            max_commits: 1,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(99)),
+                max_commits: 1,
+            },
+        )
         .unwrap_err();
 
     assert_eq!(
@@ -75,10 +84,13 @@ fn patch_stream_uses_durable_canonical_history_when_retained_envelope_is_missing
 
     let batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: None,
-            max_commits: 8,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: None,
+                max_commits: 8,
+            },
+        )
         .unwrap();
 
     assert_eq!(batch.patches.len(), 3);

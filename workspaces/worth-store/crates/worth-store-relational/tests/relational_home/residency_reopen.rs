@@ -173,3 +173,36 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     assert_eq!(workload::states_of(home.runtime(), &records), expected);
     home.close();
 }
+
+#[test]
+fn a_cold_first_commit_on_a_fork_preserves_reference_artifacts_and_record_identities() {
+    for seed in [0x5eed_0301, 0x5eed_0302, 0x5eed_0402] {
+        let script = workload::Script::generate(seed, 9, 3);
+        let fork = script
+            .steps
+            .iter()
+            .position(|step| matches!(step, workload::Step::Fork { .. }))
+            .expect("the script forks");
+        let target = fork + 1;
+        assert!(script.steps[target].is_commit());
+        let host = workload::serial_request();
+        let execution = ExecutionRequest::serial(&host);
+        let prepared =
+            super::prepared_home::PreparedHome::prepare(&script.steps[..target], &execution);
+        let home = durable_run::open(prepared.location(), &execution).unwrap();
+        assert_eq!(
+            home.cold_storage_reads().member_reads,
+            0,
+            "fork recovery stays cold"
+        );
+        durable_run::apply(&home, &execution, &script.steps[target..target + 1]);
+        durable_run::assert_reference_artifacts(
+            &workload::artifacts_of(home.runtime()),
+            &script,
+            &format!("cold fork seed {seed:#x}"),
+        );
+        durable_run::apply(&home, &execution, &script.steps[target + 1..]);
+        durable_run::assert_holds(&home, &script, &script.artifacts);
+        home.close();
+    }
+}

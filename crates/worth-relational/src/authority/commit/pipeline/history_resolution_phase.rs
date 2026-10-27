@@ -11,6 +11,7 @@ use crate::transactions::data::{
 };
 
 pub(super) fn resolve_authoritative_history_phase(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
@@ -24,7 +25,7 @@ pub(super) fn resolve_authoritative_history_phase(
     let history = match merge_history_plan {
         None => {
             let _ = transaction_id;
-            resolve_commit_history(runtime, validation_input, version_id)
+            resolve_commit_history(execution, runtime, validation_input, version_id)
         }
         Some(plan) => resolve_commit_history_for_merge(runtime, validation_input, plan, version_id),
     }

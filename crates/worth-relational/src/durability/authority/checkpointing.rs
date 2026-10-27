@@ -36,10 +36,11 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         )?;
         let manifest_publication = if !artifact_policy.is_embedded() {
             artifact_policy.publication_source().map(|source| {
-                self.runtime
-                    .durability
-                    .checkpoint_selection()
-                    .prepare(captured.manifest.clone(), source)
+                self.runtime.durability.checkpoint_selection().prepare(
+                    captured.manifest.clone(),
+                    source,
+                    captured.history_members.clone(),
+                )
             })
         } else {
             None
@@ -81,7 +82,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        let captured = self.capture_checkpoint_basis()?;
+        let captured = self
+            .capture_checkpoint_basis()?
+            .demand_memory_image(self.runtime, execution)?;
         self.finalize_captured_checkpoint(captured)
     }
 

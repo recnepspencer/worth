@@ -17,6 +17,7 @@ use super::*;
 #[derive(Debug, Default)]
 struct UnresolvingMedium {
     unresolve_next: Arc<AtomicBool>,
+    journal: Arc<JournalContents>,
 }
 
 impl UnresolvingMedium {
@@ -31,6 +32,11 @@ impl UnresolvingMedium {
 }
 
 impl RelationalDurableMedium for UnresolvingMedium {
+    fn cold_source(
+        &self,
+    ) -> Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> {
+        self.journal.clone()
+    }
     fn read_transition(
         &self,
         sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,
@@ -38,24 +44,28 @@ impl RelationalDurableMedium for UnresolvingMedium {
         RelationalBranchTransitionArtifact,
         worth_relational::facade::durability::RelationalDurableTransitionReadFailure,
     > {
-        Err(
-            worth_relational::facade::durability::RelationalDurableTransitionReadFailure::Missing(
-                sequence,
-            ),
-        )
+        self.journal.transitions.lock().unwrap().iter()
+            .find(|artifact| artifact.sequence() == sequence).cloned()
+            .ok_or(worth_relational::facade::durability::RelationalDurableTransitionReadFailure::Missing(sequence))
     }
 
     fn publish(
         &self,
-        _artifact: &RelationalCanonicalCommitArtifact,
+        artifact: &RelationalCanonicalCommitArtifact,
     ) -> RelationalDurablePublication {
+        self.journal.commits.lock().unwrap().push(artifact.clone());
         self.answer()
     }
 
     fn publish_transition(
         &self,
-        _artifact: &RelationalBranchTransitionArtifact,
+        artifact: &RelationalBranchTransitionArtifact,
     ) -> RelationalDurablePublication {
+        self.journal
+            .transitions
+            .lock()
+            .unwrap()
+            .push(artifact.clone());
         self.answer()
     }
 }
@@ -126,4 +136,54 @@ fn unresolved_relational_durability_retains_a_possible_effect() {
         expected.snapshot(),
         "the product head does not move for an unresolved owner effect"
     );
+}
+
+/// The test medium's actual durable bytes, including a lost-answer publication.
+#[derive(Debug, Default)]
+struct JournalContents {
+    commits: std::sync::Mutex<Vec<RelationalCanonicalCommitArtifact>>,
+    transitions: std::sync::Mutex<Vec<RelationalBranchTransitionArtifact>>,
+}
+impl worth_relational::facade::durability::RelationalDurableColdSource for JournalContents {
+    fn retain_members(
+        &self,
+        members: &[worth_relational::facade::durability::RelationalDurableMemberLocator],
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableMemberCustody,
+        worth_relational::facade::storage::RelationalStorageUnavailableCause,
+    > {
+        if !members.is_empty() {
+            return Err(
+                worth_relational::facade::storage::RelationalStorageUnavailableCause::MissingMember,
+            );
+        }
+        Ok(worth_relational::facade::durability::RelationalDurableMemberCustody::new(()))
+    }
+    fn read_member(
+        &self,
+        _: worth_relational::facade::durability::RelationalDurableMemberLocator,
+        _: u64,
+    ) -> Result<Vec<u8>, worth_relational::facade::storage::RelationalStorageUnavailableCause> {
+        Err(worth_relational::facade::storage::RelationalStorageUnavailableCause::MissingMember)
+    }
+    fn read_commit(
+        &self,
+        position: worth_relational::facade::publication::PatchStreamPosition,
+        limit: u64,
+    ) -> Result<Vec<u8>, worth_relational::facade::storage::RelationalStorageUnavailableCause> {
+        use worth_relational::facade::storage::RelationalStorageUnavailableCause as Cause;
+        let commits = self.commits.lock().unwrap();
+        let bytes = commits
+            .iter()
+            .find(|artifact| artifact.position() == position)
+            .ok_or(Cause::MissingMember)?
+            .as_bytes();
+        if bytes.len() as u64 > limit {
+            return Err(Cause::LimitExceeded {
+                length: bytes.len() as u64,
+                limit,
+            });
+        }
+        Ok(bytes.to_vec())
+    }
 }

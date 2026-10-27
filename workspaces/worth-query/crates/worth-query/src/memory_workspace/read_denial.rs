@@ -12,3 +12,19 @@ pub(super) fn execution(
     };
     WorthQueryWorkspaceError::with_kind(kind, format!("workspace read stopped: {cause:?}"))
 }
+
+impl WorthQueryWorkspaceError {
+    /// Preserve a native retained-read refusal at the workspace boundary.
+    pub fn observation_read_denied(
+        denial: worth_relational::facade::change_source::RelationalObservationReadDenial,
+    ) -> Self {
+        use worth_relational::facade::change_source::RelationalObservationReadDenial as Denial;
+        match denial {
+            Denial::Execution(cause) => execution(cause),
+            Denial::ForeignObservation => Self::with_kind(
+                WorthQueryWorkspaceErrorKind::RelationalBasisUnavailable,
+                "retained observation belongs to another runtime",
+            ),
+        }
+    }
+}

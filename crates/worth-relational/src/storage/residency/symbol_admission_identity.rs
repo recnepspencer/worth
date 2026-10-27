@@ -1,28 +1,50 @@
-//! An immutable region view's identity, without access to its contents.
-use super::ResidentRegion;
+//! A logical immutable cell version and its requested dictionary closure.
+use super::RelationalRegionResidency;
 use std::hash::{Hash, Hasher};
 use std::sync::{Arc, Weak};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum SymbolClosureLevel {
+    Head,
+    Full,
+}
+
 #[derive(Debug)]
-pub(crate) struct RelationalRegionSymbolAdmissionIdentity(Weak<ResidentRegion>);
+pub(crate) struct RelationalRegionSymbolAdmissionIdentity {
+    region: Weak<RelationalRegionResidency>,
+    level: SymbolClosureLevel,
+}
 
 impl RelationalRegionSymbolAdmissionIdentity {
-    pub(super) fn new(region: &Arc<ResidentRegion>) -> Self {
-        Self(Arc::downgrade(region))
+    pub(super) fn head(region: &Arc<RelationalRegionResidency>) -> Self {
+        Self {
+            region: Arc::downgrade(region),
+            level: SymbolClosureLevel::Head,
+        }
     }
-    // Keeping the Weak prevents address reuse for the cache entry's lifetime.
-    fn address(&self) -> usize {
-        self.0.as_ptr() as usize
+    pub(super) fn full(region: &Arc<RelationalRegionResidency>) -> Self {
+        Self {
+            region: Arc::downgrade(region),
+            level: SymbolClosureLevel::Full,
+        }
+    }
+    pub(crate) fn covered_head(&self) -> Option<Self> {
+        matches!(self.level, SymbolClosureLevel::Full).then(|| Self {
+            region: self.region.clone(),
+            level: SymbolClosureLevel::Head,
+        })
     }
 }
 impl PartialEq for RelationalRegionSymbolAdmissionIdentity {
     fn eq(&self, other: &Self) -> bool {
-        Weak::ptr_eq(&self.0, &other.0)
+        self.level == other.level && Weak::ptr_eq(&self.region, &other.region)
     }
 }
 impl Eq for RelationalRegionSymbolAdmissionIdentity {}
 impl Hash for RelationalRegionSymbolAdmissionIdentity {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.address().hash(state);
+        // The Weak keeps this allocation's address from being reused.
+        (self.region.as_ptr() as usize).hash(state);
+        self.level.hash(state);
     }
 }

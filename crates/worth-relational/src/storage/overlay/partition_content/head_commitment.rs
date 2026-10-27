@@ -1,5 +1,5 @@
 use super::*;
-use digest_index::HistoryAppendFrontier;
+use crate::storage::substrate::HistoryAppendFrontier;
 
 /// History Merkle right spines carry enough proof to check current content
 /// against the original region leaf and to append without reading old values.
@@ -7,6 +7,17 @@ use digest_index::HistoryAppendFrontier;
 pub(crate) struct PartitionHistoryFrontiers {
     entities: Vec<(u64, HistoryAppendFrontier)>,
     relations: Vec<(u64, HistoryAppendFrontier)>,
+}
+
+impl PartitionHistoryFrontiers {
+    pub(crate) fn into_arenas(
+        self,
+    ) -> (
+        Vec<(u64, HistoryAppendFrontier)>,
+        Vec<(u64, HistoryAppendFrontier)>,
+    ) {
+        (self.entities, self.relations)
+    }
 }
 
 impl PartitionContentCommitment {
@@ -29,22 +40,15 @@ impl PartitionContentCommitment {
         symbols: &StringInterner,
         frontiers: &PartitionHistoryFrontiers,
     ) -> Option<Self> {
-        if !partition
-            .entity_arena
-            .metadata_history
-            .iter()
-            .all(|history| history.is_empty())
-            || !partition
-                .relation_arena
-                .metadata_history
-                .iter()
-                .all(|history| history.is_empty())
-        {
-            return None;
-        }
         let seed = Self {
-            entities: records::RecordContentIndex::from_history_frontiers(&frontiers.entities)?,
-            relations: records::RecordContentIndex::from_history_frontiers(&frontiers.relations)?,
+            entities: records::RecordContentIndex::from_history_frontiers(
+                &frontiers.entities,
+                &partition.entity_arena,
+            )?,
+            relations: records::RecordContentIndex::from_history_frontiers(
+                &frontiers.relations,
+                &partition.relation_arena,
+            )?,
             ..Self::default()
         };
         Self::capture_seeded(partition, symbols, None, seed)

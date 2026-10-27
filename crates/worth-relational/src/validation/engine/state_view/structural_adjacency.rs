@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, RelationId};
-use crate::storage::partition::adjacency_queries;
 
 use super::InvariantStateView;
 
@@ -62,22 +61,16 @@ impl<'state> InvariantStateView<'state> {
     fn gather_relation_candidates(&self, entity_id: EntityId, outgoing: bool) -> Vec<RelationId> {
         let mut relation_ids = BTreeSet::new();
         for partition in [
-            self.state().get_partition(entity_id.partition_id),
-            self.state().base_partition(entity_id.partition_id),
+            self.state().get_current_partition(entity_id.partition_id),
+            self.state().base_current_partition(entity_id.partition_id),
         ]
         .into_iter()
         .flatten()
         {
             let candidates = if outgoing {
-                adjacency_queries::outgoing_relation_candidates_from_state(
-                    &SinglePartitionAccess::new(partition),
-                    entity_id,
-                )
+                partition.outgoing_candidates(entity_id)
             } else {
-                adjacency_queries::incoming_relation_candidates_from_state(
-                    &SinglePartitionAccess::new(partition),
-                    entity_id,
-                )
+                partition.incoming_candidates(entity_id)
             };
             relation_ids.extend(candidates);
         }
@@ -95,53 +88,18 @@ impl<'state> InvariantStateView<'state> {
 
     fn read_relation_candidate_count(&self, entity_id: EntityId, outgoing: bool) -> usize {
         [
-            self.state().get_partition(entity_id.partition_id),
-            self.state().base_partition(entity_id.partition_id),
+            self.state().get_current_partition(entity_id.partition_id),
+            self.state().base_current_partition(entity_id.partition_id),
         ]
         .into_iter()
         .flatten()
         .fold(0usize, |count, partition| {
-            let table = if outgoing {
-                &partition.adjacency
+            let candidates = if outgoing {
+                partition.outgoing_candidates(entity_id)
             } else {
-                &partition.reverse_adjacency
+                partition.incoming_candidates(entity_id)
             };
-            count.saturating_add(
-                table
-                    .get(entity_id.slot_index())
-                    .map_or(0, |relations| relations.current_ids().len()),
-            )
+            count.saturating_add(candidates.len())
         })
-    }
-}
-
-struct SinglePartitionAccess<'partition> {
-    partition: &'partition crate::storage::overlay::PartitionState,
-}
-
-impl<'partition> SinglePartitionAccess<'partition> {
-    fn new(partition: &'partition crate::storage::overlay::PartitionState) -> Self {
-        Self { partition }
-    }
-}
-
-impl crate::storage::overlay::PartitionAccess for SinglePartitionAccess<'_> {
-    fn get_partition(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Option<&crate::storage::overlay::PartitionState> {
-        (self.partition.partition_id == partition_id).then_some(self.partition)
-    }
-
-    fn partition_ids(&self) -> Vec<crate::identity::data::PartitionId> {
-        vec![self.partition.partition_id]
-    }
-
-    fn partition_ids_with_memory(
-        &self,
-        memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
-    ) -> Result<Vec<crate::identity::data::PartitionId>, crate::storage::overlay::PartitionIdsDenial>
-    {
-        crate::storage::overlay::collect_partition_ids(1, [self.partition.partition_id], memory)
     }
 }

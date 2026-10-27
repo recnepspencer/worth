@@ -32,6 +32,8 @@ mod root_regions;
 pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
 mod root_selection;
+mod selected_read;
+pub(crate) use selected_read::SelectedRelationalBranchRead;
 mod sharing_cost_cell;
 mod target;
 mod transition;
@@ -129,3 +131,6 @@ mod basis_admission_tests;
 #[cfg(test)]
 #[path = "basis_registry_scale_tests.rs"]
 mod basis_registry_scale_tests;
+
+mod symbol_read;
+pub(crate) use symbol_read::SymbolAdmittedRootRead;

@@ -188,7 +188,7 @@ fn run_periodic_authority_work(
         .map(|interval| (step + 1).is_multiple_of(interval))
         .unwrap_or(false)
     {
-        let _ = runtime.retention().run_pass();
+        let _ = runtime.retention().run_pass(execution).unwrap();
         operations.push(ScenarioOperation::RunRetentionPass);
     }
 }

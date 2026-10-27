@@ -79,7 +79,9 @@ fn prepared_publication_rejects_an_existing_envelope_before_any_effect() {
         .err()
         .expect("an existing envelope must fail the real prepared-publication court");
 
-    assert!(error.contains("DuplicateCommit"));
+    assert!(
+        matches!(error, crate::mvcc::PublicationPreparationDenial::Invalid(detail) if detail.contains("DuplicateCommit"))
+    );
     assert_eq!(runtime.history.branch_cells_snapshot(), before_cells);
     assert_eq!(runtime.history.catalog_len(), before_catalog);
 }
@@ -165,7 +167,9 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
         )
         .err()
         .expect("the unresolved owner symbol sabotages root capture");
-    assert!(error.contains("UnresolvedContentSymbol"));
+    assert!(
+        matches!(error, crate::mvcc::PublicationPreparationDenial::Invalid(detail) if detail.contains("UnresolvedContentSymbol"))
+    );
     let after_storage = runtime
         .acquire_partition_edition()
         .entries()

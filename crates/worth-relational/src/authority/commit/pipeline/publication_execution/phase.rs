@@ -68,8 +68,7 @@ pub(super) fn finalize_publication_phase(
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
 ) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
-        clone_mode,
-        committed_partitions,
+        mirror_publication,
         prepared_history,
         validated_lineage_events,
         lineage_nodes,
@@ -110,8 +109,7 @@ pub(super) fn finalize_publication_phase(
     finalize_published_commit(
         runtime,
         FinalizationInput {
-            clone_mode,
-            committed_partitions,
+            mirror_publication,
             prepared_history,
             changed_records: &changed_records,
             version_id,
@@ -141,7 +139,8 @@ pub(super) fn finalize_publication_phase(
     phase_timing.publication_history_publish_micros =
         publication_phase_timing.history_publish_micros;
     phase_timing.publication_visibility_pin_micros = publication_phase_timing.visibility_pin_micros;
-    phase_timing.publication_retention_trim_micros = publication_phase_timing.retention_trim_micros;
+    phase_timing.publication_retention_reconcile_micros =
+        publication_phase_timing.retention_reconcile_micros;
     phase_timing.publication_compaction_micros = publication_phase_timing.compaction_micros;
     phase_timing.publication_bundle_publish_micros = publication_phase_timing.bundle_publish_micros;
     phase_timing.publication_retention_pass_micros = publication_phase_timing.retention_pass_micros;

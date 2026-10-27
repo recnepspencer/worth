@@ -7,14 +7,20 @@ use crate::publication::patch::data::PatchStreamPosition;
 use super::HistorySubsystem;
 
 impl HistorySubsystem {
+    pub(crate) fn performed_envelope_residency(
+        &self,
+        id: CommitId,
+    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.canonical_publication_routes
+            .performed_envelope_residency(id)
+    }
     pub(crate) fn canonical_envelope(
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        if let Some(artifact) = self.commit_artifact(commit_id) {
-            return Some(Arc::clone(artifact.envelope()));
-        }
-        self.canonical_publication_routes.by_commit(commit_id)
+        self.commit_artifact(commit_id)
+            .and_then(|artifact| artifact.resident_envelope())
+            .or_else(|| self.canonical_publication_routes.by_commit(commit_id))
     }
 
     pub(crate) fn canonical_envelope_for_version(
@@ -37,6 +43,10 @@ impl HistorySubsystem {
     ) -> Option<Arc<crate::history::data::PositionedCanonicalCommit>> {
         self.canonical_publication_routes
             .positioned_by_patch(position)
+            .or_else(|| {
+                self.recorded_commit_at_patch_position(position)
+                    .and_then(|id| self.positioned_canonical_commit(id))
+            })
     }
 
     /// Performed route inventory for cold history and inspection consumers.
@@ -55,6 +65,14 @@ impl HistorySubsystem {
     ) -> Vec<(PatchStreamPosition, CommitId)> {
         self.canonical_publication_routes
             .visible_patches_after(after_position, max_commits)
+    }
+
+    pub(crate) fn latest_canonical_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.canonical_publication_routes
+            .latest_patch_references(limit)
     }
 
     pub(crate) fn canonical_stream_position(
@@ -93,7 +111,14 @@ impl HistorySubsystem {
         &self,
         commit: Arc<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<(), &'static str> {
-        self.canonical_publication_routes.install_recovered(commit)
+        let artifact = self
+            .commit_artifact(commit.commit.commit_id)
+            .ok_or("recovered canonical route has no admitted catalog entry")?;
+        self.canonical_publication_routes.install_recovered(
+            commit,
+            artifact.envelope_residency(),
+            artifact.roots().clone(),
+        )
     }
 
     pub(crate) fn rebuild_recovered_canonical_routes(
@@ -104,8 +129,16 @@ impl HistorySubsystem {
             self.canonical_publication_routes
                 .continuing_branch_transitions(),
         );
+        routes.install_checkpoint_catalog(self.commit_artifacts());
         for commit in commits {
-            routes.install_recovered(commit)?;
+            let artifact = self
+                .commit_artifact(commit.commit.commit_id)
+                .ok_or("recovered canonical route has no admitted catalog entry")?;
+            routes.install_recovered(
+                commit,
+                artifact.envelope_residency(),
+                artifact.roots().clone(),
+            )?;
         }
         self.canonical_publication_routes = routes;
         Ok(())
