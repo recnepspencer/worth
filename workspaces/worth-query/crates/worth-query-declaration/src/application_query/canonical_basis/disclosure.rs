@@ -2,20 +2,19 @@ use worth_foundational::facade::{
     prepare_aspect_value_identity_basis, AspectMask, CanonicalBasisEntry,
 };
 
-use super::super::{
+use super::{
     entry::{boolean, null, text},
     result_shape::{cardinality_name, traversal_direction_name},
 };
 use crate::application_query::{
-    ApplicationQueryDisclosurePosture, ApplicationQueryObservableInfluence,
-    WorthQueryPortableApplicationQueryParts,
+    ApplicationQueryDisclosureContract, ApplicationQueryDisclosurePosture,
+    ApplicationQueryObservableInfluence,
 };
 
 pub(super) fn append_disclosure(
     entries: &mut Vec<CanonicalBasisEntry>,
-    definition: &WorthQueryPortableApplicationQueryParts,
+    disclosure: &ApplicationQueryDisclosureContract,
 ) {
-    let disclosure = definition.disclosure();
     entries.extend([
         text("disclosure.posture", disclosure_name(disclosure.posture())),
         text("disclosure.classification", disclosure.classification()),
@@ -79,6 +78,15 @@ fn append_rule(
             text(format!("{path}.from"), orbit.from()),
             text(format!("{path}.to"), orbit.to()),
             text(format!("{path}.order"), "anchor-forward-v1"),
+        ]);
+    }
+    if let crate::application_query::ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) =
+        selector
+    {
+        entries.extend([
+            text(format!("{path}.kind"), "history-metadata"),
+            text(format!("{path}.history"), metadata.history_type()),
+            text(format!("{path}.facet"), metadata.facet().name()),
         ]);
     }
     if let crate::application_query::ApplicationQueryDisclosureSelector::Components(selection) =

@@ -1,7 +1,8 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
-> Phases 7 and 11 accepted on 2026-10-26. Phases 8–10 remain unfinished.
+> Phases 7 and 11 accepted on 2026-10-26; Phase 10 accepted on 2026-10-27.
+> Phases 8–9 remain unfinished.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -67,7 +68,7 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 | Exact async source binding | World derives `TruthCommitIdentity` from the admitted immutable native reference; populated forks preserve their actual commit despite a reset branch version. Empty targets refuse before Signal admission | Phase 7 courts cover native equality, sibling publication, reserved occurrence gaps and cleanup; the Decl/Host resource endpoint remains Phase 8 |
 | Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
-| Native record/aspect history has no bounded application endpoint | `worth-relational/src/history/access/aspect_history_queries.rs` selects canonical changes but collects a branch-wide scan into `Vec` | Phase 10 supplies native continuation and a disclosed record/aspect history query on an exact retained product observation |
+| Bounded record/aspect history reaches the application SDK | Relational retains finite canonical pages; World follows exact raw product ancestry and component evidence | Phase 10 captures disclosed exact generations through installed History meaning and continues at pinned truth with fresh SubjectRead and independent metadata decisions |
 | Relational identity planning inventories retired | The three string-only Phase 1 catalogs and their module/export declarations have been removed | Phase 11 preserves actual identity authority, selection/receipt issuance and real compile-boundary tests |
 | Bridge uses one facade import | The three hidden wildcard alias modules have been removed | Phase 11 retains the standalone `worth_runtime_bridge::facade` and its substantive control, replay and certification capabilities |
 
@@ -1047,6 +1048,24 @@ ordinary installed query/disclosure and request controls. Independent of Phases
 7–9 and unfinished graph phases. Previously optional in the audit, this capability
 is now required milestone scope by the 2026-10-26 extension.
 
+**Accepted, 2026-10-27.** The installed Decl/Host route captures exact disclosed
+entity and physical-relation generations from complete one-shot reads, then pages
+canonical changes at a pinned product with fresh SubjectRead and independently
+governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
+and [physical occurrence journey](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/history/court.rs)
+qualify equal-value occurrences, fork/sibling exclusion, ordered/filtered physical
+IDs, deletion/replacement, current-security revoke/regrant, typed retired gaps,
+cancellation and final Native/World release. Native and World owner courts qualify
+finite source visits, page backing and immutable request-bound successors.
+Partial ordered/live capture and restart-persistent continuations remain outside
+this contract. The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+describes the supported route and its explicit work/storage limits. The
+[Native growth court](../../crates/worth-runtime-world/tests/runtime_world_certification/court/record_history/growth.rs)
+compares ten and 10,000 real unrelated retained record changes with identical
+one-entry/one-visit/page-backing limits. Individual request work maxima remain
+equal, and the exact full traversal reaches the independently selected last
+record after every empty incomplete prefix.
+
 ### Requirements
 
 - Declare a typed entity/relation history query with selected aspect references
@@ -1104,13 +1123,16 @@ output. Check cancellation, expiry and final retention release at their real own
 ### Target DX
 
 ```rust,ignore
-// Planned installed query shape; bounds are pagination limits, not fixed costs.
-let page = request.at(&retained_observation)
-    .query(RecordChanges::for_entity(&entity).aspect(Geometry::reference()))
-    .page_size(32)
-    .maximum_source_visits(256)
-    .execute()?;
-let next = page.continuation(); // None only when the selected history is complete.
+// Illustrative: not compiled.
+// Installed history, captured subjects and selections come from actual Host admission.
+let page = runtime.read_application_history(
+    &phase, &history, &external, &subjects, &mut cursor,
+    current_security, &selected_truth, &request, limits,
+)?;
+for event in page.entries() {
+    inspect(event.commit_id(), event.record(), event.changed_aspects());
+}
+let complete = page.is_complete();
 ```
 
 ### How We Know It's Done

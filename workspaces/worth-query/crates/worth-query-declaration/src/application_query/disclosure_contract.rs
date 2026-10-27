@@ -11,6 +11,8 @@ use crate::application_schema::{
     ApplicationScalarValueBinding, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 
+mod history;
+
 mod components;
 mod influence;
 mod selector;

@@ -313,7 +313,7 @@ fn contract() -> ApplicationCapabilityContract<
     .build()
 }
 
-pub(super) fn composition() -> ApplicationCapabilityComposition {
+pub(in crate::document_retention_model) fn composition() -> ApplicationCapabilityComposition {
     let allow = ApplicationAuthorizationPathBuilder::from_principal(Principal::reference())
         .forward(WorkflowDocumentOwner::reference())
         .allow(Document::reference());

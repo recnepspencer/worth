@@ -166,6 +166,23 @@ fn touch_scope_admits_target(
             WorthQueryOperationTouchScope::UnlinkRelation(scope),
             ApplicationOperationProgramTarget::Unlink { relation, from, to },
         ) => scope.relation() == relation && scope.from() == from && scope.to() == to,
+        (
+            WorthQueryOperationTouchScope::InitializeRelationField(scope),
+            ApplicationOperationProgramTarget::InitializeRelationField {
+                relation,
+                from,
+                to,
+                aspect,
+                field,
+            },
+        ) => {
+            scope.relation().relation() == relation
+                && scope.relation().from() == from
+                && scope.relation().to() == to
+                && scope.contract().key().as_str() == aspect
+                && scope.field_path().fields().len() == 1
+                && scope.field_path().fields()[0].as_str() == field
+        }
         _ => false,
     }
 }

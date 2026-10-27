@@ -11,6 +11,7 @@ pub enum WorthQueryOperationTouchScope {
     WriteField(WorthQueryOperationFieldTouchScope),
     LinkRelation(WorthQueryOperationRelationTouchScope),
     UnlinkRelation(WorthQueryOperationRelationTouchScope),
+    InitializeRelationField(super::WorthQueryOperationRelationFieldInitializationScope),
     DeclaredDomain(WorthQueryDeclaredDomainTouchScopeIdentity),
 }
 
@@ -43,6 +44,14 @@ impl WorthQueryOperationTouchScope {
                     .then_with(|| left.from().cmp(right.from()))
                     .then_with(|| left.to().cmp(right.to())),
                 (Self::DeclaredDomain(left), Self::DeclaredDomain(right)) => left.cmp(right),
+                (Self::InitializeRelationField(left), Self::InitializeRelationField(right)) => {
+                    compare_binding(left.relation().schema(), right.relation().schema())
+                        .then_with(|| left.relation().relation().cmp(right.relation().relation()))
+                        .then_with(|| left.relation().from().cmp(right.relation().from()))
+                        .then_with(|| left.relation().to().cmp(right.relation().to()))
+                        .then_with(|| left.contract().key().cmp(right.contract().key()))
+                        .then_with(|| left.field_path().cmp(right.field_path()))
+                }
                 _ => Ordering::Equal,
             })
     }
@@ -56,6 +65,7 @@ fn touch_rank(scope: &WorthQueryOperationTouchScope) -> u8 {
         WorthQueryOperationTouchScope::LinkRelation(_) => 3,
         WorthQueryOperationTouchScope::UnlinkRelation(_) => 4,
         WorthQueryOperationTouchScope::DeclaredDomain(_) => 5,
+        WorthQueryOperationTouchScope::InitializeRelationField(_) => 6,
     }
 }
 

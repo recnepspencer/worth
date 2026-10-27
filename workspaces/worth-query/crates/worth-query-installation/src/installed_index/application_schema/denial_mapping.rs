@@ -13,6 +13,10 @@ pub(super) fn map_compilation_denial(
     denial: ApplicationSchemaCompilationDenial,
 ) -> WorthQueryInstalledApplicationSchemaDenial {
     let (kind, subject) = match denial {
+        ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
+            subject,
+        ),
         ApplicationSchemaCompilationDenial::Capability(denial) => {
             let kind = match denial.kind() {
                 crate::application_capability::WorthQueryApplicationCapabilityInstallationDenialKind::CanonicalEntryLimitExceeded => {
@@ -182,7 +186,8 @@ pub(in crate::installed_index) fn map_catalog_denial_to_index_denial(
         | CatalogDenialKind::InvalidFieldKey
         | CatalogDenialKind::InvalidAspectShape
         | CatalogDenialKind::ProjectionMaskRejected
-        | CatalogDenialKind::CanonicalContractRejected => {
+        | CatalogDenialKind::CanonicalContractRejected
+        | CatalogDenialKind::UnsupportedRecordBinding => {
             WorthQueryInstalledPackageIndexDenialKind::ApplicationSchemaInvalidAspectContract
         }
     };

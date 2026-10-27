@@ -219,6 +219,18 @@ fn write_program_target(
             write_three_texts(output, relation, from, to)
         }
         ApplicationOperationProgramTarget::Emit { effect } => tagged_text(output, 6, effect),
+        ApplicationOperationProgramTarget::InitializeRelationField {
+            relation,
+            from,
+            to,
+            aspect,
+            field,
+        } => {
+            output.u16(7)?;
+            write_three_texts(output, relation, from, to)?;
+            output.text(aspect)?;
+            output.text(field)
+        }
     }
 }
 
@@ -249,6 +261,13 @@ fn decode_program_target(
         },
         6 => ApplicationOperationProgramTarget::Emit {
             effect: input.text()?.to_owned(),
+        },
+        7 => ApplicationOperationProgramTarget::InitializeRelationField {
+            relation: input.text()?.to_owned(),
+            from: input.text()?.to_owned(),
+            to: input.text()?.to_owned(),
+            aspect: input.text()?.to_owned(),
+            field: input.text()?.to_owned(),
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })

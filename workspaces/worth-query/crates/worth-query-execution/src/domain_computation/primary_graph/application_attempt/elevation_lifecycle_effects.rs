@@ -27,12 +27,14 @@ pub(super) fn lifecycle_effects_are_exact(
                 }
                 (
                     WorthQueryApplicationRealizedEffect::CreateRelation {
+                        fields,
                         kind,
                         key,
                         from,
                         to,
                     },
                     WorthQueryApplicationRealizedEffect::CreateRelation {
+                        fields: expected_fields,
                         kind: expected_kind,
                         key: expected_key,
                         from: expected_from,
@@ -43,6 +45,7 @@ pub(super) fn lifecycle_effects_are_exact(
                         && key == expected_key
                         && from == expected_from
                         && to == expected_to
+                        && fields == expected_fields
                 }
                 _ => false,
             })

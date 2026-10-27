@@ -19,6 +19,7 @@ use super::super::{
 use super::invariant::HandlerInterruption;
 
 mod operation_body;
+mod relation_initialization;
 mod verbs;
 
 /// Borrow of the effect builder for one exact binding.
@@ -33,6 +34,8 @@ where
         Binding::Input,
         <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
     >,
+    pub(super) execution: worth_execution::ExecutionRequest<'borrow, 'borrow>,
+    pub(super) value_bindings: &'borrow worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 }
 
 impl<'borrow, Schema, Binding> CandidateWriter<'borrow, Schema, Binding>
@@ -47,8 +50,14 @@ where
             Binding::Input,
             <Binding::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
         >,
+        execution: worth_execution::ExecutionRequest<'borrow, 'borrow>,
+        value_bindings: &'borrow worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     ) -> Self {
-        Self { candidate }
+        Self {
+            candidate,
+            execution,
+            value_bindings,
+        }
     }
 
     pub fn checkpoint(&self) -> Result<(), HandlerInterruption> {

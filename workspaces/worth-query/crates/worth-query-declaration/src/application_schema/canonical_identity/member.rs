@@ -4,11 +4,15 @@ use crate::application_schema::ApplicationSchemaMember;
 mod aftermath;
 mod authorization;
 mod capability;
+mod derived_relation;
 mod field;
 mod invariant;
 mod mutation_description;
 mod operation;
 mod principal_binding;
+mod relation_aspect;
+mod relation_graph;
+pub(super) use relation_aspect::append_relation_field;
 mod schema;
 mod vocabulary;
 
@@ -19,6 +23,14 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::RuleReadableCollection { .. }
+        | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+            derived_relation::append(basis, &prefix, member)
+        }
+        ApplicationSchemaMember::RelationAspect { definition } => {
+            relation_aspect::append(basis, &prefix, definition)
+        }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::append(basis, &prefix, description)
         }
@@ -34,6 +46,7 @@ pub(super) fn append_member(
             schema::append_schema_member(basis, &prefix, member)
         }
         ApplicationSchemaMember::ApplicationQuery { .. }
+        | ApplicationSchemaMember::ApplicationHistoryQuery { .. }
         | ApplicationSchemaMember::ApplicationCapability { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContext { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. }

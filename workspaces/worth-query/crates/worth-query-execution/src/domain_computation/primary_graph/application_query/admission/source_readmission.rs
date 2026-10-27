@@ -91,7 +91,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let prepared =
             self.prepare_application_query_from_observed(query, access, observed, controls)?;
         let (parameters, controls) = prepared.into_parts();
-        self.finish_application_query_readmission(execution, query, access, parameters, controls)
+        self.finish_application_query_readmission(
+            execution, query, access, parameters, controls, None,
+        )
     }
 
     pub(in crate::domain_computation::primary_graph) fn prepare_application_query_from_observed<

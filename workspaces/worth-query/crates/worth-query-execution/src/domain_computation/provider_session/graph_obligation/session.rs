@@ -58,6 +58,7 @@ enum WorthQueryGraphWorkBasis {
     Query {
         identity: WorthQueryApplicationBasisIdentity,
         product: crate::basis::WorthQueryProductObservationLease,
+        authorization_product: crate::basis::WorthQueryProductObservationLease,
         port: WorthQueryGraphReadOwnerPort,
     },
     Mutation(Option<WorthQueryApplicationSnapshotLease>),
@@ -241,6 +242,22 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
         match &self.basis {
             WorthQueryGraphWorkBasis::Query { product, .. } => Some(product),
+            WorthQueryGraphWorkBasis::Mutation(lease) => {
+                lease.as_ref().map(|lease| lease.product().read_lease_ref())
+            }
+        }
+    }
+
+    /// Query truth can remain historical while authorization uses the exact
+    /// security Product supplied when this genuine session was admitted.
+    pub(in crate::domain_computation) fn authorization_product(
+        &self,
+    ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
+        match &self.basis {
+            WorthQueryGraphWorkBasis::Query {
+                authorization_product,
+                ..
+            } => Some(authorization_product),
             WorthQueryGraphWorkBasis::Mutation(lease) => {
                 lease.as_ref().map(|lease| lease.product().read_lease_ref())
             }

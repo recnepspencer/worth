@@ -13,6 +13,9 @@ pub struct ApplicationQueryResultSlotKey {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ApplicationQueryResultSlotContract {
+    HistoryMetadata {
+        facet: super::ApplicationHistoryMetadataFacet,
+    },
     /// Identity, full membership/length and anchor-forward order are one result.
     Components {
         set: String,
@@ -65,6 +68,17 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn history_metadata(
+        history: WorthQueryPortableTypeIdentity,
+        facet: super::ApplicationHistoryMetadataFacet,
+    ) -> Self {
+        Self {
+            query: history,
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::HistoryMetadata { facet },
+        }
+    }
+
     pub(super) fn components(meaning: &super::ApplicationQueryComponentMeaning) -> Self {
         Self {
             query: meaning.query_identity(),

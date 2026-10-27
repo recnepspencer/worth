@@ -32,6 +32,11 @@ pub enum ValidatedMutationTouch {
     LinkRelation {
         kind: KindId,
     },
+    /// A supplied field on a newly created relation; never an update grant.
+    InitializeRelationField {
+        kind: KindId,
+        locator: AspectFieldLocator,
+    },
     UnlinkRelation {
         kind: KindId,
     },
@@ -59,6 +64,7 @@ impl ValidatedMutationTouch {
             | Self::DeleteEntity { kind }
             | Self::WriteEntityField { kind, .. }
             | Self::LinkRelation { kind }
+            | Self::InitializeRelationField { kind, .. }
             | Self::UnlinkRelation { kind }
             | Self::UnrepresentableEntityMutation { kind }
             | Self::RevalidateEntity { kind }

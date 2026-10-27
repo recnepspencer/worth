@@ -20,7 +20,7 @@ use crate::record::foundational_aspect;
 use crate::record::foundational_value;
 use crate::record::sequence::{decode_sequence, require_canonical_sequence, write_sequence};
 
-pub(super) fn write(
+pub(in crate::record) fn write(
     output: &mut dyn BinaryEncodingSink,
     contract: &ApplicationQueryDisclosureContract,
 ) -> Result<(), Denial> {
@@ -34,7 +34,7 @@ pub(super) fn write(
     write_sequence(output, contract.rules(), write_rule)
 }
 
-pub(super) fn decode(
+pub(in crate::record) fn decode(
     input: &mut BinaryInput<'_>,
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryDisclosureContract, Denial> {
@@ -89,6 +89,15 @@ fn write_selector(
     selector: &ApplicationQueryDisclosureSelector,
 ) -> Result<(), Denial> {
     match selector {
+        ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
+            output.u16(5)?;
+            write_type_identity(output, &metadata.history_identity())?;
+            output.u16(match metadata.facet() {
+                worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Occurrence => 1,
+                worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Ancestry => 2,
+                worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Continuation => 3,
+            })
+        }
         ApplicationQueryDisclosureSelector::Components(selection) => {
             output.u16(6)?;
             super::components::write(output, selection)
@@ -165,6 +174,21 @@ fn decode_selector(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
+        5 => {
+            use worth_query_declaration::facade::application_query::{
+                ApplicationHistoryMetadataFacet as Facet, ApplicationHistoryMetadataMeaning,
+            };
+            let history = decode_type_identity(input)?;
+            let facet = match input.u16()? {
+                1 => Facet::Occurrence,
+                2 => Facet::Ancestry,
+                3 => Facet::Continuation,
+                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
+            };
+            ApplicationQueryDisclosureSelector::HistoryMetadata(
+                ApplicationHistoryMetadataMeaning::from_untrusted_fields(history, facet),
+            )
+        }
         6 => ApplicationQueryDisclosureSelector::Components(super::components::decode(input)?),
         4 => ApplicationQueryDisclosureSelector::Orbit(super::orbit::decode(input)?),
         1 => ApplicationQueryDisclosureSelector::InternalField {

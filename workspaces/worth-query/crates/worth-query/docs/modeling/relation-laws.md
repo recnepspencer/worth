@@ -649,6 +649,38 @@ identities or assume a particular edge wins when several close cycles.
 - Changing relation policy while assuming unchanged schema/program names make
   persisted application meaning compatible.
 
+## Relation-owned payload at creation
+
+Declare a real relation aspect with
+`ApplicationRelationAspectDefinition::new(relation, aspect, absence)` and typed
+`ApplicationRelationFieldRef` fields (or `worth_query_relation_field!`). Register
+the definition with `.relation_aspect(..)`. Scalar bindings keep their real
+relation owner through native contracts, canonical meaning and installation.
+The existing entity field declaration remains entity-owned.
+
+An operation that creates the relation declares both `.operation_link(..)` and
+`.operation_initialize_relation_field(operation, field)`, with `OperationLinks`
+and `OperationWrites` on its typed markers. In its handler, use
+`writer.link_for_initialization(..)` and then
+`writer.initialize_relation_field(&created, field, encoded_value)`.
+`ApplicationEncodedScalarValue` is explicit caller preparation. The initializer
+checks the original request's interruption controls and the installed binding
+before accepting the value; callers provide no resource estimate. The returned
+handle belongs to that actual program builder. Another
+program's handle, a duplicate field or a duplicate create key refuses.
+
+Initialization applies only to that candidate's new relation. It supplies no
+relation update operation. Native touch admission separately requires Link and
+every actual initialized field, including for raw candidates. Existing empty
+`link` behavior and native semantic-edge uniqueness remain in force.
+
+A bootstrap-minted invariant projection reader can inspect the initialized
+payload with `reader.relation_field(&physical_relation, field)`. It validates
+the exact relation occurrence, snapshot, endpoints and installed field binding.
+Operation/decision readers and ordinary disclosed rows expose no forwarding
+door. This privileged read supplies neither governed history permission nor a
+recorded relation-field decision dependency.
+
 ## Current Limits
 
 The ordinary application builders expose source-to-target acyclicity with no

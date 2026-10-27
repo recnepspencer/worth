@@ -17,7 +17,9 @@ pub enum WorthQueryInstalledValueMeaningDenial {
 
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
     /// Descriptive readiness/recovery input, checked against this handle's exact
-    /// installed executable bindings and native physical field closure.
+    /// installed entity-field bindings and native physical field closure.
+    /// Relation aspects retain their separate grouped declaration/native meaning;
+    /// this legacy entity roster does not claim whole-schema recovery readiness.
     pub fn value_meaning(
         &self,
     ) -> Result<Vec<ApplicationAspectValueMeaning>, WorthQueryInstalledValueMeaningDenial> {
@@ -25,7 +27,13 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
         let meanings =
             ApplicationAspectValueMeaning::from_members(self.installed_declaration().members())
                 .map_err(D::Declaration)?;
-        if meanings.len() != self.native_contracts().len() {
+        if meanings.len()
+            != self
+                .native_contracts()
+                .contracts()
+                .filter(|contract| contract.locus().owner_kind().is_entity())
+                .count()
+        {
             return Err(D::NativeAspectMismatch);
         }
         for meaning in &meanings {

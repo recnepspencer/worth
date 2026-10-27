@@ -101,6 +101,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
         partition: WorthQueryApplicationCreationPartition::Context(instance.partition_id),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.transition_proposal_relation,
         key: "transition-proposal".to_owned(),
         from: EntityReference::Created(transition.clone()),
@@ -141,6 +142,7 @@ pub(in crate::domain_computation::primary_graph) fn visit_workflow_proposal_fact
             partition: WorthQueryApplicationCreationPartition::Context(instance.partition_id),
         })?;
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.proposal_coverage_relation,
             key: format!("proposal-coverage-relation-{index}"),
             from: EntityReference::Created(proposal_entity.clone()),

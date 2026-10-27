@@ -568,6 +568,44 @@ resource entry through Decl/Host; that application integration is required by
 See [native async source custody](../crates/worth-runtime-world/README.md#owned-async-source-binding)
 and the [internal engine guide](../workspaces/worth-query/crates/worth-query/docs/capabilities/async-resources-and-result-state.md).
 
+### Typed relation initialization
+
+Declare relation-owned scalar fields with `ApplicationRelationAspectDefinition`
+and `ApplicationRelationFieldRef`. An operation needs both Link and explicit
+field initialization targets; its typed writer retains fields only on a newly
+created relation with a same-program handle. Native touch admission enforces the
+same contract for raw candidates. Bootstrap invariant readers can inspect those
+actual physical payloads through `relation_field`; ordinary operation and query
+readers do not acquire that privileged door. See
+[relation payload creation](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#relation-owned-payload-at-creation).
+
+### Native record and aspect history pages
+
+The Relational owner provides a retained cursor inside one exact selected commit:
+`retain_record_history_subject` resolves an exact entity/relation generation in
+its admitted root, including retained tombstones; `record_aspect_history_cursor`
+requires independently owner-issued exact commit selection. Each `next_page`
+bounds canonical record visits, returned entries and newly allocated page backing
+under the original request. A finite `retain_record_history_selection` can be
+reused by exact per-commit cursors; each cursor keeps independent source custody.
+Serial and inherited accounting stays with the retained owner until its final
+drop. It retains the canonical envelope without copying
+its patches. This native cursor does not establish World product ancestry or
+application disclosure. World's `open_exact_product_history` and staged one-parent
+pages supply genuine retained product ancestry, fork inheritance and exact
+component evidence, with typed refusal at retired gaps. They retain the pinned
+source instead of reading a newer live head; see
+[exact product history](../crates/worth-runtime-world/README.md#exact-retained-product-history).
+The installed Decl/Host route declares an
+`ApplicationHistoryQueryDefinition` over a real `SubjectRead`, captures only its
+disclosed exact generations, and opens/continues a bounded cursor at a pinned
+product with fresh SubjectRead and independent metadata admission. The compiled
+facade audit qualifies this route in
+[Phase 10](../plans/WORTH-query/milestone-9.18.1.md#phase-10-bounded-record-and-aspect-change-history).
+See [installed capture and paging](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+for the API, separate capability decisions, typed gaps and final release.
+See [native paging and retention](../crates/worth-relational/API_OVERVIEW.md#bounded-record-and-aspect-history).
+
 ### Graph-read admission in the default Query workspace
 
 `worth-query-admission::integration::review_graph_read_access(requirements, inventory)`

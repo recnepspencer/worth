@@ -1,6 +1,7 @@
 //! Ordered, portable native values for one operation's scope-bound body.
 
 mod creation;
+mod entity_field_loci;
 mod query_context;
 
 pub use super::created_field::ApplicationOperationBodyCreatedField;

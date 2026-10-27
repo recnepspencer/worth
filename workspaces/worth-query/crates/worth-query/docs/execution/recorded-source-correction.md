@@ -15,6 +15,10 @@ secondary to `19`, and reverses the first operation. Readback becomes primary
 `5` and secondary `19`. Its fork and authority courts use the same installed
 application and ordinary request API.
 
+[Record and aspect audit history](../capabilities/record-and-aspect-history.md)
+reports canonical changes to disclosed record generations. This correction route
+owns declared inverse/reapplication meaning and the publication of those actions.
+
 ## Declare the corrective action and disclosure query
 
 Implement `decl::application_aftermath::ApplicationCorrectionBinding<Schema>`

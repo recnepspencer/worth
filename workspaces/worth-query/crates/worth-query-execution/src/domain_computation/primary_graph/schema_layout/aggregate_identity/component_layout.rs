@@ -72,3 +72,12 @@ impl ComponentSetLayout {
         Ok(true)
     }
 }
+
+impl super::super::WorthQueryPrimaryGraphLayout {
+    pub(in crate::domain_computation::primary_graph) fn component_set(
+        &self,
+        name: &str,
+    ) -> Option<&ComponentSetLayout> {
+        self.component_sets.get(name)
+    }
+}

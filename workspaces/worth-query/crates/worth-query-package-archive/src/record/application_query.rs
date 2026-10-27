@@ -22,10 +22,10 @@ use super::sequence::{decode_sequence, write_sequence};
 
 mod aggregate_selection;
 mod components;
-mod controls;
-mod disclosure;
+pub(in crate::record) mod controls;
+pub(in crate::record) mod disclosure;
 mod orbit;
-mod result_shape;
+pub(in crate::record) mod result_shape;
 mod root_selection;
 pub(in crate::record) use root_selection::{
     decode_path as decode_root_path, write_path as write_root_path,

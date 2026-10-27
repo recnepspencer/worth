@@ -22,36 +22,40 @@ impl ApplicationRelationIntegrityRecord {
     pub(crate) fn enabled_laws(
         &self,
     ) -> impl Iterator<Item = (&'static str, ApplicationRelationLawValue)> + '_ {
+        self.graph_laws().enabled_laws(self.unique)
+    }
+}
+
+impl<'a> super::ApplicationRelationGraphLawRef<'a> {
+    pub(crate) fn enabled_laws(
+        self,
+        unique: Option<super::ApplicationRelationUniquenessScope>,
+    ) -> impl Iterator<Item = (&'static str, ApplicationRelationLawValue)> + 'a {
         [
             self.acyclic.then_some(("acyclic", 1)),
             self.symmetric.then_some(("symmetric", 1)),
             self.orbit.then_some(("orbit", 1)),
-            self.unique.map(|scope| ("unique", scope.canonical_value())),
+            unique.map(|scope| ("unique", scope.canonical_value())),
             self.same_partition_endpoints
                 .then_some(("same_partition_endpoints", 1)),
         ]
         .into_iter()
         .flatten()
         .map(|(name, value)| (name, ApplicationRelationLawValue::Number(value)))
-        .chain(
-            self.reaches_at_least
-                .as_ref()
-                .into_iter()
-                .flat_map(|minimum| {
-                    [
-                        (
-                            "reaches_at_least",
-                            ApplicationRelationLawValue::Number(u64::from(
-                                minimum.minimum_reachable_targets,
-                            )),
-                        ),
-                        (
-                            "reaches_at_least.kinds",
-                            ApplicationRelationLawValue::KindSet(minimum.normalized_kinds()),
-                        ),
-                    ]
-                }),
-        )
+        .chain(self.reaches_at_least.into_iter().flat_map(|minimum| {
+            [
+                (
+                    "reaches_at_least",
+                    ApplicationRelationLawValue::Number(u64::from(
+                        minimum.minimum_reachable_targets,
+                    )),
+                ),
+                (
+                    "reaches_at_least.kinds",
+                    ApplicationRelationLawValue::KindSet(minimum.normalized_kinds()),
+                ),
+            ]
+        }))
     }
 }
 

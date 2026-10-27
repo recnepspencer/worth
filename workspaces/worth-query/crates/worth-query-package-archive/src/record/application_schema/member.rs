@@ -11,18 +11,31 @@ use super::super::decode_budget::RecordDecodeAttempt;
 mod authorization;
 mod capability;
 mod component_set;
+mod derived_relation;
+mod history;
 mod invariant;
 mod mutation_description;
 mod operation;
+mod relation_aspect;
+mod relation_graph;
 mod schema;
 mod source_disclosure;
 mod vocabulary;
+
+fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    derived_relation::require_shape(member)?;
+    schema::require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::RelationAspect { definition } = member {
+        relation_aspect::require_supported_field_codec(definition)?;
+    }
+    Ok(())
+}
 
 pub(super) fn require_encoding_contract(
     member: &ApplicationSchemaMember,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
     if matches!(
         member,
         ApplicationSchemaMember::OperationComponentRead { .. }
@@ -32,6 +45,7 @@ pub(super) fn require_encoding_contract(
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
+            | ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::ComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
@@ -56,9 +70,14 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::RuleReadableCollection { .. }
+        | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+            derived_relation::write(output, member)
+        }
         ApplicationSchemaMember::OperationComponentRead { definition } => {
             super::super::operation_component_read::write(output, definition)
         }
@@ -67,6 +86,12 @@ pub(super) fn write(
         }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+            history::write(output, definition)
+        }
+        ApplicationSchemaMember::RelationAspect { definition } => {
+            relation_aspect::write(output, definition)
         }
         ApplicationSchemaMember::OperationBody { operation, body } => {
             output.text(operation)?;
@@ -108,6 +133,11 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        tag @ 41..=43 => derived_relation::decode(tag, input, budget),
+        36 => history::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
+        37 => relation_aspect::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::RelationAspect { definition }),
         40 => Ok(ApplicationSchemaMember::OperationComponentRead {
             definition: super::super::operation_component_read::decode(input, budget)?,
         }),
@@ -131,6 +161,11 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::DerivedRelation { .. } => 41,
+        ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
+        ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
+        ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
+        ApplicationSchemaMember::RelationAspect { .. } => 37,
         ApplicationSchemaMember::OperationComponentRead { .. } => 40,
         ApplicationSchemaMember::ComponentSet { .. } => 38,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,

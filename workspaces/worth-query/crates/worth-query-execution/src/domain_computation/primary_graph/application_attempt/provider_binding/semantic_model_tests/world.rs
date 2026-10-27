@@ -140,6 +140,7 @@ fn update(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffect {
 
 fn create_relation(axes: &MixedEffectAxes) -> WorthQueryApplicationRealizedEffect {
     WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: axes.relation_kind,
         key: "owned-edge".to_owned(),
         from: axes.created_reference.clone(),

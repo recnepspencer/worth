@@ -184,7 +184,7 @@ fn require_nesting_depth_at(
     Ok(())
 }
 
-pub(super) fn write_traversal_direction(
+pub(in crate::record) fn write_traversal_direction(
     output: &mut dyn BinaryEncodingSink,
     value: ApplicationQueryResultTraversalDirection,
 ) -> Result<(), Denial> {
@@ -193,7 +193,7 @@ pub(super) fn write_traversal_direction(
         ApplicationQueryResultTraversalDirection::Reverse => 2,
     })
 }
-pub(super) fn decode_traversal_direction(
+pub(in crate::record) fn decode_traversal_direction(
     input: &mut BinaryInput<'_>,
 ) -> Result<ApplicationQueryResultTraversalDirection, Denial> {
     match input.u16()? {

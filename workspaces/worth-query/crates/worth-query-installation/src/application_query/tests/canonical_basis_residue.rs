@@ -95,8 +95,7 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
     let preconditions = include_str!(
         "../../../../worth-query-execution/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
     );
-    let evidence_slot =
-        include_str!("../../../../worth-query/src/evidence_identity/foundational.rs");
+    let evidence_slot = include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
     let capability = concat!(
         include_str!(
             "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/mod.rs"

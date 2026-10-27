@@ -5181,6 +5181,7 @@ Use the declarations and host functions exported by `worth-query-decl` and
 | Every workflow call, budget, denial, and a worked example | [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
 | Feature capsules, ports, connections, and the authoring rule | [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
 | Application action preparation, execution, recovery and cleanup | [Ordinary Application Front Door](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
+| Disclosed record generations, bounded canonical history, fresh payload and metadata permission | [Record And Aspect History](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md) |
 | Contribution composition, installation and output demand | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Declaration surface | [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md) |
 | The complete pure-facade reference application | [Bank public consumer contract](../workspaces/worth-query-bank-world/docs/public-consumer-contract.md) |

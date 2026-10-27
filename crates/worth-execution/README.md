@@ -33,6 +33,20 @@ admitted width. Bounds supplied by the process or an ancestor apply to its
 descendants. `ExecutionReport::accounted_cost()` returns the measured work/span
 when the run has this contract. Use the physical report to inspect placement.
 
+## Original-request retained storage
+
+`ExecutionRequest::reserve_retained_memory(bytes)` admits retained backing
+against the effective accounted context, including serial and inherited
+accounting. It returns a sealed reservation for accounted execution and `None`
+for truly native execution. Keep the reservation with the actual backing until
+its final owner drops. Cancellation and deadlines still apply to native calls.
+
+`ExecutionRequestArrayBuilder::allocate(request, count)` borrows the original
+request and shares the existing fixed array allocation owner. Push and seal
+check that request; the sealed array retains one backing reservation without
+retaining the borrowed request. `ExecutionRequestArrayDenial` distinguishes
+original request refusal from physical allocation failure.
+
 ## Checked component edits
 
 Runtime owners apply one `ComponentEdit` through

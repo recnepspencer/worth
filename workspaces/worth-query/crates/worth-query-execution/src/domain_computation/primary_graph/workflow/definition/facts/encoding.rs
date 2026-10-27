@@ -91,6 +91,7 @@ pub(super) fn create_relation(
     target: EntityReference,
 ) -> WorthQueryApplicationRealizedEffect {
     WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: kind_id,
         key: key.into(),
         from: source,

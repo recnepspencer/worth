@@ -27,7 +27,7 @@ impl SelectedPreparedReadSecurityBasis<'_> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    /// Consume the second exact selected-index check before sealing this same
+    /// Check exact selected-index currency before sealing this same
     /// issued Product/Query basis against the current World head. A moved head
     /// or different Native basis cannot authorize the graph read.
     pub(in crate::domain_computation::primary_graph) fn admit_matching_head_query_prepared_read_security_basis_with_native_access<

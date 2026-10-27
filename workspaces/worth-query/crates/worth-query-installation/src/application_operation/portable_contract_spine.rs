@@ -256,6 +256,29 @@ fn compile_touch(
                 to: to.clone(),
             })
         }
+        ApplicationOperationProgramTarget::InitializeRelationField {
+            relation,
+            from,
+            to,
+            aspect,
+            field,
+        } => {
+            let native = native_relation_contract(native_contracts, &schema, relation, aspect)?;
+            let field = native
+                .field(field)
+                .cloned()
+                .ok_or(WorthQueryPortableOperationContractSpineDenialKind::MissingNativeField)?;
+            Ok(
+                WorthQueryPortableOperationTouchScope::InitializeRelationField {
+                    schema,
+                    relation: relation.clone(),
+                    from: from.clone(),
+                    to: to.clone(),
+                    contract: native.contract().clone(),
+                    field_path: CanonicalFieldPath::single(field),
+                },
+            )
+        }
         ApplicationOperationProgramTarget::Unlink { relation, from, to } => {
             Ok(WorthQueryPortableOperationTouchScope::UnlinkRelation {
                 schema,
@@ -280,6 +303,30 @@ fn native_contract<'a>(
             record.schema() == schema
                 && record.entity() == entity
                 && record.aspect().as_str() == aspect
+                && matches!(
+                    record.binding(),
+                    worth_foundational::facade::AspectBinding::EntityField { .. }
+                )
+        })
+        .ok_or(WorthQueryPortableOperationContractSpineDenialKind::MissingNativeAspect)
+}
+
+fn native_relation_contract<'a>(
+    contracts: &'a [WorthQueryPortableNativeAspectContractRecord],
+    schema: &str,
+    relation: &str,
+    aspect: &str,
+) -> SpineResult<&'a WorthQueryPortableNativeAspectContractRecord> {
+    contracts
+        .iter()
+        .find(|record| {
+            record.schema() == schema
+                && record.entity() == relation
+                && record.aspect().as_str() == aspect
+                && matches!(
+                    record.binding(),
+                    worth_foundational::facade::AspectBinding::RelationField { .. }
+                )
         })
         .ok_or(WorthQueryPortableOperationContractSpineDenialKind::MissingNativeAspect)
 }
