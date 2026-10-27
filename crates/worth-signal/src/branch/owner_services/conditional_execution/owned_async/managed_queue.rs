@@ -3,20 +3,6 @@ use crate::data::resource::{
     ResourceManagedQueueBinding, ResourceManagedQueueDenial, ResourceManagedQueueMutationReport,
 };
 
-/// Post-admission refusal retains the actual occurrence and any bound queue.
-/// Its caller must retain its original source binding and service port for cleanup.
-pub enum SignalOwnedAsyncManagedAdmission {
-    Ready {
-        request: SignalOwnedAsyncRequestAdmission,
-        queue: SignalOwnedAsyncManagedQueueBinding,
-    },
-    CleanupRequired {
-        report: ResourceRequestAdmissionReport,
-        queue: Option<SignalOwnedAsyncManagedQueueBinding>,
-        cause: SignalOwnedAsyncQueueDenial,
-    },
-}
-
 pub(crate) enum SignalOwnedAsyncManagedAdmissionState {
     Ready {
         request: SignalOwnedAsyncRequestAdmission,
@@ -32,8 +18,8 @@ pub(crate) enum SignalOwnedAsyncManagedAdmissionState {
 /// Exact native queue custody, bound to its original live service/source.
 /// Local request selectors alone cannot reconstruct this owner.
 pub struct SignalOwnedAsyncManagedQueueBinding {
-    origin: SignalOwnedAsyncSourceBinding,
-    binding: ResourceManagedQueueBinding,
+    pub(super) origin: SignalOwnedAsyncSourceBinding,
+    pub(super) binding: ResourceManagedQueueBinding,
 }
 
 impl SignalOwnedAsyncManagedQueueBinding {
@@ -48,11 +34,14 @@ impl SignalOwnedAsyncManagedQueueBinding {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SignalOwnedAsyncQueueDenial {
     Service(SignalConditionalServiceExecutionDenial),
     Queue(ResourceManagedQueueDenial),
     SafePoint(crate::data::resource::ResourceSafePointObservationDenial),
+    QueueUnavailable,
+    QueueNotDrained { depth: u64 },
+    CleanupPending,
 }
 
 impl<D, I, T> SignalConditionalExecutionPort<D, I, T>
@@ -98,27 +87,10 @@ where
                 queue_capacity,
             )
         })?;
-        let wrap = |queue| SignalOwnedAsyncManagedQueueBinding {
-            origin: binding.clone(),
-            binding: queue,
-        };
-        Ok(match state {
-            SignalOwnedAsyncManagedAdmissionState::Ready { request, queue } => {
-                SignalOwnedAsyncManagedAdmission::Ready {
-                    request,
-                    queue: wrap(queue),
-                }
-            }
-            SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
-                report,
-                queue,
-                cause,
-            } => SignalOwnedAsyncManagedAdmission::CleanupRequired {
-                report,
-                queue: queue.map(wrap),
-                cause,
-            },
-        })
+        Ok(SignalOwnedAsyncManagedAdmission::from_initial(
+            binding.clone(),
+            state,
+        ))
     }
 
     pub fn enqueue_owned_async_queue(

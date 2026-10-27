@@ -18,6 +18,14 @@ pub enum RuntimeWorldOwnedAsyncRevalidationDenial {
     Bridge(worth_runtime_bridge::facade::BridgeAsyncCompletionRejection),
 }
 
+#[derive(Debug)]
+pub enum RuntimeWorldOwnedAsyncManagedRevalidationDenial {
+    ForeignOwner,
+    RelationalSourceMismatch,
+    NoCommittedSource,
+    Bridge(worth_runtime_bridge::facade::BridgeOwnedAsyncManagedDenial),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum RuntimeWorldOwnedAsyncProductValidationDenial {
     ForeignOwner,
@@ -33,6 +41,38 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(crate) fn revalidate_managed_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        request: &mut worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
+        RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    > {
+        let truth = self
+            .validate_owned_async_product(observation, relational_source)
+            .map_err(|cause| match cause {
+                RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::ForeignOwner
+                }
+                RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::RelationalSourceMismatch
+                }
+                RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
+                    RuntimeWorldOwnedAsyncManagedRevalidationDenial::NoCommittedSource
+                }
+            })?;
+        bridge
+            .revalidate_managed_owned_async_request(
+                request,
+                observation.basis().signal_basis(),
+                truth,
+            )
+            .map_err(RuntimeWorldOwnedAsyncManagedRevalidationDenial::Bridge)
+    }
+
     pub(crate) fn admit_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,

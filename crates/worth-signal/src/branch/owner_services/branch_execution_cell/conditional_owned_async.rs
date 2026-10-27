@@ -1,5 +1,6 @@
 mod completion_commit;
 mod managed_queue;
+mod managed_replacement;
 
 use std::sync::atomic::Ordering;
 
@@ -99,7 +100,10 @@ where
         definition: &SignalInstalledDefinitionBinding,
         node: ResourceNodeId,
         handle: ResourceRequestHandle,
-    ) -> Result<SignalOwnedAsyncRetrySchedule, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<
+        crate::data::resource::ResourceRetryScheduleReport,
+        SignalConditionalServiceExecutionDenial,
+    > {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
             state.schedule_owned_async_retry(node, handle)
         })

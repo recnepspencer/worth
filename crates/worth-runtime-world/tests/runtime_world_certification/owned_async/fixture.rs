@@ -246,3 +246,44 @@ pub fn completion(
         64,
     )
 }
+
+pub(super) fn selected_fork(court: &AsyncSourceCourt) -> ProductBranchObservation {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let committed = court.publish(execution, &court.empty);
+    let fork = court.fork(&committed, "managed-async-fork");
+    drop(court.prepare(&execution, &committed));
+    let sibling = court.publish(execution, &committed);
+    assert!(
+        sibling
+            .basis()
+            .relational_basis()
+            .observation()
+            .commit_id()
+            .unwrap()
+            .0
+            > fork
+                .basis()
+                .relational_basis()
+                .observation()
+                .commit_id()
+                .unwrap()
+                .0
+                + 1
+    );
+    fork
+}
+
+pub(super) fn admit_managed(
+    court: &AsyncSourceCourt,
+    selected: &ProductBranchObservation,
+) -> BridgeOwnedAsyncManagedRequestAdmission {
+    let lease = court.lease(selected);
+    let owner = court
+        .world
+        .admit_managed_owned_async_request(&court.bridge, &court.declaration, selected, &lease)
+        .expect("actual selected source admits a managed native request");
+    assert!(!owner.cleanup_required());
+    assert!(owner.request().is_some());
+    owner
+}

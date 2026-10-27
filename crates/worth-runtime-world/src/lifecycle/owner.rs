@@ -37,7 +37,8 @@ pub(crate) use operation::{
     RuntimeWorldOperationReservation, RuntimeWorldPublicationCapacityLedger,
 };
 pub use owned_async_product::{
-    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    RuntimeWorldOwnedAsyncRevalidationDenial,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
