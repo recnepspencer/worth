@@ -561,6 +561,11 @@ and scope binding. A transported codec description grants no provider, action or
 completion authority. These contracts are a Phase 8 prerequisite; the ordinary
 Host resource lifecycle remains unfinished.
 
+Installed resource access purposes carry only their actual action and requested
+disclosure facets. Close has no Inspect or result obligation; detailed close adds
+only cleanup detail. ResourceRead admission binds that exact installed contract
+to genuine provider capacity, without borrowing the Access query's payload plan.
+
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
 whose branch version is zero. Empty targets return typed `NoCommittedSource`

@@ -9,6 +9,7 @@ pub enum WorthQueryApplicationResourceInstallationDenialKind {
     UnsupportedValueProfile,
     InvalidLimits,
     MissingActionAuthorization,
+    AccessContractInvalid,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

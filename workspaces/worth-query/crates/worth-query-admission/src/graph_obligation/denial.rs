@@ -44,6 +44,7 @@ pub enum WorthQueryGraphWorkAdmissionDenial {
     ExecutionResource(WorthQueryExecutionResourceAdmissionDenial),
     ProviderSupportUnavailable,
     OperationAuthorityMismatch,
+    ResourceAuthorityMismatch,
     CapacityUnavailable,
     IdentityExhausted,
 }

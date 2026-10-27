@@ -911,6 +911,14 @@ its decoder. Boolean availability and lifecycle state do not authorize counts;
 cleanup detail requires both Count and Explanation influence. The Host provider
 and progression surface remains unfinished.
 
+The installed-access prerequisite compiles explicit Resource/action/facet
+obligations rather than reusing the Access query's payload plan or permission.
+Close and detailed Close retain their own action; only the latter selects cleanup
+disclosure. ResourceRead admission checks exact installed purpose/subject and
+actual provider-support affinity before reserving capacity. The reservation
+remains with its admitted plan until terminal/drop. Fresh session, provider and
+Host integration are still required; these compiled contracts grant no permission.
+
 The native prerequisite adds World-qualified managed request
 admission, exact attempt-owned queue custody and genuine Signal completion commit.
 Completion admission remains distinct from commit; cancellation leaves queue drain

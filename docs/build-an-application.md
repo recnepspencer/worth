@@ -1853,6 +1853,10 @@ Managed asynchronous resource requests are still a required
 through Decl/Host. Resource declarations and installed typed-profile lookup are
 available as prerequisites: they separate Start/Inspect/Advance/Close authority
 from availability, state, payload, domain failure and cleanup-detail disclosure.
+Installed access purposes keep the corresponding action and facets together;
+plain Close requires no Inspect or payload disclosure. Their ResourceRead plans
+retain genuine provider capacity until terminal release, but grant no lifecycle
+action or payload permission by themselves.
 Availability is boolean existence; protected queue/provider counts belong to
 cleanup detail and require Count as well as Explanation influence. The ordinary
 Host start/progression/provider surface remains unfinished.

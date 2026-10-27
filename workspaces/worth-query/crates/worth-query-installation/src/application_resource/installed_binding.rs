@@ -47,6 +47,26 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>>
     ) -> Option<&WorthQueryInstalledAbilityRequirement> {
         self.compiled.requirements.get(&action)
     }
+    pub fn access_contract(
+        &self,
+        purpose: super::WorthQueryResourceAccessPurpose,
+    ) -> &super::WorthQueryInstalledResourceAccessContract {
+        &self.compiled.access_contracts[&purpose]
+    }
+    #[doc(hidden)]
+    pub fn retain_access_contract(
+        &self,
+        purpose: super::WorthQueryResourceAccessPurpose,
+    ) -> Arc<super::WorthQueryInstalledResourceAccessContract> {
+        Arc::clone(&self.compiled.access_contracts[&purpose])
+    }
+    #[doc(hidden)]
+    pub fn owns_access_contract(
+        &self,
+        contract: &super::WorthQueryInstalledResourceAccessContract,
+    ) -> bool {
+        std::ptr::eq(self.access_contract(contract.purpose()), contract)
+    }
 }
 
 impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {

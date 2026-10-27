@@ -26,6 +26,10 @@ pub(crate) struct CompiledApplicationResource {
     pub(super) access: Arc<WorthQueryCompiledApplicationQueryBinding>,
     pub(super) requirements:
         BTreeMap<ApplicationResourceAction, WorthQueryInstalledAbilityRequirement>,
+    pub(super) access_contracts: BTreeMap<
+        super::WorthQueryResourceAccessPurpose,
+        Arc<super::WorthQueryInstalledResourceAccessContract>,
+    >,
 }
 
 #[derive(Default)]
@@ -82,12 +86,18 @@ impl WorthQueryInstalledApplicationResourceCatalog {
                     requirements.insert(action, requirement.clone());
                 }
             }
+            let access_contracts = super::access_compilation::compile_access_contracts(
+                schema,
+                definition,
+                &requirements,
+            )?;
             let compiled = CompiledApplicationResource {
                 schema: schema.binding_identity(),
                 definition: definition.clone(),
                 descriptor: descriptor.clone(),
                 access,
                 requirements,
+                access_contracts,
             };
             if resources
                 .insert(parts.name.clone(), Arc::new(compiled))
