@@ -9,6 +9,7 @@ use std::{ffi::OsString, num::NonZeroU64, path::PathBuf};
 
 use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
+use worth_store::physical_runtime::certification::{MediaFaultDirective, MediaOperationRole};
 use worth_store::physical_runtime::production::PhysicalCheckpointStep;
 use worth_store::physical_runtime::{
     PhysicalRecoveryProcessYieldpoint, PhysicalRecoveryYieldpointStage as Stage,
@@ -79,6 +80,9 @@ fn prove_stage(
         (Stop::Commit(Seam::AfterWalDurability), InFlight::Durable)
     };
     let killed = process_kill::launch_with_wal_segment_bytes(stop, wal_segment_bytes);
+    if stage == Stage::ObligationDischarge {
+        leave_indeterminate_replacement(&killed.location, execution);
+    }
     let markers = tempfile::tempdir().unwrap();
     let label = PathBuf::from(stage.label());
     let bytes = wal_segment_bytes.map(|bytes| PathBuf::from(bytes.get().to_string()));
@@ -119,6 +123,33 @@ fn prove_stage(
             again.close();
         }
     }
+}
+
+/// A settled WAL seam leaves no physical-work obligation. Lose the answer
+/// to a real root replacement so recovery must adjudicate and discharge one.
+/// Checkpointing changes no logical history, even when its selection is unclear.
+fn leave_indeterminate_replacement(
+    location: &std::path::Path,
+    execution: &ExecutionRequest<'_, '_>,
+) {
+    let fault = (
+        MediaOperationRole::AtomicReplace,
+        NonZeroU64::new(1).unwrap(),
+        MediaFaultDirective::IndeterminateAfterEffect,
+    );
+    let (home, activations) = super::media_faults::open_with_faults(
+        location,
+        schema_transition::TARGET,
+        &[fault],
+        execution,
+    )
+    .unwrap();
+    super::media_faults::arm(&activations);
+    assert!(home
+        .checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .is_err());
+    assert!(activations[0].is_consumed());
+    home.certification_abort();
 }
 
 #[test]
