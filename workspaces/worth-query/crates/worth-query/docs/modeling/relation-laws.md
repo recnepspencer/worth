@@ -335,8 +335,31 @@ policy so real bulk construction can finish; that ceiling is not a locality clai
 The existing compiled
 `invariant_reads` example still exercises the real geometry and access refusals.
 
-Full Phase 5 remains open for cert-only replay, actual differing worker execution
-with exact identity/lineage agreement, and CAD shell adoption through face adjacency.
+### Component Replay And Worker Determinism
+
+The existing [Native component recovery court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/components.rs)
+separately checks checkpoint-plus-tail recovery and actual
+`ReplayAuthority::replay_commit` audits after split and merge. Audit recovery must
+compare the Snapshot surface without failure or mismatch. That surface includes
+all authoritative entity aspects, including aggregate names and lineage rows,
+and all physical relations, including membership. Nonempty split/merge events
+are first observed through genuine pinned aggregate reads. The replay Lineage
+surface concerns branch/schema history and does not replace these component
+facts. Replay remains a certification concern; ordinary application readers do
+not gain a replay import.
+
+The [Native worker court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/components/workers.rs)
+submits identical birth, split, least-member removal and merge commits under
+actual one-, two- and eight-worker leases. It compares both declared sets' full
+published membership, opaque names and incident lineage, plus retirement and
+merge continuation for every issued name. Parallel cases require real
+staged-parallel metadata and bounded overlap of genuine invariant readers on
+distinct worker threads. Prepared proposed/committed reads must agree with the
+corresponding publication. This proves stable publication under parallel
+invariant execution; it makes no claim that partition maintenance is parallel.
+
+Full Phase 5 remains open for CAD shell adoption through face adjacency and the
+final guide/phase acceptance audit.
 
 ### Privileged Component Inspection
 
@@ -393,9 +416,9 @@ full-verification fallback; no record-local invalidation cost is promised.
 The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
 use an installed mutation binding, real admission and both projection seals.
 They cover complete/partial/foreign cohorts and negative census evidence across
-ordinary World publications. Ordinary invariant consumption,
-the full Phase 5 topology/replay/locality portfolio
-and CAD shell integration remain unfinished in
+ordinary World publications. Ordinary invariant consumption and the public
+topology, replay and locality courts are described above. CAD shell integration
+and the final acceptance audit remain unfinished in
 [Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
 
 ### Declared Component-Query Contracts

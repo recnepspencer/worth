@@ -636,9 +636,14 @@ The public [topology island consumer](../../workspaces/worth-query/crates/worth-
 now uses complete component reads plus genuine ordered orbits. Its existing
 grouped topology target includes independent seeded union-find comparison across
 ordinary coupling edits and least-member replacement, and original business-read
-locality beside 10 and 10,000 unrelated rings. This is partial Phase 5 evidence;
-cert-only replay, actual worker-count identity/lineage equality and private CAD
-shell integration still prevent phase acceptance.
+locality beside 10 and 10,000 unrelated rings. The Native component courts also
+audit actual cert-only replay after split/merge and compare complete published
+membership, identities, incident lineage and historical-name resolution across
+one, two and eight workers. Parallel runs require actual overlapping invariant
+readers and staged-parallel metadata; they do not claim parallel partition
+maintenance. See [component replay and worker determinism](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism).
+Phase 5 remains open for private CAD shell integration and the final guide/phase
+acceptance audit.
 
 ### Gaps To Watch
 

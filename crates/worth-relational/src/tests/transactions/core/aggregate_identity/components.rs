@@ -2,6 +2,7 @@
 mod fixtures;
 mod proposal;
 mod registration;
+mod workers;
 use fixtures::*;
 use worth_foundational::facade::AggregateLineageKind;
 
@@ -152,7 +153,7 @@ fn physical_couplings_drive_split_anchor_removal_merge_and_exact_fork_identity()
 }
 
 #[test]
-fn checkpoint_and_tail_replay_keep_component_definitions_memberships_and_lineage() {
+fn checkpoint_tail_recovery_and_cert_replay_keep_component_memberships_and_split_merge_lineage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = persisted();
@@ -171,6 +172,11 @@ fn checkpoint_and_tail_replay_keep_component_definitions_memberships_and_lineage
             .push(delete_edge(&born, 5, 6)),
     );
     let expected = read(execution, &runtime, &split.snapshot, false, ids[1]);
+    assert!(expected
+        .lineage()
+        .any(|event| event.kind() == AggregateLineageKind::SplitFrom
+            && event.occurrence() == split.commit.commit_id));
+    audit_component_replay(execution, &runtime, &split);
     let (_, recovered) = recover_with(execution, &runtime, persisted);
     let snapshot = snapshot_for_owner_branch(&recovered, &BranchId("main".into()));
     let actual = read(execution, &recovered, &snapshot, false, ids[1]);
@@ -190,6 +196,59 @@ fn checkpoint_and_tail_replay_keep_component_definitions_memberships_and_lineage
         runtime.history().commit_envelopes_snapshot(),
         recovered.history().commit_envelopes_snapshot()
     );
+    let merged = commit(
+        execution,
+        &runtime,
+        WorkerIntentBatch::new("replayed-component-merge").push(edge(
+            6,
+            2,
+            EntityReference::Existing(ids[1]),
+            EntityReference::Existing(ids[3]),
+        )),
+    );
+    let joined = read(execution, &runtime, &merged.snapshot, false, ids[3]);
+    assert_eq!(joined.identity(), expected.identity());
+    assert_eq!(joined.members().collect::<Vec<_>>(), ids[1..4]);
+    assert!(joined
+        .lineage()
+        .any(|event| event.kind() == AggregateLineageKind::MergedInto
+            && event.occurrence() == merged.commit.commit_id));
+    audit_component_replay(execution, &runtime, &merged);
+}
+
+fn audit_component_replay(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    target: &CommitResult,
+) {
+    use crate::facade::replay::{
+        RelationalReplayRequest, ReplayExecutionMode, ReplayObservableSurface,
+        ReplayVerificationMode,
+    };
+    let audit = runtime
+        .replay_authority()
+        .replay_commit(
+            RelationalReplayRequest {
+                commit_id: target.commit.commit_id,
+                branch_id: BranchId("main".into()),
+                execution_mode: ReplayExecutionMode::SerialDeterministic,
+                verification_mode: ReplayVerificationMode::AuditRecoveryVerification,
+            },
+            execution,
+        )
+        .unwrap();
+    assert_eq!(audit.failure, None, "{:?}", audit.mismatches);
+    assert!(audit.mismatches.is_empty());
+    assert_eq!(audit.snapshot_version, Some(target.commit.version_id));
+    assert!(audit
+        .reconstructed_commit_closure
+        .contains(&target.commit.commit_id));
+    // Snapshot comparison includes all authoritative entity aspects (aggregate
+    // names and lineage rows) and physical relations (complete memberships).
+    // The separate Lineage surface describes branch/schema lineage instead.
+    assert!(audit
+        .compared_surfaces
+        .contains(&ReplayObservableSurface::Snapshot));
 }
 
 #[test]

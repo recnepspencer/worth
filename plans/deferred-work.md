@@ -141,8 +141,10 @@ explains visibility, disclosure and retained source evidence.
 [Milestone 9.18.1 Phase 5](WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity)
 now includes the public topology island consumer, independent seeded union-find
 merge/split/anchor-removal courts and actual split business-read locality beside
-10 and 10,000 unrelated rings. It remains open for cert-only replay, actual worker
-execution with identical identities/lineage, and Proprietary CAD shell adoption.
+10 and 10,000 unrelated rings. The [Native replay and worker courts](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-replay-and-worker-determinism)
+audit split/merge replay and identical published identities/lineage across actual
+one-, two- and eight-worker runs. It remains open for Proprietary CAD shell
+adoption and the final guide/phase acceptance audit.
 Keep this entry until those complete-phase gates pass; remove it when Phase 5
 ships rather than describing implemented Query declarations as unavailable.
 

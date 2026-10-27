@@ -1,4 +1,5 @@
 //! Installed Native rules retain real aggregate reads across preparation and seal.
+pub(super) mod parallel;
 use std::num::NonZeroU64;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
