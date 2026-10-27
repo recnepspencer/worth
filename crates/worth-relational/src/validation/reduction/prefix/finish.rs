@@ -151,7 +151,7 @@ impl ReducedInvariantPrefix {
             if stage.output.strategy.serial_selection_reason.is_some() {
                 failures.push(PreparationFailureClass::SerialStrategySelected);
             }
-            conflicts.extend(stage.conflicts.drain(..));
+            conflicts.append(&mut stage.conflicts);
         }
         for _ in &conflicts {
             check(1, 0)?;

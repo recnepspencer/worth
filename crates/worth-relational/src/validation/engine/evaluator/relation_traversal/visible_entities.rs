@@ -131,24 +131,22 @@ fn collect_planned_entities(
             }
             crate::transactions::data::MutationIntent::Create(
                 crate::transactions::data::CreateIntent::BulkEntities(spec),
-            ) => {
-                if contract_candidate_kind_matches(spec.kind_id, kind_ids) {
-                    for client_key in &spec.client_keys {
-                        if !context.checkpoint(1) {
-                            return;
-                        }
-                        if !context.claim_scratch(
-                            (std::mem::size_of::<EntityReference>() as u64)
-                                .saturating_add(client_key.owned_allocation_capacity_bytes()),
-                        ) {
-                            return;
-                        }
-                        entities.push(EntityReference::Created(CreatedEntityRef {
-                            partition_id: spec.partition_id,
-                            kind_id: spec.kind_id,
-                            client_key: client_key.clone(),
-                        }));
+            ) if contract_candidate_kind_matches(spec.kind_id, kind_ids) => {
+                for client_key in &spec.client_keys {
+                    if !context.checkpoint(1) {
+                        return;
                     }
+                    if !context.claim_scratch(
+                        (std::mem::size_of::<EntityReference>() as u64)
+                            .saturating_add(client_key.owned_allocation_capacity_bytes()),
+                    ) {
+                        return;
+                    }
+                    entities.push(EntityReference::Created(CreatedEntityRef {
+                        partition_id: spec.partition_id,
+                        kind_id: spec.kind_id,
+                        client_key: client_key.clone(),
+                    }));
                 }
             }
             _ => {}

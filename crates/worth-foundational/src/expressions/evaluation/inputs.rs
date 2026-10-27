@@ -142,7 +142,7 @@ fn conform(
             }
             (Repr::Map(parts), ExpressionType::Map(key, entry))
             | (Repr::Entry(parts), ExpressionType::MapEntry(key, entry)) => {
-                for pair in parts.items.chunks_exact(2) {
+                for pair in parts.items.as_chunks::<2>().0 {
                     pending.push((&pair[0], (**key).clone()));
                     pending.push((&pair[1], (**entry).clone()));
                 }

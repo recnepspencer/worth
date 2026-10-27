@@ -42,6 +42,10 @@ impl DemandRecords {
         self.4.get()
     }
 
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     pub(super) fn retain(
         &mut self,
         mut predicate: impl FnMut(&WorthQueryOutputDemandKey, &mut DemandRecord) -> bool,
@@ -129,6 +133,10 @@ impl DemandRecords {
             .insert(key.clone());
         self.0.insert(key, row)
     }
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     pub(super) fn remove(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
         let row = self.0.remove(key)?;
         self.3.remove(row.product_occurrence);

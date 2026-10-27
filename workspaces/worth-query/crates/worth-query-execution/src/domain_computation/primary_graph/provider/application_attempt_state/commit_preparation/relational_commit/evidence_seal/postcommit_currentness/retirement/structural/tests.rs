@@ -192,13 +192,13 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
         unreachable!()
     };
     let original_identity = observation.native().identity();
-    let incoming = walk(&facts)
+    let incoming = walk(facts)
         .native()
         .relations()
         .iter()
         .find(|edge| edge.target == anchor)
         .unwrap();
-    let outgoing = walk(&facts)
+    let outgoing = walk(facts)
         .native()
         .relations()
         .iter()
@@ -250,7 +250,7 @@ fn retiring_the_selected_anchor_does_not_retire_the_surviving_group_read() {
     cancellation.cancel();
     at_current(&world, &execution, |runtime, snapshot| {
         assert!(matches!(
-            prepare(runtime, &stopped, snapshot, &facts[0], &nodes(&facts)),
+            prepare(runtime, &stopped, snapshot, &facts[0], &nodes(facts)),
             Err(CompanionPreflightStop::Execution(Cause::Cancelled))
         ));
     });

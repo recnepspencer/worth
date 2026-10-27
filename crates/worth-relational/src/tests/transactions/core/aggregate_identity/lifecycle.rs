@@ -111,7 +111,7 @@ fn committed_birth_anchor_removal_split_merge_and_fork_keep_one_identity_owner()
     };
     let lineage: Vec<_> = read
         .relations()
-        .into_iter()
+        .iter()
         .filter(|edge| edge.kind.kind_id == KindId(4))
         .map(|edge| {
             let state = edge.authoritative_aspect_state.as_ref().unwrap();
@@ -150,7 +150,7 @@ fn committed_birth_anchor_removal_split_merge_and_fork_keep_one_identity_owner()
     );
     let ownership: Vec<_> = read
         .relations()
-        .into_iter()
+        .iter()
         .filter(|edge| edge.kind.kind_id == KindId(5) && read.get_entity(edge.source).is_some())
         .map(|edge| (edge.source, row_identity(edge.target)))
         .collect();

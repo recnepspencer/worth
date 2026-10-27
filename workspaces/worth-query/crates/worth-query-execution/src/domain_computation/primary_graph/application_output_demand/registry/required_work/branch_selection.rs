@@ -28,11 +28,7 @@ impl SelectedRequiredWork {
         let next_version = state.version.checked_add(1);
         let mut cursor = &mut state.native_hints;
         let mut at_head = true;
-        loop {
-            let Some(hint) = cursor.as_ref() else {
-                break;
-            };
-
+        while let Some(hint) = cursor.as_ref() {
             if hint.branch.branch_id() == branch {
                 break;
             }

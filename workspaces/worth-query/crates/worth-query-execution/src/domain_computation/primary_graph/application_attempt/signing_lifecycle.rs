@@ -76,7 +76,7 @@ pub(super) fn expand<Schema: ApplicationSchema, Operation, Input, Scope>(
         .map_err(|cause| cause.into_commit_outcome())??;
     let extra = super::read_set::admit_completed_facts(
         batch.facts.len(),
-        batch.facts.into_iter(),
+        batch.facts,
         request.allocation_policy(),
         admission.publication_request(),
         admission.operation(),

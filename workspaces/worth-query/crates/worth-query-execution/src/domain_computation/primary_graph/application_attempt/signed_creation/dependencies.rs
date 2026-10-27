@@ -80,7 +80,7 @@ pub(super) fn capture<Schema, Operation, Input, Scope>(
         .map_err(Denial::Execution)??;
     candidate
         .read_set
-        .append_completed_facts(revisions.into_iter(), request.allocation_policy())
+        .append_completed_facts(revisions, request.allocation_policy())
         .map_err(Denial::Attempt)?;
     Ok((candidate, memory))
 }

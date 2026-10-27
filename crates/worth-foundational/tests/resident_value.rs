@@ -8,6 +8,11 @@ use worth_foundational::facade::ChargedBytes;
 struct Record {
     label: String,
     #[serde(skip)]
+    // This adversarial shape must count the boxed Vec header and spare capacity.
+    #[expect(
+        clippy::box_collection,
+        reason = "the court verifies both nested heap owners, including a serde-skipped field"
+    )]
     cache: Option<Box<Vec<String>>>,
 }
 

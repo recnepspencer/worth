@@ -53,16 +53,16 @@ pub(super) fn find(
                     }
                     let entity = EntityId::new(partition_id, logical as u64, slot.generation());
                     let row = super::super::stored_record::decode(view, entity, kind, work)?;
-                    if row.definition == contract.definition && row.identity == identity {
-                        if found
+                    if row.definition == contract.definition
+                        && row.identity == identity
+                        && found
                             .replace(StoredAggregate {
                                 entity,
                                 record: row,
                             })
                             .is_some()
-                        {
-                            return work.invalid(PlanDenial::AmbiguousIdentity);
-                        }
+                    {
+                        return work.invalid(PlanDenial::AmbiguousIdentity);
                     }
                 }
             }

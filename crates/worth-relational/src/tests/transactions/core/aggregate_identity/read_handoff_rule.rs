@@ -129,10 +129,8 @@ impl ReaderRule {
         let scope = capture.proposed.clone();
         let succeeded = !capture.proposed.is_empty() || !capture.committed.is_empty();
         self.control.captures.lock().unwrap().push(capture);
-        if succeeded {
-            if let Some(cancel) = self.control.cancel.lock().unwrap().as_ref() {
-                cancel.cancel();
-            }
+        if succeeded && let Some(cancel) = self.control.cancel.lock().unwrap().as_ref() {
+            cancel.cancel();
         }
         scope
     }

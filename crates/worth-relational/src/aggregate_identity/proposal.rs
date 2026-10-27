@@ -266,12 +266,12 @@ impl AggregateInvocation<'_> {
                 ..
             })
         );
-        if result.is_ok() || promoted {
-            if let Some(error) = self.source.owner.failure() {
-                control.check()?;
-                crate::validation::engine::check_invariant_request(*execution)?;
-                return Err(error);
-            }
+        if (result.is_ok() || promoted)
+            && let Some(error) = self.source.owner.failure()
+        {
+            control.check()?;
+            crate::validation::engine::check_invariant_request(*execution)?;
+            return Err(error);
         }
         result
     }

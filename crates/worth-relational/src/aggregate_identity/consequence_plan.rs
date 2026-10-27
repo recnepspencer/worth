@@ -120,7 +120,7 @@ pub(super) fn append(
                 retired: None,
             }
         } else {
-            let mut row = cohorts.rows[&assignment.identity].record.clone();
+            let mut row = cohorts.rows[&assignment.identity].record;
             row.current_anchor = Some(anchor);
             row
         };
@@ -139,7 +139,7 @@ pub(super) fn append(
     }
     for identity in &result.retired {
         let old = &cohorts.rows[identity];
-        let mut row = old.record.clone();
+        let mut row = old.record;
         row.current_anchor = None;
         row.retired = Some(occurrence);
         work.retain(extent::row_mutation())?;
