@@ -590,8 +590,14 @@ pages supply genuine retained product ancestry, fork inheritance and exact
 component evidence, with typed refusal at retired gaps. They retain the pinned
 source instead of reading a newer live head; see
 [exact product history](../crates/worth-runtime-world/README.md#exact-retained-product-history).
-The declared Decl/Host history query remains unfinished
-in [Phase 10](../plans/WORTH-query/milestone-9.18.1.md#phase-10-bounded-record-and-aspect-change-history).
+The installed Decl/Host route declares an
+`ApplicationHistoryQueryDefinition` over a real `SubjectRead`, captures only its
+disclosed exact generations, and opens/continues a bounded cursor at a pinned
+product with fresh SubjectRead and independent metadata admission. The compiled
+facade audit qualifies this route in
+[Phase 10](../plans/WORTH-query/milestone-9.18.1.md#phase-10-bounded-record-and-aspect-change-history).
+See [installed capture and paging](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+for the API, separate capability decisions, typed gaps and final release.
 See [native paging and retention](../crates/worth-relational/API_OVERVIEW.md#bounded-record-and-aspect-history).
 
 ### Graph-read admission in the default Query workspace

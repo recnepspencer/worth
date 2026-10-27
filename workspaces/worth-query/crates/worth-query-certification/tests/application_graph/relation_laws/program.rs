@@ -85,7 +85,7 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             .operation_delete(EditFeeds::reference(), Node::reference())
             .operation_delete(EditFeeds::reference(), Leaf::reference())
             .application_mutation_binding::<FeedsBinding<L>>();
-        if L::RELATION_PAYLOAD {
+        let schema = if L::RELATION_PAYLOAD {
             schema
                 .relation_aspect(
                     ApplicationRelationAspectDefinition::new(
@@ -103,7 +103,8 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
                 )
         } else {
             schema
-        }
+        };
+        L::observation_members(schema)
     }
 }
 impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphContribution<L> {

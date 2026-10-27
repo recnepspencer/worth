@@ -6,6 +6,10 @@ use crate::history::{
     CompositeAncestorSelectionDenial, CompositeRuntimeWorldCommit, RetainedExactHistoryPosition,
 };
 
+/// Typed refusal to open or advance exact retained product history.
+/// Branch and history variants preserve their actual owner's denial; request
+/// and allocation variants retain the original execution cause. An invalid
+/// continuation cannot install a successor on the supplied cursor.
 #[derive(Debug)]
 pub enum ProductExactHistoryDenial {
     Branch(RuntimeWorldBranchAdmissionDenial),
@@ -74,16 +78,27 @@ impl PreparedProductExactHistoryPage<'_, '_> {
 }
 
 impl ProductExactHistoryCursor {
+    /// Newly owned source and first-position backing; canonical commit custody is shared.
+    pub const fn opening_backing_bytes() -> usize {
+        Self::source_backing_bytes() + Self::transition_backing_bytes()
+    }
+
+    /// One new retained parent position; existing immutable sources remain shared.
+    pub const fn transition_backing_bytes() -> usize {
+        RetainedExactHistoryPosition::owned_backing_bytes()
+    }
+
+    const fn source_backing_bytes() -> usize {
+        std::mem::size_of::<ExactHistorySource>() + 2 * std::mem::size_of::<usize>()
+    }
+
     pub(crate) fn owner_issued(
         execution: worth_execution::ExecutionRequest<'_, '_>,
         target: ProductBranchObservation,
         position: Arc<RetainedExactHistoryPosition>,
     ) -> Result<Self, ProductExactHistoryDenial> {
         let memory = execution
-            .reserve_retained_memory(
-                (std::mem::size_of::<ExactHistorySource>() + 2 * std::mem::size_of::<usize>())
-                    as u64,
-            )
+            .reserve_retained_memory(Self::source_backing_bytes() as u64)
             .map_err(ProductExactHistoryDenial::Request)?;
         Ok(Self {
             source: Arc::new(ExactHistorySource {

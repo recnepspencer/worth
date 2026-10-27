@@ -6,6 +6,11 @@ impl LawPolicy for Payload {
     const INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     const RELATION_PAYLOAD: bool = true;
+    fn observation_members(
+        schema: ApplicationSchemaDeclarationBuilder<GraphSchema<Self>>,
+    ) -> ApplicationSchemaDeclarationBuilder<GraphSchema<Self>> {
+        super::super::history::declare(schema)
+    }
 }
 worth_query_aspect!(pub EdgeFacts for S: GraphSchemaBinding, Precedes;
     identity = AspectIdentity(0x91811001), revision = AspectContractRevision(1));

@@ -8,6 +8,11 @@ pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const RELATION_PAYLOAD: bool = false;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
+    fn observation_members(
+        schema: ApplicationSchemaDeclarationBuilder<GraphSchema<Self>>,
+    ) -> ApplicationSchemaDeclarationBuilder<GraphSchema<Self>> {
+        schema
+    }
 }
 #[derive(Clone, Debug)]
 pub struct Acyclic;

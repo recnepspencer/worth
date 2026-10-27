@@ -20,6 +20,10 @@ pub(crate) struct RetainedExactHistoryPosition {
 }
 
 impl RetainedExactHistoryPosition {
+    pub(crate) const fn owned_backing_bytes() -> usize {
+        std::mem::size_of::<Self>() + 2 * std::mem::size_of::<usize>()
+    }
+
     pub(crate) fn commit(&self) -> &CompositeRuntimeWorldCommit {
         &self.commit
     }
@@ -91,9 +95,6 @@ fn reserve_position(
     }
     .check_live()?;
     execution
-        .reserve_retained_memory(
-            (std::mem::size_of::<RetainedExactHistoryPosition>() + 2 * std::mem::size_of::<usize>())
-                as u64,
-        )
+        .reserve_retained_memory(RetainedExactHistoryPosition::owned_backing_bytes() as u64)
         .map_err(Denial::Request)
 }

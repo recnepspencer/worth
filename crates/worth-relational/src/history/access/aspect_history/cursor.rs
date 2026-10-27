@@ -76,7 +76,7 @@ impl RelationalRuntime {
             checkpoint.poll()?;
             let memory = execution
                 .reserve_retained_memory(
-                    (size_of::<RetainedCanonicalRecordHistory>() + 2 * size_of::<usize>()) as u64,
+                    RelationalCanonicalRecordHistoryCursor::owned_source_backing_bytes() as u64,
                 )
                 .map_err(Denial::Request)?;
             let envelope = self
@@ -105,6 +105,11 @@ impl RelationalRuntime {
 }
 
 impl RelationalCanonicalRecordHistoryCursor {
+    /// The new cursor source wrapper shares its canonical envelope and sealed selection.
+    pub const fn owned_source_backing_bytes() -> usize {
+        size_of::<RetainedCanonicalRecordHistory>() + 2 * size_of::<usize>()
+    }
+
     /// Canonical record patches are the source-visit granule. Selected-aspect
     /// lookup is logarithmic in a record's operations; no patch payload is copied.
     /// All failures leave the accepted position unchanged.

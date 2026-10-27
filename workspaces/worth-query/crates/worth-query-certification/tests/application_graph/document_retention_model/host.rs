@@ -95,6 +95,9 @@ impl WorthQueryApplicationContribution<DocumentRetentionSchema> for DocumentRete
         setup.handler::<super::actor_generation::ActorLifecycleBinding, _>(
             super::actor_generation::ActorLifecycleHandler,
         )?;
+        setup.handler::<super::record_history::reaffirm::Binding, _>(
+            super::record_history::reaffirm::Handler,
+        )?;
         setup.invariant(
             DocumentRetentionV1::reference(),
             ApplicationInvariantExecutionPoint::CommitBoundary,
@@ -279,6 +282,7 @@ fn seed_host(
     seed_document(graph);
     super::workflow::seed_authoring(graph);
     super::workflow::governed_read::seed(graph);
+    super::record_history::seed(graph);
     super::program_adoption::seed(graph);
     Ok(())
 }

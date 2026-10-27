@@ -332,6 +332,8 @@ pub use worth_query_execution::facade::application_contribution;
 pub use worth_query_execution::facade::application_discovery;
 pub use worth_query_execution::facade::application_installation;
 pub use worth_query_execution::facade::application_invariants;
+/// Read-only observations for facade-only certification; these reports grant no authority.
+pub use worth_query_execution::facade::certification;
 pub use worth_query_execution::facade::convergence_epoch;
 pub use worth_query_execution::facade::installed;
 pub use worth_query_execution::facade::primary_graph;

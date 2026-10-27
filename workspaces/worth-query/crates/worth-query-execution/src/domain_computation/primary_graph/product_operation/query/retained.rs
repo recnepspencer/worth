@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
-    pub(super) fn retained_query_controls(
+    pub(in crate::domain_computation::primary_graph) fn retained_query_controls(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         retained: WorthQuerySelectedProductOperation<'runtime, Schema>,

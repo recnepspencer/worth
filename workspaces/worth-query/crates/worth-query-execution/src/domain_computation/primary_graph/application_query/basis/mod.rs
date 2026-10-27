@@ -22,5 +22,6 @@ pub(crate) use historical_authority::WorthQueryApplicationHistoricalRead;
 pub(super) use index_currency_denial::map_index_currency_denial;
 pub(in crate::domain_computation::primary_graph) use selected_indexes::PreparedSelectedReadIndexes;
 pub(super) use selected_indexes::{
-    ensure_selected_read_indexes_admitted, ensure_selected_read_indexes_admitted_with_native_access,
+    ensure_query_truth_and_security_indexes_admitted,
+    ensure_query_truth_and_security_indexes_admitted_with_native_access,
 };
