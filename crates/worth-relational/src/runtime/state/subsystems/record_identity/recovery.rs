@@ -296,6 +296,7 @@ impl RecordIdentitySubsystem {
             (class, partition_id, slot),
             PendingRecordReservation { generation, origin },
         );
+        super::observation::reserved(&self.state, class, partition_id, slot, generation);
         Ok(RecordSlotReservation::new(
             Arc::clone(&self.state),
             class,

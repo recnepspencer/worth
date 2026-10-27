@@ -39,3 +39,7 @@ pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalPatchPositionReservationCounters,
     RelationalPhase4ReferenceCostCounters,
 };
+
+pub use subsystems::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};

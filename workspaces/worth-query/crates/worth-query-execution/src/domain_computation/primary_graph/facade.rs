@@ -387,3 +387,9 @@ pub use super::application_checkpoint::{
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };
+
+pub use super::record_reservations::{
+    WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial,
+    WorthQueryRecordReservationObservationFailure, WorthQueryRecordReservationReport,
+    WorthQueryReservedRecord,
+};

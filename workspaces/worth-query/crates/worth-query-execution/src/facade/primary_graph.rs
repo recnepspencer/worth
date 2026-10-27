@@ -385,3 +385,9 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };
+
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial,
+    WorthQueryRecordReservationObservationFailure, WorthQueryRecordReservationReport,
+    WorthQueryReservedRecord,
+};

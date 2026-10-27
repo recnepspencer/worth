@@ -579,7 +579,7 @@ capability retained during bootstrap; it grants no initial-state authoring on
 restore. Ordinary runtime holders cannot mint it. Restoration and admission use
 the existing checkpoint owner and resource limits.
 
-### Inspect checkpoints
+### Inspect checkpoints and rejected-proposal reservations
 
 `WorthQueryPrimaryGraphApplicationRuntime::inspect_application_checkpoint`
 accepts an advancement phase and checkpoint bytes. It returns a typed
@@ -589,3 +589,15 @@ Query framing and native fields/arenas have their single codec owners. This is
 reconstructive diagnostic inspection, not recovery admission or mutation
 permission. Unknown fields fail closed; codec projections exhaustively classify
 their actual decoded types. Ordinary reads should use query/projection APIs.
+
+`observe_record_reservations` on that runtime starts an owned, bounded observer
+for actual Native reservations in this runtime on the current thread. Drop ends
+it, including on unwind. Its explicit diagnostic allocation policy funds fixed
+backing; `report(policy)` seals a funded immutable prefix. Reports retain entity
+and relation coordinates even when the proposal refuses. Capacity, request and
+physical allocation failures return typed incomplete-evidence failures; no
+partial report is certified as complete. Other runtimes/threads are excluded.
+Observer recording costs O(active observers) per reservation; starting reserves
+O(maximum records), and sealing a report copies O(observed records). The observer
+never changes allocation or publication semantics. Scope it around the proposal
+being diagnosed; concurrent proposals on other threads are independent.

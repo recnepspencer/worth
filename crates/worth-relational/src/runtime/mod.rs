@@ -94,3 +94,7 @@ pub(crate) use state::{
 };
 
 pub use crate::visibility::materialization::read_records::BoundedFrontierReadStop;
+
+pub use state::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};
