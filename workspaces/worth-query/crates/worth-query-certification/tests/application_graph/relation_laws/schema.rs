@@ -6,6 +6,8 @@ use worth_query_host::facade::declaration::{application_schema::*, authenticatio
 pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const INTEGRITY: ApplicationRelationIntegrity;
     const RELATION_PAYLOAD: bool = false;
+    const DERIVED_RELATIONS: bool = false;
+    const CUSTOM_DERIVED_OWNER: bool = false;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
     fn observation_members(

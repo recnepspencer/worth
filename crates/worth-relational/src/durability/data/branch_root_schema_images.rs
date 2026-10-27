@@ -22,6 +22,9 @@ pub(crate) struct DurableBranchRootSchemaImage {
     entity_registrations: Vec<DurableEntitySchemaRegistration>,
     relation_registrations: Vec<DurableRelationSchemaRegistration>,
     retained_aspect_contracts: Vec<PortableAspectContract>,
+    // Appended optional tail preserves physical-only sequence and map encodings.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -80,6 +83,7 @@ impl DurableBranchRootSchemaImage {
             descriptor_semantics_version: authority.descriptor_semantics_version(),
             entity_registrations,
             relation_registrations,
+            derived_relations: registry.derived_parts(),
             retained_aspect_contracts: authority
                 .retained_aspect_contracts()
                 .iter()
@@ -144,6 +148,12 @@ impl DurableBranchRootSchemaImage {
                 .register_relation_kind(registration.readmit()?)
                 .map_err(|error| format!("relation schema readmission denied: {error:?}"))?;
         }
+        registry = registry
+            .register_derived_relations(self.derived_relations.clone())
+            .map_err(|error| format!("derived schema readmission denied: {error:?}"))?;
+        if registry.derived_parts() != self.derived_relations {
+            return Err("branch-root derived definitions are not canonical".to_owned());
+        }
         if registry.authority_digest_bytes() != self.schema_root {
             return Err("branch-root schema authority digest mismatch".to_owned());
         }
@@ -171,6 +181,7 @@ impl DurableBranchRootSchemaImage {
         let mut digest = Sha256::new();
         digest.update(b"worth.relational.branch-root-schema-image.v1\0");
         digest.update(encoded);
+        crate::derived_relation::canonical::update_digest(&mut digest, &self.derived_relations);
         Ok(digest.finalize().into())
     }
 }

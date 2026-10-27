@@ -76,7 +76,7 @@ basis.
 
 ### Derived relation meaning
 
-The Phase 6 declaration prerequisite names a derived endpoint set with
+A derived endpoint set is named with
 `ApplicationDerivedRelationRef` and builds its recipe with
 `ApplicationDerivedRelation`. Recipes compose actual stored or named-derived
 references, reverse direction, and optionally exclude self edges. Completed
@@ -87,10 +87,41 @@ edge deletion and physical uniqueness remain with stored relations.
 `rule_readable_collection` records the existing Feature, Collection, Computation,
 output artifact and completeness identities. `operation_read_derived_relation`
 records an operation's declared source read. These associations grant no read,
-publication or capability authority. Until the actual Native proposed source
-and managed collection/read owners are connected, binding such a schema refuses
-with `DerivedSourceUnavailable`. Ordinary schemas keep their existing installed
-path. Rule-readable runtime execution and CAD adoption remain unfinished.
+publication or capability authority. The supported first vertical requires
+unbounded endpoint-set laws and same-context (`Forbid`) traversal on every
+physical leaf. Other authored law combinations refuse installation with
+`DerivedSourceUnavailable`, including empty graphs.
+
+Ordinary invariant setup resolves a typed derived relation against its actual
+installed physical leaf roster. Preparation admits the complete source under
+the genuine proposed or committed observation; evaluation consumes that frozen
+proof with the same observation, root generation, posture, definition and access
+contract. Proposed reads cannot borrow a committed proof or cached endpoint set.
+Decision readers additionally require the actual operation's declared derived
+read and issued physical scopes. They record every physical entity and explored
+adjacency, including empty adjacency and distinct paths with equal endpoints;
+a failed source read vetoes the decision even if a handler swallows its error.
+
+For a count projection, contribution setup uses `derived_relation_count` with
+the same declared recipe and actual collection traits. Its computation declares
+`ApplicationDerivedRelationCountPartition`, the built-in deterministic one-bucket
+key, and `DeterministicPartitioned` execution. The closed framework owner feeds
+the existing partitioned computation and collection completion.
+Installation refuses a custom owner that only repeats the descriptive collection
+association. The existing derived-view registry retains the disposable count and
+its reverse dependency index under the actual Product branch/incarnation/commit.
+Physical changes invalidate it even when the derived endpoint set stays equal.
+Every count first acquires its Native source, so warm retention is not a promise
+of avoiding physical proof work. `discard_rule_readable_collections()` removes
+these projections; later reads can reconstruct them without changing truth or
+ordinary Query views.
+
+The [facade journey](../../../worth-query-certification/tests/application_graph/relation_laws/derived/court.rs)
+uses an authenticated action, real proposed-state rule, negative-adjacency edit,
+physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
+checks that a broad proof cannot lend its physical source access to a narrower
+reader on the same observation. Full Phase 6 laws, walks, orbits, components,
+logical member domains and CAD consumers remain unfinished.
 
 Read-only application work follows one path:
 

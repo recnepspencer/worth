@@ -79,6 +79,10 @@ impl<'runtime> StructuralAspectStateView<'runtime> {
 
 #[derive(Clone)]
 pub struct StructuralRelationView<'runtime> {
+    pub(crate) derived_source: Option<(
+        crate::derived_relation::catalog::DerivedRegistryCustody,
+        crate::derived_relation::affinity::DerivedSourceAffinity,
+    )>,
     state_view: InvariantStateView<'runtime>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     work: super::CustomInvariantWorkMeter,
@@ -143,6 +147,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
             execution,
             work,
             access,
+            derived_source: None,
             aggregate: None,
             #[cfg(test)]
             walk_observer: None,

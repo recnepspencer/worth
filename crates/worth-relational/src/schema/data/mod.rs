@@ -98,6 +98,10 @@ pub struct KindResolution {
 pub struct RelationalSchemaRegistry {
     pub(crate) entity_kinds: BTreeMap<KindId, EntityKindRegistration>,
     pub(crate) relation_kinds: BTreeMap<KindId, RelationKindRegistration>,
+    pub(crate) derived_relations: BTreeMap<
+        crate::derived_relation::DerivedRelationIdentity,
+        std::sync::Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
+    >,
 }
 
 impl RelationalSchemaRegistry {
@@ -151,11 +155,19 @@ impl RelationalSchemaRegistry {
         mut self,
         additions: RelationalSchemaRegistry,
     ) -> Result<Self, SchemaRegistryError> {
+        let derived = additions.derived_relations;
         for registration in additions.entity_kinds.into_values() {
             self = self.register_entity_kind(registration)?;
         }
         for registration in additions.relation_kinds.into_values() {
             self = self.register_relation_kind(registration)?;
+        }
+        for (identity, entry) in derived {
+            if self.derived_relations.insert(identity, entry).is_some() {
+                return Err(SchemaRegistryError::inconsistent_schema_basis(
+                    "derived relation is already registered",
+                ));
+            }
         }
         Ok(self)
     }
@@ -361,6 +373,7 @@ impl RelationalSchemaRegistry {
             primary_schema_version_id,
             entity_kinds,
             relation_kinds,
+            derived_relations: self.derived_parts(),
         }
     }
 

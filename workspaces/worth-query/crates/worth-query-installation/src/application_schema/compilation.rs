@@ -1,4 +1,5 @@
 use std::sync::Arc;
+mod derived_sources;
 
 use worth_foundational::facade::{CanonicalDigestDerivationDenial, CanonicalDigestId};
 use worth_query_declaration::facade::application_schema::{
@@ -84,27 +85,8 @@ where
             ));
         }
     }
-    // Descriptive source syntax is not a Native candidate/source binding.
-    // Until that owner exists, installing these laws must refuse rather than
-    // bootstrap a schema whose proposed derived obligations would be skipped.
-    for member in input.declaration.erased().members() {
-        use worth_query_declaration::facade::application_schema::ApplicationSchemaMember as Member;
-        let subject = match member {
-            Member::DerivedRelation { definition } => Some(definition.parts().relation.clone()),
-            Member::RuleReadableCollection { association } => Some(format!(
-                "{}::{}",
-                association.feature, association.collection
-            )),
-            Member::OperationDerivedRead {
-                operation,
-                relation,
-            } => Some(format!("{operation}:{relation}")),
-            _ => None,
-        };
-        if let Some(subject) = subject {
-            return Err(ApplicationSchemaCompilationDenial::DerivedSourceUnavailable(subject));
-        }
-    }
+    derived_sources::validate(input.declaration.erased().members())
+        .map_err(ApplicationSchemaCompilationDenial::DerivedSourceUnavailable)?;
     let binding_identity = ApplicationSchemaBindingIdentity::from_installed_parts(
         input.package_authority.runtime_ordinal,
         input.package_authority.generation.ordinal(),

@@ -104,6 +104,11 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
         } else {
             schema
         };
+        let schema = if L::DERIVED_RELATIONS {
+            super::derived::declare(schema)
+        } else {
+            schema
+        };
         L::observation_members(schema)
     }
 }
@@ -119,7 +124,11 @@ impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphCo
             setup.handler::<EditBinding<L>, _>(Handler)?;
         }
         setup.handler::<CreateBinding<L>, _>(CreateHandler)?;
-        setup.handler::<FeedsBinding<L>, _>(FeedsHandler)
+        setup.handler::<FeedsBinding<L>, _>(FeedsHandler)?;
+        if L::DERIVED_RELATIONS {
+            super::derived::configure(setup)?;
+        }
+        Ok(())
     }
 }
 pub struct GraphFeature;
@@ -127,23 +136,41 @@ impl<L: LawPolicy> ApplicationFeature<GraphSchema<L>> for GraphFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.relation-laws.feature.v1";
 }
+pub struct GraphRules<L: LawPolicy>(PhantomData<fn() -> L>);
+impl<L: LawPolicy> ApplicationProgramRulesShape<GraphSchema<L>> for GraphRules<L> {
+    fn rules() -> Vec<ApplicationProgramRuleDeclaration> {
+        if L::DERIVED_RELATIONS {
+            super::derived::program_rules::<L>()
+        } else {
+            Vec::new()
+        }
+    }
+}
 pub struct GraphProgram<L: LawPolicy>(PhantomData<fn() -> L>);
 impl<L: LawPolicy> ApplicationProgramDefinition<GraphSchema<L>> for GraphProgram<L> {
     type Contributions = (GraphContribution<L>,);
     type Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>;
-    type Rules = ApplicationRuleLeaf;
+    type Rules = GraphRules<L>;
     const IDENTITY: ApplicationProgramIdentity =
         ApplicationProgramIdentity::new("worth.query.relation-laws.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
-        vec![
-            ApplicationFeatureSpec::root::<GraphSchema<L>, GraphFeature>()
-                .native_action::<EditBinding<L>>()
+        let feature = ApplicationFeatureSpec::root::<GraphSchema<L>, GraphFeature>()
+            .native_action::<EditBinding<L>>()
+            .finish_action()
+            .native_action::<CreateBinding<L>>()
+            .finish_action()
+            .native_action::<FeedsBinding<L>>()
+            .finish_action();
+        let feature = if L::DERIVED_RELATIONS {
+            feature
+                .native_action::<super::derived::CountBinding<L>>()
                 .finish_action()
-                .native_action::<CreateBinding<L>>()
-                .finish_action()
-                .native_action::<FeedsBinding<L>>()
-                .finish_action()
-                .finish(),
-        ]
+                .derived_artifact::<super::derived::Artifact>()
+                .managed_computation::<super::derived::CountComputation>()
+                .derived_collection::<super::derived::CountCollection>()
+        } else {
+            feature
+        };
+        vec![feature.finish()]
     }
 }

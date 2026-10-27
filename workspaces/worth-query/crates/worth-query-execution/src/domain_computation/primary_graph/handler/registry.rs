@@ -138,6 +138,7 @@ where
             }
         }
         self.require_operation_body_coverage(installed_schema)?;
+        self.validate_rule_readable_collections(installed_schema)?;
         Ok(InstalledMutationHandlerRegistry {
             entries: self.entries.clone(),
             _schema: PhantomData,

@@ -12,6 +12,10 @@ pub struct SchemaAuthoritySnapshot {
     pub primary_schema_version_id: Option<SchemaVersionId>,
     pub entity_kinds: Vec<SchemaAuthorityKindSnapshot>,
     pub relation_kinds: Vec<SchemaAuthorityRelationSnapshot>,
+    /// Complete executable recipes. Empty legacy authorities keep their text
+    /// representation and V2 digest unchanged.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub derived_relations: Vec<crate::derived_relation::DerivedRelationDefinitionParts>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -41,10 +45,22 @@ impl SchemaAuthoritySnapshot {
             .saturating_mul(std::mem::size_of::<SchemaAuthorityKindSnapshot>() as u64);
         let relation_storage = (self.relation_kinds.capacity() as u64)
             .saturating_mul(std::mem::size_of::<SchemaAuthorityRelationSnapshot>() as u64);
+        let derived_storage = (self.derived_relations.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<
+                crate::derived_relation::DerivedRelationDefinitionParts,
+            >() as u64)
+            .saturating_add(
+                self.derived_relations
+                    .iter()
+                    .map(|definition| definition.owned_capacity_bytes() as u64)
+                    .sum(),
+            );
         self.entity_kinds
             .iter()
             .fold(
-                entity_storage.saturating_add(relation_storage),
+                entity_storage
+                    .saturating_add(relation_storage)
+                    .saturating_add(derived_storage),
                 |bytes, kind| bytes.saturating_add(kind.kind_name.capacity() as u64),
             )
             .saturating_add(
@@ -99,6 +115,7 @@ pub fn schema_authority_snapshot_digest_bytes(snapshot: &SchemaAuthoritySnapshot
             relation_kind.cascade_delete_policy,
         )]);
     }
+    crate::derived_relation::canonical::update_digest(&mut hasher, &snapshot.derived_relations);
     let digest = hasher.finalize();
     let mut out = [0_u8; 32];
     out.copy_from_slice(&digest);
@@ -153,12 +170,14 @@ mod tests {
             primary_schema_version_id: Some(SchemaVersionId(0)),
             entity_kinds: vec![kind(1, &boundary_name)],
             relation_kinds: Vec::new(),
+            derived_relations: Vec::new(),
         };
         let two_kinds = SchemaAuthoritySnapshot {
             primary_schema_id: Some(SchemaId("s".to_owned())),
             primary_schema_version_id: Some(SchemaVersionId(0)),
             entity_kinds: vec![kind(1, "a"), kind(2, "b")],
             relation_kinds: Vec::new(),
+            derived_relations: Vec::new(),
         };
 
         assert_ne!(
@@ -363,6 +382,7 @@ mod tests {
             primary_schema_version_id: Some(SchemaVersionId(0)),
             entity_kinds: Vec::new(),
             relation_kinds: vec![relation],
+            derived_relations: Vec::new(),
         }
     }
 }

@@ -76,6 +76,9 @@ pub(crate) fn compile_application_contract_spine(
         let schema_operations = compile_portable_operation_contract_records(schema, &schema_native)
             .map_err(|denial| {
                 let kind = match denial {
+                    OperationDenial::InvalidDerivedSource => {
+                        DenialKind::ApplicationOperationContractInvalidDerivedSource
+                    }
                     OperationDenial::MissingNativeAspect => {
                         DenialKind::ApplicationOperationContractMissingNativeAspect
                     }

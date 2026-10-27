@@ -675,6 +675,14 @@ let count = reader.component_count(FaceIslands::reference())?;
 
 ## Phase 6: Derived Relations Readable By Rules
 
+**Status: open.** The first runtime vertical connects genuine Native endpoint
+sources to frozen proposed/committed invariant reads, declared decision reads and
+a framework-owned managed endpoint count. Six focused courts qualify unbounded
+laws with same-context physical leaves, proposed-state refusal, exact read
+access, managed-cache invalidation/rebuild and genuine Native/Query recovery.
+Full law/walk/orbit/component composition, logical member domains, differential
+and growth evidence, and CAD adoption remain required below.
+
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
 ### Requirements

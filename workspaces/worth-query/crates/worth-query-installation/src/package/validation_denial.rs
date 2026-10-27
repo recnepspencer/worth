@@ -25,6 +25,7 @@ pub enum WorthQueryPortablePackageValidationDenialKind {
     ApplicationContractInvalidFieldKey,
     ApplicationContractInvalidAspectShape,
     ApplicationContractProjectionMaskRejected,
+    ApplicationOperationContractInvalidDerivedSource,
     ApplicationOperationContractMissingNativeAspect,
     ApplicationOperationContractMissingNativeField,
     ApplicationOperationContractInvalidProjectionMask,

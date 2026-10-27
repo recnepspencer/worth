@@ -23,8 +23,8 @@ mod operation_projection_denial;
 mod operation_reader;
 pub(in crate::domain_computation::primary_graph) use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
-    WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
-    WorthQueryOutputAvailabilityState,
+    WorthQueryInvariantDerivedRelation, WorthQueryObservedOutputAvailability,
+    WorthQueryOutputAvailabilityDenial, WorthQueryOutputAvailabilityState,
 };
 mod realized_scope;
 mod relation_field;

@@ -40,7 +40,9 @@ impl ApplicationRuleReadableCollectionAssociation {
         Ok(())
     }
 
-    pub(crate) fn of<Schema, Feature, Collection>(relation: &str) -> Self
+    /// Projects the actual existing trait identities. The result remains
+    /// descriptive; only a configured framework owner can bind this bridge.
+    pub fn of<Schema, Feature, Collection>(relation: &str) -> Self
     where
         Schema: ApplicationSchema,
         Feature: ApplicationFeature<Schema>,

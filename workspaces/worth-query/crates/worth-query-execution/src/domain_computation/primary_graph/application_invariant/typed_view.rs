@@ -16,9 +16,11 @@ use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
 mod component;
+pub(super) mod derived_relation;
 pub use component::{
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
 };
+pub use derived_relation::WorthQueryApplicationInvariantDerivedRelation;
 mod entity_reobservation;
 mod field_reads;
 mod interruption;

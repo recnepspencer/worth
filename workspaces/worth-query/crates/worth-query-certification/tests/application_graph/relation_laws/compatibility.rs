@@ -96,7 +96,7 @@ fn unbound_refused<L: LawPolicy>() {
     assert!(matches!(refusal.support_denial(), Some(worth_query_host::facade::domain::WorthQueryProgramSupportDenial::RelationLawMeaningMismatch { .. })), "{refusal:?}");
 }
 
-fn capture<L: LawPolicy>(world: &World<L>) -> WorthQueryApplicationCheckpoint {
+pub(super) fn capture<L: LawPolicy>(world: &World<L>) -> WorthQueryApplicationCheckpoint {
     let runtime = world.application.runtime();
     runtime
         .with_host_advancement(|phase| {
@@ -110,7 +110,7 @@ fn capture<L: LawPolicy>(world: &World<L>) -> WorthQueryApplicationCheckpoint {
         .unwrap()
 }
 
-fn restore<L: LawPolicy>(
+pub(super) fn restore<L: LawPolicy>(
     checkpoint: WorthQueryApplicationCheckpoint,
 ) -> Result<
     WorthQueryProgramApplicationRuntime<GraphSchema<L>, GraphProgram<L>>,

@@ -23,6 +23,9 @@ mod reconcile;
 #[cfg(test)]
 mod reconstruction_observation;
 mod refresh;
+mod source;
+pub(super) use source::ManagedDerivedSource;
+pub use source::WorthQueryRuleReadableCollectionLifecycleForTest;
 pub(in crate::domain_computation::primary_graph::application_query::derived_view) mod storage_quote;
 use storage_quote::image_quote;
 pub(super) use storage_quote::ManagedStoragePolicy;
@@ -65,7 +68,7 @@ struct RetainedView<Key, Value> {
 pub(super) struct ManagedDerivedViewState<Key, Value> {
     pub(super) runtime_authority: u64,
     pub(super) binding: ApplicationSchemaBindingIdentity,
-    pub(super) query: WorthQueryInstalledApplicationQueryIdentity,
+    pub(super) source: ManagedDerivedSource,
     pub(super) entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
     pub(super) secondary_entry_query: Option<WorthQueryInstalledApplicationQueryIdentity>,
     pub(super) branch: BranchId,
@@ -95,7 +98,7 @@ where
         Self {
             runtime_authority,
             binding,
-            query,
+            source: ManagedDerivedSource::Query(query),
             entry_query,
             secondary_entry_query,
             branch,

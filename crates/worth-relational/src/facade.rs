@@ -317,6 +317,10 @@ pub mod replay {
 }
 
 pub mod schema {
+    pub use crate::derived_relation::{
+        DerivedRelationDefinitionParts, DerivedRelationDenial, DerivedRelationHandle,
+        DerivedRelationIdentity, DerivedRelationNode,
+    };
     pub use crate::schema::aggregate_identity::{
         register_aggregate_identity_storage, register_aggregate_membership,
     };
