@@ -81,18 +81,18 @@ impl NodeDoor {
                 crate::lineage::data::LineageGraphRequest {
                     branch_id: BranchId("main".into()),
                     traversal_basis: crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-                }).map(|_| ()),
+                }).map(|graph| { assert!(graph.nodes().contains(&fixture.expected)); }),
             Self::Divergence => fixture.runtime.lineage_access().divergence_between_branches(execution,
                 crate::lineage::data::LineageDivergenceRequest {
                     left_branch: BranchId("main".into()), right_branch: BranchId("main".into()),
                     traversal_basis: crate::lineage::data::LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-                }).map(|_| ()),
+                }).map(|summary| { assert!(summary.shared_lineage_ids().contains(&fixture.expected.lineage_id())); }),
             Self::ObservationVisible => {
                 let identity = fixture.runtime.main_branch_identity();
                 let (_, basis) = fixture.runtime.observe_branch(&identity).unwrap();
                 fixture.runtime.visible_entities_for_lineages_at_observation(execution,
                     &basis.observation(), &[fixture.expected.lineage_id()])
-                    .map(|_| ()).map_err(|denial| match denial {
+                    .map(|entities| { assert!(entities.contains(&fixture.expected.entity_id())); }).map_err(|denial| match denial {
                         crate::change_source::RelationalObservationReadDenial::Execution(cause) => cause,
                         crate::change_source::RelationalObservationReadDenial::ForeignObservation => panic!("fixture owns its observation"),
                     })
@@ -101,7 +101,7 @@ impl NodeDoor {
                 .runtime
                 .lineage_access()
                 .for_record(execution, fixture.expected.entity_id())
-                .map(|_| ()),
+                .map(|node| assert_eq!(node, Some(fixture.expected.clone()))),
             Self::RecordHistory => fixture
                 .runtime
                 .lineage_access()
@@ -114,7 +114,7 @@ impl NodeDoor {
                             HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
                     },
                 )
-                .map(|_| ()),
+                .map(|history| { assert!(history.expect("the producer has a lineage").resolved.contains(&fixture.expected.lineage_id())); }),
             Self::AspectHistory => fixture
                 .runtime
                 .history()
@@ -124,7 +124,7 @@ impl NodeDoor {
                     fixture.expected.lineage_id(),
                     None,
                 )
-                .map(|_| ()),
+                .map(|history| { let history = history.expect("the producer has aspect history"); assert!(!history.entries.is_empty()); assert!(history.resolved_lineage_chain.contains(&fixture.expected.lineage_id())); }),
             Self::AspectHistoryTrace => fixture
                 .runtime
                 .history()
@@ -134,7 +134,7 @@ impl NodeDoor {
                     fixture.expected.lineage_id(),
                     None,
                 )
-                .map(|_| ()),
+                .map(|result| { let history = result.history.expect("the producer has traced aspect history"); assert!(!history.entries.is_empty()); assert!(history.resolved_lineage_chain.contains(&fixture.expected.lineage_id())); assert!(result.trace.returned_entries > 0); }),
         }
     }
 }

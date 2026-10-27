@@ -258,3 +258,6 @@ struct PreparationPlacements {
 }
 #[path = "cold_preparation_failure_matrix.rs"]
 mod failure_matrix;
+
+#[path = "cold_unique_symbols.rs"]
+mod unique_symbols;

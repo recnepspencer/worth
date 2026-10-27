@@ -60,6 +60,8 @@ mod cold_read_matrix;
 mod cold_reserved_checkpoint;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
+#[path = "cold_tail_matrix.rs"]
+mod cold_tail_matrix;
 #[path = "cold_visibility.rs"]
 mod cold_visibility;
 #[path = "replay_pin_concurrency.rs"]

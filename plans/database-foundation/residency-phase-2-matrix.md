@@ -1,144 +1,109 @@
 # Residency phase 2 matrix ledger
 
-This is the working coverage inventory, not a completion declaration. Each
-covered refusal family tests missing member, source unavailable, damaged,
-integrity mismatch, limit exceeded and memory exhausted. Proven damage is
-sticky; the other classes retry. Every refusal checks the journal frontier and
-publication offers. Positive cases check real producer contents rather than
-accepting `None` or an empty answer. Growth assertions use headroom.
+This is the current coverage inventory. Final clean-tree lane execution is
+still outstanding. Slice logs are intermediate evidence, not final acceptance.
+The chronological boundary findings, corrections and slice results are in
+`residency-phase-2.md`.
 
-| Guarded operation family | Region Head | Region history | Envelope | ID symbols | Intern bucket | Lineage node | Lineage events | Derived index |
-|---|---|---|---|---|---|---|---|---|
-| Projection adjacency/frontiers, exact and historical | adjacency table | historical only; exact untouched | metadata only | anchor and remote adjacency table | no interning | no lookup | no lookup | no lookup |
-| Transaction entity/relation reads and current writes | current matrix | must stay untouched | metadata only | current matrix | write bucket matrix | no lookup | no lookup | no lookup |
-| Remote invariant preparation | preparation matrix | must stay untouched | nonhead merge matrix | admitted current values | bucket matrix | audit pending | audit pending | index matrix |
-| Full scans, historical visibility, statistics, inspection, retention | Full read matrix | Full read matrix | operation-specific below | Full read matrix | no interning | node doors below | audit pending | index doors below |
-| Entity/relation/lineage aspect history, with and without trace | aspect matrix | aspect matrix | aspect matrix | aspect matrix | no interning | node matrix | event matrix (real Replace chain) | no lookup |
-| Envelope surfaces, bounded patches and patch stream | no region lookup | no region lookup | envelope matrix | envelope-owned text | no interning | envelope-owned facts | envelope-owned facts | optional artifact surface covered |
-| Retained artifact export | no region lookup | no region lookup | envelope matrix | envelope-owned text | no interning | envelope-owned facts | envelope-owned facts | omitted rebuildable cache |
-| Embedded native export | Full read matrix | Full read matrix | envelope matrix | Full read matrix | no interning | node matrix | event matrix | index matrix |
-| Portable memory checkpoint | Full read matrix | Full read matrix | envelope matrix | Full read matrix | no interning | node matrix | event matrix | index matrix |
-| Native external capture | must not load | must not load | complete index, no body load | carry directory custody | carry directory custody | carry page directory | event pages (CHK11) | carry image directory |
-| Independent merge planning/preparation | damage court; class expansion pending | audit pending | nonhead merge matrix | audit pending | shared bucket matrix | audit pending | audit pending | audit pending |
-| Transaction merge-parent validation | current preparation matrix | must stay untouched | nonhead merge matrix | current preparation matrix | shared bucket matrix | audit pending | audit pending | shared index matrix |
-| Node point/history/aspect/graph/divergence doors | operation Full matrix | operation Full matrix | selected history matrix | operation Full matrix | no interning | lineage matrix | event matrix | no lookup |
-| Cached derived-index use, pin and candidate preparation | operation Full matrix | operation Full matrix | audit pending | operation Full matrix | no interning | no lookup | no lookup | index matrix |
-| Derived-index build/reconstruction | Full read matrix | Full read matrix | historical Full/source table; envelope metadata suffices | Full read matrix | no interning | no lookup | no lookup | index matrix |
-| Replay envelope access, execution and ancestor receipts | historical snapshot Full guard | historical snapshot Full guard | envelope matrix in checkpoint and tail shapes | guarded snapshot admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
-| Historical lineage, selected observations, aspect wrappers, graphs, divergence and exports | operation region guard | operation Full guard | envelope courts | operation symbol guard | node matrix | event matrix, 11 doors | cache subject expansion pending |
-| Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
+Each refusal family tests six independently stated source outcomes: missing
+named member, source unavailable, damaged, integrity mismatch, limit exceeded
+and memory exhausted. Only missing named content and proven damage are sticky;
+transport, allocation and limit failures retry. Refusals preserve the exact
+subject and cause and check journal frontier and offered artifacts. Preparation
+courts additionally check position reservations and provisional effects.
 
-Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
-lineage node 54, lineage events 66, index cache/build/export/inspection 84, current Head/ID symbol 264, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390, historical index 24: 2,040 refusal cells. Positive current and
-remote-invariant unavailable-history families add 150 cells; adjacency adds another 258 untouched-subject positives. These totals are an
-inventory of the tables; final logs must prove the final tree's execution.
+| Operation family | Head | History | Envelope | ID symbols | Intern bucket | Lineage node/events | Derived image |
+|---|---|---|---|---|---|---|---|
+| Current transaction and projection points, metadata and retirement | current table | fault-armed untouched | metadata only | current table | no interning | no old-page lookup | no lookup |
+| Exact projection kind/record scans | scan table | fault-armed untouched | metadata only | current closure; historical-only page untouched | no interning | no lookup | no lookup |
+| Versioned scans, historical visibility, statistics, inspection and retention | Full table | Full table | selected metadata or history door below | Full table | no interning | explicit lineage doors below; record inspection uses no lineage port | no cache lookup except indexed door below |
+| Projection adjacency/frontiers | anchor and remote table | historical only; exact untouched | metadata only | anchor and remote table | no interning | no lookup | no lookup |
+| Transaction validation/candidate/commit and remote uniqueness | preparation tables | fault-armed untouched | merge-parent table | current value admission | bucket table | new nodes/events derive from staged Head; no old-page lookup | index table |
+| Historical merge planning | merge member table | merge member table | nonhead merge table | merge member table | shared preparation bucket table | fault-armed untouched | fault-armed untouched |
+| Independent merge execution | accepted Head draft probes; planning supplies read inventory | historical planning above | admitted planning inventory | accepted dictionary custody | bucket table | fault-armed untouched | cache-unused table; explicit rebuild checked afterward |
+| Entity/relation/lineage aspect history, including trace | aspect table | aspect table | aspect table | aspect table | no interning | node/event tables | no lookup |
+| Bounded patches/streams and envelope surfaces | no lookup | no lookup | envelope table | envelope-owned meanings | no interning | envelope-owned facts | optional artifact surface covered |
+| Retained export | no lookup | no lookup | envelope table | envelope-owned meanings | no interning | envelope-owned facts | rebuildable cache omitted |
+| Embedded export and portable memory checkpoint | Full table | Full table | envelope table | Full table | no interning | node/event tables | index table |
+| External native checkpoint capture | no load | no load | index only; no body load | placement custody | placement custody | page-directory custody | image placement custody |
+| Node point/history/aspect/graph/divergence/observation doors | operation region guard | historical guard when needed | selected history table | operation symbol guard | no interning | node table; event table for resolution | no generation-cache port |
+| Cached generation reads, pin and field-read preparation | operation guard | Full pin guard | metadata only; no body port | operation guard | no interning | no lookup | index table |
+| Historical index reconstruction | historical-source table | historical-source table | fault-armed unused body | historical-only symbol table | no interning | no lookup | historical-source table |
+| Replay execution and ancestor receipts | historical snapshot guard | historical snapshot guard | checkpoint/tail envelope table | snapshot admission | shared issuance | identity-frontier courts and event table | replay cache reconstruction |
+| Tail recovery | tail table refusal | tail table untouched | checkpoint-head refusal; supplied-tail body untouched | tail table refusal | tail table untouched | tail node/event pages untouched | tail table refusal |
 
-Additional acceptance courts already present include probe miss/identity
-reservation tests, the Head type-level historical-access fence, selective
-journal envelope readmission, dictionary directory placement custody, paired
-memory/durable envelope lifetime, complete live index capture/reopen, and the
-two priority regression tests. Recovered tail lifetime is covered in both real journal shapes. Still required:
-independent-merge and tail-recovery class expansion and the final complete home-oracle lane. The
-new real Store-home agreement court passes cold/warm/fully-warmed reads and
-observations retained across commits and checkpoints. The
-final lane inventory and logs will be recorded after these gaps close.
+The table names both consumed and unconsumed subjects. An absent call to a
+subject's port is not modeled as a storage failure. In particular, uniqueness
+scans authoritative selected-state fields; merge's target identity index is
+built from selected records; neither consumes a derived-generation payload.
+Derived generations are explicitly refreshed. Historical merge planning uses
+versioned source, target and ancestor reads and therefore requires Full; its
+applied native commit draft uses the shared Head probe mechanism.
 
+## Table inventory
 
-Lineage event slice adds a real two-replacement fixture with unrelated ranges,
-shared-cell/per-runtime admission, concurrent demand, range-boundary locality,
-actual byte corruption in both body-first and export-first orders, older-page
-placement custody, and native capture from a fork whose shared pages are
-resident but query index is empty. The latter first emitted an empty event
-member directory; capture now reads counted resident page witnesses directly.
-The 66-cell event table passed in the complete 1,990-test native run. The outstanding
-reserved-ID checkpoint court exposed lost low IDs and now passes with CHK12
-exact page membership. Separate proofs refuse forged interior membership,
-duplicate publication IDs and overflowing high bits without another load.
+These count loop cases, not test functions or every subsidiary assertion.
+Additional setup/no-load/genuine-absence checks within a case are not counted
+again. Growth tests use headroom; zero I/O and identity uniqueness assertions
+are semantic requirements, not growth estimates.
 
+| Table | Typed refusal cases | Fault-armed untouched cases |
+|---|---:|---:|
+| Full/versioned reads and exact projection scans | 744 | 48 |
+| Envelope/export/checkpoint/replay/receipt | 156 | 0 |
+| Lineage node, nine doors | 54 | 0 |
+| Lineage event, eleven doors | 66 | 0 |
+| Generation cache/build/export/pin/inspection, fourteen doors | 84 | 0 |
+| Current Head/ID-symbol reads, twenty-two doors | 264 | 132 |
+| Intern buckets, five preparation doors | 30 | 0 |
+| Remote invariant preparation, three doors | 18 | 18 |
+| Aspect history | 144 | 0 |
+| Nonhead merge-parent history | 18 | 0 |
+| Projection adjacency, both bases and local/remote subjects | 390 | 258 |
+| Historical index source | 24 | 6 |
+| Historical merge planning members | 18 | 12 |
+| Independent merge unused generation cache | 0 | 6 |
+| Tail recovery, nine inputs | 24 | 30 |
+| **Total** | **2,034** | **510** |
 
-Public projection scan rows now include both exact and historical bases for
-bounded entity/relation kind scans and record projection callbacks. Their first
-cold Head returned WorkerFailed after a resident-only panic. All eight doors
-now pass the same three-subject, six-class table (144 added refusal cells).
-The complete native run passes 1,994 tests with 31 ignored. Pure metadata point
-and adjacency projection surfaces, historical index selection and the tail
-recovery class matrix remain under audit; final lanes remain unrun.
+The tail table uses actual producer Head/history, ID pages, bucket-page lists,
+node/event pages, a built generation, the covered checkpoint-head position and
+supplied canonical tail positions. A refused staging runtime leaves the
+receiving runtime untouched. A new recovery plan owns new cells; repairing
+transport and retrying a fresh plan does not reuse or clear a damaged live cell.
 
+## Additional acceptance evidence
 
-Current projection points add six doors (borrowed entity projection, admitted
-entity projection, ordinary/admitted entity revision, relation revision and
-current adjacency IDs): 72 refusal cells and 36 positive history-untouched
-cells. Actual callbacks remain at zero on a failed demand. The original
-transaction/preparation doors and their assertions are retained.
+- Probe/identity: `cold_candidates`, `cold_symbols` and preparation-round courts
+  prove misses cannot escape, abandoned identities are spent, diagnostics and
+  counters settle only for accepted rounds, and warm/cold meanings agree.
+- Head fence: residency type-level/compile-fail courts reject historical access
+  through Head, while Full demand folds history and returns the retained value.
+- Selective envelopes: `cold_envelopes` and `cold_envelope_lifetime` prove bounded
+  query reads, sticky journal damage, live/checkpoint/tail release and paired
+  memory-only retention. Historical index source selection leaves its unused
+  envelope cold with all six failure classes armed.
+- Paging: symbol view-level and ring dictionaries, node range locality, event
+  range/replacement courts, concurrent page admission and per-runtime fork
+  admission prove reopen loads only touched meanings. `cold_unique_symbols`
+  re-admits a real paged field in cold/Head-warm/Full-warm runtimes, gets the
+  original ID, and rejects its duplicate with a typed invariant conflict.
+- Custody: dictionary, index, node/event placement courts retain older carriers
+  across replacement; the outstanding-reservation checkpoint court preserves
+  late-published low identities. Full folding uses the authenticated dependency
+  directory rather than eagerly restoring old rows.
+- Accepted reads: pin/projection and deterministic Head callback courts retain
+  their immutable values after later transport damage; fresh reads refuse.
+- Lineage success adapters assert actual point nodes, resolved chains, aspect
+  entries, graph membership, divergence membership and visible entity identity.
+- Priority regressions remain unchanged:
+  `complexity_budget_unobserved_write_copies_no_partition` and
+  `publication_port_performs_one_exact_candidate_and_reports_the_loser_stale`.
+- Real home agreement compares cold, warm and fully warmed reads to a memory
+  reference, including observations retained across later commits/checkpoints.
+  Its complete home-oracle lane remains required, along with every other final
+  lane in the brief.
 
-
-Accepted-pin damage isolation now crosses actual embedded transport for all six
-failure classes. A raw view rejects proven damage; an accepted pin's metadata,
-point projection and Full scan keep their immutable meaning with zero further
-loads. Unproven transport failures preserve the healthy resident raw view.
-Resident basis construction also has a type-level fence against Default and
-infallible promotion from a selected metadata-only basis. The native full run
-passes 1,996 tests with 31 ignored; the subsequent added type fence passes its
-own focused lane. All final clean-tree evidence remains outstanding.
-
-
-Issued-snapshot kind/status/aspect reads and retirement add four current doors
-(48 refusal cells and 24 unavailable-history positives). The same table now
-covers 22 current doors, including genuine absence only after successful guard
-admission. Separate actual deletion/reopen evidence proves original creation
-and deletion versions are in Head. Head-only metadata pin courts prove cold
-construction refuses without I/O, shared authenticated Head bytes do not admit
-a fork's dictionary, and accepted meaning survives a later commit or proven
-transport damage. Public pin types are aggregated through the native facade;
-post-publication optional witness sealing consumes this no-load capability.
-
-Projection adjacency now has nine explicit doors and both exact/historical
-selection, against anchor and remote Head/history/ID-symbol pages in all six
-failure classes. The 648-cell table contributes 390 typed refusals and 258
-untouched-subject positives. Total refusal inventory is 2,040; positive table
-inventory is 414. Failed admitted reads expose no callbacks, and failed reads
-advance no journal position or offered artifact count. Sticky page assertions
-measure the failed page itself, preserving region/page damage isolation.
-
-The remote symbol fixture is causally checked: an actual admitted field is
-published in a declared relation aspect, its commit is made nonhead with an
-unrelated low-text commit, and the text is absent both immediately after reopen
-and after anchor warming. The actual incoming edge then refuses the failed page.
-A branch-head envelope legitimately carries its admitted meanings, so it cannot
-stand in for a cold page fixture. Current adjacency never opens history;
-outgoing adjacency never opens the remote edge's region or dictionary page.
-
-A deterministic Head callback court damages the physical carrier after Head
-admission and before borrowing the field revision. Accepted counted custody
-still returns the revision, while the next fresh read returns sticky damage.
-Native and projection cold/warm courts also prove abandoned discovery rounds
-settle no extra materialization or adjacency lease instrumentation. An exhausted
-frontier opens no source member. The full native run at this slice passes
-2,006 tests with 31 ignored; final clean-tree lanes are still outstanding.
-
-Generation payload inspection now adds latest, exact commit, exact observation
-and version inventory doors to the index table: 14 doors by six failure classes,
-84 refusal cells. The first row reproduced MissingMember becoming Ok(false).
-All four request-free payload getters are retired; their read_* replacements
-admit the existing image and preserve the exact native execution cause.
-Every index refusal also checks that no journal position was reserved.
-
-The public no-load generation_residency_for_observation status distinguishes
-DeferredImage, Absent and Published without exposing a payload or granting read
-authority. The same fault table checks DeferredImage and a genuinely absent
-definition with zero further reads. Query's existing certification observer uses
-that explicit cache status, preserving its no-warming claim. Fresh Query currency,
-bootstrap and principal reads propagate typed image failures; a native refresh
-execution failure is no longer flattened into generic index absence.
-
-Historical index reconstruction adds 30 cells: 24 refusals across selected Head,
-history, history-only ID symbols and the index image, plus six unused-envelope
-positives. Actual before/after symbolic values occupy different pages; the
-history-only value and nonhead body are cold at reopen. The build uses an older
-source commit after a later write and must match the memory producer's earlier
-generation entries. Its selected source may be exact or cover the MVCC interval;
-metadata selection itself performs zero member reads. Metadata-only source
-identity leaves the unused old envelope body cold even with every fault class
-armed. Frontier, offers and position reservations remain unchanged. Overall
-inventory is 2,040 refusal cells and 414 untouched-subject positives.
+Final evidence belongs in `target/lane-evidence/<lane>.log`, with exact command,
+HEAD, clean/dirty status, UTC start/end and exit code. The reviewer report must
+list final counts and log paths and identify every unrun lane as unrun.
