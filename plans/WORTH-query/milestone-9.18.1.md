@@ -659,13 +659,16 @@ acceptance audit.
 
 ### Target DX
 
-```rust,ignore
-schema.components::<Shells>(&[FaceAdjacency::reference()]);
+This is a component set of stored faces. CAD shells require the projected
+face-use member domain specified below; these face islands are not shells.
 
-let shell = reader.component_of(Shells::reference(), &face)?;
-let shell_identity = shell.identity();
-let faces = shell.members();
-let count = reader.component_count(Shells::reference())?;
+```rust,ignore
+schema.components::<FaceIslands>(&[FaceAdjacency::reference()]);
+
+let island = reader.component_of(FaceIslands::reference(), &face)?;
+let island_identity = island.identity();
+let faces = island.members();
+let count = reader.component_count(FaceIslands::reference())?;
 ```
 
 ---
@@ -732,6 +735,188 @@ schema.derived_relation::<FaceAdjacency>(
 
 let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face)?;
 ```
+
+---
+
+## CAD Shell Member Domain
+
+This contract governs the unfinished CAD shell adoption in Phases 5–6. It does
+not advertise an implemented projected-member API. The existing component
+declaration and Native membership storage accept physical entities; the first
+derived-relation runtime slice also has physical entity endpoints. Those are
+necessary foundations, not sufficient representations of the CAD shell domain.
+
+### Actual Consumer And Decisive Proof
+
+CAD's accepted cell-complex contract derives exactly two face uses per face:
+`(face, Negative)` and `(face, Positive)`, even when both sides have the same
+region. A shell is a maximal component of one region's boundary face uses joined
+through shared boundary vertices; shared-edge sectors are included in that
+connectivity. The exterior is selected by the actual side-to-body incidence,
+not a fabricated Region entity. Region-side incidence is source truth.
+
+A face-only or shared-edge-only implementation must fail these actual installed
+CAD journeys before acceptance:
+
+- A two-sided sheet has one exterior shell containing both uses of each face.
+  Self-edge exclusion compares complete face-use keys, never carrier faces.
+- Two boundary patches touching at a shared vertex join the appropriate shell
+  without inventing a shared edge. Disjoint patches remain separate.
+- A shared face between distinct regions contributes its two uses to the
+  distinct region boundaries. A route through another region cannot join them.
+  Interior sides in the same body that touch a shared vertex remain separate
+  when their regions differ; an unconditional face-to-body fallback must fail.
+- Actual source edits cut and join components, remove the least carrier, and
+  delete/recreate a carrier in a reused physical slot. Membership, persistent
+  names, retirement and split/merge continuations agree with independent
+  topology observations; a stale generation cannot select the new use.
+- A whole component transfers to another region with its use keys unchanged.
+  Its opaque Native identity survives without fabricated split/merge events;
+  current region changes, its old region-qualified address refuses current
+  resolution, and an authorized pinned historical read still observes the old
+  region. Reuse must observe the source edit even if adjacency endpoints match.
+- An absent stored-region side changes to a real region and back to its actual
+  exterior body. Proposed/committed rules, retained decisions and cached managed
+  results consume the changed positive and negative source facts. Endpoint
+  deduplication or Boolean recipe composition must not lose those dependencies.
+  Invalid both-anchor and neither-anchor edits retain the actual `SideAnchors`
+  refusal and publish no partial shell state.
+
+The public Native/Query courts additionally cover eviction and rebuild, exact
+fork/replay identity and lineage, and real differing-worker executions for this
+member domain. Read-only logical members cannot enter an entity writer, supply
+a mutation target or satisfy an authority/capability check. Negative cases need
+lawful actual-source counterparts. Reuse existing grouped targets; no new
+one-case Cargo targets, budget knobs or proof journals are required.
+
+### Product And Authority Decisions
+
+1. A declared projected member domain is a finite product of one stored carrier
+   entity kind and named cases. Its logical key contains the complete carrier
+   identity, including generation, and the canonical semantic case identity.
+   Case identity is independent of declaration/enumeration order. The domain
+   has no independently writable entity kind, allocated virtual EntityId or
+   RelationId. A declaration, copied key, digest or current least member grants
+   no observation or mutation authority.
+2. Native issues read-only logical member handles against the actual selected
+   schema/domain, carrier generation, immutable root and observation posture.
+   Query resolves the corresponding exact application binding. Preparation
+   admits the complete physical leaf closure and retains actual positive and
+   absence facts; evaluation consumes that frozen proof. Foreign domains,
+   roots, generations or narrower access audiences refuse before use. A
+   serialized selector needs fresh admission and cannot restore an old proof.
+3. Extend the existing derived-relation recipe/evaluator with carrier projection,
+   case-restricted carrier projection, homogeneous union and intersection.
+   These are closed typed meaning, not callbacks into application code. For
+   shells, derive face-use-to-vertex incidence, stored-region incidence and
+   explicit exterior-body incidence. CAD already stores `FaceNegative`,
+   `FacePositive`, `FaceNegativeExterior` and `FacePositiveExterior`; exactly
+   one stored-region or exterior anchor per side is enforced by its existing
+   `SideAnchors` invariant. Region incidence unions the Negative case/carrier
+   leg followed by `FaceNegative` with the Positive leg followed by
+   `FacePositive`. Exterior incidence instead follows the corresponding
+   explicit `FaceNegativeExterior`/`FacePositiveExterior` legs. It never falls
+   back to a face's owning body merely because no Region was observed. Shell
+   adjacency is shared-vertex incidence
+   intersected with the union of shared-region and shared-exterior incidence,
+   excluding equal complete logical keys. All branches retain their real
+   supporting and empty reads, including both explicit side-anchor rosters.
+   Replacing a stored-region side with an exterior side edits those actual
+   incidences; it is not a complement or application-defined fallback operator.
+   Native contains no CAD region, orientation or shell policy.
+4. The existing Native aggregate coordinator, partition maintenance and naming
+   policy own projected components. Complete logical member keys determine
+   heirs and name minting; routing keys and hashes never become identity.
+   Projected membership uses an explicit reserved Native metadata grammar for
+   logical coordinates, not fake business entities or physical relations.
+   Entity-domain records, meanings, canonical bytes and identities retain their
+   existing encoding when the projected-domain extension is absent. New domain
+   and recipe meaning participates in schema snapshots, digest, portability,
+   recovery and exact readmission before any runtime rebinding.
+5. Face-use identity does not contain region. A committed shell retains its
+   Native component identity across a whole-cohort region transfer under the
+   existing member-heir policy; region is separately observed current context.
+   A pure candidate's `(region, least face use)` is only a `ShellLocator`.
+   Committed CAD reads retain the real typed aggregate identity and current
+   region. Old representative `ShellName` bytes are never interpreted as Native
+   identities: current identity-bearing readmission refuses them as legacy
+   locators and directs a fresh source read. No stored carrier reference is
+   migrated through a guessed member or region.
+6. Domain projection, source evaluation, maintenance and retained proof use the
+   original request's work, memory and cancellation owners. Single-component
+   work is bounded by affected incidence and component membership, including
+   actual vertex-star fan-out and finite case multiplicity. Do not construct a
+   body-wide face Cartesian product or scan unrelated components. Full domain
+   census and reconstructive rebuild retain their explicit broader cost.
+
+### Target Contracts And Destination
+
+The declaration facade adds `ApplicationProjectedMemberDomainRef`,
+`ApplicationProjectedMemberDomainDefinition` and typed
+`ApplicationProjectedMemberCaseRef`. A domain reference cannot enter
+`schema.entity` or a stored relation endpoint. The existing component-set meaning
+gains an explicit projected-domain form; its typed `projected` constructor is
+distinct from the physical-entity constructor. Native and Query read-only
+projected identities remain distinct from physical entity identities. The common
+component read family accepts the corresponding typed binding/member pair;
+the actual Native aggregate owner remains singular.
+
+Target usage, after the declared domain/cases and set have been installed:
+
+```rust,ignore
+let use_ = reader.projected_member(FaceUses::reference(), &face, NegativeSide::reference())?;
+let shell = reader.component_of(Shells::reference(), &use_)?;
+let identity = shell.identity();
+let face_uses = shell.members();
+```
+
+Extend these existing authority axes; create populated responsibilities only:
+
+```text
+worth-query-declaration/src/application_schema/
+  projected_member_domain/{reference,definition,validation}.rs       create
+  component_set.rs; derived_relation/{expression,recipe,validation}.rs extend
+  canonical_identity/member/projected_member_domain.rs              create
+worth-query-package-archive/src/record/application_schema/member/
+  projected_member_domain.rs                                       create
+worth-relational/src/
+  projected_member_domain/{definition,key,admission,projection}.rs   create
+  derived_relation/{catalog,evaluation,proof,pinned}.rs              extend
+  aggregate_identity/{transition,projection,materialization,pinned}.rs extend
+worth-query-execution/src/domain_computation/primary_graph/
+  schema_layout/projected_member_domain.rs                          create
+  application_invariant/{typed_binding,prepared_scope,typed_view}/  extend
+  invariant_projection/component/; application_mutation/            extend
+worth-cad-entry/src/
+  schema/shells.rs; basis/live/shells.rs                             create
+worth-topology/src/
+  names/uses.rs; cells/{shell,uses}.rs                               change
+```
+
+Pure declaration/archive own meaning only; Native owns live admission, actual
+source evaluation and persistent metadata; Query carries their exact proofs
+through installed rules, decisions and result/disclosure owners. CAD owns face
+use, region and shell interpretation. The stable public facades remain Query
+Decl/Host and Native's runtime facade; do not add application deep imports,
+application callbacks, a second graph/view engine, writable FaceUse/Shell rows,
+or a private CAD partitioner for committed shell reads. Pure topology validation
+may retain candidate-local connectivity/locators and serves as an independent
+oracle; it does not mint committed identity.
+
+Implement in authority order within the existing phases: finite portable domain
+meaning and exact compatibility; Native source/domain admission and recipe
+evaluation; shared aggregate persistence and read handoffs; ordinary Query
+rule/decision/disclosure consumption; actual CAD adoption and removal of its
+representative-name publication path. Each reviewed slice is committed, but
+Phases 5–6 stay open until their complete original obligations pass.
+
+The continuing CAD contract is `cad/docs/plans/query-9.18.1-adoption.md` with the
+cell-complex naming rules and general-modeling use-name contract updated in the
+same adoption. The public capability index must distinguish currently shipped
+entity-domain components from projected-member requirements. The existing
+relation-law/invariant guides gain real compiled domain/case examples, failure
+and source-affinity semantics, region transfer, compatibility and lifecycle
+before phase acceptance; target snippets above are not substitutes for them.
 
 ---
 
