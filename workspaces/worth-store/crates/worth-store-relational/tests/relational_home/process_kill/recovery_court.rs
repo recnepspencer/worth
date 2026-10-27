@@ -23,6 +23,10 @@ pub(super) fn assert_killed_home_recovers(stop: Stop) {
         Stop::AboveCheckpoint => (InFlight::Nothing, 1),
         Stop::Commit(Seam::BeforeWalAppend) => (InFlight::NotDurable, 2),
         Stop::Commit(_) => (InFlight::Durable, 2),
+        Stop::CheckpointReturned => (InFlight::Nothing, 2),
+        Stop::CheckpointAcknowledged(_) => (InFlight::Nothing, 2),
+        Stop::CheckpointCarried(Seam::BeforeWalAppend) => (InFlight::Nothing, 2),
+        Stop::CheckpointCarried(_) => (InFlight::Nothing, 3),
         Stop::CheckpointMembers(_) => (InFlight::Nothing, 1),
         Stop::Checkpoint(Seam::BeforeWalAppend) => (InFlight::Nothing, 1),
         Stop::Checkpoint(_) => (InFlight::Nothing, 2),
@@ -44,6 +48,16 @@ pub(super) fn assert_killed_home_recovers(stop: Stop) {
         checkpoint,
         "{case}: selected checkpoint"
     );
+    if matches!(
+        stop,
+        Stop::CheckpointCarried(_) | Stop::CheckpointAcknowledged(_) | Stop::CheckpointReturned
+    ) {
+        assert_eq!(
+            home.cold_storage_reads().member_reads,
+            0,
+            "{case}: checkpoint reopen loads only the manifest"
+        );
+    }
     let commits = assert_recovered(&home, &script, &killed.acknowledged, &in_flight, &case);
     let transition_flight = match stop {
         Stop::BranchTransition(Seam::BeforeWalAppend)

@@ -123,15 +123,22 @@ fn a_location_holding_something_else_is_refused_not_initialized_over() {
 
 /// Flip one byte `offset` bytes after every occurrence of `pattern` in every
 /// file under `root`. Returns how many bytes were flipped.
-fn flip_after(
+pub(super) fn flip_after(
     root: &Path,
     pattern: &[u8],
     offset: usize,
     matches: &dyn Fn(&[u8]) -> bool,
 ) -> usize {
     let mut flipped = 0;
-    for entry in fs::read_dir(root).unwrap() {
-        let path = entry.unwrap().path();
+    let paths = if root.is_file() {
+        vec![root.to_owned()]
+    } else {
+        fs::read_dir(root)
+            .unwrap()
+            .map(|entry| entry.unwrap().path())
+            .collect()
+    };
+    for path in paths {
         if path.is_dir() {
             flipped += flip_after(&path, pattern, offset, matches);
             continue;
@@ -217,7 +224,7 @@ fn a_damaged_journal_entry_in_the_store_files_refuses_before_service() {
 
 /// The placement a home publishes under: the default record format with a
 /// manifest capacity of 64.
-fn home_placement() -> AdmittedRecordPlacementPolicy {
+pub(super) fn home_placement() -> AdmittedRecordPlacementPolicy {
     PhysicalRecordPlacementPolicy::builder()
         .manifest_capacity(ManifestEntryCapacity::new(64).unwrap())
         .admit(AdmittedPhysicalRecordFormat::admit(

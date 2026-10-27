@@ -51,3 +51,10 @@ mod residency_reopen;
 
 #[path = "relational_home/residency_agreement.rs"]
 mod residency_agreement;
+
+#[path = "relational_home/residency_fixture.rs"]
+mod residency_fixture;
+#[path = "relational_home/residency_media.rs"]
+mod residency_media;
+#[path = "relational_home/residency_process.rs"]
+mod residency_process;

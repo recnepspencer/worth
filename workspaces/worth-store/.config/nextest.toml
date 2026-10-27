@@ -66,6 +66,18 @@ slow-timeout = { period = "60s", terminate-after = 17 }
 filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
 slow-timeout = { period = "60s", terminate-after = 34 }
 
+# The first checkpoint adds 472 admitted cuts (236 per seed; 576 scheduled,
+# 104 directives inapplicable to their media role). Preserve the reference
+# 176-cut matrix's 300 s/default and 600 s/CI allowance: 472/176 * 300 =
+# 804.55 s and 472/176 * 600 = 1,609.09 s, rounded up to 14 / 27 minutes.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+slow-timeout = { period = "60s", terminate-after = 14 }
+
+[[profile.ci.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+slow-timeout = { period = "60s", terminate-after = 27 }
+
 # This test runs archive, deletion-request and delete matrices under one timer:
 # 3 * 176 = 528 admitted cuts. Preserve the same allowance per cut, rather
 # than giving their combined work one ordinary case's guard. The loaded
