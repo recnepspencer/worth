@@ -51,7 +51,7 @@ fn first_live(script: &workload::Script, commits: usize) -> usize {
         .expect("a prefix with a live record to demand")
 }
 
-fn read(
+pub(super) fn read(
     home: &RelationalStoreHome,
     record: &RecordRef,
     execution: &ExecutionRequest<'_, '_>,
@@ -294,7 +294,7 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
 }
 
 /// Inspect the producer's framed member header, never a guessed locator.
-fn region_head(
+pub(super) fn region_head(
     home: &RelationalStoreHome,
 ) -> (
     worth_store::physical_runtime::AnchoredRecordMemberLocator,
