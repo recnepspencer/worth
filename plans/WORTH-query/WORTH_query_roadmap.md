@@ -5753,7 +5753,12 @@ milestone, as defined by the governing 9.18 specification.
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6
-remain unfinished; components and rule-readable derived relations are next.
+remain open for actual private CAD adoption and combined acceptance. Their public
+component and logical-source APIs are implemented; logical-source qualification
+covers 35 runtime courts and a Host compile-pass/compile-fail pair. The separate
+public production-maintenance prerequisite at `5b01312ed004` is qualified by eleven
+runtime courts and a Host example; actual private generation-reuse receipts remain
+required.
 The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
