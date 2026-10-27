@@ -3,7 +3,9 @@ use worth_query::facade::runtime;
 const SOURCE_GRAPH_RETAINED_SLOTS: usize = 1;
 const SOURCE_GRAPH_RETAINED_BYTES: u64 = 4 * 1024 * 1024;
 const SOURCE_GRAPH_CAPTURE_VISITS: usize = 4 * 1024;
-const SOURCE_QUERY_CACHE_BYTES: u64 = 12 * 1024;
+// One retained entry includes the current branch/source custody. Keep both
+// the single-entry bound and a finite byte budget for its complete backing.
+const SOURCE_QUERY_CACHE_BYTES: u64 = 16 * 1024;
 
 pub(super) fn presentation_async_resources() -> runtime::WorthQueryConditionalExecutionResources {
     runtime::WorthQueryConditionalExecutionResources::new(
