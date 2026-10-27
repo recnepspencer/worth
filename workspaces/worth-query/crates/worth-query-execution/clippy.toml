@@ -43,4 +43,7 @@ disallowed-methods = [
 ignore-interior-mutability = [
   "bytes::Bytes",
   "worth_query_execution::domain_computation::primary_graph::structural_walk::key::StructuralWalkKey",
+  # ordering_coordinates/Hash inspect fixed coordinates and meaning identity,
+  # never retained footprint custody or its shared owner/ledger state.
+  "worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
 ]
