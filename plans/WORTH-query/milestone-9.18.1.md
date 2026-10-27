@@ -3,8 +3,9 @@
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
 > Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
 > Phase 9 remains unfinished.
-> The 2026-10-27 Proprietary findings add required, unfinished Phases 12–18,
-> including mandatory Rust 1.99.x qualification.
+> The 2026-10-27 Proprietary findings add Phases 12–18. Phases 12 and 15 are
+> transferred, not completed, to 9.19's managed-index and final CAD qualification.
+> Phases 13–14 and 16–18 remain required here, including Rust 1.99.x qualification.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -121,10 +122,9 @@ does not replace 9.18's composite operation/correction history.
 
    No phase adds a second evaluator, traversal, partitioner or view engine.
 2. **Domain-neutral vocabulary.** Names describe graphs: acyclic, symmetric,
-   orbit, component, walk, lineage. Phase 12 adds generic spatial range meaning
-   using the existing numerical owners' bounds contracts. CAD topology,
-   exact-contact policy and other application domain types stay outside Query
-   and Relational.
+   orbit, component, walk, lineage. The general managed-index extension belongs
+   to 9.19; spatial algorithms remain provider-owned. CAD topology, exact-contact
+   policy and other application domain types stay outside Query and Relational.
 3. **No raw handles.** Applications never receive Relational, Bridge or Signal
    handles, as the capability index already requires. Each new capability is a
    typed Query surface.
@@ -170,8 +170,9 @@ does not replace 9.18's composite operation/correction history.
    a domain feature need not be invented in Proprietary merely to exercise it.
    Migrated orchestration and its displaced executable path are cut over in the
    same integration phase, not deferred to Phase 11's unrelated small cleanup.
-   Phases 12, 15–17 explicitly require the real Proprietary consumer evidence
-   named below; a public fixture does not replace those adoption gates.
+   Phases 16–17 explicitly require the real Proprietary consumer evidence named
+   below. The transferred index/locality finding is adopted once at the end of
+   9.19; a public fixture does not replace its final private gate.
 
 Code and test files stay within 400 lines. Planned syntax is marked
 `rust,ignore` until it compiles; each phase turns its DX into a compiled
@@ -1318,19 +1319,25 @@ phases. This is the report's basis, not an instruction to change an SDK pin.
 Existing accepted phases retain their historical acceptance. These findings
 extend the milestone's ordinary preparation, candidate validation, failure and
 consumer qualification boundaries; none is an optional closeout item.
+The index implementation and its spatial-dependent locality acceptance are now
+required scope in [9.19](milestone-9.19.md), whose final phase performs Proprietary
+cutover after public qualification. Numbers 12 and 15 are retained as transfer
+references, not local implementation phases or claims of completion.
 
 | Priority | Finding | Required phase and owner |
 | --- | --- | --- |
-| P1 | Retained spatial range reads in preparation and candidate validation | 12 — Query + Relational; numerical primitives retain their numerical owner |
+| P1 | Retained spatial range reads in preparation and candidate validation | 12 transferred to 9.19 — general managed-index extension; provider owns spatial mechanics |
 | P1 | Unqualified compiler reported as byte overflow | 13 — worth-foundational + Query Admission/Execution |
 | P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
-| P2 | Scoped invariants must stay local on real large bodies | 15 — Query + Relational, with Proprietary CAD adoption |
+| P2 | Scoped invariants must stay local on real large bodies | 15 transferred to 9.19 — public qualification followed by final Proprietary adoption |
 | P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
 | P3, required | Proposal acceptance reissues ordinary requests | 17 — Query entry/admission + Proprietary authoring |
 | P3, required | Qualify Rust 1.99.x and keep the supported stable toolchain current | 18 — worth-foundational + workspace toolchain/CI owners |
 
 ### Decisive Proof For The Added Phases
 
+The following spatial journey is the consumer requirement transferred to 9.19;
+its self-contained phases govern implementation and final private adoption.
 Use the real Decl/Host installation and the installed CAD entry. In a committed
 1,000-vertex chain, move a middle vertex so its incident cells encounter an
 otherwise untouched, non-incident cell. Operation preparation discovers pairs
@@ -1362,8 +1369,9 @@ the proposal supplies neither acceptance permission nor replay authority.
 
 ### Destination Ownership And Module Boundaries
 
-The following tree names existing owners and created destinations for Phases
-12–18. Created destinations are populated by their implementing slice, not by
+The following tree names owners for the remaining Phases 13–14 and 16–18.
+The generic index topology is governed by 9.19, not a spatial subsystem here.
+Created destinations are populated by their implementing slice, not by
 empty placeholders in this specification change. Implementation planning may
 refine private children without moving the public facade or changing ownership.
 
@@ -1374,115 +1382,44 @@ crates/worth-foundational/
     admitted.rs                                 [existing: typed preparation outcome]
     sort_admission.rs                           [existing: reviewed sort work/storage bound]
     compiler_qualification/                     [created: compiler identity and eligibility meaning]
-crates/worth-relational/src/
-  derived_spatial/                               [created: managed native spatial-root mechanism]
-    definition.rs                               [declared source/bounds interpretation]
-    root/                                       [basis-bound immutable root and retention]
-    candidate/                                  [delta maintenance and atomic root handoff]
-    range/                                      [range traversal and complete read dependencies]
-  validation/custom_rule/                        [existing: candidate read authority and scope]
 workspaces/worth-query/crates/
-  worth-query-declaration/src/application_schema/
-    spatial_view/                               [created: portable spatial declaration]
   worth-query-admission/src/
     application_query/parameter_canonical_basis/  [existing: preserve sort qualification refusal]
     canonical_identity_derivation/               [existing: preserve canonical cause]
   worth-query-execution/src/domain_computation/primary_graph/
-    application_query/derived_view/
-      spatial/                                  [created: existing managed-view integration]
-    application_invariant/typed_view/
-      spatial/                                  [created: candidate-qualified range adapter]
-    invariant_projection/operation_reader/
-      spatial/                                  [created: committed preparation range adapter]
     application_attempt/provider_binding/effect_lowering/
       entity_field_patch.rs                     [existing: exact unobserved-write refusal]
     application_attempt/compare_and_commit/commit_outcome/denial/
       unique_value.rs                           [existing: preserve lowering cause and stage]
-  worth-query-package-archive/src/record/application_schema/member/
-    spatial_view/                               [created: versioned portable meaning]
   worth-query-certification/tests/application_graph/
-    spatial_view/                               [created: shared facade range/atomicity courts]
     proposal_acceptance/                        [created: fresh ordinary acceptance journey]
 ```
 
-Query's existing managed-view owner governs registration, retention and
-reconstruction. Relational owns the basis-bound index mechanism and candidate
-commit handoff; it does not gain a second general view registry. Numerical
-bounds, conservative overlap and rounding remain with the existing numerical
-owners, outside Query. Proprietary topology maps its cells to that declared
-contract and retains exact contact classification. Native code contains no
-Face, Body, B-rep or operation-family policy.
+9.19 extends Query's existing managed-view owner for generic provider roots,
+candidate staging and dependencies. Relational supplies source/candidate custody
+and commit integration; numerical algorithms remain outside the generic runtime.
+This milestone creates no parallel index registry or specialized spatial facade.
 
 Stable public entry remains `worth-query-decl` and `worth-query-host`.
 Preparation and candidate adapters consume their respective original read
 authority; neither can mint publication or mutation capability. Private module
 visibility, facade/dependency checks and the existing archive-version discipline
-enforce this direction. No application-owned index cache, generic callback
+enforce this direction. No unmanaged application-owned index cache, generic callback
 validator, new executor or production replay entrance is permitted. Cost courts
 extend the existing grouped Native/Query targets and CAD installed tests; they
 do not introduce a cost registry or a persistent implementation journal.
 
 ---
 
-## Phase 12: Retained Spatial Views In Preparation And Candidate Validation
+## Phase 12: Managed Index Finding — Transferred To 9.19
 
-**Status: unfinished; required. Priority: P1.**
-**Owner:** Query + Relational, with numerical primitives at their existing owner.
-**Depends on:** Phase 6's shared derived-read, dependency and proposed-state
-contracts. Those prerequisites may be integrated before Phase 6's full adoption
-portfolio closes. Independent of async resources and causal inspection.
-
-### Requirements
-
-- Declare one domain-neutral spatial derived view over source records and their
-  conservative bounds. Declaration fixes source identity, bound dependencies,
-  dimensions, units/frame interpretation and overlap semantics. Canonical schema
-  identity and portable archive meaning include that contract. Numerical admission
-  refuses invalid or incomparable bounds with the numerical owner's typed cause;
-  no epsilon, unchecked float conversion or CAD-specific bounds algorithm enters
-  Query. Overlap supplies candidates, never proof of exact contact or separation.
-- Retain one managed spatial root per exact basis/definition, structurally sharing
-  unchanged state. Expose range search from `DecisionReader` in `prepare_decision`
-  at its committed basis and from the installed invariant context at its candidate
-  basis. Readable rows by key, an exported native index, or a partitioned pair
-  computation without discovery do not implement this contract.
-- Apply retired, made and moved source changes incrementally before candidate
-  validation, including edges incident to moved vertices through declared
-  dependencies. Maintain the candidate privately; graph truth and the derived
-  root become visible in the same successful commit. Refusal/cancellation releases
-  candidate state without altering committed truth, roots or retained readers.
-- Range reads preserve positive hits and searched absence dependencies, so an
-  insertion or move into a previously empty range invalidates its consumers.
-  Source identity includes generation; branches and retained bases cannot borrow
-  each other's root. Fresh disclosure precedes range traversal and protected
-  counts. Refused, unavailable and interrupted reads never return complete-looking
-  partial answers.
-- Warm local work follows changed bounds, affected incident cells, index height
-  and reported candidates. No per-edit full-body rebuild, copy or sweep is hidden
-  in maintenance, preparation or validation. Cold construction, eviction and
-  reconstruction are explicit separate lanes; rebuilding from authoritative
-  graph data must reproduce range results. Reuse existing request controls and
-  Phase 1's actual-read observations instead of a new accounting system.
-
-### Target DX
-
-```rust,ignore
-// Planned syntax; both readers use the same installed declaration.
-// The framework supplies these readers at their actual, distinct bases.
-let discovery = decision_reader.spatial_range(CellsByBounds::reference(), &probe)?;
-let neighbours = invariant_context.view()
-    .spatial_range(CellsByBounds::reference(), &candidate_probe)?;
-```
-
-### How We Know It's Done
-
-The decisive spatial court above passes through both real readers, including
-1,000/2,000-vertex growth, the 50,000-face discovery case, non-incident contact
-refusal, empty-range invalidation, branch/generation isolation and rebuild parity.
-The installed CAD path consumes the retained view in arrange discovery and the
-B-rep checker, deleting the displaced full-sweep path for these warm edits.
-Multiple retained partitioned computations or a multi-stage discovery workaround
-cannot close this phase while candidate range reads remain absent.
+**Status: transferred; not implemented or accepted by this document. Priority: P1.**
+The general managed derived-index extension, committed preparation reads,
+candidate invariant reads and spatial/nonspatial qualification are required in
+[Milestone 9.19](milestone-9.19.md). Its final phase performs the single integrated
+Proprietary cutover. Phase 6 supplies shared prerequisites; this transfer does not
+add spatial meaning to its graph contracts. No independent Phase 12 implementation
+or private adoption is required to close 9.18.1.
 
 ---
 
@@ -1543,30 +1480,15 @@ test alone cannot close this phase.
 
 ---
 
-## Phase 15: Scoped Invariant Locality On Large Bodies
+## Phase 15: Spatial-Dependent Invariant Locality — Transferred To 9.19
 
-**Status: unfinished; required. Priority: P2.**
-**Owner:** Query + Relational, with Proprietary CAD qualification.
-**Depends on:** Phase 12 for spatial contact locality and the existing touched
-scope/read-footprint contracts. Baseline diagnosis can proceed independently.
-
-### Requirements And Acceptance
-
-Qualify the complete installed invariant path on METABOSS bodies up to 50,000
-faces. Hold one-cell edit size, local incidence, candidate density and rule
-meaning fixed while increasing unrelated body size. Include an unrelated body
-and a hostile contact with a non-incident cell in the same body. Work follows
-the semantic affected neighbourhood, range-search height and real hits, rather
-than rebuilding body histories, traversing all cells or checking every face.
-
-Observe preparation, candidate maintenance, invariant scope acquisition and rule
-evaluation separately using existing actual-read evidence. A local rule body
-does not excuse a global scope-building pass. Correct scope planning and
-dependency maintenance at their existing owners when the court exposes leakage;
-never prune the genuine violating neighbour to manufacture local counts.
-The independent exhaustive checker must agree with the installed verdict for
-hostile and lawful twins. Commit/refusal atomicity remains intact. This phase
-closes only on the real CAD installation, not a small synthetic local graph.
+**Status: transferred; not qualified by this document. Priority: P2.**
+[Milestone 9.19](milestone-9.19.md) owns the 1,000/2,000-vertex and 50,000-face
+locality requirements, including preparation, maintenance, scope acquisition,
+non-incident contact, ordinary validation and refusal atomicity. Its public
+phases expose defects before one final real CAD cutover. The requirement remains
+mandatory there; this transfer neither proves locality nor weakens the affected
+graph phases' existing tests. It is not a 9.18.1 closure dependency.
 
 ---
 
@@ -1575,8 +1497,9 @@ closes only on the real CAD installation, not a small synthetic local graph.
 **Status: unfinished; required. Priority: P3.**
 **Owner:** Relational + Query, with Proprietary CAD Acceptance 8.
 **Depends on:** real cell-bearing publication and the accepted history reader.
-Baseline work can run independently; final integrated locality consumes Phases
-12 and 15 where that path uses spatial maintenance and invariant checks.
+This phase qualifies cell-version storage and history reads independently of the
+transferred index work. Spatial-dependent integrated locality is rechecked in
+9.19's final Proprietary phase and is not a prerequisite for this phase's closure.
 
 ### Requirements And Acceptance
 
@@ -1684,9 +1607,10 @@ toolchain/contributor documentation, including the typed unqualified outcome.
   durable restart and multi-parent history remain successor contracts. 9.19–9.20
   consume the same query/provider admission; 9.21 can consume the exposed causal
   references without acquiring authority over their source records.
-- For Phases 12–18, revise `docs/capability-index.md` and
-  `docs/build-an-application.md` for declared spatial range reads, committed versus
-  candidate roots, reconstruction and typed compiler/write refusals. Extend the
+- For the retained Phases 13–14 and 16–18, revise `docs/capability-index.md` and
+  `docs/build-an-application.md` for typed compiler/write refusals, storage/history
+  qualification and ordinary proposal acceptance. Managed-index and candidate
+  query guidance belongs to 9.19. Extend the
   managed-derived-view explanation in the application guide and
   `workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md`
   with compiled two-facade examples. Update `CONTRIBUTING.md` with exact qualified
@@ -1705,14 +1629,18 @@ specification change checks links, scope and path claims without compiling runti
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
-- All eighteen phases are required. Phases 1–6 retain their original acceptance
+- Phases 1–11, 13–14 and 16–18 are required here: sixteen implementation phases,
+  with numbers 12 and 15 retained solely as transfer references to required 9.19
+  scope. No transferred finding is marked completed. Phases 1–6 retain their
+  original acceptance
   and Proprietary consumer obligations; the additional application-runtime work
   is proved through the current two-facade public composition and grouped courts.
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
-  Phases 12–18 add the 2026-10-27 Proprietary findings, including both spatial
-  readers, real CAD locality/storage/acceptance qualification and mandatory
-  current Rust qualification. Phase numbering does not impose serial execution:
+  The retained Proprietary findings include storage/acceptance qualification and
+  mandatory current Rust qualification. 9.19 owns the general index extension,
+  both index readers and their final private locality cutover. Phase numbering
+  does not impose serial execution:
   use each phase's actual dependencies.
 - WORTH Proprietary builds against the candidate revision through a reviewed pin
   update, with its workarounds deleted.
@@ -1729,7 +1657,7 @@ specification change checks links, scope and path claims without compiling runti
 
 Not supplied here:
 - typed correlated path programs (9.20);
-- managed search and access products (9.19), distinct from Phase 12's required
-  basis-bound spatial candidate range index;
+- managed indexes, search/access products and spatial-dependent CAD locality
+  (9.19), including the transferred Phase 12 and 15 findings;
 - decision summaries (9.21);
 - merge, rebase and multi-parent lineage (cross-runtime).
