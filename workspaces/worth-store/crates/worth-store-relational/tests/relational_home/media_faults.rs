@@ -76,10 +76,6 @@ impl FaultedMedia {
         })
     }
 
-    pub(crate) fn arm(&self) {
-        arm(&self.activations);
-    }
-
     pub(crate) fn open(
         self,
         location: &Path,
