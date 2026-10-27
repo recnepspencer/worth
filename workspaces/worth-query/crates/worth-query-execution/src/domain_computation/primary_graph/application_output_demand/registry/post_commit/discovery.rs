@@ -19,11 +19,7 @@ fn discover(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) -> Vec
     }
     let mut candidates = Vec::new();
     for (other, record) in occurrence_rows(&state.records, key) {
-        let same_row = {
-            #[cfg(test)]
-            super::super::demand_key::observe_row_comparison();
-            other == key
-        };
+        let same_row = other == key;
         let superseded = if same_row {
             record.settlements.len().saturating_sub(1)
         } else if key.replacement_order(other) == Some(std::cmp::Ordering::Greater) {

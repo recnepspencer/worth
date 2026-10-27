@@ -15,7 +15,7 @@ use worth_query_execution::facade::{
     },
     product::WorthQueryProductBranchAdmissionDenial as Product,
 };
-pub(super) fn request_stop(denial: &Request) -> Option<Denial> {
+pub(in crate::application_entry::mutation) fn request_stop(denial: &Request) -> Option<Denial> {
     match denial {
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::Execution(cause)) => Some(*cause),
         Request::SignedCreation(worth_query_execution::facade::primary_graph::WorthQuerySignedCreationPreparationDenial::LifecycleObservation(outcome)) => {

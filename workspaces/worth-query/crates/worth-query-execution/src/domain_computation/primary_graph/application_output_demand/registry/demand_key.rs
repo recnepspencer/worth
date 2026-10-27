@@ -75,8 +75,6 @@ impl WorthQueryOutputDemandKey {
     }
 
     pub(super) fn replacement_order(&self, other: &Self) -> Option<Ordering> {
-        #[cfg(test)]
-        observe_row_comparison();
         if self.family != other.family {
             return None;
         }

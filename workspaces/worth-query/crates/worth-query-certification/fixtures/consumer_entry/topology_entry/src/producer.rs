@@ -12,23 +12,15 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
     WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerOutputFamily, WorthQueryUndeclaredProducerDenial,
 };
 
 use super::{PlanarMutationBinding, TopologySchemaBinding};
 
 #[cfg(test)]
-static PROVIDER_CONTACTS: AtomicUsize = AtomicUsize::new(0);
-
+mod contacts;
 #[cfg(test)]
-pub(super) fn reset_provider_contacts() {
-    PROVIDER_CONTACTS.store(0, Ordering::SeqCst);
-}
-
-#[cfg(test)]
-pub(super) fn provider_contacts() -> usize {
-    PROVIDER_CONTACTS.load(Ordering::SeqCst)
-}
+pub(crate) use contacts::ProviderContacts;
 
 const INITIAL: WorthQueryProducerApplicability =
     WorthQueryProducerApplicability::new("planar", WorthQueryProducerLifecyclePosture::Initial);
@@ -65,6 +57,8 @@ pub struct InitialPlanarProvider {
     authorization_denials: Arc<AtomicUsize>,
     pub(crate) key_mask: u64,
     domain_denial: Arc<AtomicBool>,
+    #[cfg(test)]
+    contacts: Option<ProviderContacts>,
 }
 
 impl InitialPlanarProvider {
@@ -78,7 +72,15 @@ impl InitialPlanarProvider {
             authorization_denials,
             key_mask: 0,
             domain_denial,
+            #[cfg(test)]
+            contacts: None,
         }
+    }
+
+    #[cfg(test)]
+    pub(super) fn with_contacts(mut self, contacts: Option<ProviderContacts>) -> Self {
+        self.contacts = contacts;
+        self
     }
 }
 
@@ -86,11 +88,14 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, InitialPlanarProducer<Schema>>
     for InitialPlanarProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.planar-initial-provider.v1";
 
     fn operation_input(&self, source: &super::PlanarReadResult) -> super::PlanarMutation {
         #[cfg(test)]
-        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
+        if let Some(contacts) = &self.contacts {
+            contacts.record();
+        }
         let mut input = planar_producer_input(source);
         if self
             .authorization_denials
@@ -122,7 +127,9 @@ impl<Schema: TopologySchemaBinding>
 
     fn idempotency_key(&self, _: &super::PlanarReadResult, source_identity: &[u8; 32]) -> u64 {
         #[cfg(test)]
-        PROVIDER_CONTACTS.fetch_add(1, Ordering::SeqCst);
+        if let Some(contacts) = &self.contacts {
+            contacts.record();
+        }
         planar_source_key(source_identity) | self.key_mask
     }
 }

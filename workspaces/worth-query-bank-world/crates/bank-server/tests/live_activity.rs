@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 #[path = "live_activity/consumer_scale.rs"]
 mod consumer_scale;
 #[allow(
@@ -205,27 +206,43 @@ fn cancellation_and_deadline_are_distinct_live_terminals() {
     ));
 }
 
+/// Live declarations carry no resource contract (capability-index: "Request
+/// Live controls retain channel buffer capacity"), so a caller buffer wider
+/// than the removed 64-cause installed queue ceiling opens and governs delivery.
 #[test]
-fn live_buffer_capacity_is_owned_by_the_request() {
-    let fixture = ordinary_read_world("live-buffer-capacity", 0);
+fn caller_live_buffer_wider_than_the_removed_installed_ceiling_governs_the_queue() {
+    let fixture = ordinary_read_world("live-buffer-ceiling", 0);
     let owner = fixture.authenticate(OWNER);
+    let teller = fixture.authenticate(TELLER);
     let mut live = fixture
         .world
         .runtime
         .account_activity(fixture.personal_account)
         .as_principal(&owner)
         .subscribe(live_controls_for(request_scope(), 65))
-        .expect("the request owns its buffer capacity");
-    assert!(matches!(
-        live.poll(&owner, &request_scope()),
-        BankAccountActivityLiveOutcome::Pending
-    ));
-    assert!(matches!(
-        live.close(),
-        BankApplicationLiveCloseOutcome::Completed
-    ));
+        .expect("the caller's 65-cause buffer opens without an installed queue ceiling");
+    for ordinal in 0..3 {
+        commit_deposit(
+            &fixture,
+            &teller,
+            fixture.personal_account,
+            &format!("wide-buffer-live-deposit-{ordinal}"),
+        );
+    }
+    for remaining in (0..3).rev() {
+        let BankAccountActivityLiveOutcome::Delivered(delivered) =
+            live.poll(&owner, &request_scope())
+        else {
+            panic!("every buffered matching cause must deliver")
+        };
+        assert_eq!(delivered.result().entries().len(), 1);
+        assert_eq!(live.buffered_cause_count(), remaining);
+    }
 }
 
+/// Live controls carry no work field and the installed live-work ceiling is
+/// gone (`ee07da2b0e`): the caller's controls open a subscription under the
+/// installed policy, which closes cleanly.
 #[test]
 fn live_delivery_needs_result_cardinality_without_a_work_estimate() {
     let fixture = ordinary_read_world("live-result-cardinality", 0);

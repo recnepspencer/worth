@@ -1,14 +1,20 @@
 use super::super::{OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial};
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
 
 pub(super) struct RootSelectionWork<'a> {
     pub(super) interruption: super::super::ReadInterruption<'a>,
 
     pub(super) work_units: usize,
-    pub(super) adjacency_lists_read: usize,
-    pub(super) relation_records_examined: usize,
+    pub(super) reads: WorthQueryInvariantProjectionWork,
     pub(super) predicate_records_examined: usize,
     pub(super) predicate_work_units: usize,
     pub(super) spent: Option<&'a OneShotReadWorkObservation<'a>>,
+    pub(super) steps:
+        Vec<super::super::super::access_receipt::WorthQueryApplicationQueryRootPathStepRead>,
+    pub(super) step_limit: usize,
+    pub(super) step_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(super) source_allocation:
+        Option<std::sync::Arc<super::super::super::observed_source::RootPathAllocation>>,
 }
 
 impl<'a> RootSelectionWork<'a> {
@@ -20,11 +26,14 @@ impl<'a> RootSelectionWork<'a> {
             interruption,
 
             work_units: 0,
-            adjacency_lists_read: 0,
-            relation_records_examined: 0,
+            reads: WorthQueryInvariantProjectionWork::default(),
             predicate_records_examined: 0,
             predicate_work_units: 0,
             spent,
+            steps: Vec::new(),
+            step_memory: None,
+            step_limit: 0,
+            source_allocation: None,
         }
     }
 
@@ -51,12 +60,8 @@ impl<'a> RootSelectionWork<'a> {
             spent.charge(charged, subject)?;
         }
         self.work_units = self.work_units.saturating_add(charged);
-        self.adjacency_lists_read = self
-            .adjacency_lists_read
-            .saturating_add(adjacency_lists_read);
-        self.relation_records_examined = self
-            .relation_records_examined
-            .saturating_add(relation_records_examined);
+        self.reads
+            .record_adjacencies(adjacency_lists_read, relation_records_examined);
         Ok(())
     }
 
@@ -64,6 +69,7 @@ impl<'a> RootSelectionWork<'a> {
         &mut self,
         records_examined: usize,
         matches_reserved: usize,
+        field_reads: usize,
         subject: &str,
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         let charged = records_examined.saturating_add(matches_reserved);
@@ -73,6 +79,7 @@ impl<'a> RootSelectionWork<'a> {
             spent.charge(charged, subject)?;
         }
         self.work_units = self.work_units.saturating_add(charged);
+        self.reads.record_fields(field_reads);
         self.predicate_records_examined = self
             .predicate_records_examined
             .saturating_add(records_examined);

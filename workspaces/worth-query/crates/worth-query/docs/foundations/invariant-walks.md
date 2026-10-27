@@ -1,0 +1,219 @@
+# Complete relation walks
+
+Use a complete walk when a rule or projection must inspect a dependency history, hierarchy,
+or other graph condition beyond a fixed number of hops. A walk follows one
+stored relation and returns each reachable entity with its minimum distance
+from the starting roots. Cycles and duplicate paths are allowed.
+
+## Installed invariant views
+
+Import the installed APIs from
+`worth_query_host::facade::application_invariants`. Resolve the relation binding
+with the schema resolver supplied to the invariant factory. Its source and
+target must have the same entity kind.
+
+| Read | Call |
+| --- | --- |
+| Walk from one root | `view.walk(&binding, direction, &root)` |
+| Walk from several roots | `view.closure(&binding, direction, &roots)` |
+| Test forward reachability | `view.reaches(&binding, &from, &to)` |
+
+```rust,ignore
+let history = view.walk(&previous, RelationDirection::Forward, &tip)?;
+for step in &history {
+    inspect(step.entity(), step.distance());
+}
+let depends = view.reaches(&previous, &later, &earlier)?;
+let shared = view.closure(&previous, RelationDirection::Forward, &roots)?;
+```
+
+`Forward` follows source to target; `Reverse` follows target to source. If a
+feature points to its previous feature, forward follows history toward earlier
+features. `RelationDirection` is also exported by the declaration facade. It
+replaces `ApplicationQueryRootPathDirection` with the same meanings and wire
+encodings.
+
+Roots appear once at distance zero. Other entities appear once at their minimum
+distance from any root. Visits are ordered by distance, then native entity
+identity. `walk.entities()` yields the members; `walk.relations()` yields every
+matching physical edge, including self edges, back edges and edges that did
+not discover a new entity.
+
+Reachability is reflexive for a valid local entity. `reaches` currently performs
+a complete forward walk before answering, even for a reflexive query. Failure
+to complete returns an error rather than `false`.
+
+## Snapshot projections
+
+Import snapshot projection authority and result types from
+`worth_query_host::facade::primary_graph`. Inside
+`WorthQueryApplicationInvariantProjectionAuthority::project`, use the existing
+application relation reference and a locally resolved identity:
+
+```rust,ignore
+let root = reader.resolve_entity(NodeKey::reference(), 0_u64)?;
+let walk = reader.walk(Next::reference(), RelationDirection::Forward, &root)?;
+for step in &walk {
+    inspect(step.entity(), step.distance());
+}
+let depends = reader.reaches(Next::reference(), &root, &target)?;
+let shared = reader.closure(Next::reference(), RelationDirection::Reverse, &roots)?;
+```
+
+The [compiled snapshot callback](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/walk/tests.rs)
+uses a real installed schema and graph. Snapshot methods take relation references;
+installed invariant views take their resolver-issued relation bindings.
+
+A snapshot walk reads one pinned branch root through Native's complete executor.
+It uses the same snapshot projection authority as `relations_from` and
+`relations_to`. Use identities from that authority. It does not add principal
+access or make a foreign identity local. Iteration mints typed identities without
+graph access. Those identities can be passed to the snapshot's ordinary field
+reads, which still acquire the requested data.
+
+The walk retains its result allocation. The completed snapshot separately keeps
+payment for its reached-entity scope, so dropping the walk does not release the
+snapshot's scope funding. Both use the original execution request. A cancelled
+or resource-refused walk returns no partial result; swallowing an execution or
+work-limit error inside the callback still prevents projection completion.
+
+`reader.work()` reports observations so far; `completed.work()` reports the
+completed projection. Actual acquisitions remain counted after a later refusal.
+These observations grant no authority and impose no budget.
+
+## Raw operation projections
+
+The raw `WorthQueryApplicationOperationInvariantProjectionReader` also accepts
+`walk`, `closure` and `reaches` with the same arguments and result types as the
+snapshot reader. The relation must implement `OperationReads<Operation>`, as
+for `relations_from` and `relations_to`. An admitted projection uses its selected
+snapshot, original request and installed projection work budget. The
+[compiled operation court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/operation_projection.rs)
+opens real authenticated operation admissions and exercises these calls.
+
+These are inspection reads. They do not record decision dependencies or protect
+an operation's result against source changes before publication. Use the recorded
+decision APIs below when the walk determines an operation's result.
+
+## Recorded decision walks
+
+Handler `DecisionReader` and the lent `WorthQueryComputationReader` accept
+`walk`, `closure` and `reaches` with the same relation references and typed
+identities. The raw operation reader names these recorded methods
+`decision_walk`, `decision_closure` and `decision_reaches`. They require a real
+operation admission and the relation's declared decision-read capability.
+
+A handler can start from its supplied scope:
+
+```rust,ignore
+let root = reader.scope().clone();
+let history = reader.walk(Next::reference(), RelationDirection::Forward, &root)?;
+let last = history.entities().last().expect("the root is included");
+let reachable = reader.reaches(Next::reference(), &root, &last)?;
+```
+
+The [installed handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/handler.rs)
+and [retained-candidate tests](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/decision_walks/currentness.rs)
+exercise actual admission, sealing and publication. Sealing retains the exact
+performed Native observation. Repeating the same logical walk preserves one
+dependency with all its handler/computation attributions. Dropping the returned
+walk leaves that dependency's original allocation funded until its last owner
+drops. A swallowed failed decision read still prevents sealing, including a
+failure before a complete key or value exists.
+
+Publication compares each recorded logical walk with one complete Native walk
+at the selected current snapshot. Deep changes, a new child at an empty reached
+leaf, retirement and changes to nondiscovery edges can invalidate it. An
+unrelated field edit can leave the same retained candidate current.
+
+Walk metadata does not provide an explicit relation-pair observation for link or
+unlink authoring. Keep those operations' existing recorded pair reads. Field
+reads through returned identities also retain their own field dependencies.
+
+A partitioned computation that previously used a structural walk currently runs
+fresh under the current admission, in both accounted and unaccounted execution.
+With an unchanged computation basis, its reported full-run cause is
+`StructuralWalkRead`; an existing basis-drift cause retains priority. Carrying
+those old values between live invocations remains unqualified. Live structural
+facts are also deliberately unsupported for checkpoint reuse; decoding cannot reconstruct an
+issued observation from copied metadata.
+
+## Preparing the rule's read scope
+
+Preparation must identify every affected root from the domain's relationships.
+A deep edit may leave the root untouched. Each preparation walk admits every
+entity and physical edge it encounters. Evaluation checks subsequent reads
+against this frozen scope.
+
+For example, an active group may forbid reachable blocked nodes. Preparation
+can find the group's root through its authored membership relation and walk
+its path relation. Evaluation can then read the path again:
+
+```rust,ignore
+let reachable = view
+    .walk(&self.next, RelationDirection::Forward, &root.entity)
+    .map_err(access)?;
+for step in &reachable {
+    checkpoint(budget)?;
+    if view.field(&self.blocked, step.entity()).map_err(access)? == Some(true) {
+        let blocked = view.field(&self.key, step.entity()).map_err(access)?
+            .ok_or_else(|| failure("blocked key absent"))?;
+        return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
+            root: root.key,
+            blocked,
+            distance: step.distance() as u64,
+        }));
+    }
+}
+```
+
+The [rule callback](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/rule/evaluation.rs)
+and [schema](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/schema.rs)
+show the surrounding bindings and preparation. The membership relation and
+walked path serve different purposes: finding a root does not by itself prepare
+all of its descendants.
+
+Declare the required entity, field and relation reads as for other invariant
+reads. Complete traversal does not supply a domain's root-selection policy.
+Native relation laws can require acyclicity when the domain needs it; walks
+also work on cyclic graphs.
+
+## Identity, cost and failures
+
+Use identities from the view being read. `proposed()` and `committed()` describe
+different sides of a validation. A handle from another schema binding,
+candidate, posture or branch is not a traversal grant. Keeping a walk alive
+does not make its identities valid in a later candidate.
+
+Native traversal enforces visibility, kind access and the original request's
+work and memory limits. Query records actual acquisitions and accounts for its
+prepared-scope storage with the original invariant budget. Checked callbacks
+must also account for their own computation and owned storage.
+
+A returned walk owns its native result and retains its allocation payer.
+Borrowed iteration creates typed values without another graph read or another
+result collection. Drop the result when its facts are no longer needed; other
+owners may still retain the same payer.
+
+There is no fixed depth limit. A successful walk exhausts its frontier;
+cancellation, deadline or resource exhaustion returns no partial result.
+Propagate that refusal rather than returning an empty walk or a false
+reachability answer.
+
+`planner.reads()` reports preparation acquisitions. `context.reads()` includes
+preparation and the current evaluation. Acquired adjacency lists, relation
+records and entity metadata remain counted when a later read fails. Counts
+neither grant access nor replace a budget.
+
+Inspect `WorthQueryInvariantAccessDenial::kind()` to distinguish foreign
+binding/view, undeclared access, wrong kind and unprepared scope from work,
+memory and interruption failures. `Interrupted` preserves cancellation versus
+deadline. `MemoryAdmission` carries the original native allocation refusal.
+
+Complete walks currently belong to installed invariant views, snapshot and
+operation projection readers, and handler/computation decision readers. They
+follow one stored endorelation. Declared queries retain their separate read APIs.
+
+See [invariants and read observations](invariants-and-read-observations.md),
+[relation laws](../modeling/relation-laws.md), and
+[build an application](../../../../../../docs/build-an-application.md).

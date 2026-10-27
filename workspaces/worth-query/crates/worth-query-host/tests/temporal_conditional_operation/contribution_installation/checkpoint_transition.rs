@@ -1,6 +1,8 @@
 //! Real native predecessor -> target World -> ordinary target reopen journey.
 #[path = "checkpoint_transition/admission.rs"]
 mod admission;
+#[path = "checkpoint_transition/funded_capture.rs"]
+mod funded_capture;
 #[path = "checkpoint_transition/original_request.rs"]
 mod original_request;
 #[path = "checkpoint_transition/predecessor.rs"]

@@ -328,6 +328,7 @@ fn custom_provenance_with_visible_records(
         },
         // Synthetic projection fixture; this value does not assert runtime metering.
         work_units: std::num::NonZeroU64::new(17).unwrap(),
+        non_applicability: None,
         proposal_identity: None,
     }
 }

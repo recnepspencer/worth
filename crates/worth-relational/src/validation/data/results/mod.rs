@@ -124,6 +124,7 @@ pub enum InvariantViolationFields {
     },
     CustomInvariantViolation {
         identity: crate::validation::data::CustomInvariantSemanticIdentity,
+        refusal: crate::validation::data::CustomInvariantRefusal,
     },
     PartitionIsolation {
         contract_id: ContractId,
@@ -131,6 +132,8 @@ pub enum InvariantViolationFields {
         relation_id: Option<crate::identity::data::RelationId>,
         source_partition_id: PartitionId,
         target_partition_id: PartitionId,
+        source: EntityReference,
+        target: EntityReference,
     },
     Acyclicity {
         contract_id: ContractId,
@@ -173,7 +176,10 @@ impl InvariantViolationFields {
                 identity, detail, ..
             } => (identity.semantic_identity().rule_id.as_str().len() as u64)
                 .saturating_add(detail.capacity() as u64),
-            Fields::CustomInvariantViolation { identity } => identity.rule_id.as_str().len() as u64,
+            Fields::CustomInvariantViolation { identity, refusal } => {
+                (identity.rule_id.as_str().len() as u64)
+                    .saturating_add(refusal.owned_allocation_capacity_bytes())
+            }
             Fields::RelationEndpointKindMismatch { contract_id, .. }
             | Fields::RelationEndpointKindSelfEdge { contract_id, .. }
             | Fields::RelationEndpointKindCrossContext { contract_id, .. }

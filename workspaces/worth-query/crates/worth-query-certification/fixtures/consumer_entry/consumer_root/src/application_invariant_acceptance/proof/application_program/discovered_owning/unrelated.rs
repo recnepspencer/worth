@@ -4,6 +4,7 @@ use worth_query_host::facade::application_entry::WorthQueryOperationDeliveryDeni
 #[test]
 fn discovered_ordinary_unrelated_progress_is_current_and_consumed_fact_keeps_history() {
     let original = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let world = installation::install_selected_program_with_isolated_cycle(

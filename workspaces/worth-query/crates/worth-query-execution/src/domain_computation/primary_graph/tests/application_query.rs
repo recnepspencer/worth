@@ -243,8 +243,13 @@ fn execution_runtime_mints_plan_from_exact_mapped_principal_and_typed_scope() {
     assert_eq!(result.receipt().query_identity(), query.identity());
     assert_eq!(result.receipt().projected_record_count(), 1);
     assert_eq!(result.receipt().projected_field_count(), 2);
+    assert!(
+        result.receipt().reads().field_reads() > result.receipt().projected_field_count(),
+        "the root guard reads a field in addition to result projection"
+    );
+    assert_eq!(result.receipt().reads().index_candidates_examined(), 0);
     assert_eq!(result.receipt().fallback_count(), 0);
-    assert_eq!(result.receipt().edge_scan_count(), 0);
+    assert_eq!(result.receipt().reads().adjacency_edges_inspected(), 0);
     assert_eq!(result.receipt().per_result_neighbor_lookup_count(), 0);
     assert!(result.receipt().basis_released());
 }

@@ -1,60 +1,10 @@
 //! Refuse changed current codec meaning before mirror reconstruction or indexes.
-use crate::durability::data::{
-    DurabilityError, DurableCheckpoint, RecoveryFailureClass, RelationalRecoveryStop,
-};
+use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
 use crate::schema::data::{DeclaredAspectContractBinding, RelationalSchemaRegistry};
-use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
-use worth_foundational::{facade::AspectShape, FoundationalBranchTarget};
+use worth_execution::MapKernelContext;
+use worth_foundational::facade::AspectShape;
 
-/// Only native readmitted root authorities enter this comparison. Historical
-/// roots retain their own meaning; current branch heads cannot adopt new codecs
-/// through ordinary exact recovery. This fence grants no transition authority.
-pub(super) fn check_current_codec_meaning(
-    execution: &ExecutionRequest<'_, '_>,
-    checkpoint: &DurableCheckpoint,
-    roots: &super::branch_root_images::RestoredBranchRootImages,
-    target: &RelationalSchemaRegistry,
-) -> Result<(), RelationalRecoveryStop> {
-    execution
-        .in_scope(|lease| {
-            ExecutionWorkCeiling::new(execution.work_ceiling()).run_with_checkpoint(
-                lease,
-                None,
-                |context| {
-                    for cell in &checkpoint.branch_cells {
-                        charge(context, 1)?;
-                        let FoundationalBranchTarget::Basis(selected) = cell.observation.target()
-                        else {
-                            continue;
-                        };
-                        let commit = crate::history::data::CommitId(selected.selected_commit_id());
-                        charge(context, lookup_work(roots.schema_authorities.len()))?;
-                        // A target without a readmitted carrier lacks its commit
-                        // artifact or root image. Branch-cell readmission refuses
-                        // it by name before any state is installed; this fence
-                        // compares only carriers that exist.
-                        let Some(source) = roots.schema_authorities.get(&commit) else {
-                            continue;
-                        };
-                        if source.authority_digest() != *selected.roots().schema_root() {
-                            // Root readmission owns descriptor identity and reports
-                            // SchemaRootMismatch; codec comparison cannot substitute it.
-                            continue;
-                        }
-                        compare_registries(source.registry(), target, context)?;
-                        // Symmetry refuses added as well as removed canonical carriers.
-                        compare_registries(target, source.registry(), context)?;
-                    }
-                    Ok(())
-                },
-            )
-        })
-        .map_err(request)?
-        .map_err(request)?
-        .0
-}
-
-fn compare_registries(
+pub(super) fn compare_registries(
     source: &RelationalSchemaRegistry,
     target: &RelationalSchemaRegistry,
     context: &mut MapKernelContext<'_, '_>,
@@ -192,7 +142,7 @@ fn carrier_changed() -> RelationalRecoveryStop {
     .into()
 }
 
-fn charge(
+pub(super) fn charge(
     context: &mut MapKernelContext<'_, '_>,
     work: usize,
 ) -> Result<(), RelationalRecoveryStop> {
@@ -200,7 +150,7 @@ fn charge(
     context.checkpoint(work).map_err(request)
 }
 
-fn lookup_work(entries: usize) -> usize {
+pub(super) fn lookup_work(entries: usize) -> usize {
     // A B-tree has at most 11 key comparisons per node; binary depth is a
     // conservative bound on its actual minimum branching of at least two.
     1 + 11 * (usize::BITS - entries.leading_zeros()) as usize
@@ -226,7 +176,7 @@ fn overflow() -> RelationalRecoveryStop {
     )
 }
 
-fn request(
+pub(super) fn request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> RelationalRecoveryStop {
     RelationalRecoveryStop::Request(cause.into())

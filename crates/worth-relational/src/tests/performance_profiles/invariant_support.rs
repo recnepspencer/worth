@@ -88,7 +88,9 @@ impl CustomInvariantRule for MaterializationWaveRule {
         {
             Ok(CustomInvariantVerdict::Pass)
         } else {
-            Ok(CustomInvariantVerdict::Violation)
+            Ok(CustomInvariantVerdict::Violation(
+                crate::validation::data::CustomInvariantRefusal::Empty,
+            ))
         }
     }
 }

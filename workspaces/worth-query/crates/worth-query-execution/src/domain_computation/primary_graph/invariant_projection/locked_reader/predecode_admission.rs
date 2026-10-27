@@ -59,7 +59,8 @@ where
         else {
             return Ok(Ok(None));
         };
-        self.work.record_field();
+        let reads = &mut self.work;
+        let decoder = self.value_decode;
         let observed = observe_field_value_borrowed_admitted(
             self.runtime,
             self.execution,
@@ -68,9 +69,10 @@ where
             identity.kind,
             &locator,
             |raw| {
+                reads.record_fields(1);
                 let Some(raw) = raw else { return Ok(Ok(None)) };
                 decoding::decode_admitted(raw, admit, checkpoint, |raw| {
-                    self.value_decode.decode::<Field::Binding>(
+                    decoder.decode::<Field::Binding>(
                         field.entity(),
                         field.aspect(),
                         field.field(),

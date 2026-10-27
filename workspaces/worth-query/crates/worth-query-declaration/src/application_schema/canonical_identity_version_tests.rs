@@ -27,7 +27,8 @@ fn schema_axes_use_the_current_complete_identity_preimage() {
         from: "From".to_owned(),
         to: "To".to_owned(),
         integrity:
-            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
+            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+                .into(),
     };
     let provenance = ApplicationSchemaContributionProvenance::from_untrusted_parts(
         "worth.tests.contribution.v1".to_owned(),
@@ -56,14 +57,15 @@ fn relation_endpoint_policy_changes_current_canonical_meaning() {
     let unchanged = canonical_identity(
         header(),
         &[relation(
-            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
         )],
         &[],
     );
     let no_self_edges = canonical_identity(
         header(),
         &[relation(
-            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
+            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+                .into(),
         )],
         &[],
     );

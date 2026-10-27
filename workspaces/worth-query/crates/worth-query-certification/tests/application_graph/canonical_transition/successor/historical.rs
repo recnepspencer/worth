@@ -218,6 +218,7 @@ fn held_v1_result_snapshot_output_and_observation_survive_independent_v2_adoptio
                 .expect_err("native cancellation must veto even an application Err output");
             assert_eq!(
                 cancelled.kind(),
+                // The handoff reports the original request's own stop.
                 WorthQueryInvariantProjectionDenialKind::ExecutionRequest(
                     worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled
                 )

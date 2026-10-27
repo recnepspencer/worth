@@ -76,15 +76,9 @@ pub(super) fn execute_index_packets(
     // prevents caller request order from affecting worker assignment or merge.
     let mut ordered = packets;
     ordered.sort_by_key(|packet| (packet.definition.index_id.0, packet.header.packet_index));
-    let memory = lease
-        .and_then(|lease| lease.policy().charged_memory_bytes())
-        .map_or(crate::execution::PacketMemory::Tracked, |limit| {
-            let ceiling = limit / (ordered.len().max(1) as u64).saturating_mul(8);
-            crate::execution::PacketMemory::Declared {
-                scratch: ceiling,
-                result: ceiling,
-            }
-        });
+    // Each packet charges the lease what it actually holds; the lease's own
+    // memory policy is the bound, not a per-packet share of it.
+    let memory = crate::execution::PacketMemory::Tracked;
     let inputs = ordered
         .into_iter()
         .enumerate()

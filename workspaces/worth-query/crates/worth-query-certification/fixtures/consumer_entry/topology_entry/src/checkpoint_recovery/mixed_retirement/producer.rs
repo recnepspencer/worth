@@ -74,6 +74,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, ReplacementProducer<Schema>>
     for ReplacementProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.mixed-replacement-provider.v1";
     fn operation_input(&self, source: &PlanarReadResult) -> VertexReplacement {

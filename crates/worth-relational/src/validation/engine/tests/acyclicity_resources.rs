@@ -2,6 +2,7 @@
 mod fixture;
 mod graph_semantics;
 mod interruptions;
+mod native_prerequisites;
 mod packet_capacity;
 
 use crate::execution::RelationalExecutionDenialCause as Cause;

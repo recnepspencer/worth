@@ -27,6 +27,20 @@ pub struct CustomInvariantExecutionContext<'runtime> {
     work: super::CustomInvariantWorkMeter,
 }
 
+/// Why Relational reported an installed custom invariant not applicable
+/// instead of evaluating it against the candidate.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum CustomInvariantNonApplicability {
+    /// The candidate's complete footprint was proven and touches no kind in
+    /// the rule's declared closure: the rule holds vacuously.
+    CandidateOutsideClosure,
+    /// The footprint was not proven outside the closure; the rule's scope
+    /// planner found no touch it applies to.
+    NoApplicableTouch,
+    /// Checked scope preparation was refused before the rule could run.
+    PreparationRefused,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CustomInvariantProvenance {
     pub observation_kind: InvariantObservationKind,
@@ -38,6 +52,11 @@ pub struct CustomInvariantProvenance {
     #[serde(skip)]
     pub proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
     pub work_units: std::num::NonZeroU64,
+    /// `None` when the rule evaluated the candidate. An artifact written
+    /// before this field decodes as `None`: no basis, so a not-applicable
+    /// verdict stays unexplained and producer admission refuses it.
+    #[serde(default)]
+    pub non_applicability: Option<CustomInvariantNonApplicability>,
 }
 
 impl<'runtime> CustomInvariantExecutionContext<'runtime> {
@@ -98,9 +117,14 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         });
         let aspect_states =
             StructuralAspectStateView::new(state_view.clone(), work.clone(), access.clone());
-        let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
-        let committed_relations =
-            StructuralRelationView::new(committed_state_view.clone(), work.clone(), access.clone());
+        let relations =
+            StructuralRelationView::new(state_view, execution, work.clone(), access.clone());
+        let committed_relations = StructuralRelationView::new(
+            committed_state_view.clone(),
+            execution,
+            work.clone(),
+            access.clone(),
+        );
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),
@@ -142,8 +166,9 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
         retained_touched: Arc<TouchedStructuralSet>,
         work: super::CustomInvariantWorkMeter,
         access: Arc<crate::validation::data::CustomInvariantAccessContract>,
+        basis: CustomInvariantNonApplicability,
     ) -> CustomInvariantProvenance {
-        Self::from_prepared_scope(
+        let mut provenance = Self::from_prepared_scope(
             runtime,
             execution,
             observation,
@@ -154,12 +179,20 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             work,
             access,
         )
-        .provenance()
+        .provenance();
+        provenance.non_applicability = Some(basis);
+        provenance
     }
 
     /// Checks the original request without charging work or opening a scope.
     pub fn check_live(&self) -> Result<(), super::CustomInvariantInterruption> {
         super::interruption::check_live(self.execution)
+    }
+
+    /// Charges encoded refusal storage to this evaluation's original meter.
+    /// This remains available to serial rules with ordinary evaluation hooks.
+    pub fn refusal_budget(&self) -> &dyn super::CustomInvariantLeaseBudget {
+        &self.work
     }
 
     pub fn observation_kind(&self) -> InvariantObservationKind {
@@ -225,6 +258,7 @@ impl<'runtime> CustomInvariantExecutionContext<'runtime> {
             traversal: self.traversal.summary(),
             proposal_identity: self.proposal_identity.clone(),
             work_units: self.work.consumed(),
+            non_applicability: None,
         }
     }
 }

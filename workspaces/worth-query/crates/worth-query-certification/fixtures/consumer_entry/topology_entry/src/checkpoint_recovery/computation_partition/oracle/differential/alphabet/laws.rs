@@ -6,7 +6,6 @@ pub(in super::super::super) struct LawCase {
     pub after: Model,
     pub changes: Vec<Change>,
     pub calls: [usize; 4],
-    pub stopped_prior: bool,
     pub own_write: Option<OwnWrite>,
 }
 impl Model {
@@ -27,7 +26,6 @@ impl Model {
                     after,
                     changes,
                     calls,
-                    stopped_prior: false,
                     own_write: None,
                 })
             };
@@ -59,7 +57,6 @@ impl Model {
                 after: now,
                 changes: vec![value],
                 calls: [0, 0, 1, 1],
-                stopped_prior: false,
                 own_write: Some(OwnWrite {
                     number: 3,
                     bits: 4.0_f64.to_bits(),
@@ -141,35 +138,6 @@ impl Model {
             own
         };
         cases.push(own);
-        let mut before = base.clone();
-        before.entries[0].as_mut().unwrap().work = before.heavy;
-        let mut after = before.clone();
-        let change = after.created(8, 1, 2.0, after.heavy);
-        assert!(before.completes() && !after.completes());
-        cases.push(LawCase {
-            name: "Work ceiling",
-            before: before.clone(),
-            after: after.clone(),
-            changes: vec![change],
-            calls: [1, 1, 1, 1],
-            stopped_prior: false,
-            own_write: None,
-        });
-        let change = after.deleted(8);
-        assert!(after == before);
-        cases.push(LawCase {
-            name: "Relief after stopped publication",
-            before: {
-                let mut stopped = before.clone();
-                stopped.created(8, 1, 2.0, stopped.heavy);
-                stopped
-            },
-            after: before.clone(),
-            changes: vec![change],
-            calls: [1, before.len(), 2, 2],
-            stopped_prior: true,
-            own_write: None,
-        });
         cases
     }
 }

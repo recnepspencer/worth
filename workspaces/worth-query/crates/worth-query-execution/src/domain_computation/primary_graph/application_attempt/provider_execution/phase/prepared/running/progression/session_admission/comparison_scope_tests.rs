@@ -51,10 +51,27 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
             )
         })
         .expect("the fixture read owns its installed host call");
+    // The caller lease funds the whole attempt, so its capture grants are
+    // charged inside the attempt's own worker lineage.
+    let caller = worth_execution::ExecutionResourceLease::serial(worth_execution::LeaseRequest {
+        policy: worth_foundational::ExecutionRequestPolicy::new(
+            worth_foundational::ExecutionPosture::Serial,
+            worth_foundational::DeterminismContract::CanonicalBitwise,
+            worth_foundational::ExecutionBudget::new(
+                std::num::NonZeroUsize::MIN,
+                Some(64 << 20),
+                None,
+            ),
+        ),
+        cancellation: worth_execution::CancellationToken::new(),
+        deadline: None,
+    })
+    .unwrap();
     world
         .application
-        .with_application_advancement(
+        .with_funded_application_advancement(
             &crate::domain_computation::primary_graph::tests::fixture::live_scope(),
+            worth_execution::ExecutionAllocationPolicy::Execution(&caller),
             |active_phase| {
                 let phase = &active_phase;
                 let prepared = prepare_application_commit(
@@ -118,6 +135,7 @@ fn primary_comparison_scope_preserves_registration_cancellation_cleanup_and_retr
                     &foreign,
                     &request,
                     &cancellation,
+                    &caller,
                 );
                 mutation_run
                     .finish(

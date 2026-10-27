@@ -15,6 +15,7 @@ mod prepared_program;
 pub(in crate::application_entry) mod program_output_continuation;
 mod program_output_settlement;
 mod program_output_work;
+mod recorded_replay;
 mod recovery;
 pub(in crate::application_entry) mod request;
 mod requirement_assessment;

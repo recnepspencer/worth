@@ -122,18 +122,34 @@ impl ProductBranchHeadProtection {
         &self.product_head_history
     }
 
+    /// Seat or unseat the history half: only a head an installed reference
+    /// carries owns the ancestry behind it.
+    pub(super) fn seat_history(&mut self, seated: bool) {
+        if seated {
+            self.product_head_history.seat();
+        } else {
+            self.product_head_history.unseat();
+        }
+    }
+
+    pub(super) const fn history_is_seated(&self) -> bool {
+        self.product_head_history.is_seated()
+    }
+
     pub(crate) fn transfer_receipt(&self) -> Option<&RetentionTransferReceipt> {
         self.transfer_receipt.as_ref()
     }
 
+    /// The parts leave every reference, so the history half is unseated.
     pub(crate) fn into_parts(
-        self,
+        mut self,
     ) -> (
         ProductBranchReferenceSnapshot,
         ProductHeadRetentionObligation,
         ProductHeadHistoryProtectionObligation,
         Option<RetentionTransferReceipt>,
     ) {
+        self.seat_history(false);
         (
             self.snapshot,
             self.product_head,

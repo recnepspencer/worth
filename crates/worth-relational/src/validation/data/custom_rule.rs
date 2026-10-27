@@ -1,12 +1,16 @@
 mod errors;
+mod refusal;
+pub use refusal::CustomInvariantRefusal;
 mod touched_scope;
 
 pub use crate::validation::custom_rule::{
-    CustomInvariantExecutionContext, CustomInvariantInterruption, CustomInvariantLeaseBudget,
-    CustomInvariantProvenance, CustomInvariantRegistration, CustomInvariantRegistrationError,
+    CompleteStructuralWalk, CustomInvariantExecutionContext, CustomInvariantInterruption,
+    CustomInvariantLeaseBudget, CustomInvariantNonApplicability, CustomInvariantProvenance,
+    CustomInvariantReadBudget, CustomInvariantRegistration, CustomInvariantRegistrationError,
     CustomInvariantRule, CustomInvariantScopePlanner, CustomInvariantTraversalSummary,
     StructuralAspectStateView, StructuralReadError, StructuralRelationRecord,
-    StructuralRelationView,
+    StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
+    StructuralWalkStep,
 };
 pub use errors::{
     CustomInvariantExecutionError, CustomInvariantPreparationError, CustomInvariantVerdict,

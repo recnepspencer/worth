@@ -42,6 +42,7 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         })
         .collect::<Vec<_>>();
     use crate::document_retention_model::{
+        correctable_retention::CorrectableRetentionBinding,
         retention_entry::{
             ExplicitReviewedSetRetentionBinding, OccurrenceSetRetentionBinding,
             ReviewedSetRetentionBinding, SetRetentionBinding,
@@ -55,13 +56,14 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         <ReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <OccurrenceSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ExplicitReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
+        <CorrectableRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
     ];
     assert_eq!(removed_operations.len(), removed_bindings.len() * 2);
     for binding in removed_bindings {
         assert!(
             removed_operations
                 .iter()
-                .any(|requirement| requirement.subject().ends_with(binding)),
+                .any(|requirement| action_binding(requirement.subject()) == Some(binding)),
             "the removal target retires {binding}"
         );
         assert_eq!(
@@ -138,12 +140,20 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
         .on_branch(branch)
         .programs();
     let requirements = programs.compare(&target).expect("comparison succeeds");
+    // The target also removes the root's other ordinary operations; this court
+    // judges the one it keeps under a changed contract.
+    use crate::document_retention_model::{
+        retention_entry::SetRetentionBinding, schema::DocumentRetentionSchema,
+    };
+    use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
+    let changed =
+        <SetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY;
     let requirement = requirements
         .custody_inventory_requirements()
         .iter()
         .find(|requirement| {
             requirement.kind() == WorthQueryProgramCustodyInventoryKind::OperationContinuation
-                && requirement.subject().ends_with(<crate::document_retention_model::retention_entry::SetRetentionBinding as worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding<crate::document_retention_model::schema::DocumentRetentionSchema>>::IDENTITY)
+                && action_binding(requirement.subject()) == Some(changed)
         })
         .expect("changed operation requires continuation disposition");
     assert_eq!(requirement.change(), ApplicationSemanticChangeKind::Changed);
@@ -168,4 +178,21 @@ fn changed_operation_requires_and_then_receives_fresh_target_admission() {
         RetentionVerdict::Performed(9),
         "the changed operation executes through a fresh request admitted by the active target"
     );
+}
+
+/// The binding of a length-framed action subject
+/// (`<instance>`, `<feature>`, `<binding>`), compared whole.
+fn action_binding(subject: &str) -> Option<&str> {
+    let mut parts = Vec::new();
+    let mut rest = subject;
+    while !rest.is_empty() {
+        let (length, framed) = rest.split_once(':')?;
+        let length = length.parse::<usize>().ok()?;
+        parts.push(framed.get(..length)?);
+        rest = framed.get(length..)?;
+    }
+    match parts.as_slice() {
+        [_, _, binding] => Some(binding),
+        _ => None,
+    }
 }

@@ -49,6 +49,7 @@ macro_rules! producer {
             const REUSE_POLICY: &'static str = "tracked-source-and-publication-facts";
         }
         impl WorthQueryApplicationProducerProvider<Schema, $producer> for Provider {
+            type DenialValue = WorthQueryUndeclaredProducerDenial;
             const SEMANTIC_IDENTITY: &'static str = concat!("availability-provider-", $id);
             fn operation_input(&self, source: &PlanarReadResult) -> binding::Input {
                 binding::Input {

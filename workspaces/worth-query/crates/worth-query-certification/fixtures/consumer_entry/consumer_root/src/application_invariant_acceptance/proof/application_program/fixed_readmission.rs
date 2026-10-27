@@ -25,10 +25,12 @@ fn fixed_fresh_readmission_rejects_changed_metadata_before_output_dispatch() {
 }
 fn refuse_changed_action(metadata_changed: bool) {
     let changed = ApplicationProgramAuthoring::<ConsumerSchema, ChangedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let changed_revision = *changed.revision();
     let removed = ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let removed_revision = if metadata_changed {
@@ -37,6 +39,7 @@ fn refuse_changed_action(metadata_changed: bool) {
         *removed.revision()
     };
     let original = ApplicationProgramAuthoring::<ConsumerSchema, crate::ConsumerProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let original_revision = *original.revision();

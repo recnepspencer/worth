@@ -37,7 +37,11 @@ fn reduction_scan_and_rounds_preserve_canonical_values_and_cost() {
     let serial_reduced = reduce(None);
     assert_eq!(
         serial_reduced.1,
-        7 + serial_reduced.3.accounted_metrics().unwrap().charged_work
+        7 + serial_reduced
+            .3
+            .accounted_metrics()
+            .expect("a serial reduction carries accounting")
+            .charged_work
     );
     assert!(serial_reduced.2 < serial_reduced.1);
 

@@ -122,6 +122,7 @@ fn relation_scope_requirements_for(
                 .or_insert_with(super::RelationScopeRequirement::default);
             entry.requires_global_evaluation |= requirement.requires_global_evaluation;
             entry.requires_visible_successors |= requirement.requires_visible_successors;
+            entry.requires_affected_pairs |= requirement.requires_affected_pairs;
             entry
                 .minimum_candidate_kinds
                 .extend(requirement.minimum_candidate_kinds);

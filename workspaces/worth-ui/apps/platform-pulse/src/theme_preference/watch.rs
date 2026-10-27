@@ -49,23 +49,23 @@ impl PlatformPulseThemePreferenceWatch {
         watcher
             .watch(&root, notify::RecursiveMode::NonRecursive)
             .map_err(|_| Denial::WatchUnavailable)?;
-        let pending = Arc::new(Mutex::new(PendingPreference::default()));
+        // The watch is registered before the initial read, so a successor
+        // written after that read always wakes the worker. The initial read
+        // runs here rather than on the worker, so the preference present at
+        // launch is observed before the application starts, on the host's own
+        // startup turns, instead of whenever the worker is next scheduled.
+        let path = root.join(FILE_NAME);
+        let pending = Arc::new(Mutex::new(PendingPreference {
+            observation: Some(read(&path)),
+            signal: None,
+        }));
         let stop = Arc::new(AtomicBool::new(false));
         let worker_pending = Arc::clone(&pending);
         let worker_stop = Arc::clone(&stop);
         let worker = std::thread::Builder::new()
             .name("pulse-theme-preference".into())
-            .spawn(move || {
-                run(
-                    root.join(FILE_NAME),
-                    notifications,
-                    failed,
-                    worker_stop,
-                    worker_pending,
-                )
-            })
+            .spawn(move || run(path, notifications, failed, worker_stop, worker_pending))
             .map_err(|_| Denial::WatchUnavailable)?;
-        let _ = wake.try_send(());
         Ok(Self {
             watcher: Some(watcher),
             wake,

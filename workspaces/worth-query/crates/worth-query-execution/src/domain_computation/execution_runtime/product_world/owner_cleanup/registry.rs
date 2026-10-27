@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock, Weak};
 
+use super::history::WorthQueryReleasedHistoryFollower;
 use super::{
     WorthQueryProductBranchOwnerCleanupCapacityExhausted,
     WorthQueryProductBranchOwnerCleanupDenial, WorthQueryProductBranchOwnerCleanupReceipt,
@@ -32,6 +33,7 @@ struct CleanupRegistryState {
 #[derive(Clone)]
 pub(crate) struct WorthQueryProductBranchOwnerCleanupRegistry {
     state: Arc<Mutex<CleanupRegistryState>>,
+    follower: Arc<OnceLock<Weak<dyn WorthQueryReleasedHistoryFollower>>>,
 }
 
 impl WorthQueryProductBranchOwnerCleanupRegistry {
@@ -43,6 +45,24 @@ impl WorthQueryProductBranchOwnerCleanupRegistry {
                 reserved: 0,
                 entries: BTreeMap::new(),
             })),
+            follower: Arc::new(OnceLock::new()),
+        }
+    }
+
+    /// The one follower every history release these cleanups make reaches.
+    pub(crate) fn follow_history_releases(
+        &self,
+        follower: Weak<dyn WorthQueryReleasedHistoryFollower>,
+    ) {
+        assert!(
+            self.follower.set(follower).is_ok(),
+            "one provider follows a product World's history releases"
+        );
+    }
+
+    pub(super) fn history_released(&self) {
+        if let Some(follower) = self.follower.get().and_then(Weak::upgrade) {
+            follower.history_released();
         }
     }
 

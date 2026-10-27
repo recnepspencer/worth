@@ -1,6 +1,4 @@
-use std::num::NonZeroUsize;
-
-use worth_runtime_world::facade::CompositeHistoryReclamationRequest;
+use worth_runtime_world::facade::CompositeCommitIdentity;
 
 use super::{
     WorthQueryProductBranchHistoryCleanup, WorthQueryProductBranchOwnerCleanupDenial,
@@ -8,57 +6,26 @@ use super::{
 };
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 
+/// What follows every history release a branch or recovery cleanup makes.
+pub(crate) trait WorthQueryReleasedHistoryFollower: Send + Sync {
+    /// History a walk released may have been the last to keep evidence Query
+    /// inherited onto its commits; that evidence goes now.
+    fn history_released(&self);
+}
+
 impl WorthQueryProductBranchOwnerCleanupRecord {
     pub(super) fn release_retired_history(
         &mut self,
         runtime: &WorthQueryProductRuntime,
     ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
-        let Some(history) = self.history.as_mut() else {
+        let Some(WorthQueryProductBranchHistoryCleanup { resume }) = self.history.as_mut() else {
             return Ok(());
         };
-        let pending = match history {
-            WorthQueryProductBranchHistoryCleanup::RetiredBranch {
-                retired_head,
-                retirement_boundary,
-                pending,
-            } => {
-                if pending.is_none() {
-                    *pending = Some(collect_retired_history(
-                        runtime,
-                        retired_head,
-                        retirement_boundary,
-                    )?);
-                }
-                pending
-                    .as_mut()
-                    .expect("retired history candidates were initialized")
-            }
-            WorthQueryProductBranchHistoryCleanup::ExactUnpublished { pending } => pending,
-        };
-        if pending.is_empty() {
-            self.history = None;
-            return Ok(());
-        }
-        let outcome = runtime
-            .owner
-            .lifecycle_port()
-            .reclaim_history(CompositeHistoryReclamationRequest::new(
-                runtime.owner.owner_identity(),
-                pending.clone(),
-                pending.len(),
-            ))
-            .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
-        let reclaimed = outcome.reclaimed_commits();
-        let mut reclaimed_index = 0;
-        pending.retain(|candidate| {
-            if reclaimed.get(reclaimed_index) == Some(candidate) {
-                reclaimed_index += 1;
-                false
-            } else {
-                true
-            }
-        });
-        if pending.is_empty() {
+        let walked = walk(runtime, resume);
+        // Every release, complete or not, is followed before it reports.
+        runtime.owner_cleanup.history_released();
+        walked?;
+        if resume.is_empty() {
             self.history = None;
             Ok(())
         } else {
@@ -67,41 +34,29 @@ impl WorthQueryProductBranchOwnerCleanupRecord {
     }
 }
 
-fn collect_retired_history(
+/// A live fork, the live branch it forked from or an installed child keeps the
+/// history it reaches; a walk ends there. A held read or a head still in
+/// custody keeps only the commits from it down, and the walk resumes from it.
+fn walk(
     runtime: &WorthQueryProductRuntime,
-    retired_head: &worth_runtime_world::facade::CompositeCommitIdentity,
-    retirement_boundary: &worth_runtime_world::facade::CompositeCommitIdentity,
-) -> Result<
-    Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
-    WorthQueryProductBranchOwnerCleanupDenial,
-> {
-    if retired_head == retirement_boundary {
-        return Ok(Vec::new());
-    }
-    let installed = runtime
-        .owner
-        .inspection_port()
-        .history_snapshot()
-        .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?
-        .installed_commits();
-    let maximum = NonZeroUsize::new(installed)
-        .ok_or(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
-    let traversal = runtime
-        .owner
-        .inspection_port()
-        .trace_ancestry(retired_head.clone(), maximum)
-        .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
-    let mut candidates = Vec::new();
-    let mut reached_boundary = false;
-    for commit in traversal.commits() {
-        if commit.identity() == retirement_boundary {
-            reached_boundary = true;
-            break;
+    resume: &mut Vec<CompositeCommitIdentity>,
+) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+    let mut index = 0;
+    while let Some(from) = resume.get(index) {
+        let release = runtime
+            .owner
+            .lifecycle_port()
+            .release_retired_branch_history(from)
+            .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
+        match release.held_commit() {
+            Some(held) => {
+                resume[index] = held.clone();
+                index += 1;
+            }
+            None => {
+                resume.remove(index);
+            }
         }
-        candidates.push(commit.identity().clone());
     }
-    if !reached_boundary {
-        return Err(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable);
-    }
-    Ok(candidates)
+    Ok(())
 }

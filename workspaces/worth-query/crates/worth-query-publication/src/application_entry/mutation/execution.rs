@@ -1,3 +1,4 @@
+use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationIntent,
     ApplicationMutationScopeBinding, ApplicationMutationScopeResolution,
@@ -178,9 +179,27 @@ where
             WorthQueryApplicationRequestMutationDenial,
         >,
     > {
+        match self.recorded_replay(allocation_policy, |phase, request, identities, staged| {
+            if request
+                .request
+                .application
+                .requires_application_program::<Intent::Binding>()
+            {
+                return Err(WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired);
+            }
+            super::authorization::prepare(phase, request, identities, staged)
+        }) {
+            RecordedReplay::Replayed(outcome) => {
+                return super::WorthQueryApplicationMutationAttemptReport::new(Ok(outcome), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Refused(refusal) => {
+                return super::WorthQueryApplicationMutationAttemptReport::new(Err(refusal), worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
+            }
+            RecordedReplay::Miss => {}
+        }
         let scope = self.request_scope().clone();
         let runtime = self.request.application;
-        runtime.with_application_advancement(&scope, |phase| {
+        runtime.with_funded_application_advancement(&scope, allocation_policy, |phase| {
         if let Err(denial) = self.require_workflow_transition() {
             return super::WorthQueryApplicationMutationAttemptReport::new(Err(denial),
                 worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerWork::NotStarted);
@@ -328,57 +347,6 @@ where
         }
         Ok(())
     }
-
-    pub(in crate::application_entry) fn resolve_idempotency(
-        &self,
-        phase: &AdvancementPhase<'_>,
-        admission: &WorthQueryAdmittedApplicationOperation<
-            Schema,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
-            <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
-            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
-        >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<
-        Option<
-            WorthQueryApplicationMutationOutcome<
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::Denial,
-                <Intent::Binding as ApplicationMutationBinding<Schema>>::Result,
-            >,
-        >,
-        WorthQueryApplicationRequestMutationDenial,
-    > {
-        self.request
-            .application
-            .validate_application_advancement(phase)
-            .map_err(|cause| {
-                WorthQueryApplicationRequestMutationDenial::ExecutionRequest(cause.into())
-            })?;
-        let resolution = match self
-            .request
-            .application
-            .resolve_admitted_application_idempotency(phase, admission, idempotency)
-        {
-            Ok(read) => read.into_resolution(),
-            Err(denial) => {
-                return match denial.historical_commit() {
-                    Some(observation) => Ok(Some(
-                        WorthQueryApplicationMutationOutcome::PreviouslyCommitted(observation),
-                    )),
-                    None => Err(WorthQueryApplicationRequestMutationDenial::Idempotency(
-                        denial,
-                    )),
-                };
-            }
-        };
-        Ok(match resolution {
-            WorthQueryApplicationIdempotencyResolution::AlreadyCommitted(receipt) => Some(
-                WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
-            ),
-            WorthQueryApplicationIdempotencyResolution::IntentDrift => {
-                Some(WorthQueryApplicationMutationOutcome::IdempotencyIntentDrift)
-            }
-            WorthQueryApplicationIdempotencyResolution::Unseen => None,
-        })
-    }
 }
+
+mod idempotency;

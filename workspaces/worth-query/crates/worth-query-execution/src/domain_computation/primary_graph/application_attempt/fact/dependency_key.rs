@@ -16,6 +16,15 @@ impl WorthQueryApplicationObservedFact {
     pub(in crate::domain_computation::primary_graph) fn dependency_locator_byte_bound(
         &self,
     ) -> Option<u64> {
+        if let Self::StructuralWalk { observation } = self {
+            // Decimal components of one initialized native ID fit within128bytes;
+            // count the bound without an uncontrolled preliminary root scan.
+            return u64::try_from(observation.key().roots().len())
+                .ok()?
+                .checked_mul(128)?
+                .checked_add(observation.key().relation().len() as u64)?
+                .checked_add(512);
+        }
         struct Count(usize);
         impl std::fmt::Write for Count {
             fn write_str(&mut self, text: &str) -> std::fmt::Result {

@@ -50,6 +50,11 @@ pub struct InvariantProofBoundarySummary {
 }
 
 impl InvariantProofBoundarySummary {
+    pub(crate) fn owned_allocation_capacity_bytes(&self) -> u64 {
+        (self.widened_causes.capacity() as u64)
+            .saturating_mul(std::mem::size_of::<InvariantScopeWideningCause>() as u64)
+    }
+
     pub(crate) fn new(
         scope_class: InvariantPlanScopeClass,
         widened_causes: Vec<InvariantScopeWideningCause>,
@@ -141,40 +146,6 @@ impl InvariantExecutionMetadata {
             proof_boundary,
             proposal_identity,
         }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn executed_with_strategy(
-        execution_point: InvariantExecutionPoint,
-        observation_kind: InvariantObservationKind,
-        version_id: crate::identity::data::VersionId,
-        current_version_id: crate::identity::data::VersionId,
-        consumed_groups: InvariantGroupSet,
-        applicable_groups: InvariantGroupSet,
-        max_cost: InvariantCostClass,
-        plan_contract: Option<InvariantPlanContract>,
-        has_merged_plan: bool,
-        preparation_strategy: PreparationStrategy,
-        preparation_failures: Vec<PreparationFailureClass>,
-        proof_boundary: Option<InvariantProofBoundarySummary>,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
-    ) -> Self {
-        Self::new(
-            execution_point,
-            observation_kind,
-            version_id,
-            current_version_id,
-            consumed_groups,
-            applicable_groups,
-            max_cost,
-            InvariantExecutionDisposition::Executed,
-            plan_contract,
-            has_merged_plan,
-            Some(preparation_strategy),
-            preparation_failures,
-            proof_boundary,
-            proposal_identity,
-        )
     }
 
     pub fn execution_point(&self) -> InvariantExecutionPoint {

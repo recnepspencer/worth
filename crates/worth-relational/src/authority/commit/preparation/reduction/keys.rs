@@ -11,8 +11,8 @@ pub(crate) struct ValidationReductionKey {
     pub(crate) execution_point: InvariantExecutionPoint,
     pub(crate) observation_kind: InvariantObservationKind,
     pub(crate) partition_scope: Arc<[PartitionId]>,
-    pub(crate) invariant_group_scope_mask: u32,
     pub(crate) packet_index: usize,
+    pub(crate) invariant_group_scope_mask: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

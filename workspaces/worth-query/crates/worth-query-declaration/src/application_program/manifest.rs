@@ -1,4 +1,5 @@
 use super::semantic_encoding::framed_record;
+mod relation_laws;
 use super::{
     ApplicationActionDeclaration, ApplicationConnectionDeclaration, ApplicationFeatureDeclaration,
     ApplicationProgramRuleDeclaration, ValidatedApplicationProgram,
@@ -34,6 +35,7 @@ impl<Schema, Program> ValidatedApplicationProgram<Schema, Program> {
             self.rules(),
             self.adoption_authorization(),
         )
+        .with_relation_laws(self.relation_laws())
     }
 }
 

@@ -254,9 +254,14 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
             prepared_scope.retain_restricted(&state_view, &committed_state_view, &access, &work);
         let aspect_states =
             StructuralAspectStateView::new(state_view.clone(), work.clone(), access.clone());
-        let relations = StructuralRelationView::new(state_view, work.clone(), access.clone());
-        let committed_relations =
-            StructuralRelationView::new(committed_state_view.clone(), work.clone(), access.clone());
+        let relations =
+            StructuralRelationView::new(state_view, execution, work.clone(), access.clone());
+        let committed_relations = StructuralRelationView::new(
+            committed_state_view.clone(),
+            execution,
+            work.clone(),
+            access.clone(),
+        );
         let counts = StructuralCountView::from_touched_scope(&touched);
         let traversal = BoundedStructuralTraversal::new(
             runtime.performance_access(),
@@ -288,6 +293,10 @@ impl<'runtime> CustomInvariantScopePlanner<'runtime> {
     /// Checks the original request without charging work or opening a scope.
     pub fn check_live(&self) -> Result<(), super::CustomInvariantInterruption> {
         super::interruption::check_live(self.execution)
+    }
+
+    pub fn read_budget(&self) -> super::CustomInvariantReadBudget<'_> {
+        super::CustomInvariantReadBudget::new(self.execution, &self.work)
     }
 
     pub fn observation_kind(&self) -> InvariantObservationKind {

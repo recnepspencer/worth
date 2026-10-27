@@ -267,6 +267,12 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
         .with_write(|symbols| symbols.intern("inspection.structural.family"));
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
+    // Recovery requires a real retained meaning, not a fabricated numeric symbol.
+    let family = runtime.services.symbols.with_read(|symbols| {
+        symbols
+            .symbol("left")
+            .expect("the published client key is interned")
+    });
     assert!(runtime.set_entity_structural_identity_for_test(
         left,
         Some(StructuralFingerprint::new(family, 1001)),

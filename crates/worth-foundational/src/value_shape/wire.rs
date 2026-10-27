@@ -104,8 +104,17 @@ pub fn encode_canonical_value<Value: CanonicalValue>(
     value: &Value,
     bounds: ValueDecodeBounds,
 ) -> Result<String, D> {
-    ValueShapeDefinition::of::<Value>().inspect()?;
-    super::ValueDelegate::<Value>::validate(value, bounds)?;
+    encode_delegated_canonical_value::<super::ValueDelegate<Value>>(value, bounds)
+}
+
+/// The same canonical encoder for an entry-owned delegate of a foreign value.
+/// No wrapper value or second serialization is required.
+pub fn encode_delegated_canonical_value<Delegate: ValueSeedDelegate>(
+    value: &Delegate::Value,
+    bounds: ValueDecodeBounds,
+) -> Result<String, D> {
+    ValueShapeDefinition::from_delegate::<Delegate>().inspect()?;
+    Delegate::validate(value, bounds)?;
     let mut writer = BoundedJsonWriter {
         bytes: Vec::new(),
         maximum: bounds.maximum_wire_bytes(),

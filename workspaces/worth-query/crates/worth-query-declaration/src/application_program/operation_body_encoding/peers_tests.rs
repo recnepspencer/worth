@@ -2,8 +2,8 @@
 use super::operation_body_record;
 use crate::{
     application_query::{
-        ApplicationQueryRootPathDirection as Path, ApplicationQueryRootPathMeaning,
-        ApplicationQueryRootPathStep as Step, WorthQueryPortableApplicationQueryRootPathParts,
+        ApplicationQueryRootPathMeaning, ApplicationQueryRootPathStep as Step,
+        RelationDirection as Path, WorthQueryPortableApplicationQueryRootPathParts,
     },
     application_schema::{
         ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField as Field,
@@ -36,6 +36,7 @@ fn body(member: &str, relation: &str) -> Body {
                     "Parent".into(),
                     "Row".into(),
                     Path::Reverse,
+                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
                 )],
                 guards: vec![],
             },

@@ -75,6 +75,7 @@ impl<Schema: TopologySchemaBinding> WorthQueryApplicationProducerBinding<Schema>
 impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, ChainProducer<Schema>> for ChainProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.query.certification.consumed-chain-provider.v1";
     fn operation_input(&self, source: &PlanarOutputReadResult) -> ChainInput {
         let upstream = |key: &str, root| ChainUpstream {

@@ -263,8 +263,8 @@ fn capture_observation(result: &GovernedResult) -> ConsumerObservation {
         omission_posture: result.receipt().omission_posture(),
         result_count: result.receipt().result_count(),
         projected_field_count: result.receipt().projected_field_count(),
-        adjacency_list_read_count: result.receipt().adjacency_list_read_count(),
-        edge_scan_count: result.receipt().edge_scan_count(),
+        adjacency_list_read_count: result.receipt().reads().adjacency_lists_read(),
+        edge_scan_count: result.receipt().reads().adjacency_edges_inspected(),
         observed_source_debug: result
             .observed_sources()
             .iter()

@@ -345,7 +345,7 @@ fn shared_pair_claims_survive_projection_and_late_refusal_is_atomic() {
                             &key,
                             first,
                             batch,
-                            |row: &AccountSummaryResult, _batch| {
+                            |row: &AccountSummaryResult, _| {
                                 let selected = application
                                     .on_product(request_execution, fresh_product.retained_clone())
                                     .unwrap();

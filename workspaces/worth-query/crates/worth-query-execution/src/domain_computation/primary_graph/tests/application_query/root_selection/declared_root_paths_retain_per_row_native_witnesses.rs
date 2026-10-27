@@ -112,9 +112,14 @@ fn declared_root_paths_retain_per_row_native_witnesses() {
         [11, 22]
     );
     assert_eq!(result.receipt().result_count(), 2);
-    assert_eq!(result.receipt().adjacency_list_read_count(), 3);
-    assert_eq!(result.receipt().edge_scan_count(), 4);
+    assert_eq!(result.receipt().reads().adjacency_lists_read(), 3);
+    assert_eq!(result.receipt().reads().adjacency_edges_inspected(), 4);
     assert_eq!(result.receipt().examined_candidate_count(), 3);
+    assert!(
+        result.receipt().reads().field_reads() > result.receipt().projected_field_count(),
+        "path guards compare candidates beyond the returned projection fields"
+    );
+    assert_eq!(result.receipt().reads().index_candidates_examined(), 0);
     assert_eq!(result.receipt().work().predicate_work_units(), 6);
     assert_eq!(result.receipt().fallback_count(), 0);
     assert_eq!(result.receipt().per_result_neighbor_lookup_count(), 0);

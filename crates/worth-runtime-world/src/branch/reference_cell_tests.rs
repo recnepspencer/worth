@@ -364,3 +364,20 @@ fn unrelated_product_reference_progress_does_not_wait() {
     drop(held);
     worker.join().expect("unrelated worker");
 }
+
+/// Custody that leaves a reference no longer owns history: retiring the cell
+/// and taking a protection apart both unseat its head.
+#[test]
+fn custody_leaving_a_reference_is_unseated() {
+    let (mut fixture, catalog, root) = fixture::installed_root();
+    let snapshot = fixture::initial_snapshot(&mut fixture, Arc::clone(&root));
+    let cell = product_cell(snapshot.clone(), &catalog, &fixture);
+    cell.seat_head(true);
+    let (_, released) = cell.retire().into_parts();
+    let released = released.expect("the live cell carried its head");
+    assert!(!released.history_is_seated(), "retirement unseats the head");
+    let mut parted = fixture::product_head_protection(&fixture, &catalog, snapshot);
+    parted.seat_history(true);
+    let (_, _, history, _) = parted.into_parts();
+    assert!(!history.is_seated(), "the parts leave every reference");
+}

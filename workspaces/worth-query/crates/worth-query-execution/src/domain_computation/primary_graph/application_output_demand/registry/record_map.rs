@@ -19,7 +19,6 @@ pub(super) struct DemandRecords(Map, BTreeMap<
     super::cleanup::ClosedCleanupQueue,
     super::publication_head::PublicationHeads,
     #[cfg(test)] std::cell::Cell<u64>,
-    #[cfg(test)] std::cell::Cell<u64>,
 );
 
 thread_local! { static WHOLE_ROWS: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(Some(0)) }; }
@@ -88,8 +87,6 @@ impl DemandRecords {
             Default::default(),
             Default::default(),
             queue,
-            Default::default(),
-            #[cfg(test)]
             Default::default(),
             #[cfg(test)]
             Default::default(),

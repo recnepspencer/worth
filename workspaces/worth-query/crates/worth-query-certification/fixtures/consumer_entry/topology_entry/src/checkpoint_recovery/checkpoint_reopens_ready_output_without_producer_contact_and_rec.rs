@@ -4,13 +4,14 @@ use super::*;
 #[test]
 fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after_source_change() {
     let _guard = checkpoint_recovery_test_guard();
-    super::super::producer::reset_provider_contacts();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    provider_observation.reset();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let settled = settle(&request, &application);
     assert!(settled.work().producer_contact_count() > 0);
-    assert!(super::super::producer::provider_contacts() > 0);
+    assert!(provider_observation.count() > 0);
     drop(settled);
     drop(principal);
     drop(scope);
@@ -24,15 +25,15 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         .expect("installed host call opens");
     drop(application);
 
-    super::super::producer::reset_provider_contacts();
-    let restored = install(Some(checkpoint));
+    provider_observation.reset();
+    let restored = support::observed::install(Some(checkpoint), &provider_observation);
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
     let restored_settlement = settle(&request, &restored);
     assert_eq!(restored_settlement.work().producer_contact_count(), 0);
     assert_eq!(restored_settlement.work().delivery_contact_count(), 0);
     assert_eq!(restored_settlement.work().derived_publication_count(), 0);
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     let retained = crate::checkpoint_recovery::support::retain_read(&restored, &request)
         .expect("the recovered root is observable");
     request
@@ -45,7 +46,7 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
         repeated_restored_settlement.work().producer_contact_count(),
         0
     );
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     drop(repeated_restored_settlement);
 
     let observed = request
@@ -77,8 +78,8 @@ fn checkpoint_reopens_ready_output_without_producer_contact_and_recomputes_after
     ));
     drop(restored_settlement);
 
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let recomputed = settle(&request, &restored);
     assert!(recomputed.work().producer_contact_count() > 0);
-    assert!(super::super::producer::provider_contacts() > 0);
+    assert!(provider_observation.count() > 0);
 }

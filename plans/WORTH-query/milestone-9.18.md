@@ -548,6 +548,21 @@ implicit patch-record ceiling while an explicitly selected finite ceiling still
 refuses with its typed publication trace. Repository boundary and generated-context
 checks pass; independent source and acceptance reviews clear the public boundary.
 
+Follow-up (fork-head adoption): closing a branch whose history a live fork reaches
+completes instead of reporting its history as still retained. World counts the heads
+live product references carry apart from held reads, so a closed branch's release
+walks from its head toward the root, past its fork point, and stops at history a
+live head or descendant owns; a held read, receipt, forming child or head still in
+publication or recovery custody only defers it. Releasing a publication recovery
+whose successor stayed installed walks on from that successor the same way. Completed
+evidence on commits World still retains passes to the forks that reach them, so an
+adopted fork is one correction unit on its parent's history. The
+`application_correction adoption-cycles` court runs 100 fork-head, step and adopt
+cycles with linear retained bytes and constant completed evidence, refuses a step
+without changing its parent, reverses parent-made and fork-made sources across an
+adoption, closes forks without adopting them at constant evidence, and releases an
+unpublished fork's history and evidence with its recovery.
+
 Each phase adds its adversarial proof as the boundary becomes real; there is no final
 phase where all correctness testing begins. Implementation plans choose private edit
 order within these decisions, not new authority or product semantics.

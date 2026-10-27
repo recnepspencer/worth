@@ -32,6 +32,7 @@ pub fn estimate_graph_read_access_cost(
         supported,
         counters,
         attribution_rows,
+        requirements.rows().iter().any(|row| row.traversal_operator() == Some(&crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure)),
     )
 }
 
@@ -202,12 +203,12 @@ fn estimate_cost_counters(
 
 fn relation_frontier_breadth(row: &WorthQueryGraphReadAccessRequirementRow) -> Option<usize> {
     row.relation_name()
-        .map(|_| row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_RELATION_TOUCH_UNIT)
+        .map(|_| planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT)
 }
 
 fn relation_edge_touch_estimate(row: &WorthQueryGraphReadAccessRequirementRow) -> Option<usize> {
     row.relation_name()
-        .map(|_| row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_RELATION_TOUCH_UNIT)
+        .map(|_| planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT)
 }
 
 fn candidate_root_pressure(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
@@ -227,22 +228,22 @@ fn intermediate_set_pressure(row: &WorthQueryGraphReadAccessRequirementRow) -> u
         WorthQueryGraphReadAccessRequirementKind::TraversalWorkset
         | WorthQueryGraphReadAccessRequirementKind::VisitedSet
         | WorthQueryGraphReadAccessRequirementKind::DedupSet => {
-            row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_RELATION_TOUCH_UNIT
+            planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT
         }
         _ => 0,
     }
 }
 
 fn relation_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
-    row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_RELATION_TOUCH_UNIT * 8
+    planning_extent_unit(row) * UNKNOWN_RELATION_TOUCH_UNIT * 8
 }
 
 fn frontier_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
-    row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_FRONTIER_UNIT_BYTES
+    planning_extent_unit(row) * UNKNOWN_FRONTIER_UNIT_BYTES
 }
 
 fn set_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
-    row.relation_depth().unwrap_or(1).max(1) * UNKNOWN_SET_UNIT_BYTES
+    planning_extent_unit(row) * UNKNOWN_SET_UNIT_BYTES
 }
 
 fn predicate_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
@@ -260,4 +261,16 @@ fn result_memory_bytes(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
         Some(WorthQueryGraphReadResultPressure::CollectionWide) | None => 2048,
     };
     per_result_bytes.saturating_mul(row.maximum_cardinality().unwrap_or(1).max(1))
+}
+
+// Complete traversal has no ordinal-derived size bound. These existing unknown
+// units remain heuristic placeholders, never capacity quotes or read ceilings.
+fn planning_extent_unit(row: &WorthQueryGraphReadAccessRequirementRow) -> usize {
+    if row.traversal_operator()
+        == Some(&crate::graph_read_access::WorthQueryGraphReadTraversalOperator::CompleteClosure)
+    {
+        1
+    } else {
+        row.relation_depth().unwrap_or(1).max(1)
+    }
 }

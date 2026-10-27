@@ -95,19 +95,53 @@ pub(super) fn evaluate_symmetry_contract(
         Ok(scope) => scope,
         Err(violation) => return vec![violation],
     };
-    if scope.planned_edges.is_empty() {
+    let paired = matches!(
+        contract.mode,
+        SymmetryMode::PairedInverseRequired | SymmetryMode::PairedTwinRequired
+    );
+    if if paired {
+        scope.affected_pairs.is_empty()
+    } else {
+        scope.planned_edges.is_empty()
+    } {
         return Vec::new();
     }
     context.metrics().count_relation_contracts_evaluated(1);
     let mut violations = Vec::new();
-    for edge in &scope.planned_edges {
+    // Pair counts may contain incidental edges from partial incidence reads.
+    // Only explicit changed/revalidated pairs define paired symmetry's domain.
+    let planned = scope
+        .planned_edges
+        .iter()
+        .take(if paired { 0 } else { scope.planned_edges.len() })
+        .map(|edge| (&edge.source, &edge.target, None));
+    let surviving = scope
+        .affected_pairs
+        .iter()
+        .take(if paired {
+            scope.affected_pairs.len()
+        } else {
+            0
+        })
+        .map(|pair| (&pair.source, &pair.target, Some(pair)));
+    for (source, target, affected) in planned.chain(surviving) {
         if !context.checkpoint(1) {
             return Vec::new();
+        }
+        if let Some(pair) = affected
+            && scope
+                .directed_pair_counts
+                .get(pair)
+                .copied()
+                .unwrap_or_default()
+                == 0
+        {
+            continue;
         }
         context.metrics().count_relation_symmetry_checks(1);
         match contract.mode {
             SymmetryMode::CanonicalUndirected => {
-                if edge.target < edge.source {
+                if target < source {
                     if !context.claim_result(4096) {
                         return Vec::new();
                     }
@@ -121,8 +155,8 @@ pub(super) fn evaluate_symmetry_contract(
                         InvariantViolationFields::RelationSymmetry {
                             contract_id: contract.contract_id.clone(),
                             relation_kind_id: contract.relation_kind_id,
-                            source: edge.source.clone(),
-                            target: edge.target.clone(),
+                            source: source.clone(),
+                            target: target.clone(),
                             mode: contract.mode,
                         },
                     ));
@@ -130,8 +164,8 @@ pub(super) fn evaluate_symmetry_contract(
             }
             SymmetryMode::PairedInverseRequired | SymmetryMode::PairedTwinRequired => {
                 let inverse = super::super::request::PreparedRelationPairKey {
-                    source: edge.target.clone(),
-                    target: edge.source.clone(),
+                    source: target.clone(),
+                    target: source.clone(),
                 };
                 if scope
                     .directed_pair_counts
@@ -148,13 +182,13 @@ pub(super) fn evaluate_symmetry_contract(
                         DiagnosticCode::RelationSymmetryViolation,
                         format!(
                             "relation contract '{}' requires an inverse/twin edge for {:?}->{:?}",
-                            contract.contract_id, edge.source, edge.target
+                            contract.contract_id, source, target
                         ),
                         InvariantViolationFields::RelationSymmetry {
                             contract_id: contract.contract_id.clone(),
                             relation_kind_id: contract.relation_kind_id,
-                            source: edge.source.clone(),
-                            target: edge.target.clone(),
+                            source: source.clone(),
+                            target: target.clone(),
                             mode: contract.mode,
                         },
                     ));
@@ -162,8 +196,8 @@ pub(super) fn evaluate_symmetry_contract(
             }
             SymmetryMode::InverseProhibited => {
                 let inverse = super::super::request::PreparedRelationPairKey {
-                    source: edge.target.clone(),
-                    target: edge.source.clone(),
+                    source: target.clone(),
+                    target: source.clone(),
                 };
                 if scope
                     .directed_pair_counts
@@ -180,13 +214,13 @@ pub(super) fn evaluate_symmetry_contract(
                         DiagnosticCode::RelationSymmetryViolation,
                         format!(
                             "relation contract '{}' prohibits inverse duplication for {:?}->{:?}",
-                            contract.contract_id, edge.source, edge.target
+                            contract.contract_id, source, target
                         ),
                         InvariantViolationFields::RelationSymmetry {
                             contract_id: contract.contract_id.clone(),
                             relation_kind_id: contract.relation_kind_id,
-                            source: edge.source.clone(),
-                            target: edge.target.clone(),
+                            source: source.clone(),
+                            target: target.clone(),
                             mode: contract.mode,
                         },
                     ));

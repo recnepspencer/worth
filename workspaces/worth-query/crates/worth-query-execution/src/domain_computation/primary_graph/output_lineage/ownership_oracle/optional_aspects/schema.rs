@@ -1,5 +1,5 @@
 use super::*;
-pub(super) trait BirthSchema: TopologySchemaBinding {
+pub(super) trait BirthSchema: TopologyModelBinding {
     const REQUIRED: bool;
     const SOURCE_WRITE: super::own_effect::SourceWrite = super::own_effect::SourceWrite::None;
 }

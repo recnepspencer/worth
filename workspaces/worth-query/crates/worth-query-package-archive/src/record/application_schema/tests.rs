@@ -5,6 +5,7 @@ mod invariant;
 mod mutation_description;
 mod operation_body;
 mod query_context;
+mod relation_integrity;
 mod resource_path;
 mod retired_fact_budget;
 
@@ -219,7 +220,7 @@ fn tag_four_relation_bytes_retain_self_edge_meaning_and_reencode_exactly() {
         relation: "Peer".to_owned(),
         from: "Entity".to_owned(),
         to: "Entity".to_owned(),
-        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+        integrity: ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
     };
     let bytes = encode_member(&member);
 
@@ -245,7 +246,8 @@ fn no_self_edges_uses_the_revised_relation_record() {
         from: "Entity".to_owned(),
         to: "Entity".to_owned(),
         integrity:
-            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling(),
+            ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+                .into(),
     };
     let bytes = encode_member(&member);
 

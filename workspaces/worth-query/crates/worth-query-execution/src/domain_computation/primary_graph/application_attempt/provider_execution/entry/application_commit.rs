@@ -12,7 +12,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Input: Clone + Send + Sync + 'static,
     {
         let request = program.read_set.admission.publication_request().clone();
-        self.with_application_advancement(&request, |phase| {
+        self.with_funded_application_advancement(&request, allocation_policy, |phase| {
             self.compare_and_commit_application_in_advancement(
                 &phase,
                 program,

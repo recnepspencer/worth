@@ -874,8 +874,11 @@ Native owners retain effect, custody and unresolved-publication authority.
 
 **Native substrate.** Every lane takes an `ExecutionAllocationPolicy`
 (`worth_query_host::facade::runtime`): `SystemAllocation` or
-`Execution(&lease)`. The caller chooses; there is no default. The program lanes
-take the installed program runtime first.
+`Execution(&lease)`. The caller chooses; there is no default. Under
+`Execution(&lease)` the lane opens its host call as a controlled child of that
+lease, so its workers descend from it and the lease is the call's one budget
+(see **Execution authority** below). The program lanes take the installed
+program runtime first.
 
 | Lane | Use it when |
 |---|---|
@@ -934,6 +937,17 @@ descriptive history.
   Within that call, Query prepares ready independent producers on the owner,
   computes their managed tasks together, then completes and publishes them in
   canonical order. The caller pumps progress; a worker does not publish.
+- **Producer-required invariants.** A producer's `REQUIRED_INVARIANTS` must
+  each be satisfied by every publication: the rule passes, or Relational
+  proves the publication's footprint touches no kind in the rule's declared
+  closure. The receipt types that vacuous case apart. A candidate with no
+  intents leaves no receipt at all, so Query refuses it as a missing
+  invariant. Any other not-applicable receipt, such as a scoped-out rule
+  (a raw delete never proves its footprint) or refused preparation, still
+  refuses the publication. The refusal is typed: the commit denial's invariant
+  failure is `ProducerRequirementNotAdmitted`, carrying the receipt's verdict
+  and non-applicability basis, and the producer's demand denial returns the
+  same value from `producer_requirement_denial()`.
 - **Fixed required outputs.** The ordinary operation delegates performed publication,
   original-carrier retention, native output advancement and complete settlement.
   Registered replay resumes without another source effect. Delivery checks the

@@ -38,6 +38,9 @@ fn append_root_paths(
     for (path_index, root_path) in paths.iter().enumerate() {
         for (step_index, step) in root_path.steps().iter().enumerate() {
             let path = format!("root-path[{path_index}].step[{step_index}]");
+            if step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure {
+                entries.push(text(format!("{path}.traversal"), "closure"));
+            }
             entries.extend([
                 text(format!("{path}.relation"), step.relation()),
                 text(format!("{path}.from"), step.from()),
@@ -45,8 +48,8 @@ fn append_root_paths(
                 text(
                     format!("{path}.direction"),
                     match step.direction() {
-                        worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Forward => "forward",
-                        worth_query_declaration::facade::application_query::ApplicationQueryRootPathDirection::Reverse => "reverse",
+                        worth_query_declaration::facade::application_query::RelationDirection::Forward => "forward",
+                        worth_query_declaration::facade::application_query::RelationDirection::Reverse => "reverse",
                     },
                 ),
                 unsigned(format!("{path}.depth"), step.depth()),

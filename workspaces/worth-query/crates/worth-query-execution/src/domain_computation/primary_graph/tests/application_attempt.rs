@@ -30,12 +30,15 @@ mod effect_authority;
 mod emitted_effects;
 #[path = "application_attempt/guarded_operation_custody.rs"]
 mod guarded_operation_custody;
+#[path = "application_attempt/guarded_publication_pending.rs"]
+mod guarded_publication_pending;
 #[path = "application_attempt/host_commit_identity.rs"]
 mod host_commit_identity;
 #[path = "application_attempt/idempotency_behavior.rs"]
 mod idempotency_behavior;
 #[path = "application_attempt/index_budget.rs"]
 mod index_budget;
+pub(in crate::domain_computation::primary_graph) mod invariant_walks;
 #[path = "application_attempt/live_delivery_capacity.rs"]
 mod live_delivery_capacity;
 #[path = "application_attempt/mutation_binding_identity.rs"]
@@ -314,3 +317,5 @@ mod freshness_stops;
 
 #[path = "application_attempt/equality_stop_oracle.rs"]
 mod equality_stop_oracle;
+
+mod typed_invariant_refusal;

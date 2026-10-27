@@ -24,6 +24,9 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryCompletedCommi
     /// The World history hold each recorded commit's publication handed over,
     /// kept until that commit's own caller resolves its receipt and takes it.
     fresh_history: BTreeMap<CommitId, WorthQueryCommitHistoryHold>,
+    /// Evidence a retired product occurrence left on World commits history
+    /// still retains, by World commit: a live fork may still correct them.
+    inherited: BTreeMap<CompositeCommitIdentity, CommitId>,
 }
 
 /// The selectors one evidence entry is indexed under besides its commit.
@@ -59,22 +62,65 @@ impl EvidenceKeys {
 }
 
 impl WorthQueryCompletedCommitEvidenceStore {
-    pub(in crate::domain_computation::primary_graph::provider) fn take_one_for_product_occurrence(
-        &mut self,
+    /// The commits one product occurrence published, with their World commits.
+    pub(in crate::domain_computation::primary_graph::provider) fn occurrence_commits(
+        &self,
         branch: &worth_runtime_world::facade::ProductBranchIdentity,
         incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
-    ) -> Option<(CommitId, WorthQueryPrimaryGraphCommittedApplication)> {
-        let commit = self.by_commit.iter().find_map(|(commit, evidence)| {
-            let publication = evidence.committed_product_publication();
-            (publication.product_branch() == branch
-                && publication.product_incarnation() == incarnation)
-                .then_some(*commit)
-        })?;
-        let evidence = self.remove(commit)?;
-        Some((commit, evidence))
+    ) -> Vec<(CommitId, CompositeCommitIdentity)> {
+        self.by_commit
+            .iter()
+            .filter_map(|(commit, evidence)| {
+                let publication = evidence.committed_product_publication();
+                (publication.product_branch() == branch
+                    && publication.product_incarnation() == incarnation)
+                    .then(|| (*commit, publication.composite_commit().clone()))
+            })
+            .collect()
     }
 
-    fn remove(&mut self, commit: CommitId) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
+    /// Keeps a retired occurrence's evidence for a commit World history still
+    /// retains, so a fork that reaches it can still correct it. Only the
+    /// publication's identities stay, so it pins nothing the close released.
+    pub(in crate::domain_computation::primary_graph::provider) fn inherit(
+        &mut self,
+        commit: CommitId,
+    ) {
+        let Some(evidence) = self.by_commit.get_mut(&commit) else {
+            return;
+        };
+        evidence.retire_publication();
+        let world = evidence
+            .committed_product_publication()
+            .composite_commit()
+            .clone();
+        if self.performed_by_world.get(&world) == Some(&commit) {
+            self.performed_by_world.remove(&world);
+        }
+        self.fresh_history.remove(&commit);
+        self.inherited.insert(world, commit);
+    }
+
+    /// World commits that inherited evidence is waiting on.
+    pub(in crate::domain_computation::primary_graph::provider) fn inherited_commits(
+        &self,
+    ) -> Vec<CompositeCommitIdentity> {
+        self.inherited.keys().cloned().collect()
+    }
+
+    /// Releases the inherited evidence of a World commit history let go.
+    pub(in crate::domain_computation::primary_graph::provider) fn release_inherited(
+        &mut self,
+        world: &CompositeCommitIdentity,
+    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
+        let commit = self.inherited.get(world).copied()?;
+        self.release(commit)
+    }
+
+    pub(in crate::domain_computation::primary_graph::provider) fn release(
+        &mut self,
+        commit: CommitId,
+    ) -> Option<WorthQueryPrimaryGraphCommittedApplication> {
         let evidence = self.by_commit.remove(&commit)?;
         let keys = EvidenceKeys::of(&evidence);
         if self.by_session.get(&keys.affinity) == Some(&commit) {
@@ -94,6 +140,9 @@ impl WorthQueryCompletedCommitEvidenceStore {
         let world = evidence.committed_product_publication().composite_commit();
         if self.performed_by_world.get(world) == Some(&commit) {
             self.performed_by_world.remove(world);
+        }
+        if self.inherited.get(world) == Some(&commit) {
+            self.inherited.remove(world);
         }
         self.fresh_history.remove(&commit);
         Some(evidence)
@@ -119,7 +168,8 @@ impl WorthQueryCompletedCommitEvidenceStore {
     /// Evidence outlives its commit's history: once that history retires it
     /// keeps only the publication's identities, so replay still answers and
     /// nothing in World or its owners stays pinned. Returns the Relational
-    /// commits whose evidence retired.
+    /// commits whose evidence retired. Inherited evidence goes entirely: its
+    /// occurrence is closed and its commit can no longer be corrected.
     pub(in crate::domain_computation::primary_graph::provider) fn retire(
         &mut self,
         retired: &[CompositeCommitIdentity],
@@ -127,6 +177,10 @@ impl WorthQueryCompletedCommitEvidenceStore {
         retired
             .iter()
             .filter_map(|world| {
+                // Its receipt basis went with its occurrence.
+                if self.release_inherited(world).is_some() {
+                    return None;
+                }
                 let commit = self.performed_by_world.remove(world)?;
                 self.by_commit.get_mut(&commit)?.retire_publication();
                 Some(commit)

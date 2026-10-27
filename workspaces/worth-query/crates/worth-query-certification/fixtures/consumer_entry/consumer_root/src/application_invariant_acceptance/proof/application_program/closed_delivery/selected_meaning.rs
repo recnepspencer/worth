@@ -12,18 +12,22 @@ use worth_query_host::facade::{
 fn closed_delivery_uses_actual_selected_action_and_root_after_adoption() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
     let original = ApplicationProgramAuthoring::<ConsumerSchema, ConsumerProgram>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let original_revision = *original.revision();
     let changed = ApplicationProgramAuthoring::<ConsumerSchema, ChangedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let changed_revision = *changed.revision();
     let removed = ApplicationProgramAuthoring::<ConsumerSchema, RemovedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let removed_revision = *removed.revision();
     let unchanged = ApplicationProgramAuthoring::<ConsumerSchema, UnchangedFixed>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let unchanged_revision = *unchanged.revision();

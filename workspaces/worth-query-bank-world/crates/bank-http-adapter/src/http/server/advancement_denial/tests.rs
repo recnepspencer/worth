@@ -102,6 +102,11 @@ fn opening_cause_projection_contract_is_equal_for_queries_and_mutations() {
             Kind::InternalDenied,
             Next::ContactOperator,
         ),
+        (
+            Resource::AccountingUnavailable,
+            Kind::InternalDenied,
+            Next::ContactOperator,
+        ),
     ];
     for (resource, kind, next) in resources {
         check(Denial::Resource(resource), kind, next);

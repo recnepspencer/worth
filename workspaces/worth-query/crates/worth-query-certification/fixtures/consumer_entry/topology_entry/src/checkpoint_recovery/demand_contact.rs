@@ -6,17 +6,18 @@ use super::*;
 #[test]
 fn direct_demand_reports_its_own_contact_not_the_reused_outputs_history() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     let first = settle(&request, &application);
     assert_eq!(first.root_producer_contacts_in_this_demand(), 1);
     drop(first);
 
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let reused = direct_demand(&request);
     assert_eq!(reused.producer_contacts_in_this_demand(), 0);
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert!(
         reused
             .readiness_delivery()
@@ -29,7 +30,8 @@ fn direct_demand_reports_its_own_contact_not_the_reused_outputs_history() {
 #[test]
 fn restored_output_reuses_under_receiving_host_policy_without_provider_contact() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = authenticate(&application);
     let request = application.request(&principal, &scope);
     drop(settle(&request, &application));
@@ -44,18 +46,19 @@ fn restored_output_reuses_under_receiving_host_policy_without_provider_contact()
         .expect("installed host call opens");
     drop(application);
 
-    let restored = support::install_with_demand_profile(
+    let restored = support::observed::install_program::<CheckpointProgram>(
         Some(checkpoint),
         worth_query_host::facade::runtime::WorthQueryOutputDemandResourceProfile::new(
             NonZeroUsize::new(32).unwrap(),
         ),
+        &provider_observation,
     );
     let (scope, principal) = authenticate(&restored);
     let request = restored.request(&principal, &scope);
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     let reused = direct_demand(&request);
     assert_eq!(reused.producer_contacts_in_this_demand(), 0);
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
 }
 
 #[test]

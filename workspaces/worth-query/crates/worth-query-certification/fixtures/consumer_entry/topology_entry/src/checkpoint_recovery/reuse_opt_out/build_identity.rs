@@ -16,9 +16,11 @@ type Request<'a, 'p, 's> = WorthQueryApplicationRequest<'a, 'p, 's, NoReuseSchem
 #[test]
 fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_entities() {
     let _guard = checkpoint_recovery_test_guard();
+    let provider_observation = crate::producer::ProviderContacts::default();
     let build_a = ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap();
     let build_b = ApplicationBuildIdentity::parse("22222222-2222-2222-2222-222222222222").unwrap();
-    let mut original = install_no_reuse_with_build(None, build_a);
+    let mut original =
+        install_no_reuse_with_build(None, build_a, Some(provider_observation.clone()));
     let (source_entity, final_entity, original_root_commit, original_final_commit) = {
         let (scope, principal) = support::authenticate(&original);
         let request = original.request(&principal, &scope);
@@ -117,8 +119,12 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
     original.close_conditional_runtime().unwrap();
     drop(original);
 
-    reset_contacts();
-    let mut same = install_no_reuse_with_build(Some(reopen(&saved)), build_a);
+    reset_contacts(&provider_observation);
+    let mut same = install_no_reuse_with_build(
+        Some(reopen(&saved)),
+        build_a,
+        Some(provider_observation.clone()),
+    );
     {
         let (scope, principal) = support::authenticate(&same);
         let request = same.request(&principal, &scope);
@@ -150,15 +156,19 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
             final_entity
         );
         assert_values(&request);
-        assert_eq!(crate::producer::provider_contacts(), 0);
+        assert_eq!(provider_observation.count(), 0);
         assert_eq!(crate::final_output::provider_contacts(), 0);
     }
     assert!(same.close_live_delivery().owner_terminal());
     same.close_conditional_runtime().unwrap();
     drop(same);
 
-    reset_contacts();
-    let mut changed = install_no_reuse_with_build(Some(reopen(&saved)), build_b);
+    reset_contacts(&provider_observation);
+    let mut changed = install_no_reuse_with_build(
+        Some(reopen(&saved)),
+        build_b,
+        Some(provider_observation.clone()),
+    );
     {
         let (scope, principal) = support::authenticate(&changed);
         let request = changed.request(&principal, &scope);
@@ -168,7 +178,7 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
             verify_current(&request, &changed, 0x2712_0103),
             Err(PlanarMutationDenial::CurrentOutputMissing)
         );
-        assert_eq!(crate::producer::provider_contacts(), 0);
+        assert_eq!(provider_observation.count(), 0);
         assert_eq!(crate::final_output::provider_contacts(), 0);
         let source = request
             .query(PlanarRead {
@@ -217,7 +227,7 @@ fn none_producers_reopen_same_build_and_regenerate_changed_build_with_original_e
         let after = support::retain_read(&changed, &request).unwrap();
         assert_eq!(regenerated.posture(), Posture::Performed);
         assert!(regenerated.producer_contacts_in_this_demand() > 0);
-        assert!(crate::producer::provider_contacts() > 0);
+        assert!(provider_observation.count() > 0);
         assert!(crate::final_output::provider_contacts() > 0);
         assert_ne!(
             before.selected_commit(),
@@ -262,8 +272,8 @@ fn reopen(bytes: &[u8]) -> application_installation::WorthQueryApplicationCheckp
     application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes.to_vec())
 }
 
-fn reset_contacts() {
-    crate::producer::reset_provider_contacts();
+fn reset_contacts(provider_observation: &crate::producer::ProviderContacts) {
+    provider_observation.reset();
     crate::final_output::reset_provider_contacts();
 }
 

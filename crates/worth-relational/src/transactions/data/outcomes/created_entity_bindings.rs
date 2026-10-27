@@ -74,6 +74,37 @@ impl CommitCreatedEntityBindings {
         u64::try_from(work).ok()
     }
 
+    /// Recover diagnostic creation meaning from this apply's actual correspondence.
+    /// Only the refusal path walks these retained bindings; ordinary successful
+    /// validation allocates no reverse index. The caller checkpoints each entry.
+    pub(crate) fn original_reference(
+        &self,
+        entity_id: EntityId,
+        mut checkpoint: impl FnMut() -> bool,
+    ) -> Option<CreatedEntityRef> {
+        for (stable, allocated) in &self.by_stable_reference {
+            if !checkpoint() {
+                return None;
+            }
+            if *allocated == entity_id {
+                return Some(CreatedEntityRef {
+                    partition_id: stable.partition_id,
+                    kind_id: stable.kind_id,
+                    client_key: crate::symbols::data::ClientKey::raw(stable.client_key.clone()),
+                });
+            }
+        }
+        for (created, allocated) in &self.by_exact_reference {
+            if !checkpoint() {
+                return None;
+            }
+            if *allocated == entity_id {
+                return Some(created.clone());
+            }
+        }
+        None
+    }
+
     pub(crate) fn resolve(&self, created: &CreatedEntityRef) -> Option<EntityId> {
         if let Some(entity_id) = self.by_exact_reference.get(created) {
             return Some(*entity_id);
@@ -118,6 +149,14 @@ mod tests {
         assert_eq!(bindings.resolve(&first), Some(first_id));
         assert_eq!(bindings.resolve(&second), Some(second_id));
         assert_ne!(bindings.resolve(&first), bindings.resolve(&second));
+        assert_eq!(bindings.original_reference(first_id, || true), Some(first));
+        assert_eq!(
+            bindings.original_reference(second_id, || true),
+            Some(second)
+        );
+        assert!(bindings
+            .original_reference(EntityId::new(partition, 99, 1), || true)
+            .is_none());
     }
 
     #[test]
@@ -138,6 +177,22 @@ mod tests {
         );
 
         assert_eq!(bindings.resolve(&created), Some(entity_id));
+        drop(symbols);
+        let diagnostic = bindings.original_reference(entity_id, || true).unwrap();
+        assert_eq!(diagnostic.partition_id, partition);
+        assert_eq!(diagnostic.kind_id, kind);
+        assert_eq!(
+            diagnostic.client_key.as_raw_str(),
+            Some("symbol-created-record")
+        );
+        let mut checkpoint_reached = false;
+        assert!(bindings
+            .original_reference(entity_id, || {
+                checkpoint_reached = true;
+                false
+            })
+            .is_none());
+        assert!(checkpoint_reached);
     }
 
     #[test]

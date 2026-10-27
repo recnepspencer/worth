@@ -270,6 +270,7 @@ impl ProductBranchRegistryReservation {
             .cell
             .take()
             .expect("validated destination remains borrowed");
+        cell.seat_head(true);
         state.entries.insert(
             installed.branch.clone(),
             ProductBranchRegistryEntry {

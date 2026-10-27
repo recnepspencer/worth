@@ -2,30 +2,43 @@ use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
 
 use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision};
+use crate::domain_computation::primary_graph::structural_walk::StructuralWalkDependencies;
+use std::sync::Arc;
+mod allocation;
+mod walks;
+pub(in crate::domain_computation::primary_graph::application_query) use allocation::{
+    tree_clone_bytes, RootPathAllocation,
+};
 
 /// One immutable root-path witness for a returned row.
 /// Native revisions, not the selected ID alone, prove its currentness.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSelection {
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,
     pub(in crate::domain_computation::primary_graph) adjacencies:
         Vec<WorthQueryObservedAdjacencyRevision>,
+    pub(in crate::domain_computation::primary_graph) walks: Option<Arc<StructuralWalkDependencies>>,
     identity: [u8; 32],
+    _allocation: Option<Arc<RootPathAllocation>>,
 }
 
 impl WorthQueryObservedRootSelection {
-    pub(in crate::domain_computation::primary_graph) fn new(
+    pub(in crate::domain_computation::primary_graph::application_query) fn new(
         entities: Vec<EntityId>,
         aspects: Vec<WorthQueryObservedFieldRevision>,
         adjacencies: Vec<WorthQueryObservedAdjacencyRevision>,
+        walks: Option<Arc<StructuralWalkDependencies>>,
+        allocation: Option<Arc<RootPathAllocation>>,
     ) -> Self {
-        let identity = canonical_identity(&entities, &aspects, &adjacencies);
+        let identity = canonical_identity(&entities, &aspects, &adjacencies, &walks);
         Self {
             entities,
             aspects,
             adjacencies,
+            walks,
             identity,
+            _allocation: allocation,
         }
     }
 
@@ -34,11 +47,20 @@ impl WorthQueryObservedRootSelection {
     }
 
     pub(in crate::domain_computation::primary_graph) fn retained_bytes(&self) -> usize {
+        if self
+            ._allocation
+            .as_ref()
+            .is_some_and(|allocation| allocation.has_payment())
+        {
+            return 0;
+        }
         let Self {
             entities,
             aspects,
             adjacencies,
+            walks: _walks,
             identity: _identity,
+            _allocation,
         } = self;
         let base = std::mem::size_of::<Self>().saturating_add(2 * std::mem::size_of::<usize>());
         let entities = entities
@@ -50,6 +72,8 @@ impl WorthQueryObservedRootSelection {
                 .saturating_mul(std::mem::size_of::<WorthQueryObservedFieldRevision>()),
             |bytes, aspect| bytes.saturating_add(aspect.owned_capacity_bytes()),
         );
+        // Only descriptor slots are owned here. Each complete Native body
+        // retains its original independent payment; it is never re-quoted per row.
         adjacencies.iter().fold(
             base.saturating_add(entities)
                 .saturating_add(aspects)
@@ -63,10 +87,22 @@ impl WorthQueryObservedRootSelection {
     }
 }
 
+impl PartialEq for WorthQueryObservedRootSelection {
+    fn eq(&self, other: &Self) -> bool {
+        self.identity == other.identity
+            && self.entities == other.entities
+            && self.aspects == other.aspects
+            && self.adjacencies == other.adjacencies
+            && self.walks == other.walks
+    }
+}
+impl Eq for WorthQueryObservedRootSelection {}
+
 fn canonical_identity(
     entities: &[EntityId],
     aspects: &[WorthQueryObservedFieldRevision],
     adjacencies: &[WorthQueryObservedAdjacencyRevision],
+    walks: &Option<Arc<StructuralWalkDependencies>>,
 ) -> [u8; 32] {
     let mut digest = Sha256::new();
     digest.update(b"worth-query:root-selection-source:v2");
@@ -99,6 +135,15 @@ fn canonical_identity(
         digest.update((adjacency.endpoints.len() as u64).to_be_bytes());
         for endpoint in &adjacency.endpoints {
             encode_entity(&mut digest, *endpoint);
+        }
+    }
+    // Preserve one-hop source commitments. Closure's explicit discriminator
+    // commits to its full body descriptor without scanning that body per row.
+    if let Some(walks) = walks {
+        digest.update(b"complete-structural-walks:v1");
+        digest.update((walks.values().len() as u64).to_be_bytes());
+        for walk in walks.values() {
+            digest.update(walk.commitment());
         }
     }
     digest.finalize().into()

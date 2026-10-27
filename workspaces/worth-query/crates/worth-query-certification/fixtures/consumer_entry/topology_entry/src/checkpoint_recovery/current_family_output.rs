@@ -11,7 +11,8 @@ use worth_query_host::facade::application_installation::WorthQueryCheckpointCapt
 #[test]
 fn preserved_family_head_reopens_for_current_output_before_any_demand() {
     let _guard = checkpoint_recovery_test_guard();
-    let application = install(None);
+    let provider_observation = crate::producer::ProviderContacts::default();
+    let application = support::observed::install(None, &provider_observation);
     let (scope, principal) = support::authenticate(&application);
     let request = application.request(&principal, &scope);
     let mut demand = request
@@ -47,11 +48,14 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
 
     // The old Initial row is genuine recovered custody, so ready-cache
     // replacement cannot remove it from the next capture's recovered input.
-    let application = install(Some(
-        application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
-            initial_bytes,
+    let application = support::observed::install(
+        Some(
+            application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(
+                initial_bytes,
+            ),
         ),
-    ));
+        &provider_observation,
+    );
     let (scope, principal) = support::authenticate(&application);
     let request = application.request(&principal, &scope);
     let observed = request
@@ -121,11 +125,14 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
 
     // Reenter through untrusted bytes and installed producer readmission.
     // No demand or supplier replay is allowed to repair this current-output read.
-    super::super::producer::reset_provider_contacts();
+    provider_observation.reset();
     super::super::final_output::reset_provider_contacts();
-    let reopened = install(Some(
-        application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
-    ));
+    let reopened = support::observed::install(
+        Some(
+            application_installation::WorthQueryApplicationCheckpoint::from_untrusted_bytes(bytes),
+        ),
+        &provider_observation,
+    );
     let (scope, principal) = support::authenticate(&reopened);
     let request = reopened.request(&principal, &scope);
     let verify = |command| {
@@ -157,7 +164,7 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         verify(0x9176_6202_u64).unwrap(),
         WorthQueryApplicationMutationOutcome::Committed { .. }
     ));
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert_eq!(super::super::final_output::provider_contacts(), 0);
 
     let source = request
@@ -183,7 +190,7 @@ fn preserved_family_head_reopens_for_current_output_before_any_demand() {
         )
         .unwrap();
     assert_stale(verify(0x9176_6204_u64).unwrap_err());
-    assert_eq!(super::super::producer::provider_contacts(), 0);
+    assert_eq!(provider_observation.count(), 0);
     assert_eq!(super::super::final_output::provider_contacts(), 0);
 }
 

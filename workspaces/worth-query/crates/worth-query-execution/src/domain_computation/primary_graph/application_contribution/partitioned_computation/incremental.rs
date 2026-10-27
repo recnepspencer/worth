@@ -188,6 +188,17 @@ where
     if super::certification_reuse::disabled() {
         return full(basis, WorthQueryPartitionedComputationFullCause::Unretained);
     }
+    if let Ok(retained) = &prior.retained
+        && retained.facts.has_structural_walk()
+    {
+        if let Some(cause) = basis.drift(&retained.basis) {
+            return full(basis, cause);
+        }
+        return full(
+            basis,
+            WorthQueryPartitionedComputationFullCause::StructuralWalkRead,
+        );
+    }
     let changes = reader.computation_changes(&COMPARATOR, &prior);
     let rebase_changes = changes.clone();
     let retained = match prior.retained {

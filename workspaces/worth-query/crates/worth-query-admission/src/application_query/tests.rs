@@ -43,6 +43,8 @@ mod planning_variations;
 mod without_traversal;
 use alternate_source_digest::AlternateSourceDigestGraph;
 use without_traversal::WithoutTraversalGraph;
+#[path = "tests/complete_closure.rs"]
+mod complete_closure;
 #[path = "tests/installed_fixture.rs"]
 mod installed_fixture;
 use installed_fixture::{installed_schema, query_definition};
@@ -86,6 +88,9 @@ worth_query_application_schema! {
                     Activity::reference(),
                 )
                 .effect(live_lane::PlanningLiveEffect::reference())
+                .relation(complete_closure::AccountNext::reference(), Account::reference(), Account::reference())
+                .application_query(complete_closure::definition(complete_closure::ClosureQuery::reference(), false))
+                .application_query(complete_closure::definition(complete_closure::ReverseClosureQuery::reference(), true))
                 .application_query(query_definition())
         }
     }

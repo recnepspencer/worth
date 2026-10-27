@@ -8,7 +8,9 @@ use worth_relational::facade::durability::{
 #[derive(Debug)]
 pub enum WorthQueryCheckpointCaptureDenial {
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
-    Durability(DurabilityError),
+    /// Boxed: the native durability refusal is the largest cause, and every
+    /// capture result would otherwise reserve its bytes inline.
+    Durability(Box<DurabilityError>),
     Allocation(ExecutionAllocationDenial),
     /// Original execution stopped, or cannot fund the required capture contract.
     Execution(super::super::WorthQueryPrimaryGraphInstallationDenial),
@@ -17,7 +19,7 @@ pub enum WorthQueryCheckpointCaptureDenial {
 impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptureDenial {
     fn from(error: RelationalNativeCheckpointCaptureDenial) -> Self {
         match error {
-            RelationalNativeCheckpointCaptureDenial::Durability(error) => Self::Durability(error),
+            RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             RelationalNativeCheckpointCaptureDenial::Allocation(error) => Self::Allocation(error),
         }
     }
@@ -25,7 +27,7 @@ impl From<RelationalNativeCheckpointCaptureDenial> for WorthQueryCheckpointCaptu
 
 impl From<DurabilityError> for WorthQueryCheckpointCaptureDenial {
     fn from(error: DurabilityError) -> Self {
-        Self::Durability(error)
+        Self::Durability(Box::new(error))
     }
 }
 

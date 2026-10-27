@@ -23,6 +23,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
     matches!(
         fact,
         Fact::SourcePublication { .. }
+            | Fact::StructuralWalk { .. }
             | Fact::SourceEntity { .. }
             | Fact::Entity { .. }
             | Fact::SourceFieldRevision { .. }

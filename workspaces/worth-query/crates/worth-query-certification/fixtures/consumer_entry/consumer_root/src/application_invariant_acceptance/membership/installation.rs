@@ -50,6 +50,7 @@ fn install_program_seeded<
             setup_calls: Arc::new(AtomicUsize::new(0)),
             invariant_calls: Arc::new(AtomicUsize::new(0)),
             invariant_probe: Arc::new(AtomicUsize::new(0)),
+            invariant_read_observer: None,
             producer_authorization_denials: Arc::new(AtomicUsize::new(0)),
             producer_domain_denial: Arc::new(AtomicBool::new(false)),
         },
@@ -57,6 +58,7 @@ fn install_program_seeded<
         (),
     );
     let program = ApplicationProgramAuthoring::<Schema, P>::begin()
+        .with_schema(&Schema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .expect("the separate membership graph and operation authorization are complete");
     let application = in_memory_program(

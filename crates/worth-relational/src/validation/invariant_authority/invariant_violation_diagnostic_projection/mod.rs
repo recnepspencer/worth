@@ -19,6 +19,8 @@ use crate::validation::data::{
 };
 
 mod from_invariant_violation_fields;
+#[cfg(test)]
+mod refusal_tests;
 mod typed_projection;
 
 #[derive(Debug)]
@@ -120,6 +122,7 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
     },
     CustomInvariantViolation {
         identity: &'a crate::validation::data::CustomInvariantSemanticIdentity,
+        refusal: &'a crate::validation::data::CustomInvariantRefusal,
     },
     PartitionIsolation {
         contract_id: &'a ContractId,
@@ -127,6 +130,8 @@ pub(super) enum InvariantViolationDiagnosticProjection<'a> {
         relation_id: Option<RelationId>,
         source_partition_id: PartitionId,
         target_partition_id: PartitionId,
+        source: &'a EntityReference,
+        target: &'a EntityReference,
     },
     Acyclicity {
         contract_id: &'a ContractId,

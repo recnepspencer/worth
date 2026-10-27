@@ -4,6 +4,7 @@ use super::*;
 #[test]
 fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source() {
     let program = ApplicationProgramAuthoring::<ConsumerSchema, Program<QueryDelivery>>::begin()
+        .with_schema(&ConsumerSchema::declaration().expect("the completed schema is valid"))
         .validated_program()
         .unwrap();
     let grants = [
@@ -195,8 +196,6 @@ fn discovered_owning_committed_retention_retry_preserves_fresh_result_and_source
     use worth_query_host::facade::application_entry::{
         WorthQueryOperationDeliveryDenial, WorthQueryOperationDeliveryPolicy as Policy,
     };
-    let _one = NonZeroUsize::new(1).unwrap();
-
     let policy = Policy::default();
     let query_denial = settled
         .read_current_with_policy(&request, policy.query(NonZeroUsize::new(2).unwrap()))

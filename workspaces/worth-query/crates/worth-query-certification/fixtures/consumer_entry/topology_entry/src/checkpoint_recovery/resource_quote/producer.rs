@@ -38,6 +38,7 @@ impl<S: TopologySchemaBinding> WorthQueryApplicationProducerBinding<S> for Produ
 }
 pub struct Provider;
 impl<S: TopologySchemaBinding> WorthQueryApplicationProducerProvider<S, Producer<S>> for Provider {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "quote-count.provider";
     fn operation_input(&self, source: &Source) -> Input {
         Input {

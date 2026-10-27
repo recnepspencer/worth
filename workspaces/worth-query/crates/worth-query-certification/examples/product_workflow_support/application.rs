@@ -29,12 +29,21 @@ pub struct ExampleApplication {
 
 impl ExampleApplication {
     pub fn publish(gate: &str) -> Self {
+        Self::publish_completing(gate, "completed")
+    }
+
+    /// Publishes with the lifecycle the conditional re-entry writes on
+    /// completion.
+    pub fn publish_completing(gate: &str, completed_lifecycle: &str) -> Self {
         let declaration = TemporalHostSchema::declaration().expect("the example schema is valid");
         let (clock_source, clock_control) = ClockSource::due();
         let runtime = application_installation::in_memory_program(
             program::validated_program(),
             declaration,
-            (TemporalContributionConfiguration { clock_source },),
+            (TemporalContributionConfiguration {
+                completed_lifecycle: completed_lifecycle.to_owned(),
+                ..TemporalContributionConfiguration::new(clock_source)
+            },),
             ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
                 .expect("embedded application build identity"),
             example_limits(None),

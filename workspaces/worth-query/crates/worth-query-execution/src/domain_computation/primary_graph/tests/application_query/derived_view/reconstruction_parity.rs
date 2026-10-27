@@ -160,6 +160,7 @@ fn members_admitted_across_a_commit_are_stale_after_the_same_charged_reads() {
                 })
                 .unwrap();
             assert_eq!(answer, Err(WorthQueryManagedDerivedViewDenial::StaleSource));
+            assert!(work.charged_work() > 0);
         })
         .unwrap();
 }

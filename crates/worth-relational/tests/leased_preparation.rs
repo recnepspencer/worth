@@ -1,12 +1,12 @@
 #[path = "leased_preparation/companion_read.rs"]
 mod companion_read;
 use worth_execution::ExecutionAllocationPolicy as AllocationPolicy;
-#[path = "leased_preparation/declared_index_ceiling.rs"]
-mod leased_preparation_declared_index_ceiling;
 #[path = "leased_preparation/denial_causes.rs"]
 mod leased_preparation_denial_causes;
 #[path = "leased_preparation/index_budget.rs"]
 mod leased_preparation_index_budget;
+#[path = "leased_preparation/index_request_memory.rs"]
+mod leased_preparation_index_request_memory;
 #[path = "leased_preparation/preimage.rs"]
 mod preimage;
 #[path = "../examples/support.rs"]

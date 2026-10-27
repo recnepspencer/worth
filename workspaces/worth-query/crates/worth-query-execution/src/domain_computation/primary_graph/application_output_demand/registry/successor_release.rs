@@ -73,6 +73,3 @@ fn delivery_owner(state: &DemandRegistryState, key: &WorthQueryOutputDemandKey) 
         DeliveryOwner::None
     }
 }
-
-#[cfg(test)]
-impl WorthQueryOutputDemandInterest {}

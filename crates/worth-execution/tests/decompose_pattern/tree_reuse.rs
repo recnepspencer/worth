@@ -63,6 +63,13 @@ fn back(
     Ok(input.interior + input.interface_slice)
 }
 
+fn recombined(metrics: &worth_execution::ReductionMetrics) -> u64 {
+    metrics
+        .accounted_metrics()
+        .expect("a retained decomposition carries reduction accounting")
+        .recombined_nodes
+}
+
 #[test]
 fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {
     let original: Vec<_> = (1..=64).map(|id| (id, id)).collect();
@@ -70,13 +77,7 @@ fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {
     let first = retained
         .run(None, &map(&original), EDITIONS, interior, interface, back)
         .unwrap();
-    let recombined = |metrics: worth_execution::ReductionMetrics| {
-        metrics
-            .accounted_metrics()
-            .expect("serial decomposition records reduction accounting")
-            .recombined_nodes
-    };
-    assert_eq!(recombined(first.reduction_metrics), 64);
+    assert_eq!(recombined(&first.reduction_metrics), 64);
 
     let updated = retained
         .run(
@@ -88,8 +89,8 @@ fn one_changed_contribution_recombines_only_path_and_matches_fresh_tree() {
             back,
         )
         .unwrap();
-    assert!(recombined(updated.reduction_metrics) > 0);
-    assert!(recombined(updated.reduction_metrics) < 64);
+    assert!(recombined(&updated.reduction_metrics) > 0);
+    assert!(recombined(&updated.reduction_metrics) < 64);
     assert_eq!(updated.reuse.unchanged_contributions, 63);
 
     let mut fresh_entries = original;

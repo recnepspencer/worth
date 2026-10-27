@@ -140,6 +140,8 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactAttributi
     >,
     range_progress: Option<ranges::CallRangeProgress>,
     range_closed: Option<std::sync::Arc<ranges::NativeCallCarriage>>,
+    // Original walk-authoring payment; consumed after all authoring fields.
+    walk_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl ComputationFactAttribution {
@@ -332,6 +334,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
 mod charged;
 mod layout;
 mod ranges;
+mod structural_reads;
 pub(in crate::domain_computation::primary_graph) use layout::CheckedCallShape;
 pub(in crate::domain_computation::primary_graph) use ranges::NativeCallCarriage;
 mod reattribution;

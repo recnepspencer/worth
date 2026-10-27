@@ -211,14 +211,28 @@ impl ProductBranchReferenceCell {
 
     /// Give back the protection of a cell nobody else shares. A cell the
     /// registry never installed has exactly one holder, so for it this is
-    /// total; a shared cell keeps its protection and answers `None`.
+    /// total; a shared cell keeps its protection and answers `None`. The
+    /// protection returns to custody, so it no longer owns its ancestry.
     pub(crate) fn into_protection(self) -> Option<ProductBranchHeadProtection> {
         Arc::try_unwrap(self.state.current).ok().and_then(|image| {
-            image
+            let mut protection = image
                 .into_inner()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .protection
+                .protection;
+            if let Some(protection) = protection.as_mut() {
+                protection.seat_history(false);
+            }
+            protection
         })
+    }
+
+    /// The registry installed (`true`) or released (`false`) this cell. Only
+    /// the head of an installed reference owns the ancestry behind it; a
+    /// publication moves the seat to its successor.
+    pub(crate) fn seat_head(&self, seated: bool) {
+        if let Some(protection) = self.state.write().protection.as_mut() {
+            protection.seat_history(seated);
+        }
     }
 
     /// Protect and recheck one candidate before asking the component owner for

@@ -9,7 +9,7 @@ use worth_query_host::facade::application_contribution::{
     WorthQueryApplicationProducerProvider, WorthQueryDecisionContextDependencies,
     WorthQueryProducerApplicability, WorthQueryProducerInputReuseContract,
     WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerOutputFamily,
+    WorthQueryProducerOutputFamily, WorthQueryUndeclaredProducerDenial,
 };
 use worth_query_host::facade::{application_contribution, domain};
 
@@ -199,6 +199,7 @@ impl<Schema: TopologySchemaBinding>
     WorthQueryApplicationProducerProvider<Schema, PlanarFinalOutputProducer<Schema>>
     for PlanarFinalOutputProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str =
         "worth.query.certification.planar-final-output-provider.v2";
 

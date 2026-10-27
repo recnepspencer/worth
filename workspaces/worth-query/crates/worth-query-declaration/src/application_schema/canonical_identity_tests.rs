@@ -39,7 +39,7 @@ fn every_application_schema_member_family_changes_identity() {
             relation: "Relation".to_string(),
             from: "From".to_string(),
             to: "To".to_string(),
-            integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
+            integrity: crate::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().into(),
         },
         principal_binding("PrincipalBinding"),
         application_query("value"),

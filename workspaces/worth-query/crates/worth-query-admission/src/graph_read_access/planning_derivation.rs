@@ -77,6 +77,7 @@ fn visit_specs<'a, S: RowSink<'a>>(
                     sink.row(reverse)?;
                 }
                 WorthQueryGraphReadTraversalOperator::DeclarationTraversal
+                | WorthQueryGraphReadTraversalOperator::CompleteClosure
                 | WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {
                     WorthQueryAdmittedGraphReadRelationDirection::Ancestor => sink.row(reverse)?,
                     WorthQueryAdmittedGraphReadRelationDirection::Forward

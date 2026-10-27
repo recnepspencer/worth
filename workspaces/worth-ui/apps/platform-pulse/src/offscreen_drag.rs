@@ -10,9 +10,9 @@ use std::process::ExitCode;
 use std::time::Duration;
 
 use worth_ui_native_platform::{
-    UiNativeOffscreenSettle, UiNativeOffscreenStart, UiNativePlatformOutcome,
-    UiNativePlatformProfile, UiNativeSubmittedFrameWork, UiNativeWindowSpec,
-    UiPresentationWorkStage, WorthUiNativePlatform,
+    UiNativeOffscreenPlatformSession, UiNativeOffscreenSettle, UiNativeOffscreenStart,
+    UiNativePlatformOutcome, UiNativePlatformProfile, UiNativeSubmittedFrameWork,
+    UiNativeWindowSpec, UiPresentationWorkStage, WorthUiNativePlatform,
 };
 use worth_ui_platform_pulse::visual_identity_pulse::{
     PLATFORM_PULSE_MINIMUM_LOGICAL_EXTENT, PLATFORM_PULSE_PRODUCT_LOGICAL_EXTENT,
@@ -27,11 +27,6 @@ pub(crate) const FLAG: &str = "--worth-ui-offscreen-drag";
 /// The most turns one step may take to settle. A step that needs more is
 /// reported, not waited on.
 const MAX_TURNS_PER_STEP: u32 = 10_000;
-
-/// How long the started application must post no wake before the drag
-/// begins. Its threads observe their sources at most 250 ms after they
-/// open, so a quiet second means startup is over.
-const STARTUP_QUIET: Duration = Duration::from_secs(1);
 
 /// One step of a drag: the extent the client area was dragged to, and the
 /// frames the host submitted before it settled.
@@ -50,8 +45,15 @@ pub(crate) struct PlatformPulseDrag {
 }
 
 /// Opens the product application offscreen at its product extent and scale
-/// 1, lets it settle until it posts nothing for [`STARTUP_QUIET`], then
-/// drags its client area through `path`.
+/// 1, runs it until the host settles, then drags its client area through
+/// `path`.
+///
+/// Startup is over when the host settles. The application reads its Query
+/// value and theme preference while it is prepared, so what they hold at
+/// launch is presented on the host's own startup turns, and its threads post
+/// a wake only when a watched file changes. A wake posted by the time the
+/// host settles is startup work the host could not see; the drag fails
+/// rather than measure over it, and never waits for one.
 pub(crate) fn drag(
     launch: AdmittedPlatformPulseLaunchConfiguration,
     publisher: PlatformPulseObservationPublisher,
@@ -75,11 +77,13 @@ pub(crate) fn drag(
                 return Err(format!("offscreen start ended: {outcome:?}"));
             }
         };
-    let mut startup = session.run_until_idle(MAX_TURNS_PER_STEP);
-    while matches!(startup, UiNativeOffscreenSettle::Idle { .. })
-        && session.await_wake(STARTUP_QUIET)
+    let startup = session.run_until_idle(MAX_TURNS_PER_STEP);
+    if matches!(startup, UiNativeOffscreenSettle::Idle { .. })
+        && application_wake_posted(&mut session)
     {
-        startup = session.run_until_idle(MAX_TURNS_PER_STEP);
+        return Err(format!(
+            "startup settled {startup:?} with an application wake already posted"
+        ));
     }
     let settled = session.take_frame_work();
     let steps = path
@@ -104,6 +108,12 @@ pub(crate) fn drag(
         }
         outcome => Err(format!("offscreen close ended: {outcome:?}")),
     }
+}
+
+/// Whether an application thread has posted a wake the host has not yet
+/// taken. The check does not wait.
+fn application_wake_posted(session: &mut UiNativeOffscreenPlatformSession) -> bool {
+    session.await_wake(Duration::ZERO)
 }
 
 /// The drag the `--worth-ui-offscreen-drag` run performs: narrower in 16

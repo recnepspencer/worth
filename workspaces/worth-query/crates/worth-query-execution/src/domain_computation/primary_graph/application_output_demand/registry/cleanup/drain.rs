@@ -20,9 +20,6 @@ impl WorthQueryOutputDemandRegistry {
                 self.drain_foreign_cleanup();
                 return Ok(());
             };
-            #[cfg(test)]
-            self.state.lock().unwrap().records.note_cleanup_entry();
-
             let released = std::mem::take(&mut retired._settlements);
             drop(retired);
             let state = self
@@ -35,6 +32,3 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 }
-
-#[cfg(test)]
-impl DemandRegistryState {}

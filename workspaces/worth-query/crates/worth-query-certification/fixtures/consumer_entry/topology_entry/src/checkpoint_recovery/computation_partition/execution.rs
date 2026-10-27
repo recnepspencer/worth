@@ -4,8 +4,7 @@
 use worth_foundational::facade::PartitionIdentity;
 use worth_query_decl::facade::application_operation::application_computation_partition_identity;
 use worth_query_host::facade::application_contribution::{
-    WorthQueryComputationPartitionStop, WorthQueryManagedComputationResourceDenial,
-    WorthQueryPartitionedComputationDenial,
+    WorthQueryComputationPartitionStop, WorthQueryPartitionedComputationDenial,
 };
 
 use super::facts::{RegionEntry, RegionFault};

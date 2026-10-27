@@ -64,6 +64,7 @@ mod projected_completion;
 mod projected_extension;
 mod relation_observation;
 mod source_facts;
+mod structural_walk;
 mod unique_write_dependencies;
 
 pub(super) use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};

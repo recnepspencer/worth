@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use worth_relational::facade::identity::EntityId;
 use worth_relational::facade::runtime::{
     CustomInvariantDescriptor, CustomInvariantExecutionContext, CustomInvariantExecutionError,
-    CustomInvariantOperationalMetadata, CustomInvariantPreparationError,
+    CustomInvariantOperationalMetadata, CustomInvariantPreparationError, CustomInvariantRefusal,
     CustomInvariantRegistration, CustomInvariantRule, CustomInvariantScopePlanner,
     CustomInvariantSemanticIdentity, CustomInvariantSemanticVersion, CustomInvariantVerdict,
     InvariantCostClass, InvariantExecutionPoint, InvariantFailureEffect, InvariantGroupSet,
@@ -105,7 +105,7 @@ impl CustomInvariantRule for GraphSelectedStateProbe {
                 .is_ok()
         });
         Ok(if forbidden_is_visible {
-            CustomInvariantVerdict::Violation
+            CustomInvariantVerdict::Violation(CustomInvariantRefusal::Empty)
         } else {
             CustomInvariantVerdict::Pass
         })

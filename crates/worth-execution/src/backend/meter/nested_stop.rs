@@ -17,6 +17,7 @@
 //! | Partition work sum | Fact: latch | `KernelContext::stop_request` |
 //! | Framework/reduction counters | Fact: latch | `request_stop` |
 //! | Charged-byte and size counters | Fact: latch | `LeaseDenial::charged_bytes_overflow` |
+//! | Allocation through an unrelated lease | Fact: latch | `ExecutionAllocationPolicy` |
 //!
 //! Handed refusals mark the invoking run; framework narrowing marks nothing.
 //! Fact doors latch overflowed work, span or byte counters on the active invoking

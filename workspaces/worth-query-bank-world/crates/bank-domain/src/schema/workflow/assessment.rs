@@ -7,8 +7,8 @@ use worth_query_host::facade::{
         WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
         WorthQueryApplicationProducerProvider, WorthQueryProducerApplicability,
         WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-        WorthQueryProducerOutputFamily, WorthQueryWorkflowAssessmentOutputFamily,
-        WorthQueryWorkflowAssessmentPosture,
+        WorthQueryProducerOutputFamily, WorthQueryUndeclaredProducerDenial,
+        WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
     },
     declaration::{
         application_operation::{
@@ -231,6 +231,7 @@ impl WorthQueryApplicationProducerBinding<BankSchema> for ApprovedPaymentAssessm
 impl WorthQueryApplicationProducerProvider<BankSchema, ApprovedPaymentAssessmentProducer>
     for ApprovedPaymentAssessmentProvider
 {
+    type DenialValue = WorthQueryUndeclaredProducerDenial;
     const SEMANTIC_IDENTITY: &'static str = "worth.bank.approved-payment-assessment.provider.v1";
 
     fn operation_input(&self, source: &PaymentSummary) -> ApprovedPaymentAssessmentInput {

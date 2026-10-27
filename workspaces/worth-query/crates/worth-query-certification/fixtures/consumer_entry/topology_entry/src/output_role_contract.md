@@ -701,6 +701,7 @@ contract:
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
+#     type DenialValue = worth_query_host::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
 #     fn operation_input(&self, _: &PlanarReadResult) -> FinalPlanarMutation {
 #         unimplemented!()
 #     }
@@ -752,6 +753,7 @@ A producer whose role is at-most-one:
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
+#     type DenialValue = worth_query_host::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
 #     fn operation_input(&self, _: &PlanarReadResult) -> FinalPlanarMutation {
 #         unimplemented!()
 #     }
@@ -798,6 +800,7 @@ A producer whose role binds another entity than its family outputs:
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
+#     type DenialValue = worth_query_host::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
 #     fn operation_input(&self, _: &PlanarReadResult) -> FinalPlanarMutation {
 #         unimplemented!()
 #     }
@@ -855,6 +858,7 @@ A producer whose role belongs to another operation's contract:
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
+#     type DenialValue = worth_query_host::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
 #     fn operation_input(&self, _: &PlanarReadResult) -> FinalPlanarMutation {
 #         unimplemented!()
 #     }
@@ -904,6 +908,7 @@ A producer whose role its contract does not declare:
 # struct Provider;
 # impl WorthQueryApplicationProducerProvider<S, Producer> for Provider {
 #     const SEMANTIC_IDENTITY: &'static str = "doc.provider";
+#     type DenialValue = worth_query_host::facade::application_contribution::WorthQueryUndeclaredProducerDenial;
 #     fn operation_input(&self, _: &PlanarReadResult) -> FinalPlanarMutation {
 #         unimplemented!()
 #     }

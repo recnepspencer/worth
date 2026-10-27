@@ -70,7 +70,37 @@ fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {
 }
 
 #[test]
-fn foreign_owner_refusal_leaves_no_hidden_shared_custody() {
+fn exclusive_basis_refuses_identity_copy_and_releases_its_sole_owner() {
+    let world = installed_authorization_world(true);
+    let observer = world.application.application_query_basis_observer();
+    let selected = world
+        .application
+        .with_host_advancement(|phase| world.selected_product(&(phase).test_host_request()))
+        .expect("the fixture read owns its installed host call");
+    let identity = selected.application_basis().identity().clone();
+    // ee07da2b0e removed the work/byte forecast from promotion, so promotion
+    // has no quota refusal. Before promotion the exclusive owner still refuses
+    // every identity copy without allocating a shared owner.
+    let before = observer.observe();
+    let stop = match selected.application_basis().retain_shared() {
+        Ok(_) => panic!("exclusive custody cannot be copied before promotion"),
+        Err(stop) => stop,
+    };
+    assert_eq!(stop, CompanionPreflightStop::SelectedSourceMismatch);
+    assert_eq!(observer.observe().active(), before.active());
+
+    let (_, product, basis) = selected.into_parts();
+    drop(product);
+    let receipt = basis.release();
+    assert_eq!(receipt.identity(), &identity);
+    assert!(
+        receipt.released(),
+        "refusal preserved the sole exclusive owner"
+    );
+}
+
+#[test]
+fn denied_identity_copy_and_foreign_owner_leave_no_hidden_shared_custody() {
     let world = installed_authorization_world(true);
     let foreign = installed_authorization_world(true);
     let observer = world.application.application_query_basis_observer();
@@ -94,6 +124,26 @@ fn foreign_owner_refusal_leaves_no_hidden_shared_custody() {
         .retain_selected_query_basis_admitted(&shared)
         .unwrap();
 
+    assert_eq!(observer.observe().active(), before.active() + 1);
+    // ee07da2b0e removed the work/byte forecasts from identity copies: a
+    // further copy is admitted and shares the one native owner.
+    let (copy_product, copy) = match world
+        .application
+        .retain_selected_query_basis_admitted(&shared)
+    {
+        Ok(copy) => copy,
+        Err(error) => panic!("an identity copy carries no quota forecast: {error:?}"),
+    };
+    assert_eq!(copy.identity(), basis.identity());
+    assert_eq!(observer.observe().active(), before.active() + 1);
+    drop(copy_product);
+    let copied = copy.release();
+    assert!(!copied.released());
+    assert_eq!(
+        copied.outcome(),
+        WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained
+    );
+
     let error = match foreign
         .application
         .retain_selected_query_basis_admitted(&shared)
@@ -106,7 +156,7 @@ fn foreign_owner_refusal_leaves_no_hidden_shared_custody() {
     drop(product);
     assert!(
         basis.release().released(),
-        "failed clones retained no extra share"
+        "the released copy and refused foreign owner retained no extra share"
     );
     assert_eq!(observer.observe().active(), before.active());
 }

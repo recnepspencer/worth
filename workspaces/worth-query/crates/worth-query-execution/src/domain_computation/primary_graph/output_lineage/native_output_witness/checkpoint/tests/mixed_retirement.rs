@@ -35,7 +35,6 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
     let graph = world.application.runtime.primary_graph().unwrap();
     let layout = graph.layout();
     let handle = graph.integration_handle();
-    let _owner = &handle.source_owner.invalidation_owner;
     let correspondence = mixed_correspondence(request_execution, live, retired);
     let foreign = installed_authorization_world(true);
     let foreign_selected = foreign
@@ -46,7 +45,7 @@ fn mixed_native_witness_retains_exact_retirement_and_refuses_tampered_recovery()
         .application
         .with_host_advancement(|phase| {
             let host_custody = phase.test_host_request();
-            let execution = &host_custody.borrowed_request_for_test();
+            let request_execution = &host_custody.borrowed_request_for_test();
             handle.with_runtime_mut(request_execution, |runtime| {
                 let before = snapshot(runtime);
                 let prepare = || {

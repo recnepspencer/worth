@@ -95,17 +95,24 @@ impl PreparedProducerExecutionOutcome {
     }
 }
 
-pub(super) fn completed_handler<Value, DomainDenial>(
+/// Settles a handler's result. A domain denial carries the rejecting
+/// provider's diagnostic words beside the value its `Declared` binding
+/// encodes; the binding, not the words, is the caller's authority.
+pub(super) fn completed_handler<Value, DomainDenial, Declared>(
     identity: &'static str,
     result: HandlerResult<Value, DomainDenial>,
     domain_reason: impl FnOnce(&DomainDenial) -> Option<&'static str>,
-) -> Result<Value, WorthQueryOutputDemandDenial> {
+) -> Result<Value, WorthQueryOutputDemandDenial>
+where
+    Declared: graph::WorthQueryProducerDenialDeclaration<DomainDenial>,
+{
     match result {
         HandlerResult::Completed(value) => Ok(value),
         HandlerResult::DomainDenied(domain_denial) => {
             Err(WorthQueryOutputDemandDenial::producer_domain_denied(
                 identity,
                 domain_reason(&domain_denial),
+                Declared::declared_value(&domain_denial),
             ))
         }
         HandlerResult::ExecutionDenied(error) => Err(handler_execution_failed(identity, error)),
@@ -267,6 +274,7 @@ fn refused_preflight(
         | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
+        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
@@ -282,3 +290,9 @@ fn refused_preflight(
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod invariant_refusal_tests;
+
+#[cfg(test)]
+mod domain_denial_tests;
