@@ -39,7 +39,7 @@ where
         authorization: &mut WorthQueryRetainedCapabilityAuthorization,
         graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
-        let product = graph_work.product().ok_or_else(|| {
+        let product = graph_work.authorization_product().ok_or_else(|| {
             denial(
                 WorthQueryOperationAuthorizationDenialKind::Refused(
                     AuthorizationRefusal::InconsistentDecision,

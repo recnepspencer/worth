@@ -121,6 +121,7 @@ impl WorthQueryManagedGraphWorkSession {
             WorthQueryGraphWorkBasis::Query {
                 identity: basis.clone(),
                 product,
+                authorization_product: authorization_product.retained_clone(),
                 port,
             },
             provider,
