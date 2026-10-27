@@ -18,10 +18,17 @@ use super::{
     SignalInstalledDefinitionBinding,
 };
 
+mod completion_admission;
 mod completion_commit;
 mod managed_queue;
+pub use completion_admission::SignalOwnedAsyncCompletionAdmission;
 pub use completion_commit::SignalOwnedAsyncCompletionCommit;
-pub use managed_queue::{SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncQueueDenial};
+pub(crate) use completion_commit::SignalOwnedAsyncCompletionCommitState;
+pub(crate) use managed_queue::SignalOwnedAsyncManagedAdmissionState;
+pub use managed_queue::{
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedQueueBinding,
+    SignalOwnedAsyncQueueDenial,
+};
 
 /// Opaque proof that one presealed resource definition belongs to this exact
 /// conditional service occurrence. Copying node text cannot manufacture it.
@@ -171,9 +178,9 @@ where
         &self,
         binding: &SignalOwnedAsyncSourceBinding,
         raw: RawCompletionEnvelope,
-    ) -> Result<ResourceCompletionAdmissionReport, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<SignalOwnedAsyncCompletionAdmission, SignalConditionalServiceExecutionDenial> {
         self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
+        let report = self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.admit_conditional_owned_async_completion(
                 admission,
                 &binding.basis,
@@ -181,7 +188,11 @@ where
                 binding.node,
                 raw,
             )
-        })
+        })?;
+        Ok(SignalOwnedAsyncCompletionAdmission::new(
+            binding.clone(),
+            report,
+        ))
     }
 
     pub fn revalidate_owned_async_request(

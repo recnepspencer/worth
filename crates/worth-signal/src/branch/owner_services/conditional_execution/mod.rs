@@ -85,10 +85,14 @@ pub(crate) use operation_scope::{
     SignalConditionalDefinitionPublicationScope, SignalConditionalOperationScopeBinding,
 };
 pub use owned_async::{
-    SignalOwnedAsyncCompletionCommit, SignalOwnedAsyncManagedAdmission,
+    SignalOwnedAsyncCompletionAdmission, SignalOwnedAsyncCompletionCommit,
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedQueueBinding,
     SignalOwnedAsyncQueueDenial, SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
     SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
     SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission,
+};
+pub(crate) use owned_async::{
+    SignalOwnedAsyncCompletionCommitState, SignalOwnedAsyncManagedAdmissionState,
 };
 pub use port::SignalConditionalExecutionPort;
 pub(in crate::branch::owner_services) use temporal::SignalConditionalTemporalRegistry;

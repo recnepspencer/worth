@@ -10,7 +10,6 @@ pub struct BridgeOwnedAsyncCommittedCompletion {
     authority: Arc<()>,
     native: worth_signal::facade::branch::SignalOwnedAsyncCompletionCommit,
     port: super::super::signal_port::BridgeConditionalSignalPort,
-    source: worth_signal::facade::branch::SignalOwnedAsyncSourceBinding,
 }
 
 impl BridgeOwnedAsyncCommittedCompletion {
@@ -39,7 +38,7 @@ impl BridgeOwnedSignalRuntime {
         if !completion.is_owned_by(&self.async_observation_authority) {
             return Err(super::foreign_continuation_denial());
         }
-        let admitted = completion
+        completion
             .report()
             .admitted_completion()
             .filter(|admitted| {
@@ -51,9 +50,9 @@ impl BridgeOwnedSignalRuntime {
             .ok_or_else(|| {
                 commit_denial("completion is not this owner's admitted ordinary completion")
             })?;
-        let (port, source) = request.signal_parts();
+        let (port, _) = request.signal_parts();
         let native = port
-            .commit_owned_async_completion(source, admitted.admitted_completion())
+            .commit_owned_async_completion(completion.native_admission())
             .map_err(|cause| {
                 commit_denial(format!("Signal completion commit refused: {cause:?}"))
             })?;
@@ -61,7 +60,6 @@ impl BridgeOwnedSignalRuntime {
             authority: Arc::clone(&self.async_observation_authority),
             native,
             port: port.clone(),
-            source: source.clone(),
         })
     }
 
@@ -74,7 +72,7 @@ impl BridgeOwnedSignalRuntime {
         }
         committed
             .port
-            .finish_owned_async_completion_timeout_cleanup(&committed.source, &mut committed.native)
+            .finish_owned_async_completion_timeout_cleanup(&mut committed.native)
             .map_err(|cause| commit_denial(format!("committed timeout cleanup refused: {cause:?}")))
     }
 }

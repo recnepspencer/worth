@@ -1,5 +1,6 @@
 use std::sync::Arc;
-use worth_signal::facade::{AdmittedResourceRequest, ResourceManagedQueueBinding};
+use worth_signal::facade::branch::SignalOwnedAsyncManagedQueueBinding;
+use worth_signal::facade::AdmittedResourceRequest;
 
 use super::super::{signal_port::BridgeConditionalSignalPort, BridgeOwnedAsyncRequestAdmission};
 
@@ -19,7 +20,7 @@ pub struct BridgeOwnedAsyncManagedRequestAdmission {
     pub(super) port: BridgeConditionalSignalPort,
     pub(super) source: worth_signal::facade::branch::SignalOwnedAsyncSourceBinding,
     pub(super) admitted: AdmittedResourceRequest,
-    pub(super) queue: Option<ResourceManagedQueueBinding>,
+    pub(super) queue: Option<SignalOwnedAsyncManagedQueueBinding>,
     pub(super) request: Option<BridgeOwnedAsyncRequestAdmission>,
     pub(super) refusal: Option<BridgeOwnedAsyncManagedDenial>,
 }

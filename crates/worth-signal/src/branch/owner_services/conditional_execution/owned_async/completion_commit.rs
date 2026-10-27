@@ -1,9 +1,14 @@
 use super::*;
-use crate::data::resource::{AdmittedResourceCompletion, ResourceCompletionCommitReport};
+use crate::data::resource::ResourceCompletionCommitReport;
 use crate::data::temporal::TemporalWakeId;
 
 /// A native commit remains observable even if its timeout cleanup later refuses.
 pub struct SignalOwnedAsyncCompletionCommit {
+    origin: SignalOwnedAsyncSourceBinding,
+    state: SignalOwnedAsyncCompletionCommitState,
+}
+
+pub(crate) struct SignalOwnedAsyncCompletionCommitState {
     pub(crate) report: ResourceCompletionCommitReport,
     pub(crate) handle: ResourceRequestHandle,
     pub(crate) pending_timeout: Option<TemporalWakeId>,
@@ -12,15 +17,15 @@ pub struct SignalOwnedAsyncCompletionCommit {
 
 impl SignalOwnedAsyncCompletionCommit {
     pub fn report(&self) -> &ResourceCompletionCommitReport {
-        &self.report
+        &self.state.report
     }
 
     pub fn timeout_cleanup_denial(&self) -> Option<&SignalConditionalServiceExecutionDenial> {
-        self.cleanup_denial.as_ref()
+        self.state.cleanup_denial.as_ref()
     }
 
     pub fn timeout_cleanup_complete(&self) -> bool {
-        self.pending_timeout.is_none()
+        self.state.pending_timeout.is_none()
     }
 }
 
@@ -32,11 +37,16 @@ where
 {
     pub fn commit_owned_async_completion(
         &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-        admitted: AdmittedResourceCompletion,
+        admission: &SignalOwnedAsyncCompletionAdmission,
     ) -> Result<SignalOwnedAsyncCompletionCommit, SignalConditionalServiceExecutionDenial> {
+        let binding = &admission.origin;
         self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
+        let admitted = admission.report.admitted_completion().ok_or_else(|| {
+            SignalConditionalServiceExecutionDenial::SlotAdmission(
+                crate::data::error::SignalError::invalid_input("completion admission was denied"),
+            )
+        })?;
+        let state = self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.commit_conditional_owned_async_completion(
                 admission,
                 &binding.basis,
@@ -44,14 +54,18 @@ where
                 binding.node,
                 admitted,
             )
+        })?;
+        Ok(SignalOwnedAsyncCompletionCommit {
+            origin: binding.clone(),
+            state,
         })
     }
 
     pub fn finish_owned_async_completion_timeout_cleanup(
         &self,
-        binding: &SignalOwnedAsyncSourceBinding,
         committed: &mut SignalOwnedAsyncCompletionCommit,
     ) -> Result<(), SignalConditionalServiceExecutionDenial> {
+        let binding = &committed.origin;
         self.require_owned_async_binding(binding)?;
         self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.finish_conditional_owned_async_completion_timeout_cleanup(
@@ -59,7 +73,7 @@ where
                 &binding.basis,
                 &self.definition,
                 binding.node,
-                committed,
+                &mut committed.state,
             )
         })
     }
