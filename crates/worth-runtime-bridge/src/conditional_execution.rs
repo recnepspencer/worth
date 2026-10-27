@@ -100,7 +100,8 @@ pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
 pub use owned_async::{
     BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
     BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
-    BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncResourceReleaseRefusal,
 };
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,

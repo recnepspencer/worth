@@ -19,12 +19,7 @@ impl ResourceRuntimeState {
                 else {
                     break;
                 };
-                if let Some(value) = self.pruned_in_flight_history_by_request.remove(&id) {
-                    self.expired_lifecycle_availability.absorb(
-                        b"resource-lifecycle",
-                        id.get(),
-                        &value,
-                    );
+                if self.expire_lifecycle_availability(id) {
                     expired[0] = expired[0].saturating_add(1);
                 }
             }
@@ -34,12 +29,7 @@ impl ResourceRuntimeState {
                 let Some(id) = self.pruned_denied_completions_by_id.keys().next().copied() else {
                     break;
                 };
-                if let Some(value) = self.pruned_denied_completions_by_id.remove(&id) {
-                    self.expired_denied_availability.absorb(
-                        b"resource-denied-completion",
-                        id.get(),
-                        &value,
-                    );
+                if self.expire_denied_availability(id) {
                     expired[1] = expired[1].saturating_add(1);
                 }
             }
@@ -49,17 +39,78 @@ impl ResourceRuntimeState {
                 let Some(id) = self.pruned_retry_lineage_by_ordinal.keys().next().copied() else {
                     break;
                 };
-                if let Some(value) = self.pruned_retry_lineage_by_ordinal.remove(&id) {
-                    self.expired_retry_availability.absorb(
-                        b"resource-retry-lineage",
-                        id.get(),
-                        &value,
-                    );
+                if self.expire_retry_availability(id) {
                     expired[2] = expired[2].saturating_add(1);
                 }
             }
         }
         expired
+    }
+
+    pub(super) fn expire_lifecycle_availability(
+        &mut self,
+        id: crate::data::resource::ResourceRequestId,
+    ) -> bool {
+        let Some(value) = self.pruned_in_flight_history_by_request.remove(&id) else {
+            return false;
+        };
+        self.absorb_released_lifecycle(value);
+        true
+    }
+
+    pub(super) fn expire_denied_availability(
+        &mut self,
+        id: crate::data::resource::AsyncDenialId,
+    ) -> bool {
+        let Some(value) = self.pruned_denied_completions_by_id.remove(&id) else {
+            return false;
+        };
+        self.absorb_released_denial(value);
+        true
+    }
+
+    pub(super) fn expire_retry_availability(
+        &mut self,
+        id: crate::data::resource::ResourceRetryOrdinal,
+    ) -> bool {
+        let Some(value) = self.pruned_retry_lineage_by_ordinal.remove(&id) else {
+            return false;
+        };
+        self.absorb_released_retry(value);
+        true
+    }
+
+    pub(super) fn absorb_released_lifecycle(
+        &mut self,
+        value: crate::data::resource::ResourceRetainedHistoryAvailability,
+    ) {
+        self.expired_lifecycle_availability.absorb(
+            b"resource-lifecycle",
+            value.handle().request_id().get(),
+            &value,
+        );
+    }
+
+    pub(super) fn absorb_released_denial(
+        &mut self,
+        value: crate::data::resource::ResourceRetainedDeniedCompletionAvailability,
+    ) {
+        self.expired_denied_availability.absorb(
+            b"resource-denied-completion",
+            value.denial_id().get(),
+            &value,
+        );
+    }
+
+    pub(super) fn absorb_released_retry(
+        &mut self,
+        value: crate::data::resource::ResourceRetainedRetryLineageAvailability,
+    ) {
+        self.expired_retry_availability.absorb(
+            b"resource-retry-lineage",
+            value.retry_ordinal().get(),
+            &value,
+        );
     }
 }
 

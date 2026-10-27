@@ -31,6 +31,12 @@ pub(in crate::logic::transaction::runtime::state::resource) struct ResourceRetry
 }
 
 impl ResourceRetryBudgetLedger {
+    pub(in crate::logic::transaction::runtime::state::resource) fn request_generation_count_for_test(
+        &self,
+    ) -> usize {
+        self.spend_by_generation.len()
+    }
+
     pub(in crate::logic::transaction::runtime) fn fork_persistent(&mut self) -> Self {
         Self {
             spend_by_generation: self.spend_by_generation.fork_persistent(),

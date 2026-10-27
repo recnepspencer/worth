@@ -3,6 +3,7 @@ use crate::branch::owner_services::conditional_execution::{
     SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedProgress,
     SignalOwnedAsyncManagedQueueHandoff, SignalOwnedAsyncManagedReport,
     SignalOwnedAsyncManagedWakeCleanup, SignalOwnedAsyncQueueDenial,
+    SignalOwnedAsyncRetentionObligation,
 };
 use crate::data::resource::AdmittedResourceRequest;
 
@@ -30,6 +31,19 @@ where
                     None
                 }
             });
+        let retention = cleanup.as_ref().map(|cleanup| {
+            let wake = match cleanup {
+                SignalOwnedAsyncManagedWakeCleanup::ReadyRetry { wake, .. }
+                | SignalOwnedAsyncManagedWakeCleanup::ReadyTimeout { wake, .. } => wake.id(),
+                SignalOwnedAsyncManagedWakeCleanup::RetiredRetry { wake, .. } => wake.id(),
+                SignalOwnedAsyncManagedWakeCleanup::Retirement { wake, .. } => *wake,
+            };
+            SignalOwnedAsyncRetentionObligation {
+                previous: None,
+                retry: None,
+                wakes: [Some(wake), None],
+            }
+        });
         SignalOwnedAsyncManagedHandoff {
             progress,
             report,
@@ -42,6 +56,7 @@ where
             },
             cleanup,
             refusal: refusal.map(SignalOwnedAsyncQueueDenial::Service),
+            retention,
         }
     }
 

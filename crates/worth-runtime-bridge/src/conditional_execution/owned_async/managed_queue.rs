@@ -29,12 +29,16 @@ impl BridgeOwnedSignalRuntime {
             .owned_async_queue_capacity(lowered)
             .ok_or_else(|| request_denial("declaration has no installed managed queue capacity"))?;
         let bound = self.bind_owned_async_basis(lowered, signal_basis, truth_basis)?;
-        let admitted = bound
-            .port
-            .admit_managed_owned_async_request(&bound.source, capacity.get())
-            .map_err(|denial| {
-                request_denial(format!("Signal managed request denied: {denial:?}"))
-            })?;
+        let admitted = if self.owned_async_uses_process_local_retention(lowered) {
+            bound
+                .port
+                .admit_process_local_managed_owned_async_request(&bound.source, capacity.get())
+        } else {
+            bound
+                .port
+                .admit_managed_owned_async_request(&bound.source, capacity.get())
+        }
+        .map_err(|denial| request_denial(format!("Signal managed request denied: {denial:?}")))?;
         Ok(self.assemble_managed_owned_async_request(bound, admitted))
     }
 

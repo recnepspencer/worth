@@ -100,6 +100,7 @@ where
                     owner.admitted.handle(),
                     queue,
                     intent,
+                    owner.process_local,
                 )
             })
             .map_err(SignalOwnedAsyncQueueDenial::Service)??;
@@ -114,6 +115,11 @@ where
         let Some(cleanup) = &mut owner.cleanup else {
             return Ok(());
         };
+        let clears_retry = matches!(
+            cleanup,
+            SignalOwnedAsyncManagedWakeCleanup::ReadyRetry { .. }
+                | SignalOwnedAsyncManagedWakeCleanup::RetiredRetry { .. }
+        );
         let binding = &owner.origin;
         self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.finish_conditional_managed_owned_async_wake_cleanup(
@@ -126,13 +132,22 @@ where
         })?;
         owner.cleanup = None;
         owner.refusal = None;
+        let binding = owner.origin.clone();
+        self.release_pending_process_local_retention(&binding, owner)
+            .map_err(|cause| match cause {
+                SignalOwnedAsyncQueueDenial::Service(cause) => cause,
+                _ => SignalConditionalServiceExecutionDenial::DefinitionMismatch,
+            })?;
+        if clears_retry {
+            owner.pending_retry = None;
+        }
         Ok(())
     }
 
     fn require_managed_replacement(
         &self,
         target: &SignalOwnedAsyncSourceBinding,
-        owner: &SignalOwnedAsyncManagedAdmission,
+        owner: &mut SignalOwnedAsyncManagedAdmission,
     ) -> Result<(), SignalOwnedAsyncQueueDenial> {
         self.require_owned_async_binding(target)
             .map_err(SignalOwnedAsyncQueueDenial::Service)?;
@@ -144,7 +159,7 @@ where
         if owner.cleanup.is_some() {
             return Err(SignalOwnedAsyncQueueDenial::CleanupPending);
         }
-        Ok(())
+        self.release_pending_process_local_retention(target, owner)
     }
 
     fn custodied_queue<'owner>(
@@ -160,7 +175,7 @@ where
         Ok(owner.queue.as_ref().map(|queue| &queue.binding))
     }
 
-    fn require_compatible_owned_async_source(
+    pub(super) fn require_compatible_owned_async_source(
         &self,
         target: &SignalOwnedAsyncSourceBinding,
         prior: &SignalOwnedAsyncSourceBinding,

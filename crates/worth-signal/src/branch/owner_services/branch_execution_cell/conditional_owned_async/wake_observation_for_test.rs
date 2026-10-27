@@ -7,6 +7,21 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(in crate::branch::owner_services) fn conditional_owned_async_retention_storage_for_test(
+        &self,
+        admission: &SignalOwnerOperationAdmission<'_>,
+        basis: &AdmittedSignalBranchBasis,
+        definition: &SignalInstalledDefinitionBinding,
+        node: ResourceNodeId,
+    ) -> Result<(
+        crate::branch::owner_services::conditional_execution::SignalOwnedAsyncRetentionStorageForTest,
+        TemporalWakeSummary,
+    ), SignalConditionalServiceExecutionDenial>{
+        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
+            state.owned_async_retention_storage_for_test(node)
+        })
+    }
+
     pub(in crate::branch::owner_services) fn conditional_owned_async_wake_frontier_for_test(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,

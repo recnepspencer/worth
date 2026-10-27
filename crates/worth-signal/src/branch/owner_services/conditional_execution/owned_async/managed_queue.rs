@@ -30,6 +30,7 @@ pub enum SignalOwnedAsyncQueueDenial {
     QueueUnavailable,
     QueueNotDrained { depth: u64 },
     CleanupPending,
+    ReleaseRequired,
 }
 
 impl<D, I, T> SignalConditionalExecutionPort<D, I, T>

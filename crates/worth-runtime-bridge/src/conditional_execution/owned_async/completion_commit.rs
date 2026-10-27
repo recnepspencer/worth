@@ -7,9 +7,9 @@ use std::sync::Arc;
 /// Genuine committed native completion and its still-owned timeout cleanup.
 /// A completion admission report alone cannot construct this result.
 pub struct BridgeOwnedAsyncCommittedCompletion {
-    authority: Arc<()>,
-    native: worth_signal::facade::branch::SignalOwnedAsyncCompletionCommit,
-    port: super::super::signal_port::BridgeConditionalSignalPort,
+    pub(super) authority: Arc<()>,
+    pub(super) native: worth_signal::facade::branch::SignalOwnedAsyncCompletionCommit,
+    pub(super) port: super::super::signal_port::BridgeConditionalSignalPort,
 }
 
 impl BridgeOwnedAsyncCommittedCompletion {

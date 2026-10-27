@@ -22,6 +22,9 @@ mod initial_custody;
 #[path = "owned_async/branch_head.rs"]
 mod branch_head;
 
+#[path = "owned_async/process_local_retention.rs"]
+mod process_local_retention;
+
 use fixture::{completion, source_commit, AsyncSourceCourt};
 use worth_runtime_bridge::facade::TruthCommitIdentity;
 use worth_runtime_world::facade::{

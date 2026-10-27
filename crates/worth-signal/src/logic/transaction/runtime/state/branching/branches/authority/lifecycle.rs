@@ -18,6 +18,8 @@ mod completion_commit;
 mod initial_request;
 mod managed_queue;
 mod managed_replacement;
+mod process_local_release;
+mod process_local_retry;
 mod replacement_handoff;
 mod request_custody;
 mod retry;
@@ -39,7 +41,7 @@ where
         node: ResourceNodeId,
     ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
         use crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedAdmissionState;
-        match self.admit_owned_async_request_handoff(node, true)? {
+        match self.admit_owned_async_request_handoff(node, true, false)? {
             SignalOwnedAsyncManagedAdmissionState::Ready { request, .. } => Ok(request),
             SignalOwnedAsyncManagedAdmissionState::CleanupRequired { cause, .. } => {
                 // The legacy Native host signature has no caller-owned cleanup
@@ -70,6 +72,7 @@ where
         intent: ResourceRevalidationIntent,
     ) -> Result<SignalOwnedAsyncRevalidationAdmission, SignalConditionalServiceExecutionDenial>
     {
+        self.require_unmanaged_owned_async_revalidation(node, &intent)?;
         let handoff = self.revalidate_owned_async_request_handoff(node, intent)?;
         replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
         let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Revalidation(report) = handoff.report else {
@@ -109,6 +112,7 @@ where
         handle: ResourceRequestHandle,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncTimeoutAdmission, SignalConditionalServiceExecutionDenial> {
+        self.require_unmanaged_owned_async_progression(node, handle)?;
         let handoff = self.advance_owned_async_timeout_handoff(node, handle, coordinate)?;
         replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
         let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Timeout(report) = handoff.report else {
@@ -125,6 +129,7 @@ where
         crate::data::resource::ResourceRetryScheduleReport,
         SignalConditionalServiceExecutionDenial,
     > {
+        self.require_unmanaged_owned_async_progression(node, handle)?;
         let handoff = self.schedule_owned_async_retry_handoff(node, handle)?;
         replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
         let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::RetrySchedule(report) = handoff.report else {
@@ -140,6 +145,7 @@ where
         schedule: &SignalOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncRetryAdmission, SignalConditionalServiceExecutionDenial> {
+        self.require_unmanaged_owned_async_progression(node, handle)?;
         let handoff = self.advance_owned_async_retry_handoff(node, handle, schedule, coordinate)?;
         replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
         let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Retry(report) = handoff.report else {

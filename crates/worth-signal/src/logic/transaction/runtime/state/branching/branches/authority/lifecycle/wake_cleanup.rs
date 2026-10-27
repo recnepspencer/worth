@@ -69,16 +69,13 @@ where
                 if wake.reason() != *reason {
                     return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
                 }
-                // An independently installed successor is never cleared here.
-                if self
-                    .derived
-                    .resource
-                    .pending_retry_wake_for_handle(*previous)
-                    == Some(wake.id())
-                    && self.derived.resource.pending_retry_wake_for_node(node) == Some(wake.id())
-                {
-                    self.derived.resource.clear_pending_retry_for_node(node);
-                }
+                // The exact old schedule can remain pending after a newer
+                // occurrence has replaced the node's latest retry index.
+                self.derived.resource.clear_pending_retry_for_retired_wake(
+                    node,
+                    *previous,
+                    wake.id(),
+                );
             }
             SignalOwnedAsyncManagedWakeCleanup::Retirement { wake, reason } => {
                 self.retire_optional_wake(Some(*wake), *reason)?;

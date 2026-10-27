@@ -7,6 +7,41 @@ where
     I: Copy + Ord,
     T: Copy + Ord,
 {
+    pub(super) fn require_unmanaged_owned_async_revalidation(
+        &self,
+        node: ResourceNodeId,
+        intent: &ResourceRevalidationIntent,
+    ) -> Result<(), SignalConditionalServiceExecutionDenial> {
+        let active = self.derived.resource.active_request_handle_for_node(node);
+        if [intent.expected_active(), active]
+            .into_iter()
+            .flatten()
+            .any(|handle| {
+                self.derived
+                    .resource
+                    .in_flight_request_optional(handle, None)
+                    .is_some_and(|actual| actual.node() == node && actual.is_process_local())
+            })
+        {
+            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
+        }
+        Ok(())
+    }
+
+    pub(super) fn require_unmanaged_owned_async_progression(
+        &mut self,
+        node: ResourceNodeId,
+        handle: ResourceRequestHandle,
+    ) -> Result<(), SignalConditionalServiceExecutionDenial> {
+        if self
+            .require_owned_async_request_instance(node, handle)?
+            .is_process_local()
+        {
+            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
+        }
+        Ok(())
+    }
+
     pub(super) fn require_owned_async_handle(
         &self,
         node: ResourceNodeId,

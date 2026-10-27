@@ -573,6 +573,12 @@ witnesses select their original occurrence and do not become successor custody.
 The UI opening adapter preserves and cleans up the actual refused-entry owner.
 This internal integration does not supply the unfinished Host resource endpoint.
 
+The lower Bridge resource declaration can explicitly opt a queued producer into
+process-local retention. Its move-owned release consumes only that producer's
+genuine terminal/queue/completion custody, preserving both owners on refusal and
+returning distinct released evidence on success. This is a lower-owner Phase 8
+prerequisite; installed Host provider/row retention and fresh access remain open.
+
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
 whose branch version is zero. Empty targets return typed `NoCommittedSource`

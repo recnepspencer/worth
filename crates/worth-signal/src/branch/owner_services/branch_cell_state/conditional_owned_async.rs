@@ -2,6 +2,7 @@ mod completion_commit;
 mod initial_request;
 mod managed_queue;
 mod managed_replacement;
+mod process_local_release;
 mod wake_observation_for_test;
 
 use crate::branch::owner_services::conditional_execution::{
