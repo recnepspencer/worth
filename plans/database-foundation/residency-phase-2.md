@@ -3215,3 +3215,25 @@ That corrected invocation then passes 6,085 tests before two temporal fixture fa
 The complete external fixture command passes 371 Rust tests and reports six failures in the topology owner. Every failed child process succeeds and runs its semantic assertions; each parent then cannot find its single metrics/observation record. The emitters print that first record after single-thread libtest has already written the test-name prefix. Add a leading newline to the six emitted protocol records (native commit, failed-prefix cost, diamond wave, ordinary-read history, queued failure history and three-member history). Keep the strict starts_with/strip_prefix parsers, exact work/span deltas, bit/order assertions and all histories unchanged. An owner-scoped audit of these protocol producers/consumers identifies the whole affected framing family. This is a fixture protocol defect exposed by the corrected serial invocation, not an absent application metric. Focused exact-name courts and the full external fixture lane are rerun.
 
 `repair-fixture-protocol-courts.log` passes all six exact-name courts, including all original work/span and semantic history assertions. Strict topology all-target clippy, formatting, dirty caps and agent-context pass. Composition reports zero scan errors and seven existing long court/orchestration advisories across six files; output framing adds no new responsibility. The full external fixture command is repeated after committing the fix.
+
+### Bank history child-output framing
+
+The complete Bank workspace lane passes 509 tests before two parallel-history
+parent assertions report seven assessment rows instead of eight and four
+transfer rows instead of five. Both child processes succeed; their internal
+semantic, application-order and independent journal assertions run. The first
+BANK_ASSESSMENT/BANK_CELL record shares serial libtest's test-name prefix, so
+the strict starts_with parser drops it. Add a leading newline to those two
+producer records, preserving every exact row count, work/span, native identity,
+posting and balance assertion. The previously passing deadline history retains
+its original producer and checks. This is a fixture protocol defect, not a
+product result mismatch. Preserve the red full log as
+`failed-final-bank-stdout-framing-f1024ee04d.log`, run all five focused
+parallel-history courts, then repeat the full workspace lane.
+
+`repair-bank-parallel-history.log` passes all five courts, including both
+original failures and the present-deadline histories. Strict workspace/all-target
+clippy, package formatting, dirty line caps and agent-context pass. Composition
+finds zero scan errors and two existing long oracle functions; each keeps its
+action, independent model and assertions together. The full clean-tree Bank
+workspace lane is repeated after this test-only correction.
