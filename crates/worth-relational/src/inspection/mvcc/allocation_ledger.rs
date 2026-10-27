@@ -161,10 +161,10 @@ fn inventory_root(
     derived_cache_bytes: u64,
     authoritative: &mut Vec<RelationalAuthoritativeAllocationObservation>,
     excluded: &mut Vec<RelationalOwnerExcludedAllocationObservation>,
-) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
+) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
     for region in root.storage_regions() {
         let partition = root
-            .partition_state(region.partition_id).map_err(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
+            .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
             .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
         let mut payload = PayloadLedger {
             runtime_instance_id,

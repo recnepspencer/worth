@@ -274,7 +274,10 @@ mod tests {
         let baseline_digest = partition.authoritative_content_digest(&symbols).unwrap();
         let baseline_inventory = partition.allocation_inventory();
 
-        partition.adjacency[0]
+        partition
+            .adjacency
+            .get_mut(0)
+            .unwrap()
             .index_historical_kind(KindId(9), RelationId::new(PartitionId(5), 4, 1));
         let perturbed_inventory = partition.allocation_inventory();
 

@@ -198,6 +198,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         .root
         .partition_state(world.output.partition_id)
         .unwrap()
+        .unwrap()
         .entity_arena
         .get(&world.output)
         .unwrap()

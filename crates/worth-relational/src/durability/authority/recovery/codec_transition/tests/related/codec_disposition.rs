@@ -158,6 +158,7 @@ fn cold_retirement_requires_every_sibling_group_before_route_eligibility() {
                 .root
                 .partition_state(sibling.partition_id)
                 .unwrap()
+                .unwrap()
                 .entity_arena
                 .get(&sibling)
                 .unwrap()

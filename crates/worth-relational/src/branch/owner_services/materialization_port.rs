@@ -49,10 +49,10 @@ impl RelationalMaterializationPort {
             .ok_or(RelationalMaterializationError::SourceCommitMismatch)?;
         let records = crate::storage::residency::probe_full(
             execution,
-            &basis
-                .inner
-                .root
-                .with_symbol_admission(&runtime.services.symbols),
+            &crate::branch::SymbolAdmittedRootRead::new(
+                &basis.inner.root,
+                &runtime.services.symbols,
+            ),
             |state| source_generated_manifest(state, generated_entities),
         )
         .map_err(|failure| RelationalMaterializationError::Read(failure.into()))??;

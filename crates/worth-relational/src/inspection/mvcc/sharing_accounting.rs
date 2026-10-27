@@ -33,7 +33,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         root: &RelationalBranchRoot,
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
-    ) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
+    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
         self.observe_partition_allocations(runtime_instance_id, root)?;
         self.observe_root_allocations(runtime_instance_id, root);
         self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes);
@@ -111,7 +111,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         &mut self,
         runtime_instance_id: u64,
         root: &RelationalBranchRoot,
-    ) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
+    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
         for region in root.storage_regions() {
             self.logical_partition_bytes = self
                 .logical_partition_bytes
@@ -121,8 +121,8 @@ impl RelationalAuthoritativeAllocationAccounting {
                 .saturating_add(region.root_region_bytes)
                 .saturating_add(region.partition_state_bytes);
             let partition = root
-                .partition_state(region.partition_id).map_err(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
-                .ok_or(crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
+                .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
+                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
             for allocation in
                 crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,

@@ -1,6 +1,7 @@
 //! Public materialization reads demand their actual recovered root footprint.
 use super::*;
 use crate::branch::{RelationalMaterializationError, RelationalMaterializationRecord};
+use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::execution::RelationalExecutionDenialCause;
 use crate::identity::data::{KindId, PartitionId};
 use crate::storage::residency::{PartitionHeadProbe, PartitionProbe};
@@ -87,9 +88,12 @@ fn residency_retained_kind_demands_only_its_cold_head_and_preserves_damage() {
         source.damaged.store(false, Ordering::Relaxed);
         let attachment = TestDurableMedium::new().attachment();
         for bytes in source.commits.values() {
-            attachment.offer(
-                RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap(),
-            );
+            let artifact =
+                RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
+            assert!(matches!(
+                attachment.publish(&artifact),
+                crate::durability::medium::RelationalDurablePublication::Committed
+            ));
         }
         let mut runtime = durable_runtime_with_test_schema();
         bind_durable_medium(&mut runtime, attachment);
@@ -175,13 +179,13 @@ fn residency_load_free_sharing_and_ledger_refuse_cold_payloads_without_inventing
     assert!(matches!(
         fixture.runtime.observe_branch_sharing(&[identity.clone()]),
         Err(
-            crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)
+            crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)
         )
     ));
     assert!(matches!(
         fixture.runtime.inspect_owner_allocation_ledger(&[identity]),
         Err(
-            crate::inspection::mvcc::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)
+            crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable(_)
         )
     ));
     assert_eq!(

@@ -49,7 +49,7 @@ fn observe_entry(
     runtime: &RelationalRuntime,
     entry: &BranchSharingScopeEntry,
     inventory: &mut BranchSharingInventory,
-) -> Result<(), crate::inspection::mvcc::RelationalBranchSharingInspectionDenial> {
+) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
     let first_root_observation = inventory.root_ids.insert(entry.root.id());
     let commit_id = entry
         .root

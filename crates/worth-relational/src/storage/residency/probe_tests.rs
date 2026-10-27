@@ -260,7 +260,6 @@ impl Drop for DiscoveryAnswer {
 fn deep_or_wide_discovery_escalates_and_drops_the_round_before_loading() {
     let fixture = region_with_history();
     let full = full_demand(&fixture.cell, 1 << 24).unwrap();
-    let symbols = crate::runtime::RuntimeSymbolTable::default();
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     for stop_on_first_miss in [true, false] {

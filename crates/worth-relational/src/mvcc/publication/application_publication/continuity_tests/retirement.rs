@@ -134,6 +134,7 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .entity_arena
             .get(&id)
             .expect("the actual old tombstone generation is retained")
