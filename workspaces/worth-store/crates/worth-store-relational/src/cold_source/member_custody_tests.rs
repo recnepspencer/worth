@@ -21,7 +21,9 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         .unwrap(),
     );
     let source = StoreColdSource::new(serving.clone());
-    let runtime = RelationalRuntimeApi::builder().build();
+    let runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
@@ -104,7 +106,6 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         "the producer-written native basis still has its index member"
     );
     let provider_owner = source.retain_members(&remaining).unwrap();
-    drop(records);
     drop(source);
     let serving = match Arc::try_unwrap(serving) {
         Err(serving) => serving,

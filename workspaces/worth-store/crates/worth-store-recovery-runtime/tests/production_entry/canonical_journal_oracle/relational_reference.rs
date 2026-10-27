@@ -51,7 +51,8 @@ impl RelationalReference {
             .schema_setup(|schema| {
                 schema.schema_registry(schema_registry());
             })
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         {
             let execution = ExecutionRequest::serial(&request);
             let mut generator = Xorshift(seed | 1);

@@ -11,6 +11,8 @@ use crate::recovered_transitions::RelationalStoreTransitionJournalRefusal;
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum RelationalStoreHomeOpenRefusal {
+    /// The supplied native runtime configuration was refused before service.
+    RuntimeConstruction(worth_relational::facade::runtime::RelationalRuntimeConstructionDenial),
     /// The location could not be inspected or created.
     Location {
         kind: std::io::ErrorKind,
