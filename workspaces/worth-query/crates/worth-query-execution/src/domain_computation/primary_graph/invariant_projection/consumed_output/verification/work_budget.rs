@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         | CompanionPreflightStop::RegistrationChanged => {
             ConsumedOutputVerificationStop::Unavailable
         }
-        stop @ (CompanionPreflightStop::PreparationMemoryCounterOverflow) => {
+        stop @ CompanionPreflightStop::PreparationMemoryCounterOverflow => {
             ConsumedOutputVerificationStop::CapacityExhausted(VerificationCapacityStop::Meter(stop))
         }
         CompanionPreflightStop::Interrupted(event) => {

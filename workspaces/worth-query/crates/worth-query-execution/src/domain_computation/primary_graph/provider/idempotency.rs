@@ -268,7 +268,8 @@ fn pending_publication_denial(
         Kind::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
-        kind @ (Kind::StorageUnavailable(_)
+        kind @ (Kind::NativeReadDenied { .. }
+        | Kind::StorageUnavailable(_)
         | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }

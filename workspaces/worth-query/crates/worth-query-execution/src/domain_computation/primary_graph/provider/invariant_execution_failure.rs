@@ -31,12 +31,13 @@ pub(super) fn map_transaction_staging_failure(
 ) -> WorthQueryInvariantExecutionFailure {
     use worth_relational::facade::mvcc::RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
-        native @ (Denial::AllocationDenied(_)
+        native @ (Denial::SymbolIdentityExhausted
+        | Denial::AllocationDenied(_)
         | Denial::CardinalityOverflow
         | Denial::InputDirectoryAllocationDenied { .. }) => {
             return WorthQueryInvariantExecutionFailure::native_staging(
                 native,
-                "Relational staging owner refused backing or cardinality",
+                "Relational staging owner refused backing, cardinality or symbol identity",
             );
         }
         Denial::SavepointCapacityExhausted { maximum_savepoints } => {

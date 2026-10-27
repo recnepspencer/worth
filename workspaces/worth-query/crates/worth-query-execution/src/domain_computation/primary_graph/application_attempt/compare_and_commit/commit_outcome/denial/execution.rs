@@ -92,7 +92,8 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::StorageUnavailable(_)
+                    kind @ (Session::NativeReadDenied { .. }
+                    | Session::StorageUnavailable(_)
                     | Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
                     | Session::ExecutionWorkerPanicked { .. }
