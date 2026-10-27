@@ -559,8 +559,8 @@ action requirements and explicit disclosure slots. `schema.installed_resource`
 resolves this meaning against actual typed recipes and the installed principal
 and scope binding. A transported codec description grants no provider, action or
 completion authority. The Host endpoint and its public provider/cleanup journeys
-are implemented and runtime-qualified on the Phase 8 work branch, pending phase
-integration; see [application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
+are accepted in milestone 9.18.1 Phase 8; see
+[application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
 
 Installed resource access purposes carry only their actual action and requested
 disclosure facets. Close has no Inspect or result obligation; detailed close adds
@@ -580,7 +580,7 @@ process-local retention. Its move-owned release consumes only that producer's
 genuine terminal/queue/completion custody, preserving both owners on refusal and
 returning distinct released evidence on success. This is a lower-owner Phase 8
 prerequisite. Host uses it to release actual row custody before returning its
-Native slot; the complete endpoint still requires its phase evidence gate.
+Native slot under fresh action and disclosure admission.
 
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks

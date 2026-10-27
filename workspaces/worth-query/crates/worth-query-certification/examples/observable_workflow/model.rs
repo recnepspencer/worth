@@ -24,6 +24,8 @@ pub mod program_adoption;
 pub mod programs;
 #[path = "../../tests/application_graph/document_retention_model/readback.rs"]
 pub mod readback;
+#[path = "../../tests/application_graph/document_retention_model/record_history.rs"]
+pub mod record_history;
 #[path = "../../tests/application_graph/document_retention_model/retention_days.rs"]
 pub mod retention_days;
 #[path = "../../tests/application_graph/document_retention_model/retention_entry.rs"]

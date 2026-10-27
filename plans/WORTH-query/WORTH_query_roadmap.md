@@ -5769,8 +5769,11 @@ security. Its facade audit covers equal writes, fork/sibling exclusion,
 ordered/filtered physical relations, replacement, retired gaps, cancellation and
 final custody release. The Native ten/10,000 retained-change court preserves
 identical finite page limits and actual per-page work maxima while traversing every
-unrelated prefix. Phases 8–9 remain unfinished; the application resource endpoint
-is Phase 8.
+unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
+use the ordinary Decl/Host start, fresh inspection, progression and close path,
+with finite provider/ingress/result custody and genuine owned-effect recovery.
+Its combined workflow qualifies populated forks, burned prepared adoptions and
+sibling publications against the actual Native source. Phase 9 remains unfinished.
 These additions do not reopen the original phases. The 2026-10-27 Proprietary
 report against SDK `ba86433627` adds required Phases 12–18: retained spatial
 range reads for preparation and candidate validation, honest compiler and

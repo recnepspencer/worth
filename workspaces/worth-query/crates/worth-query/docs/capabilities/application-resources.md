@@ -6,8 +6,7 @@ verifies its own issued attempt; Signal owns request, timeout, retry and
 completion transitions. A transport acknowledgement or a copied completion
 envelope cannot fulfill a resource.
 
-The Phase 8 endpoint is implemented and runtime-qualified on its milestone
-9.18.1 work branch, pending final checks and phase integration. Its
+Milestone 9.18.1 Phase 8 is accepted on 2026-10-27. Its
 [ordinary application journeys](../../../worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs)
 and [owned-effect journey](../../../worth-query-certification/examples/observable_workflow/resource_monitor/journey.rs)
 exercise the installed public API and its actual provider/cleanup owners.

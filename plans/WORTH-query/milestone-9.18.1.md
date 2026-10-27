@@ -1,8 +1,8 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
-> Phases 7 and 11 accepted on 2026-10-26; Phase 10 accepted on 2026-10-27.
-> Phases 8–9 remain unfinished.
+> Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
+> Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add required, unfinished Phases 12–18,
 > including mandatory Rust 1.99.x qualification.
 > Written on 2026-10-24 against master `b56db81af6`.
@@ -911,8 +911,7 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
-**Status:** Implemented and runtime-qualified on the work branch; final checks and
-phase integration remain pending. Typed resource declarations and installed-profile lookup preserve
+**Accepted, 2026-10-27.** Typed resource declarations and installed-profile lookup preserve
 the complete input/result/failure codec description, exact Access recipe,
 provider role, finite capacities and independent Start/Inspect/Advance/Close
 requirements. Member 39 and disclosure selector 7 extend the current protocol 18.
@@ -920,6 +919,16 @@ Portable value-shape text is descriptive; only actual typed inventory can resolv
 its decoder. Boolean availability and lifecycle state do not authorize counts;
 cleanup detail requires both Count and Explanation influence. The Host provider
 and progression surface is implemented with its actual provider and cleanup journeys.
+
+Qualification uses the actual World/Bridge custody courts, one closed compile-fail
+case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs),
+the existing ordinary-query revocation control and the
+[combined workflow](../../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
+The integrated tree repeats those six selected application cases and the combined
+example; its populated fork, genuine prepare/drop, sibling publication and owned
+recovery remain in that one real journey. The shared example declares the same
+history meaning required by its actual handlers and program feature. These are
+17 distinct focused qualifications, not a rerun of the lower async portfolio.
 
 The installed-access prerequisite compiles explicit Resource/action/facet
 obligations rather than reusing the Access query's payload plan or permission.
@@ -1006,7 +1015,7 @@ reservation as well as a branch version. All lifecycle actions use the ordinary
 Decl/Host API.
 
 The separate public recoverable-effect journey derives a move-only handle
-from an actual committed outbox/aftermath operation and admit genuine inspection.
+from an actual committed outbox/aftermath operation and admits genuine inspection.
 The current terminal/outcome owner precedes the historical outbox provenance read
 and is rechecked after arbitrary verification. Authenticated indeterminate
 admission cannot be ordinary result commit or automatic redispatch. Refused
