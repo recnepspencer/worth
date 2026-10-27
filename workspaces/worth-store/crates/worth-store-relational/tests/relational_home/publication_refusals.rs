@@ -226,6 +226,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
     );
     let (home, activations) =
         media_faults::open_with_faults(&location, SOURCE, &[fault], &execution).unwrap();
+    let acknowledged = workload::artifacts_of(home.runtime());
     media_faults::arm(&activations);
     let unresolved = workload::commit(home.runtime(), &execution, &main(), batches::create(3));
     let fate = unresolved
@@ -241,7 +242,7 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         .clone();
     assert_eq!(super::crash_oracle::commit_subject(&fate).0 .0, 3);
     assert_eq!(
-        workload::artifacts_of(home.runtime()).len(),
+        workload::append_live_artifacts(home.runtime(), &acknowledged).len(),
         2,
         "installed while unresolved"
     );
@@ -277,6 +278,10 @@ fn an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves() {
         recovered.len(),
         3,
         "the durable unresolved commit was recovered"
+    );
+    assert!(
+        recovered.starts_with(&acknowledged),
+        "recovery preserves the acknowledged artifact bytes"
     );
     create(&home, 5, &execution);
     // The fate names the artifact by Relational's payload digest; resolving
