@@ -20,7 +20,7 @@ pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
 pub(in crate::domain_computation::primary_graph) use verification::StructuralWalkVerification;
 
 #[derive(Debug)]
-pub(in crate::domain_computation::primary_graph) struct StructuralWalkObservation {
+pub(in crate::domain_computation) struct StructuralWalkObservation {
     query: StructuralWalkKey,
     native: PinnedStructuralWalk,
     commitment: [u8; 32],

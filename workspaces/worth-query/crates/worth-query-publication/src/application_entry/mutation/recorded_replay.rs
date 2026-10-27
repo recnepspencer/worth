@@ -58,7 +58,6 @@ impl StepRefusal for PerformedDenial {
             Self::Action(_)
             | Self::ForeignProgram
             | Self::UndeclaredOutputRoot
-            | Self::MissingConnection
             | Self::Connection(_) => false,
         }
     }

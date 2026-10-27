@@ -202,6 +202,12 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
         WorthQueryApplicationCommitOutcome::Denied(commit_denial) => {
             let kind = commit_denial.kind();
             let capacity = commit_denial.output_verification_capacity_stop();
+            let requirement = commit_denial
+                .invariant_execution_failure()
+                .and_then(|failure| match failure.kind() {
+                    crate::domain_computation::WorthQueryInvariantExecutionDenialKind::ProducerRequirementNotAdmitted(denial) => Some(denial),
+                    _ => None,
+                });
             Err(commit_denial::stopped(
                 identity,
                 kind,
@@ -209,7 +215,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 commit_denial.execution_denial_cause(),
                 capacity,
                 &commit_denial,
-            ))
+            )
+            .with_custom_invariant_denial(commit_denial.custom_invariant_denial().cloned())
+            .with_producer_requirement_denial(requirement))
         }
         WorthQueryApplicationCommitOutcome::ProductUnpublished(outcome) => Err(denial(
             WorthQueryOutputDemandDenialKind::ProducerUnavailable,
