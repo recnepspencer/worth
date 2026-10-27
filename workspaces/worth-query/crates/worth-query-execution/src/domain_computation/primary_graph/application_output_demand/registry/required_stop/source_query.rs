@@ -74,6 +74,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
         | Kind::RetentionCapacityExhausted
         // An admission-to-execution race; the next advance reports the installation.
         | Kind::ExpressionContextIncomplete
+        | Kind::ProjectionInspectionIncomplete
         | Kind::StaleInstalledQuery => false,
         Kind::Projection(kind) => projection_is_row(kind),
         Kind::ForeignPlan
@@ -85,6 +86,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
         | Kind::TraversalUnavailable
         | Kind::ProjectionUnavailable
         | Kind::ExpressionContextUnavailable
+        | Kind::ProjectionInspectionUnavailable
         | Kind::ResultBufferLimitExceeded
         | Kind::SourceIdentityExhausted => true,
     }

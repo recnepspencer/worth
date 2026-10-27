@@ -1269,6 +1269,18 @@ unknown versions refuse before payload fields or allocations.
   Bind exact runtime, product occurrence, installed query/operation, result shape
   and retained evidence. Extend actual producers to carry genuine references when
   needed; never reconstruct authority or reference identity from display fields.
+- A single completed query establishes `Observed`, not `Changed`. Fresh
+  `why_observed` selects that meaning. Paired `why_changed` compares genuine
+  original before/after Native disclosed projections with exact binding,
+  parameters, full subject, result shape/order and disclosure interpretation.
+  Field revisions or producer contacts cannot stand in for payload equality.
+  This means declared Native cells/presence and ordered nested rows, not arbitrary
+  application DTOs or private predicate/dependency provenance. The existing
+  explicit one-shot `retain_projection_for_inspection` custody supplies complete
+  bound field/relation trees and original effective disclosure decisions under
+  original-request funding; unbound, unsupported and partial capture refuses.
+  Missing older bodies stay explicitly comparison-unavailable. Fresh read,
+  metadata and current DiagnosticMask admission precede body traversal.
 - Migrate/reuse `CausalInspection`'s anchoring, reference resolution, typed
   admission, Bridge assembly, materialization and omission contracts. A receipt
   supplies observation evidence only. Current principal, purpose, scope and field
@@ -1306,6 +1318,13 @@ proof that the new receipt acquisition and authorization path is complete.
 // Planned syntax; receipt is returned by an actual ordinary application query.
 let explanation = request.inspections()
     .for_observation::<InstalledQueryBinding>(result.receipt())?
+    .why_observed()
+    .reference_only()
+    .execute()?;
+
+// Changed needs two genuine explicitly retained disclosed projections.
+let change = request.inspections()
+    .compare_observations::<InstalledQueryBinding>(before.receipt(), after.receipt())?
     .why_changed()
     .reference_only()
     .execute()?;

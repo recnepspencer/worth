@@ -9,7 +9,8 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 /// The original compiled binding interprets those parameters; it does not
 /// provide permission to read or inspect them.
 /// The exact row meanings share their original immutable footprints; the roster
-/// owns its original request's fixed backing and retains no business rows.
+/// owns its original request's fixed backing. Native disclosed rows are
+/// retained only when the original one-shot explicitly requests them.
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryRetainedObservedParameters
 {
     admitted: WorthQueryAdmittedApplicationQueryParameters,
@@ -18,9 +19,16 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
     producer: Option<
         Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
     >,
+    projection: Option<Arc<super::super::projection::retained_projection::OriginalProjection>>,
 }
 
 impl WorthQueryRetainedObservedParameters {
+    pub(super) fn projection(
+        &self,
+    ) -> Option<&Arc<super::super::projection::retained_projection::OriginalProjection>> {
+        self.projection.as_ref()
+    }
+
     pub(in crate::domain_computation::primary_graph::application_query) fn new(
         admitted: WorthQueryAdmittedApplicationQueryParameters,
         binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
@@ -28,12 +36,14 @@ impl WorthQueryRetainedObservedParameters {
         producer: Option<
             Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
         >,
+        projection: Option<Arc<super::super::projection::retained_projection::OriginalProjection>>,
     ) -> Self {
         Self {
             admitted,
             binding,
             rows,
             producer,
+            projection,
         }
     }
 

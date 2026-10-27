@@ -2,7 +2,7 @@
 use super::{denial, WorthQueryApplicationOneShotDenial, WorthQueryApplicationOneShotDenialKind};
 use worth_execution::{ExecutionAllocationDenialClass, ExecutionRequestArrayDenial};
 
-pub(super) fn denied(
+pub(in crate::domain_computation::primary_graph::application_query) fn denied(
     cause: ExecutionRequestArrayDenial,
     query: &str,
 ) -> WorthQueryApplicationOneShotDenial {

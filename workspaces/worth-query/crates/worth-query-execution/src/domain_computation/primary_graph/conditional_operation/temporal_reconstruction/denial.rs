@@ -170,6 +170,8 @@ pub(super) fn one_shot(
         | Kind::TraversalUnavailable
         | Kind::ProjectionUnavailable
         | Kind::ExpressionContextUnavailable
+        | Kind::ProjectionInspectionUnavailable
+        | Kind::ProjectionInspectionIncomplete
         | Kind::ExpressionContextIncomplete
         | Kind::Projection(..)
         | Kind::ResultBufferLimitExceeded

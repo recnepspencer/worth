@@ -112,6 +112,53 @@ Connecting a cause still requires exact entity generation, field, performed
 revision and declared output-role overlap. Fresh Host admission and that correlation
 remain unfinished in Phase 9; a matching entity, aspect or value is insufficient.
 
+### Original Disclosed Projection Custody
+
+Ordinary observations retain source footprints by default. A caller can explicitly
+request the actual complete Native disclosed field/relation tree as well:
+
+```rust,ignore
+let result = request.query(intent)
+    .retain_projection_for_inspection()
+    .execute()?;
+```
+
+The one-shot wrapper also delegates `execute_governed` and `execute_approved` to
+their existing admission owners. It exposes no subscription or continuation door.
+The original Vec is moved once into an immutable shared backing after disclosure
+stripping; the ordinary application decoder borrows those same nodes. Its clear
+drops only its share. Original row, result-set and opaque observations share the
+same backing and original-request reservation, without retaining a Native reader
+or the application DTO. The effective decision for every declared slot, including
+withheld slots, shares its original compiled slot key in funded fixed storage;
+the retained binding supplies classification and required-disclosure meaning.
+Withheld fields therefore remain distinct from disclosed absent values.
+
+Bound empty results retain a genuine empty tree. Unbound queries and orbit or
+component payloads represented outside the tree return typed
+`ProjectionInspectionUnavailable`; an actual truncated or continuation tree
+returns `ProjectionInspectionIncomplete`. Failed decoding or session completion
+publishes no completed observation. The
+[original projection courts](../../../worth-query-execution/src/domain_computation/primary_graph/application_query/projection/retained_projection/tests.rs)
+use actual query completion and field publications, including an equal-value
+rewrite, and check final-clone release alongside unchanged ordinary decoding.
+
+A completed read establishes an observation. It cannot establish that a result
+changed. Planned fresh `why_observed` admission will inspect one such observation;
+planned paired `why_changed` admission must compare genuine before/after retained
+Native disclosed projections under the same original binding, parameters, full
+scope, result shape, ordering and disclosure interpretation. Revision changes,
+producer contacts and equal source identities cannot replace that comparison.
+Only declared cell values/presence, ordered rows and nesting belong to this
+payload meaning; private predicate/dependency provenance does not. Arbitrary DTO
+comparison needs its own explicitly authored contract and is outside this meaning.
+
+Custody grants no inspection access. Fresh read/metadata admission and the current
+subject's DiagnosticMask must precede availability checks or body traversal.
+The fresh single/paired Host issuer, Native Bridge assembly and exact producer
+association remain unfinished in Phase 9. Older observations without this explicit
+body will have typed comparison unavailability; they are never reconstructed.
+
 ### Optional Query Inspection Metadata Meaning
 
 The declaration facade exposes

@@ -5,6 +5,14 @@ use super::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
+    /// Original descriptive projection custody. Fresh inspection admission
+    /// must precede checking availability or traversing its contents.
+    pub(in crate::domain_computation::primary_graph) fn original_projection(
+        &self,
+    ) -> Option<&Arc<super::super::projection::retained_projection::OriginalProjection>> {
+        self.parameters.projection()
+    }
+
     /// A genuine settlement seed, not proof of row or field production.
     /// Metadata must be freshly admitted before inspecting its availability.
     pub(in crate::domain_computation::primary_graph) fn original_settled_producer(

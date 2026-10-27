@@ -58,6 +58,11 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     /// A requested native expression context was incomplete, withheld by
     /// disclosure, or truncated. Fresh admission may repair this observation.
     ExpressionContextIncomplete,
+    /// The requested inspection backing has no bound ordinary field/relation
+    /// projection (including orbit/component payloads represented elsewhere).
+    ProjectionInspectionUnavailable,
+    /// The actual projection is truncated or has a continuation boundary.
+    ProjectionInspectionIncomplete,
     /// Projecting a result row failed.
     Projection(WorthQueryApplicationProjectionDenialKind),
     /// The read would exceed the result buffer limit.
@@ -66,7 +71,7 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     WorkLimitExceeded,
     /// The runtime ran out of observed-source identities.
     SourceIdentityExhausted,
-    /// Physical storage refused the complete original row-evidence roster.
+    /// Physical storage refused original query observation custody.
     /// Request memory, work and control refusals remain `ExecutionRequest`
     /// or the corresponding interruption kind.
     SourceObservationAllocation {
@@ -104,7 +109,7 @@ impl PartialEq for WorthQueryApplicationOneShotDenial {
 }
 impl Eq for WorthQueryApplicationOneShotDenial {}
 
-pub(super) fn denial(
+pub(in crate::domain_computation::primary_graph::application_query) fn denial(
     kind: WorthQueryApplicationOneShotDenialKind,
     query: impl Into<String>,
     subject: impl Into<String>,

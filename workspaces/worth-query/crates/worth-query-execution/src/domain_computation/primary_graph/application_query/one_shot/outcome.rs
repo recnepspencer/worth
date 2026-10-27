@@ -23,7 +23,7 @@ mod completed;
 pub(in crate::domain_computation::primary_graph::application_query) use completed::CompletedOneShotRead;
 mod decode_denial;
 mod result_set_footprint;
-mod source_storage;
+pub(in crate::domain_computation::primary_graph::application_query) mod source_storage;
 pub(in crate::domain_computation::primary_graph::application_query) use decode_denial::value_decode_denial;
 use result_set_footprint::ResultSetFootprint;
 pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_projection<
@@ -181,6 +181,18 @@ where
     let parameter_binding_identity = *plan.parameters.identity();
     admit_request(request, plan.query.name())?;
     let capture = capture(&kernel.raw.rows, &plan)?;
+    let retained_projection = if plan.retain_projection_for_inspection {
+        Some(super::super::projection::retained_projection::retain(
+            execution,
+            &mut kernel.raw,
+            plan.query.read_graph(),
+            &plan.governance,
+            plan.query.binding_observation().is_some(),
+            plan.query.name(),
+        )?)
+    } else {
+        None
+    };
     let scope_selector = plan.scope.retain_scope_selector();
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
@@ -253,6 +265,7 @@ where
             row_meanings,
             plan.controls
                 .original_settled_producer_for(plan.basis.selected_product().observation()),
+            retained_projection,
         ),
     );
     let mut observed_sources = Vec::with_capacity(source_parameters.row_meanings().len());

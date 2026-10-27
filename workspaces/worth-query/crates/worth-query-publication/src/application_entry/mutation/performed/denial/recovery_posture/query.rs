@@ -247,6 +247,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::ActiveSnapshotCapacityExhausted { .. }
         | ExecutionKind::RetentionCapacityExhausted
         | ExecutionKind::ExpressionContextIncomplete
+        | ExecutionKind::ProjectionInspectionIncomplete
         | ExecutionKind::PredicateIndexUnavailable
         | ExecutionKind::TraversalUnavailable => Retryable,
         ExecutionKind::ExecutionRequest(_) => Retryable,
@@ -263,6 +264,7 @@ fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPos
         | ExecutionKind::CardinalityMismatch
         | ExecutionKind::ProjectionUnavailable
         | ExecutionKind::ExpressionContextUnavailable
+        | ExecutionKind::ProjectionInspectionUnavailable
         | ExecutionKind::Projection(_)
         | ExecutionKind::ResultBufferLimitExceeded
         | ExecutionKind::WorkLimitExceeded

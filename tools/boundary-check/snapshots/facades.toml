@@ -233,6 +233,7 @@ exports = [
     "WorthQueryApplicationProgramOutputUnavailable",
     "WorthQueryApplicationProgramWork",
     "WorthQueryApplicationProgramsRequest",
+    "WorthQueryApplicationProjectionRetentionRequest",
     "WorthQueryApplicationQueryBatchDenial",
     "WorthQueryApplicationQueryBatchRequest",
     "WorthQueryApplicationQueryBatchResourceDenial",
