@@ -98,6 +98,10 @@ fn write_selector(
                 worth_query_declaration::facade::application_query::ApplicationHistoryMetadataFacet::Continuation => 3,
             })
         }
+        ApplicationQueryDisclosureSelector::Components(selection) => {
+            output.u16(6)?;
+            super::components::write(output, selection)
+        }
         ApplicationQueryDisclosureSelector::Orbit(orbit) => {
             output.u16(4)?;
             super::orbit::write(output, orbit)
@@ -185,6 +189,7 @@ fn decode_selector(
                 ApplicationHistoryMetadataMeaning::from_untrusted_fields(history, facet),
             )
         }
+        6 => ApplicationQueryDisclosureSelector::Components(super::components::decode(input)?),
         4 => ApplicationQueryDisclosureSelector::Orbit(super::orbit::decode(input)?),
         1 => ApplicationQueryDisclosureSelector::InternalField {
             entity: input.text()?.to_owned(),

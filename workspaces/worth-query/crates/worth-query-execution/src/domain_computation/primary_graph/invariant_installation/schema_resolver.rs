@@ -6,6 +6,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchemaBindin
 pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {
     pub(super) _schema: PhantomData<fn() -> Schema>,
     pub(super) layout: &'layout super::super::schema_layout::WorthQueryPrimaryGraphLayout,
+    pub(super) descriptor: &'layout worth_query_installation::facade::WorthQueryInstalledApplicationInvariantDescriptor,
     pub(super) binding_identity: ApplicationSchemaBindingIdentity,
 }
 
@@ -29,6 +30,49 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
                 entity_kind,
                 _marker: PhantomData,
             }
+        })
+    }
+
+    /// Resolve a component set only when both declared reads and applicability
+    /// cover its member kind and every physical coupling relation. This includes
+    /// create/delete scheduling when an earlier complete census was empty.
+    pub fn typed_component_set<Set, Entity>(
+        &self,
+        set: worth_query_declaration::facade::application_schema::ApplicationComponentSetRef<
+            Schema,
+            Set,
+            Entity,
+        >,
+    ) -> Option<
+        super::super::application_invariant::WorthQueryApplicationInvariantComponentSetBinding<
+            Schema,
+            Set,
+            Entity,
+        >,
+    > {
+        use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget as Target;
+        let layout = self.layout.component_set(set.name())?;
+        if layout.member.as_ref() != set.member()
+            || self.layout.entity_kind(set.member()) != Some(layout.member_kind)
+        {
+            return None;
+        }
+        let covered = |target: Target| {
+            self.descriptor.read_closure().contains(&target)
+                && self.descriptor.applicability().contains(&target)
+        };
+        if !covered(Target::Entity(layout.member.to_string()))
+            || layout
+                .sources
+                .iter()
+                .any(|(name, _)| !covered(Target::Relation(name.to_string())))
+        {
+            return None;
+        }
+        Some(super::super::application_invariant::WorthQueryApplicationInvariantComponentSetBinding {
+            binding_identity: self.binding_identity.clone(),
+            definition: layout.definition, member_kind: layout.member_kind,
+            sources: layout.sources.clone(), _marker: PhantomData,
         })
     }
 
@@ -104,3 +148,6 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
             })
     }
 }
+
+#[cfg(test)]
+mod tests;

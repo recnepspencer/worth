@@ -13,8 +13,6 @@ pub(super) struct RootSelectionWork<'a> {
         Vec<super::super::super::access_receipt::WorthQueryApplicationQueryRootPathStepRead>,
     pub(super) step_limit: usize,
     pub(super) step_memory: Option<worth_execution::ExecutionMemoryReservation>,
-    pub(super) source_allocation:
-        Option<std::sync::Arc<super::super::super::observed_source::RootPathAllocation>>,
 }
 
 impl<'a> RootSelectionWork<'a> {
@@ -33,7 +31,6 @@ impl<'a> RootSelectionWork<'a> {
             steps: Vec::new(),
             step_memory: None,
             step_limit: 0,
-            source_allocation: None,
         }
     }
 

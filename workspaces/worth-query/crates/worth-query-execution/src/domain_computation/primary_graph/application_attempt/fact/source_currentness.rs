@@ -34,7 +34,10 @@ impl WorthQueryApplicationObservedFact {
         if let Some(control) = control {
             control().map_err(CompanionPreflightStop::Execution)?;
         }
-        if !matches!(self, Self::Aggregate { .. } | Self::StructuralWalk { .. }) {
+        if !matches!(
+            self,
+            Self::ComponentSelection { .. } | Self::Aggregate { .. } | Self::StructuralWalk { .. }
+        ) {
             return self.source_currentness_in(runtime, execution, snapshot);
         }
         check_request(execution)?;
@@ -52,6 +55,9 @@ impl WorthQueryApplicationObservedFact {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
         comparison_result(match self {
+            Self::ComponentSelection { observation } => {
+                reads.check_component(observation, execution, control)
+            }
             Self::Aggregate { observation } => {
                 reads.check_aggregate(observation, execution, control)
             }

@@ -1,4 +1,6 @@
 mod canonical_contract;
+mod component_scope;
+mod component_set;
 mod correction_binding;
 mod derived_relation;
 mod fixture;

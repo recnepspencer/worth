@@ -12,6 +12,19 @@ pub struct WorthQueryApplicationInvariantEntityBinding<Schema, Entity> {
     pub(in crate::domain_computation::primary_graph) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+/// Installed component definition with complete declared read and applicability coverage.
+pub struct WorthQueryApplicationInvariantComponentSetBinding<Schema, Set, Entity> {
+    pub(in crate::domain_computation::primary_graph) binding_identity:
+        ApplicationSchemaBindingIdentity,
+    pub(in crate::domain_computation::primary_graph) definition:
+        worth_foundational::facade::AggregateDefinitionIdentity,
+    pub(in crate::domain_computation::primary_graph) member_kind: KindId,
+    pub(in crate::domain_computation::primary_graph) sources:
+        std::sync::Arc<[(std::sync::Arc<str>, KindId)]>,
+    pub(in crate::domain_computation::primary_graph) _marker:
+        PhantomData<fn() -> (Schema, Set, Entity)>,
+}
+
 /// Installed field access for one exact application schema binding.
 pub struct WorthQueryApplicationInvariantFieldBinding<Schema, Entity, Value> {
     pub(in crate::domain_computation::primary_graph) binding_identity:

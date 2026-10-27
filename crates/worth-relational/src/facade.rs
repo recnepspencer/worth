@@ -322,9 +322,9 @@ pub mod schema {
     };
     pub use crate::schema::data::{
         AcyclicityContractDeclaration, AggregateIdentityContractDeclaration,
-        AggregateIdentityStorage, AllowedCycleClass, AspectBinding, AspectContractPlanRevision,
-        AspectDeclarationTrace, AspectDeclarationTraceRow, AspectLoweringTrace,
-        AspectLoweringTraceRow, CardinalityContractDeclaration,
+        AggregateIdentitySource, AggregateIdentityStorage, AllowedCycleClass, AspectBinding,
+        AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
+        AspectLoweringTrace, AspectLoweringTraceRow, CardinalityContractDeclaration,
         ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
         DeclaredAspectContractBinding, DescriptorCanonicalBasisSupportPolicy,
         DescriptorCanonicalBasisVersion, DescriptorSemanticsSupportPolicy,

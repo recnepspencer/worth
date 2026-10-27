@@ -15,6 +15,10 @@ use super::{
 use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
+mod component;
+pub use component::{
+    WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
+};
 mod entity_reobservation;
 mod field_reads;
 mod interruption;

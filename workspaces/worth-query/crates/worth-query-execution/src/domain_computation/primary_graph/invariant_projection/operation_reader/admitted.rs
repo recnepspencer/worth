@@ -1,5 +1,7 @@
 //! The one operation-scoped reader envelope for owned and borrowed projections.
 use super::*;
+mod root;
+pub(super) use root::AdmittedReadRoot;
 
 /// The optional real source-query loan an admitted projection may read through.
 pub(super) struct SourceAccess<'access, Schema> {
@@ -48,6 +50,7 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         runtime_authority: authority.runtime_authority,
         binding_identity: &authority.binding_identity,
         admission_identity: Some(admission.admission_identity()),
+        admitted_root: Some(AdmittedReadRoot::from_admission(admission)),
         admitted_principal: Some(admission.graph_work().principal()),
         query_context: admission.query_context(),
         operation_scope: Some(admission.operation_scope_binding().clone()),

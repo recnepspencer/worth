@@ -110,6 +110,7 @@ impl<Schema, Operation, Input, Scope>
                     !matches!(
                         fact,
                         super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
                             | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
                     )
                 })
@@ -150,6 +151,7 @@ impl<Schema, Operation, Input, Scope>
                     !matches!(
                         fact,
                         super::super::WorthQueryApplicationObservedFact::StructuralWalk { .. }
+                            | super::super::WorthQueryApplicationObservedFact::ComponentSelection {..}
                             | super::super::WorthQueryApplicationObservedFact::Aggregate { .. }
                     )
                 })

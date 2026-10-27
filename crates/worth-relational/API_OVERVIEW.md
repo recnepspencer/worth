@@ -21,6 +21,44 @@ The product center is:
 - `inspection`
 - `publication`
 
+## Persistent aggregate identity
+
+`schema::AggregateIdentitySource::Orbit(kind)` binds the existing homogeneous
+permutation. `Components { relations }` binds one or more homogeneous relations
+as undirected coupling over live members of the declared entity kind, including
+singletons. Installation normalizes the source roster and refuses empty,
+missing, heterogeneous or private source kinds. Each installed definition owns
+its own membership relation; several sets can share coupling kinds.
+
+The existing Native identity owner prepares only affected prior cohorts, stages
+actual physical edge and vertex changes through Execution's checked
+`ComponentPartitioner`, then publishes ordinary private membership, aggregate
+and lineage records atomically with the business commit. Inverse/parallel edges
+are distinct physical couplings; removing one preserves connectivity while
+another remains. Self links add no connectivity. Routing keys never supply
+persistent identity. Request controls and accounted retention remain with the
+original request; unaccounted native serial requests keep their actual posture.
+
+A retained Native pin selects `PinnedAggregateReadScope::for_definition(id,
+member)` through `read_aggregate`. A Native custom rule uses
+`StructuralRelationView::aggregates().of_definition(id, member)` when its structural
+read contract admits every source relation. Both expose complete canonical
+membership. Component topology rules register in `InvariantGroup::RelationIntegrity`
+so coupling deletion selects them as well as creation and endpoint changes.
+`PinnedAggregateLineageScope::for_definition(id, identity)` selects
+real stored lineage and merge-only resolution at that same exact root. Existing
+relation-based selection remains orbit-only. These lower-owner reads grant no
+application disclosure or write authority.
+
+The accepted scalar orbit JSON/MessagePack and canonical identity bytes are
+unchanged. Component source declarations have a distinct object grammar and
+canonical domain. See the
+[Native component courts](src/tests/transactions/core/aggregate_identity/components.rs)
+and [source/encoding controls](src/tests/transactions/core/aggregate_identity/components/registration.rs).
+Query declaration/read/count/footprint and scoped visibility, topology examples,
+and CAD shell integration remain unfinished in
+[milestone 9.18.1 Phase 5](../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+
 ## Main doors
 
 Prepared runtime integrations can inspect an unconsumed candidate with
@@ -201,3 +239,18 @@ The standalone library surface now uses the job-shaped runtime names directly:
 The exact component artifacts and outcomes available to a later composite
 owner are frozen in [`OWNER_COMPONENT_PORT.md`](./OWNER_COMPONENT_PORT.md).
 
+
+## Complete Custom-Invariant Aggregate Census
+
+`StructuralRelationView::aggregates().of_definition(definition, member)` retains
+one actual proposed/committed cohort. `all_of_definition(definition)` validates
+member/source declared access even when empty, enumerates the exact view's visible
+member kind, then selects each genuine Native cohort once. It returns an
+`AggregateReadCollection` in Native aggregate identity order, with original body
+and collection payer custody. No routing key becomes identity and no second
+partitioner or membership cache is introduced. Individual Of reads never invoke
+this census. A deliberate census can grow with the complete partition/slot
+inventory; original request stops refuse without a partial successful result.
+Application invariants must declare member/source applicability through Query's
+[typed factory binding](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
+so genuine create/delete/coupling changes schedule fresh preparation.

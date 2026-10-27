@@ -121,6 +121,31 @@ pub struct WorthQueryInstalledRootPath {
 }
 
 impl WorthQueryInstalledRootPath {
+    pub(crate) fn from_meaning(
+        path: &worth_query_declaration::facade::application_query::ApplicationQueryRootPathMeaning,
+    ) -> Self {
+        Self::new(
+            path.steps()
+                .iter()
+                .enumerate()
+                .map(|(index, step)| {
+                    WorthQueryInstalledRootPathStep::new(
+                        step.relation(),
+                        step.from(),
+                        step.to(),
+                        step.direction(),
+                        step.traversal(),
+                        index + 1,
+                    )
+                })
+                .collect(),
+            path.guards()
+                .iter()
+                .map(WorthQueryInstalledRootPathGuard::new)
+                .collect(),
+        )
+    }
+
     pub(crate) fn new(
         steps: Vec<WorthQueryInstalledRootPathStep>,
         guards: Vec<WorthQueryInstalledRootPathGuard>,

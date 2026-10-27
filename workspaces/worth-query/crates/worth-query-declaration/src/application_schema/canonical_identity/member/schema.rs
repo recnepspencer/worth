@@ -10,6 +10,18 @@ pub(super) fn append_schema_member(
     member: &ApplicationSchemaMember,
 ) {
     match member {
+        ApplicationSchemaMember::ComponentSet { definition } => {
+            basis.text(format!("{prefix}.kind"), "component-set");
+            basis.text(format!("{prefix}.name"), definition.name());
+            basis.text(format!("{prefix}.member"), definition.member());
+            basis.u64(
+                format!("{prefix}.sources.len"),
+                definition.relations().len() as u64,
+            );
+            for (index, relation) in definition.relations().iter().enumerate() {
+                basis.text(format!("{prefix}.sources[{index}]"), relation);
+            }
+        }
         ApplicationSchemaMember::Entity { entity } => {
             basis.text(format!("{prefix}.kind"), "entity");
             basis.text(format!("{prefix}.entity"), entity);

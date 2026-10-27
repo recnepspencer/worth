@@ -10,7 +10,7 @@ use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView};
 pub(super) fn read(
     view: &InvariantStateView<'_>,
     entity: EntityId,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<AggregateRecord> {
     work.retain(super::retention_extent::stored_row())?;
@@ -21,7 +21,7 @@ pub(super) fn read(
 pub(super) fn read_scalar(
     view: &InvariantStateView<'_>,
     entity: EntityId,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<AggregateRecord> {
     let row = decode(view, entity, contract.storage.aggregate_kind, work)?;
@@ -30,7 +30,7 @@ pub(super) fn read_scalar(
 
 fn definition(
     row: AggregateRecord,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<AggregateRecord> {
     if row.definition != contract.definition {

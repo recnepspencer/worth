@@ -9,8 +9,7 @@ use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity}
 
 /// Selection values only. The exact pin and original request remain authority.
 pub struct PinnedAggregateLineageScope<'input> {
-    relation: KindId,
-    definition: AggregateDefinitionIdentity,
+    selection: AggregateSelection,
     identity: AggregateIdentity,
     limits: coordination::Limits<'input>,
 }
@@ -21,8 +20,20 @@ impl<'input> PinnedAggregateLineageScope<'input> {
         identity: AggregateIdentity,
     ) -> Self {
         Self {
-            relation,
-            definition,
+            selection: AggregateSelection::Orbit {
+                relation,
+                definition: Some(definition),
+            },
+            identity,
+            limits: coordination::Limits::default(),
+        }
+    }
+    pub fn for_definition(
+        definition: AggregateDefinitionIdentity,
+        identity: AggregateIdentity,
+    ) -> Self {
+        Self {
+            selection: AggregateSelection::Definition(definition),
             identity,
             limits: coordination::Limits::default(),
         }
@@ -125,8 +136,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             execution,
             scope.limits,
             |root, view, work| {
-                let contract =
-                    contract::resolve(root, scope.relation, Some(scope.definition), work)?;
+                let contract = contract::resolve(root, scope.selection, work)?;
                 let selected = lookup::find(root, view, contract, scope.identity, work)?;
                 let resolved = resolution::resolve(view, selected, contract, work)?;
                 work.checkpoint(0)?;

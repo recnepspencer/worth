@@ -34,6 +34,9 @@ fn validate_root_selection(
             orbit.output_name(),
         ])?;
     }
+    if let Some(selection) = definition.component_selection() {
+        validate_identifiers([selection.set(), selection.member(), selection.output_name()])?;
+    }
     for path in definition.root_paths() {
         validate_identifiers([path.start_entity(), path.terminal_entity()])?;
         for step in path.steps() {

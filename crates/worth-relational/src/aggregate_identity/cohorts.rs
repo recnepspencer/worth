@@ -1,10 +1,11 @@
-//! Complete affected permutation cohorts using Native frontier mechanics.
+//! Complete affected graph cohorts using Native frontier mechanics.
 use std::collections::{BTreeMap, BTreeSet};
 
 use super::changes::AggregateChanges;
 use crate::authority::mutation::AdjacencyDeltaKind;
 use crate::identity::data::{EntityId, RelationId};
-use crate::schema::data::AggregateIdentityContractDeclaration;
+use crate::schema::data::{AggregateIdentityContractDeclaration, AggregateIdentitySource};
+mod components;
 use crate::structural_traversal::{walk as walk_native_breadth_first, BreadthFirstRead};
 use crate::transactions::data::RecordRef;
 use crate::validation::engine::state_view::InvariantStateView;
@@ -29,7 +30,8 @@ pub(super) struct CollectedCohorts {
 }
 
 pub(super) fn collect(
-    contract: AggregateIdentityContractDeclaration,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    contract: &AggregateIdentityContractDeclaration,
     before: &InvariantStateView<'_>,
     after: &InvariantStateView<'_>,
     effect: &AggregateChanges,
@@ -39,7 +41,7 @@ pub(super) fn collect(
     let mut additions: BTreeMap<EntityId, BTreeSet<RelationId>> = BTreeMap::new();
     for delta in &effect.adjacency {
         work.checkpoint(1)?;
-        if delta.kind_id != contract.source_relation {
+        if !contract.source.contains_relation(delta.kind_id) {
             continue;
         }
         let (source, target) = match delta.kind {
@@ -68,10 +70,11 @@ pub(super) fn collect(
         if new.is_some() {
             work.acquired(Acquisition::Entity)?;
         }
-        if old.is_none() != new.is_none()
-            && old
+        if old
+            .as_ref()
+            .is_some_and(|entry| entry.kind_id == contract.member_kind)
+            != new
                 .as_ref()
-                .or(new.as_ref())
                 .is_some_and(|entry| entry.kind_id == contract.member_kind)
         {
             work.retain(extent::seed())?;
@@ -89,7 +92,19 @@ pub(super) fn collect(
             seeds.insert(member);
         }
     }
-    let proposed = groups(&seeds, after, contract, &additions, work)?;
+    let proposed = match contract.source {
+        AggregateIdentitySource::Orbit(_) => groups(&seeds, after, contract, &additions, work)?,
+        AggregateIdentitySource::Components { .. } => components::maintain(
+            execution,
+            &seeds,
+            &prior_groups,
+            before,
+            after,
+            contract,
+            effect,
+            work,
+        )?,
+    };
     let mut collected = CollectedCohorts {
         prior: Vec::new(),
         proposed,
@@ -115,7 +130,7 @@ pub(super) fn collect(
 pub(super) fn read_stored_group(
     view: &InvariantStateView<'_>,
     members: &BTreeSet<EntityId>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     memberships: &mut BTreeMap<EntityId, (RelationId, AggregateIdentity)>,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<StoredAggregate> {
@@ -169,10 +184,13 @@ fn membership(
 pub(super) fn groups(
     seeds: &BTreeSet<EntityId>,
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     additions: &BTreeMap<EntityId, BTreeSet<RelationId>>,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Vec<BTreeSet<EntityId>>> {
+    if matches!(contract.source, AggregateIdentitySource::Components { .. }) {
+        return components::groups(seeds, view, contract, work);
+    }
     let mut visited = BTreeSet::new();
     let mut groups = Vec::new();
     for &seed in seeds {
@@ -205,7 +223,7 @@ pub(super) fn groups(
 
 struct OrbitRead<'a, 'state, 'work, 'scope, 'authority, 'memory> {
     view: &'a InvariantStateView<'state>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &'a AggregateIdentityContractDeclaration,
     additions: &'a BTreeMap<EntityId, BTreeSet<RelationId>>,
     work: &'a mut AggregateWork<'work, 'scope, 'authority, 'memory>,
 }
@@ -242,7 +260,8 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
                 continue;
             };
             self.work.acquired(Acquisition::Relation)?;
-            if edge.kind_id == self.contract.source_relation && edge.source == entity {
+            if Some(edge.kind_id) == self.contract.source.orbit_relation() && edge.source == entity
+            {
                 self.work.retain(extent::successor_edge())?;
                 edges.insert((id, edge.target));
             }
@@ -254,20 +273,36 @@ impl BreadthFirstRead for OrbitRead<'_, '_, '_, '_, '_, '_> {
     }
 }
 
-fn outgoing(
+pub(super) fn outgoing(
     view: &InvariantStateView<'_>,
     entity: EntityId,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Vec<RelationId>> {
-    let count = view.relation_candidate_count(entity, true) as u64;
+    adjacency(view, entity, true, work)
+}
+
+pub(super) fn adjacency(
+    view: &InvariantStateView<'_>,
+    entity: EntityId,
+    outgoing: bool,
+    work: &mut AggregateWork<'_, '_, '_, '_>,
+) -> BuildResult<Vec<RelationId>> {
+    let count = view.relation_candidate_count(entity, outgoing) as u64;
     work.retain(
         count
             .saturating_mul(extent::relation_candidate())
             .saturating_add(extent::empty_candidate()),
     )?;
     work.checkpoint(count.saturating_mul(8).saturating_add(1))?;
-    let ids = view
-        .outgoing_relations_for_entity_observed(entity, || work.acquired(Acquisition::Relation))?;
+    let ids = if outgoing {
+        view.outgoing_relations_for_entity_observed(entity, || {
+            work.acquired(Acquisition::Relation)
+        })?
+    } else {
+        view.incoming_relations_for_entity_observed(entity, || {
+            work.acquired(Acquisition::Relation)
+        })?
+    };
     work.acquired(Acquisition::Adjacency)?;
     Ok(ids)
 }

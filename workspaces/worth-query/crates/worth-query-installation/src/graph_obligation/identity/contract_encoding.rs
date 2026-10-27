@@ -186,6 +186,14 @@ fn encode_read_scope(
     scope: &WorthQueryOperationGraphReadScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationGraphReadScope::Components(scope) => {
+            basis.text(format!("{prefix}.kind"), "components")?;
+            encode_binding(basis, prefix, scope.schema())?;
+            basis.text(
+                format!("{prefix}.definition"),
+                &scope.meaning().canonical_record(),
+            )?;
+        }
         WorthQueryOperationGraphReadScope::Entity(entity) => {
             basis.text(format!("{prefix}.kind"), "entity")?;
             encode_binding(basis, prefix, entity.schema())?;

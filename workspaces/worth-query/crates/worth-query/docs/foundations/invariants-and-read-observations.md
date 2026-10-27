@@ -334,7 +334,15 @@ See [invariant walks](invariant-walks.md) and the
 [orbit and lineage contracts](../modeling/relation-laws.md) for their exact
 reader, footprint, disclosure and retained-snapshot boundaries. Privileged
 snapshot lineage inspection does not supply a tracked publication dependency.
-Component identity and proposed-state derived-relation reads remain unfinished.
+Component sets carry Native persistent identity through privileged inspection,
+admitted operation/decision reads, ordinary invariant proposed/committed
+selection/enumeration/count and complete one-shot Query results. See
+[ordinary invariant component reads](../modeling/relation-laws.md#ordinary-invariant-component-reads)
+for factory read/applicability coverage, complete census cost and physical footprints,
+and [declared query component reads](../modeling/relation-laws.md#declared-component-query-contracts)
+for whole-slot disclosure and source currentness.
+The full Phase 5 topology, replay/locality and CAD acceptance remain open. Proposed-state derived-relation
+reads remain unfinished in Phase 6.
 These counts describe Query boundary operations, not storage-engine I/O,
 allocation, elapsed time or unique entities.
 

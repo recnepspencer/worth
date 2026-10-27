@@ -10,6 +10,7 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 mod authorization;
 mod capability;
+mod component_set;
 mod derived_relation;
 mod history;
 mod invariant;
@@ -37,8 +38,15 @@ pub(super) fn require_encoding_contract(
     require_supported_field_codec(member)?;
     if matches!(
         member,
+        ApplicationSchemaMember::OperationComponentRead { .. }
+    ) {
+        super::super::operation_component_read::require_nesting_depth(maximum_depth)?;
+    }
+    if matches!(
+        member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::DerivedRelation { .. }
+            | ApplicationSchemaMember::ComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
             | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
@@ -69,6 +77,12 @@ pub(super) fn write(
         | ApplicationSchemaMember::RuleReadableCollection { .. }
         | ApplicationSchemaMember::OperationDerivedRead { .. } => {
             derived_relation::write(output, member)
+        }
+        ApplicationSchemaMember::OperationComponentRead { definition } => {
+            super::super::operation_component_read::write(output, definition)
+        }
+        ApplicationSchemaMember::ComponentSet { definition } => {
+            component_set::write(output, definition)
         }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
@@ -124,6 +138,10 @@ pub(super) fn decode(
             .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
         37 => relation_aspect::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::RelationAspect { definition }),
+        40 => Ok(ApplicationSchemaMember::OperationComponentRead {
+            definition: super::super::operation_component_read::decode(input, budget)?,
+        }),
+        38 => component_set::decode(input, budget),
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
@@ -148,6 +166,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
         ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
         ApplicationSchemaMember::RelationAspect { .. } => 37,
+        ApplicationSchemaMember::OperationComponentRead { .. } => 40,
+        ApplicationSchemaMember::ComponentSet { .. } => 38,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,
         ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 34,
         ApplicationSchemaMember::ApplicationInvariant { .. } => 27,

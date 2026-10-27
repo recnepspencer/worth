@@ -10,14 +10,17 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     register_aggregate_identity_storage, register_aggregate_membership,
-    AggregateIdentityContractDeclaration, AggregateIdentityStorage, RelationalSchemaRegistry,
-    SchemaId, SchemaVersionId,
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 
 use super::{
     kind_space_exhausted, relational_schema_denial, required_kind,
     WorthQueryPrimaryGraphInstallationDenial,
 };
+mod component_layout;
+mod definitions;
+pub(in crate::domain_computation::primary_graph) use component_layout::ComponentSetLayout;
 #[cfg(test)]
 mod tests;
 
@@ -29,22 +32,17 @@ pub(super) fn lower(
     version: SchemaVersionId,
     entity_kinds: &BTreeMap<String, KindId>,
     relation_kinds: &BTreeMap<String, KindId>,
-) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
-    let definitions: BTreeMap<_, _> = schema
-        .members()
-        .iter()
-        .filter_map(|member| match member {
-            ApplicationSchemaMember::Relation {
-                relation,
-                from,
-                integrity,
-                ..
-            } if integrity.orbit => Some((relation.as_str(), from.as_str())),
-            _ => None,
-        })
-        .collect();
+) -> Result<
+    (
+        RelationalSchemaRegistry,
+        BTreeMap<String, ComponentSetLayout>,
+    ),
+    WorthQueryPrimaryGraphInstallationDenial,
+> {
+    let mut components = BTreeMap::new();
+    let definitions = definitions::collect(schema, relation_kinds)?;
     if definitions.is_empty() {
-        return Ok(registry);
+        return Ok((registry, components));
     }
     let authority = registry.authority_snapshot();
     let last_kind = authority
@@ -71,38 +69,31 @@ pub(super) fn lower(
     };
     registry = register_aggregate_identity_storage(registry, schema_id, version, storage)
         .map_err(relational_schema_denial)?;
-    for (index, (relation, member)) in definitions.into_iter().enumerate() {
+    for (index, definition) in definitions.into_iter().enumerate() {
+        let member_kind = required_kind(entity_kinds, definition.member)?;
         let offset = u32::try_from(index)
             .ok()
             .and_then(|index| index.checked_add(3))
             .ok_or_else(kind_space_exhausted)?;
+        let membership_kind = next_kind(offset)?;
+        if let Some((name, layout)) =
+            component_layout::retain(&definition, member_kind, membership_kind)
+        {
+            components.insert(name, layout);
+        }
         registry = register_aggregate_membership(
             registry,
             schema_id,
             version,
             AggregateIdentityContractDeclaration {
-                definition: definition_identity(schema, relation),
-                source_relation: required_kind(relation_kinds, relation)?,
-                member_kind: required_kind(entity_kinds, member)?,
-                membership_kind: next_kind(offset)?,
+                definition: definition.identity,
+                source: definition.source,
+                member_kind,
+                membership_kind,
                 storage,
             },
         )
         .map_err(relational_schema_denial)?;
     }
-    Ok(registry)
-}
-
-fn definition_identity(
-    schema: &ErasedApplicationSchemaDeclaration,
-    relation: &str,
-) -> AggregateDefinitionIdentity {
-    let mut hash = Sha256::new();
-    hash.update(b"WORTH_QUERY_ORBIT_DEFINITION_V1\0");
-    for name in [schema.owner(), schema.name(), relation] {
-        hash.update((name.len() as u64).to_be_bytes());
-        hash.update(name.as_bytes());
-    }
-    hash.update(schema.major().to_be_bytes());
-    AggregateDefinitionIdentity::from_bytes(hash.finalize().into())
+    Ok((registry, components))
 }

@@ -6,6 +6,15 @@ pub(super) fn append_fact(
     fact: &WorthQueryApplicationObservedFact,
 ) {
     match fact {
+        WorthQueryApplicationObservedFact::ComponentSelection { observation } => {
+            kind(entries, prefix, "scoped-native-components");
+            push(
+                entries,
+                format!("{prefix}.content"),
+                CanonicalBasisEntryKind::Value,
+                CanonicalBasisValue::BytesDigest(CanonicalDigestId::new(observation.commitment())),
+            );
+        }
         WorthQueryApplicationObservedFact::Aggregate { observation } => {
             aggregate::append_values(entries, prefix, observation)
         }

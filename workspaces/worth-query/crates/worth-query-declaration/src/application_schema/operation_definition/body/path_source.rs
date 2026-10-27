@@ -33,45 +33,7 @@ impl ApplicationOperationBodyPathFieldSource {
         let mut part =
             |text: &str| write!(&mut result, "{}:{text};", text.len()).expect("String write");
         part("body-path-field-source-v1");
-        part(self.path.start_entity());
-        part(self.path.terminal_entity());
-        part(&self.path.steps().len().to_string());
-        for step in self.path.steps() {
-            part(step.relation());
-            part(step.from());
-            part(step.to());
-            part(match (step.traversal(), step.direction()) {
-                (
-                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
-                    crate::application_query::RelationDirection::Forward,
-                ) => "forward",
-                (
-                    crate::application_query::ApplicationQueryRootPathTraversal::OneHop,
-                    crate::application_query::RelationDirection::Reverse,
-                ) => "reverse",
-                (
-                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
-                    crate::application_query::RelationDirection::Forward,
-                ) => "forward-closure",
-                (
-                    crate::application_query::ApplicationQueryRootPathTraversal::Closure,
-                    crate::application_query::RelationDirection::Reverse,
-                ) => "reverse-closure",
-            });
-        }
-        part(&self.path.guards().len().to_string());
-        for guard in self.path.guards() {
-            part(&guard.after_step().to_string());
-            part(guard.entity());
-            part(guard.aspect());
-            part(guard.field());
-            part(guard.scalar_family().canonical_name());
-            part(guard.value_type());
-            part(
-                worth_foundational::facade::prepare_aspect_value_identity_basis(guard.expected())
-                    .as_str(),
-            );
-        }
+        self.path.visit_canonical_parts(&mut part);
         part(self.field.entity());
         part(self.field.aspect());
         part(self.field.field());
@@ -135,6 +97,44 @@ mod tests {
         ApplicationQueryRootPathStep, ApplicationQueryRootPathTraversal as Mode, RelationDirection,
         WorthQueryPortableApplicationQueryRootPathParts,
     };
+
+    #[test]
+    fn path_field_source_canonical_record_preserves_existing_forward_reverse_bytes() {
+        let steps = [RelationDirection::Forward, RelationDirection::Reverse]
+            .into_iter()
+            .map(|direction| {
+                ApplicationQueryRootPathStep::from_untrusted_fields(
+                    "Children".into(),
+                    "Node".into(),
+                    "Child".into(),
+                    direction,
+                    Mode::OneHop,
+                )
+            })
+            .collect();
+        let source = ApplicationOperationBodyPathFieldSource {
+            path: ApplicationQueryRootPathMeaning::from_untrusted_parts(
+                WorthQueryPortableApplicationQueryRootPathParts {
+                    start_entity: "Node".into(),
+                    terminal_entity: "Node".into(),
+                    steps,
+                    guards: Vec::new(),
+                },
+            ),
+            field: ApplicationFieldBindingLocus::new("Node", "Facts", "Text"),
+            presence: ApplicationFieldPresence::Required,
+        };
+        assert!(source.has_supported_shape());
+        assert_eq!(
+            source.canonical_record(),
+            concat!(
+                "25:body-path-field-source-v1;4:Node;4:Node;1:2;",
+                "8:Children;4:Node;5:Child;7:forward;",
+                "8:Children;4:Node;5:Child;7:reverse;",
+                "1:0;4:Node;5:Facts;4:Text;8:required;",
+            )
+        );
+    }
     #[test]
     fn operation_path_profile_refuses_both_closure_directions_without_weakening_one_hop() {
         for direction in [RelationDirection::Forward, RelationDirection::Reverse] {

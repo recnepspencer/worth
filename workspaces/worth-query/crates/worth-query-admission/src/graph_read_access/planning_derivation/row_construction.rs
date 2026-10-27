@@ -283,6 +283,16 @@ pub(super) fn build_row<Admission>(
             .with_fanout_posture(input.shape().fanout_posture().clone())
             .with_traversal_operator(operator.clone())
         }
+        RowSpec::ComponentSelection => WorthQueryGraphReadAccessRequirementRow::new(
+            Kind::AggregateSelection,
+            Rebuild::AuthoritativeRelationTruth,
+            Invalidation::AuthoritativeRelationDelta,
+            Complexity::CompleteTraversalWorkset,
+            Memory::DiscoveredWorkset,
+        )
+        .with_traversal_operator(
+            crate::graph_read_access::WorthQueryGraphReadTraversalOperator::AggregateSelection,
+        ),
         RowSpec::ResultBuffer => WorthQueryGraphReadAccessRequirementRow::new(
             Kind::ResultBuffer,
             Rebuild::OperationResolutionProof,

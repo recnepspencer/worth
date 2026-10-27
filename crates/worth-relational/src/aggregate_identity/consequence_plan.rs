@@ -54,7 +54,7 @@ impl ConsequencePlan {
 
 pub(super) fn append(
     plan: &mut ConsequencePlan,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     occurrence: CommitId,
     cohorts: CollectedCohorts,
     after: &InvariantStateView<'_>,
@@ -236,7 +236,7 @@ pub(super) fn append(
 
 fn create_row(
     plan: &mut ConsequencePlan,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     partition: PartitionId,
     row: AggregateRecord,
     work: &mut AggregateWork<'_, '_, '_, '_>,

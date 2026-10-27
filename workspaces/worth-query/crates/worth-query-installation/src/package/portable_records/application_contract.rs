@@ -104,6 +104,10 @@ impl WorthQueryPortableNativeAspectContractRecord {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryPortableOperationGraphReadScope {
+    Components {
+        schema: String,
+        definition: worth_query_declaration::facade::application_schema::ApplicationOperationComponentReadMeaning,
+    },
     Entity {
         schema: String,
         entity: String,
@@ -126,6 +130,7 @@ pub enum WorthQueryPortableOperationGraphReadScope {
 impl WorthQueryPortableOperationGraphReadScope {
     pub fn schema(&self) -> &str {
         match self {
+            Self::Components { schema, .. } => schema,
             Self::Entity { schema, .. }
             | Self::NativeProjection { schema, .. }
             | Self::Relation { schema, .. } => schema,

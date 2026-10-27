@@ -52,7 +52,7 @@ fn retained_query_aggregate_identity_is_not_hidden_by_its_walk_companion() {
         });
     }
 }
-fn snapshot(
+pub(super) fn snapshot(
     world: &World,
     execution: &ExecutionRequest<'_, '_>,
 ) -> WorthQueryApplicationSnapshotLease {

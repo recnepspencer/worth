@@ -11,7 +11,7 @@ use worth_foundational::facade::{
 pub(super) fn descriptor() -> AggregateIdentityContractDeclaration {
     AggregateIdentityContractDeclaration {
         definition: AggregateDefinitionIdentity::from_bytes([7; 32]),
-        source_relation: KindId(2),
+        source: AggregateIdentitySource::Orbit(KindId(2)),
         member_kind: KindId(1),
         membership_kind: KindId(5),
         storage: AggregateIdentityStorage {

@@ -40,6 +40,7 @@ crate::worth_query_mutation_binding!(@binding
     handler identity "worth.query.tests.workflow.apply-handler.v1",
     program , workflow_authority required,
     workflow_requirements crate::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<ChangeApprover>(),
+    inspection_disclosure ,
     outputs crate::application_operation::NoApplicationMutationOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Principal,
     principal_identity u64, identity_binding U64ApplicationValueBinding,

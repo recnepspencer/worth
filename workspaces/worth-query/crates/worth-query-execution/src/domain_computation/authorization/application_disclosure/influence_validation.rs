@@ -44,14 +44,25 @@ pub(super) fn validate_influence<Schema, Query, Parameters, QueryResult, Scope>(
     for ordering in query.read_graph().ordering() {
         require_field_influence(fields, ordering.field(), ordering_surfaces(query))?;
     }
-    if let Some(orbit) = query.read_graph().orbit() {
+    for slot in query
+        .read_graph()
+        .orbit()
+        .map(|meaning| meaning.slot_key())
+        .into_iter()
+        .chain(
+            query
+                .read_graph()
+                .component_selection()
+                .map(|meaning| meaning.slot_key()),
+        )
+    {
         let mut surfaces = membership_surfaces(query);
         surfaces.extend([
             ApplicationQueryObservableInfluence::Ordering,
             ApplicationQueryObservableInfluence::Aggregate,
         ]);
         for surface in surfaces {
-            require_result_influence(results, &orbit.slot_key(), surface)?;
+            require_result_influence(results, &slot, surface)?;
         }
     }
     validate_continuation(query, results)?;

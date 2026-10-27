@@ -69,6 +69,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
             result_shape,
             root_paths: vec![root_path()],
             orbit: None,
+            component_selection: None,
             cardinality: ApplicationQueryCardinality::Many,
             predicates: vec![ApplicationQueryPredicate::from_untrusted_fields(
                 text("Entity"),

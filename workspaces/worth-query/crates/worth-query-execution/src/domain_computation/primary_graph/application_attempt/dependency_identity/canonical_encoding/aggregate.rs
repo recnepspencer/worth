@@ -29,18 +29,22 @@ pub(super) fn append<E>(
         "entity-kind",
         key.entity_kind().as_u32().into(),
     );
-    number_u64(
-        entries,
-        prefix,
-        "relation-kind",
-        key.relation_kind().as_u32().into(),
-    );
-    push(
-        entries,
-        format!("{prefix}.relation"),
-        CanonicalBasisEntryKind::Identity,
-        text(key.relation()),
-    );
+    if let Some(relation) = key.orbit_relation() {
+        number_u64(entries, prefix, "relation-kind", relation.as_u32().into());
+        push(
+            entries,
+            format!("{prefix}.relation"),
+            CanonicalBasisEntryKind::Identity,
+            text(key.subject()),
+        );
+    } else {
+        push(
+            entries,
+            format!("{prefix}.component-set"),
+            CanonicalBasisEntryKind::Identity,
+            text(key.subject()),
+        );
+    }
     entity(entries, prefix, "selector", key.member());
     push(
         entries,

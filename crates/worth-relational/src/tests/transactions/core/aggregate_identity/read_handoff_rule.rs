@@ -18,6 +18,7 @@ pub(super) enum ReadMode {
 #[derive(Default)]
 pub(super) struct Control {
     pub enabled: AtomicBool,
+    pub source: Option<crate::schema::data::AggregateIdentityContractDeclaration>,
     pub roots: Mutex<Vec<EntityId>>,
     pub captures: Mutex<Vec<Capture>>,
     pub pressure: Mutex<Option<SerialMemoryBudget>>,
@@ -77,6 +78,29 @@ impl Control {
 }
 
 impl ReaderRule {
+    fn read(
+        &self,
+        view: &StructuralRelationView<'_>,
+        root: EntityId,
+    ) -> Result<AggregateRead, AggregateReadDenial> {
+        match &self.control.source {
+            Some(source) => view.aggregates().of_definition(source.definition, root),
+            None => view.aggregates().of_source_relation(KindId(2), root),
+        }
+    }
+    fn source_kinds(&self) -> Vec<KindId> {
+        match &self.control.source {
+            Some(source) => source
+                .source
+                .relations()
+                .iter()
+                .copied()
+                .collect::<std::collections::BTreeSet<_>>()
+                .into_iter()
+                .collect(),
+            None => vec![KindId(2)],
+        }
+    }
     fn observe(
         &self,
         proposed: StructuralRelationView<'_>,
@@ -114,13 +138,13 @@ impl ReaderRule {
         }
         for &root in roots {
             if !matches!(self.mode, ReadMode::Committed) {
-                match proposed.aggregates().of_source_relation(KindId(2), root) {
+                match self.read(&proposed, root) {
                     Ok(read) => capture.proposed.push(read),
                     Err(error) => capture.errors.push(error),
                 }
             }
             if !matches!(self.mode, ReadMode::Proposed) {
-                match committed.aggregates().of_source_relation(KindId(2), root) {
+                match self.read(&committed, root) {
                     Ok(read) => capture.committed.push(read),
                     Err(error) => capture.errors.push(error),
                 }
@@ -152,7 +176,7 @@ impl CustomInvariantRule for ReaderRule {
                 maximum_work_units: self.maximum,
                 access: CustomInvariantAccessContract {
                     read_entity_kinds: vec![KindId(1)],
-                    read_relation_kinds: vec![KindId(2)],
+                    read_relation_kinds: self.source_kinds(),
                     affected_entity_kinds: if self.maintenance {
                         vec![KindId(1), KindId(3)]
                     } else {
@@ -161,12 +185,23 @@ impl CustomInvariantRule for ReaderRule {
                     affected_relation_kinds: if self.maintenance {
                         vec![KindId(2), KindId(5)]
                     } else {
-                        vec![KindId(2)]
+                        self.source_kinds()
                     },
                     include_relation_endpoint_entity_touches: true,
                 },
                 execution_point: InvariantExecutionPoint::CommitBoundary,
-                groups: InvariantGroupSet::of(InvariantGroup::SchemaCompliance),
+                groups: InvariantGroupSet::of(
+                    if self.control.source.as_ref().is_some_and(|source| {
+                        matches!(
+                            source.source,
+                            crate::schema::data::AggregateIdentitySource::Components { .. }
+                        )
+                    }) {
+                        InvariantGroup::RelationIntegrity
+                    } else {
+                        InvariantGroup::SchemaCompliance
+                    },
+                ),
                 cost_class: InvariantCostClass::Touched,
                 failure_effect: InvariantFailureEffect::BlockCommit,
             },

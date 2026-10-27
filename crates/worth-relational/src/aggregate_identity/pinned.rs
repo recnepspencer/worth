@@ -9,6 +9,9 @@ use crate::runtime::RelationalPinnedRead;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelFailure};
 
+use super::selection::AggregateSelection;
+use worth_foundational::facade::AggregateDefinitionIdentity;
+
 mod contract;
 mod coordination;
 mod denial;
@@ -23,14 +26,25 @@ pub use result::PinnedAggregateRead;
 /// A source-qualified selection and optional narrowing constraints. Only the
 /// actual pinned receiver and original request grant read/execution authority.
 pub struct PinnedAggregateReadScope<'input> {
-    relation: KindId,
+    selection: AggregateSelection,
     member: EntityId,
     limits: coordination::Limits<'input>,
 }
 impl<'input> PinnedAggregateReadScope<'input> {
     pub fn new(relation: KindId, member: EntityId) -> Self {
         Self {
-            relation,
+            selection: AggregateSelection::Orbit {
+                relation,
+                definition: None,
+            },
+            member,
+            limits: coordination::Limits::default(),
+        }
+    }
+    /// Select the actual installed component/orbit definition without relation ambiguity.
+    pub fn for_definition(definition: AggregateDefinitionIdentity, member: EntityId) -> Self {
+        Self {
+            selection: AggregateSelection::Definition(definition),
             member,
             limits: coordination::Limits::default(),
         }
@@ -61,7 +75,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             scope.limits,
             |root, view, funded| {
                 funded.retain(result::controls())?;
-                let contract = contract::resolve(root, scope.relation, None, funded)?;
+                let contract = contract::resolve(root, scope.selection, funded)?;
                 let Some(member) = view.entity_metadata(scope.member) else {
                     return funded.invalid(PlanDenial::MemberUnavailable);
                 };

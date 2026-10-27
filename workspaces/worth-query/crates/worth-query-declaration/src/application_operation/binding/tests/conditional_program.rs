@@ -16,7 +16,7 @@ crate::worth_query_mutation_binding!(@binding
     result RenameResultBinding, idempotency u64, identity "conditional-key.v1",
     decision RenameDecision, denial RenameDenialBinding,
     handler identity "conditional-handler.v1", program required,
-    workflow_authority , workflow_requirements , outputs RenameOutputs,
+    workflow_authority , workflow_requirements , inspection_disclosure , outputs RenameOutputs,
     principal PrincipalBinding, mapping ExternalMapping, principal_entity Account,
         principal_identity u64, identity_binding crate::application_schema::U64ApplicationValueBinding,
     scope_binding crate::application_operation::ApplicationMutationFieldScope<MutationSchema,

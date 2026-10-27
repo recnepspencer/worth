@@ -1,4 +1,4 @@
-//! Strict stored groups use the same funded Native permutation traversal and decoder.
+//! Strict stored groups use the same funded Native graph traversal and decoder.
 use super::funding::PlanDenial;
 use super::{cohorts, funding, retention_extent as extent};
 use crate::identity::data::EntityId;
@@ -17,6 +17,7 @@ pub(super) struct StoredAggregateRead {
     _retention: Option<Arc<ExecutionMemoryReservation>>,
 }
 struct StoredValue {
+    contract: AggregateIdentityContractDeclaration,
     identity: AggregateIdentity,
     members: BTreeSet<EntityId>,
 }
@@ -27,7 +28,7 @@ pub(super) struct StoredGroup {
 
 pub(super) fn collect(
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     member: EntityId,
     work: &mut funding::AggregateWork<'_, '_, '_, '_>,
 ) -> funding::BuildResult<StoredGroup> {
@@ -46,29 +47,32 @@ impl ChargedBytes for StoredValue {
         self.members.len() as u64 * extent::tree_entry::<EntityId, ()>()
             + extent::arc_backing::<StoredAggregateRead>()
             + extent::arc_backing::<ExecutionMemoryReservation>()
+            + self.contract.source.owned_bytes()
     }
 }
 
 pub(super) fn in_custom_scope(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     member: EntityId,
     allowance: &mut dyn FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
 ) -> Result<Arc<StoredAggregateRead>, TransactionCommitError> {
     let (value, retention) = funding::run_custom_read(execution, allowance, |work| {
         work.retain(
             extent::arc_backing::<StoredAggregateRead>()
-                + extent::arc_backing::<ExecutionMemoryReservation>(),
+                + extent::arc_backing::<ExecutionMemoryReservation>()
+                + contract.source.owned_bytes(),
         )?;
         let group = collect(view, contract, member, work)?;
         Ok(StoredValue {
+            contract: contract.clone(),
             identity: group.stored.record.identity,
             members: group.members,
         })
     })?;
     Ok(Arc::new(StoredAggregateRead {
-        contract,
+        contract: value.contract,
         identity: value.identity,
         members: value.members,
         _retention: retention.map(Arc::new),

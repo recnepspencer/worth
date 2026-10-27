@@ -11,6 +11,7 @@ use worth_relational::facade::schema::RelationalSchemaRegistry;
 use super::WorthQueryPrimaryGraphInstallationDenial;
 
 mod aggregate_identity;
+pub(in crate::domain_computation::primary_graph) use aggregate_identity::ComponentSetLayout;
 mod application_layout_lowering;
 mod authorization_selectors;
 mod capability_grant_join;
@@ -74,6 +75,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     authorization_selectors: authorization_selectors::WorthQueryAuthorizationSelectors,
     entity_kinds: BTreeMap<String, KindId>,
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
+    component_sets: BTreeMap<String, ComponentSetLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
     pub(in crate::domain_computation::primary_graph) signing_lifecycle:
@@ -187,7 +189,7 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
-        let registry = aggregate_identity::lower(
+        let (registry, component_sets) = aggregate_identity::lower(
             registry,
             schema,
             native_contracts,
@@ -226,6 +228,7 @@ impl WorthQueryPrimaryGraphLayout {
                 authorization_selectors,
                 entity_kinds,
                 relation_kinds: relation_layouts,
+                component_sets,
                 application_entity_kinds,
                 signing,
                 signing_lifecycle,

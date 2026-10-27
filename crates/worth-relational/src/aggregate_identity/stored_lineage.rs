@@ -14,7 +14,7 @@ use worth_foundational::facade::{AspectKey, ContractValidatedAspectValueView};
 pub(super) fn read(
     view: &InvariantStateView<'_>,
     aggregate: &StoredAggregate,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<BTreeSet<AggregateLineageEvent>> {
     let mut events = BTreeSet::new();
@@ -35,7 +35,7 @@ pub(super) struct MergeContinuation {
 pub(super) fn visit(
     view: &InvariantStateView<'_>,
     aggregate: &StoredAggregate,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
     mut emit: impl FnMut(AggregateLineageEvent, &mut AggregateWork<'_, '_, '_, '_>) -> BuildResult<()>,
 ) -> BuildResult<Option<MergeContinuation>> {

@@ -5,8 +5,18 @@ use worth_foundational::PartitionIdentity;
 use super::{PartitionItemId, PartitionWork};
 
 mod checked;
+mod request;
 mod retained;
 use super::checked_scope::OwnedRetainedCharge;
+
+/// One edit to an undirected coupling graph. Routing keys are not persistent names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ComponentEdit {
+    UpsertItem(PartitionItemId),
+    RemoveItem(PartitionItemId),
+    AddEdge(PartitionItemId, PartitionItemId),
+    RemoveEdge(PartitionItemId, PartitionItemId),
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ComponentDenial {

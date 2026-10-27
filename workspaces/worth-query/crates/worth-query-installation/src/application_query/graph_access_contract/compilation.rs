@@ -15,9 +15,7 @@ use super::{
     WorthQueryInstalledGraphRelation,
 };
 use crate::application_query::canonical_basis::{prepare_graph_basis, prepare_planning_basis};
-use crate::application_query::{
-    WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard, WorthQueryInstalledRootPathStep,
-};
+use crate::application_query::WorthQueryInstalledRootPath;
 
 impl WorthQueryInstalledGraphReadContract {
     pub(in crate::application_query) fn compile(
@@ -51,28 +49,7 @@ impl WorthQueryInstalledGraphReadContract {
         let root_paths = definition
             .root_paths()
             .iter()
-            .map(|path| {
-                WorthQueryInstalledRootPath::new(
-                    path.steps()
-                        .iter()
-                        .enumerate()
-                        .map(|(index, step)| {
-                            WorthQueryInstalledRootPathStep::new(
-                                step.relation(),
-                                step.from(),
-                                step.to(),
-                                step.direction(),
-                                step.traversal(),
-                                index + 1,
-                            )
-                        })
-                        .collect(),
-                    path.guards()
-                        .iter()
-                        .map(WorthQueryInstalledRootPathGuard::new)
-                        .collect(),
-                )
-            })
+            .map(WorthQueryInstalledRootPath::from_meaning)
             .collect();
         let ordering = definition
             .ordering()
@@ -103,6 +80,9 @@ impl WorthQueryInstalledGraphReadContract {
             relations,
             root_paths,
             orbit: definition.orbit().map(|orbit| Arc::new(orbit.clone())),
+            component_selection: definition
+                .component_selection()
+                .map(|selection| Arc::new(selection.clone())),
             predicates,
             ordering,
             maximum_traversal_depth,

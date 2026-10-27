@@ -42,8 +42,12 @@ mod native_access;
 pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQueryNativeAccess;
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
+mod component_result;
 mod one_shot;
 mod orbit_result;
+pub use component_result::{
+    WorthQueryApplicationQueryComponent, WorthQueryApplicationQueryComponents,
+};
 pub use orbit_result::WorthQueryApplicationQueryOrbit;
 mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
@@ -148,3 +152,5 @@ pub(in crate::domain_computation::primary_graph) use read_execution::dispatch_wi
 pub use observed_source::retained_dependencies::{
     WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
+
+pub(in crate::domain_computation::primary_graph) use read_execution::component_native_acquisitions_on_this_thread_for_test;

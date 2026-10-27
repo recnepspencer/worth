@@ -12,6 +12,8 @@ use crate::application_schema::{
 };
 
 mod history;
+
+mod components;
 mod influence;
 mod selector;
 pub use influence::{ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence};

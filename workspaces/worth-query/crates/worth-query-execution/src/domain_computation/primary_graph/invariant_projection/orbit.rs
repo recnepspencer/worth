@@ -5,20 +5,11 @@ use super::{
     WorthQueryInvariantProjectionTraversalDenialKind as Kind,
 };
 use crate::domain_computation::primary_graph::aggregate_identity::WorthQueryAggregateIdentity;
-use crate::domain_computation::primary_graph::aggregate_observation::{
-    AggregateObservation, AggregateQuery,
-};
 use crate::domain_computation::primary_graph::structural_walk::StructuralWalkObservation;
 use worth_execution::MapKernelContext;
 use worth_query_declaration::facade::application_schema::RelationDirection;
 use worth_query_installation::facade::{ApplicationRelationRef, ApplicationSchema};
-use worth_relational::facade::{
-    runtime::{
-        PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
-        RelationalPinnedReadAdmissionDenial,
-    },
-    transactions::RelationalExecutionDenialCause as Cause,
-};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 mod result;
 pub use result::WorthQueryInvariantProjectionOrbit;
 
@@ -47,9 +38,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             if layout.from != layout.to {
                 return Err(Denial::new(Kind::InvalidOrbit, relation.name()));
             }
-            let aggregate = self.read_orbit_identity(
+            let aggregate = self.read_aggregate_identity(
                 layout.from,
-                layout.kind,
+                crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(layout.kind),
                 member.entity_id,
                 relation.name(),
             )?;
@@ -96,71 +87,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         member: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
     ) -> Result<WorthQueryAggregateIdentity<Schema, Relation>, Denial> {
         Ok(self.orbit(relation, member)?.identity().clone())
-    }
-
-    fn read_orbit_identity(
-        &mut self,
-        entity_kind: worth_relational::facade::identity::KindId,
-        relation: worth_relational::facade::identity::KindId,
-        member: worth_relational::facade::identity::EntityId,
-        subject: &str,
-    ) -> Result<std::sync::Arc<AggregateObservation>, Denial> {
-        let pin = self
-            .runtime
-            .read_truth()
-            .pin_read_capability(self.snapshot, &[], self.execution)
-            .map_err(|denial| match denial {
-                RelationalPinnedReadAdmissionDenial::Request(stop) => self.walk_stop(
-                    worth_execution::WorkCeilingDenial::Stopped(stop).into(),
-                    subject,
-                ),
-                _ => Denial::new(Kind::EndpointUnavailable, subject),
-            })?;
-        let result = AggregateObservation::read(
-            &pin,
-            self.execution,
-            AggregateQuery {
-                relation: subject,
-                entity_kind,
-                relation_kind: relation,
-                member,
-                maximum_work: self.work_budget.remaining().map(|n| n as u64),
-                control: None,
-            },
-        );
-        let work = match &result {
-            Ok(value) => value.native().work_units(),
-            Err(denial) => denial.work,
-        };
-        if let Err(PinnedAggregateReadDenial {
-            kind: PinnedAggregateReadDenialKind::Read(cause),
-            ..
-        }) = &result
-        {
-            self.native_read_stop.get_or_insert(*cause);
-        }
-        // Debit actual work to the existing projection allowance. Private identity
-        // acquisitions are not business endpoint/edge diagnostic observations.
-        if !usize::try_from(work).is_ok_and(|work| self.work_budget.consume(work)) {
-            self.work_budget.mark_exceeded();
-            return Err(Denial::new(Kind::WorkBudgetExceeded, subject));
-        }
-        result.map_err(|denial| self.orbit_denial(denial, subject))
-    }
-
-    fn orbit_denial(&mut self, denial: PinnedAggregateReadDenial, subject: &str) -> Denial {
-        use PinnedAggregateReadDenialKind as Native;
-        let kind = match denial.kind {
-            Native::Read(cause) => return self.walk_stop(cause, subject),
-            Native::NotAggregateRelation => Kind::NotOrbitRelation,
-            Native::MemberUnavailable | Native::WrongMemberKind => Kind::EndpointUnavailable,
-            Native::WorkLimitExceeded => {
-                self.work_budget.mark_exceeded();
-                Kind::WorkBudgetExceeded
-            }
-            _ => Kind::InvalidOrbit,
-        };
-        Denial::new(kind, subject)
     }
 
     fn orbit_checkpoint(

@@ -3,6 +3,7 @@
 use worth_foundational::facade::{AspectContract, AspectShape};
 
 use super::*;
+mod component_scope;
 mod external_emission;
 mod observations;
 mod query_context;
@@ -223,6 +224,10 @@ fn observe_graph_read(
 ) {
     work.observe_fixed(1);
     match scope {
+        WorthQueryPortableOperationGraphReadScope::Components { schema, definition } => {
+            work.observe_text(schema);
+            work.observe_component_scope(definition);
+        }
         WorthQueryPortableOperationGraphReadScope::Entity { schema, entity } => {
             work.observe_text(schema);
             work.observe_text(entity);

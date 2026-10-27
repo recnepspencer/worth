@@ -53,6 +53,19 @@ impl RootSelectionWork<'_> {
     ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         self.checkpoint(subject)?;
         let result = execution.run_native_with_checkpoint(|_context| {
+            if let Some(step) = self.steps.iter_mut().find(|step| {
+                step.path_index() == path_index
+                    && step.step_index() == step_index
+                    && step.traversal() == traversal
+                    && step.direction() == direction
+            }) {
+                let combined = step
+                    .reads()
+                    .checked_combined(reads)
+                    .ok_or(Cause::ChargedBytesOverflow)?;
+                *step = Step::new(path_index, step_index, traversal, direction, combined);
+                return Ok(());
+            }
             if self.steps.len() >= self.step_limit {
                 return Err(Cause::ExpectedIdentitiesNotCanonical);
             }

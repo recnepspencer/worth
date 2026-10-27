@@ -179,6 +179,7 @@ pub struct WorthQueryGraphReadPlanningShape {
     ordering_fields: Vec<WorthQueryGraphReadPlanningOrderingField>,
     relationship_proof_required: bool,
     root_union_dedup_required: bool,
+    component_selection_required: bool,
     lifecycle_class: WorthQueryGraphReadLifecycleClass,
     result_pressure: WorthQueryGraphReadResultPressure,
 }
@@ -198,6 +199,7 @@ impl WorthQueryGraphReadPlanningShape {
             ordering_fields: Vec::new(),
             relationship_proof_required: false,
             root_union_dedup_required: false,
+            component_selection_required: false,
             lifecycle_class: WorthQueryGraphReadLifecycleClass::ReusableReadFamily,
             result_pressure,
         }
@@ -226,6 +228,14 @@ impl WorthQueryGraphReadPlanningShape {
     pub fn with_relationship_proof_required(mut self, required: bool) -> Self {
         self.relationship_proof_required = required;
         self
+    }
+
+    pub fn with_component_selection_required(mut self, required: bool) -> Self {
+        self.component_selection_required = required;
+        self
+    }
+    pub const fn component_selection_required(&self) -> bool {
+        self.component_selection_required
     }
 
     pub fn with_root_union_dedup_required(mut self, required: bool) -> Self {

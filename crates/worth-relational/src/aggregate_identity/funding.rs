@@ -3,6 +3,7 @@ use super::observations::{Acquisition, AggregateReadObservations};
 use crate::transactions::data::TransactionCommitError;
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation, MapKernelFailure, ScopeStop};
 mod failure;
+mod partition_ids;
 pub(super) use failure::{FundingFailure, PlanDenial};
 #[cfg(test)]
 mod tests;

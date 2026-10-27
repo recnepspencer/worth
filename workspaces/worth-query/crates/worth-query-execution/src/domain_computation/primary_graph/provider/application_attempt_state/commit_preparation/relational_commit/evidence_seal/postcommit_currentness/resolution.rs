@@ -24,6 +24,7 @@ pub(super) fn reads_source(fact: &Fact) -> bool {
         fact,
         Fact::SourcePublication { .. }
             | Fact::StructuralWalk { .. }
+            | Fact::ComponentSelection { .. }
             | Fact::Aggregate { .. }
             | Fact::SourceEntity { .. }
             | Fact::Entity { .. }
