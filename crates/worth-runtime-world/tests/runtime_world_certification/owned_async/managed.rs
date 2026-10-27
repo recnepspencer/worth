@@ -49,7 +49,7 @@ fn managed_queue_saturates_and_cancellation_leaves_exact_drain_custody() {
     assert!(
         court
             .world
-            .admit_owned_async_request(
+            .admit_unqueued_owned_async_request(
                 &court.bridge,
                 &court.declaration,
                 &selected,
@@ -205,11 +205,11 @@ fn actual_completion_commit_releases_active_index_and_old_cleanup_cannot_cancel_
 }
 
 #[test]
-fn managed_replacement_is_refused_before_legacy_revalidation_or_retry_effects() {
+fn queued_replacement_refusal_retains_the_exact_current_custodian() {
     let court = AsyncSourceCourt::managed(NonZeroU64::MIN);
     let selected = selected_fork(&court);
-    let owner = admit_managed(&court, &selected);
-    let request = owner.request().unwrap();
+    let mut owner = admit_managed(&court, &selected);
+    let request = owner.retained_request().unwrap();
     court
         .bridge
         .enqueue_managed_owned_async_queue(&owner, 1)
@@ -219,9 +219,9 @@ fn managed_replacement_is_refused_before_legacy_revalidation_or_retry_effects() 
     let newer_source = court.publish(execution, &selected);
     assert!(court
         .world
-        .revalidate_owned_async_request(
+        .revalidate_managed_owned_async_request(
             &court.bridge,
-            request,
+            &mut owner,
             &newer_source,
             &court.lease(&newer_source),
         )
@@ -229,7 +229,7 @@ fn managed_replacement_is_refused_before_legacy_revalidation_or_retry_effects() 
     assert_eq!(
         court
             .bridge
-            .owned_async_active_request_count(request)
+            .owned_async_active_request_count(&request)
             .unwrap(),
         1
     );
@@ -244,12 +244,22 @@ fn managed_replacement_is_refused_before_legacy_revalidation_or_retry_effects() 
     );
     let timeout = court
         .bridge
-        .advance_owned_async_request_to_timeout(request, 5)
+        .advance_managed_owned_async_request_to_timeout(&mut owner, 5)
         .unwrap();
-    assert!(court
+    let scheduled = court
         .bridge
-        .schedule_owned_async_retry(request, &timeout)
-        .is_err());
+        .schedule_managed_owned_async_retry(&mut owner, &timeout)
+        .unwrap();
+    let original = owner.request_handle();
+    assert!(matches!(
+        court
+            .bridge
+            .advance_managed_owned_async_retry(&mut owner, &scheduled, 7),
+        Err(BridgeOwnedAsyncManagedDenial::Signal(
+            worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::QueueNotDrained { depth: 1 }
+        ))
+    ));
+    assert_eq!(owner.request_handle(), original);
     assert_eq!(
         court
             .bridge
@@ -262,6 +272,15 @@ fn managed_replacement_is_refused_before_legacy_revalidation_or_retry_effects() 
     court
         .bridge
         .dequeue_managed_owned_async_queue(&owner, 1)
+        .unwrap();
+    court
+        .bridge
+        .advance_managed_owned_async_retry(&mut owner, &scheduled, 7)
+        .unwrap();
+    assert_ne!(owner.request_handle(), original);
+    court
+        .bridge
+        .cancel_managed_owned_async_request(&owner)
         .unwrap();
 }
 

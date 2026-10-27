@@ -86,6 +86,10 @@ pub(crate) struct SignalOwnedAsyncManagedHandoff {
 }
 
 impl SignalOwnedAsyncManagedAdmission {
+    /// Descriptive selection from this actual custodian, never abort authority.
+    pub fn pending_retry(&self) -> Option<&crate::data::resource::ScheduledResourceRetry> {
+        self.pending_retry.as_ref()
+    }
     pub(super) fn from_initial(
         origin: SignalOwnedAsyncSourceBinding,
         state: SignalOwnedAsyncManagedAdmissionState,

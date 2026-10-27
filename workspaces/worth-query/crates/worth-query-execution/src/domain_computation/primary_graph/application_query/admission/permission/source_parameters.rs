@@ -136,7 +136,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             )
         })?;
 
-        let session = WorthQueryPreparedQuerySessionIdentity::reserve().map_err(|_| {
+        let session = WorthQueryPreparedProductReadSessionIdentity::reserve().map_err(|_| {
             denial(
                 WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
                 query.name(),

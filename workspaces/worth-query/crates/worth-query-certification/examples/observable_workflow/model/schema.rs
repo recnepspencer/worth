@@ -33,7 +33,7 @@ worth_query_application! {
     pub DocumentRetentionSchema {
         owner: "observable_workflow_reference",
         version: (1, 0),
-        contributions: [DocumentRetentionContribution, crate::effect::ArchiveContribution],
+        contributions: [DocumentRetentionContribution, crate::effect::ArchiveContribution, crate::resource_monitor::MonitorContribution],
     }
 }
 

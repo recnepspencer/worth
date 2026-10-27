@@ -1,5 +1,6 @@
 mod collection;
 mod feature;
+mod resource;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_query::{
@@ -38,6 +39,8 @@ where
     factories: &'a mut WorthQueryApplicationInvariantFactories<Schema>,
     producers: &'a mut PendingProducerRegistry<Schema>,
     conditionals: &'a mut PendingConditionalRegistry<Schema>,
+    resources:
+        &'a mut super::super::application_resource::installation::PendingResourceRegistry<Schema>,
 }
 
 impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, Schema> {
@@ -48,6 +51,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
         factories: &'a mut WorthQueryApplicationInvariantFactories<Schema>,
         producers: &'a mut PendingProducerRegistry<Schema>,
         conditionals: &'a mut PendingConditionalRegistry<Schema>,
+        resources: &'a mut super::super::application_resource::installation::PendingResourceRegistry<Schema>,
     ) -> Self {
         Self {
             installed_schema,
@@ -56,6 +60,7 @@ impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, S
             factories,
             producers,
             conditionals,
+            resources,
         }
     }
 

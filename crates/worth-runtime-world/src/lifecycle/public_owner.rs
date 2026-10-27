@@ -39,20 +39,6 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
-    pub fn admit_owned_async_request(
-        &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
-        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
-        observation: &crate::branch::ProductBranchObservation,
-        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    > {
-        self.root
-            .admit_owned_async_request(bridge, declaration, observation, relational_source)
-    }
-
     pub fn admit_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -68,6 +54,26 @@ where
             declaration,
             observation,
             relational_source,
+        )
+    }
+
+    pub fn advance_owned_async_source_clock(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+        coordinate: u64,
+    ) -> Result<
+        worth_signal::facade::TemporalClockAdvanceSummary,
+        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.root.advance_owned_async_source_clock(
+            bridge,
+            declaration,
+            observation,
+            relational_source,
+            coordinate,
         )
     }
 
@@ -106,20 +112,6 @@ where
             observation,
             relational_source,
         )
-    }
-
-    pub fn revalidate_owned_async_request(
-        &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        observation: &crate::branch::ProductBranchObservation,
-        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
-        super::owner::RuntimeWorldOwnedAsyncRevalidationDenial,
-    > {
-        self.root
-            .revalidate_owned_async_request(bridge, request, observation, relational_source)
     }
 
     pub fn revalidate_managed_owned_async_request(

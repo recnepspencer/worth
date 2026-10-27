@@ -74,15 +74,3 @@ where
         )
     }
 }
-
-/// The old unmanaged result cannot carry a retained temporal/cleanup handoff.
-/// Managed callers consume the complete handoff instead of this legacy mapping.
-pub(super) fn legacy_replacement_refusal(
-    refusal: Option<SignalOwnedAsyncQueueDenial>,
-) -> Result<(), SignalConditionalServiceExecutionDenial> {
-    match refusal {
-        None => Ok(()),
-        Some(SignalOwnedAsyncQueueDenial::Service(cause)) => Err(cause),
-        Some(_) => unreachable!("the unmanaged algorithm performs no managed queue action"),
-    }
-}

@@ -30,7 +30,19 @@ impl WorthQueryApplicationContribution<CapabilitySchema> for CapabilityContribut
         setup.handler::<super::workflow::bindings::GuardedBinding, _>(RetentionHandler(
             contacts.clone(),
         ))?;
-        setup.handler::<super::workflow::actor_binding::ActorBinding, _>(RetentionHandler(contacts))
+        setup.handler::<super::workflow::actor_binding::ActorBinding, _>(RetentionHandler(
+            contacts.clone(),
+        ))?;
+        setup.handler::<super::resources::lifecycle::Binding, _>(
+            super::resources::lifecycle::Handler,
+        )?;
+        setup.handler::<super::resources::grant_status::Binding, _>(
+            super::resources::grant_status::Handler,
+        )?;
+        setup.resource::<super::resources::Resource, _, super::resources::Clock, _>(
+            super::resources::Producer(contacts.resource.clone()),
+            contacts.resource_clock.clone(),
+        )
     }
 }
 struct Adapter;
@@ -135,6 +147,7 @@ pub fn install_program<
                 .field(DocumentRetentionField::reference(), 7_u64),
             )?;
             seed_grant(graph, "source-child", 1, 1)?;
+            seed_grant(graph, "resource-action", 1, 3)?;
             seed_grant(graph, "issuer-revoke", 2, 2)?;
             if workflow {
                 seed_grant(graph, "workflow-advancer", 1, 2)?;
@@ -167,7 +180,11 @@ fn seed_grant(
         .field(GrantScopeKey::reference(), DOCUMENT_IDENTITY.to_owned())
         .field(GrantNotBefore::reference(), 0_u64)
         .field(GrantNotAfter::reference(), u64::MAX)
-        .field(GrantDepth::reference(), 0_u64),
+        .field(GrantDepth::reference(), 0_u64)
+        .field(
+            super::resources::ResourceDisclosureField::reference(),
+            1_u64,
+        ),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         GrantResource::reference(),

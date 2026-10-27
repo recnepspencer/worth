@@ -126,6 +126,7 @@ where
         workflow_guarded_operations,
         program_support: None,
         installed_conditionals: Default::default(),
+        installed_resources: Default::default(),
             workflow_coverage: Default::default(),
             signing_owners: Default::default(),
     })

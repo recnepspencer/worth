@@ -145,25 +145,26 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.installed_owned_async_declaration(identity)
     }
 
+    pub fn advance_owned_async_source_clock(
+        &self,
+        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
+        basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+        truth: crate::facade::BridgeAsyncRequestTruthViewBasis,
+        coordinate: u64,
+    ) -> Result<
+        worth_signal::facade::TemporalClockAdvanceSummary,
+        crate::facade::BridgeAsyncRequestIdentityRejection,
+    > {
+        self.runtime
+            .advance_owned_async_source_clock(declaration, basis, truth, coordinate)
+    }
+
     /// Admit through Bridge's lower Signal/truth basis contract.
     ///
     /// Runtime World qualification is established by the composition owner
     /// before calling this operation; this operation claims only Bridge and
     /// Signal request authority.
     #[doc(hidden)]
-    pub fn admit_owned_async_request_identity(
-        &self,
-        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
-        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
-        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRequestAdmission,
-        crate::facade::BridgeAsyncRequestIdentityRejection,
-    > {
-        self.runtime
-            .admit_owned_async_request_identity(declaration, signal_basis, truth_basis)
-    }
-
     pub fn validate_owned_async_completion_envelope(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,
@@ -206,57 +207,8 @@ impl BridgeSealedRuntimeAssembly {
         self.runtime.retire_owned_async_request(request)
     }
 
-    pub fn advance_owned_async_request_to_timeout(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        coordinate: u64,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncTimeoutAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .advance_owned_async_request_to_timeout(request, coordinate)
-    }
-
-    pub fn schedule_owned_async_retry(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        timeout: &super::super::BridgeOwnedAsyncTimeoutAdmission,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRetrySchedule,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime.schedule_owned_async_retry(request, timeout)
-    }
-
-    pub fn advance_owned_async_retry(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        schedule: &super::super::BridgeOwnedAsyncRetrySchedule,
-        coordinate: u64,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRetryAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .advance_owned_async_retry(request, schedule, coordinate)
-    }
-
     /// Revalidate through Bridge's lower Signal/truth basis contract.
     #[doc(hidden)]
-    pub fn revalidate_owned_async_request(
-        &self,
-        request: &super::super::BridgeOwnedAsyncRequestAdmission,
-        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
-        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
-    ) -> Result<
-        super::super::BridgeOwnedAsyncRevalidationAdmission,
-        crate::facade::BridgeAsyncCompletionRejection,
-    > {
-        self.runtime
-            .revalidate_owned_async_request(request, signal_basis, truth_basis)
-    }
-
     pub fn owned_async_active_request_count(
         &self,
         request: &super::super::BridgeOwnedAsyncRequestAdmission,

@@ -1,4 +1,5 @@
 mod admission;
+mod clock;
 mod completion;
 mod completion_commit;
 mod declaration;
@@ -11,7 +12,6 @@ mod managed_retry;
 mod managed_revalidation;
 mod process_local_release;
 mod retirement;
-mod retry_revalidation;
 mod supersession;
 mod wake_observation_for_test;
 

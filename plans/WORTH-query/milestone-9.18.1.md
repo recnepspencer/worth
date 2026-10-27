@@ -911,28 +911,31 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
-**Status:** Open. Typed resource declarations and installed-profile lookup preserve
+**Status:** Implemented and runtime-qualified on the work branch; final checks and
+phase integration remain pending. Typed resource declarations and installed-profile lookup preserve
 the complete input/result/failure codec description, exact Access recipe,
 provider role, finite capacities and independent Start/Inspect/Advance/Close
 requirements. Member 39 and disclosure selector 7 extend the current protocol 18.
 Portable value-shape text is descriptive; only actual typed inventory can resolve
 its decoder. Boolean availability and lifecycle state do not authorize counts;
 cleanup detail requires both Count and Explanation influence. The Host provider
-and progression surface remains unfinished.
+and progression surface is implemented with its actual provider and cleanup journeys.
 
 The installed-access prerequisite compiles explicit Resource/action/facet
 obligations rather than reusing the Access query's payload plan or permission.
 Close and detailed Close retain their own action; only the latter selects cleanup
 disclosure. ResourceRead admission checks exact installed purpose/subject and
 actual provider-support affinity before reserving capacity. The reservation
-remains with its admitted plan until terminal/drop. Fresh session, provider and
-Host integration are still required; these compiled contracts grant no permission.
+remains with its admitted plan until terminal/drop. The endpoint uses a distinct
+Resource ProductRead intent, actual installed contract leaf, original basis and
+independent current authorization Product, with its own proof/terminal. Query
+completion remains Query-only; compiled contracts grant no permission.
 
 The native prerequisite adds World-qualified managed request
 admission, exact attempt-owned queue custody and genuine Signal completion commit.
 Completion admission remains distinct from commit; cancellation leaves queue drain
 custody with its owner. A committed result retains any refused timeout cleanup.
-These lower-owner operations do not yet provide the Decl/Host resource endpoint.
+The Decl/Host endpoint carries these lower-owner operations through its runtime row.
 Signal completion admission, queue and timeout-cleanup owners retain their actual
 originating service/source binding. Public report DTOs remain diagnostic
 projections and cannot construct admission or lend authority across runtimes.
@@ -954,13 +957,14 @@ The read-only UI explicitly selects the genuine observed `BranchHead` snapshot,
 without a committed-source or fresh-currentness claim. The separate authoritative
 source entrance still refuses an empty target before native admission.
 Initial default supersession retires the prior timeout; the separate Native
-coalescing policy retires only its new unused timeout. Raw Native-host legacy
-return signatures still cannot carry every post-admission cleanup obligation;
-new Query/UI consumers do not use that stripping adapter. The real application
-control handoff, provider verification, fresh authorization/disclosure and this
-remaining compatibility boundary still require qualification before phase closure.
+coalescing policy retires only its new unused timeout. The application cutover
+removes public report-stripping initial, timeout, schedule, retry and revalidation
+Native service/Bridge/World alternatives and migrates actual callers to genuine custody. Lower Native kernels remain their
+single owners. Focused World, Bridge, compile-fail and public application journeys
+qualify the application control handoff, provider verification, fresh
+authorization/disclosure and compatibility cutover.
 
-The lower-owner retention prerequisite is being qualified separately from Host
+The qualified lower-owner retention prerequisite remains separate from Host
 integration. An explicitly installed queued process-local posture uses exact
 owner-selected terminal, denial, retry-lineage and retired-wake release. It
 retains one fixed predecessor obligation before the next report can overwrite
@@ -976,14 +980,49 @@ Refusal preserves the real custodian and any completion owner. Success consumes
 them into released evidence without live progression capability. Fulfilled
 process-local requests require their actual completion cleanup owner before
 release and fresh Start; they cannot revalidate around that handoff. Legacy
-retention remains unchanged. Query must still install released row state before
-its original-request terminal handoff, and qualify the finite provider/row path;
-Native release alone does not bound or certify the unfinished Host lifecycle.
+retention remains unchanged. Query installs released row state before its
+original-request terminal handoff. The public journeys also qualify the finite
+provider/row path; Native release alone is not the Host lifecycle proof.
+
+The Host endpoint admits finite Native slots, allocated rows, retained result
+slots and fixed ingress before effects. A genuine issued attempt/verifier binds
+the producer projection, original-request scratch and actual installed decoder
+before Native completion stage/commit. Verified candidates survive result-slot
+refusal without a second provider call. Accepted clock-only progress is an honest
+owned Reserved outcome. Provider/Native/recovery custody lives in the runtime row;
+move-only handles and weak exact receipts cannot reconstruct it. Fresh exact
+receipt reclaim requires Close plus Availability; there is no browse/index or
+implicit abandoned-row recovery. Existing explicit runtime close refuses any
+allocated row and successful close clears its Resource registry. Rust Drop and
+process expiry make no Native/provider cleanup claim.
+
+The populated-fork/sibling source comparison uses a closed receiver-owned
+certification probe after ordinary State admission. It compares the actual
+retained Bridge source with an independently reissued Native read, without
+adding consumer metadata meaning or deriving authority from transport correlation.
+The combined example drops a genuine prepared program adoption before its
+sibling publication, proving the source remains distinct from a burned Native
+reservation as well as a branch version. All lifecycle actions use the ordinary
+Decl/Host API.
+
+The separate public recoverable-effect journey derives a move-only handle
+from an actual committed outbox/aftermath operation and admit genuine inspection.
+The current terminal/outcome owner precedes the historical outbox provenance read
+and is rechecked after arbitrary verification. Authenticated indeterminate
+admission cannot be ordinary result commit or automatic redispatch. Refused
+cleanup retains the exact row/handle; successful authorized resource cleanup
+returns the original recovery handle. Declared preimage grammar admits recovery
+ownership/inspection here; it is not evidence of an executable corrector.
 
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
 resource machinery into the current application SDK; it does not reopen 9.4's
 entire lower-runtime portfolio.
+
+Native cancellation and the immutable-witness retirement adapter remain Native-only
+actions: they create no successor or new wake custody, and do not attest to
+provider, queue or full Resource cleanup. The genuine custodian retains those
+existing obligations.
 
 ### Requirements
 
@@ -1021,14 +1060,15 @@ twins must reach the disputed admission and refuse before result publication.
 
 ### Target DX
 
+<!-- illustrative -->
 ```rust,ignore
-// Planned syntax; the retained owner delegates the existing native lifecycle.
-let mut resource = request.resources()
-    .start(Assessment::reference(), input)?;
-let state = resource.inspect(&fresh_request)?;
-let progress = resource.advance(&fresh_request)?;
-// A close refusal keeps resource custody available for a later funded retry.
-let closed = resource.close(&fresh_request)?;
+// Illustrative: not compiled.
+let resources = request.resources();
+let mut resource = resources.start::<Assessment>(input)?;
+let original = resource.receipt();
+resources.advance(&mut resource)?;
+let result = resources.with_result_governed(&original, fresh_metadata, |value| inspect(value))?;
+let closed = resources.close(&mut resource)?;
 ```
 
 ### How We Know It's Done

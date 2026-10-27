@@ -3,10 +3,13 @@ mod decision_read_set;
 mod mutation_progression;
 mod owner_execution;
 mod read_terminal;
+mod resource_terminal;
+pub(in crate::domain_computation) use resource_terminal::WorthQueryResourceReadCompletion;
 mod session;
 pub(in crate::domain_computation) use session::{
-    WorthQueryManagedGraphReadDenial, WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion,
-    WorthQueryPreparedSessionRead,
+    WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSessionStartDenial,
+    WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
+    WorthQuerySessionResourceReadProof,
 };
 mod session_identity;
 
@@ -26,7 +29,7 @@ pub(in crate::domain_computation) use owner_execution::{
 pub use read_terminal::WorthQueryGraphReadCompletion;
 pub(in crate::domain_computation) use session::{
     WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
-    WorthQueryPreparedQuerySessionIdentity,
+    WorthQueryPreparedProductReadSessionIdentity,
 };
 pub use session_identity::{
     WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity,

@@ -17,12 +17,17 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationSnapshotLease
 
 mod mutation_readmission;
 mod prepared_query_read;
+mod product_read;
 mod query_preparation;
 mod query_read;
+mod resource_preparation;
+mod resource_read;
 pub(in crate::domain_computation) use prepared_query_read::{
     WorthQueryPreparedQueryPin, WorthQueryPreparedReadCompletion, WorthQueryPreparedSessionRead,
 };
-pub(in crate::domain_computation) use query_preparation::WorthQueryPreparedQuerySessionIdentity;
+pub(in crate::domain_computation) use product_read::WorthQueryPreparedProductReadSessionIdentity;
+use product_read::{ProductReadBasis, ProductReadIntent};
+pub(in crate::domain_computation) use resource_read::WorthQuerySessionResourceReadProof;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryGraphWorkAccessContextAffinity {
@@ -55,11 +60,9 @@ impl WorthQueryGraphWorkAccessContextAffinity {
 }
 
 enum WorthQueryGraphWorkBasis {
-    Query {
-        identity: WorthQueryApplicationBasisIdentity,
-        product: crate::basis::WorthQueryProductObservationLease,
-        authorization_product: crate::basis::WorthQueryProductObservationLease,
-        port: WorthQueryGraphReadOwnerPort,
+    ProductRead {
+        intent: ProductReadIntent,
+        read: ProductReadBasis,
     },
     Mutation(Option<WorthQueryApplicationSnapshotLease>),
 }
@@ -193,7 +196,7 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> Option<&worth_relational::facade::snapshots::SnapshotHandle> {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease
                 .as_ref()
                 .map(WorthQueryApplicationSnapshotLease::snapshot),
@@ -205,7 +208,7 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Option<&crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle>
     {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease
                 .as_ref()
                 .map(WorthQueryApplicationSnapshotLease::handle),
@@ -216,7 +219,7 @@ impl WorthQueryManagedGraphWorkSession {
         &mut self,
     ) -> Option<WorthQueryApplicationSnapshotLease> {
         match &mut self.basis {
-            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease.take(),
         }
     }
@@ -225,7 +228,7 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> Option<&WorthQueryApplicationSnapshotLease> {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query { .. } => None,
+            WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(lease) => lease.as_ref(),
         }
     }
@@ -241,7 +244,7 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query { product, .. } => Some(product),
+            WorthQueryGraphWorkBasis::ProductRead { read, .. } => Some(&read.product),
             WorthQueryGraphWorkBasis::Mutation(lease) => {
                 lease.as_ref().map(|lease| lease.product().read_lease_ref())
             }
@@ -254,10 +257,7 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query {
-                authorization_product,
-                ..
-            } => Some(authorization_product),
+            WorthQueryGraphWorkBasis::ProductRead { read, .. } => Some(&read.authorization_product),
             WorthQueryGraphWorkBasis::Mutation(lease) => {
                 lease.as_ref().map(|lease| lease.product().read_lease_ref())
             }
@@ -299,7 +299,7 @@ impl WorthQueryManagedGraphWorkSession {
 
     fn retained_affinity_is_exact(&self) -> bool {
         let basis_branch = match &self.basis {
-            WorthQueryGraphWorkBasis::Query { identity, .. } => identity.branch_id(),
+            WorthQueryGraphWorkBasis::ProductRead { read, .. } => read.identity.branch_id(),
             WorthQueryGraphWorkBasis::Mutation(Some(lease)) => lease.snapshot().branch_id(),
             WorthQueryGraphWorkBasis::Mutation(None) => self.branch.relational(),
         };
@@ -322,8 +322,15 @@ impl WorthQueryManagedGraphWorkSession {
         &self,
     ) -> Option<&WorthQueryApplicationBasisIdentity> {
         match &self.basis {
-            WorthQueryGraphWorkBasis::Query { identity, .. } => Some(identity),
-            WorthQueryGraphWorkBasis::Mutation(_) => None,
+            WorthQueryGraphWorkBasis::ProductRead {
+                intent: ProductReadIntent::Query,
+                read,
+            } => Some(&read.identity),
+            WorthQueryGraphWorkBasis::ProductRead {
+                intent: ProductReadIntent::Resource(_),
+                ..
+            }
+            | WorthQueryGraphWorkBasis::Mutation(_) => None,
         }
     }
 
@@ -380,5 +387,6 @@ pub(in crate::domain_computation) enum WorthQueryManagedGraphReadDenial {
     ForeignBasis,
     ForeignGraph,
     ForeignReadProof,
+    ForeignReadIntent,
     TerminalReleaseMismatch,
 }

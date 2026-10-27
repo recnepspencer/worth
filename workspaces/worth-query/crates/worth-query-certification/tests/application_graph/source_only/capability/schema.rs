@@ -19,7 +19,7 @@ worth_query_application_contribution! {
     pub contribution CapabilityContribution in CapabilitySchema {
         identity: "capability-retention.application.v1",
         members: |schema| {
-            super::grants::declare(schema).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Document::reference())
+            super::resources::declare(super::grants::declare(schema)).entity(ExternalMapping::reference()).entity(Principal::reference()).entity(Document::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
                 .aspect(Principal::reference(), PrincipalFacts::reference()).aspect(Document::reference(), DocumentFacts::reference())
                 .field(ExternalMapping::reference(), ExternalIdentityField::reference()).field(ExternalMapping::reference(), MappingStatusField::reference())
@@ -40,6 +40,7 @@ worth_query_application_contribution! {
                 .application_mutation_binding::<super::workflow::bindings::StartBinding>()
                 .application_mutation_binding::<super::workflow::bindings::AdvanceBinding>().application_query_binding::<super::readback::ReadBinding>()
                 .application_query(super::readback::definition())
+                .application_resource(super::resources::definition())
         }
     }
 }

@@ -1,4 +1,6 @@
 //! Owning no-output publication, native unresolved postures, and independent close custody.
+#[path = "source_only/capability.rs"]
+mod capability;
 #[path = "source_only/fixture.rs"]
 mod fixture;
 #[path = "source_only/handler.rs"]

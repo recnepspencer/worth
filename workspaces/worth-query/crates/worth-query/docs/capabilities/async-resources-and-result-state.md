@@ -2,6 +2,9 @@
 
 > **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
 
+For declared application providers, finite process-local custody and fresh
+action/disclosure admission, use [application resources](application-resources.md).
+
 ## What This Feature Is
 
 Async capabilities let you declare that a Query artifact depends on resource or
@@ -61,13 +64,15 @@ modules translate the supported authoring and workspace audience only.
 
 The installed Bridge request-response profile currently uses initial
 supersession. Native's separately authored coalescing profile retains its shared
-winner and disposes only the new unused timeout. The raw Native-host legacy
-signature still cannot return a post-admission cleanup carrier; new Query/UI
-routes do not consume that stripping adapter. Its remaining compatibility
-limitation is not certified as a complete resource lifecycle.
+winner and disposes only the new unused timeout. Report-only initial admission,
+timeout, schedule, retry and revalidation forwarding alternatives have been
+removed in the application cutover. Native-only cancellation and immutable-witness
+retirement remain: they create no successor or new wake custody and do not attest
+to queue/provider cleanup. The existing genuine custodian retains those
+obligations. Lower Native kernels remain their original owners.
 See the [native source contract](../../../../../../crates/worth-runtime-world/README.md#owned-async-source-binding)
 and [compiled lifecycle courts](../../tests/installed_operating_world/product_owned_async.rs).
-The managed Decl/Host resource endpoint remains the separate Phase 8 requirement
+The installed managed Decl/Host resource endpoint is the separate Phase 8 capability
 in [milestone 9.18.1](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 
 Declaration-side authoring:

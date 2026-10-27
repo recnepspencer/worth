@@ -41,6 +41,30 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(crate) fn advance_owned_async_source_clock(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+        coordinate: u64,
+    ) -> Result<
+        worth_signal::facade::TemporalClockAdvanceSummary,
+        RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        let truth = self
+            .validate_owned_async_product(observation, relational_source)
+            .map_err(request_product_denial)?;
+        bridge
+            .advance_owned_async_source_clock(
+                declaration,
+                observation.basis().signal_basis(),
+                truth,
+                coordinate,
+            )
+            .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
+    }
+
     pub(crate) fn revalidate_managed_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -88,28 +112,6 @@ where
             .map_err(request_product_denial)?;
         bridge
             .admit_managed_owned_async_request_identity(
-                declaration,
-                observation.basis().signal_basis(),
-                truth_basis,
-            )
-            .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
-    }
-
-    pub(crate) fn admit_owned_async_request(
-        &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
-        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
-        observation: &ProductBranchObservation,
-        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        RuntimeWorldOwnedAsyncRequestAdmissionDenial,
-    > {
-        let truth_basis = self
-            .validate_owned_async_product(observation, relational_source)
-            .map_err(request_product_denial)?;
-        bridge
-            .admit_owned_async_request_identity(
                 declaration,
                 observation.basis().signal_basis(),
                 truth_basis,
@@ -167,38 +169,6 @@ where
                 truth,
             )
             .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
-    }
-
-    pub(crate) fn revalidate_owned_async_request(
-        &self,
-        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
-        request: &worth_runtime_bridge::facade::BridgeOwnedAsyncRequestAdmission,
-        observation: &ProductBranchObservation,
-        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
-    ) -> Result<
-        worth_runtime_bridge::facade::BridgeOwnedAsyncRevalidationAdmission,
-        RuntimeWorldOwnedAsyncRevalidationDenial,
-    > {
-        let truth_basis = self
-            .validate_owned_async_product(observation, relational_source)
-            .map_err(|denial| match denial {
-                RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
-                    RuntimeWorldOwnedAsyncRevalidationDenial::ForeignOwner
-                }
-                RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
-                    RuntimeWorldOwnedAsyncRevalidationDenial::RelationalSourceMismatch
-                }
-                RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
-                    RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource
-                }
-            })?;
-        bridge
-            .revalidate_owned_async_request(
-                request,
-                observation.basis().signal_basis(),
-                truth_basis,
-            )
-            .map_err(RuntimeWorldOwnedAsyncRevalidationDenial::Bridge)
     }
 
     fn validate_owned_async_product(
