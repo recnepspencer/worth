@@ -149,7 +149,7 @@ pub mod facade {
         WorthQueryInstalledApplicationCapabilityPlanSource,
     };
     pub use crate::application_operation::{
-        WorthQueryApplicationConditionalOperationBinding,
+        InstalledSourceDisclosureBinding, WorthQueryApplicationConditionalOperationBinding,
         WorthQueryApplicationOperationInstallationDenial,
         WorthQueryApplicationOperationInstallationDenialKind,
         WorthQueryCompiledApplicationOperationContracts,

@@ -23,6 +23,7 @@ pub struct ApplicationMutationDescriptionParts {
     pub output_roles: Vec<ApplicationMutationOutputRoleDescription>,
     pub output_role_families: Vec<ApplicationMutationOutputRoleFamilyDescription>,
     pub workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
+    pub inspection_disclosure: Option<super::super::DeclaredApplicationSourceDisclosure>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -92,5 +93,11 @@ impl ApplicationMutationDescription {
 
     pub fn output_role_families(&self) -> &[ApplicationMutationOutputRoleFamilyDescription] {
         &self.parts.output_role_families
+    }
+
+    pub fn inspection_disclosure(
+        &self,
+    ) -> Option<&super::super::DeclaredApplicationSourceDisclosure> {
+        self.parts.inspection_disclosure.as_ref()
     }
 }

@@ -14,6 +14,7 @@ mod invariant;
 mod mutation_description;
 mod operation;
 mod schema;
+mod source_disclosure;
 mod vocabulary;
 
 pub(super) fn require_encoding_contract(

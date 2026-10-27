@@ -19,6 +19,7 @@ mod installed_contract_support;
 mod operation_declaration_resolution;
 mod portable_contract_spine;
 mod precondition_contract;
+pub(crate) mod source_disclosure;
 
 #[cfg(test)]
 mod tests;
@@ -72,3 +73,4 @@ pub use installed_conditional::{
     WorthQueryInstalledApplicationConditionalOperation,
 };
 pub use precondition_contract::WorthQueryInstalledMutationPrecondition;
+pub use source_disclosure::InstalledSourceDisclosureBinding;

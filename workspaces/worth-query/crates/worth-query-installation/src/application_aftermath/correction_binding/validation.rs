@@ -39,13 +39,12 @@ pub(crate) fn resolve_correction_binding(
     let inverse = bindings
         .get(declaration.inverse().binding_identity().as_str())
         .ok_or_else(denied)?;
-    let disclosure = queries
-        .iter()
-        .find(|query| query.identity() == declaration.disclosure().parts().binding.as_str())
-        .ok_or_else(denied)?;
-    if !declaration.disclosure().matches_descriptor(disclosure)
-        || disclosure.scope().field() != source.scope().field()
-    {
+    let disclosure = crate::application_operation::source_disclosure::resolve_query(
+        declaration.disclosure(),
+        queries,
+    )
+    .ok_or_else(denied)?;
+    if disclosure.scope().field() != source.scope().field() {
         return Err(denied());
     }
     if declaration.source() != source.description()

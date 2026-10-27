@@ -95,6 +95,7 @@ pub struct ApplicationMutationBindingDescriptor {
     requires_workflow_authority: bool,
     workflow_control: bool,
     workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
+    inspection_disclosure: Option<super::super::source_disclosure::SourceDisclosureDescriptor>,
 }
 
 impl ApplicationMutationBindingDescriptor {
@@ -122,6 +123,7 @@ impl ApplicationMutationBindingDescriptor {
         requires_workflow_authority: bool,
         workflow_control: bool,
         workflow_execution_requirements: super::ApplicationWorkflowExecutionRequirements,
+        inspection_disclosure: Option<super::super::source_disclosure::SourceDisclosureDescriptor>,
     ) -> Self
     where
         Binding: 'static,
@@ -167,6 +169,9 @@ impl ApplicationMutationBindingDescriptor {
                     })
                     .collect(),
                 workflow_execution_requirements: workflow_execution_requirements.clone(),
+                inspection_disclosure: inspection_disclosure
+                    .as_ref()
+                    .map(|disclosure| disclosure.declaration.clone()),
             },
         );
         Self {
@@ -199,11 +204,24 @@ impl ApplicationMutationBindingDescriptor {
             requires_workflow_authority,
             workflow_control,
             workflow_execution_requirements,
+            inspection_disclosure,
         }
     }
 
     pub fn description(&self) -> &ApplicationMutationDescription {
         &self.description
+    }
+
+    pub fn inspection_disclosure(
+        &self,
+    ) -> Option<&super::super::DeclaredApplicationSourceDisclosure> {
+        self.description.inspection_disclosure()
+    }
+
+    pub fn inspection_disclosure_query_type(&self) -> Option<TypeId> {
+        self.inspection_disclosure
+            .as_ref()
+            .map(|value| value.query_type)
     }
 
     pub fn denial_binding_type(&self) -> TypeId {

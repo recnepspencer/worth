@@ -26,11 +26,26 @@ impl<Schema, Operation, Input, Scope>
             })
     }
 
+    /// Original disclosure parameters have a separate custody from correction input.
+    pub fn requires_original_source_capture(
+        &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+    ) -> bool {
+        self.requires_original_input_retention(access)
+            || !self
+                .read_set
+                .admission
+                .allowed_graph_contract()
+                .source_inspection_disclosures()
+                .is_empty()
+    }
+
     /// Keeps native immutable payload custody after the original request ends.
     /// The sealed handler proof prevents substitution of another input or binding.
     pub fn retain_original_mutation_input<Binding>(
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
@@ -39,10 +54,11 @@ impl<Schema, Operation, Input, Scope>
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
         Input: Send + Sync + 'static,
     {
-        if !self.requires_original_input_retention(access) {
+        if !self.requires_original_source_capture(access) {
             return Ok(self);
         }
-        self.retain_checked_input::<Binding>(access, runtime, input)
+        let retain_input = self.requires_original_input_retention(access);
+        self.retain_checked_input::<Binding>(access, phase, runtime, input, retain_input)
     }
 
     /// Keeps the performed inverse's actual input for retry, including an irreversible inverse.
@@ -50,6 +66,7 @@ impl<Schema, Operation, Input, Scope>
     pub fn retain_performed_correction_input<Binding>(
         self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
@@ -58,14 +75,16 @@ impl<Schema, Operation, Input, Scope>
         Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
         Input: Send + Sync + 'static,
     {
-        self.retain_checked_input::<Binding>(access, runtime, input)
+        self.retain_checked_input::<Binding>(access, phase, runtime, input, true)
     }
 
     fn retain_checked_input<Binding>(
         mut self,
         access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
+        retain_input: bool,
     ) -> Result<Self, WorthQueryApplicationAttemptDenial>
     where
         Schema: ApplicationSchema,
@@ -94,10 +113,41 @@ impl<Schema, Operation, Input, Scope>
                 "original correction scope was not retained by this admission owner",
             ));
         }
-        let correction = correction::capture::<Schema, Binding>(runtime, input.input())?;
-        self.read_set
+        let execution = phase
+            .execution_request_for(&runtime.product_runtime)
+            .map_err(|_| {
+                WorthQueryApplicationAttemptDenial::new(
+                    WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                    "original source capture",
+                )
+            })?;
+        if self
+            .read_set
             .admission
-            .retain_original_input::<Binding>(input, correction);
+            .original_inspection_disclosure()
+            .is_none()
+        {
+            let inspection =
+                crate::domain_computation::primary_graph::source_disclosure::capture_inspection::<
+                    Schema,
+                    Binding,
+                >(
+                    &execution,
+                    runtime,
+                    input.input(),
+                    self.read_set.admission.original_scope(),
+                )?;
+            self.read_set
+                .admission
+                .retain_original_inspection_disclosure(inspection);
+        }
+        if retain_input {
+            let correction =
+                correction::capture::<Schema, Binding>(&execution, runtime, input.input())?;
+            self.read_set
+                .admission
+                .retain_original_input::<Binding>(input, correction);
+        }
         Ok(self)
     }
 }

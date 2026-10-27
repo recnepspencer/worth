@@ -70,6 +70,9 @@ pub(in crate::application_operation) struct WorthQuerySealedOperationContractCom
     execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     external_effect: InstalledExternalEffectContract,
     aftermath: Option<WorthQueryInstalledAftermathContract>,
+    source_inspection_disclosures: Vec<
+        worth_query_declaration::facade::application_operation::DeclaredApplicationSourceDisclosure,
+    >,
     graph_reads: WorthQueryOperationGraphReadContract,
     touches: WorthQueryOperationTouchContract,
     emissions: WorthQueryOperationEmissionContract,
@@ -259,6 +262,19 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             execution_posture: self.execution_posture,
             external_effect: self.external_effect,
             aftermath,
+            source_inspection_disclosures: self
+                .members
+                .iter()
+                .filter_map(|member| match member {
+                    ApplicationSchemaMember::ApplicationMutation { description }
+                        if description.operation() == self.operation
+                            && description.input_identity().as_str() == self.input_type =>
+                    {
+                        description.inspection_disclosure().cloned()
+                    }
+                    _ => None,
+                })
+                .collect(),
             graph_reads,
             touches,
             emissions,

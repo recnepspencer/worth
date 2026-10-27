@@ -11,6 +11,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 mod handler_work;
 #[path = "optional_output_role/indexed_selection.rs"]
 mod indexed_selection;
+#[path = "optional_output_role/source_disclosure.rs"]
+mod source_disclosure;
 use crate::domain_computation::primary_graph::application_attempt::OutputRoleUse;
 use crate::domain_computation::primary_graph::application_entry::mutation::{
     HandlerResult, WorthQueryCompletedMutationCandidate,
