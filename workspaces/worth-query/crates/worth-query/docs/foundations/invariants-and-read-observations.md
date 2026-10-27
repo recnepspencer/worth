@@ -328,10 +328,15 @@ retain observations made before that stop.
 
 ## Current Limits
 
-The installed read view exposes declared fields and one-hop relations. It does
-not currently expose transitive closure, orbit/component identity or derived
-relations as proposed-state reads. These counts describe Query boundary
-operations, not storage-engine I/O, allocation, elapsed time or unique entities.
+The installed read view exposes declared fields, one-hop relations, complete
+walks and closures, and stored-relation orbits with persistent aggregate identity.
+See [invariant walks](invariant-walks.md) and the
+[orbit and lineage contracts](../modeling/relation-laws.md) for their exact
+reader, footprint, disclosure and retained-snapshot boundaries. Privileged
+snapshot lineage inspection does not supply a tracked publication dependency.
+Component identity and proposed-state derived-relation reads remain unfinished.
+These counts describe Query boundary operations, not storage-engine I/O,
+allocation, elapsed time or unique entities.
 
 The runnable observer example uses serial requests and one explicit edit per
 observation window. Concurrent applications must correlate their own diagnostic
@@ -340,6 +345,8 @@ windows; an event stream does not create invocation or publication authority.
 ## Related Docs
 
 - [Ordinary application entry](ordinary-application-front-door.md)
+- [Complete invariant walks and closures](invariant-walks.md)
+- [Relation laws, orbits and lineage](../modeling/relation-laws.md)
 - [Typed invariant refusal](../../../../../../docs/build-an-application.md#typed-refusal-from-installed-invariants)
 - [Program adoption](programs-and-adoption.md)
 - [Execution resources and managed runs](../domain-capabilities/execution-resource-admission-and-managed-runs.md)
