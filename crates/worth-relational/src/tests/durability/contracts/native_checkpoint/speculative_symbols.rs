@@ -39,12 +39,28 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
         .checkpoint
     };
     let before = decode(&before);
-    let after = decode(&after);
+    let mut after = decode(&after);
     // D7 retains abandoned identity frontiers. Decoding authenticates both
     // dictionary indices; their expanded meaning and commits stay unchanged.
     assert!(after.symbol_identity_frontier > before.symbol_identity_frontier);
     assert_eq!(before.symbol_table, after.symbol_table);
     assert_eq!(before.envelopes, after.envelopes);
+    assert_eq!(before.partition_images, after.partition_images);
+    assert_eq!(before.aspect_contracts, after.aspect_contracts);
+    assert_eq!(
+        before.branch_root_schema_images,
+        after.branch_root_schema_images
+    );
+    assert_eq!(before.index_definitions, after.index_definitions);
+    assert_eq!(before.lineage, after.lineage);
+    // Only D7's burned symbol and record identities may differ. Full equality
+    // also protects root images, coverage, schemas, and derived artifacts.
+    after.symbol_identity_frontier = before.symbol_identity_frontier;
+    after.record_identity.generation_high_water =
+        before.record_identity.generation_high_water.clone();
+    after.record_identity.reusable_slots = before.record_identity.reusable_slots.clone();
+    after.record_identity.append_frontiers = before.record_identity.append_frontiers.clone();
+    assert_eq!(before, after);
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");
     let published = capture();
