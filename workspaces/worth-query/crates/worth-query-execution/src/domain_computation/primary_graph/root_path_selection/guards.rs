@@ -7,7 +7,7 @@ pub(super) fn apply<E>(
     after_step: usize,
     frontier: &mut Frontier,
     ports: &mut RootPathReadPorts<'_, E>,
-    set_source: &mut Option<SourceFactsBuilder>,
+    selected: &mut RootPathSelectionBuilder,
 ) -> Result<(), RootPathReadDenial<E>> {
     for guard in path
         .guards()
@@ -17,6 +17,9 @@ pub(super) fn apply<E>(
         if frontier.is_empty() {
             break;
         }
+        selected
+            .admit_frontier_keys(basis.execution, frontier.len())
+            .map_err(|cause| RootPathReadDenial::native(guard.entity(), cause))?;
         let candidates = frontier.keys().copied().collect::<BTreeSet<_>>();
         let RootPathReadPorts {
             checkpoint,
@@ -28,7 +31,13 @@ pub(super) fn apply<E>(
             if prepared {
                 return Err(RootPathReadDenial::traversal(guard.field().as_str()));
             }
-            prepare_sources(basis, guard, frontier, set_source, observation)?;
+            prepare_sources(
+                basis,
+                guard,
+                frontier,
+                &mut selected.set_source,
+                observation,
+            )?;
             checkpoint(guard.field().as_str()).map_err(RootPathReadDenial::Adapter)?;
             prepared = true;
             Ok(())
@@ -56,7 +65,10 @@ fn prepare_sources<E>(
     observation: &mut dyn FnMut(RootPathReadObservation<'_>) -> Result<(), E>,
 ) -> Result<(), RootPathReadDenial<E>> {
     for (&entity, source) in frontier {
-        if !source.has_field(entity, guard.aspect(), guard.field()) {
+        if !source
+            .has_field(basis.execution, entity, guard.aspect(), guard.field())
+            .map_err(|cause| RootPathReadDenial::native(guard.entity(), cause))?
+        {
             observation(RootPathReadObservation::SourceRead {
                 subject: guard.entity(),
             })
@@ -74,7 +86,9 @@ fn prepare_sources<E>(
             )
             .map_err(|cause| RootPathReadDenial::source(guard.entity(), cause))?;
         if let Some(set_source) = &mut *set_source
-            && set_source.record_field(observed)
+            && set_source
+                .record_field(basis.execution, observed)
+                .map_err(|cause| RootPathReadDenial::native(guard.entity(), cause))?
         {
             observation(RootPathReadObservation::SourceCopy {
                 units: 1,

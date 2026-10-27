@@ -47,8 +47,9 @@ impl BridgeOwnedSignalRuntime {
             crate::source::map_owned_signal_report(
                 request.request().clone(),
                 validated.clone(),
-                report,
+                *report.report(),
             ),
+            report,
         ))
     }
 
@@ -77,10 +78,11 @@ impl BridgeOwnedSignalRuntime {
             })?;
         Ok(super::super::BridgeOwnedAsyncCompletionAdmission::new(
             &self.async_observation_authority,
-            crate::source::map_owned_signal_report(request, validated, report)
+            crate::source::map_owned_signal_report(request, validated, *report.report())
                 .from_owner_effects_indeterminate(
                 crate::source::BridgeAsyncEffectsIndeterminateCompletion::from_owner_observation(),
             ),
+            report,
         ))
     }
 

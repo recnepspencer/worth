@@ -41,7 +41,7 @@ pub struct BridgeOwnedSignalRuntime {
     pub(super) signal_graph_lifecycle_probe: worth_signal::facade::SignalGraphLifecycleProbe,
     pub(super) signal_services: Option<super::service_binding::BridgeSignalServiceBinding>,
     pub(super) async_declarations:
-        RwLock<BTreeMap<Arc<str>, crate::facade::LoweredBridgeAsyncSourceDeclaration>>,
+        RwLock<BTreeMap<Arc<str>, super::owned_async::BridgeInstalledOwnedAsyncDeclaration>>,
     pub(super) async_observation_authority: Arc<()>,
     pub(super) conditional_lowerings:
         Arc<RwLock<super::lowering_registry::BridgeConditionalLoweringRegistry>>,

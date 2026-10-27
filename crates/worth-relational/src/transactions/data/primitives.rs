@@ -45,6 +45,8 @@ impl WorkerIntentBatch {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+/// A typed physical record identity. Its domain stays distinct; the value
+/// alone confers no read, allocation or mutation authority.
 pub enum RecordRef {
     Entity(EntityId),
     Relation(RelationId),

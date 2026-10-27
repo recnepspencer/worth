@@ -24,7 +24,7 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
         .unwrap();
     let relations = read
         .relations()
-        .into_iter()
+        .iter()
         .filter(|edge| edge.kind.kind_id == KindId(5))
         .map(|edge| RelationalRelationMaterialization {
             relation_id: edge.relation_id,

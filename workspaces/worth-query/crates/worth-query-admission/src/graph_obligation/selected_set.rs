@@ -12,6 +12,7 @@ use super::WorthQueryGraphObligationSelectionCounters;
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryGraphWorkIntentKind {
     ApplicationQueryRead,
+    ResourceRead,
     ApplicationOperationRead,
     ApplicationOperationMutation,
 }
@@ -22,6 +23,11 @@ pub struct WorthQueryGraphWorkIntent {
 }
 
 impl WorthQueryGraphWorkIntent {
+    pub const fn resource_read() -> Self {
+        Self {
+            kind: WorthQueryGraphWorkIntentKind::ResourceRead,
+        }
+    }
     pub const fn application_query_read() -> Self {
         Self {
             kind: WorthQueryGraphWorkIntentKind::ApplicationQueryRead,
@@ -81,6 +87,7 @@ pub(super) enum SelectedInstalledGraphObligations {
     Owned(WorthQueryInstalledGraphObligationSet),
     Shared(WorthQueryRetainedApplicationQueryGraphObligations),
     PreparedOperation(Arc<WorthQueryInstalledGraphObligationSet>),
+    PreparedResource(Arc<WorthQueryInstalledGraphObligationSet>),
 }
 
 impl SelectedInstalledGraphObligations {
@@ -88,7 +95,7 @@ impl SelectedInstalledGraphObligations {
         match self {
             Self::Owned(installed) => installed,
             Self::Shared(installed) => installed.installed_set(),
-            Self::PreparedOperation(installed) => installed,
+            Self::PreparedOperation(installed) | Self::PreparedResource(installed) => installed,
         }
     }
 }

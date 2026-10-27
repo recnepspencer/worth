@@ -363,3 +363,5 @@ impl PersistedDurableCheckpointFile {
 
 mod text_wire;
 pub(crate) use text_wire::CheckpointFileWire;
+
+pub(crate) use text_wire::inspect as inspect_checkpoint;

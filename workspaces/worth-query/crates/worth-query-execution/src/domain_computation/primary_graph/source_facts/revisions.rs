@@ -24,6 +24,38 @@ pub(in crate::domain_computation) struct WorthQueryObservedAdjacencyRevision {
     pub(in crate::domain_computation::primary_graph) endpoints: Vec<EntityId>,
 }
 
+impl WorthQueryObservedFieldRevision {
+    pub(in crate::domain_computation::primary_graph) fn owned_capacity_bytes(&self) -> usize {
+        let Self {
+            entity: _entity,
+            entity_name,
+            aspect,
+            field,
+            contract_revision: _contract_revision,
+            native_revision: _native_revision,
+        } = self;
+        entity_name
+            .capacity()
+            .saturating_add(aspect.owned_allocation_capacity_bytes())
+            .saturating_add(field.owned_allocation_capacity_bytes())
+    }
+}
+impl WorthQueryObservedAdjacencyRevision {
+    pub(in crate::domain_computation::primary_graph) fn owned_capacity_bytes(&self) -> usize {
+        let Self {
+            anchor: _anchor,
+            relation_kind: _relation_kind,
+            direction: _direction,
+            native_revision: _native_revision,
+            comparison_work_limit: _comparison_work_limit,
+            endpoints,
+        } = self;
+        endpoints
+            .capacity()
+            .saturating_mul(std::mem::size_of::<EntityId>())
+    }
+}
+
 impl Ord for WorthQueryObservedAdjacencyRevision {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         (

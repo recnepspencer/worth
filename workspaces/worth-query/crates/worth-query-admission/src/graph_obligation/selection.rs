@@ -61,6 +61,9 @@ fn validate_subject(
         WorthQueryGraphWorkIntentKind::ApplicationQueryRead => {
             WorthQueryInstalledGraphObligationSubjectKind::ApplicationQuery
         }
+        WorthQueryGraphWorkIntentKind::ResourceRead => {
+            WorthQueryInstalledGraphObligationSubjectKind::ApplicationResource
+        }
         WorthQueryGraphWorkIntentKind::ApplicationOperationRead
         | WorthQueryGraphWorkIntentKind::ApplicationOperationMutation => {
             WorthQueryInstalledGraphObligationSubjectKind::ApplicationOperation
@@ -80,6 +83,7 @@ fn validate_effect_posture(
             Err(DenialKind::MutationAuthorityRequired)
         }
         WorthQueryGraphWorkIntentKind::ApplicationQueryRead
+        | WorthQueryGraphWorkIntentKind::ResourceRead
         | WorthQueryGraphWorkIntentKind::ApplicationOperationRead
             if has_mutation =>
         {

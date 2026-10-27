@@ -119,7 +119,7 @@ pub(super) fn row(
     let relation = projection
         .exact_relation_metadata(entry.relation_id())
         .map_err(|_| Denial::ExactBasisRequired)?
-        .ok_or_else(&corrupt)?;
+        .ok_or_else(corrupt)?;
     let (parent, child) = match parent_endpoint {
         RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
         RelatedEntityEndpoint::TargetParent => (relation.target, relation.source),
@@ -140,7 +140,7 @@ pub(super) fn row(
     let actual_child = projection
         .with_exact_entity_state(child, |metadata, _| metadata)
         .map_err(|_| Denial::ExactBasisRequired)?
-        .ok_or_else(&corrupt)?;
+        .ok_or_else(corrupt)?;
     if actual_child.kind_id != *child_kind {
         return Err(corrupt());
     }

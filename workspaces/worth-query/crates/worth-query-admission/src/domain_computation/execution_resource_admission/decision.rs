@@ -57,3 +57,9 @@ impl WorthQueryExecutionResourceAdmissionDenial {
         self.counters
     }
 }
+
+impl worth_execution::ChargedBytes for WorthQueryExecutionResourceAdmissionDenial {
+    fn additional_charged_bytes(&self) -> u64 {
+        u64::try_from(self.detail.capacity()).unwrap_or(u64::MAX)
+    }
+}

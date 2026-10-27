@@ -164,14 +164,50 @@ pub(crate) fn persisted_runtime_with_declared_aspect_schema(
 }
 
 pub(crate) fn unique_test_store_path(prefix: &str) -> PathBuf {
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let counter = TEST_STORE_COUNTER.fetch_add(1, Ordering::Relaxed);
-    let path = std::env::temp_dir().join(format!("{prefix}-{nanos}-{counter}"));
-    let _ = fs::remove_dir_all(&path);
-    path
+    for _ in 0..64 {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let counter = TEST_STORE_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let parent =
+            std::env::temp_dir().join(format!("{prefix}-{}-{nanos}-{counter}", std::process::id()));
+        match claim_store_path(&parent) {
+            Ok(Some(path)) => return path,
+            Ok(None) => continue,
+            Err(error) => panic!("cannot reserve store fixture {}: {error}", parent.display()),
+        }
+    }
+    panic!("store fixture namespace exhausted for {prefix}");
+}
+
+/// Atomically own the parent; callers still receive an absent store path.
+/// A colliding fixture or earlier process's directory is never erased.
+fn claim_store_path(parent: &std::path::Path) -> std::io::Result<Option<PathBuf>> {
+    match fs::create_dir(parent) {
+        Ok(()) => Ok(Some(parent.join("store"))),
+        Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
+#[test]
+fn existing_store_namespaces_are_preserved_and_new_store_paths_start_absent() {
+    let first = unique_test_store_path("worth-relational-namespace-court");
+    let parent = first.parent().unwrap();
+    let marker = parent.join("owned-marker");
+    fs::write(&marker, b"another fixture owns this namespace").unwrap();
+    assert!(claim_store_path(parent).unwrap().is_none());
+    assert_eq!(
+        fs::read(&marker).unwrap(),
+        b"another fixture owns this namespace"
+    );
+    let second = unique_test_store_path("worth-relational-namespace-court");
+    assert_ne!(first, second);
+    assert!(!first.exists());
+    assert!(!second.exists());
+    fs::remove_dir_all(parent).unwrap();
+    fs::remove_dir_all(second.parent().unwrap()).unwrap();
 }
 
 pub(crate) fn runtime_with_test_schema_and_chunks(

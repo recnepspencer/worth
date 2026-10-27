@@ -2,7 +2,7 @@
 //! every fresh-preparing lane resolves its key in the World's placement first,
 //! and only a miss opens the funded call, whose refusal is the original one.
 use std::num::NonZeroUsize;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
@@ -307,73 +307,9 @@ fn the_requests_own_refusal_answers_before_the_funded_opening() {
     );
 }
 
-const REPLAY_SAMPLES: usize = 15;
-
-/// A host whose history records `population` committed keys, the first of
-/// which the court replays.
-fn populated(population: u64) -> DocumentRetentionRuntime<RetentionProgramP0> {
-    let host = publish_on_first_program();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    for offset in 0..population {
-        let key = 0x5e92_0000 + offset;
-        let (committed, _) = host
-            .runtime()
-            .request(&principal, &scope)
-            .on_branch(host.current_world())
-            .advanced()
-            .mutate(SetRetentionIntent {
-                input: SetRetentionInput {
-                    identity: DOCUMENT_IDENTITY.to_owned(),
-                    // Alternate the value so every key records a real change.
-                    retention_days: RETENTION + offset % 2,
-                },
-            })
-            .without_source()
-            .idempotency(&key)
-            .execute_in_program_report(&host, Policy::SystemAllocation)
-            .into_parts();
-        assert!(matches!(
-            committed.expect("each population key commits"),
-            Outcome::Committed { .. }
-        ));
-    }
-    host
-}
-
-/// One replay of the oldest recorded key under a stopped lease, timed.
-fn timed_replay(
-    host: &DocumentRetentionRuntime<RetentionProgramP0>,
-    stopped: &ExecutionResourceLease<'_>,
-) -> Duration {
-    let scope = request_scope();
-    let principal = authenticate_operator(host.installed_schema(), &scope);
-    let request = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .advanced()
-        .mutate(SetRetentionIntent {
-            input: SetRetentionInput {
-                identity: DOCUMENT_IDENTITY.to_owned(),
-                retention_days: RETENTION,
-            },
-        })
-        .without_source();
-    let key = 0x5e92_0000;
-    let started = Instant::now();
-    let (replay, work) = request
-        .idempotency(&key)
-        .execute_in_program_report(host, Policy::Execution(stopped))
-        .into_parts();
-    let elapsed = started.elapsed();
-    assert!(matches!(
-        replay.expect("the oldest recorded key replays"),
-        Outcome::AlreadyCommitted(_) | Outcome::PreviouslyCommitted(_)
-    ));
-    assert_eq!(work, WorthQueryMutationHandlerWork::NotStarted);
-    elapsed
-}
+#[path = "recorded_replay_ordering/growth.rs"]
+mod growth;
+use growth::{populated, timed_replay, REPLAY_SAMPLES};
 
 /// A growth class, not a count: thirty-two times the recorded outcomes must
 /// not make the World-side pre-admission step grow with them. Samples of the

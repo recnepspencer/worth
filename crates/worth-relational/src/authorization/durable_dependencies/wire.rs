@@ -72,7 +72,7 @@ impl RelationalAuthorizationDurableDependencies {
         if !wire.len().is_multiple_of(2) || wire.is_empty() {
             return Err(Denial::MalformedWire);
         }
-        for pair in wire.as_bytes().chunks_exact(2) {
+        for pair in wire.as_bytes().as_chunks::<2>().0 {
             check_live(execution)?;
             nibble(pair[0]).ok_or(Denial::MalformedWire)?;
             nibble(pair[1]).ok_or(Denial::MalformedWire)?;
@@ -80,7 +80,7 @@ impl RelationalAuthorizationDurableDependencies {
         let mut bytes =
             ExecutionByteBuffer::allocate(wire.len() / 2, execution.allocation_policy())
                 .map_err(Denial::Allocation)?;
-        for pair in wire.as_bytes().chunks_exact(2) {
+        for pair in wire.as_bytes().as_chunks::<2>().0 {
             check_live(execution)?;
             bytes
                 .extend_from_slice(&[(nibble(pair[0]).ok_or(Denial::MalformedWire)? << 4)

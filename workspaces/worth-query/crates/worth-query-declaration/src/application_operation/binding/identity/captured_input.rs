@@ -36,6 +36,70 @@ pub enum ApplicationCanonicalInputScalar<'a> {
     /// Exact captured representation, not admitted Decimal/domain validity.
     DecimalText(&'a str),
 }
+impl ApplicationCanonicalInputScalar<'_> {
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        match self {
+            Self::Inline(value) => value.owned_allocation_capacity_bytes(),
+            Self::Text(value) | Self::DecimalText(value) => value.len(),
+        }
+    }
+    pub fn into_value(self) -> AspectValue {
+        match self {
+            Self::Inline(value) => value,
+            Self::Text(value) => {
+                AspectValue::String(InternedString::Raw(String::from(Box::<str>::from(value))))
+            }
+            Self::DecimalText(value) => {
+                AspectValue::Decimal(CanonicalDecimal::new(String::from(Box::<str>::from(value))))
+            }
+        }
+    }
+}
+
+pub(super) struct EncodedInputIdentity {
+    pub(super) canonical: ApplicationCanonicalIdentity,
+    pub(super) capture: Option<ApplicationCanonicalInput>,
+}
+impl EncodedInputIdentity {
+    pub(super) fn identity(&self) -> [u8; 32] {
+        self.canonical.identity()
+    }
+    pub(super) fn work(&self) -> ApplicationCanonicalWork {
+        self.canonical.work()
+    }
+}
+
+impl ApplicationCanonicalInput {
+    pub fn encoded_byte_length(&self) -> usize {
+        self.bytes.len() - self.value_offset
+    }
+    pub(super) fn new(bytes: Vec<u8>, value_offset: usize) -> Self {
+        Self {
+            bytes: Arc::new(bytes),
+            value_offset,
+        }
+    }
+
+    /// Selects from the original serialized record, never from the live Rust
+    /// object. Unsupported or ambiguous representations deny, not coerce.
+    pub fn scalar_member(
+        &self,
+        member: &str,
+        family: ScalarAspectType,
+    ) -> Result<ApplicationCanonicalInputScalar<'_>, ApplicationCanonicalInputDenial> {
+        scalar_record::select(&self.bytes[self.value_offset..], member, family)
+    }
+
+    /// Selects one serialized Option of a scalar. None is absence, not a missing
+    /// record member; nested options and bare scalar members are refused.
+    pub fn optional_scalar_member(
+        &self,
+        member: &str,
+        family: ScalarAspectType,
+    ) -> Result<Option<ApplicationCanonicalInputScalar<'_>>, ApplicationCanonicalInputDenial> {
+        scalar_record::select_optional(&self.bytes[self.value_offset..], member, family)
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -120,69 +184,5 @@ mod tests {
             captured.scalar_member("measure", ScalarAspectType::Float32),
             Err(super::ApplicationCanonicalInputDenial::InvalidScalar)
         ));
-    }
-}
-impl ApplicationCanonicalInputScalar<'_> {
-    pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        match self {
-            Self::Inline(value) => value.owned_allocation_capacity_bytes(),
-            Self::Text(value) | Self::DecimalText(value) => value.len(),
-        }
-    }
-    pub fn into_value(self) -> AspectValue {
-        match self {
-            Self::Inline(value) => value,
-            Self::Text(value) => {
-                AspectValue::String(InternedString::Raw(String::from(Box::<str>::from(value))))
-            }
-            Self::DecimalText(value) => {
-                AspectValue::Decimal(CanonicalDecimal::new(String::from(Box::<str>::from(value))))
-            }
-        }
-    }
-}
-
-pub(super) struct EncodedInputIdentity {
-    pub(super) canonical: ApplicationCanonicalIdentity,
-    pub(super) capture: Option<ApplicationCanonicalInput>,
-}
-impl EncodedInputIdentity {
-    pub(super) fn identity(&self) -> [u8; 32] {
-        self.canonical.identity()
-    }
-    pub(super) fn work(&self) -> ApplicationCanonicalWork {
-        self.canonical.work()
-    }
-}
-
-impl ApplicationCanonicalInput {
-    pub fn encoded_byte_length(&self) -> usize {
-        self.bytes.len() - self.value_offset
-    }
-    pub(super) fn new(bytes: Vec<u8>, value_offset: usize) -> Self {
-        Self {
-            bytes: Arc::new(bytes),
-            value_offset,
-        }
-    }
-
-    /// Selects from the original serialized record, never from the live Rust
-    /// object. Unsupported or ambiguous representations deny, not coerce.
-    pub fn scalar_member(
-        &self,
-        member: &str,
-        family: ScalarAspectType,
-    ) -> Result<ApplicationCanonicalInputScalar<'_>, ApplicationCanonicalInputDenial> {
-        scalar_record::select(&self.bytes[self.value_offset..], member, family)
-    }
-
-    /// Selects one serialized Option of a scalar. None is absence, not a missing
-    /// record member; nested options and bare scalar members are refused.
-    pub fn optional_scalar_member(
-        &self,
-        member: &str,
-        family: ScalarAspectType,
-    ) -> Result<Option<ApplicationCanonicalInputScalar<'_>>, ApplicationCanonicalInputDenial> {
-        scalar_record::select_optional(&self.bytes[self.value_offset..], member, family)
     }
 }

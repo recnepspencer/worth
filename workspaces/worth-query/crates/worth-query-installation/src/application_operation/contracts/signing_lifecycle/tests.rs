@@ -155,7 +155,10 @@ fn path_only_subject_writes_compile_lifecycle_consequences_but_audit_context_doe
     let f = Fixture::new();
     let subject = f.derive(Role::Subject, std::num::NonZeroUsize::new(3));
     assert_eq!(subject.rules.len(), 1);
-    assert_eq!(subject.rules[0].subjects(), [f.source.field.clone()]);
+    assert_eq!(
+        subject.rules[0].subjects(),
+        std::slice::from_ref(&f.source.field)
+    );
     assert_eq!(subject.rules[0].maximum_subjects(), Some(3));
     assert_eq!(
         f.derive(Role::Subject, None).rules[0].maximum_subjects(),

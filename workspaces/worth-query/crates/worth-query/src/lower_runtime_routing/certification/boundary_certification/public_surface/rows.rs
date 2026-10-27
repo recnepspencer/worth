@@ -285,7 +285,7 @@ pub(super) const PUBLIC_SURFACE_ROWS: &[WorthQueryLowerRuntimePublicSurfaceRow] 
     WorthQueryLowerRuntimePublicSurfaceRow::new(
         WorthQueryLowerRuntimeSeamKey::CausalBridgeMaterialization,
         "causal bridge materialization adapter",
-        "crates/worth-query/src/runtime/inspection/causal/builder_bridge.rs",
+        "crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/builder_bridge.rs",
         WorthQueryLowerRuntimePublicSurfaceKind::AllowedBoundaryAdapter,
         "causal inspection bridge materialization remains a declared Query boundary adapter",
     ),

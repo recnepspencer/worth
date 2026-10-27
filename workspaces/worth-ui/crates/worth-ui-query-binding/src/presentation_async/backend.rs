@@ -3,10 +3,14 @@
 use worth_query::facade::{foundation, runtime};
 use worth_runtime_bridge::facade::{RuntimeBridge, RuntimeBridgeBuilder};
 
+mod source;
+
 pub(super) fn configure(
     builder: runtime::WorthQueryRuntimeBuilder,
-) -> runtime::WorthQueryRuntimeBuilder {
-    presentation_consumer_support(builder)
+) -> Result<runtime::WorthQueryRuntimeBuilder, super::WorthUiPresentationAsyncInstallationError> {
+    let source = source::initialize()?;
+    Ok(presentation_consumer_support(builder)
+        .relational_runtime(source)
         .relational_product_bridge("worth-ui-presentation-async", presentation_bridge)
         .schema_adapter(PresentationSchema)
         .source_adapter(PresentationSource)
@@ -17,7 +21,7 @@ pub(super) fn configure(
         .preview_basis(PresentationPreviewDenial)
         .inspector_evidence(PresentationInspectionDenial)
         .support_profile(presentation_support_profile())
-        .build_backend_from_parts()
+        .build_backend_from_parts())
 }
 
 fn presentation_consumer_support(

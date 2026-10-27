@@ -8,11 +8,23 @@ use crate::facade::{
 use super::super::BridgeOwnedSignalRuntime;
 use super::BridgeOwnedAsyncRequestResponseDeclaration;
 
+pub(in crate::conditional_execution) struct BridgeInstalledOwnedAsyncDeclaration {
+    pub(super) lowered: LoweredBridgeAsyncSourceDeclaration,
+    pub(super) queue_capacity: Option<std::num::NonZeroU64>,
+    pub(super) process_local_retention: bool,
+}
+
 impl BridgeOwnedSignalRuntime {
     pub(in crate::conditional_execution) fn install_owned_async_request_response(
         &mut self,
         declaration: BridgeOwnedAsyncRequestResponseDeclaration,
     ) -> Result<LoweredBridgeAsyncSourceDeclaration, BridgeAsyncSourceDeclarationRejection> {
+        if declaration.process_local_retention && declaration.managed_queue_capacity.is_none() {
+            return Err(BridgeAsyncSourceDeclarationRejection::new(
+                crate::facade::BridgeAsyncSourceDeclarationRejectionKind::SignalDeclarationRejected,
+                "process-local resource retention requires an installed managed queue",
+            ));
+        }
         if self
             .async_declarations
             .get_mut()
@@ -42,7 +54,7 @@ impl BridgeOwnedSignalRuntime {
                 error.to_string(),
             )
                 })?;
-        let resource = worth_signal::facade::ResourceNodeDeclaration::new(
+        let mut resource = worth_signal::facade::ResourceNodeDeclaration::new(
             worth_signal::facade::ResourceNodeId::from_node(node),
             worth_signal::facade::ResourcePayloadContract::new(
                 worth_signal::facade::ResourcePayloadContractId::new(declaration.payload_contract),
@@ -59,6 +71,11 @@ impl BridgeOwnedSignalRuntime {
             worth_signal::facade::ResourceTimeoutPolicyDeclaration::PerAttemptTimeout { timeout },
         )
         .with_retry_max_attempts(declaration.retry_max_attempts);
+        if declaration.process_local_retention {
+            resource = resource.with_retention_policy(
+                worth_signal::facade::ResourceRetentionPolicyDeclaration::TerminalSummariesOnly,
+            );
+        }
         let draft = BridgeAsyncSourceDeclarationDraft::request_response(
             crate::facade::BridgeAsyncSourceDeclarationIdentity::admit_bridge_owned(
                 declaration.identity.clone(),
@@ -105,7 +122,14 @@ impl BridgeOwnedSignalRuntime {
         self.async_declarations
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(declaration.identity, lowered.clone());
+            .insert(
+                declaration.identity,
+                BridgeInstalledOwnedAsyncDeclaration {
+                    lowered: lowered.clone(),
+                    queue_capacity: declaration.managed_queue_capacity,
+                    process_local_retention: declaration.process_local_retention,
+                },
+            );
         Ok(lowered)
     }
 
@@ -117,7 +141,19 @@ impl BridgeOwnedSignalRuntime {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .get(identity)
-            .cloned()
+            .map(|installed| installed.lowered.clone())
+    }
+
+    pub(super) fn owned_async_queue_capacity(
+        &self,
+        lowered: &LoweredBridgeAsyncSourceDeclaration,
+    ) -> Option<std::num::NonZeroU64> {
+        self.async_declarations
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(lowered.declaration_identity().as_str())
+            .filter(|installed| installed.lowered == *lowered)
+            .and_then(|installed| installed.queue_capacity)
     }
 
     pub fn owned_async_declaration_count(&self) -> usize {
@@ -125,5 +161,18 @@ impl BridgeOwnedSignalRuntime {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .len()
+    }
+
+    pub(super) fn owned_async_uses_process_local_retention(
+        &self,
+        lowered: &LoweredBridgeAsyncSourceDeclaration,
+    ) -> bool {
+        self.async_declarations
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(lowered.declaration_identity().as_str())
+            .is_some_and(|installed| {
+                installed.lowered == *lowered && installed.process_local_retention
+            })
     }
 }

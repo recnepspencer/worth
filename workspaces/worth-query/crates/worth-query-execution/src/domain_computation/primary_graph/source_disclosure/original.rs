@@ -1,39 +1,25 @@
-//! One immutable query/parameter payload and its original funded backing.
-use std::sync::Arc;
-use worth_execution::ExecutionMemoryReservation;
-use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
-use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
+//! Source disclosure associates the sole funded parameter capture with its source.
+use super::super::application_query::CapturedApplicationQueryParameters;
 
-pub(in crate::domain_computation) struct OriginalSourceDisclosure {
-    query: WorthQueryInstalledApplicationQueryIdentity,
-    parameters: Arc<WorthQueryAdmittedApplicationQueryParameters>,
-    // Last to drop: parameters cannot outlive their original reservation.
-    _funding: Option<ExecutionMemoryReservation>,
-}
+pub(in crate::domain_computation) struct OriginalSourceDisclosure(
+    CapturedApplicationQueryParameters,
+);
 
 impl OriginalSourceDisclosure {
-    pub(super) fn captured(
-        query: WorthQueryInstalledApplicationQueryIdentity,
-        parameters: WorthQueryAdmittedApplicationQueryParameters,
-        funding: Option<ExecutionMemoryReservation>,
-    ) -> Self {
-        Self {
-            query,
-            parameters: Arc::new(parameters),
-            _funding: funding,
-        }
+    pub(super) fn captured(parameters: CapturedApplicationQueryParameters) -> Self {
+        Self(parameters)
     }
     pub(in crate::domain_computation) fn query(
         &self,
-    ) -> &WorthQueryInstalledApplicationQueryIdentity {
-        &self.query
+    ) -> &worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity {
+        self.0.query()
     }
     pub(in crate::domain_computation) fn parameters(
         &self,
-    ) -> &WorthQueryAdmittedApplicationQueryParameters {
-        &self.parameters
+    ) -> &worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters{
+        self.0.parameters()
     }
     pub(in crate::domain_computation) fn same_capture(&self, other: &Self) -> bool {
-        self.query == other.query && Arc::ptr_eq(&self.parameters, &other.parameters)
+        self.0.same_capture(&other.0)
     }
 }

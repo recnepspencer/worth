@@ -240,6 +240,7 @@ mod tests {
                     aspects: Vec::new(),
                     adjacencies: vec![adjacency.clone()],
                     walks: None,
+                    allocation: None,
                 },
                 None,
             ))),

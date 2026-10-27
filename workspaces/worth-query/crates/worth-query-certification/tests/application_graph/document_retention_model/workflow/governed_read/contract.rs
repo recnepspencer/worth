@@ -11,9 +11,21 @@ where
         InputBinding = WorkflowReadInputBinding,
     >,
 {
+    for_input(cap, op, C::ACTION)
+}
+
+pub(super) fn for_input<C, O, Input>(
+    cap: ApplicationCapabilityRef<DocumentRetentionSchema, C>,
+    op: ApplicationOperationRef<DocumentRetentionSchema, O, Input>,
+    action: &str,
+) -> ApplicationCapabilityContract<DocumentRetentionSchema, C, O, Input>
+where
+    O: ApplicationOperationMarkerIdentity<DocumentRetentionSchema>,
+    O::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
     ApplicationCapabilityContractBuilder::new(cap,op,WorkflowAuthoringGrant::reference())
     .target(ApplicationCapabilityTargetDefinition::new(
-        ApplicationCapabilityValueBinding::new(WorkflowGrantActionField::reference(),encoded(C::ACTION.to_owned())),
+        ApplicationCapabilityValueBinding::new(WorkflowGrantActionField::reference(),encoded(action.to_owned())),
         ApplicationCapabilityRelationBinding::from_reference(WorkflowGrantResource::reference()),
         ApplicationCapabilityRelationDimension::not_applicable(),ApplicationCapabilityFieldDimension::not_applicable(),
         ApplicationCapabilityValueBinding::new(WorkflowGrantPurposeField::reference(),encoded("reviewed-document".to_owned()))))

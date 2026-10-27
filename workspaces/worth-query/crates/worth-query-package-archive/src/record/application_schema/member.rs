@@ -21,6 +21,9 @@ mod operation;
 mod projected_member_domain;
 mod relation_aspect;
 mod relation_graph;
+mod resource;
+mod resource_value;
+
 mod schema;
 mod source_disclosure;
 mod vocabulary;
@@ -44,6 +47,9 @@ pub(super) fn require_encoding_contract(
     maximum_depth: u32,
 ) -> Result<(), Denial> {
     require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
     if matches!(
         member,
         ApplicationSchemaMember::OperationComponentRead { .. }
@@ -82,6 +88,9 @@ pub(super) fn write(
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
     require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
     output.u16(member_tag(member))?;
     match member {
         ApplicationSchemaMember::DerivedComponentSet { definition } => {
@@ -100,6 +109,9 @@ pub(super) fn write(
         }
         ApplicationSchemaMember::ComponentSet { definition } => {
             component_set::write(output, definition)
+        }
+        ApplicationSchemaMember::ApplicationResource { definition } => {
+            resource::write(output, definition)
         }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
@@ -158,6 +170,9 @@ pub(super) fn decode(
         45 => inspection::decode(input, budget),
         44 => projected_member_domain::decode(input, budget),
         tag @ 41..=43 => derived_relation::decode(tag, input, budget),
+        39 => resource::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationResource { definition }),
+
         36 => history::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
         37 => relation_aspect::decode(input, budget)
@@ -191,6 +206,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::DerivedComponentSet { .. } => 46,
         ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
+        ApplicationSchemaMember::ApplicationResource { .. } => 39,
+
         ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
         ApplicationSchemaMember::RelationAspect { .. } => 37,
         ApplicationSchemaMember::OperationComponentRead { .. } => 40,

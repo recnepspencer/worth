@@ -40,32 +40,6 @@ struct RetryScheduleEligibilityDenial {
 }
 
 impl ResourceRuntimeState {
-    pub fn pending_retry_wake_for_handle(
-        &self,
-        handle: ResourceRequestHandle,
-    ) -> Option<TemporalWakeId> {
-        self.pending_retry_by_request
-            .get(&handle.request_id())
-            .filter(|scheduled| scheduled.previous() == handle)
-            .map(|scheduled| scheduled.backoff_wake_id())
-    }
-    pub fn pending_retry_wake_for_node(&self, node: ResourceNodeId) -> Option<TemporalWakeId> {
-        self.pending_retry_by_node
-            .get(&node)
-            .map(|scheduled| scheduled.backoff_wake_id())
-    }
-    pub fn clear_pending_retry_for_node(
-        &mut self,
-        node: ResourceNodeId,
-    ) -> Option<ScheduledResourceRetry> {
-        let scheduled = self.pending_retry_by_node.remove(&node)?;
-        self.pending_retry_by_request
-            .remove(&scheduled.previous().request_id());
-        self.pending_retry_by_wake
-            .remove(&scheduled.backoff_wake_id());
-        self.retain_retry_lineage(node, scheduled.clone());
-        Some(scheduled)
-    }
     pub fn schedule_resource_retry(
         &mut self,
         handle: ResourceRequestHandle,

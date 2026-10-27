@@ -110,6 +110,15 @@ fn append_rule(
             entries.push(text(format!("{path}.components.{key}"), value))
         });
     }
+    if let crate::application_query::ApplicationQueryDisclosureSelector::Resource(meaning) =
+        selector
+    {
+        entries.extend([
+            text(format!("{path}.kind"), "resource"),
+            text(format!("{path}.resource"), meaning.resource_type()),
+            text(format!("{path}.facet"), meaning.facet().name()),
+        ]);
+    }
     for (index, surface) in rule.influence().permitted().enumerate() {
         entries.push(text(
             format!("{path}.influence[{index}]"),

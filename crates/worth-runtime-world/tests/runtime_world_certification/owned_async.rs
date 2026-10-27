@@ -1,10 +1,36 @@
+#[path = "owned_async/native_service.rs"]
+mod native_service;
+
+#[path = "owned_async/managed_replacement.rs"]
+mod managed_replacement;
+
+#[path = "owned_async/native_replacement.rs"]
+mod native_replacement;
+
 #[path = "owned_async/fixture.rs"]
 mod fixture;
+
+#[path = "owned_async/managed.rs"]
+mod managed;
+
+#[path = "owned_async/service_affinity.rs"]
+mod service_affinity;
+
+#[path = "owned_async/initial_custody.rs"]
+mod initial_custody;
+
+#[path = "owned_async/branch_head.rs"]
+mod branch_head;
+
+#[path = "owned_async/process_local_retention.rs"]
+mod process_local_retention;
+#[path = "owned_async/source_clock.rs"]
+mod source_clock;
 
 use fixture::{completion, source_commit, AsyncSourceCourt};
 use worth_runtime_bridge::facade::TruthCommitIdentity;
 use worth_runtime_world::facade::{
-    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
+    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
 };
 
 #[test]
@@ -40,10 +66,11 @@ fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revali
         "abandoned preparation burns an occurrence"
     );
     let lease = court.lease(&fork);
-    let request = court
+    let owner = court
         .world
-        .admit_owned_async_request(&court.bridge, &court.declaration, &fork, &lease)
+        .admit_unqueued_owned_async_request(&court.bridge, &court.declaration, &fork, &lease)
         .expect("populated fork reaches the real Signal admission");
+    let request = owner.retained_request().unwrap();
     let expected = TruthCommitIdentity::from_relational_commit_id(selected.0);
     assert_eq!(
         source_commit(&request),
@@ -76,17 +103,19 @@ fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revali
         0
     );
 
-    let request = court
+    let mut owner = court
         .world
-        .admit_owned_async_request(&court.bridge, &court.declaration, &fork, &lease)
+        .admit_unqueued_owned_async_request(&court.bridge, &court.declaration, &fork, &lease)
         .unwrap();
+    let request = owner.retained_request().unwrap();
     let sibling_lease = court.lease(&sibling);
-    let replacement = court
+    court
         .world
-        .revalidate_owned_async_request(&court.bridge, &request, &sibling, &sibling_lease)
+        .revalidate_managed_owned_async_request(&court.bridge, &mut owner, &sibling, &sibling_lease)
         .unwrap();
+    let replacement = owner.request().unwrap();
     assert_eq!(
-        source_commit(replacement.request()),
+        source_commit(replacement),
         &TruthCommitIdentity::from_relational_commit_id(sibling_commit.0)
     );
     assert_eq!(
@@ -109,12 +138,12 @@ fn populated_zero_version_fork_keeps_native_commit_through_completion_and_revali
     );
     court
         .bridge
-        .retire_owned_async_request(replacement.request())
+        .retire_owned_async_request(replacement)
         .unwrap();
     assert_eq!(
         court
             .bridge
-            .owned_async_active_request_count(replacement.request())
+            .owned_async_active_request_count(replacement)
             .unwrap(),
         0
     );
@@ -126,7 +155,7 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let court = AsyncSourceCourt::new();
     let empty_lease = court.lease(&court.empty);
-    let denial = court.world.admit_owned_async_request(
+    let denial = court.world.admit_unqueued_owned_async_request(
         &court.bridge,
         &court.declaration,
         &court.empty,
@@ -139,15 +168,16 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
 
     let committed = court.publish(execution, &court.empty);
     let committed_lease = court.lease(&committed);
-    let request = court
+    let mut owner = court
         .world
-        .admit_owned_async_request(
+        .admit_unqueued_owned_async_request(
             &court.bridge,
             &court.declaration,
             &committed,
             &committed_lease,
         )
         .expect("committed twin admits with unchanged installed declaration");
+    let request = owner.retained_request().unwrap();
     assert_eq!(
         court
             .bridge
@@ -156,15 +186,15 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
         1,
         "empty refusal created no hidden request"
     );
-    let denied = court.world.revalidate_owned_async_request(
+    let denied = court.world.revalidate_managed_owned_async_request(
         &court.bridge,
-        &request,
+        &mut owner,
         &court.empty,
         &empty_lease,
     );
     assert!(matches!(
         denied,
-        Err(RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource)
+        Err(RuntimeWorldOwnedAsyncManagedRevalidationDenial::NoCommittedSource)
     ));
     assert_eq!(
         court
@@ -175,7 +205,7 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
         "refused revalidation preserves original custody"
     );
 
-    let mismatch = court.world.admit_owned_async_request(
+    let mismatch = court.world.admit_unqueued_owned_async_request(
         &court.bridge,
         &court.declaration,
         &committed,
@@ -186,7 +216,7 @@ fn empty_source_refuses_before_signal_and_preserves_original_request_custody() {
         Err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch)
     ));
     let foreign = AsyncSourceCourt::new();
-    let foreign_denial = foreign.world.admit_owned_async_request(
+    let foreign_denial = foreign.world.admit_unqueued_owned_async_request(
         &court.bridge,
         &court.declaration,
         &committed,

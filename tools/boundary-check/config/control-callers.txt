@@ -2,6 +2,17 @@
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
 # Logical source court observes only real closed-count retention lifecycle.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
+# Closed Resource source comparison; actual Host actions retain ordinary admission.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs
+# Exact native resource-cell wake observations; no application control audience.
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/native.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/owned_async/wake_observation_for_test.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
+
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_adoption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_cleanup.rs

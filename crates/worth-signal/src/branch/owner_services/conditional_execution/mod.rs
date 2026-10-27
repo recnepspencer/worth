@@ -85,13 +85,27 @@ pub(crate) use operation_scope::{
     SignalConditionalDefinitionPublicationScope, SignalConditionalOperationScopeBinding,
 };
 pub use owned_async::{
-    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
+    SignalOwnedAsyncCompletionAdmission, SignalOwnedAsyncCompletionCommit,
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,
+    SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncManagedReport,
+    SignalOwnedAsyncQueueDenial, SignalOwnedAsyncReleasedResource, SignalOwnedAsyncReleasedRetry,
+    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncResourceReleaseRefusal,
+    SignalOwnedAsyncRetentionStorageForTest, SignalOwnedAsyncRetryAdmission,
     SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
     SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission,
+};
+pub(crate) use owned_async::{
+    SignalOwnedAsyncCompletionCommitState, SignalOwnedAsyncManagedAdmissionState,
+    SignalOwnedAsyncRetentionObligation,
 };
 pub use port::SignalConditionalExecutionPort;
 pub(in crate::branch::owner_services) use temporal::SignalConditionalTemporalRegistry;
 pub use temporal::{
     SignalConditionalTemporalPartition, SignalConditionalTemporalPartitionDenial,
     SignalConditionalTemporalPromotion, SignalConditionalTemporalPromotionView,
+};
+
+pub(crate) use owned_async::{
+    SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
+    SignalOwnedAsyncManagedWakeCleanup,
 };

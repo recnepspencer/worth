@@ -167,6 +167,9 @@ impl ResourceRuntimeState {
             timeout_deadline_authority,
             timeout_decision_digest,
         );
+        if input.previous.is_process_local() {
+            in_flight.mark_process_local();
+        }
         if let Some(wake_id) = timeout_wake_id {
             in_flight.attach_timeout_wake(wake_id);
             if let Some(telemetry) = telemetry {

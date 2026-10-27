@@ -18,6 +18,8 @@ use super::super::WorthQueryRetainedCapabilityAuthorization;
 
 mod field_admission;
 mod governance;
+mod resource;
+pub(in crate::domain_computation) use resource::admit_application_resource_governance;
 
 pub(in crate::domain_computation) use field_admission::{
     WorthQueryApplicationDisclosedProjectionAdmission,
@@ -160,63 +162,5 @@ pub(in crate::domain_computation) fn admit_application_query_governance(
     }
 }
 
-pub(in crate::domain_computation) struct WorthQueryApplicationGovernanceBinding {
-    runtime: WorthQueryRuntimeAuthorityIdentity,
-    query: WorthQueryInstalledApplicationQueryIdentity,
-    parameters: CanonicalDigestId,
-    principal: EntityId,
-    scope: EntityId,
-    session: WorthQueryGraphWorkSessionIdentity,
-    managed_run: WorthQueryGraphWorkManagedRunIdentity,
-    branch: BranchId,
-    basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
-    provider: String,
-}
-
-impl WorthQueryApplicationGovernanceBinding {
-    pub(in crate::domain_computation) fn from_session(
-        graph_work: &WorthQueryManagedGraphWorkSession,
-        query: WorthQueryInstalledApplicationQueryIdentity,
-        parameters: CanonicalDigestId,
-        principal: EntityId,
-        scope: EntityId,
-    ) -> Self {
-        Self {
-            runtime: graph_work.runtime_authority(),
-            query,
-            parameters,
-            principal,
-            scope,
-            session: graph_work.identity(),
-            managed_run: graph_work.managed_run_identity(),
-            branch: graph_work.branch().relational().clone(),
-            basis: graph_work
-                .query_basis()
-                .expect("application disclosure is admitted only for a query session")
-                .clone(),
-            provider: graph_work.provider().to_string(),
-        }
-    }
-
-    fn matches(
-        &self,
-        graph_work: &WorthQueryManagedGraphWorkSession,
-        runtime: WorthQueryRuntimeAuthorityIdentity,
-        query: &WorthQueryInstalledApplicationQueryIdentity,
-        parameters: &CanonicalDigestId,
-        principal: EntityId,
-        scope: EntityId,
-    ) -> bool {
-        self.runtime == runtime
-            && self.runtime == graph_work.runtime_authority()
-            && &self.query == query
-            && &self.parameters == parameters
-            && self.principal == principal
-            && self.scope == scope
-            && self.session == graph_work.identity()
-            && self.managed_run == graph_work.managed_run_identity()
-            && self.branch == *graph_work.branch().relational()
-            && graph_work.query_basis() == Some(&self.basis)
-            && self.provider == graph_work.provider()
-    }
-}
+mod binding;
+pub(in crate::domain_computation) use binding::WorthQueryApplicationGovernanceBinding;

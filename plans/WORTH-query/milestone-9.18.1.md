@@ -1,8 +1,10 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
-> Phases 7 and 11 accepted on 2026-10-26; Phase 10 accepted on 2026-10-27.
-> Phases 8–9 remain unfinished.
+> Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
+> Phase 9 remains unfinished.
+> The 2026-10-27 Proprietary findings add required, unfinished Phases 12–18,
+> including mandatory Rust 1.99.x qualification.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -66,7 +68,7 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 | Finding | Existing boundary | Required destination |
 | --- | --- | --- |
 | Exact async source binding | World derives `TruthCommitIdentity` from the admitted immutable native reference; populated forks preserve their actual commit despite a reset branch version. Empty targets refuse before Signal admission | Phase 7 courts cover native equality, sibling publication, reserved occurrence gaps and cleanup; the Decl/Host resource endpoint remains Phase 8 |
-| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
+| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; Execution owns the legacy occurrence-custody integration, with directional older engine/UI adapters | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
 | Bounded record/aspect history reaches the application SDK | Relational retains finite canonical pages; World follows exact raw product ancestry and component evidence | Phase 10 captures disclosed exact generations through installed History meaning and continues at pinned truth with fresh SubjectRead and independent metadata decisions |
 | Relational identity planning inventories retired | The three string-only Phase 1 catalogs and their module/export declarations have been removed | Phase 11 preserves actual identity authority, selection/receipt issuance and real compile-boundary tests |
@@ -119,8 +121,10 @@ does not replace 9.18's composite operation/correction history.
 
    No phase adds a second evaluator, traversal, partitioner or view engine.
 2. **Domain-neutral vocabulary.** Names describe graphs: acyclic, symmetric,
-   orbit, component, walk, lineage. No geometry, CAD or banking type enters the
-   platform.
+   orbit, component, walk, lineage. Phase 12 adds generic spatial range meaning
+   using the existing numerical owners' bounds contracts. CAD topology,
+   exact-contact policy and other application domain types stay outside Query
+   and Relational.
 3. **No raw handles.** Applications never receive Relational, Bridge or Signal
    handles, as the capability index already requires. Each new capability is a
    typed Query surface.
@@ -156,6 +160,9 @@ does not replace 9.18's composite operation/correction history.
    as returned entries, so an empty-match query cannot scan an entire branch in
    one call. These limits do not introduce fixed read-cost promises, a second
    work-accounting system or extra meters for the original graph reads.
+   Phases 12–18 likewise reuse existing request/resource owners. Their growth
+   courts qualify actual locality and storage behavior without adding fixed
+   read-count promises or production cost signatures.
 9. **Consumers delete their workarounds in the same phase.** A phase is not
    done while a public fixture or the Proprietary CAD entry still carries the
    hand-written version of what that phase supplies.
@@ -163,6 +170,8 @@ does not replace 9.18's composite operation/correction history.
    a domain feature need not be invented in Proprietary merely to exercise it.
    Migrated orchestration and its displaced executable path are cut over in the
    same integration phase, not deferred to Phase 11's unrelated small cleanup.
+   Phases 12, 15–17 explicitly require the real Proprietary consumer evidence
+   named below; a public fixture does not replace those adoption gates.
 
 Code and test files stay within 400 lines. Planned syntax is marked
 `rust,ignore` until it compiles; each phase turns its DX into a compiled
@@ -1021,25 +1030,29 @@ crates/worth-runtime-bridge/src/
   conditional_execution/owned_async/                         E lifecycle authority
   diagnostics/causal_envelope/                               E evidence assembly
   facade.rs                                                 E remove alias modules
-worth-query-declaration/src/application_query/
-  async_resource/                                           M typed resource meaning
-  history/                                                  N target/aspect selection
-  inspection/{definition,metadata,validation}.rs             N exact-binding inspection metadata meaning
-  canonical_basis/inspection.rs                             N portable metadata identity
-  disclosure_contract/inspection.rs                         N typed metadata rules
-worth-query-installation/src/application_query/
-  async_resource/                                           M installed declarations
-  history/                                                  N schema/disclosure binding
-  inspection.rs                                             N validate exact compiled binding before issuer admission
+worth-query-declaration/src/
+  application_resource/                                     N typed resource meaning, action/disclosure profiles
+  application_schema/value_binding/canonical/               E complete descriptive codec reference
+  application_query/
+    history/                                                N target/aspect selection
+    inspection/{definition,metadata,validation}.rs           N exact-binding inspection metadata meaning
+    canonical_basis/inspection.rs                           N portable metadata identity
+    disclosure_contract/inspection.rs                       N typed metadata rules
+worth-query-installation/src/
+  application_resource/                                     N actual typed resource/provider correspondence
+  application_query/
+    history/                                                N schema/disclosure binding
+    inspection.rs                                           N validate exact compiled binding before issuer admission
 worth-query-package-archive/src/record/
   application_schema/member/inspection.rs                   N additive member45/v1
   application_query/disclosure/inspection.rs                N additive selector8/v1
+
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
 worth-query-execution/src/domain_computation/
   evidence_identity/                                        M shared diagnostic identity protocol
   primary_graph/
-    async_resource/                                         M live resource orchestration
+    application_resource/                                   M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
 worth-query-publication/src/application_entry/
@@ -1126,10 +1139,127 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
+**Accepted, 2026-10-27.** Typed resource declarations and installed-profile lookup preserve
+the complete input/result/failure codec description, exact Access recipe,
+provider role, finite capacities and independent Start/Inspect/Advance/Close
+requirements. Member 39 and disclosure selector 7 extend the current protocol 18.
+Portable value-shape text is descriptive; only actual typed inventory can resolve
+its decoder. Boolean availability and lifecycle state do not authorize counts;
+cleanup detail requires both Count and Explanation influence. The Host provider
+and progression surface is implemented with its actual provider and cleanup journeys.
+
+Qualification uses the actual World/Bridge custody courts, one closed compile-fail
+case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs),
+the existing ordinary-query revocation control and the
+[combined workflow](../../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
+The integrated tree repeats those six selected application cases and the combined
+example; its populated fork, genuine prepare/drop, sibling publication and owned
+recovery remain in that one real journey. The shared example declares the same
+history meaning required by its actual handlers and program feature. These are
+17 distinct focused qualifications, not a rerun of the lower async portfolio.
+
+The installed-access prerequisite compiles explicit Resource/action/facet
+obligations rather than reusing the Access query's payload plan or permission.
+Close and detailed Close retain their own action; only the latter selects cleanup
+disclosure. ResourceRead admission checks exact installed purpose/subject and
+actual provider-support affinity before reserving capacity. The reservation
+remains with its admitted plan until terminal/drop. The endpoint uses a distinct
+Resource ProductRead intent, actual installed contract leaf, original basis and
+independent current authorization Product, with its own proof/terminal. Query
+completion remains Query-only; compiled contracts grant no permission.
+
+The native prerequisite adds World-qualified managed request
+admission, exact attempt-owned queue custody and genuine Signal completion commit.
+Completion admission remains distinct from commit; cancellation leaves queue drain
+custody with its owner. A committed result retains any refused timeout cleanup.
+The Decl/Host endpoint carries these lower-owner operations through its runtime row.
+Signal completion admission, queue and timeout-cleanup owners retain their actual
+originating service/source binding. Public report DTOs remain diagnostic
+projections and cannot construct admission or lend authority across runtimes.
+Managed declarations refuse legacy admission, retry and revalidation entrances
+before effects. Managed retry and revalidation retain one native custodian. One
+cell lock validates the exact prior occurrence, installed definition and drained
+queue, performs the native transition, and binds only a genuinely new occurrence.
+Coalescing preserves the winner's queue and original business-source claim while
+the custodian moves to the current service origin. Retry schedules retain their
+issuer; foreign schedules cannot advance another runtime's clock. Actual partial
+clock progress and acquired or retired wakes remain in a bounded cleanup handoff,
+which blocks overlapping progression and cannot clear a successor's pending retry.
+Timeout admission precedes fallible wake retirement, so cleanup cannot discard a
+timeout transition. Bridge installs the matching port and invalidates its stale
+receipt before fallible descriptive assembly. The internal Query/UI route now
+retains the actual unqueued custodian through entry, progression and refused
+opening cleanup. Its immutable witnesses preserve their original occurrences.
+The read-only UI explicitly selects the genuine observed `BranchHead` snapshot,
+without a committed-source or fresh-currentness claim. The separate authoritative
+source entrance still refuses an empty target before native admission.
+Initial default supersession retires the prior timeout; the separate Native
+coalescing policy retires only its new unused timeout. The application cutover
+removes public report-stripping initial, timeout, schedule, retry and revalidation
+Native service/Bridge/World alternatives and migrates actual callers to genuine custody. Lower Native kernels remain their
+single owners. Focused World, Bridge, compile-fail and public application journeys
+qualify the application control handoff, provider verification, fresh
+authorization/disclosure and compatibility cutover.
+
+The qualified lower-owner retention prerequisite remains separate from Host
+integration. An explicitly installed queued process-local posture uses exact
+owner-selected terminal, denial, retry-lineage and retired-wake release. It
+retains one fixed predecessor obligation before the next report can overwrite
+its genuine selection; existing omission summaries absorb expired diagnostics.
+The genuine pending retry schedule survives deferred report changes; an explicit
+process-local abort retires only that exact backoff without advancing time and
+retains its actual released schedule/retirement evidence.
+Stored ProcessLocal occurrences reject raw Native timeout/retry/revalidation
+before effects; those entrances cannot bypass the managed cleanup custodian.
+Exact predecessor release carries the genuine current occurrence, preserving
+its generation charge independently of newer same-node index entries.
+Refusal preserves the real custodian and any completion owner. Success consumes
+them into released evidence without live progression capability. Fulfilled
+process-local requests require their actual completion cleanup owner before
+release and fresh Start; they cannot revalidate around that handoff. Legacy
+retention remains unchanged. Query installs released row state before its
+original-request terminal handoff. The public journeys also qualify the finite
+provider/row path; Native release alone is not the Host lifecycle proof.
+
+The Host endpoint admits finite Native slots, allocated rows, retained result
+slots and fixed ingress before effects. A genuine issued attempt/verifier binds
+the producer projection, original-request scratch and actual installed decoder
+before Native completion stage/commit. Verified candidates survive result-slot
+refusal without a second provider call. Accepted clock-only progress is an honest
+owned Reserved outcome. Provider/Native/recovery custody lives in the runtime row;
+move-only handles and weak exact receipts cannot reconstruct it. Fresh exact
+receipt reclaim requires Close plus Availability; there is no browse/index or
+implicit abandoned-row recovery. Existing explicit runtime close refuses any
+allocated row and successful close clears its Resource registry. Rust Drop and
+process expiry make no Native/provider cleanup claim.
+
+The populated-fork/sibling source comparison uses a closed receiver-owned
+certification probe after ordinary State admission. It compares the actual
+retained Bridge source with an independently reissued Native read, without
+adding consumer metadata meaning or deriving authority from transport correlation.
+The combined example drops a genuine prepared program adoption before its
+sibling publication, proving the source remains distinct from a burned Native
+reservation as well as a branch version. All lifecycle actions use the ordinary
+Decl/Host API.
+
+The separate public recoverable-effect journey derives a move-only handle
+from an actual committed outbox/aftermath operation and admits genuine inspection.
+The current terminal/outcome owner precedes the historical outbox provenance read
+and is rechecked after arbitrary verification. Authenticated indeterminate
+admission cannot be ordinary result commit or automatic redispatch. Refused
+cleanup retains the exact row/handle; successful authorized resource cleanup
+returns the original recovery handle. Declared preimage grammar admits recovery
+ownership/inspection here; it is not evidence of an executable corrector.
+
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
 resource machinery into the current application SDK; it does not reopen 9.4's
 entire lower-runtime portfolio.
+
+Native cancellation and the immutable-witness retirement adapter remain Native-only
+actions: they create no successor or new wake custody, and do not attest to
+provider, queue or full Resource cleanup. The genuine custodian retains those
+existing obligations.
 
 ### Requirements
 
@@ -1167,14 +1297,15 @@ twins must reach the disputed admission and refuse before result publication.
 
 ### Target DX
 
+<!-- illustrative -->
 ```rust,ignore
-// Planned syntax; the retained owner delegates the existing native lifecycle.
-let mut resource = request.resources()
-    .start(Assessment::reference(), input)?;
-let state = resource.inspect(&fresh_request)?;
-let progress = resource.advance(&fresh_request)?;
-// A close refusal keeps resource custody available for a later funded retry.
-let closed = resource.close(&fresh_request)?;
+// Illustrative: not compiled.
+let resources = request.resources();
+let mut resource = resources.start::<Assessment>(input)?;
+let original = resource.receipt();
+resources.advance(&mut resource)?;
+let result = resources.with_result_governed(&original, fresh_metadata, |value| inspect(value))?;
+let closed = resources.close(&mut resource)?;
 ```
 
 ### How We Know It's Done
@@ -1442,6 +1573,357 @@ consumers preserve the real boundary. Use focused existing grouped compile/runti
 checks and a residue search, not a new catalogue-validation or getter test suite.
 Both cleanup findings ship together with corrected public import guidance.
 
+## Proprietary Platform Follow-through — 2026-10-27
+
+The CAD report against public SDK `ba86433627` adds the following required
+phases. This is the report's basis, not an instruction to change an SDK pin.
+Existing accepted phases retain their historical acceptance. These findings
+extend the milestone's ordinary preparation, candidate validation, failure and
+consumer qualification boundaries; none is an optional closeout item.
+
+| Priority | Finding | Required phase and owner |
+| --- | --- | --- |
+| P1 | Retained spatial range reads in preparation and candidate validation | 12 — Query + Relational; numerical primitives retain their numerical owner |
+| P1 | Unqualified compiler reported as byte overflow | 13 — worth-foundational + Query Admission/Execution |
+| P2 | Unobserved field write loses its cause | 14 — worth-query-execution |
+| P2 | Scoped invariants must stay local on real large bodies | 15 — Query + Relational, with Proprietary CAD adoption |
+| P3, required | Cell-version storage and live-at-k cost | 16 — Relational + Query, with Proprietary CAD acceptance |
+| P3, required | Proposal acceptance reissues ordinary requests | 17 — Query entry/admission + Proprietary authoring |
+| P3, required | Qualify Rust 1.99.x and keep the supported stable toolchain current | 18 — worth-foundational + workspace toolchain/CI owners |
+
+### Decisive Proof For The Added Phases
+
+Use the real Decl/Host installation and the installed CAD entry. In a committed
+1,000-vertex chain, move a middle vertex so its incident cells encounter an
+otherwise untouched, non-incident cell. Operation preparation discovers pairs
+from the retained committed spatial root; the installed invariant searches the
+proposed root, detects the new contact and refuses publication. An otherwise
+equal non-contacting move commits. Repeat at 2,000 vertices with the same local
+edit and spatial distribution: work differs with index height, affected incidence
+and actual hits, rather than a full sweep or rebuild. In the METABOSS
+50,000-face body, a boolean touching one face discovers the touched candidate
+pairs without visiting all unrelated faces. Pair discovery is observed separately
+from the already partitioned pair-certification computation.
+
+Compare range results against an independent exhaustive geometric reference in
+the test, including empty ranges, retired/made/moved cells and incident edges.
+After refusal or interruption, independently read committed graph truth and the
+committed range result; both must retain their original basis and contents.
+Stale committed-root substitution, missing incident-edge maintenance, omitted
+empty-range dependencies and scan-all-then-filter implementations must fail this
+evidence. Dense overlap may legitimately increase the number of candidates;
+these locality claims do not promise constant work for arbitrary distributions.
+
+The failure courts remove the decide-time `DefinitionRecordField` observation
+from the real installed record probe and exercise a genuinely unqualified sort
+admission. Both must retain their own typed cause through the public caller,
+before publication. A generic provider rejection or charged-byte overflow cannot
+satisfy either case. The proposal court accepts retained authored intent under
+fresh authority, then repeats with revoked authority or a stale basis; recording
+the proposal supplies neither acceptance permission nor replay authority.
+
+### Destination Ownership And Module Boundaries
+
+The following tree names existing owners and created destinations for Phases
+12–18. Created destinations are populated by their implementing slice, not by
+empty placeholders in this specification change. Implementation planning may
+refine private children without moving the public facade or changing ownership.
+
+```text
+crates/worth-foundational/
+  build.rs                                      [existing: exact compiler qualification]
+  src/canonicalization/basis/construction/
+    admitted.rs                                 [existing: typed preparation outcome]
+    sort_admission.rs                           [existing: reviewed sort work/storage bound]
+    compiler_qualification/                     [created: compiler identity and eligibility meaning]
+crates/worth-relational/src/
+  derived_spatial/                               [created: managed native spatial-root mechanism]
+    definition.rs                               [declared source/bounds interpretation]
+    root/                                       [basis-bound immutable root and retention]
+    candidate/                                  [delta maintenance and atomic root handoff]
+    range/                                      [range traversal and complete read dependencies]
+  validation/custom_rule/                        [existing: candidate read authority and scope]
+workspaces/worth-query/crates/
+  worth-query-declaration/src/application_schema/
+    spatial_view/                               [created: portable spatial declaration]
+  worth-query-admission/src/
+    application_query/parameter_canonical_basis/  [existing: preserve sort qualification refusal]
+    canonical_identity_derivation/               [existing: preserve canonical cause]
+  worth-query-execution/src/domain_computation/primary_graph/
+    application_query/derived_view/
+      spatial/                                  [created: existing managed-view integration]
+    application_invariant/typed_view/
+      spatial/                                  [created: candidate-qualified range adapter]
+    invariant_projection/operation_reader/
+      spatial/                                  [created: committed preparation range adapter]
+    application_attempt/provider_binding/effect_lowering/
+      entity_field_patch.rs                     [existing: exact unobserved-write refusal]
+    application_attempt/compare_and_commit/commit_outcome/denial/
+      unique_value.rs                           [existing: preserve lowering cause and stage]
+  worth-query-package-archive/src/record/application_schema/member/
+    spatial_view/                               [created: versioned portable meaning]
+  worth-query-certification/tests/application_graph/
+    spatial_view/                               [created: shared facade range/atomicity courts]
+    proposal_acceptance/                        [created: fresh ordinary acceptance journey]
+```
+
+Query's existing managed-view owner governs registration, retention and
+reconstruction. Relational owns the basis-bound index mechanism and candidate
+commit handoff; it does not gain a second general view registry. Numerical
+bounds, conservative overlap and rounding remain with the existing numerical
+owners, outside Query. Proprietary topology maps its cells to that declared
+contract and retains exact contact classification. Native code contains no
+Face, Body, B-rep or operation-family policy.
+
+Stable public entry remains `worth-query-decl` and `worth-query-host`.
+Preparation and candidate adapters consume their respective original read
+authority; neither can mint publication or mutation capability. Private module
+visibility, facade/dependency checks and the existing archive-version discipline
+enforce this direction. No application-owned index cache, generic callback
+validator, new executor or production replay entrance is permitted. Cost courts
+extend the existing grouped Native/Query targets and CAD installed tests; they
+do not introduce a cost registry or a persistent implementation journal.
+
+---
+
+## Phase 12: Retained Spatial Views In Preparation And Candidate Validation
+
+**Status: unfinished; required. Priority: P1.**
+**Owner:** Query + Relational, with numerical primitives at their existing owner.
+**Depends on:** Phase 6's shared derived-read, dependency and proposed-state
+contracts. Those prerequisites may be integrated before Phase 6's full adoption
+portfolio closes. Independent of async resources and causal inspection.
+
+### Requirements
+
+- Declare one domain-neutral spatial derived view over source records and their
+  conservative bounds. Declaration fixes source identity, bound dependencies,
+  dimensions, units/frame interpretation and overlap semantics. Canonical schema
+  identity and portable archive meaning include that contract. Numerical admission
+  refuses invalid or incomparable bounds with the numerical owner's typed cause;
+  no epsilon, unchecked float conversion or CAD-specific bounds algorithm enters
+  Query. Overlap supplies candidates, never proof of exact contact or separation.
+- Retain one managed spatial root per exact basis/definition, structurally sharing
+  unchanged state. Expose range search from `DecisionReader` in `prepare_decision`
+  at its committed basis and from the installed invariant context at its candidate
+  basis. Readable rows by key, an exported native index, or a partitioned pair
+  computation without discovery do not implement this contract.
+- Apply retired, made and moved source changes incrementally before candidate
+  validation, including edges incident to moved vertices through declared
+  dependencies. Maintain the candidate privately; graph truth and the derived
+  root become visible in the same successful commit. Refusal/cancellation releases
+  candidate state without altering committed truth, roots or retained readers.
+- Range reads preserve positive hits and searched absence dependencies, so an
+  insertion or move into a previously empty range invalidates its consumers.
+  Source identity includes generation; branches and retained bases cannot borrow
+  each other's root. Fresh disclosure precedes range traversal and protected
+  counts. Refused, unavailable and interrupted reads never return complete-looking
+  partial answers.
+- Warm local work follows changed bounds, affected incident cells, index height
+  and reported candidates. No per-edit full-body rebuild, copy or sweep is hidden
+  in maintenance, preparation or validation. Cold construction, eviction and
+  reconstruction are explicit separate lanes; rebuilding from authoritative
+  graph data must reproduce range results. Reuse existing request controls and
+  Phase 1's actual-read observations instead of a new accounting system.
+
+### Target DX
+
+```rust,ignore
+// Planned syntax; both readers use the same installed declaration.
+// The framework supplies these readers at their actual, distinct bases.
+let discovery = decision_reader.spatial_range(CellsByBounds::reference(), &probe)?;
+let neighbours = invariant_context.view()
+    .spatial_range(CellsByBounds::reference(), &candidate_probe)?;
+```
+
+### How We Know It's Done
+
+The decisive spatial court above passes through both real readers, including
+1,000/2,000-vertex growth, the 50,000-face discovery case, non-incident contact
+refusal, empty-range invalidation, branch/generation isolation and rebuild parity.
+The installed CAD path consumes the retained view in arrange discovery and the
+B-rep checker, deleting the displaced full-sweep path for these warm edits.
+Multiple retained partitioned computations or a multi-stage discovery workaround
+cannot close this phase while candidate range reads remain absent.
+
+---
+
+## Phase 13: Honest Compiler Qualification Refusals
+
+**Status: unfinished; required. Priority: P1.**
+**Owner:** worth-foundational + Query Admission/Execution.
+**Depends on:** existing canonical sort admission; independent of Phases 6, 8–9
+and 12. Rust 1.99 qualification does not substitute for this repair.
+
+### Requirements And Acceptance
+
+`canonical_verified_std_sort` currently recognizes only exact release/commit
+pairs for Rust 1.94.0 and 1.98.0. Preserve an unqualified implementation as a typed
+compiler-qualification refusal containing the actual compiler release and full
+commit, rather than `AccountingOverflow` or
+`ExecutionResource { denial: ChargedBytesOverflow }`. Carry that cause through
+foundational preparation, parameter/canonical-identity admission and original
+source disclosure to the ordinary caller without relabeling its failure stage.
+Real arithmetic overflow and request exhaustion keep their own distinct causes.
+No successful canonical artifact or downstream publication follows refusal.
+
+Use the Proprietary `tools/correction-sdk-probe/` reproducer identified on
+`codex/undo-redo-20261027` at `0eea66558`, plus a focused owner court and a qualified
+compiler twin. Exercise the refused qualification boundary even after the default
+compiler is upgraded; a forced byte-overflow surrogate is not evidence. Audit
+all mappings of `UnsupportedSortImplementation`, including graph-index inventory
+and canonical identity paths. Public machine-readable release/commit context and
+the qualified twin must reach the caller before this phase closes.
+
+---
+
+## Phase 14: Preserve Unobserved Field-Write Causes
+
+**Status: unfinished; required. Priority: P2.**
+**Owner:** worth-query-execution.
+**Depends on:** existing decision observations and candidate effect lowering;
+independent of the new spatial and async work.
+
+### Requirements And Acceptance
+
+An existing-entity field write without its required decision observation refuses
+as typed `UnobservedWrite`, naming the exact entity generation and field locator.
+Enforce at the earliest boundary with that information and retain the cause
+through `EffectLowering`; do not translate it into an unexplained
+`ProviderRejected(ProposalBinding)`. If detected during writing, preserve that
+earlier stage rather than pretending lowering occurred. Observation of absence,
+entity creation and actual stale/foreign observations retain their distinct
+existing semantics. A locator identifies the attempted write, not disclosed
+field contents or new authority.
+
+Remove the decide-time `DefinitionRecordField` read from the installed CAD
+`installed/record.rs` journey. It must reach the disputed write, refuse with the
+typed locator and cause, and leave truth unchanged. Restore only that read for
+the lawful committing twin. Both public effect-lowering and final caller
+assertions must expose cause-erasing translations; a direct private constructor
+test alone cannot close this phase.
+
+---
+
+## Phase 15: Scoped Invariant Locality On Large Bodies
+
+**Status: unfinished; required. Priority: P2.**
+**Owner:** Query + Relational, with Proprietary CAD qualification.
+**Depends on:** Phase 12 for spatial contact locality and the existing touched
+scope/read-footprint contracts. Baseline diagnosis can proceed independently.
+
+### Requirements And Acceptance
+
+Qualify the complete installed invariant path on METABOSS bodies up to 50,000
+faces. Hold one-cell edit size, local incidence, candidate density and rule
+meaning fixed while increasing unrelated body size. Include an unrelated body
+and a hostile contact with a non-incident cell in the same body. Work follows
+the semantic affected neighbourhood, range-search height and real hits, rather
+than rebuilding body histories, traversing all cells or checking every face.
+
+Observe preparation, candidate maintenance, invariant scope acquisition and rule
+evaluation separately using existing actual-read evidence. A local rule body
+does not excuse a global scope-building pass. Correct scope planning and
+dependency maintenance at their existing owners when the court exposes leakage;
+never prune the genuine violating neighbour to manufacture local counts.
+The independent exhaustive checker must agree with the installed verdict for
+hostile and lawful twins. Commit/refusal atomicity remains intact. This phase
+closes only on the real CAD installation, not a small synthetic local graph.
+
+---
+
+## Phase 16: Cell-Version Storage And Live-At-k Qualification
+
+**Status: unfinished; required. Priority: P3.**
+**Owner:** Relational + Query, with Proprietary CAD Acceptance 8.
+**Depends on:** real cell-bearing publication and the accepted history reader.
+Baseline work can run independently; final integrated locality consumes Phases
+12 and 15 where that path uses spatial maintenance and invariant checks.
+
+### Requirements And Acceptance
+
+Measure entities, relations and retained bytes per cell version, versions made
+per local edit, and real `live_at(k)` query work at 1, 100 and 10,000 features.
+Separate authoritative version records, retained history, derived/index storage,
+transient/peak allocation and returned live cells. Vary history length and live
+body size independently; compare warm local edits, cold reconstruction and
+historical reads without charging one lane to another or omitting setup work.
+
+Use installed cell-bearing publications and actual platform observations, with
+an independently authored live-cell reference. State the expected growth class
+before measuring and report observed results in the existing CAD acceptance
+document, with the named workload and environment. Repeated whole-body copies
+for local edits, hidden full-history rebuilds in the ordinary edit lane, or a
+failure of CAD Acceptance 8 must be fixed at the responsible platform owner.
+Output-sized historical materialization is reported honestly; no arbitrary
+constant-time live-history claim or fitted exact-count golden is required.
+No private packed store, second version table or replacement cost ledger may
+stand in for this acceptance.
+
+---
+
+## Phase 17: Proposal Acceptance Through Fresh Ordinary Requests
+
+**Status: unfinished; required. Priority: P3.**
+**Owner:** Query entry/admission + Proprietary authoring.
+**Depends on:** ordinary governed application requests and existing source
+operation/correction contracts. Independent of spatial indexing and Phases 8–9.
+
+### Requirements And Acceptance
+
+A proposal stores authored intents and typed domain references as ordinary
+versioned domain data. It stores no executable platform receipt, admitted writer,
+replay proof or transferable permission. Acceptance interprets the selected
+intents and reissues ordinary requests under the current principal, scope,
+disclosure, basis and installed operation contracts. Each attempt receives its
+actual ordinary outcome. Stale basis, revoked authority and unavailable domain
+references refuse through their existing owners; acceptance never silently
+rebases or substitutes identities. Multi-intent partial acceptance follows the
+existing operation/workflow effect posture and cannot imply rollback.
+
+Compile a Decl/Host acceptance journey and exercise the real CAD proposal path:
+record, retain, accept under fresh authority, then exercise revoked authority and
+stale-basis twins. Ordinary production import/dependency checks must reject
+`worth-query-replay` on this route; cert-only replay remains available only to its
+existing audience. Document how the existing request mechanism supplies this
+path, correcting any missing facade integration without introducing a proposal
+executor or using certification replay to simulate ordinary acceptance.
+
+---
+
+## Phase 18: Mandatory Current Rust Toolchain Qualification
+
+**Status: unfinished; required. Priority: P3. Rust 1.99.x is not optional.**
+**Owner:** worth-foundational + workspace toolchain/CI owners, with Proprietary
+SDK qualification.
+**Depends on:** the canonical sort bound and its existing compatibility contract.
+Source review can run alongside Phase 13; closure includes Phase 13's honest
+refusal on an unqualified compiler.
+
+### Requirements And Acceptance
+
+Qualify an official stable Rust 1.99.x release for `canonical_verified_std_sort`.
+Verify the exact published release and full compiler commit before adding its
+qualification; a wildcard, version comparison, beta/nightly identity or disabled
+guard cannot establish qualification. Review the corresponding standard-library
+stable sort implementations, comparison/move/scratch bounds and supported target
+widths against `sort_admission.rs`. Re-run canonical ordering/digest and admission
+evidence: comparison counts already participate in canonical material, so any
+change must follow the existing canonical version/compatibility owner rather
+than silently changing identities or weakening bounds.
+
+Update the supported workspace, CI and Proprietary development toolchain pins
+to the qualified stable release, and pass the affected grouped public tests,
+the correction probe and private SDK qualification. Keep supported older
+qualification entries only where their compatibility commitment remains valid.
+If a newer official stable Rust release exists when this phase is implemented,
+qualify and adopt that release as well; 1.99 support is the required floor, not
+permission to freeze the project on an already superseded default. If the
+required official release is unavailable, the phase remains unfinished; remaining
+on 1.98 or treating qualification as a nice-to-have cannot close the milestone.
+Record the exact supported release/commit and upgrade procedure in existing
+toolchain/contributor documentation, including the typed unqualified outcome.
+
 ## Documentation And Successor Handoff For The Added Phases
 
 - Revise `docs/capability-index.md` and `docs/build-an-application.md` for
@@ -1464,6 +1946,16 @@ Both cleanup findings ship together with corrected public import guidance.
   durable restart and multi-parent history remain successor contracts. 9.19–9.20
   consume the same query/provider admission; 9.21 can consume the exposed causal
   references without acquiring authority over their source records.
+- For Phases 12–18, revise `docs/capability-index.md` and
+  `docs/build-an-application.md` for declared spatial range reads, committed versus
+  candidate roots, reconstruction and typed compiler/write refusals. Extend the
+  managed-derived-view explanation in the application guide and
+  `workspaces/worth-query/crates/worth-query/docs/modeling/schema-validation.md`
+  with compiled two-facade examples. Update `CONTRIBUTING.md` with exact qualified
+  Rust identities and the upgrade procedure. In Proprietary, update
+  `cad/docs/plans/platform-gaps.md`, `query-9.18.1-adoption.md` beside it, and the
+  existing general-modeling Acceptance 8/proposal sections with actual adoption
+  and measurements; a public platform court alone does not assert private closure.
 
 QA must review real receipt acquisition and request authority, exact source/product
 binding, disclosure and metadata leakage, refused-progress/close custody, retained
@@ -1475,11 +1967,15 @@ specification change checks links, scope and path claims without compiling runti
 ## Closing The Milestone
 
 - 9.18.1 closes when every phase's "How We Know It's Done" list holds on master.
-- All eleven phases are required. Phases 1–6 retain their original acceptance
+- All eighteen phases are required. Phases 1–6 retain their original acceptance
   and Proprietary consumer obligations; the additional application-runtime work
   is proved through the current two-facade public composition and grouped courts.
   No added finding is satisfied by a raw re-export, a future-work note or an old
   lower-runtime example alone. Phase 11 closes both cleanup findings in one batch.
+  Phases 12–18 add the 2026-10-27 Proprietary findings, including both spatial
+  readers, real CAD locality/storage/acceptance qualification and mandatory
+  current Rust qualification. Phase numbering does not impose serial execution:
+  use each phase's actual dependencies.
 - WORTH Proprietary builds against the candidate revision through a reviewed pin
   update, with its workarounds deleted.
 - Platform certification alone is platform evidence. The Proprietary adoption
@@ -1495,6 +1991,7 @@ specification change checks links, scope and path claims without compiling runti
 
 Not supplied here:
 - typed correlated path programs (9.20);
-- managed search and access products (9.19);
+- managed search and access products (9.19), distinct from Phase 12's required
+  basis-bound spatial candidate range index;
 - decision summaries (9.21);
 - merge, rebase and multi-parent lineage (cross-runtime).

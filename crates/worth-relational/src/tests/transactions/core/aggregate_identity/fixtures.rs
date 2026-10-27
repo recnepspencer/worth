@@ -149,7 +149,7 @@ pub(super) fn records(
         .unwrap()
         .unwrap();
     read.entities()
-        .into_iter()
+        .iter()
         .filter(|entity| entity.kind.kind_id == KindId(3))
         .map(|entity| {
             let state = entity.authoritative_aspect_state.as_ref().unwrap();

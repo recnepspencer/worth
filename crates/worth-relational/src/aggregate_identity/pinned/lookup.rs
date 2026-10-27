@@ -62,16 +62,16 @@ pub(super) fn find(
                     else {
                         return Ok(());
                     };
-                    if row.definition == contract.definition && row.identity == identity {
-                        if found
+                    if row.definition == contract.definition
+                        && row.identity == identity
+                        && found
                             .replace(StoredAggregate {
                                 entity,
                                 record: row,
                             })
                             .is_some()
-                        {
-                            return work.invalid(PlanDenial::AmbiguousIdentity);
-                        }
+                    {
+                        return work.invalid(PlanDenial::AmbiguousIdentity);
                     }
                 }
             }

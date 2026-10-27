@@ -41,7 +41,11 @@ pub(super) fn complete(
         let mut facts = cohort.visibility;
         facts.push(cohort.coupling);
         if is_census {
-            all_facts.extend(facts.iter().cloned());
+            for fact in &facts {
+                all_facts.push(fact.copy_for_observer(execution).map_err(|cause| {
+                    super::super::super::denial::relational_read_denial(cause, plan.name)
+                })?);
+            }
         }
         let subject = if meaning.selection() == ApplicationQueryComponentSelection::OfScopeMember {
             ComponentSelectionSubject::Of(plan.root)
@@ -57,7 +61,7 @@ pub(super) fn complete(
             facts,
             work,
         )?;
-        let source = make_source(plan, &meaning, body)?;
+        let source = make_source(execution, plan, &meaning, body)?;
         if !is_census {
             of_source = Some(Arc::clone(&source));
         }
@@ -75,7 +79,7 @@ pub(super) fn complete(
     };
     let result_set_source = if is_census {
         let full = make_body(execution, graph, plan, subject, all_bodies, all_facts, work)?;
-        Some(make_source(plan, &meaning, full)?)
+        Some(make_source(execution, plan, &meaning, full)?)
     } else {
         of_source
     };
@@ -131,14 +135,17 @@ fn make_body(
     Ok(Arc::new(body))
 }
 fn make_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &ReadPlan<'_>,
     meaning: &Arc<ApplicationQueryComponentMeaning>,
     body: Arc<ComponentSelection>,
 ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial> {
     let mut facts = SourceFactsBuilder::default();
-    facts.observe_entity(plan.root);
+    facts
+        .observe_entity(execution, plan.root)
+        .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
     let facts = facts
-        .finish()
+        .finish(execution)
         .map_err(|cause| super::super::super::denial::relational_read_denial(cause, plan.name))?;
     Ok(Arc::new(WorthQueryObservedRootSelection::with_components(
         facts,

@@ -4,6 +4,7 @@ mod fixtures;
 mod lifecycle;
 mod logical_components;
 mod maintenance;
+mod materialization;
 mod merge_gap;
 mod pinned_lineage;
 mod pinned_reads;

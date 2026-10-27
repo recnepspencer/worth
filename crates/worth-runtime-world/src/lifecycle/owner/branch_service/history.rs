@@ -10,6 +10,7 @@ use super::super::RuntimeWorldOwnerRoot;
 
 pub(super) fn select_ancestor<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    path: crate::history::AncestorSelectionPath,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     target: &ProductBranchObservation,
     source: &crate::identity::CompositeCommitIdentity,
@@ -38,7 +39,7 @@ where
     let ancestor = owner
         .state
         .history
-        .select_retained_ancestor(execution, target.selected_commit(), source, maximum)
+        .select_ancestor(path, execution, target.selected_commit(), source, maximum)
         .map_err(Denial::History)?;
     Ok(crate::branch::ProductBranchAncestorSelection::owner_issued(
         target.clone(),

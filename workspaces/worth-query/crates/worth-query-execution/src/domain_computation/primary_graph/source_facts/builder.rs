@@ -16,12 +16,15 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 
-#[derive(Clone, Default)]
+mod allocation;
+
+#[derive(Default)]
 pub(in crate::domain_computation::primary_graph) struct SourceFactsBuilder {
     entities: BTreeSet<EntityId>,
     aspects: BTreeMap<(EntityId, AspectKey, FieldKey), WorthQueryObservedFieldRevision>,
     adjacencies: BTreeMap<(EntityId, KindId, u8), WorthQueryObservedAdjacencyRevision>,
     walks: Option<Arc<StructuralWalkDependencies>>,
+    allocation: Option<Arc<SourceFactsAllocation>>,
 }
 
 pub(in crate::domain_computation::primary_graph) enum SourceFactReadDenial {
@@ -32,37 +35,48 @@ pub(in crate::domain_computation::primary_graph) enum SourceFactReadDenial {
 impl SourceFactsBuilder {
     pub(in crate::domain_computation::primary_graph) fn observe_entity(
         &mut self,
+        execution: &ExecutionRequest<'_, '_>,
         entity: EntityId,
-    ) -> bool {
-        self.entities.insert(entity)
+    ) -> Result<bool, Cause> {
+        if !self.entities.contains(&entity)
+            && let Some(allocation) = &self.allocation
+        {
+            allocation.claim_tree::<(EntityId, ())>(execution, self.entities.len())?;
+        }
+        Ok(self.entities.insert(entity))
     }
     pub(in crate::domain_computation::primary_graph) fn record_field(
         &mut self,
+        execution: &ExecutionRequest<'_, '_>,
         value: WorthQueryObservedFieldRevision,
-    ) -> bool {
-        if let std::collections::btree_map::Entry::Vacant(entry) =
-            self.aspects
-                .entry((value.entity, value.aspect.clone(), value.field.clone()))
-        {
-            entry.insert(value);
-            true
-        } else {
-            false
+    ) -> Result<bool, Cause> {
+        if self.has_field(execution, value.entity, &value.aspect, &value.field)? {
+            return Ok(false);
         }
+        self.admit_field_record(execution, &value)?;
+        self.aspects.insert(
+            (value.entity, value.aspect.clone(), value.field.clone()),
+            value,
+        );
+        Ok(true)
     }
     pub(in crate::domain_computation::primary_graph) fn record_adjacency(
         &mut self,
+        execution: &ExecutionRequest<'_, '_>,
         value: WorthQueryObservedAdjacencyRevision,
-    ) -> bool {
+    ) -> Result<bool, Cause> {
+        if !self.has_adjacency(value.anchor, value.relation_kind, value.direction) {
+            self.admit_adjacency_record(execution, &value)?;
+        }
         if let std::collections::btree_map::Entry::Vacant(entry) = self.adjacencies.entry((
             value.anchor,
             value.relation_kind,
             super::adjacency_direction_rank(value.direction),
         )) {
             entry.insert(value);
-            true
+            Ok(true)
         } else {
-            false
+            Ok(false)
         }
     }
     pub(in crate::domain_computation::primary_graph) fn entities(
@@ -103,12 +117,15 @@ impl SourceFactsBuilder {
     }
     pub(in crate::domain_computation::primary_graph) fn has_field(
         &self,
+        execution: &ExecutionRequest<'_, '_>,
         entity: EntityId,
         aspect: &AspectKey,
         field: &FieldKey,
-    ) -> bool {
-        self.aspects
-            .contains_key(&(entity, aspect.clone(), field.clone()))
+    ) -> Result<bool, Cause> {
+        self.admit_field_lookup(execution, aspect, field)?;
+        Ok(self
+            .aspects
+            .contains_key(&(entity, aspect.clone(), field.clone())))
     }
     pub(in crate::domain_computation::primary_graph) fn has_adjacency(
         &self,
@@ -133,6 +150,8 @@ impl SourceFactsBuilder {
             .aspect_contract(entity_name, aspect)
             .ok_or(SourceFactReadDenial::Unavailable)?
             .revision();
+        self.admit_guard_field(execution, entity_name, aspect, field)
+            .map_err(SourceFactReadDenial::Execution)?;
         match self.aspects.entry((entity, aspect.clone(), field.clone())) {
             std::collections::btree_map::Entry::Occupied(entry) => Ok(entry.get().clone()),
             std::collections::btree_map::Entry::Vacant(entry) => {
@@ -165,6 +184,16 @@ impl SourceFactsBuilder {
         kind: KindId,
         direction: RelationalAdjacencyDirection,
     ) -> Result<WorthQueryObservedAdjacencyRevision, SourceFactReadDenial> {
+        if !self.has_adjacency(anchor, kind, direction)
+            && let Some(allocation) = &self.allocation
+        {
+            allocation
+                .claim_tree::<((EntityId, KindId, u8), WorthQueryObservedAdjacencyRevision)>(
+                    execution,
+                    self.adjacencies.len(),
+                )
+                .map_err(SourceFactReadDenial::Execution)?;
+        }
         match self
             .adjacencies
             .entry((anchor, kind, super::adjacency_direction_rank(direction)))
@@ -198,12 +227,25 @@ impl SourceFactsBuilder {
             }
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn finish(self) -> Result<SourceFacts, Cause> {
+    pub(in crate::domain_computation::primary_graph) fn finish(
+        self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<SourceFacts, Cause> {
+        if let Some(allocation) = &self.allocation {
+            allocation.claim_slice::<EntityId>(execution, self.entities.len())?;
+            allocation
+                .claim_slice::<WorthQueryObservedFieldRevision>(execution, self.aspects.len())?;
+            allocation.claim_slice::<WorthQueryObservedAdjacencyRevision>(
+                execution,
+                self.adjacencies.len(),
+            )?;
+        }
         Ok(SourceFacts {
             entities: collect_facts(self.entities.into_iter())?,
             aspects: collect_facts(self.aspects.into_values())?,
             adjacencies: collect_facts(self.adjacencies.into_values())?,
             walks: self.walks,
+            allocation: self.allocation,
         })
     }
 }

@@ -25,7 +25,9 @@ pub(in crate::domain_computation::primary_graph) fn observe_coupling(
     let mut facts = SourceFactsBuilder::default();
     for member in aggregate.native().members() {
         AggregateObservation::checkpoint(context).map_err(CouplingObservationDenial::Execution)?;
-        facts.observe_entity(member);
+        facts
+            .observe_entity(execution, member)
+            .map_err(CouplingObservationDenial::Execution)?;
         for (_, kind) in layout.sources.iter() {
             for direction in [
                 RelationalAdjacencyDirection::Outgoing,
@@ -39,5 +41,7 @@ pub(in crate::domain_computation::primary_graph) fn observe_coupling(
             }
         }
     }
-    facts.finish().map_err(CouplingObservationDenial::Execution)
+    facts
+        .finish(execution)
+        .map_err(CouplingObservationDenial::Execution)
 }

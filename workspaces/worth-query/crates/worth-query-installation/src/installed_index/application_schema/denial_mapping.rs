@@ -17,6 +17,10 @@ pub(super) fn map_compilation_denial(
             WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable,
             subject,
         ),
+        ApplicationSchemaCompilationDenial::Resource(denial) => (
+            WorthQueryInstalledApplicationSchemaDenialKind::ResourceInstallationDenied,
+            denial.subject().to_string(),
+        ),
         ApplicationSchemaCompilationDenial::Capability(denial) => {
             let kind = match denial.kind() {
                 crate::application_capability::WorthQueryApplicationCapabilityInstallationDenialKind::CanonicalEntryLimitExceeded => {

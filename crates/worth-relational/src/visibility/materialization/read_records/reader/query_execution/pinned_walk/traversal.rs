@@ -126,12 +126,14 @@ pub(super) fn execute(
                             return Err(Denial::EndpointUnavailable);
                         }
                         // Emit physical self/back/diamond edges even if discovery deduplicates.
-                        if !relations.contains_key(&record.relation_id) {
+                        if let std::collections::btree_map::Entry::Vacant(e) =
+                            relations.entry(record.relation_id)
+                        {
                             memory.claim_scratch(memory::tree_entry::<
                                 RelationId,
                                 RelationalRelationMetadata,
                             >()?)?;
-                            relations.insert(record.relation_id, record);
+                            e.insert(record);
                         }
                         if !frontier.contains(&neighbor) {
                             let next = distance.checked_add(1).ok_or(Denial::DistanceOverflow)?;

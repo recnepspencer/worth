@@ -4,6 +4,7 @@ mod application_capability_authoring;
 mod application_correction_authoring;
 mod application_mutation_authoring;
 mod application_query_authoring;
+mod application_resource_authoring;
 mod aspect_contract_identity;
 mod authoring_context;
 mod authorization_path_components;
@@ -79,6 +80,7 @@ mod read_authoring;
 mod references;
 mod relation_aspect;
 mod relation_integrity;
+mod resource_member_closure;
 pub use relation_aspect::{
     ApplicationRelationAspectDefinition, ApplicationRelationAspectDefinitionBuilder,
     ApplicationRelationAspectDefinitionDenial, ApplicationRelationFieldDefinition,
@@ -288,7 +290,8 @@ pub use value_binding::{
     decode_application_document, decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,
     encode_application_document, encode_canonical_value, encode_delegated_canonical_value,
-    value_decode_error, ApplicationCanonicalValueContract, ApplicationEncodedScalarValue,
+    value_decode_error, ApplicationCanonicalValueContract, ApplicationCanonicalValueReference,
+    ApplicationCanonicalValueReferenceParts, ApplicationEncodedScalarValue,
     ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
     ApplicationFrameIdentity, ApplicationIdentityScalarValueBinding,
     ApplicationNativeInputAdmissionDenial, ApplicationNativeInputDecodeProfile,

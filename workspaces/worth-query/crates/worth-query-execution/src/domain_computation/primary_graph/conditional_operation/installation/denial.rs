@@ -22,6 +22,8 @@ pub enum WorthQueryConditionalRuntimeInstallationDenialKind {
     ForeignBinding,
     /// A failed native terminal must be released through fresh progression before reconstitution.
     ManagedCleanupRetained(crate::domain_computation::WorthQueryMutationCleanupFailureKind),
+    /// An allocated application resource still owns Native/provider/recovery custody.
+    ResourceCleanupRetained,
     /// Another owning handle still retains the exact installed runtime.
     RuntimeKeepaliveRetained,
     /// The same binding was installed twice.

@@ -1,7 +1,11 @@
 //! One physical traversal engine for installed Query and operation member paths.
 //! Real read adapters own admission; this kernel cannot turn descriptors into permission.
-use super::{source_facts::SourceFactsBuilder, WorthQueryPrimaryGraphLayout};
+use super::{
+    source_facts::{SourceFacts, SourceFactsAllocation, SourceFactsBuilder},
+    WorthQueryPrimaryGraphLayout,
+};
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryRootPathTraversal, RelationDirection,
@@ -18,6 +22,7 @@ mod denial;
 mod guards;
 mod ports;
 mod step;
+mod storage;
 pub(in crate::domain_computation::primary_graph) use denial::RootPathReadDenial;
 pub(in crate::domain_computation::primary_graph) use ports::{
     RootPathReadObservation, RootPathReadPorts,
@@ -46,8 +51,14 @@ pub(in crate::domain_computation::primary_graph) struct RootPathSelectionRequest
     pub(in crate::domain_computation::primary_graph) subject: &'a str,
 }
 pub(in crate::domain_computation::primary_graph) struct RootPathSelection {
+    pub(in crate::domain_computation::primary_graph) roots: BTreeMap<EntityId, SourceFacts>,
+    pub(in crate::domain_computation::primary_graph) set_source: Option<SourceFacts>,
+    pub(in crate::domain_computation::primary_graph) allocation: Option<Arc<SourceFactsAllocation>>,
+}
+struct RootPathSelectionBuilder {
     pub(in crate::domain_computation::primary_graph) roots: Frontier,
     pub(in crate::domain_computation::primary_graph) set_source: Option<SourceFactsBuilder>,
+    pub(in crate::domain_computation::primary_graph) allocation: Option<Arc<SourceFactsAllocation>>,
 }
 pub(in crate::domain_computation::primary_graph) struct RootPathReadBasis<'a, 'execution, 'request>
 {
@@ -87,33 +98,48 @@ pub(in crate::domain_computation::primary_graph) fn select<E>(
     request: RootPathSelectionRequest<'_>,
     ports: &mut RootPathReadPorts<'_, E>,
 ) -> Result<RootPathSelection, RootPathReadDenial<E>> {
-    let mut roots = BTreeMap::new();
-    let mut set_source = request.capture_set.then(SourceFactsBuilder::default);
-    if let Some(source) = &mut set_source {
-        source.observe_entity(request.start);
+    let mut selected = RootPathSelectionBuilder {
+        roots: BTreeMap::new(),
+        set_source: request.capture_set.then(SourceFactsBuilder::default),
+        allocation: None,
+    };
+    if let Some(source) = &mut selected.set_source {
+        source
+            .observe_entity(basis.execution, request.start)
+            .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;
     }
     for (path_index, path) in request.paths.iter().enumerate() {
         ports.check(request.subject)?;
-        let mut terminal =
-            traverse_path(basis, &request, path, path_index, ports, &mut set_source)?;
+        let mut terminal = traverse_path(basis, &request, path, path_index, ports, &mut selected)?;
         match request.orientation {
             RootPathOrientation::ForwardCensus => {
                 for (root, source) in terminal {
-                    roots.entry(root).or_insert(source);
+                    if !selected.roots.contains_key(&root) {
+                        selected
+                            .admit_frontier_entry(basis.execution, selected.roots.len())
+                            .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;
+                        selected.roots.insert(root, source);
+                    }
                 }
             }
             RootPathOrientation::ReverseWitness { required_root } => {
                 if let Some(source) = terminal.remove(&required_root) {
-                    roots.insert(required_root, source);
+                    selected
+                        .admit_frontier_entry(basis.execution, selected.roots.len())
+                        .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;
+                    selected.roots.insert(required_root, source);
                     break;
                 }
             }
         }
     }
-    if let Some(source) = &mut set_source {
-        for witness in roots.values() {
+    if let Some(source) = &mut selected.set_source {
+        for witness in selected.roots.values() {
             for entity in witness.entities() {
-                if source.observe_entity(entity) {
+                if source
+                    .observe_entity(basis.execution, entity)
+                    .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?
+                {
                     ports.notify(RootPathReadObservation::SourceCopy {
                         units: 1,
                         subject: request.subject,
@@ -122,7 +148,9 @@ pub(in crate::domain_computation::primary_graph) fn select<E>(
             }
         }
     }
-    Ok(RootPathSelection { roots, set_source })
+    selected
+        .finish(basis.execution)
+        .map_err(|cause| RootPathReadDenial::native(request.subject, cause))
 }
 fn traverse_path<E>(
     basis: &RootPathReadBasis<'_, '_, '_>,
@@ -130,10 +158,18 @@ fn traverse_path<E>(
     path: &WorthQueryInstalledRootPath,
     path_index: usize,
     ports: &mut RootPathReadPorts<'_, E>,
-    set_source: &mut Option<SourceFactsBuilder>,
+    selected: &mut RootPathSelectionBuilder,
 ) -> Result<Frontier, RootPathReadDenial<E>> {
     let mut seed = SourceFactsBuilder::default();
-    seed.observe_entity(request.start);
+    if let Some(allocation) = &selected.allocation {
+        seed.protect(basis.execution, allocation)
+            .map_err(|cause| RootPathReadDenial::source(request.subject, cause))?;
+    }
+    seed.observe_entity(basis.execution, request.start)
+        .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;
+    selected
+        .admit_frontier_entry(basis.execution, 0)
+        .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;
     let mut frontier = BTreeMap::from([(request.start, seed)]);
     let count = path.steps().len();
     let reverse = matches!(
@@ -146,7 +182,7 @@ fn traverse_path<E>(
         if reverse { count } else { 0 },
         &mut frontier,
         ports,
-        set_source,
+        selected,
     )?;
     for offset in 0..count {
         let step_index = if reverse { count - 1 - offset } else { offset };
@@ -170,9 +206,9 @@ fn traverse_path<E>(
             })
             .ok_or_else(|| RootPathReadDenial::traversal(step.relation()))?;
         frontier = if step.traversal() == ApplicationQueryRootPathTraversal::Closure {
-            closure::advance(basis, layout, located, &frontier, ports, set_source)?
+            closure::advance(basis, layout, located, &mut frontier, ports, selected)?
         } else {
-            step::advance(basis, layout, located, &mut frontier, ports, set_source)?
+            step::advance(basis, layout, located, &mut frontier, ports, selected)?
         };
         guards::apply(
             basis,
@@ -180,7 +216,7 @@ fn traverse_path<E>(
             if reverse { step_index } else { step_index + 1 },
             &mut frontier,
             ports,
-            set_source,
+            selected,
         )?;
     }
     Ok(frontier)

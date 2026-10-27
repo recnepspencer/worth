@@ -31,13 +31,13 @@ pub(super) fn assert_published(
     };
     let bindings = read
         .relations()
-        .into_iter()
+        .iter()
         .filter(|edge| edge.kind.kind_id == KindId(5) && read.get_entity(edge.source).is_some())
         .map(|edge| (edge.source, row_identity(edge.target)))
         .collect::<BTreeMap<_, _>>();
     let events = read
         .relations()
-        .into_iter()
+        .iter()
         .filter(|edge| edge.kind.kind_id == KindId(4))
         .filter_map(|edge| {
             let state = edge.authoritative_aspect_state.as_ref().unwrap();
@@ -116,7 +116,7 @@ pub(super) fn assert_published(
                 );
                 let expected = prior
                     .relations()
-                    .into_iter()
+                    .iter()
                     .filter(|edge| edge.kind.kind_id == KindId(5))
                     .filter(|edge| {
                         prior_rows.iter().any(|(id, row)| {

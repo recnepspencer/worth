@@ -16,10 +16,9 @@ pub(super) fn resolve<'root>(
             .aggregate_identity
             .as_ref()
             .filter(|contract| selection.matches(contract))
+            && selected.replace(found).is_some()
         {
-            if selected.replace(found).is_some() {
-                return work.invalid(PlanDenial::AmbiguousAggregateRelation);
-            }
+            return work.invalid(PlanDenial::AmbiguousAggregateRelation);
         }
     }
     selected.ok_or(MapKernelFailure::Domain(if selection.is_definition() {

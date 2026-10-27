@@ -11,6 +11,10 @@ pub(in crate::domain_computation::primary_graph) enum ObservedComputationInputs 
     Several(std::sync::Arc<ComputationFactAttribution>),
 }
 impl ObservedComputationInputs {
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     pub(in crate::domain_computation::primary_graph) fn ordinals(
         &self,
         facts: &BTreeMap<Key, Fact>,

@@ -126,6 +126,7 @@ pub(super) fn append(
         } else {
             let mut row = cohorts.rows[&assignment.identity].record.clone();
             row.current_anchor = Some(anchor.clone());
+
             row
         };
         work.retain(extent::row_mutation())?;

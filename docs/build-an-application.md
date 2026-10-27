@@ -1848,9 +1848,24 @@ on it. Its own methods:
 Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
-Managed asynchronous resource requests are still a required
-[9.18.1 Phase 8 integration](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host)
-through Decl/Host. The existing lower World/Bridge path already preserves the
+Managed asynchronous resource requests are available through Decl/Host following
+[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
+documents the concrete `request.resources()` start/advance/inspection/close path,
+installed provider, finite ingress, exact selector reclaim and recovery handoff.
+Resource declarations and installed typed-profile lookup separate Start/Inspect/Advance/Close authority
+from availability, state, payload, domain failure and cleanup-detail disclosure.
+Installed access purposes keep the corresponding action and facets together;
+plain Close requires no Inspect or payload disclosure. Their ResourceRead plans
+retain genuine provider capacity until terminal release, but grant no lifecycle
+action or payload permission by themselves.
+Availability is boolean existence; protected queue/provider counts belong to
+cleanup detail and require Count as well as Explanation influence. A receipt is
+process-local selection provenance; fresh original-branch action and requested
+facet admission precede protected row/provider/clock access. Explicit runtime
+close refuses allocated rows and preserves their owners. Rust Drop/process
+termination does not attest to provider or Native cleanup.
+The existing lower World/Bridge path already preserves the
 exact committed source through request admission and revalidation; an empty
 source returns `NoCommittedSource` before creating a Signal request. This source
 binding does not supply an application provider or authorize external completion.

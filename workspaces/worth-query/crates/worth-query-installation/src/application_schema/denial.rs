@@ -13,6 +13,8 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     InvalidInspectionDefinition,
     InspectionBindingMeaningChanged,
     InspectionUnavailable,
+    ResourceInstallationDenied,
+
     OperationInstallationDenied,
     DerivedSourceUnavailable,
     FieldBindingMissing,

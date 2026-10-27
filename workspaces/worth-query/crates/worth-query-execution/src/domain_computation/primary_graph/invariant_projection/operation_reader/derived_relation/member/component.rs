@@ -113,7 +113,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                 let mut facts=SourceFactsBuilder::default();
                 for (entity,_) in native.data().entity_dependencies(){
                     AggregateObservation::checkpoint(context).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
-                    facts.observe_entity(*entity);
+                    facts.observe_entity(&execution,*entity).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
                 }
                 for probe in native.data().adjacency_dependencies(){
                     AggregateObservation::checkpoint(context).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
@@ -123,7 +123,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                         SourceFactReadDenial::Unavailable=>Denial::new(Kind::EndpointUnavailable,set.name()),
                     })?;
                 }
-                let facts=facts.finish().map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                let facts=facts.finish(&execution).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
                 let selection=Arc::new(ComponentSelection::from_derived(scope,layout.clone(),root,member.key.clone(),self.reader.snapshot.clone(),vec![aggregate.clone()],vec![facts],||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(denied)?);
                 self.decision_facts.record_component(&selection,admission,contracts,self.reader.authority_identity,context).map_err(|error|match error {
                     crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::structural_walks::WalkRecordDenial::Execution(cause)=>self.reader.walk_stop(cause,set.name()),

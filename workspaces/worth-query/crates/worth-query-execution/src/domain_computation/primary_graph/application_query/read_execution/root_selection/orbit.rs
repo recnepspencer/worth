@@ -95,7 +95,7 @@ pub(super) fn select(
             return Err(traversal_denial(subject));
         }
         let mut source = RootPathSourceBuilder::default();
-        source.observe_entity(plan.root);
+        source.observe_entity(execution, plan.root)?;
         source.set_walks(
             StructuralWalkDependencies::append(None, &walk, execution, context)
                 .map_err(|cause| super::super::denial::relational_read_denial(cause, subject))?,
@@ -105,7 +105,7 @@ pub(super) fn select(
             aggregate: Arc::clone(&aggregate),
             binding: plan.binding.clone(),
         });
-        let source = source.finish()?;
+        let source = source.finish(execution)?;
         let count = walk.native().visits().len();
         let mut candidates = Vec::new();
         candidates.try_reserve_exact(count).map_err(|_| {

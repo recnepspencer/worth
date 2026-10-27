@@ -170,7 +170,7 @@ impl WorthQueryPrimaryGraph {
         }
     }
 
-    pub(in crate::domain_computation) fn query_session_port(
+    pub(in crate::domain_computation) fn product_read_session_port(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort {
         crate::domain_computation::provider_session::WorthQueryGraphReadOwnerPort::new(

@@ -79,9 +79,7 @@ pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisit
         census = Some(
             selected
                 .set_source
-                .expect("census captures its full negative universe")
-                .finish()
-                .map_err(|cause| reader.native_denial(cause))?,
+                .expect("census captures its full negative universe"),
         );
         universe
     };
@@ -122,11 +120,7 @@ pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisit
                     .expect("the complete forward universe retains each actual member witness")
             };
             // Census row witnesses are retained for Query's independent cohort granule.
-            visibility.push(
-                source
-                    .finish()
-                    .map_err(|cause| reader.native_denial(cause))?,
-            );
+            visibility.push(source);
             seen.insert(candidate);
         }
         let coupling = reader.observe_cohort(&aggregate, context)?;

@@ -1,8 +1,7 @@
 use worth_foundational::facade::CanonicalDigestDerivationDenial;
 use worth_query_declaration::facade::{
     application_query::{
-        ApplicationQueryAuthorizationRequirement, ApplicationQueryDisclosureContract,
-        ErasedApplicationQueryDefinition,
+        ApplicationQueryAuthorizationRequirement, ErasedApplicationQueryDefinition,
     },
     application_schema::ApplicationSchema,
 };
@@ -22,8 +21,8 @@ use crate::{
     application_schema::WorthQueryInstalledApplicationSchema,
     canonical_work::WorthQueryCanonicalWorkEvidence,
     graph_obligation::{
-        bind_query_obligations, WorthQueryGraphObligationInstallationDenial,
-        WorthQueryInstalledGraphCapabilityRequirement,
+        bind_query_obligations, install_disclosure_capabilities,
+        WorthQueryGraphObligationInstallationDenial,
     },
 };
 
@@ -124,34 +123,6 @@ impl WorthQueryCompiledApplicationQuery {
             obligations,
         })
     }
-}
-
-fn install_disclosure_capabilities<Schema>(
-    schema: &WorthQueryInstalledApplicationSchema<Schema>,
-    disclosure: &ApplicationQueryDisclosureContract,
-) -> Vec<WorthQueryInstalledGraphCapabilityRequirement>
-where
-    Schema: ApplicationSchema,
-{
-    let (Some(name), Some(capability_type)) =
-        (disclosure.capability_name(), disclosure.capability_type())
-    else {
-        return Vec::new();
-    };
-    schema
-        .capability_registry
-        .values()
-        .filter(|compiled| {
-            compiled.contract().name() == name
-                && compiled.contract().capability_type() == capability_type
-        })
-        .map(|compiled| {
-            WorthQueryInstalledGraphCapabilityRequirement::new(
-                compiled.identity().clone(),
-                compiled.contract().clone(),
-            )
-        })
-        .collect()
 }
 
 fn install_authorization<Schema>(

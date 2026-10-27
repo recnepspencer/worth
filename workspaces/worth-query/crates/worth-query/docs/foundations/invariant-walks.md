@@ -190,6 +190,15 @@ work and memory limits. Query records actual acquisitions and accounts for its
 prepared-scope storage with the original invariant budget. Checked callbacks
 must also account for their own computation and owned storage.
 
+An executed complete step in a declared query root path also funds its copied
+source facts, intermediate frontiers and retained Query witnesses from the
+original request. Later steps and observer copies keep that metadata payment.
+It is independent of the Native walk body's payment: retaining the body alone
+does not retain Query's source metadata. Paths that execute no complete step
+keep their ordinary funding posture. The
+[source lifetime court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/declared_queries/resources.rs)
+checks both payments through their real last owners.
+
 A returned walk owns its native result and retains its allocation payer.
 Borrowed iteration creates typed values without another graph read or another
 result collection. Drop the result when its facts are no longer needed; other

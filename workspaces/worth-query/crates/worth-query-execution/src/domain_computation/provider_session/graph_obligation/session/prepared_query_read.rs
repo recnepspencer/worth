@@ -1,9 +1,7 @@
 //! Read-only dispatch custody; the capacity-reserved session stays on its owner.
 
 use super::super::{WorthQueryGraphWorkSessionIdentity, WorthQuerySessionGraphReadProof};
-use super::{
-    WorthQueryGraphWorkBasis, WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession,
-};
+use super::{WorthQueryManagedGraphReadDenial, WorthQueryManagedGraphWorkSession};
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationBasisIdentity, WorthQueryPrimaryGraphLayout,
 };
@@ -34,9 +32,7 @@ impl WorthQueryManagedGraphWorkSession {
             &WorthQueryPrimaryGraphLayout,
         ) -> Vec<worth_relational::facade::indexes::DerivedIndexId>,
     ) -> Result<WorthQueryPreparedSessionRead, WorthQueryManagedGraphReadDenial> {
-        let WorthQueryGraphWorkBasis::Query { identity, port, .. } = &self.basis else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        let super::ProductReadBasis { identity, port, .. } = self.query_read_basis()?;
         if identity != basis || !self.branch.admits_query_basis(basis) {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
@@ -75,9 +71,7 @@ impl WorthQueryManagedGraphWorkSession {
         execution
             .check_live()
             .map_err(WorthQueryManagedGraphReadDenial::RequestStop)?;
-        let WorthQueryGraphWorkBasis::Query { identity, .. } = &self.basis else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        let super::ProductReadBasis { identity, .. } = self.query_read_basis()?;
         if identity != basis
             || !self.branch.admits_query_basis(basis)
             // Operational snapshot ids differ between independently admitted
@@ -154,9 +148,7 @@ impl WorthQueryManagedGraphWorkSession {
         if completion.session != self.identity || completion.plan != self.plan.identity() {
             return Err(WorthQueryManagedGraphReadDenial::ForeignBasis);
         }
-        let WorthQueryGraphWorkBasis::Query { identity, .. } = &self.basis else {
-            return Err(WorthQueryManagedGraphReadDenial::MutationSession);
-        };
+        let super::ProductReadBasis { identity, .. } = self.query_read_basis()?;
         Ok(WorthQuerySessionGraphReadProof::new(
             completion.session,
             completion.plan,

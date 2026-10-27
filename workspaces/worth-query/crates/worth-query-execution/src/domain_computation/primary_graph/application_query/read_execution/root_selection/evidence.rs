@@ -14,14 +14,20 @@ use std::sync::Arc;
 use worth_foundational::facade::{AspectKey, FieldKey};
 use worth_relational::facade::{identity::EntityId, runtime::VisibilityProjectionView};
 
-#[derive(Clone, Default)]
+#[derive(Default)]
 pub(super) struct RootPathSourceBuilder {
     facts: SourceFactsBuilder,
     orbit: Option<DeclaredOrbitSelection>,
 }
 impl RootPathSourceBuilder {
-    pub(super) fn observe_entity(&mut self, entity: EntityId) -> bool {
-        self.facts.observe_entity(entity)
+    pub(super) fn observe_entity(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+    ) -> Result<bool, WorthQueryApplicationReadExecutionDenial> {
+        self.facts
+            .observe_entity(execution, entity)
+            .map_err(|cause| relational_read_denial(cause, "source entity allocation"))
     }
     pub(super) fn set_walks(&mut self, walks: Arc<StructuralWalkDependencies>) {
         self.facts.set_walks(walks);
@@ -40,7 +46,11 @@ impl RootPathSourceBuilder {
         field: &FieldKey,
         work: &mut RootSelectionWork,
     ) -> Result<WorthQueryObservedFieldRevision, WorthQueryApplicationReadExecutionDenial> {
-        if !self.facts.has_field(entity, aspect, field) {
+        if !self
+            .facts
+            .has_field(execution, entity, aspect, field)
+            .map_err(|cause| relational_read_denial(cause, entity_name))?
+        {
             work.charge_source_observation(entity_name)?;
         }
         self.facts
@@ -57,11 +67,15 @@ impl RootPathSourceBuilder {
     }
     pub(super) fn finish(
         self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial>
     {
         let facts = self
             .facts
-            .finish()
+            .finish(execution)
+            .map_err(|cause| relational_read_denial(cause, "source witness allocation"))?;
+        facts
+            .admit_container::<WorthQueryObservedRootSelection>(execution)
             .map_err(|cause| relational_read_denial(cause, "source witness allocation"))?;
         Ok(Arc::new(WorthQueryObservedRootSelection::new(
             facts, self.orbit,

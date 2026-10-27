@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationSchemaDeclar
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<IdentitySchema>,
 ) -> ApplicationSchemaDeclarationBuilder<IdentitySchema> {
-    schema
+    resource::with_authorization(schema)
         .entity(ExternalMapping::reference())
         .entity(Principal::reference())
         .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
@@ -28,4 +28,5 @@ pub(super) fn declare(
         .application_query(principal_query_definition())
         .application_query_binding::<PrincipalQueryBinding>()
         .application_query_binding::<result_only::ResultOnlyQueryBinding>()
+        .application_resource(resource::definition())
 }
