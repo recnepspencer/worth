@@ -51,14 +51,13 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
     };
     use worth_query_host::facade::declaration::application_operation::ApplicationMutationBinding;
     let removed_bindings = [
-        <crate::document_retention_model::correctable_retention::CorrectableRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <SetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <OccurrenceSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <ExplicitReviewedSetRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
         <CorrectableRetentionBinding as ApplicationMutationBinding<DocumentRetentionSchema>>::IDENTITY,
     ];
-    assert_eq!(removed_operations.len(), removed_bindings.len() * 2);
+    assert_eq!(removed_operations.len(), removed_bindings.len());
     for binding in removed_bindings {
         assert!(
             removed_operations
@@ -69,10 +68,10 @@ fn removed_operation_derives_retire_disposition_and_closes_its_source_owner() {
         assert_eq!(
             removed_operations
                 .iter()
-                .filter(|requirement| requirement.subject().ends_with(binding))
+                .filter(|requirement| action_binding(requirement.subject()) == Some(binding))
                 .count(),
-            2,
-            "both operation and delivery retire for {binding}"
+            1,
+            "each removed binding owns one continuation obligation: {binding}"
         );
     }
     assert!(removed_operations
