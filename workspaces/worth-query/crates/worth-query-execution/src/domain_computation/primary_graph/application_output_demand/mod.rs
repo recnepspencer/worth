@@ -56,6 +56,9 @@ pub(super) use registry::WorthQueryPerformedOutputDemandSource;
 pub(super) use registry::WorthQueryReadmittedAcceptedOutput;
 pub(super) use registry::WorthQueryRequiredOutputSourcePreparation;
 pub(super) use registry::WorthQueryRestoredAcceptedOutput;
+pub(in crate::domain_computation::primary_graph) use settlement::observation::{
+    OriginalSettledProducerObservation, OriginalSettledProducerSource,
+};
 pub use settlement::WorthQueryOutputDemandSettlement;
 pub use settlement::WorthQueryOutputSettlementPosture;
 

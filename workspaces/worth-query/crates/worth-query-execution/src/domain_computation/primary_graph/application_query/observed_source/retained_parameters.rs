@@ -15,6 +15,9 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
     admitted: WorthQueryAdmittedApplicationQueryParameters,
     binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
     rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
+    producer: Option<
+        Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
+    >,
 }
 
 impl WorthQueryRetainedObservedParameters {
@@ -22,11 +25,15 @@ impl WorthQueryRetainedObservedParameters {
         admitted: WorthQueryAdmittedApplicationQueryParameters,
         binding: Option<WorthQueryInstalledApplicationQueryBindingObservation>,
         rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
+        producer: Option<
+            Arc<super::super::super::application_output_demand::OriginalSettledProducerObservation>,
+        >,
     ) -> Self {
         Self {
             admitted,
             binding,
             rows,
+            producer,
         }
     }
 
@@ -34,6 +41,13 @@ impl WorthQueryRetainedObservedParameters {
         &self,
     ) -> &[Arc<WorthQueryObservedSourceMeaning>] {
         self.rows.elements()
+    }
+
+    pub(super) fn producer_observation(
+        &self,
+    ) -> Option<&super::super::super::application_output_demand::OriginalSettledProducerObservation>
+    {
+        self.producer.as_deref()
     }
 
     pub(super) fn row_footprints(

@@ -1,6 +1,7 @@
 use super::*;
 pub(super) trait BirthSchema: TopologyModelBinding {
     const REQUIRED: bool;
+    const INPUT_REUSE: bool = false;
     const SOURCE_WRITE: super::own_effect::SourceWrite = super::own_effect::SourceWrite::None;
 }
 worth_query_entity!(pub(super) OutputNode for Schema: BirthSchema);

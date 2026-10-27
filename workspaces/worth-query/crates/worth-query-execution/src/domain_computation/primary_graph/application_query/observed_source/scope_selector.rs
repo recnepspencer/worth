@@ -5,6 +5,15 @@ use super::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
+    /// A genuine settlement seed, not proof of row or field production.
+    /// Metadata must be freshly admitted before inspecting its availability.
+    pub(in crate::domain_computation::primary_graph) fn original_settled_producer(
+        &self,
+    ) -> Option<&super::super::super::application_output_demand::OriginalSettledProducerObservation>
+    {
+        self.parameters.producer_observation()
+    }
+
     /// Original completed rows, distinct from the result-set selection meaning.
     /// Descriptive custody only; callers must admit metadata before traversal.
     pub(in crate::domain_computation::primary_graph) fn original_row_footprints(

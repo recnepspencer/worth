@@ -1223,6 +1223,20 @@ cover one, many and empty results, original storage funding and final-owner rele
 Fresh metadata admission must precede footprint traversal; this custody alone does
 not implement fresh Host inspection or connect a producer cause.
 
+Actual output settlements also retain one original-request funded readonly supplier
+capsule on the exact settled read. Retained, shared and batch query issuance carry
+it only when the actual query basis matches the full original read tuple. The
+original committed publication A remains distinct from later settled read B; a
+plain head query cannot infer a supplier from equal source meaning. Capture shares
+the real committed envelope, settlement identity, correspondence, optional source
+disclosure and Native observer without retaining the commit receipt, Ready cell,
+Product observation or Native reader. Genuine stable input cutoff and checkpoint
+restoration preserve their distinct original identities without inventing execution.
+See [producer custody and actual courts](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-settled-producer-custody).
+This remains a prerequisite: fresh metadata admission must precede availability
+checks, and exact entity-generation/field/performed-revision/output-role overlap
+must establish any producer-to-row cause. Phase 9 is still unfinished.
+
 Optional inspection meaning belongs to the existing ordinary query binding:
 `ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata
 disclosure contract, and `application_query_inspection` registers that binding's

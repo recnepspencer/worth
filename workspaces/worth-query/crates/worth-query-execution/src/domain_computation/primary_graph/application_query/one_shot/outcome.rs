@@ -251,6 +251,8 @@ where
             plan.parameters,
             plan.query.binding_observation().cloned(),
             row_meanings,
+            plan.controls
+                .original_settled_producer_for(plan.basis.selected_product().observation()),
         ),
     );
     let mut observed_sources = Vec::with_capacity(source_parameters.row_meanings().len());

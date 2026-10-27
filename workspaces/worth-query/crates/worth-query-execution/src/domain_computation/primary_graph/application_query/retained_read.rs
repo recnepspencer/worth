@@ -17,6 +17,8 @@ pub struct WorthQueryApplicationReadObservation {
     runtime_authority: u64,
     schema_binding: ApplicationSchemaBindingIdentity,
     product: WorthQueryProductObservationLease,
+    producer:
+        Option<Arc<super::super::application_output_demand::OriginalSettledProducerObservation>>,
 }
 
 impl WorthQueryApplicationReadObservation {
@@ -31,25 +33,29 @@ impl WorthQueryApplicationReadObservation {
             runtime_authority: runtime.runtime.authority_identity().as_u64(),
             schema_binding: runtime.installed_schema.binding_identity(),
             product,
-        })
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn from_product_funded<Schema>(
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        product: WorthQueryProductObservationLease,
-    ) -> Arc<Self>
-    where
-        Schema: ApplicationSchema,
-    {
-        Arc::new(Self {
-            runtime_authority: runtime.runtime.authority_identity().as_u64(),
-            schema_binding: runtime.installed_schema.binding_identity(),
-            product,
+            producer: None,
         })
     }
 
     pub fn branch_identity(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
         self.product.branch_identity()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn from_settled_product<
+        Schema: ApplicationSchema,
+    >(
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        producer: Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
+        product: WorthQueryProductObservationLease,
+    ) -> Arc<Self> {
+        Arc::new(Self {
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            producer: producer
+                .matches(runtime, product.observation())
+                .then_some(producer),
+            product,
+        })
     }
 
     pub fn branch_incarnation(&self) -> worth_runtime_world::facade::ProductBranchIncarnation {
@@ -84,9 +90,20 @@ where
     Schema: ApplicationSchema,
 {
     pub fn retain_application_read(self) -> Arc<WorthQueryApplicationReadObservation> {
+        let producer = self.original_settled_producer().cloned();
         let (runtime, product, application_basis) = self.into_parts();
         drop(application_basis);
-        WorthQueryApplicationReadObservation::from_product(runtime, product.into_read_lease())
+        match producer {
+            Some(producer) => WorthQueryApplicationReadObservation::from_settled_product(
+                runtime,
+                producer,
+                product.into_read_lease(),
+            ),
+            None => WorthQueryApplicationReadObservation::from_product(
+                runtime,
+                product.into_read_lease(),
+            ),
+        }
     }
 }
 
@@ -132,5 +149,6 @@ where
             .product_runtime
             .lease_from_observation(observation.product.observation().clone())?;
         self.on_product(execution, product)
+            .map(|selected| selected.with_original_settled_producer(observation.producer.clone()))
     }
 }

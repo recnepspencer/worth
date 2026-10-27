@@ -35,6 +35,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .security_observation_for(execution, self.product())
             .map_err(|stop| super::selection_denial(stop, query_name))?;
         let (application, _current_security, _) = self.into_parts();
+        let producer = retained.original_settled_producer().cloned();
         let (retained_application, product, application_basis) = retained.into_parts();
         if !std::ptr::eq(application, retained_application) {
             return Err(foreign_basis(query_name));
@@ -47,7 +48,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 application_basis,
                 controls.maximum_results,
                 controls.request,
-            ),
+            )
+            .with_original_settled_producer(producer),
         ))
     }
 

@@ -253,6 +253,12 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.original_inspection_disclosure.as_deref()
     }
 
+    pub(in crate::domain_computation::primary_graph) fn retain_original_inspection_disclosure(
+        &self,
+    ) -> Option<Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>> {
+        self.original_inspection_disclosure.clone()
+    }
+
     #[cfg(test)]
     pub(crate) fn replace_idempotency_binding_for_test(
         &mut self,

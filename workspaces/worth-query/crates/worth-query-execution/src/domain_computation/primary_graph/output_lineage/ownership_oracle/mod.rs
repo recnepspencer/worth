@@ -65,3 +65,5 @@ mod installation;
 mod journey;
 
 mod optional_aspects;
+
+mod producer_observation;

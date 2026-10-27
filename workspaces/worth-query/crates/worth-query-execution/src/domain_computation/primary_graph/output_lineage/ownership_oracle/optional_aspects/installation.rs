@@ -7,6 +7,12 @@ use std::sync::{atomic::AtomicUsize, Arc};
 use worth_foundational::facade::ApplicationBuildIdentity;
 worth_query_decl::facade::worth_query_application! { pub(super) OptionalSchema { owner: "worth.query.test.optional-aspects", version: (1, 0), contributions: [Members], } }
 worth_query_decl::facade::worth_query_application! { pub(super) RequiredSchema { owner: "worth.query.test.required-aspects", version: (1, 0), contributions: [Members], } }
+worth_query_decl::facade::worth_query_application! { pub(super) ReuseSchema { owner: "worth.query.test.optional-aspects-input-reuse", version: (1, 0), contributions: [Members], } }
+impl TopologyModelBinding for ReuseSchema {}
+impl BirthSchema for ReuseSchema {
+    const REQUIRED: bool = false;
+    const INPUT_REUSE: bool = true;
+}
 impl TopologyModelBinding for OptionalSchema {}
 impl BirthSchema for OptionalSchema {
     const REQUIRED: bool = false;

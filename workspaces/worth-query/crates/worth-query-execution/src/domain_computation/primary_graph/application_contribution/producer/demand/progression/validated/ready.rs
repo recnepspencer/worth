@@ -177,11 +177,10 @@ where
                 if let Some(kind) = unavailable(proof)? {
                     return Ok(ReadyVerdict::Unavailable(kind));
                 }
-                match Settlement::from_commit(
+                match Settlement::from_committed_ready(
                     execution,
                     self,
-                    receipt,
-                    &completion.readiness,
+                    &completion,
                     &demand.selected.identity,
                     Family::IDENTITY,
                     demand.producer_contacts_in_this_demand,
@@ -198,14 +197,16 @@ where
                 }
             }
             Authority::Stable(stable) => alias(Settlement::from_stable(
+                execution,
                 self,
                 stable,
                 &current,
                 &demand.selected.identity,
                 Family::IDENTITY,
                 demand.producer_contacts_in_this_demand,
-            ))?,
+            )?)?,
             Authority::Restored(restored) => alias(Settlement::from_restoration(
+                execution,
                 self,
                 restored,
                 Family::IDENTITY,

@@ -81,6 +81,37 @@ executes both through actual query admission and completion. A future inspector
 must admit requested metadata before traversing these retained footprints. This
 capture grants no fresh permission and does not yet associate a producer chain.
 
+### Original Settled Producer Custody
+
+An actual output settlement now attaches one opaque readonly producer capsule to
+its retained read. A query issued through that exact read shares the capsule with
+its original parameters and row evidence. Retained, shared and batch query routes
+preserve the same supplier; a plain head query cannot infer it from equal source
+meaning. A different actual query basis drops the association.
+
+The capsule distinguishes the producer's committed publication A from the settled
+read B, which can follow an unrelated legal publication. It retains the original
+committed envelope, exact settlement identity, output correspondence, optional
+source-disclosure meaning and genuine Native conditional observation. It shares
+only original immutable backings: no commit receipt, Ready cell, operational
+Product observation or Native reader is retained by the query observation.
+Its concrete allocation, including Arc header alignment, is admitted once by the
+original execution request; clones share that reservation.
+
+Stable input reuse carries its real stable settlement identity without fabricating
+Native execution. Checkpoint restoration carries its original restored identity
+without manufacturing an observer. The
+[performed and later-basis court](../../../worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/producer_observation.rs),
+[installed input-cutoff court](../../../worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/producer_observation.rs)
+and [checkpoint court](../../../worth-query-execution/src/domain_computation/primary_graph/output_lineage/ownership_oracle/optional_aspects/retained_recovery.rs)
+exercise those actual production routes.
+
+This is supplier custody, not proof that a result row or field was produced by
+that supplier. Fresh metadata admission must precede even checking its availability.
+Connecting a cause still requires exact entity generation, field, performed
+revision and declared output-role overlap. Fresh Host admission and that correlation
+remain unfinished in Phase 9; a matching entity, aspect or value is insufficient.
+
 ### Optional Query Inspection Metadata Meaning
 
 The declaration facade exposes
