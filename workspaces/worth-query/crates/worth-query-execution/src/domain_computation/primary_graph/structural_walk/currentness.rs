@@ -15,7 +15,7 @@ pub(super) fn pin_at(
         .read_truth()
         .pin_read_capability(snapshot, &[], execution)
         .map_err(|stop| match stop {
-            RelationalPinnedReadAdmissionDenial::Request(stop) => Failure::Execution(stop.into()),
+            RelationalPinnedReadAdmissionDenial::Request(stop) => Failure::Execution(stop),
             _ => Failure::Unavailable,
         })
 }
