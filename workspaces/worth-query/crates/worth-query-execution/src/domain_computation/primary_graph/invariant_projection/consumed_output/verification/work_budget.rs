@@ -128,16 +128,15 @@ mod tests {
     /// verification mappings; byte-forecast stops were retired by ee07da2b0e.
     #[test]
     fn capacity_stops_are_not_missing_output_evidence() {
-        for stop in [CompanionPreflightStop::PreparationMemoryCounterOverflow] {
-            let kept = ConsumedOutputVerificationStop::CapacityExhausted(
-                VerificationCapacityStop::Meter(stop),
-            );
-            assert_eq!(map_admission_stop(stop), kept);
-            assert_eq!(
-                map_verification_stop(SettlementVerificationStop::Admission(stop)),
-                kept
-            );
-        }
+        let stop = CompanionPreflightStop::PreparationMemoryCounterOverflow;
+        let kept = ConsumedOutputVerificationStop::CapacityExhausted(
+            VerificationCapacityStop::Meter(stop),
+        );
+        assert_eq!(map_admission_stop(stop), kept);
+        assert_eq!(
+            map_verification_stop(SettlementVerificationStop::Admission(stop)),
+            kept
+        );
     }
 
     #[test]
