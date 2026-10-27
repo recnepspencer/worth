@@ -34,12 +34,13 @@ use prepared_sweep_home::PreparedSweepHome;
 const SEEDS: [u64; 2] = [0x5eed_0301, 0x5eed_0302];
 const COMMITS: usize = 9;
 const CHECKPOINT_EVERY: usize = 3;
-/// Keep small hosts busy through I/O waits, but cap simultaneous homes at 32
-/// to bound NTFS/endpoint-scanner contention and the fixture memory footprint.
+/// Retain at least eight workers because timeout budgets were derived at eight.
+/// Cap simultaneous homes at 32 to bound NTFS/endpoint-scanner contention and
+/// the fixture memory footprint.
 fn worker_count() -> usize {
     std::thread::available_parallelism()
-        .map_or(4, std::num::NonZeroUsize::get)
-        .clamp(4, 32)
+        .map_or(8, std::num::NonZeroUsize::get)
+        .clamp(8, 32)
 }
 /// Libtest runs target sweeps concurrently. Keep that from multiplying the
 /// worker allowance and starving process-kill children of their Store seam.
@@ -235,6 +236,14 @@ fn sweep(select: impl Fn(&Script) -> Target) {
             });
         }
     });
+    let failures = failures.into_inner().unwrap();
+    assert!(
+        failures.is_empty(),
+        "{} of {} cases failed:\n{}",
+        failures.len(),
+        cases.len(),
+        failures.join("\n")
+    );
     for (index, (sweep, tally)) in seeds.iter().zip(tallies.into_inner().unwrap()).enumerate() {
         eprintln!(
             "media sweep seed {:#x} step {}: {tally:?}",
@@ -250,14 +259,6 @@ fn sweep(select: impl Fn(&Script) -> Target) {
             sweep.seed
         );
     }
-    let failures = failures.into_inner().unwrap();
-    assert!(
-        failures.is_empty(),
-        "{} of {} cases failed:\n{}",
-        failures.len(),
-        cases.len(),
-        failures.join("\n")
-    );
     eprintln!(
         "media sweep: {} scheduled cases, {workers} workers, elapsed {:?}",
         cases.len(),
