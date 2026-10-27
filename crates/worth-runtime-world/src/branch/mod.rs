@@ -32,8 +32,9 @@ pub use custody::{
 };
 pub(crate) use custody::{OwnerCreatedComponentCustodyRegistry, ReservedCustodySlot};
 pub use history::{
-    ProductBranchAncestorSelection, ProductBranchAncestorSelectionDenial,
-    ProductBranchHistoryTraversal,
+    PreparedProductExactHistoryPage, ProductBranchAncestorSelection,
+    ProductBranchAncestorSelectionDenial, ProductBranchHistoryTraversal, ProductExactHistoryCursor,
+    ProductExactHistoryDenial, ProductExactHistoryPage,
 };
 pub use name::{ProductBranchName, ProductBranchNameDenial};
 pub use observation::{

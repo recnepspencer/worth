@@ -106,6 +106,36 @@ impl RuntimeWorldObservationPort {
             .map_err(super::super::RuntimeWorldServiceDenial::Denied)
     }
 
+    /// Open at exactly the retained observation, with one catalog admission
+    /// probe. No live branch head or reference generation is substituted.
+    pub fn open_exact_product_history(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        target: &crate::branch::ProductBranchObservation,
+    ) -> Result<
+        crate::branch::ProductExactHistoryCursor,
+        super::super::RuntimeWorldServiceDenial<crate::branch::ProductExactHistoryDenial>,
+    > {
+        self.service()?
+            .open_exact_product_history(execution, target)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
+    /// Prepare one genuine product-parent step. Its sealed result retains the
+    /// originating request and can be declined without consuming the cursor.
+    pub fn prepare_exact_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        super::super::RuntimeWorldServiceDenial<crate::branch::ProductExactHistoryDenial>,
+    > {
+        self.service()?
+            .prepare_exact_product_history_page(execution, cursor)
+            .map_err(super::super::RuntimeWorldServiceDenial::Denied)
+    }
+
     pub fn trace_product_branch_ancestry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

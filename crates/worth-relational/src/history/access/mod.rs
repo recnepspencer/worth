@@ -1,4 +1,5 @@
 mod ancestry;
+mod aspect_history;
 mod aspect_history_queries;
 mod bounded_commit_patches;
 mod commit_surfaces;
@@ -10,6 +11,11 @@ mod patch_stream_commit;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) use ancestry::{CommitAncestryInspection, CommitAncestryPosture};
+pub use aspect_history::{
+    RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
+    RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
+    RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+};
 pub use bounded_commit_patches::BoundedCanonicalCommitPatchDenial;
 
 pub struct HistoryAccess<'runtime> {

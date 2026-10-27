@@ -105,6 +105,26 @@ where
         super::history::select_ancestor(self, execution, target, source, maximum)
     }
 
+    fn open_exact_product_history(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        target: &ProductBranchObservation,
+    ) -> Result<crate::branch::ProductExactHistoryCursor, crate::branch::ProductExactHistoryDenial>
+    {
+        super::exact_history::open(self, execution, target)
+    }
+
+    fn prepare_exact_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &crate::branch::ProductExactHistoryCursor,
+    ) -> Result<
+        crate::branch::PreparedProductExactHistoryPage<'request, 'authority>,
+        crate::branch::ProductExactHistoryDenial,
+    > {
+        super::exact_history::prepare(self, execution, cursor)
+    }
+
     fn trace_product_branch_ancestry(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -13,8 +13,8 @@ pub use catalog::{
     RuntimeWorldPublicationRow,
 };
 pub(crate) use catalog::{
-    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetiredHistoryEntries,
-    RuntimeWorldHistoryCatalogContract,
+    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetainedExactHistoryPosition,
+    RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
 };
 #[allow(
     unused_imports,

@@ -77,6 +77,20 @@ requesting reclamation. History is an explicit inspection lane, not an ordinary
 publication scan. Head generation is readable through `reference_generation().get()`;
 the scalar cannot manufacture a branch observation or advance a reference.
 
+`observation_port().open_exact_product_history(execution, &observation)` instead
+pins that exact source and stages one genuine parent step per prepared page.
+It follows immutable `OrdinaryParent` links across forks and returns genuine
+commits/component bases without inventing past branch-reference generations.
+Retired intermediates yield a typed gap; both this cursor and
+`select_product_branch_ancestor` refuse retirement splices as exact ancestry.
+The older inspection traversal can still report that it crossed retired history.
+Use the prepared page's original request to accept an immutable successor; install
+it only after the enclosing composition's final admission and request handoff.
+Dropping staged pages or successors keeps the prior cursor intact and releases
+their actual position pins. Opening has one catalog admission probe; each page
+has one parent-step visit and constant additional position storage. Neither path
+adds application disclosure or correction permission.
+
 An intermediate owner effect can install a retained **unpublished** successor
 occurrence without changing any product reference. Its parent and exact component
 bases remain inspectable, but history presence is not performed authority. If pin
