@@ -8,6 +8,7 @@ pub struct BridgeOwnedAsyncRequestResponseDeclaration {
     pub(super) retry_max_attempts: u32,
     pub(super) retry_delay_ticks: u64,
     pub(super) timeout_ticks: u64,
+    pub(super) managed_queue_capacity: Option<std::num::NonZeroU64>,
 }
 
 impl BridgeOwnedAsyncRequestResponseDeclaration {
@@ -26,6 +27,12 @@ impl BridgeOwnedAsyncRequestResponseDeclaration {
             retry_max_attempts,
             retry_delay_ticks,
             timeout_ticks,
+            managed_queue_capacity: None,
         }
+    }
+
+    pub fn with_managed_queue_capacity(mut self, capacity: std::num::NonZeroU64) -> Self {
+        self.managed_queue_capacity = Some(capacity);
+        self
     }
 }

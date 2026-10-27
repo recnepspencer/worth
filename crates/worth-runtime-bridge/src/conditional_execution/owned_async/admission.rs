@@ -22,6 +22,11 @@ impl BridgeOwnedSignalRuntime {
         truth_basis: BridgeAsyncRequestTruthViewBasis,
     ) -> Result<super::super::BridgeOwnedAsyncRequestAdmission, BridgeAsyncRequestIdentityRejection>
     {
+        if self.owned_async_queue_capacity(lowered).is_some() {
+            return Err(request_denial(
+                "managed declaration requires managed queue admission",
+            ));
+        }
         let bound = self.bind_owned_async_basis(lowered, signal_basis, truth_basis)?;
         let admitted = bound
             .port
@@ -90,7 +95,7 @@ impl BridgeOwnedSignalRuntime {
     }
 }
 
-fn request_denial(detail: impl Into<Arc<str>>) -> BridgeAsyncRequestIdentityRejection {
+pub(super) fn request_denial(detail: impl Into<Arc<str>>) -> BridgeAsyncRequestIdentityRejection {
     BridgeAsyncRequestIdentityRejection::new(
         BridgeAsyncRequestIdentityRejectionKind::SignalRequestAdmissionRejected,
         detail,

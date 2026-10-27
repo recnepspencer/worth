@@ -1,6 +1,86 @@
 use super::*;
 
 impl BridgeSealedRuntimeAssembly {
+    pub fn observe_managed_owned_async_safe_point(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+    ) -> Result<
+        worth_signal::facade::ResourceSafePointObservationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime.observe_managed_owned_async_safe_point(request)
+    }
+
+    pub fn admit_managed_owned_async_request_identity(
+        &self,
+        declaration: &crate::facade::LoweredBridgeAsyncSourceDeclaration,
+        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+        truth_basis: crate::facade::BridgeAsyncRequestTruthViewBasis,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        crate::facade::BridgeAsyncRequestIdentityRejection,
+    > {
+        self.runtime.admit_managed_owned_async_request_identity(
+            declaration,
+            signal_basis,
+            truth_basis,
+        )
+    }
+
+    pub fn commit_owned_async_completion(
+        &self,
+        request: &super::super::BridgeOwnedAsyncRequestAdmission,
+        completion: &super::super::BridgeOwnedAsyncCompletionAdmission,
+    ) -> Result<
+        crate::facade::BridgeOwnedAsyncCommittedCompletion,
+        crate::facade::BridgeAsyncCompletionRejection,
+    > {
+        self.runtime
+            .commit_owned_async_completion(request, completion)
+    }
+
+    pub fn finish_owned_async_completion_timeout_cleanup(
+        &self,
+        committed: &mut crate::facade::BridgeOwnedAsyncCommittedCompletion,
+    ) -> Result<(), crate::facade::BridgeAsyncCompletionRejection> {
+        self.runtime
+            .finish_owned_async_completion_timeout_cleanup(committed)
+    }
+
+    pub fn enqueue_managed_owned_async_queue(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        width: u64,
+    ) -> Result<
+        worth_signal::facade::ResourceManagedQueueMutationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .enqueue_managed_owned_async_queue(request, width)
+    }
+
+    pub fn dequeue_managed_owned_async_queue(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        width: u64,
+    ) -> Result<
+        worth_signal::facade::ResourceManagedQueueMutationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime
+            .dequeue_managed_owned_async_queue(request, width)
+    }
+
+    pub fn cancel_managed_owned_async_request(
+        &self,
+        request: &crate::facade::BridgeOwnedAsyncManagedRequestAdmission,
+    ) -> Result<
+        worth_signal::facade::ResourceCancellationReport,
+        crate::facade::BridgeOwnedAsyncManagedDenial,
+    > {
+        self.runtime.cancel_managed_owned_async_request(request)
+    }
+
     pub fn installed_owned_async_declaration(
         &self,
         identity: &str,

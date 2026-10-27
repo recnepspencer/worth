@@ -1,3 +1,6 @@
+mod completion_commit;
+mod managed_queue;
+
 use std::sync::atomic::Ordering;
 
 use crate::branch::owner_services::conditional_execution::{

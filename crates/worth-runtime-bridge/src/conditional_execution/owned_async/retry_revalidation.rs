@@ -43,6 +43,7 @@ impl BridgeOwnedSignalRuntime {
         timeout: &BridgeOwnedAsyncTimeoutAdmission,
     ) -> Result<BridgeOwnedAsyncRetrySchedule, BridgeAsyncCompletionRejection> {
         self.require_owned_async_request(request)?;
+        self.require_unmanaged_owned_async_replacement(request)?;
         if !timeout.matches(
             &self.async_observation_authority,
             request.request().request_handle(),
@@ -74,6 +75,7 @@ impl BridgeOwnedSignalRuntime {
         coordinate: u64,
     ) -> Result<BridgeOwnedAsyncRetryAdmission, BridgeAsyncCompletionRejection> {
         self.require_owned_async_request(request)?;
+        self.require_unmanaged_owned_async_replacement(request)?;
         if !schedule.matches(
             &self.async_observation_authority,
             request.request().request_handle(),
@@ -137,6 +139,7 @@ impl BridgeOwnedSignalRuntime {
         truth_basis: BridgeAsyncRequestTruthViewBasis,
     ) -> Result<BridgeOwnedAsyncRevalidationAdmission, BridgeAsyncCompletionRejection> {
         self.require_owned_async_request(request)?;
+        self.require_unmanaged_owned_async_replacement(request)?;
         if request
             .request()
             .basis_binding()
@@ -198,6 +201,24 @@ impl BridgeOwnedSignalRuntime {
             ),
             lineage,
         ))
+    }
+}
+
+impl BridgeOwnedSignalRuntime {
+    fn require_unmanaged_owned_async_replacement(
+        &self,
+        request: &BridgeOwnedAsyncRequestAdmission,
+    ) -> Result<(), BridgeAsyncCompletionRejection> {
+        if self
+            .owned_async_queue_capacity(request.request().lowered())
+            .is_some()
+        {
+            Err(signal_lifecycle_denial(
+                "managed replacement requires an atomic queue custody handoff",
+            ))
+        } else {
+            Ok(())
+        }
     }
 }
 

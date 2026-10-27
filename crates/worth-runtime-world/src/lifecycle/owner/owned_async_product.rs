@@ -33,6 +33,28 @@ where
     Ctx: Send + Sync + 'static,
     T: Copy + Ord + Send + Sync + 'static,
 {
+    pub(crate) fn admit_managed_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        let truth_basis = self
+            .validate_owned_async_product(observation, relational_source)
+            .map_err(request_product_denial)?;
+        bridge
+            .admit_managed_owned_async_request_identity(
+                declaration,
+                observation.basis().signal_basis(),
+                truth_basis,
+            )
+            .map_err(RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge)
+    }
+
     pub(crate) fn admit_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
@@ -45,17 +67,7 @@ where
     > {
         let truth_basis = self
             .validate_owned_async_product(observation, relational_source)
-            .map_err(|denial| match denial {
-                RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
-                    RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
-                }
-                RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
-                    RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch
-                }
-                RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
-                    RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource
-                }
-            })?;
+            .map_err(request_product_denial)?;
         bridge
             .admit_owned_async_request_identity(
                 declaration,
@@ -126,5 +138,21 @@ where
                 relational_source.snapshot_identity().clone(),
             ),
         )
+    }
+}
+
+fn request_product_denial(
+    denial: RuntimeWorldOwnedAsyncProductValidationDenial,
+) -> RuntimeWorldOwnedAsyncRequestAdmissionDenial {
+    match denial {
+        RuntimeWorldOwnedAsyncProductValidationDenial::ForeignOwner => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::ForeignOwner
+        }
+        RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch
+        }
+        RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
+            RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource
+        }
     }
 }

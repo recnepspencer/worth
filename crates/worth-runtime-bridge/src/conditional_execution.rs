@@ -97,7 +97,10 @@ pub use managed_time::{
     BridgeManagedTemporalIntentReconciliationParts,
 };
 pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
-pub use owned_async::BridgeOwnedAsyncRequestResponseDeclaration;
+pub use owned_async::{
+    BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
+    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncRequestResponseDeclaration,
+};
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,
     BridgeOwnedAsyncEffectsIndeterminateIssuer, BridgeOwnedAsyncRequestAdmission,
