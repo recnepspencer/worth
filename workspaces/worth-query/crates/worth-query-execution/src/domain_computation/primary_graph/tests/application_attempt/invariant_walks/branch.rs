@@ -36,6 +36,16 @@ fn an_actual_sibling_candidate_rejects_the_original_typed_root_before_acquisitio
         );
         let view = context.proposed();
         let before = context.reads();
+        let error = view.reobserve_entity(&rule.node, &foreign).err().unwrap();
+        assert_eq!(
+            error.kind(),
+            WorthQueryInvariantAccessDenialKind::ForeignView
+        );
+        assert_eq!(
+            context.reads(),
+            before,
+            "a stale selector is refused before acquisition"
+        );
         let error = view
             .walk(&rule.next, RelationDirection::Forward, &foreign)
             .unwrap_err();

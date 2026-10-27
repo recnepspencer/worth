@@ -15,6 +15,7 @@ use super::{
 use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
+mod entity_reobservation;
 mod field_reads;
 mod interruption;
 mod orbit;

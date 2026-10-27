@@ -97,6 +97,7 @@ impl Probe {
 
 pub(super) struct Rule {
     probe: Probe,
+    pub(super) node: WorthQueryApplicationInvariantEntityBinding<WalkSchema, Node>,
     pub(super) key: WorthQueryApplicationInvariantFieldBinding<WalkSchema, Node, u64>,
     membership: WorthQueryApplicationInvariantRelationBinding<WalkSchema, GroupRoot, Node, Node>,
     pub(super) next: WorthQueryApplicationInvariantRelationBinding<WalkSchema, Next, Node, Node>,
@@ -107,6 +108,9 @@ pub(super) fn resolve(
 ) -> Result<Rule, String> {
     Ok(Rule {
         probe,
+        node: resolver
+            .typed_entity(Node::reference())
+            .ok_or("node kind missing")?,
         key: resolver
             .typed_field(NodeKey::reference())
             .ok_or("node key missing")?,

@@ -9,6 +9,7 @@ mod observation;
 mod operation_projection;
 mod probe;
 pub(in crate::domain_computation::primary_graph) mod program;
+mod reobservation;
 mod resources;
 mod rule;
 pub(in crate::domain_computation::primary_graph) mod schema;

@@ -35,7 +35,7 @@ installed rule APIs through `worth_query_host::facade::application_invariants`.
 | Bind the installed schema once | `setup.invariant(marker, execution_point, resolver_callback)`; `resolver.typed_field(..)` and `resolver.typed_relation(..)` |
 | Prepare the read scope | `WorthQueryApplicationInvariantRule::prepare_scope` or its checked counterpart; `planner.proposed()`, `planner.committed()`, `planner.reads()` |
 | Evaluate that scope | `evaluate` or `evaluate_checked`; `context.proposed()`, `context.committed()`, `context.reads()` |
-| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`, `walk`, `reaches`, `closure`; entity and relation handles retain their native identity and view affinity |
+| Read through a typed view | `touched_entities`, `field`, `relations_from`, `relations_to`, `walk`, `reaches`, `closure`, `reobserve_entity`; entity and relation handles retain their native identity and view affinity |
 | Inspect a normal query result | `rows.receipt().inspect().read_work().reads()`; the lower host query receipt also exposes `receipt.reads()` |
 | Inspect a snapshot projection | `WorthQueryCompletedInvariantProjection::work()` or `into_parts()` |
 
@@ -73,6 +73,16 @@ still reject an unchecked custom kernel before either stage runs.
 side of that validation. Handles carry schema binding, proposal and view
 posture: a handle obtained from one view cannot be reinterpreted as a handle for
 the other. Obtain the needed entities through the appropriate view.
+
+When preparation follows old incidence to a surviving owner, use
+`proposed.reobserve_entity(&owner_binding, &committed_owner)` to acquire that
+physical owner freshly in the target view. The selector must be an issued entity
+from this exact proposal and installation. The target's declared kind, original
+controls and prepared scope still govern both presence and absence. A removed
+target returns `None`; undeclared access and stale/foreign selectors refuse.
+The returned handle belongs to the target posture, while ordinary reads still
+reject the original cross-view handle. The compiled [reobservation court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_walks/reobservation.rs)
+covers an untouched incidence-reached survivor and actual creation/deletion.
 
 Each planner owns one observation value shared by all its views. Each evaluation
 starts from the immutable preparation observation and adds that evaluation's
