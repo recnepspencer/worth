@@ -3,6 +3,7 @@ use super::*;
 use worth_query_declaration::facade::application_schema::ApplicationComponentSetMeaning;
 
 pub(super) struct Definition<'a> {
+    pub component: Option<&'a ApplicationComponentSetMeaning>,
     pub member: &'a str,
     pub identity: AggregateDefinitionIdentity,
     pub source: AggregateIdentitySource,
@@ -34,6 +35,7 @@ pub(super) fn collect<'a>(
     // Keep the accepted Orbit registration order and every Orbit identity byte.
     for (relation, member) in orbits {
         definitions.push(Definition {
+            component: None,
             member,
             identity: orbit_identity(schema, relation),
             source: AggregateIdentitySource::Orbit(required_kind(relation_kinds, relation)?),
@@ -46,6 +48,7 @@ pub(super) fn collect<'a>(
             .map(|relation| required_kind(relation_kinds, relation))
             .collect::<Result<_, _>>()?;
         definitions.push(Definition {
+            component: Some(meaning),
             member: meaning.member(),
             identity: component_identity(schema, meaning),
             source: AggregateIdentitySource::Components { relations },

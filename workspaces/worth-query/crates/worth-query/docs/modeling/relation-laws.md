@@ -237,12 +237,44 @@ component definitions share its private storage, with separate membership
 relations. A component definition includes the set's member and normalized source
 meaning; changing the source roster selects a different definition.
 
-This is the declaration and installation prerequisite. Application component
-readers, decisions, declared-query results, disclosure, counts and CAD shell
-integration remain unfinished in
-[Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
 The compiled [installation courts](../../../worth-query-execution/src/domain_computation/primary_graph/schema_layout/aggregate_identity/tests/components.rs)
 exercise this typed builder and the shared Native storage boundary.
+
+### Privileged Component Inspection
+
+The installation-owned `WorthQueryApplicationInvariantProjectionReader` exposes
+`component_of(set_ref, &member)`. Its complete result has `identity()`, `members()`,
+`len()` and `is_empty()`. Membership follows Native canonical entity order, with
+undirected coupling across every declared source. Self edges do not join other
+members. Native ordinary adjacency excludes audit-retained relations after an
+endpoint retires. The read admits each member and acquires every source's incoming and
+outgoing physical adjacency at the same immutable snapshot. Retained results keep
+the original Native request custody; iterating members performs no graph reads.
+
+`component_lineage(set_ref, &identity)` reads Native incident lineage and merge
+continuations at that reader's snapshot, including identities that have retired.
+The set must match the name's installed definition. A name grants no read, write,
+history-disclosure or publication authority. Missing sets, foreign member
+identities, inconsistent membership and original request stops return typed
+traversal refusals. This broad installation inspection issues no publication
+decision facts and is not forwarded to ordinary operation readers.
+
+The compiled [component inspection courts](../../../worth-query-execution/src/domain_computation/primary_graph/invariant_projection/component/tests.rs)
+exercise the actual installed bootstrap and reader. Their independently issued
+same-product snapshot court checks definition-qualified reselection. A real
+World publication retires a coupled member, then checks ordinary coupling
+exclusion, the surviving component and rejection of the old membership. Coupling
+changes that preserve membership still need ordinary decision-footprint evidence.
+
+Ordinary operation/decision readers, declared-query results, disclosure,
+component enumeration/count and CAD shell integration remain unfinished in
+[Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+Those scoped reads require complete visible global cohorts: an encountered
+incomplete cohort refuses without exposing its identity, partial membership,
+count or lineage. Enumeration/count must use the installed root-path owner's
+complete pre-window member selection, including negative evidence for an empty
+selection; previously visited entities and bounded result rows cannot prove that
+universe. Scope changes do not remint Native component identities.
 
 ## How It Executes
 
@@ -453,9 +485,10 @@ identities or assume a particular edge wins when several close cycles.
 The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
-Other native symmetry modes are not exposed by these builders. They do not
-provide component query operations. Use projection readers for complete walks
-and orbit inspections as described above.
+Other native symmetry modes are not exposed by these builders. Ordinary
+component query results, decision reads and enumeration/count remain unfinished.
+Installation-owned projection readers support complete component inspection,
+walks and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains
 subject to the original execution request's resource and interruption policy.

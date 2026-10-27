@@ -59,9 +59,9 @@ pub(super) fn select(
             runtime,
             execution,
             AggregateQuery {
-                relation: subject,
+                subject,
                 entity_kind: relation.from,
-                relation_kind: relation.kind,
+                selection: crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(relation.kind),
                 member: plan.root,
                 maximum_work: None,
                 control: Some(&control),

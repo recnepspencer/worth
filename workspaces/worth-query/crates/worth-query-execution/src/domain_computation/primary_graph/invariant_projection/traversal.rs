@@ -29,30 +29,12 @@ where
         if !self.identity_is_local(from, relation.from()) || from.kind != layout.from {
             return Err(foreign(relation.name()));
         }
-        self.admit_adjacency_list(relation.name())?;
-        let read = self
-            .branch_view(relation.name())?
-            .bounded_outgoing_relations_of_kind_admitted(
-                execution,
-                from.entity_id,
-                layout.kind,
-                self.work_budget.remaining(),
-                |_| Ok(()),
-            )
-            .map_err(|cause| {
-                WorthQueryInvariantProjectionTraversalDenial::new(
-                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
-                    ),
-                    relation.name(),
-                )
-            })?;
-        let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        if !self.work_budget.consume(read.work_units()) {
-            return Err(work_budget_exceeded(relation.name()));
-        }
-        self.work
-            .record_adjacencies(1, read.relation_records_examined());
+        let read = self.read_adjacency(
+            relation.name(),
+            from.entity_id,
+            layout.kind,
+            worth_query_declaration::facade::application_schema::RelationDirection::Forward,
+        )?;
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -83,30 +65,12 @@ where
         if !self.identity_is_local(to, relation.to()) || to.kind != layout.to {
             return Err(foreign(relation.name()));
         }
-        self.admit_adjacency_list(relation.name())?;
-        let read = self
-            .branch_view(relation.name())?
-            .bounded_incoming_relations_of_kind_admitted(
-                execution,
-                to.entity_id,
-                layout.kind,
-                self.work_budget.remaining(),
-                |_| Ok(()),
-            )
-            .map_err(|cause| {
-                WorthQueryInvariantProjectionTraversalDenial::new(
-                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
-                        crate::facade::primary_graph::relational_execution_kind(cause, None),
-                    ),
-                    relation.name(),
-                )
-            })?;
-        let read = read.map_err(|limit| self.adjacency_limit_denial(limit, relation.name()))?;
-        if !self.work_budget.consume(read.work_units()) {
-            return Err(work_budget_exceeded(relation.name()));
-        }
-        self.work
-            .record_adjacencies(1, read.relation_records_examined());
+        let read = self.read_adjacency(
+            relation.name(),
+            to.entity_id,
+            layout.kind,
+            worth_query_declaration::facade::application_schema::RelationDirection::Reverse,
+        )?;
         read.into_records()
             .into_iter()
             .map(|record| {
@@ -262,3 +226,5 @@ fn work_budget_exceeded(relation: &str) -> WorthQueryInvariantProjectionTraversa
 
 #[cfg(test)]
 mod tests;
+
+mod adjacency;

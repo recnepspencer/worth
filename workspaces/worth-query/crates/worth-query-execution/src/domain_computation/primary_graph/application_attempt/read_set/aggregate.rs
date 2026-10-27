@@ -28,7 +28,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
     let mismatch = || {
         denial(
             WorthQueryApplicationAttemptDenialKind::ProjectionAdmissionMismatch,
-            key.relation(),
+            key.subject(),
         )
     };
     let body = expected
@@ -62,8 +62,8 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
     {
         return Err(mismatch());
     }
-    let layout = lease.layout.relation(key.relation()).ok_or_else(mismatch)?;
-    if layout.kind != key.relation_kind()
+    let layout = lease.layout.relation(key.subject()).ok_or_else(mismatch)?;
+    if Some(layout.kind) != key.orbit_relation()
         || layout.from != key.entity_kind()
         || layout.to != key.entity_kind()
         || !layout.orbit
@@ -74,12 +74,12 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
     let result = execution.run_native_with_checkpoint(|context| {
         for member in body.native().members() {
             AggregateObservation::checkpoint(context).map_err(|cause| {
-                WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, key.relation())
+                WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, key.subject())
             })?;
             if !scope.admits(member) {
                 return Err(denial(
                     WorthQueryApplicationAttemptDenialKind::OutsideRealizedReadScope,
-                    key.relation(),
+                    key.subject(),
                 ));
             }
         }
@@ -94,7 +94,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
         Ok((value, _)) => value,
         Err(stop) => Err(WorthQueryApplicationAttemptDenial::relational_read_stopped(
             stop.into(),
-            key.relation(),
+            key.subject(),
         )),
     }
 }

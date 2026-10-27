@@ -817,6 +817,7 @@ exports = [
     "WorthQueryInvariantExecutionFailure",
     "WorthQueryInvariantExecutionFailurePosture",
     "WorthQueryInvariantMutationTarget",
+    "WorthQueryInvariantProjectionComponent",
     "WorthQueryInvariantProjectionDenial",
     "WorthQueryInvariantProjectionDenialKind",
     "WorthQueryInvariantProjectionOrbit",

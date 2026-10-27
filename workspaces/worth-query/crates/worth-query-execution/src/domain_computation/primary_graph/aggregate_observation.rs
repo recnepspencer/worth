@@ -3,16 +3,15 @@ use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext, WorkCeilingDenial};
 use worth_relational::facade::{
     identity::{EntityId, KindId},
-    runtime::{
-        PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadScope,
-        RelationalPinnedRead,
-    },
+    runtime::{PinnedAggregateRead, PinnedAggregateReadDenial, RelationalPinnedRead},
     snapshots::SnapshotHandle,
     transactions::RelationalExecutionDenialCause as Cause,
 };
 mod currentness;
 mod key;
+mod selection;
 pub(in crate::domain_computation::primary_graph) use key::AggregateKey;
+pub(in crate::domain_computation::primary_graph) use selection::AggregateSelection;
 
 /// Only Native acquisition can construct this body. Source custody is separate
 /// from semantic truth: stored incident lineage is not part of an orbit answer.
@@ -23,9 +22,9 @@ pub(in crate::domain_computation) struct AggregateObservation {
     source: SnapshotHandle,
 }
 pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
-    pub relation: &'a str,
+    pub subject: &'a str,
     pub entity_kind: KindId,
-    pub relation_kind: KindId,
+    pub selection: AggregateSelection,
     pub member: EntityId,
     pub maximum_work: Option<u64>,
     pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
@@ -36,16 +35,18 @@ impl AggregateObservation {
         execution: &ExecutionRequest<'_, '_>,
         query: AggregateQuery<'_>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
-        let mut scope = PinnedAggregateReadScope::new(query.relation_kind, query.member)
+        let mut scope = query
+            .selection
+            .scope(query.member)
             .with_work_limit(query.maximum_work);
         if let Some(control) = query.control {
             scope = scope.with_control(control);
         }
         let native = pin.read_aggregate(execution, scope)?;
         let key = AggregateKey::new(
-            query.relation,
+            query.subject,
             query.entity_kind,
-            query.relation_kind,
+            query.selection,
             query.member,
             native.definition(),
         );

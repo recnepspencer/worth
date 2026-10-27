@@ -36,7 +36,7 @@ pub(super) fn leaf(
     let (elements, shared_text) = match fact {
         Fact::Aggregate { observation } => (
             observation.native().len(),
-            observation.key().relation().len(),
+            observation.key().subject().len(),
         ),
         Fact::StructuralWalk { observation } => (
             observation
