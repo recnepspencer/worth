@@ -60,6 +60,9 @@ pub(super) fn transaction_staging(
     use RelationalTransactionStagingDenial as Denial;
     let kind = match denial {
         Denial::AllocationDenied(ref allocation) => return allocation_failure(allocation),
+        Denial::SymbolIdentityExhausted => {
+            EffectExecutionDenialKind::TransactionSymbolIdentityExhausted
+        }
         Denial::CardinalityOverflow => {
             EffectExecutionDenialKind::TransactionStagingCardinalityOverflow
         }
@@ -147,6 +150,7 @@ pub(super) fn transaction_commit(
                 return allocation_failure(allocation);
             }
             let kind = match &error.class {
+                worth_relational::facade::transactions::ConflictClass::SymbolIdentityExhausted => EffectExecutionDenialKind::TransactionSymbolIdentityExhausted,
                 worth_relational::facade::transactions::ConflictClass::TransactionStagingCardinalityOverflow => {
                     EffectExecutionDenialKind::TransactionStagingCardinalityOverflow
                 }

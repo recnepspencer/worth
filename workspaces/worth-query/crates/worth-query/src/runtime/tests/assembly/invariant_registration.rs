@@ -193,7 +193,6 @@ fn query_builder_rejects_explicit_relational_runtime_when_query_owned_invariants
         )
         .build_backend_from_parts()
         .build(request_execution)
-        .expect("valid native runtime configuration")
     {
         Ok(_) => {
             panic!("explicit relational runtime should conflict with queued query-owned invariants")

@@ -53,7 +53,7 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
             ..
         } if *class == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation
             && denial.domain == crate::facade::runtime::ProjectionRecordDomain::Entity
-            && denial.kind_id == KindId(1)
+            && denial.kind_id == KindId(100)
             && denial.requirement.is_none()
             && denial.refusal == crate::facade::runtime::ProjectionContractRefusal::MissingAspectPlan)
     ));

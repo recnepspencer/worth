@@ -129,8 +129,7 @@ fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime()
                 .expect("valid native runtime configuration"),
         )
         .build_backend_from_parts()
-        .build(request_execution)
-        .expect("valid native runtime configuration");
+        .build(request_execution);
     let error = result
         .err()
         .expect("a package-compiled invariant must conflict with a separately supplied runtime");

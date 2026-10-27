@@ -30,6 +30,7 @@ pub enum EffectExecutionDenialKind {
         requested_payload_bytes: Option<u64>,
     },
     TransactionStagingCardinalityOverflow,
+    TransactionSymbolIdentityExhausted,
     TransactionInputDirectoryAllocationDenied {
         requested_batches: usize,
     },
@@ -90,6 +91,7 @@ impl EffectExecutionDenialKind {
             Self::TransactionStagingCardinalityOverflow => {
                 "transaction_staging_cardinality_overflow"
             }
+            Self::TransactionSymbolIdentityExhausted => "transaction_symbol_identity_exhausted",
             Self::TransactionInputDirectoryAllocationDenied { .. } => {
                 "transaction_input_directory_allocation_denied"
             }
