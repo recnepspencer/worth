@@ -26,11 +26,11 @@ pub struct WorthQueryEvidenceIdentity {
 }
 
 impl WorthQueryEvidenceIdentity {
-    pub(crate) fn compose(scope: WorthQueryEvidenceScope) -> WorthQueryEvidenceIdentityEncoder {
+    pub fn compose(scope: WorthQueryEvidenceScope) -> WorthQueryEvidenceIdentityEncoder {
         WorthQueryEvidenceIdentityEncoder::new(scope, WorthQueryEvidenceIdentityScheme::V1)
     }
 
-    pub(crate) fn compose_with_scheme(
+    pub fn compose_with_scheme(
         scope: WorthQueryEvidenceScope,
         scheme: WorthQueryEvidenceIdentityScheme,
     ) -> WorthQueryEvidenceIdentityEncoder {
@@ -54,11 +54,11 @@ impl WorthQueryEvidenceIdentity {
         self.scheme
     }
 
-    pub(crate) fn as_str(&self) -> &str {
+    pub fn as_str(&self) -> &str {
         &self.digest_token
     }
 
-    pub(crate) fn reporting_projection(&self) -> &str {
+    pub fn reporting_projection(&self) -> &str {
         self.as_str()
     }
 
@@ -66,7 +66,7 @@ impl WorthQueryEvidenceIdentity {
         self.reporting_projection()
     }
 
-    pub(crate) fn bridge_evidence_identity(&self) -> BridgeIdentityEvidence {
+    pub fn bridge_evidence_identity(&self) -> BridgeIdentityEvidence {
         let token = bridge_truth_external_identity_token(self.as_str());
         let scope = bridge_truth_projection_identity_from_external_token(
             token.clone(),
@@ -79,7 +79,7 @@ impl WorthQueryEvidenceIdentity {
         BridgeIdentityEvidence::from_query_evidence_identity(scope, identity_token)
     }
 
-    pub(crate) fn bridge_external_identity_evidence(&self) -> BridgeIdentityEvidence {
+    pub fn bridge_external_identity_evidence(&self) -> BridgeIdentityEvidence {
         BridgeIdentityEvidence::from_external_authority(bridge_truth_external_identity_token(
             self.as_str(),
         ))
@@ -127,7 +127,7 @@ impl WorthQueryEvidenceIdentity {
         )
     }
 
-    pub(crate) fn canonical_digest_id(&self) -> CanonicalDigestId {
+    pub fn canonical_digest_id(&self) -> CanonicalDigestId {
         CanonicalDigestId::new(*self.canonical_digest.value().bytes())
     }
 }
