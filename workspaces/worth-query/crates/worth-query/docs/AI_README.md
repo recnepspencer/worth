@@ -397,6 +397,15 @@ managed collection owner and rule/decision readers are connected. A committed
 derived-view cache cannot supply that missing authority. See the
 [graph obligation guide](domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
 
+**Projected member domains (Phases 5–6 prerequisite).** Typed domain/case
+declarations describe finite read-only carrier/case meaning without declaring a
+stored entity. Fresh schema admission validates the actual stored carrier and
+canonical case roster; archive tag44/v1 preserves that meaning. Installation
+returns `ProjectedMemberDomainUnavailable` until Native can issue genuine
+members. Follow the [declaration contract](../../worth-query-decl/README.md#projected-member-domain-meaning)
+for current APIs and the [component guide](modeling/relation-laws.md#component-set-declarations)
+for available entity-domain reads and the remaining CAD shell boundary.
+
 Ordinary handlers return the installed owner's `decision_plan`, which carries
 that same request through preparation, computation and completion. Use
 `checkpoint.poll()` for a control-only safe point; `advance(work)` deliberately

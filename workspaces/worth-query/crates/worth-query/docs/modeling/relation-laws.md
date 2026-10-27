@@ -217,18 +217,20 @@ Declare a set over one or more stored homogeneous relations through
 `worth_query_decl::facade::application_schema`. Different relation markers may
 couple the same entity type:
 
-<!-- illustrative -->
-```rust,ignore
-// Illustrative: not compiled.
-let shells = ApplicationComponentSetRef::<MySchema, Shells, Face>::new(
-    "Shells", Face::reference(),
-);
-let schema = builder.components(
-    ApplicationComponentSetDefinition::new(shells)
-        .coupled_by(FaceAdjacency::reference())
-        .coupled_by(OtherFaceCoupling::reference()),
-).build()?;
-```
+The compiled [topology declaration](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_islands.rs)
+defines `ApplicationComponentSetRef<S, PlanarIslands, Body>` and adds
+`ApplicationComponentSetDefinition::new(PlanarIslands::reference())` through
+`schema.components`. Its `.coupled_by(PlanarSuccessor::reference())` and
+`.coupled_by(PlanarCoupling::reference())` calls join bodies through two actual
+stored relations. The complete [installed program example](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/examples/invariant_reads.rs)
+uses this declaration and its ordinary invariant reads through Decl/Host.
+
+These are stored-entity islands. CAD shells require read-only Face×Side members
+with actual region/exterior context, as specified by the
+[CAD shell member-domain contract](../../../../../../plans/WORTH-query/milestone-9.18.1.md#cad-shell-member-domain).
+The [projected-domain declaration prerequisite](../../../worth-query-decl/README.md#projected-member-domain-meaning)
+currently supplies portable meaning; installed projected members remain
+unavailable. A component of stored faces does not supply that shell contract.
 
 The completed schema validates the actual declared relation endpoints, rejects
 empty or missing sources and duplicate set names, and normalizes source order
@@ -358,8 +360,10 @@ distinct worker threads. Prepared proposed/committed reads must agree with the
 corresponding publication. This proves stable publication under parallel
 invariant execution; it makes no claim that partition maintenance is parallel.
 
-Full Phase 5 remains open for CAD shell adoption through face adjacency and the
-final guide/phase acceptance audit.
+Full Phase 5 remains open for CAD shell adoption through the projected face-use
+domain and its derived shared-vertex/context adjacency, plus the final guide/phase
+acceptance audit. The [required domain contract](../../../../../../plans/WORTH-query/milestone-9.18.1.md#cad-shell-member-domain)
+also governs whole-cohort region transfer and legacy locator readmission.
 
 ### Privileged Component Inspection
 
