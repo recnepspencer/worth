@@ -159,6 +159,34 @@ fn saturate_host() -> (mpsc::Sender<()>, JoinHandle<()>) {
     (release_tx, thread)
 }
 
+fn assert_declared_zero_violation(error: &SignalError) {
+    match error {
+        SignalError::CheckedResultCapacityExceeded { required, declared } => {
+            assert!(*required > 0);
+            assert_eq!(*declared, 0);
+        }
+        SignalError::ExecutionStopped(stop) => {
+            assert_eq!(
+                stop.disposition(),
+                SignalPublicationDisposition::WorkerLocal
+            );
+            assert_eq!(stop.publication_progress().completed_tasks(), 0);
+            let SignalExecutionStopReason::Failure {
+                cause: SignalExecutionFailure::Domain(nested),
+                ..
+            } = stop.reason()
+            else {
+                panic!(
+                    "expected a typed callback declaration failure: {:?}",
+                    stop.reason()
+                );
+            };
+            assert_declared_zero_violation(nested);
+        }
+        _ => panic!("expected CheckedResultCapacityExceeded, got {error:?}"),
+    }
+}
+
 #[test]
 fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     let (mut graph, producer) = subscribed_graph(4096);
@@ -258,18 +286,10 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
             worth_execution::ExecutionRequest::leased(&lease),
         )
         .unwrap_err();
+    assert_declared_zero_violation(&error);
     let SignalError::ExecutionStopped(stop) = error else {
         panic!("result declaration violation is a typed execution stop: {error:?}");
     };
-    assert!(
-        matches!(stop.reason(), SignalExecutionStopReason::Failure {
-        cause: SignalExecutionFailure::Domain(error), ..
-    } if matches!(error.as_ref(), SignalError::CheckedResultCapacityExceeded {
-        required, declared: 0
-    } if *required > 0)),
-        "{:?}",
-        stop.reason()
-    );
     assert_eq!(
         stop.disposition(),
         SignalPublicationDisposition::WorkerLocal
