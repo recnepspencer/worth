@@ -121,7 +121,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             graph,
             disclosure,
         )?;
-        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_selected_read_indexes_admitted_with_native_access(execution, graph, query, basis.selected_product().relational_basis(), native)?;
+        let indexes = crate::domain_computation::primary_graph::application_query::basis::ensure_query_truth_and_security_indexes_admitted_with_native_access(execution, graph, query, basis.selected_product().relational_basis(), security_product.relational_basis(), native)?;
         let index_posture = WorthQueryQueryIndexPosture::SelectedInstalled(indexes);
         validate_admission_request(controls.request_scope(), query.name())?;
         let graph_work = start_prepared_query_session(

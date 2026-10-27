@@ -39,6 +39,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             execution_posture,
             external_effect,
             aftermath,
+            source_inspection_disclosures,
             graph_reads,
             touches,
             emissions,
@@ -83,6 +84,7 @@ impl WorthQueryCompiledApplicationOperationContracts {
             execution_posture,
             external_effect,
             aftermath,
+            source_inspection_disclosures,
             overlap_index,
         })
     }

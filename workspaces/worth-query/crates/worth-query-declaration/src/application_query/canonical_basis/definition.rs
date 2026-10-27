@@ -11,8 +11,7 @@ use crate::application_query::{
     ApplicationQueryOrderingDirection, WorthQueryPortableApplicationQueryParts,
 };
 
-mod disclosure;
-use disclosure::append_disclosure;
+use super::disclosure::append_disclosure;
 
 pub(in crate::application_query) fn prepare_definition_basis(
     definition: &WorthQueryPortableApplicationQueryParts,
@@ -36,7 +35,7 @@ pub(in crate::application_query) fn prepare_definition_basis(
     append_ordering(&mut entries, definition);
     append_continuation(&mut entries, definition);
     append_authorization(&mut entries, definition);
-    append_disclosure(&mut entries, definition);
+    append_disclosure(&mut entries, definition.disclosure());
     append_live_cause(&mut entries, definition);
     append_controls(&mut entries, definition);
     prepare_artifact(entries)

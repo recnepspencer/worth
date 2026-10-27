@@ -134,6 +134,7 @@ pub(super) fn visit_dependency_facts<Error>(
             partition: WorthQueryApplicationCreationPartition::Context(evidence.partition_id),
         })?;
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.evidence_dependency_relation,
             key: format!("evidence-dependency-{index}"),
             from: EntityReference::Created(evidence.clone()),

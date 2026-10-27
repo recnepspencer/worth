@@ -47,6 +47,7 @@ struct WorthQueryCreateRelationEffect {
     key: String,
     from: EntityReference,
     to: EntityReference,
+    fields: BTreeMap<AspectFieldLocator, AspectValue>,
 }
 
 pub(super) struct CreatedEffectReferences {
@@ -159,6 +160,7 @@ pub(super) fn lower_provider_effect(
             key,
             from,
             to,
+            fields,
         } => lower_create_relation(
             created,
             mutation_partition,
@@ -167,6 +169,7 @@ pub(super) fn lower_provider_effect(
                 key,
                 from,
                 to,
+                fields,
             },
         ),
         WorthQueryApplicationRealizedEffect::DeleteRelation { relation_id } => {
@@ -274,7 +277,7 @@ fn lower_create_relation(
             client_key: worth_relational::facade::symbols::ClientKey::raw(effect.key),
             source: from,
             target: to,
-            fields: AspectFieldPatch::default(),
+            fields: AspectFieldPatch::from(effect.fields),
         })),
     )
 }

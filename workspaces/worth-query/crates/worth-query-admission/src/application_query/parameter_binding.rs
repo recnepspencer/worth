@@ -46,6 +46,10 @@ impl WorthQueryApplicationQueryParameterDenial {
     pub fn parameter(&self) -> &str {
         &self.parameter
     }
+
+    pub fn owned_allocation_capacity_bytes(&self) -> usize {
+        self.parameter.capacity()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

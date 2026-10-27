@@ -83,6 +83,7 @@ mod resolution_denial;
 mod root;
 mod schema_layout;
 pub(crate) mod settlement_repair;
+pub(in crate::domain_computation) mod source_disclosure;
 mod typed_bootstrap;
 mod value_decode;
 pub(in crate::domain_computation) mod workflow;
@@ -185,3 +186,5 @@ pub use observations::principal_target_reads_on_this_thread_for_test;
 
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
+
+pub(crate) mod causal_inspection;

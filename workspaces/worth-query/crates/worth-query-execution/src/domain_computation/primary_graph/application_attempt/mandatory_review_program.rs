@@ -220,6 +220,7 @@ fn review_effects(
             ]),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.reviewer_relation(),
             key,
             from: EntityReference::Existing(binding.reviewer()),

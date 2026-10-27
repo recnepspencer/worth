@@ -28,6 +28,14 @@ pub struct WorthQueryApplicationEffectEntity<Schema, Entity> {
     pub(super) _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 
+/// Only the creating effect program can initialize this new relation's payload.
+pub struct WorthQueryApplicationCreatedRelation<Schema, Relation, From, To> {
+    pub(super) relation:
+        worth_query_installation::facade::ApplicationRelationRef<Schema, Relation, From, To>,
+    pub(super) created_effect: usize,
+    pub(super) program: Arc<()>,
+}
+
 pub(in crate::domain_computation::primary_graph) struct WorthQueryApplicationOptionalFieldWrite {
     pub(in crate::domain_computation::primary_graph::application_attempt) contract:
         PortableAspectContractBasis,
@@ -60,6 +68,7 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationReali
         key: String,
         from: EntityReference,
         to: EntityReference,
+        fields: BTreeMap<AspectFieldLocator, AspectValue>,
     },
     DeleteRelation {
         relation_id: RelationId,

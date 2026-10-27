@@ -30,7 +30,10 @@ mod serial_authority;
 mod serial_backing;
 mod worker_context;
 mod worker_width;
-pub use array_backing::{ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter};
+pub use array_backing::{
+    ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionRequestArrayBuilder,
+    ExecutionRequestArrayDenial,
+};
 pub use byte_backing::{ExecutionByteBuffer, ExecutionImmutableBytes};
 pub use fixed_backing::{
     ExecutionAllocationDenial, ExecutionAllocationDenialClass, ExecutionAllocationDenialKind,

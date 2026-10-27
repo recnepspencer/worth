@@ -93,6 +93,18 @@ impl<'p> TouchCollection<'p, '_> {
                 .push(ValidatedMutationTouch::WriteEntityField { kind, locator });
         }
     }
+    pub fn initialized_relation_field(&mut self, kind: KindId, locator: &AspectFieldLocator) {
+        if self.reach(locator.owned_allocation_capacity_bytes(), false)
+            && let Some(backing) = &mut self.backing
+        {
+            backing
+                .touches
+                .push(ValidatedMutationTouch::InitializeRelationField {
+                    kind,
+                    locator: locator.clone(),
+                });
+        }
+    }
     pub fn whole_field(&mut self, touch: ValidatedEntityStructTouch<'p>) {
         if touch.field.is_none() {
             // Reserve one possible unrepresentable result before group resolution.

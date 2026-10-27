@@ -33,7 +33,11 @@ impl ClosureIndex<'_> {
             })
     }
 
-    pub(super) fn program_target_exists(&self, target: &ApplicationOperationProgramTarget) -> bool {
+    pub(super) fn program_target_exists(
+        &self,
+        operation: &str,
+        target: &ApplicationOperationProgramTarget,
+    ) -> bool {
         match target {
             ApplicationOperationProgramTarget::Create { entity }
             | ApplicationOperationProgramTarget::Delete { entity } => {
@@ -53,6 +57,10 @@ impl ClosureIndex<'_> {
             ApplicationOperationProgramTarget::Emit { effect } => {
                 self.effects.contains(effect.as_str())
             }
+            ApplicationOperationProgramTarget::InitializeRelationField { relation, from, to, aspect, field } => self.members.iter().any(|member| matches!(member,
+                ApplicationSchemaMember::RelationAspect { definition }
+                if { let parts = definition.parts(); parts.relation == *relation && parts.from == *from && parts.to == *to && parts.aspect == *aspect && parts.fields.iter().any(|value| value.field == *field) }
+            )) && self.members.iter().any(|member| matches!(member, ApplicationSchemaMember::OperationProgram { operation: candidate, target: ApplicationOperationProgramTarget::Link { relation: installed, from: source, to: destination } } if candidate == operation && installed == relation && source == from && destination == to)),
         }
     }
 

@@ -27,6 +27,8 @@ use query_compilation::compile_queries;
 pub(crate) struct WorthQueryInstalledApplicationQueryCatalog {
     certification: CertificationQueryCatalog,
     bindings: BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
+    histories:
+        BTreeMap<String, Arc<crate::application_query::history::CompiledApplicationHistoryQuery>>,
 }
 
 pub(crate) enum AdmittedQueryCatalogStop<E> {
@@ -35,6 +37,12 @@ pub(crate) enum AdmittedQueryCatalogStop<E> {
 }
 
 impl WorthQueryInstalledApplicationQueryCatalog {
+    pub(crate) fn get_history(
+        &self,
+        identity: &str,
+    ) -> Option<Arc<crate::application_query::history::CompiledApplicationHistoryQuery>> {
+        self.histories.get(identity).map(Arc::clone)
+    }
     pub(crate) fn descriptors(
         &self,
     ) -> impl ExactSizeIterator<Item = &ApplicationQueryBindingDescriptor> {
@@ -135,6 +143,7 @@ where
         }
     }
     Ok(WorthQueryInstalledApplicationQueryCatalog {
+        histories: crate::application_query::history::compile(schema, &bindings)?,
         certification: CertificationQueryCatalog::new(queries.into_values().collect()),
         bindings,
     })
@@ -226,7 +235,7 @@ where
                 && binding.binding_type() == recipe.binding_type()
                 && binding.value_type() == recipe.value_type()
         });
-    if exact_member && exact_binding {
+    if recipe.locus().owner_kind().is_entity() && exact_member && exact_binding {
         Ok(())
     } else {
         Err(denial(
@@ -278,7 +287,7 @@ where
                 && binding.value_type() == recipe.value_type()
                 && binding.is_identity()
         });
-    if exact && exact_value_binding {
+    if recipe.locus().owner_kind().is_entity() && exact && exact_value_binding {
         Ok(())
     } else {
         Err(denial(

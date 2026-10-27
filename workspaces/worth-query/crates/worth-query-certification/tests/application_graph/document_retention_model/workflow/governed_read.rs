@@ -20,6 +20,7 @@ mod court;
 #[path = "governed_read/grants.rs"]
 mod grants;
 pub(in super::super) use grants::seed;
+pub(in super::super) use grants::seed_grant;
 
 worth_query_capability_context!(pub WorkflowReadContext in DocumentRetentionSchema);
 worth_query_capability_provenance!(pub WorkflowReadProvenance in DocumentRetentionSchema);

@@ -8,7 +8,7 @@ use crate::domain_computation::{
     WorthQueryProviderSessionControlStopKind as Control,
     WorthQueryProviderSessionDenialKind as Kind,
 };
-pub(in crate::domain_computation::primary_graph) fn publication_execution_kind(
+pub(in crate::domain_computation) fn publication_execution_kind(
     cause: worth_execution::WorkCeilingDenial,
 ) -> Result<Kind, Control> {
     use worth_execution::{LeaseDenial, MemoryLimitLevel, WorkCeilingDenial as Denial};

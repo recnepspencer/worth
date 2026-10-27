@@ -12,6 +12,7 @@ mod ordinary_field_authoring;
 mod original_input;
 pub(super) mod output_correspondence;
 mod relation_effects;
+mod relation_initialization;
 mod target_admission;
 mod write_index;
 
@@ -36,12 +37,12 @@ pub(in crate::domain_computation::primary_graph::application_attempt) use model:
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
 };
+pub use model::{
+    WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
+};
 pub(in crate::domain_computation::primary_graph) use model::{
     WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
-};
-pub use model::{
-    WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationEffectProgramBuilder,
 };
 
 use super::effect_validation::{canonical_key, denial};

@@ -105,6 +105,7 @@ where
     where
         AdmitBasis: FnOnce(
             WorthQueryApplicationQueryBasis,
+            &crate::basis::WorthQueryProductObservationLease,
         ) -> Result<
             (
                 WorthQueryApplicationQueryBasisCustody,
@@ -123,7 +124,7 @@ where
             self.prepare_application_query_graph_work(query, &parameters, &controls, graph)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
-        let (basis, index_posture) = admit_basis(basis_selection)?;
+        let (basis, index_posture) = admit_basis(basis_selection, &security_product)?;
         validate_admission_request(controls.request_scope(), query.name())?;
         let mut graph_work = self.start_application_query_graph_work(
             prepared.plan,

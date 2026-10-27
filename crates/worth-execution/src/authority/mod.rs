@@ -15,8 +15,8 @@ pub use lease::{
     ExecutionAllocationDenialKind, ExecutionAllocationPolicy, ExecutionArray,
     ExecutionArrayBuilder, ExecutionArrayIntoIter, ExecutionAuthority, ExecutionAuthorityConfig,
     ExecutionByteBuffer, ExecutionImmutableBytes, ExecutionLeaseStatus,
-    ExecutionPhysicalAllocationDenialKind, ExecutionPolicyDenial, ExecutionResourceLease,
-    LeaseDenial, LeaseRequest,
+    ExecutionPhysicalAllocationDenialKind, ExecutionPolicyDenial, ExecutionRequestArrayBuilder,
+    ExecutionRequestArrayDenial, ExecutionResourceLease, LeaseDenial, LeaseRequest,
 };
 pub use memory::{
     ExecutionMemoryReservation, ExecutionResultMemory, MemoryLimitDenial, MemoryLimitLevel,

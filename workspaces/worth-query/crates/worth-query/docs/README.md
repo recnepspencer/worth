@@ -42,6 +42,7 @@ Executable journeys:
 - [Executable Scope-Field Operation Bodies](./authoring/scope-field-operation-bodies.md): author literal source guards and field assignments once, then execute their installed meaning.
 - [Signed Operation Creations](./authoring/signed-operation-creations.md): publish an immutable authenticated snapshot independently of a workflow approval frontier.
 - [Read Composition](./authoring/read-composition.md): turn a typed application-query declaration into one installed read graph.
+- [Record And Aspect History](./capabilities/record-and-aspect-history.md): capture disclosed record generations and page canonical changes at a pinned product with fresh independent metadata permission.
 - [Graph Read Access Planning](./authoring/graph-read-access-planning.md): how Query proves an installed read has the access structures and bounded cost it needs.
 - [Graph Touch Obligation Authority](./authoring/graph-touch-obligation-authority.md): the graph work an installed query or operation must perform.
 - [Aspects And Authority Lanes](./modeling/aspects-and-authority-lanes.md): stable slices of domain meaning and which runtime may change them.

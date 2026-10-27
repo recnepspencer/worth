@@ -13,6 +13,7 @@ use super::super::ports::{RuntimeWorldBranchCreationOutcome, RuntimeWorldBranchC
 use super::RuntimeWorldOwnerRoot;
 
 mod creation;
+mod exact_history;
 mod history;
 #[cfg(test)]
 mod install_control;

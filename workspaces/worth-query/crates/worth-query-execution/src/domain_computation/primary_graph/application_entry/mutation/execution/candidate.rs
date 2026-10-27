@@ -19,6 +19,7 @@ pub(in crate::domain_computation::primary_graph) fn build_handler_candidate<Sche
     decision: Binding::Decision,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    value_bindings: &worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
 ) -> Result<
     HandlerResult<WorthQueryCompletedMutationCandidate<Schema, Binding>, Binding::Denial>,
     MutationHandlerExecutionDenial,
@@ -32,7 +33,8 @@ where
         .prepare_output_contract::<Binding>()
         .map_err(MutationHandlerExecutionDenial::Attempt)?;
     let built = {
-        let mut writer = CandidateWriter::<Schema, Binding>::new(&mut candidate);
+        let mut writer =
+            CandidateWriter::<Schema, Binding>::new(&mut candidate, *execution, value_bindings);
         handler.build_candidate(identities.mutation_input(), decision, &mut writer)
     };
     match built {

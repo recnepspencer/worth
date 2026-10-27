@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind,
+};
 
 use super::WorthQueryInstalledApplicationValueBinding;
 
@@ -45,14 +47,85 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         aspect: &str,
         field: &str,
     ) -> Option<&WorthQueryInstalledApplicationValueBinding> {
-        self.bindings
-            .get(&ApplicationFieldBindingLocus::new(entity, aspect, field))
+        self.field_for_owner(
+            ApplicationFieldBindingOwnerKind::Entity,
+            entity,
+            aspect,
+            field,
+        )
+    }
+
+    pub fn relation_field(
+        &self,
+        relation: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&WorthQueryInstalledApplicationValueBinding> {
+        self.field_for_owner(
+            ApplicationFieldBindingOwnerKind::Relation,
+            relation,
+            aspect,
+            field,
+        )
+    }
+
+    fn field_for_owner(
+        &self,
+        owner: ApplicationFieldBindingOwnerKind,
+        name: &str,
+        aspect: &str,
+        field: &str,
+    ) -> Option<&WorthQueryInstalledApplicationValueBinding> {
+        let locus = match owner {
+            ApplicationFieldBindingOwnerKind::Entity => {
+                ApplicationFieldBindingLocus::new(name, aspect, field)
+            }
+            ApplicationFieldBindingOwnerKind::Relation => {
+                ApplicationFieldBindingLocus::for_relation(name, aspect, field)
+            }
+        };
+        self.bindings.get(&locus)
     }
 
     /// Inspect the existing immutable catalogue after funding its lookup and
     /// temporary key storage through the caller's request authority.
     pub fn field_admitted<E>(
         &self,
+        entity: &str,
+        aspect: &str,
+        field: &str,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<&WorthQueryInstalledApplicationValueBinding>, AdmittedFieldBindingStop<E>>
+    {
+        self.field_for_owner_admitted(
+            ApplicationFieldBindingOwnerKind::Entity,
+            entity,
+            aspect,
+            field,
+            prepare,
+        )
+    }
+
+    pub fn relation_field_admitted<E>(
+        &self,
+        relation: &str,
+        aspect: &str,
+        field: &str,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<&WorthQueryInstalledApplicationValueBinding>, AdmittedFieldBindingStop<E>>
+    {
+        self.field_for_owner_admitted(
+            ApplicationFieldBindingOwnerKind::Relation,
+            relation,
+            aspect,
+            field,
+            prepare,
+        )
+    }
+
+    fn field_for_owner_admitted<E>(
+        &self,
+        owner: ApplicationFieldBindingOwnerKind,
         entity: &str,
         aspect: &str,
         field: &str,
@@ -82,7 +155,7 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         let bytes =
             u64::try_from(input).map_err(|_| AdmittedFieldBindingStop::AccountingOverflow)?;
         prepare(work, bytes).map_err(AdmittedFieldBindingStop::Admission)?;
-        Ok(self.field(entity, aspect, field))
+        Ok(self.field_for_owner(owner, entity, aspect, field))
     }
 
     pub fn bindings(

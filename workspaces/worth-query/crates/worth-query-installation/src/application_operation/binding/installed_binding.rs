@@ -111,6 +111,13 @@ where
     ) -> Option<std::sync::Arc<crate::application_aftermath::InstalledCorrectionBinding>> {
         self.meaning.retain_correction_binding()
     }
+
+    pub fn retain_inspection_disclosure(
+        &self,
+    ) -> Option<std::sync::Arc<crate::application_operation::InstalledSourceDisclosureBinding>>
+    {
+        self.meaning.retain_inspection_disclosure()
+    }
 }
 
 impl<Schema> WorthQueryInstalledApplicationSchema<Schema>

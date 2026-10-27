@@ -10,6 +10,21 @@ pub(super) fn append(
     description: &ApplicationMutationDescription,
 ) {
     basis.text(format!("{prefix}.kind"), "application-mutation");
+    if let Some(disclosure) = description.inspection_disclosure() {
+        let disclosure_prefix = format!("{prefix}.inspection-disclosure");
+        let parts = disclosure.parts();
+        basis.text(
+            format!("{disclosure_prefix}.identity"),
+            parts.identity.as_str(),
+        );
+        basis.text(
+            format!("{disclosure_prefix}.source-binding"),
+            parts.source_binding.as_str(),
+        );
+        for (field, value) in parts.query.canonical_fields() {
+            basis.text(format!("{disclosure_prefix}.query.{field}"), value);
+        }
+    }
     // Omission preserves every historical mutation identity.
     {
         let requirements = &description.parts().workflow_execution_requirements;

@@ -9,7 +9,51 @@ use crate::basis::{
     WorthQueryProductObservationLease,
 };
 
+fn exact_history_denial(
+    cause: worth_runtime_world::facade::RuntimeWorldServiceDenial<
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    >,
+) -> worth_runtime_world::facade::ProductExactHistoryDenial {
+    use worth_runtime_world::facade::{
+        ProductExactHistoryDenial, RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial,
+    };
+    match cause {
+        RuntimeWorldServiceDenial::Denied(cause) => cause,
+        RuntimeWorldServiceDenial::OwnerUnavailable(_) => {
+            ProductExactHistoryDenial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable)
+        }
+    }
+}
+
 impl WorthQueryProductRuntime {
+    pub(crate) fn open_exact_product_history(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        target: &WorthQueryProductObservationLease,
+    ) -> Result<
+        worth_runtime_world::facade::ProductExactHistoryCursor,
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    > {
+        self.owner
+            .observation_port()
+            .open_exact_product_history(execution, target.observation())
+            .map_err(exact_history_denial)
+    }
+
+    pub(crate) fn prepare_exact_product_history_page<'request, 'authority>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'request, 'authority>,
+        cursor: &worth_runtime_world::facade::ProductExactHistoryCursor,
+    ) -> Result<
+        worth_runtime_world::facade::PreparedProductExactHistoryPage<'request, 'authority>,
+        worth_runtime_world::facade::ProductExactHistoryDenial,
+    > {
+        self.owner
+            .observation_port()
+            .prepare_exact_product_history_page(execution, cursor)
+            .map_err(exact_history_denial)
+    }
+
     pub(crate) fn security_observation_for(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

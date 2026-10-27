@@ -23,15 +23,63 @@ pub struct ApplicationFieldBindingLocus {
     entity: String,
     aspect: String,
     field: String,
+    #[serde(
+        default,
+        skip_serializing_if = "ApplicationFieldBindingOwnerKind::is_entity"
+    )]
+    owner_kind: ApplicationFieldBindingOwnerKind,
+}
+
+/// Portable schema ownership. Installation must resolve its actual native binding.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Default,
+    Eq,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub enum ApplicationFieldBindingOwnerKind {
+    #[default]
+    Entity,
+    Relation,
+}
+
+impl ApplicationFieldBindingOwnerKind {
+    pub const fn is_entity(&self) -> bool {
+        matches!(self, Self::Entity)
+    }
 }
 
 impl ApplicationFieldBindingLocus {
     pub fn new(entity: &str, aspect: &str, field: &str) -> Self {
         Self {
+            owner_kind: ApplicationFieldBindingOwnerKind::Entity,
             entity: entity.to_owned(),
             aspect: aspect.to_owned(),
             field: field.to_owned(),
         }
+    }
+
+    pub fn for_relation(relation: &str, aspect: &str, field: &str) -> Self {
+        Self {
+            owner_kind: ApplicationFieldBindingOwnerKind::Relation,
+            entity: relation.to_owned(),
+            aspect: aspect.to_owned(),
+            field: field.to_owned(),
+        }
+    }
+
+    pub const fn owner_kind(&self) -> ApplicationFieldBindingOwnerKind {
+        self.owner_kind
+    }
+
+    pub fn record_name(&self) -> &str {
+        &self.entity
     }
 
     pub fn entity(&self) -> &str {
@@ -175,6 +223,25 @@ impl ApplicationFieldBindingRecipe {
     }
 
     pub(crate) fn matches_member(&self, member: &ApplicationSchemaMember) -> bool {
+        if let ApplicationSchemaMember::RelationAspect { definition } = member {
+            let aspect = definition.parts();
+            if self.locus.owner_kind() != ApplicationFieldBindingOwnerKind::Relation
+                || self.locus.record_name() != aspect.relation
+                || self.locus.aspect() != aspect.aspect
+            {
+                return false;
+            }
+            return aspect.fields.iter().any(|field| {
+                self.locus.field() == field.field
+                    && self.matches_contract(FieldBindingContract {
+                        scalar_family: field.scalar_family,
+                        value_type: &field.value_type,
+                        unit: field.unit.as_deref(),
+                        frame: field.frame.as_deref(),
+                        canonical: field.canonical.as_ref(),
+                    })
+            });
+        }
         let ApplicationSchemaMember::Field {
             entity,
             aspect,
@@ -189,15 +256,34 @@ impl ApplicationFieldBindingRecipe {
         else {
             return false;
         };
-        self.locus.entity() == entity
+        self.locus.owner_kind().is_entity()
+            && self.locus.entity() == entity
             && self.locus.aspect() == aspect
             && self.locus.field() == field
-            && self.scalar_family == *scalar_family
-            && self.binding_identity.as_str() == value_type
-            && self.unit.map(ApplicationUnitIdentity::as_str) == unit.as_deref()
-            && self.frame.map(ApplicationFrameIdentity::as_str) == frame.as_deref()
-            && self.canonical.as_ref() == canonical.as_ref()
+            && self.matches_contract(FieldBindingContract {
+                scalar_family: *scalar_family,
+                value_type,
+                unit: unit.as_deref(),
+                frame: frame.as_deref(),
+                canonical: canonical.as_ref(),
+            })
     }
+
+    fn matches_contract(&self, contract: FieldBindingContract<'_>) -> bool {
+        self.scalar_family == contract.scalar_family
+            && self.binding_identity.as_str() == contract.value_type
+            && self.unit.map(ApplicationUnitIdentity::as_str) == contract.unit
+            && self.frame.map(ApplicationFrameIdentity::as_str) == contract.frame
+            && self.canonical.as_ref() == contract.canonical
+    }
+}
+
+struct FieldBindingContract<'a> {
+    scalar_family: ScalarAspectType,
+    value_type: &'a str,
+    unit: Option<&'a str>,
+    frame: Option<&'a str>,
+    canonical: Option<&'a super::ApplicationCanonicalValueContract>,
 }
 
 impl PartialEq for ApplicationFieldBindingRecipe {

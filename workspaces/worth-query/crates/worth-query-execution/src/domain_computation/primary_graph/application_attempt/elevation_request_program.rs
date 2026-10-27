@@ -147,24 +147,28 @@ fn request_effects(
             partition: super::effect_program::WorthQueryApplicationCreationPartition::Issued,
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.requester_relation(),
             key: elevation_key.clone(),
             from: EntityReference::Existing(binding.requester()),
             to: elevation.clone(),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.grant_relation(),
             key: elevation_key.clone(),
             from: elevation.clone(),
             to: EntityReference::Existing(binding.grant()),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.review_relation(),
             key: elevation_key.clone(),
             from: elevation.clone(),
             to: review.clone(),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.review_scope_relation(),
             key: review_key,
             from: review,
@@ -173,6 +177,7 @@ fn request_effects(
     ];
     if let Some(resource_relation) = binding.resource_relation() {
         effects.push(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: resource_relation,
             key: elevation_key,
             from: elevation,
@@ -300,12 +305,14 @@ fn same_effect(
         }
         (
             WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields,
                 kind,
                 key,
                 from,
                 to,
             },
             WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields: expected_fields,
                 kind: expected_kind,
                 key: expected_key,
                 from: expected_from,
@@ -316,6 +323,7 @@ fn same_effect(
                 && key == expected_key
                 && from == expected_from
                 && to == expected_to
+                && fields == expected_fields
         }
         _ => false,
     }

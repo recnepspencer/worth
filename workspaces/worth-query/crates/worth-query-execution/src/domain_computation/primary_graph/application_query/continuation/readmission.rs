@@ -167,7 +167,13 @@ where
             affinity.product.retained_clone(),
             controls,
         );
-        let pending = prepare_governed_access(self, query, access, capability, &query_controls)?;
+        let pending = prepare_governed_access(
+            self,
+            query,
+            access,
+            capability,
+            query_controls.request_scope(),
+        )?;
         self.finish_continuation_readmission(
             execution,
             query,

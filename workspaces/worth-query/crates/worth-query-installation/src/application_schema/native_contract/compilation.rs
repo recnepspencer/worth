@@ -6,8 +6,8 @@ use worth_foundational::facade::{
     CanonicalDigestId, FieldKey, ScalarAspectType, StructAspectShape,
 };
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence, ApplicationFieldValueMeaning, ApplicationSchemaBindingIdentity,
-    ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
+    ApplicationFieldBindingOwnerKind, ApplicationFieldPresence, ApplicationFieldValueMeaning,
+    ApplicationSchemaBindingIdentity, ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
 };
 
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
@@ -24,6 +24,9 @@ use super::{
     WorthQueryInstalledApplicationSchemaContractCatalogCounters,
 };
 
+mod relation_aspect;
+use relation_aspect::collect_relation_aspects;
+
 pub(super) struct DeclaredAspectSeed {
     identity: AspectIdentity,
     revision: AspectContractRevision,
@@ -37,6 +40,9 @@ pub(super) struct DeclaredAspectSeed {
         ),
     >,
 }
+
+type DeclaredAspects =
+    BTreeMap<(ApplicationFieldBindingOwnerKind, String, String), DeclaredAspectSeed>;
 
 pub(crate) fn compile_native_contract_catalog(
     binding: &ApplicationSchemaBindingIdentity,
@@ -52,19 +58,29 @@ pub(crate) fn compile_native_contract_catalog(
         .max();
     let field_count = portable.iter().map(|record| record.fields().len()).sum();
     let mut canonical_budget = CatalogCanonicalBudget::from_schema_work(schema_work)?;
-    let mut contracts =
-        BTreeMap::<String, BTreeMap<String, WorthQueryInstalledApplicationAspectContract>>::new();
+    let mut contracts = super::catalog::NativeContractsByOwner::new();
     for record in portable.iter().cloned() {
         let entity = record.entity().to_owned();
         let aspect = record.aspect().as_str().to_owned();
+        let owner = record_owner(record.binding())?;
         let installed = install_aspect_contract(binding, record, &mut canonical_budget)?;
-        contracts
+        if contracts
+            .entry(owner)
+            .or_default()
             .entry(entity)
             .or_default()
-            .insert(aspect, installed);
+            .insert(aspect.clone(), installed)
+            .is_some()
+        {
+            return Err(denial(DenialKind::DuplicateAspectLocus, aspect));
+        }
     }
     let counters = WorthQueryInstalledApplicationSchemaContractCatalogCounters::compiled(
-        contracts.values().map(BTreeMap::len).sum(),
+        contracts
+            .values()
+            .flat_map(|owners| owners.values())
+            .map(BTreeMap::len)
+            .sum(),
         field_count,
     );
     Ok(WorthQueryInstalledApplicationSchemaContractCatalog::new(
@@ -85,18 +101,15 @@ pub(crate) fn compile_portable_native_contract_records(
     collect_declared_fields(schema, &mut aspects)?;
     aspects
         .into_iter()
-        .map(|((entity, aspect), seed)| {
-            compile_portable_aspect_record(schema.name(), entity, aspect, seed)
+        .map(|((owner, entity, aspect), seed)| {
+            compile_portable_aspect_record(schema.name(), owner, entity, aspect, seed)
         })
         .collect()
 }
 
 pub(super) fn collect_declared_aspects(
     schema: &ErasedApplicationSchemaDeclaration,
-) -> Result<
-    BTreeMap<(String, String), DeclaredAspectSeed>,
-    WorthQueryApplicationSchemaContractCatalogDenial,
-> {
+) -> Result<DeclaredAspects, WorthQueryApplicationSchemaContractCatalogDenial> {
     let mut identities = BTreeMap::<AspectIdentity, (String, String)>::new();
     let mut aspects = BTreeMap::new();
     for member in schema.members() {
@@ -111,7 +124,11 @@ pub(super) fn collect_declared_aspects(
             continue;
         };
         validate_aspect_identity(&mut identities, entity, aspect, *identity, *revision)?;
-        let locus = (entity.clone(), aspect.clone());
+        let locus = (
+            ApplicationFieldBindingOwnerKind::Entity,
+            entity.clone(),
+            aspect.clone(),
+        );
         if aspects.contains_key(&locus) {
             return Err(denial(
                 DenialKind::DuplicateAspectLocus,
@@ -128,6 +145,7 @@ pub(super) fn collect_declared_aspects(
             },
         );
     }
+    collect_relation_aspects(schema, &mut aspects, &mut identities)?;
     Ok(aspects)
 }
 
@@ -155,7 +173,7 @@ fn validate_aspect_identity(
 
 pub(super) fn collect_declared_fields(
     schema: &ErasedApplicationSchemaDeclaration,
-    aspects: &mut BTreeMap<(String, String), DeclaredAspectSeed>,
+    aspects: &mut DeclaredAspects,
 ) -> Result<(), WorthQueryApplicationSchemaContractCatalogDenial> {
     for member in schema.members() {
         let ApplicationSchemaMember::Field {
@@ -171,7 +189,11 @@ pub(super) fn collect_declared_fields(
             continue;
         };
         let seed = aspects
-            .get_mut(&(entity.clone(), aspect.clone()))
+            .get_mut(&(
+                ApplicationFieldBindingOwnerKind::Entity,
+                entity.clone(),
+                aspect.clone(),
+            ))
             .ok_or_else(|| denial(DenialKind::FieldWithoutAspect, field))?;
         let field_key = FieldKey::new(field.clone())
             .ok_or_else(|| denial(DenialKind::InvalidFieldKey, field))?;
@@ -201,6 +223,7 @@ pub(super) fn collect_declared_fields(
 
 fn compile_portable_aspect_record(
     schema: &str,
+    owner: ApplicationFieldBindingOwnerKind,
     entity: String,
     aspect_name: String,
     seed: DeclaredAspectSeed,
@@ -221,8 +244,13 @@ fn compile_portable_aspect_record(
         aspect_key,
         contract,
         fields,
-        AspectBinding::EntityField {
-            field: aspect_field,
+        match owner {
+            ApplicationFieldBindingOwnerKind::Entity => AspectBinding::EntityField {
+                field: aspect_field,
+            },
+            ApplicationFieldBindingOwnerKind::Relation => AspectBinding::RelationField {
+                field: aspect_field,
+            },
         },
     ))
 }
@@ -238,6 +266,7 @@ fn install_aspect_contract(
     let prepared = canonical_budget.prepare(record.aspect().as_str(), record.contract())?;
     let locus = WorthQueryInstalledApplicationAspectLocus::new(
         binding.clone(),
+        record_owner(record.binding())?,
         record.entity().to_owned(),
         record.aspect().clone(),
     );
@@ -249,6 +278,19 @@ fn install_aspect_contract(
         prepared.basis,
         prepared.material,
     ))
+}
+
+fn record_owner(
+    binding: &AspectBinding,
+) -> Result<ApplicationFieldBindingOwnerKind, WorthQueryApplicationSchemaContractCatalogDenial> {
+    match binding {
+        AspectBinding::EntityField { .. } => Ok(ApplicationFieldBindingOwnerKind::Entity),
+        AspectBinding::RelationField { .. } => Ok(ApplicationFieldBindingOwnerKind::Relation),
+        _ => Err(denial(
+            DenialKind::UnsupportedRecordBinding,
+            binding.canonical_name(),
+        )),
+    }
 }
 
 pub(super) fn build_foundational_contract(

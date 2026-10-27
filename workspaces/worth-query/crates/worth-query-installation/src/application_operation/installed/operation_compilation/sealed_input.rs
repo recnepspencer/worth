@@ -14,13 +14,14 @@ impl WorthQuerySealedOperationContractCompilation {
         WorthQueryInstalledApplicationOperationExecutionPosture,
         InstalledExternalEffectContract,
         Option<WorthQueryInstalledAftermathContract>,
+        Vec<worth_query_declaration::facade::application_operation::DeclaredApplicationSourceDisclosure>,
         WorthQueryOperationGraphReadContract,
         WorthQueryOperationTouchContract,
         WorthQueryOperationEmissionContract,
         usize,
         super::super::super::contracts::SigningLifecycleClosure,
         Vec<WorthQueryInstalledApplicationInvariantDescriptor>,
-    ) {
+    ){
         (
             self.body,
             self.authorization,
@@ -31,6 +32,7 @@ impl WorthQuerySealedOperationContractCompilation {
             self.execution_posture,
             self.external_effect,
             self.aftermath,
+            self.source_inspection_disclosures,
             self.graph_reads,
             self.touches,
             self.emissions,

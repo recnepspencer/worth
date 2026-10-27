@@ -77,6 +77,12 @@ impl VisibilityProjectionView {
         )
     }
 
+    /// The state borrow uses the same exact slot/kind descent as metadata.
+    /// The callback funds its own selected-field lookup and returned values.
+    pub fn exact_relation_state_read_work_bound(&self) -> Option<u64> {
+        self.exact_relation_metadata_read_work_bound()
+    }
+
     /// Borrow the exact selected root's state without resolving owned kind names
     /// or materializing a read record. A pinned old exact root remains eligible.
     pub fn with_exact_entity_state<T>(
@@ -130,6 +136,16 @@ impl VisibilityProjectionView {
         &self,
         relation: RelationId,
     ) -> Result<Option<RelationalRelationMetadata>, RelationalBorrowedRecordReadDenial> {
+        self.with_exact_relation_state(relation, |metadata, _| metadata)
+    }
+
+    /// Borrow one exact-root physical relation without materializing a read
+    /// record, copying aspect payloads, or resolving owned kind names.
+    pub fn with_exact_relation_state<T>(
+        &self,
+        relation: RelationId,
+        project: impl FnOnce(RelationalRelationMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
+    ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
         };
@@ -159,7 +175,7 @@ impl VisibilityProjectionView {
         let Some(endpoints) = &slot.extra().endpoints else {
             return Ok(None);
         };
-        Ok(Some(RelationalRelationMetadata {
+        let metadata = RelationalRelationMetadata {
             relation_id: RelationId::new(
                 relation.partition_id,
                 relation.local_slot_value(),
@@ -169,7 +185,11 @@ impl VisibilityProjectionView {
             lifecycle: slot.lifecycle(),
             source: endpoints.source,
             target: endpoints.target,
-        }))
+        };
+        Ok(Some(project(
+            metadata,
+            slot.extra().authoritative_aspect_state.as_ref(),
+        )))
     }
 }
 

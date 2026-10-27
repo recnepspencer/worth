@@ -15,8 +15,10 @@ pub enum WorthQueryPublishedApplicationQueryOmissionPosture {
 
 /// Publication-owned evidence derived from one completed application query.
 ///
-/// This receipt stores only a closed publication projection. It cannot be
-/// constructed by consumers and is not accepted by an execution transition.
+/// The display projection accompanies its original sealed query observation,
+/// when the completed lane retained one. The observation carries no current
+/// permission. Consumers cannot construct this receipt; inspection must freshly
+/// admit its real source through the installed binding.
 ///
 /// ```compile_fail
 /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryAccessReceipt;
@@ -37,6 +39,9 @@ pub enum WorthQueryPublishedApplicationQueryOmissionPosture {
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryApplicationQueryPublicationReceipt {
+    observation: Option<
+        worth_query_execution::facade::causal_inspection::WorthQueryApplicationQueryObservation,
+    >,
     query_identity: String,
     parameter_binding_identity: String,
     basis: WorthQueryPublishedApplicationBasis,
@@ -50,9 +55,15 @@ pub struct WorthQueryApplicationQueryPublicationReceipt {
 }
 
 impl WorthQueryApplicationQueryPublicationReceipt {
-    pub(super) fn from_terminal(terminal: &WorthQueryApplicationQueryAccessReceipt) -> Self {
+    pub(super) fn from_terminal(
+        terminal: &WorthQueryApplicationQueryAccessReceipt,
+        observation: Option<
+            worth_query_execution::facade::causal_inspection::WorthQueryApplicationQueryObservation,
+        >,
+    ) -> Self {
         let disclosure = WorthQueryPublishedApplicationDisclosure::capture(terminal.disclosure());
         Self {
+            observation,
             query_identity: terminal.query_identity().render_support_hex(),
             parameter_binding_identity: terminal.parameter_binding_identity().render_hex(),
             basis: WorthQueryPublishedApplicationBasis::capture(terminal),

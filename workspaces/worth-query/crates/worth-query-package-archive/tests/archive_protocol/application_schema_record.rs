@@ -18,6 +18,7 @@ const VERSION_THIRTEEN_MINIMAL_SCHEMA_HEX: &str = "000d0008000000010000003800000
 const VERSION_FOURTEEN_MINIMAL_SCHEMA_HEX: &str = "000e000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
 const VERSION_SIXTEEN_MINIMAL_SCHEMA_HEX: &str = "0010000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
 const VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX: &str = "0011000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
+const VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX: &str = "0012000800000001000000380000000d617263686976652e74657374730000000d4d696e696d616c536368656d610000000100000000000000010001000000044974656d";
 
 struct Schema;
 struct Entity;
@@ -90,7 +91,7 @@ fn application_schema_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_seventeen_minimal_application_schema_matches_the_frozen_vector() {
+fn version_eighteen_minimal_application_schema_matches_the_frozen_vector() {
     for (version, originals) in [
         (9_u16, VERSION_NINE_MINIMAL_SCHEMA_HEX),
         (6_u16, VERSION_SIX_MINIMAL_SCHEMA_HEX),
@@ -98,6 +99,7 @@ fn version_seventeen_minimal_application_schema_matches_the_frozen_vector() {
         (13_u16, VERSION_THIRTEEN_MINIMAL_SCHEMA_HEX),
         (14_u16, VERSION_FOURTEEN_MINIMAL_SCHEMA_HEX),
         (16_u16, VERSION_SIXTEEN_MINIMAL_SCHEMA_HEX),
+        (17_u16, VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX),
     ] {
         for original in originals.split('|') {
             let bytes = decode_hex(original);
@@ -115,11 +117,11 @@ fn version_seventeen_minimal_application_schema_matches_the_frozen_vector() {
     let exported = schema_package().export_typed_records().unwrap();
     let schema = schema_view(&exported);
     let bytes = encode_record_frame(schema, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    assert_eq!(encode_hex(&bytes), VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 17);
+    assert_eq!(encode_hex(&bytes), VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 8);
 
-    let frozen = decode_hex(VERSION_SEVENTEEN_MINIMAL_SCHEMA_HEX);
+    let frozen = decode_hex(VERSION_EIGHTEEN_MINIMAL_SCHEMA_HEX);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
     let decoded = decoder.decode_frame(&frozen).unwrap();

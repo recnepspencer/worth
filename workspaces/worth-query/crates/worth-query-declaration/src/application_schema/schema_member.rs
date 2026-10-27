@@ -2,6 +2,7 @@ use worth_foundational::facade::{AspectContractRevision, AspectIdentity, ScalarA
 
 use crate::application_aftermath::PortableApplicationAftermathContract;
 use crate::application_capability::ErasedApplicationCapabilityContract;
+use crate::application_query::ErasedApplicationHistoryQueryDefinition;
 use crate::application_query::ErasedApplicationQueryDefinition;
 use crate::portable_identity::WorthQueryPortableTypeIdentity;
 
@@ -27,6 +28,13 @@ pub enum ApplicationOperationProgramTarget {
         relation: String,
         from: String,
         to: String,
+    },
+    InitializeRelationField {
+        relation: String,
+        from: String,
+        to: String,
+        aspect: String,
+        field: String,
     },
     Unlink {
         relation: String,
@@ -105,6 +113,9 @@ pub enum ApplicationSchemaMember {
         to: String,
         integrity: ApplicationRelationIntegrityRecord,
     },
+    RelationAspect {
+        definition: super::ErasedApplicationRelationAspectDefinition,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,
@@ -121,6 +132,9 @@ pub enum ApplicationSchemaMember {
     },
     ApplicationQuery {
         definition: ErasedApplicationQueryDefinition,
+    },
+    ApplicationHistoryQuery {
+        definition: ErasedApplicationHistoryQueryDefinition,
     },
     ApplicationCapability {
         contract: ErasedApplicationCapabilityContract,

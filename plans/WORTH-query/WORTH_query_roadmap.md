@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-26:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6
@@ -5762,7 +5762,15 @@ native source commit, refuses empty sources before Signal admission and preserve
 request custody through completion and revalidation. Phase 11 is accepted: the
 three obsolete Relational planning catalogs and three hidden Bridge facade aliases
 are removed, preserving actual identity issuance and the standalone root facade.
-Phases 8–10 remain unfinished; the application resource endpoint is Phase 8.
+Phase 10 is accepted on 2026-10-27: entity/relation history captures
+disclosed exact generations and pages canonical changes through genuine World
+ancestry with fresh SubjectRead and independent metadata admission at current
+security. Its facade audit covers equal writes, fork/sibling exclusion,
+ordered/filtered physical relations, replacement, retired gaps, cancellation and
+final custody release. The Native ten/10,000 retained-change court preserves
+identical finite page limits and actual per-page work maxima while traversing every
+unrelated prefix. Phases 8–9 remain unfinished; the application resource endpoint
+is Phase 8.
 These additions do not reopen the original phases.
 
 ### Goal

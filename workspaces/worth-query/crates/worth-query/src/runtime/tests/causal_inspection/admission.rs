@@ -1,5 +1,4 @@
 use super::super::super::*;
-use crate::runtime::inspection::{CausalObservationTargetHandle, CausalResultShapeContextHandle};
 
 fn changed_reference_set() -> CausalEvidenceReferenceSet {
     let anchor = anchor_causal_observation(
@@ -202,9 +201,15 @@ fn causal_inspection_denies_unsupported_explanation_family_before_envelope_reque
 #[test]
 fn causal_inspection_request_denies_target_and_unresolved_family_mismatches() {
     let reference_set = changed_reference_set();
+    let unrelated =
+        QueryObservationReceipt::fixture(CausalObservationOutcome::Suppressed, Vec::new());
     let bad_target = causal_inspection_target(
-        CausalObservationTargetHandle::from_rendered("different-target"),
-        CausalResultShapeContextHandle::from_rendered("fixture-result-shape"),
+        unrelated.observation_target().clone(),
+        reference_set
+            .anchor()
+            .observation_receipt()
+            .result_shape_context()
+            .clone(),
     )
     .unwrap();
     let target_mismatch = request_causal_inspection(

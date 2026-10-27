@@ -36,6 +36,16 @@ Query does not export its owner authority markers or witness factories. The
 runtime APIs that perform an operation mint and retain the appropriate owner
 artifact.
 
+The canonical diagnostic identity protocol lives in the split Execution owner,
+`worth-query-execution/src/domain_computation/evidence_identity/`. Internal
+engine callers use `worth_query_execution::facade::evidence_identity`; the
+older Query engine preserves its existing exported identity types from that
+single implementation. Scope, canonicalization scheme, sequence boundaries,
+and opaque comparison keys retain the same meaning across both callers.
+Encoding a diagnostic identity, including its Bridge representation, grants
+no inspection, execution, publication, or correction permission. Application
+code continues to use Decl/Host and actual operation or observation owners.
+
 ## Core Mental Model
 
 An operational identity is a current right held by an owning runtime. A
