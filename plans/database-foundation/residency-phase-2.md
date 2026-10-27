@@ -3102,3 +3102,20 @@ cold/Head-warm/Full-warm duplicate symbol rejection. Full native, contracts
 and all other final lanes remain to run on a clean committed tree. Dirty caps
 and agent-context pass; strict lower clippy is being repeated for the final
 source. No merge index guard remains: generation refresh is explicit.
+
+### Final strict Query lint repair
+
+The clean-tree final Query clippy lane found two clone_on_copy calls in
+postcommit-currentness resolution (RebaseVerificationReason is Copy) and one
+err_expect in the new native source-readmission denial court. Remove the
+redundant clones and express the same expected denial directly; preserve all
+assertions and native failure payloads. No API or behavioral change is needed.
+The failed clean log is preserved as
+`failed-final-clippy-query-b833bd12c3.log`; repeat strict Query all-target clippy
+and format the owner before committing. Full Query tests remain a final lane.
+
+Final Query lint repair verification: `repair-query-clippy.log` passes all
+selected Query targets with -D warnings. Both obsolete Copy clones are gone;
+the denial court uses an explicit Err pattern and preserves every assertion.
+Owner formatting, dirty caps and agent-context pass. Resume clean-tree Query
+clippy and the remaining final lanes after this corrective commit.

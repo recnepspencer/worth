@@ -145,7 +145,7 @@ impl PreparedFactRebase {
                 };
                 view.read_entity_aspect_version(execution, *entity_id, locator.aspect().aspect_key())
                     .map_err(|denial| match denial {
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable,
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
                     })?
                     .map(Self::Aspect)
@@ -196,7 +196,7 @@ impl PreparedFactRebase {
                 let revision = runtime.read_truth().project_snapshot(snapshot)
                     .map(|view| view.read_entity_aspect_version(execution, *entity_id, aspect))
                     .transpose().map_err(|denial| match denial {
-                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable,
                         worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
                     })?.flatten();
                 match revision {
