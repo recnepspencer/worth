@@ -611,3 +611,12 @@ missing, backward or unreported coordinates return a typed
 `CheckpointReservationAdvanceDenial`. It is reconstructive diagnostic work,
 O((A+R) log(A+R)) time and O(A+R) scratch. Applications separately compare their
 model bytes; they must not reimplement allocator arithmetic.
+
+Checkpoint restore deliberately refuses unknown fields in the Native checkpoint,
+allocator, partition, arena, frontier and generation rows as `CorruptCheckpoint`
+before publishing any state. Inspection uses that same closed grammar. Current
+and supported legacy writers emit only their declared fields, so their bytes
+remain accepted; no checkpoint version was reinterpreted or migrated. A payload
+with extra fields that an older reader happened to ignore is outside this
+compatibility window and now refuses. Future field additions require an explicit
+protocol/version admission decision rather than silent forward compatibility.
