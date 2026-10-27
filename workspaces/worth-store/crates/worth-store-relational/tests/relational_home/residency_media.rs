@@ -196,19 +196,32 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
     let host = workload::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let mut fixture = Fixture::new(&execution);
-    isolate_damaged_region(&mut fixture, &execution);
+    isolate_healthy_region(&mut fixture, &execution);
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let home = durable_run::open(&location, &execution).unwrap();
     durable_run::apply(&home, &execution, &fixture.steps);
     let bytes = region_head(&home).1;
+    let page_bytes = worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
+        .admit()
+        .unwrap()
+        .page_size()
+        .bytes();
+    let records = home.certification_serving().anchored_records().unwrap();
+    let anchor = AnchoredRecordName::new(selected_checkpoint::ANCHOR).unwrap();
+    let selected = records.read(anchor, 1 << 30).unwrap().unwrap();
     assert!(
-        bytes.len()
-            > worth_store::physical_runtime::PhysicalRecordFormatDeclaration::builder()
-                .admit()
-                .unwrap()
-                .page_bytes() as usize,
-        "the corrupt region must occupy its own extent, not share an inline page with region 24"
+        selected
+            .members()
+            .iter()
+            .filter(|member| member.length() > u64::from(page_bytes))
+            .any(|member| {
+                let bytes = records.read_member(anchor, *member, 1 << 30).unwrap();
+                bytes
+                    .strip_prefix(b"WORTH-REL-REG6\n")
+                    .is_some_and(|header| header[2..6] == 24_u32.to_be_bytes() && header[38] == 0)
+            }),
+        "the healthy region's head must occupy an extent, separate from the corrupt inline frame"
     );
     home.close();
     // Damage only materialized data, leaving the canonical WAL frames intact.
@@ -302,21 +315,21 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
     home.close();
 }
 
-/// A record-checksum fault affects its physical frame. Put region 1's head in
-/// an extent so the unrelated region's own bytes remain intact after reopen.
-fn isolate_damaged_region(fixture: &mut Fixture, execution: &ExecutionRequest<'_, '_>) {
+/// A record-checksum fault affects its physical frame. Put the healthy region's
+/// head in an extent so its own bytes remain intact when region 1 is damaged.
+fn isolate_healthy_region(fixture: &mut Fixture, execution: &ExecutionRequest<'_, '_>) {
     use worth_relational::facade::{
         history::BranchId,
         identity::PartitionId,
         transactions::{CreateIntent, MutationIntent, WorkerIntentBatch},
     };
-    let mut batch = WorkerIntentBatch::new("extent-backed corrupt subject");
+    let mut batch = WorkerIntentBatch::new("extent-backed healthy subject");
     for index in 10_000..10_512 {
         let mut create = super::batches::create(index);
         let MutationIntent::Create(CreateIntent::Entity(spec)) = &mut create.intents[0] else {
             panic!("entity fixture")
         };
-        spec.partition_id = PartitionId(1);
+        spec.partition_id = PartitionId(24);
         batch.intents.extend(create.intents);
     }
     let branch = BranchId("main".into());
