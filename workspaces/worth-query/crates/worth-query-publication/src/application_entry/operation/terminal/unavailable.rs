@@ -53,7 +53,7 @@ where
                 return Err(WorthQueryOperationCloseDenial::NativeObligationRetained);
             };
             let evidence = complete(outputs, phase, &self.operation.runtime, request)
-                .map_err(WorthQueryOperationCloseDenial::Outputs)?;
+                .map_err(|denial| WorthQueryOperationCloseDenial::Outputs(Box::new(denial)))?;
             // The native transition is not replayed if subsequent cleanup refuses.
             self.output_completion = Some(TerminalOutputCompletion::Unavailable(evidence));
         }
