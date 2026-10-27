@@ -103,3 +103,6 @@ fn selected_source_is_protected_and_retired_source_cannot_be_reselected() {
         Err(Denial::SourceUnavailable)
     ));
 }
+
+#[path = "ancestor_selection/splicing.rs"]
+mod splicing;

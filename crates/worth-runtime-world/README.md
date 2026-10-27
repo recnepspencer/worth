@@ -64,7 +64,9 @@ that genuine product occurrence. `prepare_exact_product_history_page` follows
 one authoritative parent step and retains its exact component bases, including
 inherited fork ancestry. It reads no current head or reconstructed historical
 branch generation. Missing/retired raw parents return a typed history gap;
-retirement splices remain confined to the older inspection traversal.
+exact pages never substitute retirement splices for missing raw commits.
+The separate retained-ancestor selector can follow owner-recorded splices to
+prove ancestry between retained endpoints, without disclosing retired contents.
 
 Accept the prepared page through its originating cursor to receive `(page,
 successor)` under the stored original request. The original cursor stays intact

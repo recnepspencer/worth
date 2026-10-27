@@ -96,7 +96,9 @@ example permits one result because its query addresses one unique number.
 Choose bounds from the application's history and query contracts.
 
 Selection requires current disclosure plus retained native ancestry and source
-material. A copied receipt identifies the same performed source in its owning
+material. The ancestry proof may follow owner-recorded retirement splices
+between retained endpoints; this grants no access to retired intermediate
+contents, and exact history pages still refuse missing raw parents. A copied receipt identifies the same performed source in its owning
 runtime. Keep the returned source selection alive for the correction and its
 retries: it owns the source's history pin while operation owners can close
 normally. Each preparation observes the target again and checks current authority.
