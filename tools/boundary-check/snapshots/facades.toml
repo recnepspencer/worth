@@ -38,6 +38,7 @@ exports = [
     "application_operation",
     "application_program",
     "application_query",
+    "application_resource",
     "application_schema",
     "authentication",
     "authoring",

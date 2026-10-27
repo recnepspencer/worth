@@ -15,6 +15,7 @@ use super::encoding_budget::RecordPayloadEncodingWork;
 use super::sequence::{decode_sequence, write_sequence};
 
 mod authorization_path;
+mod canonical_value_reference;
 mod contribution;
 mod member;
 mod query_binding_reference;

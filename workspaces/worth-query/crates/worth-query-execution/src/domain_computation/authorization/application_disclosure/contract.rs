@@ -163,6 +163,9 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         field,
     });
     match rule.selector() {
+        ApplicationQueryDisclosureSelector::Resource(meaning) => {
+            return Err(denial(meaning.slot_type()))
+        }
         ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
             return Err(denial(metadata.slot_type()))
         }

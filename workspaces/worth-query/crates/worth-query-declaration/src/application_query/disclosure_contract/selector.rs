@@ -15,6 +15,7 @@ use super::super::{
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationQueryDisclosureSelector {
+    Resource(crate::application_resource::ApplicationResourceDisclosureMeaning),
     HistoryMetadata(super::super::ApplicationHistoryMetadataMeaning),
     Orbit(super::super::ApplicationQueryOrbitMeaning),
     InternalField {
@@ -52,6 +53,7 @@ pub enum ApplicationQueryDisclosureSelector {
 impl ApplicationQueryDisclosureSelector {
     pub(crate) fn portable_identities_are_valid(&self) -> bool {
         match self {
+            Self::Resource(meaning) => meaning.resource_identity().is_valid(),
             Self::HistoryMetadata(metadata) => metadata.history_identity().is_valid(),
             Self::InternalField { .. } => true,
             Self::Orbit(orbit) => {
@@ -85,6 +87,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub fn result_slot_key(&self) -> Option<ApplicationQueryResultSlotKey> {
         match self {
+            Self::Resource(meaning) => Some(meaning.slot_key()),
             Self::HistoryMetadata(metadata) => Some(metadata.slot_key()),
             Self::Orbit(orbit) => Some(orbit.slot_key()),
             Self::Field {
@@ -142,6 +145,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub const fn slot_type(&self) -> &str {
         match self {
+            Self::Resource(meaning) => meaning.slot_type(),
             Self::HistoryMetadata(metadata) => metadata.slot_type(),
             Self::Orbit(orbit) => orbit.slot_type(),
             Self::Field { slot_type, .. } | Self::Relation { slot_type, .. } => slot_type.as_str(),
@@ -151,6 +155,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub const fn query_type(&self) -> &str {
         match self {
+            Self::Resource(meaning) => meaning.resource_type(),
             Self::HistoryMetadata(metadata) => metadata.history_type(),
             Self::Orbit(orbit) => orbit.query_type(),
             Self::Field { query_type, .. } | Self::Relation { query_type, .. } => {
@@ -162,6 +167,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub fn output_name(&self) -> &str {
         match self {
+            Self::Resource(meaning) => meaning.facet().name(),
             Self::HistoryMetadata(metadata) => metadata.facet().name(),
             Self::Orbit(orbit) => orbit.output_name(),
             Self::Field { output_name, .. } | Self::Relation { output_name, .. } => output_name,
@@ -183,7 +189,10 @@ impl ApplicationQueryDisclosureSelector {
                 field,
                 ..
             } => Some((entity, aspect, field)),
-            Self::Relation { .. } | Self::Orbit(_) | Self::HistoryMetadata(_) => None,
+            Self::Relation { .. }
+            | Self::Orbit(_)
+            | Self::HistoryMetadata(_)
+            | Self::Resource(_) => None,
         }
     }
 
@@ -208,7 +217,8 @@ impl ApplicationQueryDisclosureSelector {
             Self::Field { .. }
             | Self::InternalField { .. }
             | Self::Orbit(_)
-            | Self::HistoryMetadata(_) => None,
+            | Self::HistoryMetadata(_)
+            | Self::Resource(_) => None,
         }
     }
 
@@ -220,7 +230,10 @@ impl ApplicationQueryDisclosureSelector {
             | Self::Field {
                 projection_mask, ..
             } => Some(projection_mask),
-            Self::Relation { .. } | Self::Orbit(_) | Self::HistoryMetadata(_) => None,
+            Self::Relation { .. }
+            | Self::Orbit(_)
+            | Self::HistoryMetadata(_)
+            | Self::Resource(_) => None,
         }
     }
 
@@ -232,7 +245,10 @@ impl ApplicationQueryDisclosureSelector {
             | Self::Field {
                 diagnostic_mask, ..
             } => Some(diagnostic_mask),
-            Self::Relation { .. } | Self::Orbit(_) | Self::HistoryMetadata(_) => None,
+            Self::Relation { .. }
+            | Self::Orbit(_)
+            | Self::HistoryMetadata(_)
+            | Self::Resource(_) => None,
         }
     }
 }

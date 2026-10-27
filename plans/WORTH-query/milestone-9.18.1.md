@@ -801,18 +801,21 @@ crates/worth-runtime-bridge/src/
   conditional_execution/owned_async/                         E lifecycle authority
   diagnostics/causal_envelope/                               E evidence assembly
   facade.rs                                                 E remove alias modules
-worth-query-declaration/src/application_query/
-  async_resource/                                           M typed resource meaning
-  history/                                                  N target/aspect selection
-worth-query-installation/src/application_query/
-  async_resource/                                           M installed declarations
-  history/                                                  N schema/disclosure binding
+worth-query-declaration/src/
+  application_resource/                                     N typed resource meaning, action/disclosure profiles
+  application_schema/value_binding/canonical/               E complete descriptive codec reference
+  application_query/
+    history/                                                N target/aspect selection
+worth-query-installation/src/
+  application_resource/                                     N actual typed resource/provider correspondence
+  application_query/
+    history/                                                N schema/disclosure binding
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
 worth-query-execution/src/domain_computation/
   evidence_identity/                                        M shared diagnostic identity protocol
   primary_graph/
-    async_resource/                                         M live resource orchestration
+    application_resource/                                   M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
 worth-query-publication/src/application_entry/
@@ -899,7 +902,16 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
-**Status:** Open. The native prerequisite adds World-qualified managed request
+**Status:** Open. Typed resource declarations and installed-profile lookup preserve
+the complete input/result/failure codec description, exact Access recipe,
+provider role, finite capacities and independent Start/Inspect/Advance/Close
+requirements. Member 39 and disclosure selector 7 extend the current protocol 18.
+Portable value-shape text is descriptive; only actual typed inventory can resolve
+its decoder. Boolean availability and lifecycle state do not authorize counts;
+cleanup detail requires both Count and Explanation influence. The Host provider
+and progression surface remains unfinished.
+
+The native prerequisite adds World-qualified managed request
 admission, exact attempt-owned queue custody and genuine Signal completion commit.
 Completion admission remains distinct from commit; cancellation leaves queue drain
 custody with its owner. A committed result retains any refused timeout cleanup.

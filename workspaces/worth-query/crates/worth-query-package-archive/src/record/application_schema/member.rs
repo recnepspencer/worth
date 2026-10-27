@@ -15,6 +15,8 @@ mod invariant;
 mod mutation_description;
 mod operation;
 mod relation_aspect;
+mod resource;
+mod resource_value;
 mod schema;
 mod source_disclosure;
 mod vocabulary;
@@ -32,6 +34,9 @@ pub(super) fn require_encoding_contract(
     maximum_depth: u32,
 ) -> Result<(), Denial> {
     require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
@@ -59,8 +64,14 @@ pub(super) fn write(
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
     require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+        resource::require_encoding_contract(definition)?;
+    }
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::ApplicationResource { definition } => {
+            resource::write(output, definition)
+        }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
         }
@@ -110,6 +121,8 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        39 => resource::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationResource { definition }),
         36 => history::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
         37 => relation_aspect::decode(input, budget)
@@ -133,6 +146,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ApplicationResource { .. } => 39,
         ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
         ApplicationSchemaMember::RelationAspect { .. } => 37,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,

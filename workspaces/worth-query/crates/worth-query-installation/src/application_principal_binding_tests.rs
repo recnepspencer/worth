@@ -1,4 +1,6 @@
 use worth_foundational::facade::AspectValue;
+#[path = "application_principal_binding_tests/resource.rs"]
+mod resource;
 #[path = "application_principal_binding_tests/result_only.rs"]
 mod result_only;
 #[path = "application_principal_binding_tests/retained_validation.rs"]
@@ -40,7 +42,7 @@ worth_query_application_schema! {
         owner: identity_installation_test,
         version: (1, 0),
         members: |schema| {
-            schema
+            resource::with_authorization(schema)
                 .entity(ExternalMapping::reference())
                 .entity(Principal::reference())
                 .aspect(ExternalMapping::reference(), ExternalIdentity::reference())
@@ -57,6 +59,7 @@ worth_query_application_schema! {
                 .application_query(principal_query_definition())
                 .application_query_binding::<PrincipalQueryBinding>()
                 .application_query_binding::<result_only::ResultOnlyQueryBinding>()
+                .application_resource(resource::definition())
         }
     }
 }

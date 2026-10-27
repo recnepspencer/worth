@@ -31,6 +31,11 @@ pub mod application_query {
     pub use crate::application_query::*;
 }
 
+/// Typed managed-resource declarations, codec profiles and independent actions.
+pub mod application_resource {
+    pub use crate::application_resource::*;
+}
+
 /// Mutation binding declaration: the bindings, intents, descriptors, output
 /// contracts, principal and scope contracts, and source expectations that tie
 /// an application intent type to an installed operation, plus the candidate

@@ -168,6 +168,11 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 application_query::validate(definition)?;
             }
+            ApplicationSchemaMember::ApplicationResource { definition } => {
+                definition
+                    .validate()
+                    .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationResource)?;
+            }
             ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
                 definition.validate().map_err(|_| {
                     ApplicationSchemaDeclarationDenial::InvalidApplicationHistoryQuery
