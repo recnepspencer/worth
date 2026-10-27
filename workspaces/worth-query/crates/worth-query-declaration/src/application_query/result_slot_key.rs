@@ -14,6 +14,12 @@ pub struct ApplicationQueryResultSlotKey {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ApplicationQueryResultSlotContract {
     /// Identity, full membership/length and anchor-forward order are one result.
+    Components {
+        set: String,
+        member: String,
+        selection: super::ApplicationQueryComponentSelection,
+        output_name: String,
+    },
     Orbit {
         relation: String,
         from: String,
@@ -59,6 +65,19 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn components(meaning: &super::ApplicationQueryComponentMeaning) -> Self {
+        Self {
+            query: meaning.query_identity(),
+            slot: meaning.slot_identity(),
+            contract: ApplicationQueryResultSlotContract::Components {
+                set: meaning.set().into(),
+                member: meaning.member().into(),
+                selection: meaning.selection(),
+                output_name: meaning.output_name().into(),
+            },
+        }
+    }
+
     pub(super) fn orbit(
         query: WorthQueryPortableTypeIdentity,
         slot: WorthQueryPortableTypeIdentity,

@@ -2,6 +2,11 @@ mod authorization_requirement;
 mod basis_support;
 mod binding;
 mod canonical_basis;
+mod component_selection;
+pub use component_selection::{
+    ApplicationQueryComponentMeaning, ApplicationQueryComponentRef,
+    ApplicationQueryComponentSelection, WorthQueryPortableApplicationQueryComponentParts,
+};
 mod continuation;
 mod definition;
 mod dependency_equivalence;

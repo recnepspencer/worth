@@ -79,6 +79,12 @@ pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Sc
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
     let graph = query.read_family_binding().planning_contract();
+    if graph.component_selection().is_some() {
+        return Err(WorthQueryApplicationQueryAdmissionDenial::new(
+            WorthQueryApplicationQueryAdmissionDenialKind::ExecutionShapeUnsupported,
+            query.name(),
+        ));
+    }
     let root = graph.root_entity();
     let exact_root_scope = root == query.scope_entity();
     let bounded_exact_selection = match graph.predicates() {

@@ -317,10 +317,41 @@ full-verification fallback; no record-local invalidation cost is promised.
 The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
 use an installed mutation binding, real admission and both projection seals.
 They cover complete/partial/foreign cohorts and negative census evidence across
-ordinary World publications. Declared-query component results, fresh query
-disclosure, the full Phase 5 topology/replay/locality portfolio and CAD shell
-integration remain unfinished in
+ordinary World publications. Declared-query runtime component results and disclosure,
+ordinary invariant consumption, the full Phase 5 topology/replay/locality portfolio
+and CAD shell integration remain unfinished in
 [Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+
+### Declared Component-Query Contracts
+
+A declared query can name a component result with
+`ApplicationQueryComponentRef::<Schema, Query, Slot, Set, Member>::of_scope_member`
+or `::census`. The former requires the query's typed scope to be the member type;
+the latter can start from another declared scope. Add the reference with
+`.component_selection(reference)` and supply a nonempty `.root_path(...)` union
+from scope to component members. An explicit identity path is valid for this
+shape. Ordinary row queries retain their existing nonempty-step requirement.
+
+The result slot describes Native identity, complete membership and component
+count together; member DTO fields are optional. A disclosure contract's
+`.components_by(reference, value, influence)` governs that complete slot.
+Predicates, ordering, paging, live execution and orbit selection cannot be combined
+with this shape. Complete-schema validation checks the actual set/member and
+all declared path and guard dependencies. Of and census have distinct canonical
+meaning and disclosure keys.
+
+This is a portable declaration and installation contract. Runtime Query admission
+currently refuses it with `ExecutionShapeUnsupported`; it cannot execute as
+ordinary raw member rows. The operation and decision reads above remain available.
+The [installed refusal court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components.rs)
+uses the real schema, planning contract and ordinary query admission, alongside a
+working orbit query. Runtime acquisition, result grouping and governed disclosure
+remain part of the open Phase 5 implementation.
+
+The archive extends the existing optional aggregate position with component tag2;
+none0 and orbit1 keep their original bytes. Component disclosure uses selector6.
+An untrusted record containing both orbit and component meanings is refused during
+fresh admission and archive preflight/write. No common grammar version changes.
 
 ## How It Executes
 

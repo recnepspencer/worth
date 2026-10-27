@@ -16,6 +16,7 @@ use super::super::{
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ApplicationQueryDisclosureSelector {
     Orbit(super::super::ApplicationQueryOrbitMeaning),
+    Components(super::super::ApplicationQueryComponentMeaning),
     InternalField {
         entity: String,
         aspect: String,
@@ -52,6 +53,9 @@ impl ApplicationQueryDisclosureSelector {
     pub(crate) fn portable_identities_are_valid(&self) -> bool {
         match self {
             Self::InternalField { .. } => true,
+            Self::Components(selection) => {
+                selection.query_identity().is_valid() && selection.slot_identity().is_valid()
+            }
             Self::Orbit(orbit) => {
                 orbit.query_identity().is_valid() && orbit.slot_identity().is_valid()
             }
@@ -84,6 +88,7 @@ impl ApplicationQueryDisclosureSelector {
     pub fn result_slot_key(&self) -> Option<ApplicationQueryResultSlotKey> {
         match self {
             Self::Orbit(orbit) => Some(orbit.slot_key()),
+            Self::Components(selection) => Some(selection.slot_key()),
             Self::Field {
                 query_type,
                 slot_type,
@@ -140,6 +145,7 @@ impl ApplicationQueryDisclosureSelector {
     pub const fn slot_type(&self) -> &str {
         match self {
             Self::Orbit(orbit) => orbit.slot_type(),
+            Self::Components(selection) => selection.slot_type(),
             Self::Field { slot_type, .. } | Self::Relation { slot_type, .. } => slot_type.as_str(),
             Self::InternalField { .. } => "internal-computation",
         }
@@ -148,6 +154,7 @@ impl ApplicationQueryDisclosureSelector {
     pub const fn query_type(&self) -> &str {
         match self {
             Self::Orbit(orbit) => orbit.query_type(),
+            Self::Components(selection) => selection.query_type(),
             Self::Field { query_type, .. } | Self::Relation { query_type, .. } => {
                 query_type.as_str()
             }
@@ -158,6 +165,7 @@ impl ApplicationQueryDisclosureSelector {
     pub fn output_name(&self) -> &str {
         match self {
             Self::Orbit(orbit) => orbit.output_name(),
+            Self::Components(selection) => selection.output_name(),
             Self::Field { output_name, .. } | Self::Relation { output_name, .. } => output_name,
             Self::InternalField { .. } => "internal-computation",
         }
@@ -177,7 +185,7 @@ impl ApplicationQueryDisclosureSelector {
                 field,
                 ..
             } => Some((entity, aspect, field)),
-            Self::Relation { .. } | Self::Orbit(_) => None,
+            Self::Relation { .. } | Self::Orbit(_) | Self::Components(_) => None,
         }
     }
 
@@ -199,7 +207,10 @@ impl ApplicationQueryDisclosureSelector {
                 cardinality,
                 ..
             } => Some((relation, from, to, *direction, *cardinality)),
-            Self::Field { .. } | Self::InternalField { .. } | Self::Orbit(_) => None,
+            Self::Field { .. }
+            | Self::InternalField { .. }
+            | Self::Orbit(_)
+            | Self::Components(_) => None,
         }
     }
 
@@ -211,7 +222,7 @@ impl ApplicationQueryDisclosureSelector {
             | Self::Field {
                 projection_mask, ..
             } => Some(projection_mask),
-            Self::Relation { .. } | Self::Orbit(_) => None,
+            Self::Relation { .. } | Self::Orbit(_) | Self::Components(_) => None,
         }
     }
 
@@ -223,7 +234,7 @@ impl ApplicationQueryDisclosureSelector {
             | Self::Field {
                 diagnostic_mask, ..
             } => Some(diagnostic_mask),
-            Self::Relation { .. } | Self::Orbit(_) => None,
+            Self::Relation { .. } | Self::Orbit(_) | Self::Components(_) => None,
         }
     }
 }

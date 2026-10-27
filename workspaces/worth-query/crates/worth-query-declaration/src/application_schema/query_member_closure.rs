@@ -7,6 +7,7 @@ use crate::application_query::{
 
 use super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
 
+mod components;
 mod disclosure;
 use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
 
@@ -43,6 +44,7 @@ fn validate_query(
     disclosure::validate_dependencies(definition, members)?;
     validate_root_selection(definition, members)?;
     validate_orbit(definition, members)?;
+    components::validate(definition, members)?;
     validate_result_shape(definition, members)?;
     validate_predicates(definition, members)?;
     validate_ordering(definition, members)
@@ -75,7 +77,7 @@ fn validate_root_selection(
     if definition.root_paths().iter().any(|path| {
         path.start_entity() != definition.scope_entity()
             || path.terminal_entity() != definition.root_entity()
-            || path.steps().is_empty()
+            || (path.steps().is_empty() && definition.component_selection().is_none())
             || !super::root_path_closure::is_closed(path, members)
     }) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);

@@ -49,6 +49,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 result_shape: parts.result_shape,
                 root_paths: Vec::new(),
                 orbit: None,
+                component_selection: None,
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
                 ordering: Vec::new(),
@@ -88,6 +89,15 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
         orbit: super::super::ApplicationQueryOrbitRef<Schema, Query, Slot, Relation, Scope>,
     ) -> Self {
         self.definition.orbit = Some(orbit.into_meaning());
+        self
+    }
+
+    /// Select complete Native components through this query's explicit root-path union.
+    pub fn component_selection<Slot, Set, Entity>(
+        mut self,
+        selection: super::super::ApplicationQueryComponentRef<Schema, Query, Slot, Set, Entity>,
+    ) -> Self {
+        self.definition.component_selection = Some(selection.into_meaning());
         self
     }
 

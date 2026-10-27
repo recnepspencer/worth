@@ -11,6 +11,7 @@ use crate::application_schema::{
     ApplicationScalarValueBinding, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
 };
 
+mod components;
 mod influence;
 mod selector;
 pub use influence::{ApplicationQueryInfluenceContract, ApplicationQueryObservableInfluence};

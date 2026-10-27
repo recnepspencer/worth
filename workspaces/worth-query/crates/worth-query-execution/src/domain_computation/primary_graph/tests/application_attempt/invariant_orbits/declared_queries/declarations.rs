@@ -127,6 +127,7 @@ pub(in crate::domain_computation::primary_graph::tests::application_attempt::inv
     if O {
         super::capability::declare(schema)
             .application_query(definition::<OrbitSchema<O>>())
+            .application_query(super::components::definition::<OrbitSchema<O>>())
             .application_query(super::metadata_only::definition::<OrbitSchema<O>>())
             .application_query(
                 builder(

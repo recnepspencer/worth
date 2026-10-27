@@ -80,6 +80,9 @@ impl WorthQueryInstalledGraphReadContract {
             relations,
             root_paths,
             orbit: definition.orbit().map(|orbit| Arc::new(orbit.clone())),
+            component_selection: definition
+                .component_selection()
+                .map(|selection| Arc::new(selection.clone())),
             predicates,
             ordering,
             maximum_traversal_depth,

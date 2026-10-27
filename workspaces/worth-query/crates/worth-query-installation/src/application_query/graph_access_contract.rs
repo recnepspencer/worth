@@ -293,6 +293,9 @@ pub(super) struct WorthQueryInstalledGraphReadMeaning {
     pub(super) projections: Vec<WorthQueryInstalledGraphProjection>,
     pub(super) relations: Vec<WorthQueryInstalledGraphRelation>,
     pub(super) root_paths: Vec<super::WorthQueryInstalledRootPath>,
+    pub(super) component_selection: Option<
+        Arc<worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>,
+    >,
     pub(super) orbit: Option<
         Arc<worth_query_declaration::facade::application_query::ApplicationQueryOrbitMeaning>,
     >,
@@ -348,6 +351,13 @@ impl WorthQueryInstalledGraphReadContract {
 
     pub fn relations(&self) -> &[WorthQueryInstalledGraphRelation] {
         &self.meaning.relations
+    }
+
+    pub fn component_selection(
+        &self,
+    ) -> Option<&worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning>
+    {
+        self.meaning.component_selection.as_deref()
     }
 
     pub fn orbit(

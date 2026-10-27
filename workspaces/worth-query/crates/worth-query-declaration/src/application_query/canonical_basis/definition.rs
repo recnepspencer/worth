@@ -31,6 +31,11 @@ pub(in crate::application_query) fn prepare_definition_basis(
             text("orbit.order", "anchor-forward-v1"),
         ]);
     }
+    if let Some(selection) = definition.component_selection() {
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("components.{key}"), value))
+        });
+    }
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);
     append_ordering(&mut entries, definition);

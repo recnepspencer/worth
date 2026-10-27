@@ -81,6 +81,14 @@ fn append_rule(
             text(format!("{path}.order"), "anchor-forward-v1"),
         ]);
     }
+    if let crate::application_query::ApplicationQueryDisclosureSelector::Components(selection) =
+        selector
+    {
+        entries.push(text(format!("{path}.kind"), "components"));
+        selection.visit_canonical_parts(|key, value| {
+            entries.push(text(format!("{path}.components.{key}"), value))
+        });
+    }
     for (index, surface) in rule.influence().permitted().enumerate() {
         entries.push(text(
             format!("{path}.influence[{index}]"),
