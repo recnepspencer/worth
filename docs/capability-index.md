@@ -107,7 +107,12 @@ refusal before installation. See
 For mutations, prepare the typed decision through `DecisionReader`, then consume
 its values and native targets through `CandidateWriter`. Propagate preparation
 or publication denials; a successful commit publishes the validated candidate
-atomically. See [prepared decisions and typed effects](build-an-application.md#prepared-decisions-and-typed-effects).
+atomically. An existing-field write without its exact decision observation
+returns typed `UnobservedWrite`; its `unobserved_write()` cause identifies the
+full entity occurrence and installed field locator without field contents.
+Early writer refusals remain handler failures; defensive commit lowering
+retains `EffectLowering` instead of a generic proposal-binding rejection.
+See [prepared decisions and typed effects](build-an-application.md#prepared-decisions-and-typed-effects).
 
 Platform owners can borrow the existing targets of a validated native mutation
 with `ValidatedMutationFootprint::records()`. Iterate its borrowed records to

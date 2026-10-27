@@ -44,7 +44,21 @@ where
         Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
     >,
 {
-    let contacts = Arc::new(Contacts::default());
+    install_program_with_contacts::<P>(Arc::new(Contacts::default()))
+}
+pub(super) fn install_without_retention_observation() -> Host {
+    install_program_with_contacts::<SourceOnlyRetentionProgram>(Arc::new(
+        Contacts::without_retention_observation(),
+    ))
+}
+fn install_program_with_contacts<P>(contacts: Arc<Contacts>) -> Host<P>
+where
+    P: ApplicationProgramDefinition<
+        SourceOnlyRetentionSchema,
+        Contributions = (SourceOnlyRetentionContribution,),
+        Outputs = ApplicationProgramOutputs<ApplicationNoOutputGraph>,
+    >,
+{
     let runtime = in_memory_rostered_program(
         ApplicationProgramAuthoring::<SourceOnlyRetentionSchema, P>::begin().validated_program().unwrap(),
         WorthQueryApplicationProgramRoster::new(),

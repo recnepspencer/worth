@@ -73,6 +73,7 @@ impl<Schema, Operation, Input, Scope>
         locator: AspectFieldLocator,
         value: Option<AspectValue>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.require_field_observation(entity_id, &locator)?;
         let contract = self
             .layout
             .aspect_contract(field.entity(), locator.aspect().aspect_key())

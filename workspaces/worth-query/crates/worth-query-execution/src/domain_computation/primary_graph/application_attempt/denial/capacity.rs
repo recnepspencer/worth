@@ -9,6 +9,8 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
             cause,
         } = self;
         let nested = match cause {
+            AttemptDenialCause::UnobservedWrite(cause) => (std::mem::size_of_val(cause.as_ref()) as u64)
+                .saturating_add(cause.owned_allocation_capacity_bytes() as u64),
             AttemptDenialCause::SourceDisclosureParameters(cause) => {
                 (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(cause.owned_allocation_capacity_bytes() as u64)
             }

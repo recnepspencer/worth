@@ -113,6 +113,7 @@ where
                 WorthQueryApplicationOutputDemandDenial::Superseded
             }
             worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(_)
+                | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::UnobservedWrite(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceQueryInstallation(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourcePrincipal(_)
                 | worth_query_execution::facade::primary_graph::WorthQueryOutputDemandDenialKind::SourceScope(_)

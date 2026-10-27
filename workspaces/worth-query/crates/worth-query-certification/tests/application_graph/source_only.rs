@@ -27,3 +27,6 @@ mod native_postures;
 
 #[path = "source_only/managed_cleanup.rs"]
 mod managed_cleanup;
+
+#[path = "source_only/unobserved_write.rs"]
+mod unobserved_write;
