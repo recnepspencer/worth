@@ -1,3 +1,9 @@
+mod inspection;
+pub use inspection::{
+    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
+    WorthQueryCheckpointRecordClass,
+};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 

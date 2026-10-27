@@ -119,3 +119,6 @@ impl CheckpointFileWire<'_> {
         .map_err(Into::into)
     }
 }
+
+mod inspection;
+pub(crate) use inspection::inspect;

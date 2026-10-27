@@ -150,3 +150,36 @@ pub(super) fn admit(bytes: &[u8]) -> Result<(), CheckpointDecodeDenial> {
     }
     Ok(())
 }
+
+pub(super) struct CurrentSections<'a> {
+    pub bootstrap_commit_id: worth_relational::facade::history::CommitId,
+    pub accepted_count: usize,
+    pub query_header: &'a [u8],
+    pub accepted_count_bytes: &'a [u8],
+    pub native: &'a [u8],
+    pub outputs: &'a [u8],
+}
+pub(super) fn sections(bytes: &[u8]) -> Result<CurrentSections<'_>, CheckpointDecodeDenial> {
+    admit(bytes)?;
+    let body = &bytes[MAGIC.len() + CHECKSUM_BYTES..];
+    let mut cursor = CheckpointCursor::new(body);
+    cursor.next_bytes(6)?;
+    let bootstrap_commit_id = worth_relational::facade::history::CommitId(cursor.next_u64()?);
+    let query_header = &body[..body.len() - cursor.remaining.len()];
+    let native_len = usize::try_from(cursor.next_u64()?)
+        .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;
+    let accepted_count_bytes = cursor.next_bytes(8)?;
+    let accepted_count = usize::try_from(u64::from_be_bytes(
+        accepted_count_bytes.try_into().expect("exact count width"),
+    ))
+    .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
+    let native = cursor.next_bytes(native_len)?;
+    Ok(CurrentSections {
+        bootstrap_commit_id,
+        accepted_count,
+        query_header,
+        accepted_count_bytes,
+        native,
+        outputs: cursor.remaining,
+    })
+}

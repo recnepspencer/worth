@@ -578,3 +578,14 @@ on `worth-query-host` to receive the restored runtime and its
 capability retained during bootstrap; it grants no initial-state authoring on
 restore. Ordinary runtime holders cannot mint it. Restoration and admission use
 the existing checkpoint owner and resource limits.
+
+### Inspect checkpoints
+
+`WorthQueryPrimaryGraphApplicationRuntime::inspect_application_checkpoint`
+accepts an advancement phase and checkpoint bytes. It returns a typed
+`WorthQueryApplicationCheckpointInspection`: exact non-allocator model value
+bytes, typed allocator frontiers/high-waters and the live entity/relation census.
+Query framing and native fields/arenas have their single codec owners. This is
+reconstructive diagnostic inspection, not recovery admission or mutation
+permission. Unknown fields fail closed; codec projections exhaustively classify
+their actual decoded types. Ordinary reads should use query/projection APIs.

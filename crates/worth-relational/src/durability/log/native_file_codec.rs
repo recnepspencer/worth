@@ -84,3 +84,5 @@ pub(crate) fn write_checkpoint_file(
 
 mod text_readmission;
 pub(crate) use text_readmission::{decode_checkpoint, read_checkpoint_file};
+
+pub(crate) use super::persisted_checkpoint::inspect_checkpoint;

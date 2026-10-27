@@ -6,15 +6,16 @@ impl WorthQueryApplicationCheckpoint {
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<DecodedApplicationCheckpoint, CheckpointDecodeDenial> {
-        let body_start = MAGIC.len() + CHECKSUM_BYTES;
-        let body = &self.bytes[body_start..];
-        let mut cursor = CheckpointCursor::new(&body[6..]);
-        let bootstrap_commit_id = worth_relational::facade::history::CommitId(cursor.next_u64()?);
-        let native_len = usize::try_from(cursor.next_u64()?)
-            .map_err(|_| "checkpoint payload length exceeds this host".to_owned())?;
-        let accepted_count = usize::try_from(cursor.next_u64()?)
-            .map_err(|_| "checkpoint accepted-output count exceeds this host".to_owned())?;
-        cursor.next_bytes(native_len)?;
+        let header::CurrentSections {
+            bootstrap_commit_id,
+            accepted_count,
+            native,
+            query_header: _,
+            accepted_count_bytes: _,
+            outputs,
+        } = header::sections(self.bytes.bytes())?;
+        let native_len = native.len();
+        let mut cursor = CheckpointCursor::new(outputs);
         let minimum = MINIMUM_ACCEPTED_OUTPUT_BYTES;
         if accepted_count > cursor.remaining.len() / minimum {
             return Err("checkpoint accepted-output count exceeds its payload"

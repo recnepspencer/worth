@@ -163,3 +163,46 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
         "restoring and observing author no model state"
     );
 }
+
+#[test]
+fn checkpoint_inspection_compares_query_header_count_and_output_metadata_bytes() {
+    let runtime = installation::install::<OptionalSchema>(false);
+    journey::demand(&runtime, true).unwrap();
+    let checkpoint = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    runtime
+        .with_host_advancement(|phase| {
+            let before = runtime
+                .inspect_application_checkpoint(&phase, checkpoint.bytes())
+                .unwrap();
+            // Independent current wire attacks live at the SDK owner, never in a
+            // consuming application's copy of the format.
+            let body = &checkpoint.bytes()[8 + 32..];
+            let native_len =
+                usize::try_from(u64::from_be_bytes(body[14..22].try_into().unwrap())).unwrap();
+            assert!(
+                body.len() > 30 + native_len,
+                "fixture has real output metadata"
+            );
+            for offset in [6, 22, 30 + native_len] {
+                let after = checkpoint
+                    .rewrite_authenticated_checkpoint_body_for_test(|body| body[offset] ^= 1);
+                let decoded = runtime
+                    .inspect_application_checkpoint(&phase, after.bytes())
+                    .unwrap();
+                assert_ne!(
+                    before.model, decoded.model,
+                    "ignored Query metadata at body offset {offset}"
+                );
+            }
+        })
+        .unwrap();
+}

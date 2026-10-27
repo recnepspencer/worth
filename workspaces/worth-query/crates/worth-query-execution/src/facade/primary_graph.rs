@@ -379,3 +379,9 @@ pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKin
 pub use crate::domain_computation::primary_graph::{
     WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
 };
+
+pub use crate::domain_computation::primary_graph::{
+    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
+    WorthQueryCheckpointRecordClass,
+};

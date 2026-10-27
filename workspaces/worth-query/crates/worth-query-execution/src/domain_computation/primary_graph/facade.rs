@@ -381,3 +381,9 @@ pub use super::provider::{
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     WorthQueryRecoveredProgramSourceDeliveryForTest,
 };
+
+pub use super::application_checkpoint::{
+    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
+    WorthQueryCheckpointRecordClass,
+};

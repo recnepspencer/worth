@@ -46,3 +46,9 @@ pub use store_layout::{
     DurableIntegrityStatus, DurableSegmentId, DurableSegmentManifest, DurableStore,
     DurableStoreLayout,
 };
+
+mod checkpoint_inspection;
+pub use checkpoint_inspection::{
+    CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
+    RelationalCheckpointInspection,
+};
