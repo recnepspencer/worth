@@ -33,6 +33,27 @@ admitted width. Bounds supplied by the process or an ancestor apply to its
 descendants. `ExecutionReport::accounted_cost()` returns the measured work/span
 when the run has this contract. Use the physical report to inspect placement.
 
+## Checked component edits
+
+Runtime owners apply one `ComponentEdit` through
+`ComponentPartitioner::edit_with_request(&execution, edit)`. It uses the existing
+checked merge/split maintenance under the original leased or serial request.
+Accounted backing stays charged to that request's memory owner until the
+partitioner drops. A different serial budget refuses without moving the old
+charge or changing the graph. Unaccounted native requests poll cancellation and
+deadlines without inventing accounting; they cannot take over a charged graph.
+
+Each edit retains its precommit checkpoint. Several successful edits are not an
+atomic batch: a consumer must stage its candidate and publish only after the
+whole operation succeeds. The existing context-and-lease `*_checked` methods
+retain their admission contract. The
+[request courts](src/partition/components/request/tests.rs) exercise actual
+leased, serial, unaccounted, refusal and final-drop custody.
+
+Component routing keys remain the least current member. They do not supply
+persistent aggregate identity; Query's component integration remains unfinished
+in [milestone 9.18.1 Phase 5](../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+
 ## Fixed payload custody
 
 Fixed payload builders allocate a declared contiguous layout and keep its
