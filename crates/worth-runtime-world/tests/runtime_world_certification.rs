@@ -4,6 +4,8 @@ mod basis_history;
 mod bridge;
 #[path = "runtime_world_certification/court/mod.rs"]
 mod court;
+#[path = "runtime_world_certification/owned_async.rs"]
+mod owned_async;
 #[path = "runtime_world_certification/reference.rs"]
 mod reference;
 #[path = "runtime_world_certification/retention.rs"]

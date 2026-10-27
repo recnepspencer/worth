@@ -5756,7 +5756,11 @@ Phases 4–6 remain unfinished; orbit relations and persistent aggregate identit
 are next. The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
-These additions are not accepted yet and do not reopen the original phases.
+Phase 7 is accepted: the existing World/Bridge request route binds the actual
+native source commit, refuses empty sources before Signal admission and preserves
+request custody through completion and revalidation. Phases 8–11 remain unfinished;
+the application resource endpoint is Phase 8. These additions do not reopen the
+original phases.
 
 ### Goal
 

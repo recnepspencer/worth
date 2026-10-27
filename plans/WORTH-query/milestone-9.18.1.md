@@ -1,7 +1,7 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–3 accepted on 2026-10-26; Phases 4–6 remain unfinished.
-> Phases 7–11 were added on 2026-10-26 and are not yet accepted.
+> Phase 7 accepted on 2026-10-26. Phases 8–11 remain unfinished.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -64,7 +64,7 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 
 | Finding | Existing boundary | Required destination |
 | --- | --- | --- |
-| Async source names a branch version as a commit | `worth-runtime-world/src/lifecycle/owner/owned_async_product.rs` converts `RelationalBranchVersion` into `TruthCommitIdentity`; a fork resets the former while retaining a committed target | Phase 7 derives the actual selected commit from the admitted observation and handles an empty target explicitly |
+| Exact async source binding | World derives `TruthCommitIdentity` from the admitted immutable native reference; populated forks preserve their actual commit despite a reset branch version. Empty targets refuse before Signal admission | Phase 7 courts cover native equality, sibling publication, reserved occurrence gaps and cleanup; the Decl/Host resource endpoint remains Phase 8 |
 | Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
 | Native record/aspect history has no bounded application endpoint | `worth-relational/src/history/access/aspect_history_queries.rs` selects canonical changes but collects a branch-wide scan into `Vec` | Phase 10 supplies native continuation and a disclosed record/aspect history query on an exact retained product observation |
@@ -824,6 +824,16 @@ owner; no flat integration bag or shared cross-runtime state machine is allowed.
 
 **Depends on:** the completed admitted Relational/Signal bases and Runtime World
 publication owners. No dependency on unfinished graph phases. Must precede Phase 8.
+
+**Accepted, 2026-10-26.** The existing World route derives its exact commit from
+the admitted immutable Relational observation. The
+[World/Bridge source court](../../crates/worth-runtime-world/tests/runtime_world_certification/owned_async.rs)
+compares the admitted binding with the native populated-fork target after sibling
+publication and a discarded reserved occurrence; empty sources refuse before
+Signal admission and refused revalidation retains original cleanup custody.
+The existing installed Query request-response courts preserve completion,
+timeout/retry, replacement and exact-request retirement. This qualifies the
+native source repair; the application resource endpoint remains Phase 8.
 
 ### Requirements
 
