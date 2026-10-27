@@ -190,14 +190,13 @@ fn assert_projection_lifecycle(
 }
 
 #[test]
-#[should_panic(expected = "projection mask rejected by aspect contract")]
 fn borrowed_projection_cannot_bypass_installed_mask_contract() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(execution, &runtime, "masked");
-    runtime
+    let refusal = runtime
         .read_truth()
         .project_snapshot(&created.snapshot)
         .unwrap()
@@ -207,5 +206,57 @@ fn borrowed_projection_cannot_bypass_installed_mask_contract() {
             ProjectionAspectScope::fields(aspect_key("name"), [field_key("name")]),
             |_| Some(()),
         )
-        .expect("read request remains live");
+        .err()
+        .expect("projection contract must refuse");
+
+    use crate::facade::runtime::{
+        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
+    };
+    assert_eq!(
+        refusal,
+        crate::execution::RelationalExecutionDenialCause::ProjectionContract(
+            RelationalProjectionContractDenial {
+                domain: ProjectionRecordDomain::Entity,
+                kind_id: KindId(1),
+                requirement: Some(0),
+                refusal: ProjectionContractRefusal::MaskRejected,
+            }
+        )
+    );
+}
+
+#[test]
+fn wrong_kind_refusal_precedes_projection_mask_admission() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let created = create_entity_outcome(execution, &runtime, "wrong-kind");
+    let entity = changed_entities(&created)[0];
+    for view in [
+        runtime
+            .read_truth()
+            .project_snapshot(&created.snapshot)
+            .unwrap(),
+        runtime
+            .read_truth()
+            .try_project_historical_version(created.version_id)
+            .unwrap(),
+    ] {
+        let called = std::cell::Cell::new(false);
+        let result = view.entity_record_of_expected_kind_with_projection_scope(
+            execution,
+            entity,
+            KindId(2),
+            ProjectionAspectScope::fields(aspect_key("undeclared"), [field_key("field")]),
+            |_| {
+                called.set(true);
+                Some(())
+            },
+        );
+        assert_eq!(result, Ok(Err(KindId(1))));
+        assert!(
+            !called.get(),
+            "a wrong-kind record must not reach the projection callback"
+        );
+    }
 }

@@ -52,7 +52,6 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
             super::verification_denial(stop, unavailable.to_owned())
         }
         RetainedFactStop::Work => work_denial(),
-        RetainedFactStop::Memory => memory_denial(),
         RetainedFactStop::Execution(cause) => read_denial(cause),
         RetainedFactStop::Interrupted(event) => interruption_denial(event),
         RetainedFactStop::Refused(refusal) => WorthQueryOutputDemandDenial::new(
@@ -71,7 +70,6 @@ pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
     OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
-    Memory,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     Refused(CompanionPreflightStop),

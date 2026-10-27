@@ -47,7 +47,14 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
         StrategyExecutionError::ExecutorFailed {
             strategy_id: CommitStrategyId(41),
             failure,
-        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, .. } if *class
-            == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation)
+        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+            class,
+            evidence: Some(crate::commit_strategies::data::StrategyExecutorFailureEvidence::ProjectionContract { denial }),
+            ..
+        } if *class == crate::commit_strategies::data::StrategyExecutorFailureClass::ProjectionContractViolation
+            && denial.domain == crate::facade::runtime::ProjectionRecordDomain::Entity
+            && denial.kind_id == KindId(1)
+            && denial.requirement.is_none()
+            && denial.refusal == crate::facade::runtime::ProjectionContractRefusal::MissingAspectPlan)
     ));
 }

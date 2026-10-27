@@ -11,15 +11,17 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         scope: &ProjectionAspectScope,
-        mut project: impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
+        mut project: impl FnMut(
+            EntityProjectionRecord<'_>,
+        )
+            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         let SnapshotStateBasis::Exact(_) = &self.basis else {
             // Historical reconstruction retains its own version-selection rules.
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
                 return Ok(None);
             };
-            self.admit_entity_projection_scope(record.kind.kind_id, scope)?;
-            return Ok(project(EntityProjectionRecord::new(&record, scope)));
+            return project(EntityProjectionRecord::new(&record, scope));
         };
         self.demand_regions_head(execution, [entity.partition_id])?;
         let resolved = super::super::read_work::point(
@@ -30,8 +32,7 @@ impl VisibilityProjectionView {
         let Some(selected) = resolved else {
             return Ok(None);
         };
-        self.admit_entity_projection_scope(selected.kind.kind_id, scope)?;
-        Ok(selected.project(scope, &mut project))
+        selected.project(scope, &mut project)
     }
 
     /// Borrow one exact-root entity after its caller has admitted the keyed
@@ -59,7 +60,9 @@ impl VisibilityProjectionView {
             return Ok(Ok(None));
         };
         self.admit_entity_projection_scope(selected.kind.kind_id, &scope)?;
-        Ok(Ok(selected.project(&scope, &mut project)))
+        Ok(Ok(
+            selected.project(&scope, &mut |record| Ok(project(record)))?
+        ))
     }
 
     fn selected_entity_projection(&self, entity: EntityId) -> Option<SelectedEntityProjection<'_>> {
@@ -105,8 +108,11 @@ impl SelectedEntityProjection<'_> {
     fn project<T>(
         self,
         scope: &ProjectionAspectScope,
-        project: &mut impl FnMut(EntityProjectionRecord<'_>) -> Option<T>,
-    ) -> Option<T> {
+        project: &mut impl FnMut(
+            EntityProjectionRecord<'_>,
+        )
+            -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         project(EntityProjectionRecord::from_slot(
             self.actual,
             &self.slot,

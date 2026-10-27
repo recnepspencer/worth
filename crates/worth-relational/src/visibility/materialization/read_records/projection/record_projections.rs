@@ -43,7 +43,9 @@ impl VisibilityProjectionView {
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         Ok({
             let projection_scope = self.admit_entity_projection_contract::<T>()?;
-            self.project_entity_record(execution, entity_id, &projection_scope, T::from_record)?
+            self.project_entity_record(execution, entity_id, &projection_scope, |record| {
+                Ok(T::from_record(record))
+            })?
         })
     }
 
@@ -74,7 +76,8 @@ impl VisibilityProjectionView {
     ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
         Ok({
             self.project_entity_record(execution, entity_id, &projection_scope, |record| {
-                project(record)
+                self.admit_entity_projection_scope(record.kind_id(), &projection_scope)?;
+                Ok(project(record))
             })?
         })
     }
@@ -89,11 +92,12 @@ impl VisibilityProjectionView {
     ) -> Result<Result<Option<T>, KindId>, crate::execution::RelationalExecutionDenialCause> {
         Ok({
             self.project_entity_record(execution, entity_id, &projection_scope, |record| {
-                Some(if record.kind_id() != expected_kind_id {
+                Ok(Some(if record.kind_id() != expected_kind_id {
                     Err(record.kind_id())
                 } else {
+                    self.admit_entity_projection_scope(expected_kind_id, &projection_scope)?;
                     Ok(project(record))
-                })
+                }))
             })?
             .unwrap_or(Ok(None))
         })

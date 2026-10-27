@@ -17,6 +17,10 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
+    NativeReadDenied {
+        cause: worth_query_host::facade::primary_graph::RelationalExecutionDenialCause,
+        partition_identity: Option<u64>,
+    },
     StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
     ExecutionResource {
         denial: worth_query_host::facade::application_contribution::WorthQueryManagedComputationResourceDenial,
@@ -153,6 +157,13 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
+        Query::NativeReadDenied {
+            cause,
+            partition_identity,
+        } => BankProviderFailureKind::NativeReadDenied {
+            cause,
+            partition_identity,
+        },
         Query::StorageUnavailable(failure) => BankProviderFailureKind::StorageUnavailable(failure),
         Query::ExecutionResource {
             denial,

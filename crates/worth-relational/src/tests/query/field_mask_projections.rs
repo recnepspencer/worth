@@ -169,7 +169,6 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 }
 
 #[test]
-#[should_panic(expected = "projection mask rejected by aspect contract")]
 fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
@@ -177,12 +176,28 @@ fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     create_entity(execution, &runtime, "scalar-field-mask");
 
-    let _ = runtime
+    let refusal = runtime
         .read_truth()
         .try_project_historical_version(runtime.current_version_id())
         .unwrap()
         .entities::<NameFieldMaskProjection>(execution)
-        .expect("read request remains live");
+        .err()
+        .expect("projection contract must refuse");
+
+    use crate::facade::runtime::{
+        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
+    };
+    assert_eq!(
+        refusal,
+        crate::execution::RelationalExecutionDenialCause::ProjectionContract(
+            RelationalProjectionContractDenial {
+                domain: ProjectionRecordDomain::Entity,
+                kind_id: KindId(1),
+                requirement: Some(0),
+                refusal: ProjectionContractRefusal::MaskRejected,
+            }
+        )
+    );
 }
 
 #[test]
