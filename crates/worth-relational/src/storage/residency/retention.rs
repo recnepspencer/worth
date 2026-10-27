@@ -112,6 +112,15 @@ impl RelationalRegionRetention {
         self.full.get().map(|lease| lease.full_view().partition())
     }
 
+    /// Borrow custody already accepted by this immutable root. Fresh operations
+    /// must demand first; later transport damage cannot revoke this lease.
+    pub(crate) fn accepted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
+        self.full
+            .get()
+            .map(|lease| lease.head_view())
+            .or_else(|| self.head.get().map(|lease| lease.head_view()))
+    }
+
     pub(crate) fn admitted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
         self.cell.check_damage().ok()?;
         if let Some(full) = self.full.get() {

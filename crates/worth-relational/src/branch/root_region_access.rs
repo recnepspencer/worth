@@ -31,6 +31,15 @@ impl RelationalBranchRoot {
             .transpose()
     }
 
+    pub(crate) fn accepted_head_region_view(
+        &self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.regions
+            .get(id)
+            .and_then(|region| region.partition.accepted_head_view())
+    }
+
     pub(crate) fn admitted_head_region(
         &self,
         id: PartitionId,

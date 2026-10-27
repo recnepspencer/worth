@@ -10,7 +10,7 @@ impl VisibilityProjectionView {
         if let Some(resident) = &self.resident {
             return resident.head_region(id);
         }
-        self.selected_root()?.admitted_head_region(id)
+        self.selected_root()?.accepted_head_region_view(id)
     }
     pub(crate) fn demand_regions_head(
         &self,

@@ -152,3 +152,63 @@ fn metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings() 
     assert_eq!(metadata.aspect_version(&aspect_key("name")), expected);
     fork.snapshots().release_snapshot(&snapshot).unwrap();
 }
+
+#[test]
+fn an_admitted_head_read_never_becomes_absence_after_transport_damage() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let fixture = CurrentFixture::reopened(execution);
+    let (_, basis) = fixture
+        .runtime
+        .observe_branch(&fixture.runtime.main_branch_identity())
+        .unwrap();
+    let view = fixture
+        .runtime
+        .read_truth()
+        .project_observation(&basis.observation())
+        .unwrap();
+    let locator = worth_foundational::facade::AspectFieldLocator::new(
+        worth_foundational::facade::LocatorAuthority::Authoritative,
+        aspect_key("name"),
+        worth_foundational::facade::CanonicalFieldPath::single(field_key("name")),
+    );
+    let mut invalidated = false;
+    let revision = view
+        .entity_field_revision_admitted(execution, fixture.entity, &locator, |_| {
+            if !invalidated {
+                invalidated = true;
+                let target = fixture.source.member_reads.lock().unwrap()[0];
+                assert!(fixture.heads.contains(&target));
+                fixture
+                    .source
+                    .failures
+                    .lock()
+                    .unwrap()
+                    .insert(ColdRead::Member(target), Cause::Damaged);
+                let failed = fixture
+                    .runtime
+                    .durability_authority()
+                    .native_checkpoint(execution.allocation_policy())
+                    .unwrap_err();
+                let crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(
+                    error,
+                ) = failed
+                else {
+                    panic!("the actual export opens its selected member")
+                };
+                assert_eq!(error.storage_unavailable.unwrap().cause, Cause::Damaged);
+                fixture.source.failures.lock().unwrap().clear();
+            }
+            Ok::<_, std::convert::Infallible>(())
+        })
+        .unwrap()
+        .unwrap();
+    assert!(
+        revision.is_some(),
+        "accepted counted Head custody cannot become an absent field"
+    );
+    assert!(
+        matches!(view.entity_field_revision(execution, fixture.entity, &locator), Err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure)) if failure.cause == Cause::Damaged),
+        "a fresh operation still refuses sticky damage"
+    );
+}

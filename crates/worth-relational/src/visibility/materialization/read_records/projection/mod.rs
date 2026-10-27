@@ -1,3 +1,4 @@
+mod adjacency_demand;
 mod adjacency_revision;
 mod admitted_snapshot;
 mod aspect_versions;

@@ -9,6 +9,7 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 
 | Guarded operation family | Region Head | Region history | Envelope | ID symbols | Intern bucket | Lineage node | Lineage events | Derived index |
 |---|---|---|---|---|---|---|---|---|
+| Projection adjacency/frontiers, exact and historical | adjacency table | historical only; exact untouched | metadata only | anchor and remote adjacency table | no interning | no lookup | no lookup | no lookup |
 | Transaction entity/relation reads and current writes | current matrix | must stay untouched | metadata only | current matrix | write bucket matrix | no lookup | no lookup | no lookup |
 | Remote invariant preparation | preparation matrix | must stay untouched | nonhead merge matrix | admitted current values | bucket matrix | audit pending | audit pending | index matrix |
 | Full scans, historical visibility, statistics, inspection, retention | Full read matrix | Full read matrix | operation-specific below | Full read matrix | no interning | node doors below | audit pending | index doors below |
@@ -29,8 +30,8 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
 lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 264, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 1,602 cells. Positive current and
-remote-invariant unavailable-history families add 150 cells. These totals are an
+remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390: 1,992 refusal cells. Positive current and
+remote-invariant unavailable-history families add 150 cells; adjacency adds another 258 untouched-subject positives. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
 Additional acceptance courts already present include probe miss/identity
@@ -91,3 +92,27 @@ construction refuses without I/O, shared authenticated Head bytes do not admit
 a fork's dictionary, and accepted meaning survives a later commit or proven
 transport damage. Public pin types are aggregated through the native facade;
 post-publication optional witness sealing consumes this no-load capability.
+
+Projection adjacency now has nine explicit doors and both exact/historical
+selection, against anchor and remote Head/history/ID-symbol pages in all six
+failure classes. The 648-cell table contributes 390 typed refusals and 258
+untouched-subject positives. Total refusal inventory is 1,992; positive table
+inventory is 408. Failed admitted reads expose no callbacks, and failed reads
+advance no journal position or offered artifact count. Sticky page assertions
+measure the failed page itself, preserving region/page damage isolation.
+
+The remote symbol fixture is causally checked: an actual admitted field is
+published in a declared relation aspect, its commit is made nonhead with an
+unrelated low-text commit, and the text is absent both immediately after reopen
+and after anchor warming. The actual incoming edge then refuses the failed page.
+A branch-head envelope legitimately carries its admitted meanings, so it cannot
+stand in for a cold page fixture. Current adjacency never opens history;
+outgoing adjacency never opens the remote edge's region or dictionary page.
+
+A deterministic Head callback court damages the physical carrier after Head
+admission and before borrowing the field revision. Accepted counted custody
+still returns the revision, while the next fresh read returns sticky damage.
+Native and projection cold/warm courts also prove abandoned discovery rounds
+settle no extra materialization or adjacency lease instrumentation. An exhausted
+frontier opens no source member. The full native run at this slice passes
+2,006 tests with 31 ignored; final clean-tree lanes are still outstanding.

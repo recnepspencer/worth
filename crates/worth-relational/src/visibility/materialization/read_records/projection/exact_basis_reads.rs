@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::branch::RelationalBranchRoot;
-use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
+use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 
 use super::read_record_identity_ordering::relation_identity_order_key;
@@ -152,14 +152,5 @@ impl<'view> ExactProjectionReader<'view> {
             charge,
             memory,
         )
-    }
-    pub(super) fn relation_record(&self, relation_id: RelationId) -> Option<RelationReadRecord> {
-        self.view
-            .reader()
-            .authoritative_relation_record_for_id_from_exact_state(
-                self.root.as_ref(),
-                self.root.schema_authority().registry(),
-                relation_id,
-            )
     }
 }

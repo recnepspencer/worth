@@ -314,6 +314,17 @@ pub(crate) trait ProjectionRecordSource {
         let Some(root) = self.selected_root() else {
             return Ok(0);
         };
+        if self.is_exact_basis() {
+            return root
+                .accepted_head_region_view(id.partition_id)
+                .map_or(Ok(0), |head| {
+                    super::super::read_work::record_quote::relation_head(
+                        root.schema_authority().registry(),
+                        head,
+                        id.slot_index(),
+                    )
+                });
+        }
         let visibility = if self.is_exact_basis() {
             super::super::reader::KindScanVisibility::Live
         } else {

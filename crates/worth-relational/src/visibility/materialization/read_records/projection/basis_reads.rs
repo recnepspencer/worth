@@ -237,9 +237,9 @@ impl VisibilityProjectionView {
         relation_id: RelationId,
     ) -> Option<RelationReadRecord> {
         match &self.basis {
-            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => {
-                ExactProjectionReader::new(self, basis.root()).relation_record(relation_id)
-            }
+            crate::visibility::snapshot_states::SnapshotStateBasis::Exact(basis) => self
+                .admitted_head_region(relation_id.partition_id)?
+                .relation_record(basis.root().schema_authority().registry(), relation_id),
             crate::visibility::snapshot_states::SnapshotStateBasis::Historical(basis) => {
                 HistoricalProjectionReader::new(self, basis).relation_record(relation_id)
             }

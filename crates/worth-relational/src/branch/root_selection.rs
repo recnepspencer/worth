@@ -22,8 +22,8 @@ impl SelectedRelationalBranchState {
     pub(crate) fn with_symbol_admission<'read>(
         &'read self,
         symbols: &'read crate::runtime::RuntimeSymbolTable,
-    ) -> super::SymbolAdmittedBranchRead<'read> {
-        super::SymbolAdmittedBranchRead::new(self, symbols)
+    ) -> super::SymbolAdmittedRootRead<'read> {
+        super::SymbolAdmittedRootRead::new(self.state().root(), symbols)
     }
 
     pub(crate) fn from_admitted_basis(basis: &super::AdmittedRelationalBranchBasis) -> Self {

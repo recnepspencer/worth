@@ -30,6 +30,17 @@ impl VisibilityProjectionView {
         Vec<crate::storage::data::RelationReadRecord>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        self.demand_adjacency(
+            execution,
+            [entity_id],
+            super::adjacency_demand::AdjacencyDemand {
+                kind: kind_id,
+                direction: AdjacencyDirection::Outgoing,
+                maximum: None,
+                frontier: false,
+                include_audit: false,
+            },
+        )?;
         super::super::read_work::metered_with_memory(
             execution,
             |context, memory| {
@@ -154,6 +165,17 @@ impl VisibilityProjectionView {
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        self.demand_adjacency(
+            execution,
+            [entity_id],
+            super::adjacency_demand::AdjacencyDemand {
+                kind: kind_id,
+                direction,
+                maximum: maximum_work_units,
+                frontier: false,
+                include_audit: false,
+            },
+        )?;
         use super::super::native_scan_stop::NativeScanStop;
         crate::execution::check_request(execution)?;
         super::super::read_work::scan_with_memory(
@@ -193,6 +215,17 @@ impl VisibilityProjectionView {
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        self.demand_adjacency(
+            execution,
+            [entity_id],
+            super::adjacency_demand::AdjacencyDemand {
+                kind: kind_id,
+                direction,
+                maximum: maximum_work_units,
+                frontier: false,
+                include_audit: false,
+            },
+        )?;
         super::super::read_work::scan_with_memory(
             execution,
             |context, memory| {
@@ -235,12 +268,20 @@ impl VisibilityProjectionView {
             self.basis.root_version() == Some(self.version_id()),
         );
         let mut ledger = AdjacencyLeaseLedger::default();
-        let ids = ledger.lease(
-            root.get_partition(entity_id.partition_id)
-                .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
-            basis,
-            kind_id,
-        );
+        let ids = if self.is_exact_basis() {
+            ledger.lease_current(
+                self.admitted_head_region(entity_id.partition_id)
+                    .and_then(|head| head.adjacency(direction).get(entity_id.slot_index())),
+                kind_id,
+            )
+        } else {
+            ledger.lease(
+                root.get_partition(entity_id.partition_id)
+                    .and_then(|partition| direction.table(partition).get(entity_id.slot_index())),
+                basis,
+                kind_id,
+            )
+        };
         let answer = (|| {
             let mut records = Vec::new();
             let mut examined = 0;

@@ -2767,3 +2767,100 @@ current truth and Full for selected historical truth, retain counted accepted
 leases, reuse the shared bounded discovery policy, and keep callbacks/effects
 outside discarded rounds. Do not add another residency/discovery authority.
 Historical index and tail replay class matrices remain pending after that slice.
+
+### Projection adjacency and accepted Head custody
+
+The callback race court reproduced an accepted Head value becoming absent after
+an embedded export discovered damage during the admission callback. Fresh
+admission must still reject sticky damage, but accepted counted custody cannot
+be revoked. Retention now lends a cached accepted Head view separately from
+fresh probing; guarded point bodies and resident snapshot bases consume that
+view. Fresh demands and probe views keep their damage checks. The actual race
+court passes and still checks that a later fresh read returns typed damage.
+
+Adjacency discovery now uses the existing bounded Head/Full probe policy over a
+root plus the requesting runtime's dictionary authority. The former selected-
+branch adapter is generalized to that root, rather than adding a second symbol
+admission mechanism. Discovery reads only borrowed metadata and adjacency IDs,
+respects the actual logical stopping schedule, checks the request and accounts
+for iterator scratch, and discards every miss before callbacks or telemetry.
+The accepted immutable root retains counted leases. Current materialization and
+clone quotes consume Head; historical selection consumes Full. Historical audit
+lifecycle classification is shared with materialization. The displaced exact
+Full relation point materializer is removed.
+
+The 432 region cells passed before dictionary extension. The complete table now
+has six subjects (anchor/remote Head, history and symbol page), nine doors, two
+bases and six failure classes: 648 cells, comprising 390 typed refusals and
+258 untouched-subject positives. The paged ring uses real field-text admission
+before publishing a remote-only edge, so anchor warming cannot counterfeit a
+remote dictionary fault. Current/historical cold-versus-warm counters and an
+exhausted frontier that performs zero source reads have separate courts.
+
+An initial fixture conversion used raw manifest u64 bounds where the failure
+contract uses Symbol; corrected without changing the claim. Another assertion
+incorrectly equated sticky page damage with no further reads of any subject.
+The diagnostic showed [Head, failed page, Head]: failed Head admission correctly
+retries the healthy carrier while the failed dictionary page remains sticky.
+The table now checks no reread of the failed page, and retains the stronger total
+read assertion for region failures. Neither damage nor a success is transferred
+between subjects. Complete native verification is running; final evidence is
+not yet claimed.
+
+The remote dictionary fixture initially used the default schema, whose relation
+has no label aspect: the legacy helper honestly omitted a label payload and the
+selected high page was unconsulted. The corrected fixture uses the actual
+relation-label schema and publishes the remote field through admit_field_text
+and field_value_for. A real transaction reads the result and verifies that the
+field is the admitted Symbol and resolves to the intended text. Raw strings and
+client-key interning alone cannot establish the tested field dependency. The
+first assertion also needed a borrowed effective relation record; corrected.
+
+A focused causality court then showed the remote field was already admitted at
+reopen: it belonged to the intentionally resident branch-head envelope. This
+was legitimate envelope custody, not a bypassed page failure. The paged fixture
+now publishes an unrelated final commit using existing low-range text, leaving
+the remote edge's commit nonhead. The causality court explicitly requires the
+remote meaning to be absent both after reopen and after anchor warming, before
+injecting the page failure. A fixture must distinguish envelope meanings from
+region dictionary demand rather than treating all initial residency as eager
+page loading.
+
+Projection adjacency and accepted Head custody verification now passes the full
+native library: 2,006 passed, 31 ignored. The complete 648-cell adjacency table,
+focused remote dictionary causality court and both visibility counter courts
+pass. Current owner clippy, formatting, dirty caps, agent-context and
+boundary-check pass. Composition scans 24 Rust files with 21 advisories and zero
+scan errors; traversal bodies retain one bounded read responsibility, and their
+request, direction, visibility, limit and memory inputs are real independent
+contracts. No unrelated helper framework or policy authority is introduced.
+Contracts pass: 203 passed and 3 ignored, including compile-time authority courts. Final clean-tree lanes
+remain deferred until the remaining matrix subjects/doors close.
+
+### Next matrix slice: derived-generation inspection
+
+Boundary review: IndexAccess::latest_generation, published_generation_for_commit,
+published_generation_for_observation and generations_for_version return resident
+payloads (Arc generations or cloned entry inventories), not manifest metadata.
+They have no request or failure channel. A deferred checkpoint image can
+therefore appear as None or an empty inventory. Definitions and definition
+identity lookup are different: they are eager manifest facts and remain pure.
+The existing IndexDefinitionReadBinding::demand_checkpoint_image already owns
+fallible, classified image admission; no new image/caching authority is needed.
+Query consumes the generation payload getters in currency, checkpoint validation,
+result preparation and certification observation. Its currency helpers currently
+return pure booleans, and must preserve native failures through existing typed
+execution stops rather than calling a cold generation stale.
+
+Plan: add the four inspection doors to the actual producer index/class table,
+first reproduce cold absence, then replace the public payload getters with
+request-aware read_* methods returning Result. Explicit orchestrators demand the
+existing image under the caller request before resident catalog lookup. Missing
+definitions and absent generations remain genuine absence only after the
+appropriate guard. Cut over all owner and downstream consumers, including Query
+currency requests and typed error mappings; remove the old request-free doors.
+Preserve eager definition reads. Add journal reservation assertions to the index
+matrix, keep sticky classification and successful retry meaning checks, run
+native all-target checks, focused index/Query proofs and required enforcement.
+This slice changes no generation selection policy, does not reconstruct truth
+from a cache, and does not introduce another optional post-publication load.

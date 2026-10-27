@@ -7,6 +7,8 @@ struct ColdRoot {
     runtime: crate::runtime::RelationalRuntime,
     source: Arc<MemberSource>,
     entities: Vec<EntityId>,
+    manifest: crate::durability::data::RelationalCheckpointManifest,
+    remote_symbol: Option<crate::symbols::data::Symbol>,
 }
 
 fn recover_relations(
@@ -22,7 +24,21 @@ fn recover_shape(
     count: u32,
     ring: bool,
 ) -> ColdRoot {
-    let runtime = durable_runtime_with_test_schema();
+    recover_shape_inner(execution, missing_history, count, ring, false)
+}
+fn recover_shape_inner(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    missing_history: Option<PartitionId>,
+    count: u32,
+    ring: bool,
+    paged: bool,
+) -> ColdRoot {
+    let runtime = if paged {
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+    } else {
+        durable_runtime_with_test_schema()
+    };
+    let mut remote_symbol = None;
     let mut entities = Vec::new();
     let mut targets = Vec::new();
     for id in 1..=count {
@@ -38,7 +54,26 @@ fn recover_shape(
         } else {
             targets[index]
         };
-        create_relation_in_partition(execution, &runtime, a, b, "edge", a.partition_id);
+        if paged && index == 1 {
+            ring_dictionary::populate(execution, &runtime);
+        }
+        let label = if paged && index + 1 == entities.len() {
+            "remote-paged-edge"
+        } else {
+            "edge"
+        };
+        if paged && index + 1 == entities.len() {
+            remote_symbol = Some(ring_dictionary::publish_edge(
+                execution, &runtime, a, b, label,
+            ));
+        } else {
+            create_relation_in_partition(execution, &runtime, a, b, label, a.partition_id);
+        }
+    }
+    if paged {
+        // A branch-head envelope is intentionally resident. Keep the remote
+        // field out of that envelope's readmitted meaning closure.
+        create_entity_in_partition(execution, &runtime, "source", PartitionId::main());
     }
     let native = runtime
         .durability_authority()
@@ -104,7 +139,11 @@ fn recover_shape(
         Vec::new(),
         source.clone(),
     );
-    let mut receiving = durable_runtime_with_test_schema();
+    let mut receiving = if paged {
+        durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
+    } else {
+        durable_runtime_with_test_schema()
+    };
     bind_durable_medium(&mut receiving, runtime.durability.detach_medium().unwrap());
     let plan = receiving
         .durability()
@@ -123,6 +162,8 @@ fn recover_shape(
         runtime: receiving,
         source,
         entities,
+        manifest: input.manifest,
+        remote_symbol,
     }
 }
 
@@ -320,3 +361,11 @@ fn replay_pin_of_a_cold_partition_is_typed_and_has_no_effect() {
         .unpin_replay_state(&other_holder, fence);
     assert_eq!(pin_count(), Some(0));
 }
+
+#[path = "cold_projection_adjacency_matrix.rs"]
+mod projection_adjacency_matrix;
+#[path = "cold_visibility_round_counters.rs"]
+mod visibility_round_counters;
+
+#[path = "cold_ring_dictionary.rs"]
+mod ring_dictionary;

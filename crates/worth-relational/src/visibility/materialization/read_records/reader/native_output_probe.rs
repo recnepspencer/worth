@@ -30,7 +30,7 @@ impl VisibilityReadContext<'_> {
             [entity.partition_id],
         )?;
         let kind = root
-            .admitted_head_region(entity.partition_id)
+            .accepted_head_region_view(entity.partition_id)
             .and_then(|partition| partition.entity_arena().get(&entity))
             .and_then(|slot| slot.is_live().then(|| slot.kind_id()).flatten());
         Ok(Some(kind))
@@ -70,7 +70,7 @@ impl VisibilityReadContext<'_> {
             &self.runtime.services.symbols,
             [entity.partition_id],
         )?;
-        let Some(partition) = root.admitted_head_region(entity.partition_id) else {
+        let Some(partition) = root.accepted_head_region_view(entity.partition_id) else {
             return Ok(None);
         };
         let Some(slot) = partition.entity_arena().get(&entity) else {

@@ -133,4 +133,4 @@ mod basis_admission_tests;
 mod basis_registry_scale_tests;
 
 mod symbol_read;
-pub(crate) use symbol_read::SymbolAdmittedBranchRead;
+pub(crate) use symbol_read::SymbolAdmittedRootRead;

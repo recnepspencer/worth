@@ -33,9 +33,7 @@ impl ResidentVisibilitySnapshotBasis {
         self.0.branch_id()
     }
     pub(crate) fn head_region(&self, id: PartitionId) -> Option<RelationalRegionHeadView<'_>> {
-        self.root()
-            .partition_state(id)
-            .map(RelationalRegionHeadView::from_owned_partition)
+        self.root().accepted_head_region_view(id)
     }
 }
 
