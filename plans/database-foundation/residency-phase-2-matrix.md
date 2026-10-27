@@ -28,9 +28,9 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
-lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 72, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 1,410 cells. Positive current and
-remote-invariant unavailable-history families add 54 cells. These totals are an
+lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 144, intern bucket 30,
+remote invariant Head 18, aspect history 144, nonhead merge 18: 1,482 cells. Positive current and
+remote-invariant unavailable-history families add 90 cells. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
 Additional acceptance courts already present include probe miss/identity
@@ -63,3 +63,10 @@ now pass the same three-subject, six-class table (144 added refusal cells).
 The complete native run passes 1,994 tests with 31 ignored. Pure metadata point
 and adjacency projection surfaces, historical index selection and the tail
 recovery class matrix remain under audit; final lanes remain unrun.
+
+
+Current projection points add six doors (borrowed entity projection, admitted
+entity projection, ordinary/admitted entity revision, relation revision and
+current adjacency IDs): 72 refusal cells and 36 positive history-untouched
+cells. Actual callbacks remain at zero on a failed demand. The original
+transaction/preparation doors and their assertions are retained.

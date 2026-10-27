@@ -8,6 +8,7 @@ use crate::transactions::data::{
 
 #[derive(Debug, Clone, Copy)]
 pub(super) enum CurrentDoor {
+    Projection(super::projection_point_door::ProjectionPointDoor),
     Entity,
     Relation,
     Validation,
@@ -16,7 +17,13 @@ pub(super) enum CurrentDoor {
     DeleteRelation,
 }
 impl CurrentDoor {
-    pub(super) const ALL: [Self; 6] = [
+    pub(super) const ALL: [Self; 12] = [
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecord),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecordAdmitted),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRevision),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRevisionAdmitted),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::RelationRevision),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::AdjacencyIds),
         Self::Entity,
         Self::Relation,
         Self::Validation,
@@ -36,6 +43,17 @@ impl CurrentDoor {
     ) -> Result<(), RelationalStorageUnavailable> {
         let mut transaction = test_owner_begin_transaction_for_main(runtime);
         match self {
+            Self::Projection(door) => {
+                door.run(execution, runtime, entity, relation)
+                    .map_err(|denial| match denial {
+                        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+                            failure,
+                        ) => failure,
+                        other => {
+                            panic!("current projection preserves its storage failure: {other:?}")
+                        }
+                    })?
+            }
             Self::Entity => assert_eq!(
                 transaction
                     .read_entity(execution, entity)

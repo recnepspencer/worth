@@ -6,6 +6,7 @@ use crate::facade::{
     transactions::{CreateIntent, MutationIntent},
 };
 use crate::storage::data::RecordLifecycleState;
+use crate::storage::overlay::PartitionAccess;
 use crate::tests::support::*;
 use worth_foundational::facade::ContractValidatedAspectValueView;
 

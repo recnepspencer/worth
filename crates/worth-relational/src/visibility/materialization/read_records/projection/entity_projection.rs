@@ -1,7 +1,6 @@
 //! Exact-basis single-entity projection borrows the selected root's values.
 
 use crate::identity::data::EntityId;
-use crate::storage::overlay::PartitionAccess;
 use crate::visibility::snapshot_states::SnapshotStateBasis;
 
 use super::{EntityProjectionRecord, ProjectionAspectScope, VisibilityProjectionView};
@@ -21,6 +20,7 @@ impl VisibilityProjectionView {
             };
             return Ok(project(EntityProjectionRecord::new(&record, scope)));
         };
+        self.demand_regions_head(execution, [entity.partition_id])?;
         let resolved = super::super::read_work::point(
             execution,
             || self.selected_entity_projection(entity),
@@ -46,6 +46,7 @@ impl VisibilityProjectionView {
                 .entity_record_with_projection_scope(execution, entity, scope, project)
                 .map(Ok);
         }
+        self.demand_regions_head(execution, [entity.partition_id])?;
         if let Err(stop) = admit_work(super::super::read_prices::KEYED_RECORD) {
             return Ok(Err(stop));
         }
@@ -59,8 +60,8 @@ impl VisibilityProjectionView {
 
     fn selected_entity_projection(&self, entity: EntityId) -> Option<SelectedEntityProjection<'_>> {
         let root = self.basis.root()?;
-        let partition = root.get_partition(entity.partition_id)?;
-        let slot = partition.entity_arena.get_slot(entity.slot_index())?;
+        let partition = root.admitted_head_region(entity.partition_id)?;
+        let slot = partition.entity_arena().get_slot(entity.slot_index())?;
         if !slot.is_live()
             || (!entity.generation.is_zero() && slot.generation() != entity.generation_value())
         {
@@ -77,7 +78,7 @@ impl VisibilityProjectionView {
             slot.generation(),
         );
         let created = partition
-            .entity_arena
+            .entity_arena()
             .created_at_for_slot(entity.slot_index())
             .expect("visible entity slot has creation metadata");
         Some(SelectedEntityProjection {

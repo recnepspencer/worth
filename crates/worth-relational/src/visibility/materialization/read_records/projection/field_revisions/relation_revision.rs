@@ -4,11 +4,11 @@ use crate::identity::data::RelationId;
 use crate::storage::data::{
     RecordLifecycleState, RelationalFieldPresence, RelationalFieldRevision,
 };
-use crate::storage::overlay::PartitionAccess;
 use worth_foundational::facade::{AspectFieldLocator, AspectShape, LocatorAuthority};
 impl VisibilityProjectionView {
     pub(super) fn read_relation_field_revision_funded(
         &self,
+        partition: crate::storage::residency::RelationalRegionHeadView<'_>,
         relation: RelationId,
         locator: &AspectFieldLocator,
         mut admit_work: impl FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
@@ -26,11 +26,8 @@ impl VisibilityProjectionView {
         };
         // The persistent partition tree has one fixed-key visit per u32 bit.
         admit_work(33)?;
-        let Some(partition) = root.get_partition(relation.partition_id) else {
-            return Ok(None);
-        };
         admit_work(3)?;
-        let Some(slot) = partition.relation_arena.get(&relation) else {
+        let Some(slot) = partition.relation_arena().get(&relation) else {
             return Ok(None);
         };
         if slot.lifecycle() != RecordLifecycleState::Live {
@@ -73,7 +70,7 @@ impl VisibilityProjectionView {
         }
         admit_work(2)?;
         let Some(revisions) = partition
-            .relation_arena
+            .relation_arena()
             .field_revisions_at(relation.slot_index())
         else {
             return Ok(None);
@@ -97,7 +94,7 @@ impl VisibilityProjectionView {
         };
         admit_work(1)?;
         let Some(created) = partition
-            .relation_arena
+            .relation_arena()
             .created_at_for_slot(relation.slot_index())
         else {
             return Ok(None);

@@ -43,6 +43,18 @@ impl AdjacencyLeaseLedger {
         adjacency.kind_ids(basis, kind_id)
     }
 
+    pub(crate) fn lease_current<'lease>(
+        &mut self,
+        adjacency: Option<crate::storage::residency::RelationalHeadAdjacencySet<'lease>>,
+        kind: crate::identity::data::KindId,
+    ) -> crate::storage::partition::AdjacencyIds<'lease> {
+        let Some(adjacency) = adjacency else {
+            return Default::default();
+        };
+        self.kind_views_leased += 1;
+        adjacency.kind_ids(kind)
+    }
+
     pub(crate) fn settle_instrumentation(
         self,
         instrumentation: &crate::runtime::RuntimeInstrumentation,

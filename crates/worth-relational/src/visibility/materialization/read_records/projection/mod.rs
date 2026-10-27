@@ -6,6 +6,7 @@ mod borrowed_adjacency;
 mod borrowed_records;
 mod contracts;
 mod creation;
+mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;
 mod entity_retirement;

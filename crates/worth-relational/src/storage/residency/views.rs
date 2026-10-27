@@ -13,6 +13,13 @@ pub(crate) struct RelationalRegionFullView<'lease> {
 }
 
 impl<'lease> RelationalRegionHeadView<'lease> {
+    pub(crate) fn adjacency(
+        self,
+        direction: crate::storage::partition::AdjacencyDirection,
+    ) -> super::RelationalHeadAdjacencyTable<'lease> {
+        super::RelationalHeadAdjacencyTable::new(direction.table(self.partition))
+    }
+
     pub(crate) fn partition_id(&self) -> crate::identity::data::PartitionId {
         self.partition.partition_id
     }

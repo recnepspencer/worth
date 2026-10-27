@@ -2541,3 +2541,56 @@ are recorded separately; boundary-check is running. This remains intermediate
 slice evidence, with final clean-commit lanes still pending. The next matrix
 subjects are pure metadata projections and their resident witnesses, historical
 index builds and tail recovery classes. No claim of phase-2 completion is made.
+
+
+### Current point projection demands
+
+The six current-point doors first failed in
+`matrix-projection-points-first.log`: a cold exact entity projection became
+WorkerFailed through the Full resident accessor. Current entity projection,
+entity and relation field revisions, and current adjacency visitation now
+explicitly demand Head before invoking admission or visitor callbacks. They
+read through typed Head arena and adjacency views, never historical columns.
+The adjacency view exposes current kind lookup only, and the existing ledger
+still accounts exactly the leased substrate view without copying IDs.
+Historical adjacency visitation declares its Full partition separately.
+
+The new revision fixture initially supplied a Planned locator to an API whose
+contract requires Authoritative; that was a test error, fixed by constructing
+the actual locator authority rather than accepting an empty answer. An owner
+test also needed an explicit PartitionAccess import after production stopped
+using that Full accessor. `matrix-projection-points-current-fixed.log` passes
+all four selected courts, preserving real values and proving no current door
+opens failed history for any of the six classes. Failed demands expose zero
+callbacks. `matrix-projection-points-native.log` passes 1,994 tests, 31 ignored.
+The refusal inventory is now 1,482 plus 90 positive unavailable-history cells.
+Formatting, caps, composition (zero scan errors) and agent-context pass;
+contracts pass 203 tests with 3 ignored; boundary-check and owner lib/tests
+clippy pass. All logs are intermediate dirty-tree slice evidence.
+
+### Next boundary: request-free metadata and resident pin proof
+
+Boundary review: projection metadata APIs that take no ExecutionRequest still
+borrow the Full partition accessor. They cannot legally load a cold source,
+and an already Head-resident publication must not promote history to answer
+current metadata. Raw projection selection is metadata-only. The existing
+RelationalPinnedRead is the resident capability; its private constructors
+currently accept an unrefined VisibilitySnapshotBasis and establish residency
+by ordering, rather than requiring a resident basis type. A projection derived
+from an accepted pin must keep that accepted custody, including after another
+fresh operation marks a shared cell damaged. No additional authority lane is
+needed.
+
+Implementation plan for that next slice: prove Head-resident metadata on the
+actual current fixture; replace request-free metadata reads with explicitly
+named read operations taking ExecutionRequest and carrying execution denials;
+retain schema-only work quotes as pure projections. Update every downstream
+caller and exhaustive denial match without compatibility forwarders. Refine
+pin construction with a private resident snapshot basis obtained only through
+Full demand, and carry that proof into pin-derived projections so they do not
+reacquire cold truth. Preserve the original work prices and the pre-effect
+callback boundary. Extend the current Head/symbol/class and untouched-history
+tables with actual entity/relation metadata, aspect version and structural
+revision doors, and add accepted-pin/fresh-guard damage isolation courts.
+Verify native tests/contracts and affected World/Query boundaries before
+closing the slice. Final lane evidence is still outstanding.

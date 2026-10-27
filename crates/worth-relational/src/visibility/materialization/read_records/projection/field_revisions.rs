@@ -40,10 +40,21 @@ impl VisibilityProjectionView {
         locator: &AspectFieldLocator,
     ) -> Result<Option<RelationalFieldRevision>, crate::execution::RelationalExecutionDenialCause>
     {
+        crate::execution::check_request(execution)?;
+        if !self.is_exact_basis() {
+            return Ok(None);
+        }
+        self.demand_regions_head(execution, [relation.partition_id])?;
+        let Some(partition) = self
+            .selected_root()
+            .and_then(|root| root.admitted_head_region(relation.partition_id))
+        else {
+            return Ok(None);
+        };
         super::super::read_work::metered(
             execution,
             |context| {
-                self.read_relation_field_revision_funded(relation, locator, |units| {
+                self.read_relation_field_revision_funded(partition, relation, locator, |units| {
                     context.checkpoint(units)
                 })
             },

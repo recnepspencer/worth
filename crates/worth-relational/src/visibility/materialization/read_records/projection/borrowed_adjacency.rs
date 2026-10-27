@@ -80,6 +80,26 @@ impl VisibilityProjectionView {
         direction: RelationalAdjacencyDirection,
         mut visit: impl FnMut(RelationalAdjacencyVisit) -> Result<(), Stop>,
     ) -> Result<Result<(), Stop>, crate::execution::RelationalExecutionDenialCause> {
+        if self.is_exact_basis() {
+            self.demand_regions_head(execution, [entity.partition_id])?;
+            let head = self
+                .selected_root()
+                .and_then(|root| root.admitted_head_region(entity.partition_id));
+            return crate::visibility::materialization::read_records::read_request::checked(
+                execution,
+                || {
+                    super::current_adjacency::visit(
+                        head,
+                        entity,
+                        kind,
+                        direction,
+                        &self.instrumentation,
+                        visit,
+                    )
+                },
+            );
+        }
+        self.demand_regions_full(execution, [entity.partition_id])?;
         crate::visibility::materialization::read_records::read_request::checked(execution, || {
             visit(RelationalAdjacencyVisit::List)?;
             visit(RelationalAdjacencyVisit::Prepare { work: 33, bytes: 0 })?;
