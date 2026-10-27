@@ -92,7 +92,7 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::NativeReadDenied { .. }
+                    kind @ (Session::ProjectionContract { .. } | Session::HistoricalVisibility { .. }
                     | Session::StorageUnavailable(_)
                     | Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
@@ -213,7 +213,8 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        Ok(Session::NativeReadDenied { .. })
+        Ok(Session::ProjectionContract { .. })
+        | Ok(Session::HistoricalVisibility { .. })
         | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)
         | Ok(Session::ForeignGraphAuthority)

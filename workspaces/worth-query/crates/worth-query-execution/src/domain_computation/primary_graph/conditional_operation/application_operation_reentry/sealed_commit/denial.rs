@@ -86,7 +86,8 @@ pub(super) fn classify_denial(denial: &Denial) -> Outcome {
                             | Resource::EquivalenceContractUnavailable,
                         ..
                     }
-                    | Session::NativeReadDenied { .. }
+                    | Session::ProjectionContract { .. }
+                    | Session::HistoricalVisibility { .. }
                     | Session::StorageUnavailable(_)
                     | Session::ForeignOperationAttempt
                     | Session::ForeignExecutionBasis

@@ -95,7 +95,8 @@ fn execution_stop(cause: Result<Execution, Control>) -> Option<Denial> {
         Ok(Execution::ExecutionResource { denial, .. }) => Some(Denial::Resource(denial)),
         Ok(Execution::ExecutionNestedPatternStopped { .. }) => Some(Denial::NestedStopped),
         Ok(Execution::ExecutionWorkerPanicked { .. }) => Some(Denial::Panicked),
-        Ok(Execution::NativeReadDenied { .. })
+        Ok(Execution::ProjectionContract { .. })
+        | Ok(Execution::HistoricalVisibility { .. })
         | Ok(Execution::StorageUnavailable(_))
         | Ok(Execution::ForeignOperationAttempt)
         | Ok(Execution::ForeignExecutionBasis)

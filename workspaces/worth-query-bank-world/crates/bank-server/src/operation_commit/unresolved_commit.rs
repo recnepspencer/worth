@@ -17,8 +17,12 @@ pub enum BankCommitRecoveryKind {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankProviderFailureKind {
-    NativeReadDenied {
-        cause: worth_query_host::facade::primary_graph::RelationalExecutionDenialCause,
+    ProjectionContract {
+        denial: worth_query_host::facade::primary_graph::RelationalProjectionContractDenial,
+        partition_identity: Option<u64>,
+    },
+    HistoricalVisibility {
+        denial: worth_query_host::facade::primary_graph::HistoricalVisibilityDenial,
         partition_identity: Option<u64>,
     },
     StorageUnavailable(worth_query_host::facade::primary_graph::RelationalStorageUnavailable),
@@ -157,11 +161,18 @@ const fn provider_failure_kind(
 ) -> BankProviderFailureKind {
     use WorthQueryProviderSessionDenialKind as Query;
     match kind {
-        Query::NativeReadDenied {
-            cause,
+        Query::ProjectionContract {
+            denial,
             partition_identity,
-        } => BankProviderFailureKind::NativeReadDenied {
-            cause,
+        } => BankProviderFailureKind::ProjectionContract {
+            denial,
+            partition_identity,
+        },
+        Query::HistoricalVisibility {
+            denial,
+            partition_identity,
+        } => BankProviderFailureKind::HistoricalVisibility {
+            denial,
             partition_identity,
         },
         Query::StorageUnavailable(failure) => BankProviderFailureKind::StorageUnavailable(failure),
