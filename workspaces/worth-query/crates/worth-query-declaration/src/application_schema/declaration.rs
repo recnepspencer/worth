@@ -16,6 +16,7 @@ use super::schema_member::ApplicationSchemaMember;
 
 mod aspects;
 mod authorization;
+mod components;
 mod fields;
 mod finalization;
 

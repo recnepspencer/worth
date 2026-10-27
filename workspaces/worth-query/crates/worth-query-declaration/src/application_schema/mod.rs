@@ -18,6 +18,7 @@ mod canonical_operation_identity;
 mod capabilities;
 mod capability_identifier_validation;
 mod capability_member_closure;
+mod component_set;
 mod contribution;
 mod decision_read_authoring;
 mod declaration;
@@ -131,6 +132,10 @@ pub use capabilities::{
     OperationCreates, OperationDeletes, OperationEmits, OperationExpectsFact,
     OperationExpectsVersion, OperationLinks, OperationReads, OperationRequiresAbility,
     OperationUnlinks, OperationWrites, ReadOnly, ReadWrite, WritableCapability, WritePosture,
+};
+pub use component_set::{
+    ApplicationComponentSetDefinition, ApplicationComponentSetMeaning, ApplicationComponentSetRef,
+    WorthQueryPortableApplicationComponentSetParts,
 };
 pub use contribution::{
     ApplicationSchemaComposition, ApplicationSchemaContribution,

@@ -16,8 +16,12 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut slot_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut provenance_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut invariants = BTreeSet::new();
+    let mut component_sets = BTreeSet::new();
     for member in members {
         let duplicate = match member {
+            ApplicationSchemaMember::ComponentSet { definition } => {
+                !component_sets.insert(definition.name())
+            }
             ApplicationSchemaMember::ApplicationMutation { description } => {
                 !mutations.insert(description.binding_identity())
             }

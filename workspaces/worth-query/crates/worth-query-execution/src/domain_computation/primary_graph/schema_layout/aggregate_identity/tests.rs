@@ -1,5 +1,6 @@
 use super::super::WorthQueryPrimaryGraphLayout;
 use super::*;
+mod components;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntimeInstaller;
 use worth_query_declaration::facade::application_schema::*;
 use worth_query_installation::facade::{
@@ -44,14 +45,16 @@ impl<const ORBIT: bool> ApplicationSchema for Schema<ORBIT> {
 }
 fn installed<const ORBIT: bool>() -> (WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry) {
     let declaration = Schema::<ORBIT>::declaration().unwrap();
-    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
-        Schema::<ORBIT>::OWNER,
-        1,
-        0,
-    ))
-    .application_schema(declaration.clone())
-    .validate()
-    .unwrap();
+    install_declaration(declaration)
+}
+fn install_declaration<S: ApplicationSchema>(
+    declaration: ApplicationSchemaDeclaration<S>,
+) -> (WorthQueryPrimaryGraphLayout, RelationalSchemaRegistry) {
+    let package =
+        WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(S::OWNER, 1, 0))
+            .application_schema(declaration.clone())
+            .validate()
+            .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("aggregate-proof", "local")
         .admit(package)
         .unwrap();

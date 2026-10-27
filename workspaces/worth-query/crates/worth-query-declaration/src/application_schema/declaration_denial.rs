@@ -20,6 +20,7 @@ pub enum ApplicationSchemaDeclarationDenial {
     MissingUnit,
     UniqueFieldWithoutEqualityIndex,
     InvalidRelationIntegrity,
+    InvalidComponentSet,
     MissingPrincipalBindingDependency,
     DuplicateApplicationQuery,
     MissingApplicationQueryDependency,

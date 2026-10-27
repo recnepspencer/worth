@@ -29,6 +29,7 @@ pub(super) fn append_member(
         | ApplicationSchemaMember::Aspect { .. }
         | ApplicationSchemaMember::Field { .. }
         | ApplicationSchemaMember::Relation { .. }
+        | ApplicationSchemaMember::ComponentSet { .. }
         | ApplicationSchemaMember::PrincipalBinding { .. } => {
             schema::append_schema_member(basis, &prefix, member)
         }

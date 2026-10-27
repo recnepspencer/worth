@@ -1,4 +1,5 @@
 mod canonical_contract;
+mod component_set;
 mod correction_binding;
 mod fixture;
 mod invariant;

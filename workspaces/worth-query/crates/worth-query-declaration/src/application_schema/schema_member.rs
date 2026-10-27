@@ -105,6 +105,9 @@ pub enum ApplicationSchemaMember {
         to: String,
         integrity: ApplicationRelationIntegrityRecord,
     },
+    ComponentSet {
+        definition: super::ApplicationComponentSetMeaning,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,

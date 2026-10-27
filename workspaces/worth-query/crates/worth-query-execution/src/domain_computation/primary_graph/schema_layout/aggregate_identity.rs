@@ -18,6 +18,7 @@ use super::{
     kind_space_exhausted, relational_schema_denial, required_kind,
     WorthQueryPrimaryGraphInstallationDenial,
 };
+mod definitions;
 #[cfg(test)]
 mod tests;
 
@@ -30,19 +31,7 @@ pub(super) fn lower(
     entity_kinds: &BTreeMap<String, KindId>,
     relation_kinds: &BTreeMap<String, KindId>,
 ) -> Result<RelationalSchemaRegistry, WorthQueryPrimaryGraphInstallationDenial> {
-    let definitions: BTreeMap<_, _> = schema
-        .members()
-        .iter()
-        .filter_map(|member| match member {
-            ApplicationSchemaMember::Relation {
-                relation,
-                from,
-                integrity,
-                ..
-            } if integrity.orbit => Some((relation.as_str(), from.as_str())),
-            _ => None,
-        })
-        .collect();
+    let definitions = definitions::collect(schema, relation_kinds)?;
     if definitions.is_empty() {
         return Ok(registry);
     }
@@ -71,7 +60,7 @@ pub(super) fn lower(
     };
     registry = register_aggregate_identity_storage(registry, schema_id, version, storage)
         .map_err(relational_schema_denial)?;
-    for (index, (relation, member)) in definitions.into_iter().enumerate() {
+    for (index, definition) in definitions.into_iter().enumerate() {
         let offset = u32::try_from(index)
             .ok()
             .and_then(|index| index.checked_add(3))
@@ -81,9 +70,9 @@ pub(super) fn lower(
             schema_id,
             version,
             AggregateIdentityContractDeclaration {
-                definition: definition_identity(schema, relation),
-                source: AggregateIdentitySource::Orbit(required_kind(relation_kinds, relation)?),
-                member_kind: required_kind(entity_kinds, member)?,
+                definition: definition.identity,
+                source: definition.source,
+                member_kind: required_kind(entity_kinds, definition.member)?,
                 membership_kind: next_kind(offset)?,
                 storage,
             },
@@ -91,18 +80,4 @@ pub(super) fn lower(
         .map_err(relational_schema_denial)?;
     }
     Ok(registry)
-}
-
-fn definition_identity(
-    schema: &ErasedApplicationSchemaDeclaration,
-    relation: &str,
-) -> AggregateDefinitionIdentity {
-    let mut hash = Sha256::new();
-    hash.update(b"WORTH_QUERY_ORBIT_DEFINITION_V1\0");
-    for name in [schema.owner(), schema.name(), relation] {
-        hash.update((name.len() as u64).to_be_bytes());
-        hash.update(name.as_bytes());
-    }
-    hash.update(schema.major().to_be_bytes());
-    AggregateDefinitionIdentity::from_bytes(hash.finalize().into())
 }

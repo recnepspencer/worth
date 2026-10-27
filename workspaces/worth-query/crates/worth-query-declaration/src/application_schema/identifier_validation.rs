@@ -141,6 +141,9 @@ pub(super) fn validate_member_identifiers(
             } => {
                 validate_identifiers([relation, from, to])?;
             }
+            ApplicationSchemaMember::ComponentSet { definition } => {
+                super::component_set::validate_identifiers(definition)?;
+            }
             ApplicationSchemaMember::PrincipalBinding {
                 binding,
                 mapping_entity,

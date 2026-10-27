@@ -209,6 +209,41 @@ An orbit's cardinality refusal exposes
 `application_invariants` facade. Another independent policy may refuse first
 and retains its original cause, such as `SelfEdge` for a forbidden singleton.
 
+## Component Set Declarations
+
+Declare a set over one or more stored homogeneous relations through
+`worth_query_decl::facade::application_schema`. Different relation markers may
+couple the same entity type:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled.
+let shells = ApplicationComponentSetRef::<MySchema, Shells, Face>::new(
+    "Shells", Face::reference(),
+);
+let schema = builder.components(
+    ApplicationComponentSetDefinition::new(shells)
+        .coupled_by(FaceAdjacency::reference())
+        .coupled_by(OtherFaceCoupling::reference()),
+).build()?;
+```
+
+The completed schema validates the actual declared relation endpoints, rejects
+empty or missing sources and duplicate set names, and normalizes source order
+and duplicates. Fresh portable readmission applies the same validation; record
+grammar 18 carries component member tag 38 through the existing archive codec.
+Each set lowers into the existing Native aggregate identity owner. Orbit and
+component definitions share its private storage, with separate membership
+relations. A component definition includes the set's member and normalized source
+meaning; changing the source roster selects a different definition.
+
+This is the declaration and installation prerequisite. Application component
+readers, decisions, declared-query results, disclosure, counts and CAD shell
+integration remain unfinished in
+[Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+The compiled [installation courts](../../../worth-query-execution/src/domain_computation/primary_graph/schema_layout/aggregate_identity/tests/components.rs)
+exercise this typed builder and the shared Native storage boundary.
+
 ## How It Executes
 
 1. Author the relation and completed schema, then validate the program with
