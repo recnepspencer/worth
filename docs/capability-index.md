@@ -562,6 +562,17 @@ resource entry through Decl/Host; that application integration is required by
 See [native async source custody](../crates/worth-runtime-world/README.md#owned-async-source-binding)
 and the [internal engine guide](../workspaces/worth-query/crates/worth-query/docs/capabilities/async-resources-and-result-state.md).
 
+### Typed relation initialization
+
+Declare relation-owned scalar fields with `ApplicationRelationAspectDefinition`
+and `ApplicationRelationFieldRef`. An operation needs both Link and explicit
+field initialization targets; its typed writer retains fields only on a newly
+created relation with a same-program handle. Native touch admission enforces the
+same contract for raw candidates. Bootstrap invariant readers can inspect those
+actual physical payloads through `relation_field`; ordinary operation and query
+readers do not acquire that privileged door. See
+[relation payload creation](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#relation-owned-payload-at-creation).
+
 ### Native record and aspect history pages
 
 The Relational owner provides a retained cursor inside one exact selected commit:
@@ -569,7 +580,10 @@ The Relational owner provides a retained cursor inside one exact selected commit
 its admitted root, including retained tombstones; `record_aspect_history_cursor`
 requires independently owner-issued exact commit selection. Each `next_page`
 bounds canonical record visits, returned entries and newly allocated page backing
-under the original request. It retains the canonical envelope without copying
+under the original request. A finite `retain_record_history_selection` can be
+reused by exact per-commit cursors; each cursor keeps independent source custody.
+Serial and inherited accounting stays with the retained owner until its final
+drop. It retains the canonical envelope without copying
 its patches. This native cursor does not establish World product ancestry or
 application disclosure. World's `open_exact_product_history` and staged one-parent
 pages supply genuine retained product ancestry, fork inheritance and exact

@@ -1,6 +1,8 @@
 mod contract;
 mod overlap;
+mod relation_initialization;
 mod scope;
+pub use relation_initialization::WorthQueryOperationRelationFieldInitializationScope;
 
 pub use contract::WorthQueryOperationTouchContract;
 pub use overlap::WorthQueryOperationReadTouchOverlapIndex;

@@ -27,12 +27,14 @@ fn appended_workflow_facts_keep_their_context_after_an_issued_application_create
             partition: WorthQueryApplicationCreationPartition::Context(workflow_partition),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: KindId::new(12),
             key: "instance-transition".to_owned(),
             from: EntityReference::Existing(EntityId::new(workflow_partition, 1, 1)),
             to: created(workflow_partition, 11, "transition"),
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: KindId::new(13),
             key: "cad-membership".to_owned(),
             from: EntityReference::Existing(EntityId::new(application_partition, 2, 1)),

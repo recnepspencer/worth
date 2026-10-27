@@ -21,6 +21,14 @@ pub struct ApplicationOperationBodySigningSpec {
     provenance: Locus,
 }
 impl ApplicationOperationBodySigningSpec {
+    pub(super) fn has_only_entity_field_loci(&self) -> bool {
+        let Self {
+            purpose: _,
+            actor,
+            provenance,
+        } = self;
+        actor.owner_kind().is_entity() && provenance.owner_kind().is_entity()
+    }
     /// Descriptive meaning shared by schema and program canonicalization.
     pub fn canonical_record(&self) -> String {
         use std::fmt::Write;

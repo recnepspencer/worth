@@ -42,3 +42,6 @@ mod minimum_oracle;
 
 #[path = "relation_laws/orbit.rs"]
 mod orbit;
+
+#[path = "relation_laws/payload.rs"]
+mod payload;

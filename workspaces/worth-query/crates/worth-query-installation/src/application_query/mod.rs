@@ -6,6 +6,10 @@ mod canonical_work_policy;
 mod continuation_contract;
 mod denial;
 mod graph_access_contract;
+pub(crate) mod history;
+pub use history::{
+    WorthQueryApplicationHistoryInstallationDenial, WorthQueryInstalledApplicationHistoryQuery,
+};
 mod installed_binding;
 mod installed_contract;
 mod live_contract;

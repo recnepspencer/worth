@@ -206,6 +206,7 @@ fn approval_effects(
             fields,
         },
         WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: binding.approver_relation(),
             key,
             from: EntityReference::Existing(binding.approver()),

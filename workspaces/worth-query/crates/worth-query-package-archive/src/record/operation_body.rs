@@ -50,6 +50,9 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<(), Denial> {
+    if !body.has_only_entity_field_loci() {
+        return Err(Denial::new(Kind::InvalidRecordShape));
+    }
     let version = version::select(body);
     output.u16(version)?;
     if version >= 8 {

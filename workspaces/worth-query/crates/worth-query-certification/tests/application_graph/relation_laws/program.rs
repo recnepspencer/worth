@@ -4,6 +4,7 @@ use std::marker::PhantomData;
 use worth_query_host::facade::{
     application_contribution::*,
     declaration::{application_program::*, application_schema::*},
+    domain::AbsenceLaw,
     primary_graph::WorthQueryPrimaryGraphInstallationDenial,
 };
 pub struct GraphContribution<L: LawPolicy>(PhantomData<fn() -> L>);
@@ -13,7 +14,7 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
     fn register_members(
         schema: ApplicationSchemaDeclarationBuilder<GraphSchema<L>>,
     ) -> ApplicationSchemaDeclarationBuilder<GraphSchema<L>> {
-        schema
+        let schema = schema
             .entity(ExternalMapping::reference())
             .entity(Principal::reference())
             .entity(Node::reference())
@@ -83,7 +84,26 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
             .operation_unlink(EditFeeds::reference(), Feeds::reference())
             .operation_delete(EditFeeds::reference(), Node::reference())
             .operation_delete(EditFeeds::reference(), Leaf::reference())
-            .application_mutation_binding::<FeedsBinding<L>>()
+            .application_mutation_binding::<FeedsBinding<L>>();
+        if L::RELATION_PAYLOAD {
+            schema
+                .relation_aspect(
+                    ApplicationRelationAspectDefinition::new(
+                        Precedes::reference(),
+                        EdgeFacts::reference(),
+                        AbsenceLaw::Optional,
+                    )
+                    .field(EdgeWeight::reference())
+                    .finish()
+                    .unwrap(),
+                )
+                .operation_initialize_relation_field(
+                    EditEdges::reference(),
+                    EdgeWeight::reference(),
+                )
+        } else {
+            schema
+        }
     }
 }
 impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphContribution<L> {
@@ -92,7 +112,11 @@ impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphCo
         _: (),
         setup: &mut WorthQueryApplicationContributionSetup<'_, GraphSchema<L>>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.handler::<EditBinding<L>, _>(Handler)?;
+        if L::RELATION_PAYLOAD {
+            setup.handler::<EditBinding<L>, _>(super::payload::PayloadHandler::<L>::default())?;
+        } else {
+            setup.handler::<EditBinding<L>, _>(Handler)?;
+        }
         setup.handler::<CreateBinding<L>, _>(CreateHandler)?;
         setup.handler::<FeedsBinding<L>, _>(FeedsHandler)
     }

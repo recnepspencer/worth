@@ -126,6 +126,7 @@ where
             decision,
             &request,
             ExecutionAllocationPolicy::SystemAllocation,
+            runtime.installed_schema().value_bindings(),
         )
         .map_err(WorkflowApprovalBodyDenial::Handler)?,
     )?;

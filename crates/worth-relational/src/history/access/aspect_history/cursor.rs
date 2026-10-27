@@ -10,7 +10,8 @@ use crate::runtime::RelationalRuntime;
 use super::{
     RelationalPreparedRecordHistoryPage, RelationalRecordHistoryChange,
     RelationalRecordHistoryDenial as Denial, RelationalRecordHistoryPage,
-    RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+    RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+    RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
 };
 
 /// Position inside one genuine selected canonical commit. This does not prove
@@ -25,8 +26,7 @@ pub struct RelationalCanonicalRecordHistoryCursor {
 pub(super) struct RetainedCanonicalRecordHistory {
     pub(super) envelope: Arc<CanonicalCommitEnvelope>,
     retained: RelationalRetainedObservation,
-    subjects: Vec<RelationalRecordHistorySubject>,
-    pub(super) aspects: Vec<AspectKey>,
+    pub(super) selection: RelationalRecordHistorySelection,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
@@ -40,54 +40,66 @@ impl RelationalRuntime {
         subjects: &[RelationalRecordHistorySubject],
         aspects: &[AspectKey],
     ) -> Result<RelationalCanonicalRecordHistoryCursor, Denial> {
-        execution.check_live()?;
+        use std::num::NonZeroUsize;
+        let selection = self.retain_record_history_selection(
+            execution,
+            subjects,
+            aspects,
+            RelationalRecordHistorySelectionLimits {
+                maximum_subjects: NonZeroUsize::new(subjects.len())
+                    .ok_or(Denial::EmptySubjectSelection)?,
+                maximum_aspects: NonZeroUsize::new(aspects.len())
+                    .ok_or(Denial::EmptyAspectSelection)?,
+                maximum_owned_bytes: NonZeroUsize::new(usize::MAX).expect("positive storage bound"),
+            },
+        )?;
+        self.record_aspect_history_cursor_from_selection(execution, selected, &selection)
+    }
+
+    /// Open another exact canonical commit while sharing the already funded
+    /// sealed selection. Each returned cursor retains its own source identity.
+    pub fn record_aspect_history_cursor_from_selection(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        selected: RelationalSelectedCommit,
+        selection: &RelationalRecordHistorySelection,
+    ) -> Result<RelationalCanonicalRecordHistoryCursor, Denial> {
         if selected.runtime_instance_id() != self.runtime_instance_id()
-            || subjects
-                .iter()
-                .any(|subject| subject.runtime_instance_id() != self.runtime_instance_id())
+            || selection.runtime() != self.runtime_instance_id()
         {
             return Err(Denial::ForeignOwner);
-        }
-        if subjects.is_empty() {
-            return Err(Denial::EmptySubjectSelection);
-        }
-        if aspects.is_empty() {
-            return Err(Denial::EmptyAspectSelection);
         }
         if selected.observation().commit_id() != Some(selected.commit_id()) {
             return Err(Denial::NotExactSelectedCommit);
         }
-        let envelope = self
-            .history
-            .canonical_envelope(selected.commit_id())
-            .or_else(|| {
-                self.history
-                    .commit_artifact(selected.commit_id())
-                    .map(|artifact| Arc::clone(artifact.envelope()))
+        super::request_stage::run(execution, |checkpoint| {
+            checkpoint.poll()?;
+            let memory = execution
+                .reserve_retained_memory(
+                    (size_of::<RetainedCanonicalRecordHistory>() + 2 * size_of::<usize>()) as u64,
+                )
+                .map_err(Denial::Request)?;
+            let envelope = self
+                .history
+                .canonical_envelope(selected.commit_id())
+                .or_else(|| {
+                    self.history
+                        .commit_artifact(selected.commit_id())
+                        .map(|artifact| Arc::clone(artifact.envelope()))
+                })
+                .ok_or(Denial::CommitUnavailable)?;
+            let retained = self
+                .retain_observation_snapshot(&selected.observation().admitted_basis())
+                .map_err(Denial::Retention)?;
+            Ok(RelationalCanonicalRecordHistoryCursor {
+                source: Arc::new(RetainedCanonicalRecordHistory {
+                    envelope,
+                    retained,
+                    selection: selection.clone(),
+                    _memory: memory,
+                }),
+                next_record: 0,
             })
-            .ok_or(Denial::CommitUnavailable)?;
-        let memory = execution
-            .allocation_policy()
-            .reserve_memory(selection_bytes(subjects, aspects)?)?;
-        let retained = self
-            .retain_observation_snapshot(&selected.observation().admitted_basis())
-            .map_err(Denial::Retention)?;
-        let mut subjects = subjects.to_vec();
-        subjects.sort_unstable_by(|left, right| left.record().cmp(right.record()));
-        subjects.dedup_by(|left, right| left.record() == right.record());
-        let mut aspects = aspects.to_vec();
-        aspects.sort_unstable();
-        aspects.dedup();
-        execution.check_live()?;
-        Ok(RelationalCanonicalRecordHistoryCursor {
-            source: Arc::new(RetainedCanonicalRecordHistory {
-                envelope,
-                retained,
-                subjects,
-                aspects,
-                _memory: memory,
-            }),
-            next_record: 0,
         })
     }
 }
@@ -126,16 +138,14 @@ impl RelationalCanonicalRecordHistoryCursor {
         {
             return Err(Denial::ForeignOwner);
         }
-        let (page, _) = execution
-            .run_native_with_checkpoint(|checkpoint| {
-                self.prepare_page(execution, checkpoint, limits)
-            })
-            .map_err(Denial::Request)?;
+        let page = super::request_stage::run(execution, |checkpoint| {
+            self.prepare_page(execution, checkpoint, limits)
+        })?;
         Ok(RelationalPreparedRecordHistoryPage {
             source: Arc::clone(&self.source),
             execution,
             expected_record: self.next_record,
-            page: page?,
+            page,
         })
     }
 
@@ -180,10 +190,8 @@ impl RelationalCanonicalRecordHistoryCursor {
         if capacity == 0 {
             return Err(Denial::PageStorageTooSmall);
         }
-        let mut slots = worth_execution::ExecutionArrayBuilder::allocate(
-            capacity,
-            execution.allocation_policy(),
-        )?;
+        let mut slots =
+            worth_execution::ExecutionRequestArrayBuilder::allocate(execution, capacity)?;
         let mut next = self.next_record;
         let mut visits = 0;
         let patches = &self.source.envelope.patch.authoritative_record_patches;
@@ -224,7 +232,8 @@ impl RetainedCanonicalRecordHistory {
         checkpoint: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<bool, Denial> {
         if self
-            .subjects
+            .selection
+            .subjects()
             .binary_search_by(|subject| subject.record().cmp(&patch.target))
             .is_err()
         {
@@ -237,7 +246,7 @@ impl RetainedCanonicalRecordHistory {
         {
             return Ok(true);
         }
-        for aspect in &self.aspects {
+        for aspect in self.selection.aspects() {
             charge_visit(checkpoint)?;
             if patch.authoritative_patch.changes_aspect(aspect) {
                 return Ok(true);
@@ -254,28 +263,4 @@ fn charge_visit(checkpoint: &mut worth_execution::MapKernelContext<'_, '_>) -> R
         checkpoint.poll()?;
     }
     Ok(())
-}
-
-fn selection_bytes(
-    subjects: &[RelationalRecordHistorySubject],
-    aspects: &[AspectKey],
-) -> Result<u64, Denial> {
-    let bytes = subjects
-        .len()
-        .checked_mul(std::mem::size_of::<RelationalRecordHistorySubject>())
-        .and_then(|bytes| {
-            bytes.checked_add(
-                aspects
-                    .len()
-                    .checked_mul(std::mem::size_of::<AspectKey>())?,
-            )
-        })
-        .and_then(|bytes| bytes.checked_add(std::mem::size_of::<RetainedCanonicalRecordHistory>()))
-        .ok_or(Denial::SizeOverflow)?;
-    let bytes = aspects.iter().try_fold(bytes, |bytes, aspect| {
-        bytes
-            .checked_add(aspect.owned_allocation_capacity_bytes())
-            .ok_or(Denial::SizeOverflow)
-    })?;
-    u64::try_from(bytes).map_err(|_| Denial::SizeOverflow)
 }

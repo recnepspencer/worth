@@ -225,6 +225,21 @@ fn encode_touch_scope(
     scope: &WorthQueryOperationTouchScope,
 ) -> Result<(), CanonicalDigestDerivationDenial> {
     match scope {
+        WorthQueryOperationTouchScope::InitializeRelationField(field) => {
+            basis.text(format!("{prefix}.kind"), "initialize-relation-field")?;
+            let relation = field.relation();
+            encode_binding(basis, prefix, relation.schema())?;
+            basis.text(format!("{prefix}.relation"), relation.relation())?;
+            basis.text(format!("{prefix}.from"), relation.from())?;
+            basis.text(format!("{prefix}.to"), relation.to())?;
+            basis.embedded_basis(
+                &format!("{prefix}.contract"),
+                field.canonical_contract_basis(),
+            )?;
+            for (index, part) in field.field_path().fields().iter().enumerate() {
+                basis.text(format!("{prefix}.field[{index}]"), part.as_str())?;
+            }
+        }
         WorthQueryOperationTouchScope::CreateEntity(entity)
         | WorthQueryOperationTouchScope::DeleteEntity(entity) => {
             let kind = if matches!(scope, WorthQueryOperationTouchScope::CreateEntity(_)) {

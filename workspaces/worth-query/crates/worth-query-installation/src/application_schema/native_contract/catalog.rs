@@ -1,10 +1,16 @@
 use std::collections::BTreeMap;
 
 use worth_foundational::facade::AspectIdentity;
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingOwnerKind;
 
 use crate::canonical_work::WorthQueryCanonicalWorkEvidence;
 
 use super::WorthQueryInstalledApplicationAspectContract;
+
+pub(super) type NativeContractsByOwner = BTreeMap<
+    ApplicationFieldBindingOwnerKind,
+    BTreeMap<String, BTreeMap<String, WorthQueryInstalledApplicationAspectContract>>,
+>;
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct WorthQueryInstalledApplicationSchemaContractCatalogCounters {
@@ -44,7 +50,7 @@ impl WorthQueryInstalledApplicationSchemaContractCatalogCounters {
 /// Sealed installed native contracts for one exact application schema binding.
 #[derive(Clone, Debug)]
 pub struct WorthQueryInstalledApplicationSchemaContractCatalog {
-    contracts: BTreeMap<String, BTreeMap<String, WorthQueryInstalledApplicationAspectContract>>,
+    contracts: NativeContractsByOwner,
     maximum_aspect_identity: Option<AspectIdentity>,
     counters: WorthQueryInstalledApplicationSchemaContractCatalogCounters,
     canonical_work: WorthQueryCanonicalWorkEvidence,
@@ -52,7 +58,7 @@ pub struct WorthQueryInstalledApplicationSchemaContractCatalog {
 
 impl WorthQueryInstalledApplicationSchemaContractCatalog {
     pub(crate) fn new(
-        contracts: BTreeMap<String, BTreeMap<String, WorthQueryInstalledApplicationAspectContract>>,
+        contracts: NativeContractsByOwner,
         maximum_aspect_identity: Option<AspectIdentity>,
         counters: WorthQueryInstalledApplicationSchemaContractCatalogCounters,
         canonical_work: WorthQueryCanonicalWorkEvidence,
@@ -70,17 +76,42 @@ impl WorthQueryInstalledApplicationSchemaContractCatalog {
         entity: &str,
         aspect: &str,
     ) -> Option<&WorthQueryInstalledApplicationAspectContract> {
+        self.aspect_for_owner(ApplicationFieldBindingOwnerKind::Entity, entity, aspect)
+    }
+
+    pub fn relation_aspect(
+        &self,
+        relation: &str,
+        aspect: &str,
+    ) -> Option<&WorthQueryInstalledApplicationAspectContract> {
+        self.aspect_for_owner(ApplicationFieldBindingOwnerKind::Relation, relation, aspect)
+    }
+
+    pub fn aspect_for_owner(
+        &self,
+        owner: ApplicationFieldBindingOwnerKind,
+        name: &str,
+        aspect: &str,
+    ) -> Option<&WorthQueryInstalledApplicationAspectContract> {
         self.contracts
-            .get(entity)
+            .get(&owner)
+            .and_then(|owners| owners.get(name))
             .and_then(|aspects| aspects.get(aspect))
     }
 
     pub fn contracts(&self) -> impl Iterator<Item = &WorthQueryInstalledApplicationAspectContract> {
-        self.contracts.values().flat_map(|aspects| aspects.values())
+        self.contracts
+            .values()
+            .flat_map(|owners| owners.values())
+            .flat_map(|aspects| aspects.values())
     }
 
     pub fn len(&self) -> usize {
-        self.contracts.values().map(BTreeMap::len).sum()
+        self.contracts
+            .values()
+            .flat_map(|owners| owners.values())
+            .map(BTreeMap::len)
+            .sum()
     }
 
     pub fn is_empty(&self) -> bool {

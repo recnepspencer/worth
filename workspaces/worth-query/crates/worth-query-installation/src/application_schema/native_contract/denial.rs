@@ -11,6 +11,7 @@ pub enum WorthQueryApplicationSchemaContractCatalogDenialKind {
     InvalidAspectShape,
     ProjectionMaskRejected,
     CanonicalContractRejected,
+    UnsupportedRecordBinding,
     CanonicalEntryBudgetExceeded,
     CanonicalEncodedByteBudgetExceeded,
 }

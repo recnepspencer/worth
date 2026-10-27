@@ -60,6 +60,16 @@ fn read_intersects_touch(
 ) -> bool {
     match (read, touch) {
         (
+            WorthQueryOperationGraphReadScope::Relation(read),
+            WorthQueryOperationTouchScope::InitializeRelationField(touch),
+        ) => {
+            let relation = touch.relation();
+            read.schema() == relation.schema()
+                && read.relation() == relation.relation()
+                && read.from() == relation.from()
+                && read.to() == relation.to()
+        }
+        (
             WorthQueryOperationGraphReadScope::Entity(read),
             WorthQueryOperationTouchScope::CreateEntity(touch)
             | WorthQueryOperationTouchScope::DeleteEntity(touch),

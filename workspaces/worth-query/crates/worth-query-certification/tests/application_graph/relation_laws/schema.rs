@@ -5,6 +5,7 @@ use worth_query_host::facade::declaration::{application_schema::*, authenticatio
 
 pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const INTEGRITY: ApplicationRelationIntegrity;
+    const RELATION_PAYLOAD: bool = false;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();
 }
@@ -166,3 +167,7 @@ impl Feeds {
 #[path = "schema/minimum.rs"]
 mod minimum;
 pub use minimum::{LeafAndPrincipalMinimumTwo, LeafMinimumTwo, MinimumTwo};
+
+#[path = "schema/payload.rs"]
+mod payload;
+pub use payload::{EdgeFacts, EdgeWeight, Payload};

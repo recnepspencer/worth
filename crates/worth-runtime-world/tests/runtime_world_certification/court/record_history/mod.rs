@@ -1,4 +1,5 @@
 mod fixture;
+mod memory;
 
 use fixture::NativeHistoryCourt;
 use std::num::NonZeroUsize;
@@ -37,6 +38,7 @@ fn canonical_history_pages_stop_inside_a_commit_and_keep_all_grammar_ranks() {
     subjects.push(subjects[0].clone());
     court.update_all(execution);
     let updated = court.basis();
+    memory::assert_retained_memory(&court, &updated);
     let earlier = court
         .runtime
         .select_reachable_commit(

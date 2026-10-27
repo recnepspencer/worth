@@ -135,6 +135,13 @@ composition owner can inspect older component commits without substituting the
 subject's provenance. The native cursor establishes no World product ancestry
 or application disclosure permission.
 
+For several selected commits, call `retain_record_history_selection` once with
+finite subject, aspect and owned-byte limits, then reuse its sealed selection
+through `record_aspect_history_cursor_from_selection`. Validation and
+canonicalization use the original request before retaining the selection; each
+commit cursor still has its own source identity. Selection, subject and cursor
+owners retain their serial or inherited memory charges until their last drop.
+
 `next_page(&runtime, execution, limits)` bounds entries, canonical record-patch
 visits and newly owned page backing. It can stop inside a large commit or return
 an empty incomplete page. Only selected keys are exposed; structural occurrences

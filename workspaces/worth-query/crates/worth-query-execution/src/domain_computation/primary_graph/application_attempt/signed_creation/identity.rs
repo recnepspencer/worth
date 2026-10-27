@@ -206,6 +206,7 @@ pub(super) fn candidate(
                 key,
                 from,
                 to,
+                fields,
             } => {
                 check_interruption(context)?;
                 entries.text(format!("{prefix}.kind"), "link");
@@ -216,6 +217,9 @@ pub(super) fn candidate(
                     .map_err(|_| {
                         super::sealing::WorthQuerySignedCreationPreparationDenial::Canonicalization
                     })?;
+                if !fields.is_empty() {
+                    entries.fields(&format!("{prefix}.initial"), &fields, context)?;
+                }
                 entries
                     .reference(&format!("{prefix}.to"), to)
                     .map_err(|_| {

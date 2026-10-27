@@ -20,14 +20,40 @@ impl<T> BuildingFixedBacking<T> {
         element_count: usize,
         policy: Policy<'_, '_>,
     ) -> Result<Self, Denial> {
-        let layout =
-            Layout::array::<T>(element_count).map_err(|_| Denial::new(Kind::Layout, None))?;
-        let quote = u64::try_from(layout.size()).map_err(|_| Denial::new(Kind::Layout, None))?;
+        let quote = Self::payload_quote(element_count)?;
         let status = policy.status(Some(quote))?;
         if let Some(status) = &status {
             check_status(status, Some(quote))?;
         }
         let reservation = policy.reserve_memory(quote)?;
+        Self::allocate_prepared(element_count, quote, reservation, status)
+    }
+
+    pub(in super::super) fn payload_quote(element_count: usize) -> Result<u64, Denial> {
+        let layout =
+            Layout::array::<T>(element_count).map_err(|_| Denial::new(Kind::Layout, None))?;
+        u64::try_from(layout.size()).map_err(|_| Denial::new(Kind::Layout, None))
+    }
+
+    /// Only the array request owner may transfer its sealed admission here.
+    /// The reservation is never accepted through a public adoption surface.
+    pub(in super::super) fn allocate_reserved(
+        element_count: usize,
+        reservation: Option<super::super::ExecutionMemoryReservation>,
+    ) -> Result<Self, Denial> {
+        let quote = Self::payload_quote(element_count)?;
+        let status = reservation
+            .as_ref()
+            .and_then(|held| held.allocation_status());
+        Self::allocate_prepared(element_count, quote, reservation, status)
+    }
+
+    fn allocate_prepared(
+        element_count: usize,
+        quote: u64,
+        reservation: Option<super::super::ExecutionMemoryReservation>,
+        status: Option<ExecutionLeaseStatus>,
+    ) -> Result<Self, Denial> {
         if let Some(status) = &status {
             check_status(status, Some(quote))?;
         }

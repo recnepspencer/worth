@@ -16,6 +16,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     ValueDecode(super::super::value_decode::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// The original handler request refused new retained effect backing or work.
+    EffectExecution(worth_execution::WorkCeilingDenial),
     Cancelled,
     DeadlineExceeded,
     ForeignApplication,

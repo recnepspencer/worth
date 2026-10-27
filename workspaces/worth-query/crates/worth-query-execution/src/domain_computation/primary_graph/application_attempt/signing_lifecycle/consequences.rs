@@ -168,6 +168,7 @@ fn append(
         ),
     });
     batch.effects.push(Effect::CreateRelation {
+        fields: Default::default(),
         kind: relation.kind,
         key: format!("{key}-evidence"),
         from: EntityReference::Existing(evidence),

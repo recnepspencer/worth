@@ -2,12 +2,17 @@
 
 mod cursor;
 mod page;
+mod request_stage;
+mod retained_selection;
 mod selection;
 
 pub use cursor::RelationalCanonicalRecordHistoryCursor;
 pub use page::{
     RelationalPreparedRecordHistoryPage, RelationalRecordHistoryChange,
     RelationalRecordHistoryPage, RelationalRecordHistoryPageLimits,
+};
+pub use retained_selection::{
+    RelationalRecordHistorySelection, RelationalRecordHistorySelectionLimits,
 };
 pub use selection::RelationalRecordHistorySubject;
 
@@ -26,6 +31,7 @@ pub enum RelationalRecordHistoryDenial {
     Interrupted(worth_execution::MapKernelStop),
     PageStorageTooSmall,
     SizeOverflow,
+    SelectionLimitExceeded,
 }
 
 impl From<worth_execution::ExecutionAllocationDenial> for RelationalRecordHistoryDenial {
@@ -37,5 +43,16 @@ impl From<worth_execution::ExecutionAllocationDenial> for RelationalRecordHistor
 impl From<worth_execution::MapKernelStop> for RelationalRecordHistoryDenial {
     fn from(cause: worth_execution::MapKernelStop) -> Self {
         Self::Interrupted(cause)
+    }
+}
+
+impl From<worth_execution::ExecutionRequestArrayDenial> for RelationalRecordHistoryDenial {
+    fn from(cause: worth_execution::ExecutionRequestArrayDenial) -> Self {
+        match cause {
+            worth_execution::ExecutionRequestArrayDenial::Request(cause) => Self::Request(cause),
+            worth_execution::ExecutionRequestArrayDenial::Allocation(cause) => {
+                Self::Allocation(cause)
+            }
+        }
     }
 }

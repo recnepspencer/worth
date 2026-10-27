@@ -106,6 +106,7 @@ impl<Schema, Operation, Input, Scope>
             crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.read_set.admission),
             |effect| { effects.push(effect); Ok::<(), WorthQueryApplicationAttemptDenial>(()) })?;
         effects.push(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.instance_succeeded_from_relation,
             key: "instance-succeeded-from".into(),
             from: worth_relational::facade::transactions::EntityReference::Created(successor),

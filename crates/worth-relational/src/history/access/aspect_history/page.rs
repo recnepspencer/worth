@@ -48,7 +48,8 @@ impl RelationalRecordHistoryChange {
     /// Selected keys only, O(selected aspects × log(canonical operations)).
     pub fn changed_aspects(&self) -> impl Iterator<Item = &AspectKey> {
         self.source
-            .aspects
+            .selection
+            .aspects()
             .iter()
             .filter(|key| self.patch().authoritative_patch.changes_aspect(key))
     }

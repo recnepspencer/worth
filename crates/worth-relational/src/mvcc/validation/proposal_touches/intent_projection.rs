@@ -78,7 +78,12 @@ fn project_create(intent: &CreateIntent, touches: &mut super::collection::TouchC
         }
         CreateIntent::Relation(spec) => {
             touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });
-            project_relation_fields(spec.kind_id, &spec.fields, touches);
+            for locator in spec.fields.locators() {
+                touches.initialized_relation_field(spec.kind_id, locator);
+                if touches.failure.is_some() {
+                    break;
+                }
+            }
         }
         CreateIntent::RelationAspects(spec) => {
             touches.insert(ValidatedMutationTouch::LinkRelation { kind: spec.kind_id });

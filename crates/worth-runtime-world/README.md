@@ -71,7 +71,10 @@ successor)` under the stored original request. The original cursor stays intact
 until the composition owner installs the complete successor state. Drop a staged
 page or uninstalled successor to decline advancement. Opening performs one catalog
 admission; each page inspects one product-parent step with constant additional
-position storage. Pages, cursors and their pinned source observations release
+position storage. Opening and new retained positions reserve memory through the
+original request's effective serial or ancestor context before allocation;
+the actual retained owners keep those reservations until final drop.
+Pages, cursors and their pinned source observations release
 their genuine history/component custody on drop. Component publication evidence
 distinguishes new native changes from `RetainExact` reuse; this owner does not
 invent a native event for every product occurrence. See the

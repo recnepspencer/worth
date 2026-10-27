@@ -10,18 +10,28 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 mod authorization;
 mod capability;
+mod history;
 mod invariant;
 mod mutation_description;
 mod operation;
+mod relation_aspect;
 mod schema;
 mod source_disclosure;
 mod vocabulary;
+
+fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    schema::require_supported_field_codec(member)?;
+    if let ApplicationSchemaMember::RelationAspect { definition } = member {
+        relation_aspect::require_supported_field_codec(definition)?;
+    }
+    Ok(())
+}
 
 pub(super) fn require_encoding_contract(
     member: &ApplicationSchemaMember,
     maximum_depth: u32,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
@@ -48,11 +58,17 @@ pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     member: &ApplicationSchemaMember,
 ) -> Result<(), Denial> {
-    schema::require_supported_field_codec(member)?;
+    require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
+        }
+        ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+            history::write(output, definition)
+        }
+        ApplicationSchemaMember::RelationAspect { definition } => {
+            relation_aspect::write(output, definition)
         }
         ApplicationSchemaMember::OperationBody { operation, body } => {
             output.text(operation)?;
@@ -94,6 +110,10 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        36 => history::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
+        37 => relation_aspect::decode(input, budget)
+            .map(|definition| ApplicationSchemaMember::RelationAspect { definition }),
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
         tag @ 11..=14 | tag @ 16..=18 | tag @ (29 | 30 | 35) => {
@@ -113,6 +133,8 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
+        ApplicationSchemaMember::RelationAspect { .. } => 37,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,
         ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 34,
         ApplicationSchemaMember::ApplicationInvariant { .. } => 27,

@@ -1,4 +1,5 @@
 use super::*;
+mod memory;
 
 fn signal_fork_child(
     court: &CompositeSupplyChainCourt,
@@ -40,6 +41,7 @@ fn exact_product_pages_keep_the_pinned_fork_ancestry_and_stage_owner_positions()
     let first = court.publish_cargo(&root, "5");
     let first_head = court.observe(&root);
     let child = signal_fork_child(&court, &first_head, "history-child");
+    memory::assert_retained_memory(&court, &child);
     let port = court.world.observation_port();
     let mut cursor = port.open_exact_product_history(execution, &child).unwrap();
     let later = court.publish_cargo(&first_head, "6");

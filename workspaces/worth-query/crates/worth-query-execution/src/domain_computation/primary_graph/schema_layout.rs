@@ -28,6 +28,7 @@ mod provider_dispatch_outbox;
 mod provider_idempotency;
 mod provider_inbound_completion;
 mod registry_lowering;
+mod relation_payload;
 mod signed_entities;
 mod signing_lifecycle;
 mod support_admission;
@@ -61,7 +62,7 @@ pub(super) use provider_idempotency::WorthQueryProviderIdempotencyLayout;
 pub(in crate::domain_computation::primary_graph) use provider_inbound_completion::WorthQueryInboundCompletionLayout;
 use registry_lowering::{
     lower_application_contract_bindings, lower_kind_ids, next_provider_kind_id,
-    relational_schema_basis,
+    register_application_relation, relational_schema_basis,
 };
 pub(in crate::domain_computation::primary_graph) use registry_lowering::{
     register_entity, register_relation, register_relation_to_kinds,
@@ -79,6 +80,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
         signing_lifecycle::SigningLifecycleLayout,
     application_relation_kinds: BTreeSet<KindId>,
     fields: BTreeMap<(String, String, String), WorthQueryPrimaryFieldLayout>,
+    relation_payload: relation_payload::ApplicationRelationPayloadLayout,
     unique_fields: unique_fields::WorthQueryUniqueFieldNames,
     aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>>,
     equality_field_keys: BTreeMap<AspectKey, BTreeSet<FieldKey>>,
@@ -126,7 +128,10 @@ impl WorthQueryPrimaryGraphLayout {
         let mut aspect_contracts: BTreeMap<String, BTreeMap<AspectKey, AspectContract>> =
             BTreeMap::new();
         let lowered_contracts = lower_application_contract_bindings(native_contracts);
+        let relation_payload =
+            relation_payload::ApplicationRelationPayloadLayout::lower(native_contracts)?;
         let mut contracts_by_entity = lowered_contracts.by_entity;
+        let mut contracts_by_relation = lowered_contracts.by_relation;
 
         for (entity, kind_id) in &entity_kinds {
             let aspects = contracts_by_entity.remove(entity).unwrap_or_default();
@@ -155,7 +160,7 @@ impl WorthQueryPrimaryGraphLayout {
             else {
                 continue;
             };
-            registry = register_relation(
+            registry = register_application_relation(
                 registry,
                 &schema_id,
                 schema_version_id,
@@ -164,7 +169,8 @@ impl WorthQueryPrimaryGraphLayout {
                 required_kind(&entity_kinds, from)?,
                 required_kind(&entity_kinds, to)?,
                 integrity,
-                Some(&entity_kinds),
+                &entity_kinds,
+                contracts_by_relation.remove(relation).unwrap_or_default(),
             )?;
         }
         let provider_kind = next_provider_kind_id(
@@ -225,6 +231,7 @@ impl WorthQueryPrimaryGraphLayout {
                 signing_lifecycle,
                 application_relation_kinds,
                 fields,
+                relation_payload,
                 unique_fields,
                 aspect_contracts,
                 equality_field_keys,

@@ -135,6 +135,14 @@ impl WorthQueryPortableOperationGraphReadScope {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryPortableOperationTouchScope {
+    InitializeRelationField {
+        schema: String,
+        relation: String,
+        from: String,
+        to: String,
+        contract: AspectContract,
+        field_path: CanonicalFieldPath,
+    },
     CreateEntity {
         schema: String,
         entity: String,
@@ -171,6 +179,7 @@ impl WorthQueryPortableOperationTouchScope {
             | Self::WriteField { schema, .. }
             | Self::LinkRelation { schema, .. }
             | Self::UnlinkRelation { schema, .. } => schema,
+            Self::InitializeRelationField { schema, .. } => schema,
         }
     }
 
@@ -236,6 +245,29 @@ impl WorthQueryPortableOperationTouchScope {
                     .cmp(right_relation)
                     .then_with(|| left_from.cmp(right_from))
                     .then_with(|| left_to.cmp(right_to)),
+                (
+                    Self::InitializeRelationField {
+                        relation: left,
+                        from: left_from,
+                        to: left_to,
+                        contract: left_contract,
+                        field_path: left_path,
+                        ..
+                    },
+                    Self::InitializeRelationField {
+                        relation: right,
+                        from: right_from,
+                        to: right_to,
+                        contract: right_contract,
+                        field_path: right_path,
+                        ..
+                    },
+                ) => left
+                    .cmp(right)
+                    .then_with(|| left_from.cmp(right_from))
+                    .then_with(|| left_to.cmp(right_to))
+                    .then_with(|| left_contract.key().cmp(right_contract.key()))
+                    .then_with(|| left_path.cmp(right_path)),
                 _ => Ordering::Equal,
             })
     }
@@ -248,6 +280,7 @@ fn portable_touch_rank(scope: &WorthQueryPortableOperationTouchScope) -> u8 {
         WorthQueryPortableOperationTouchScope::WriteField { .. } => 2,
         WorthQueryPortableOperationTouchScope::LinkRelation { .. } => 3,
         WorthQueryPortableOperationTouchScope::UnlinkRelation { .. } => 4,
+        WorthQueryPortableOperationTouchScope::InitializeRelationField { .. } => 5,
     }
 }
 

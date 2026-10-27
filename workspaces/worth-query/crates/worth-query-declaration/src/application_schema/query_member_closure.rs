@@ -10,6 +10,7 @@ use crate::application_query::{
 use super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
 
 mod disclosure;
+mod history;
 
 pub(super) fn validate_application_query_members(
     members: &[ApplicationSchemaMember],
@@ -21,7 +22,7 @@ pub(super) fn validate_application_query_members(
         }
         validate_query(definition, members)?;
     }
-    Ok(())
+    history::validate(members)
 }
 
 fn query_definition(member: &ApplicationSchemaMember) -> Option<&ErasedApplicationQueryDefinition> {
