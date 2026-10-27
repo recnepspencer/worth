@@ -71,8 +71,9 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_query_subject() {
                 WorthQueryAuthorizedApplicationReadDenial::Read(read),
                 query.name(),
             );
-            // The foreign snapshot refuses the predicate read before its body.
-            assert_eq!(outer.kind(), OneShot::PredicateIndexUnavailable);
+            // A one-predicate read selects its root without an index, so the
+            // foreign snapshot is the query's projection, not a predicate.
+            assert_eq!(outer.kind(), OneShot::ProjectionUnavailable);
             assert_eq!(outer.subject(), query.name());
         })
         .unwrap();
