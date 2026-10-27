@@ -9,7 +9,7 @@ use super::{
     ApplicationDerivedRelationSourceKind, ErasedApplicationDerivedRelationDefinition,
 };
 
-mod topology;
+pub(super) mod topology;
 
 pub(in crate::application_schema) fn validate_closure(
     members: &[ApplicationSchemaMember],

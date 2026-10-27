@@ -34,16 +34,18 @@ pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAcce
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
-    WorthQueryApplicationInvariantComponentSetBinding, WorthQueryApplicationInvariantEntityBinding,
-    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantRelationBinding,
+    WorthQueryApplicationInvariantComponentSetBinding,
+    WorthQueryApplicationInvariantDerivedRelationBinding,
+    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
-    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
-    WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantDerivedRelation,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantOrbit,
+    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
+    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

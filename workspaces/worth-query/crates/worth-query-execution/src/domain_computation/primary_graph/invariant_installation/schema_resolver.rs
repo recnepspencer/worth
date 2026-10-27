@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use worth_query_declaration::facade::application_schema::ApplicationSchemaBindingIdentity;
+mod derived_relation;
 
 /// Borrowed, application-only view used while lowering one invariant factory.
 pub struct WorthQueryApplicationInvariantSchemaResolver<'layout, Schema> {

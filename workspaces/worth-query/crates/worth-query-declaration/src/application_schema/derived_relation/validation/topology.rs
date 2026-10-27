@@ -1,7 +1,7 @@
 //! Named recipe dependencies must form a DAG before any runtime is installed.
 use super::*;
 
-pub(super) fn validate(
+pub(in crate::application_schema::derived_relation) fn validate(
     definitions: &BTreeMap<&str, &ErasedApplicationDerivedRelationDefinition>,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     let mut remaining = BTreeMap::new();

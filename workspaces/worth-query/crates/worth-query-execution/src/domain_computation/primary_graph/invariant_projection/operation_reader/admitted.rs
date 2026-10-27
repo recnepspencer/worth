@@ -50,6 +50,7 @@ pub(super) fn project<Schema, Operation, Input, Scope, Output>(
         runtime_authority: authority.runtime_authority,
         binding_identity: &authority.binding_identity,
         admission_identity: Some(admission.admission_identity()),
+        selected_product: Some(product),
         admitted_root: Some(AdmittedReadRoot::from_admission(admission)),
         admitted_principal: Some(admission.graph_work().principal()),
         query_context: admission.query_context(),

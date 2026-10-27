@@ -1,4 +1,6 @@
 mod composition;
+mod derived_relation;
+pub use derived_relation::WorthQueryDerivedRelationCountOwner;
 pub(in crate::domain_computation::primary_graph) mod computation;
 mod conditional;
 mod contracts;

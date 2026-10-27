@@ -1,4 +1,5 @@
 mod collection;
+mod derived_relation;
 mod feature;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;

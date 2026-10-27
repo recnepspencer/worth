@@ -26,12 +26,12 @@ mod declaration_denial;
 mod declared_operation;
 mod derived_relation;
 pub use derived_relation::{
-    ApplicationDerivedRelation, ApplicationDerivedRelationDefinitionDenial,
-    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode,
-    ApplicationDerivedRelationOperand, ApplicationDerivedRelationRef,
-    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceKind,
-    ApplicationRuleReadableCollectionAssociation, ErasedApplicationDerivedRelationDefinition,
-    WorthQueryPortableDerivedRelationParts,
+    application_derived_relation_physical_sources, ApplicationDerivedRelation,
+    ApplicationDerivedRelationDefinitionDenial, ApplicationDerivedRelationExpression,
+    ApplicationDerivedRelationNode, ApplicationDerivedRelationOperand,
+    ApplicationDerivedRelationRef, ApplicationDerivedRelationSource,
+    ApplicationDerivedRelationSourceKind, ApplicationRuleReadableCollectionAssociation,
+    ErasedApplicationDerivedRelationDefinition, WorthQueryPortableDerivedRelationParts,
 };
 mod effect_authoring;
 mod effect_binding;

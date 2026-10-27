@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex, Weak};
 
 const MAXIMUM_REGISTERED_VIEWS: usize = 64;
+mod native_count;
 
 pub(super) trait RegisteredDerivedView: Send + Sync {
     fn dispose(&self);
@@ -49,6 +50,15 @@ impl PreparedManagedViewPublication {
 struct RegistryState {
     next_id: u64,
     views: BTreeMap<u64, Weak<dyn RegisteredDerivedView>>,
+    native_counts: Vec<(
+        u64,
+        Arc<
+            super::retention::ManagedDerivedViewState<
+                worth_relational::facade::identity::EntityId,
+                native_count::ClosedCount,
+            >,
+        >,
+    )>,
 }
 
 #[derive(Default)]
@@ -129,19 +139,23 @@ impl ManagedDerivedViewRegistry {
     }
 
     pub(in crate::domain_computation::primary_graph) fn dispose(&self) {
-        let views = {
+        let (views, owned) = {
             let mut state = self
                 .state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            std::mem::take(&mut state.views)
+            let views = std::mem::take(&mut state.views)
                 .into_values()
                 .filter_map(|view| view.upgrade())
-                .collect::<Vec<_>>()
+                .collect::<Vec<_>>();
+            (views, std::mem::take(&mut state.native_counts))
         };
         for view in views {
             view.dispose();
         }
+        // Retained states and their backing are destroyed after the registry
+        // lock is released, just like ordinary view disposal.
+        drop(owned);
     }
 }
 

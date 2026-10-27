@@ -161,6 +161,9 @@ fn canonical_authority_snapshot(
     let mut snapshot = envelope.schema_authority.clone();
     snapshot.entity_kinds.sort_by_key(|kind| kind.kind_id);
     snapshot.relation_kinds.sort_by_key(|kind| kind.kind_id);
+    snapshot
+        .derived_relations
+        .sort_by(|left, right| left.identity.cmp(&right.identity));
     if snapshot != envelope.schema_authority {
         return Err(schema_mismatch(
             envelope,
@@ -172,6 +175,18 @@ fn canonical_authority_snapshot(
             envelope,
             "schema authority primary version differs from envelope version",
         ));
+    }
+    let mut definitions = BTreeSet::new();
+    for definition in &snapshot.derived_relations {
+        if !definitions.insert(&definition.identity)
+            || snapshot.primary_schema_id.as_ref() != Some(&definition.identity.schema)
+            || snapshot.primary_schema_version_id != Some(definition.identity.version)
+        {
+            return Err(schema_mismatch(
+                envelope,
+                "schema authority contains duplicate or mixed-basis derived definitions",
+            ));
+        }
     }
     let mut kind_ids = BTreeSet::new();
     for (kind_id, schema_id, schema_version) in snapshot

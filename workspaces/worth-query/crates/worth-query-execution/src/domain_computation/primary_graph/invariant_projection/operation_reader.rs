@@ -21,6 +21,8 @@ mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
 mod decision_plan;
 mod decision_reads;
+mod derived_relation;
+pub use derived_relation::WorthQueryInvariantDerivedRelation;
 mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
@@ -79,6 +81,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,
     admitted_root: Option<admitted::AdmittedReadRoot>,
     admitted_principal: Option<worth_relational::facade::identity::EntityId>,
     query_context: Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
@@ -172,6 +175,7 @@ where
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        selected_product: None,
                         admitted_root: None,
                         admitted_principal: None,
                         query_context: None,
@@ -224,6 +228,7 @@ where
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        selected_product: Some(product),
                         admitted_root: None,
                         admitted_principal: None,
                         query_context: None,

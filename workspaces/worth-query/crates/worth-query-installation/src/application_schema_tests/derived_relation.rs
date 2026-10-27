@@ -45,7 +45,7 @@ impl ApplicationSchema for DerivedSchema {
 }
 
 #[test]
-fn derived_source_meaning_refuses_real_installation_until_native_owner_exists() {
+fn unsupported_derived_law_refuses_real_installation_with_an_ordinary_twin() {
     let declaration = DerivedSchema::declaration().unwrap();
     let association = declaration.erased().members().iter().find_map(|member| {
         let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::RuleReadableCollection {association} = member else { return None };
@@ -94,7 +94,7 @@ fn derived_source_meaning_refuses_real_installation_until_native_owner_exists() 
     let denial = index
         .bind_application_schema(declaration)
         .err()
-        .expect("descriptive source cannot supply Native rule authority");
+        .expect("this authored derived acyclicity law has no enforcement owner yet");
     assert_eq!(
         denial.kind(),
         WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable

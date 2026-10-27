@@ -4,6 +4,11 @@ pub use crate::aggregate_identity::{
     PinnedAggregateLineageScope, PinnedAggregateRead, PinnedAggregateReadDenial,
     PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
 };
+pub use crate::derived_relation::{
+    DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial,
+    DerivedRelationReadIdentity, DerivedRelationReads, PinnedDerivedRelationRead,
+    PreparedDerivedRelationRead,
+};
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,
     CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,

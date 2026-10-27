@@ -84,6 +84,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     aggregate_projections: Arc::clone(&self.graph.aggregate_projections),
                     output_lineage: Arc::clone(&self.graph.output_lineage),
                     invalidation_owner: Arc::clone(&self.graph.source_owner.invalidation_owner),
+                    managed_views: self.graph.managed_derived_views(),
                     selected_product_occurrence: None,
                     selected_product_generation: None,
                     selected_source_partition_identity: None,

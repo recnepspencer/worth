@@ -79,6 +79,24 @@ impl ApplicationComputationPartition for ApplicationSingleComputationPartition {
     const IDENTITY: &'static str = "worth.query.single-computation-partition.v1";
 }
 
+/// The deterministic one-bucket partition of the built-in derived relation count.
+///
+/// Unlike the reserved unpartitioned computation marker, this key belongs to
+/// `DeterministicPartitioned` collection computation. It identifies descriptive
+/// work only and carries no source or read authority.
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct ApplicationDerivedRelationCountPartition;
+
+impl Serialize for ApplicationDerivedRelationCountPartition {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_unit_struct("ApplicationDerivedRelationCountPartition")
+    }
+}
+
+impl ApplicationComputationPartition for ApplicationDerivedRelationCountPartition {
+    const IDENTITY: &'static str = "worth.query.derived-relation-count-partition.v1";
+}
+
 pub trait ApplicationComputationReuse: 'static {
     const IDENTITY: &'static str;
 }

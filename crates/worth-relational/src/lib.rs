@@ -32,6 +32,7 @@ mod capabilities;
 mod change_source;
 mod commit_strategies;
 mod config;
+mod derived_relation;
 mod diagnostics;
 mod durability;
 mod errors;

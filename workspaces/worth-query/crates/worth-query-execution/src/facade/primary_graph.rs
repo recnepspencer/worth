@@ -15,6 +15,7 @@ pub use worth_relational::facade::history::CommitId;
 pub use crate::domain_computation::primary_graph::{
     WorthQueryExecutionLeaseDenial, WorthQueryPublicationFaultGuardForTest,
     WorthQueryPublicationFaultRegistrationDenial, WorthQueryRetainedSnapshotRead,
+    WorthQueryRuleReadableCollectionLifecycleForTest,
 };
 
 pub use crate::domain_computation::{
@@ -228,14 +229,15 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryInspectedOperationInvariantProjection, WorthQueryInvariantAggregate,
     WorthQueryInvariantAggregateDenial, WorthQueryInvariantAggregateDenialKind,
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantMutationTarget,
-    WorthQueryInvariantProjectionComponent, WorthQueryInvariantProjectionDenial,
-    WorthQueryInvariantProjectionDenialKind, WorthQueryInvariantProjectionOrbit,
-    WorthQueryInvariantProjectionTraversalDenial, WorthQueryInvariantProjectionTraversalDenialKind,
-    WorthQueryInvariantProjectionWalk, WorthQueryInvariantProjectionWalkIter,
-    WorthQueryInvariantProjectionWalkStep, WorthQueryInvariantProjectionWork,
-    WorthQueryInvariantRelation, WorthQueryManagedApplicationRecoveryDenial,
-    WorthQueryManagedApplicationRecoveryOutcome, WorthQueryManagedApplicationRecoveryPerformed,
+    WorthQueryInvariantDerivedRelation, WorthQueryInvariantEntityIdentity,
+    WorthQueryInvariantMutationTarget, WorthQueryInvariantProjectionComponent,
+    WorthQueryInvariantProjectionDenial, WorthQueryInvariantProjectionDenialKind,
+    WorthQueryInvariantProjectionOrbit, WorthQueryInvariantProjectionTraversalDenial,
+    WorthQueryInvariantProjectionTraversalDenialKind, WorthQueryInvariantProjectionWalk,
+    WorthQueryInvariantProjectionWalkIter, WorthQueryInvariantProjectionWalkStep,
+    WorthQueryInvariantProjectionWork, WorthQueryInvariantRelation,
+    WorthQueryManagedApplicationRecoveryDenial, WorthQueryManagedApplicationRecoveryOutcome,
+    WorthQueryManagedApplicationRecoveryPerformed,
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedMemberToken,
     WorthQueryManagedDerivedStorageQuote, WorthQueryManagedDerivedValue,
     WorthQueryManagedDerivedView, WorthQueryManagedDerivedViewDenial,
