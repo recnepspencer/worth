@@ -58,6 +58,7 @@ enum ResolvedApplicationTouch {
     DeleteEntity(KindId),
     WriteEntityField(KindId, AspectFieldLocator),
     LinkRelation(KindId),
+    InitializeRelationField(KindId, AspectFieldLocator),
     UnlinkRelation(KindId),
 }
 
@@ -159,6 +160,30 @@ fn resolve_installed_touch(
     scope: &WorthQueryOperationTouchScope,
 ) -> Result<ResolvedApplicationTouch, ()> {
     match scope {
+        WorthQueryOperationTouchScope::InitializeRelationField(scope) => {
+            let relation = scope.relation();
+            resolve_relation_touch(layout, relation, true)?;
+            if layout.relation_aspect_contract(relation.relation(), scope.contract().key().as_str())
+                != Some(scope.contract())
+                || scope.field_path().fields().len() != 1
+            {
+                return Err(());
+            }
+            let locator = layout
+                .relation_field_locator(
+                    relation.relation(),
+                    scope.contract().key().as_str(),
+                    scope.field_path().fields()[0].as_str(),
+                )
+                .ok_or(())?;
+            if locator.field_path() != scope.field_path() {
+                return Err(());
+            }
+            Ok(ResolvedApplicationTouch::InitializeRelationField(
+                layout.relation(relation.relation()).ok_or(())?.kind,
+                locator.clone(),
+            ))
+        }
         WorthQueryOperationTouchScope::CreateEntity(scope) => layout
             .entity_kind(scope.entity())
             .map(ResolvedApplicationTouch::CreateEntity)
@@ -235,6 +260,13 @@ fn validated_application_touch(
         ),
         ValidatedMutationTouch::LinkRelation { kind } => {
             application_relation_touch(layout, *kind, ResolvedApplicationTouch::LinkRelation(*kind))
+        }
+        ValidatedMutationTouch::InitializeRelationField { kind, locator } => {
+            application_relation_touch(
+                layout,
+                *kind,
+                ResolvedApplicationTouch::InitializeRelationField(*kind, locator.clone()),
+            )
         }
         ValidatedMutationTouch::UnlinkRelation { kind } => application_relation_touch(
             layout,

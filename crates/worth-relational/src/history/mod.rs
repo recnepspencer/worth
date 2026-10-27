@@ -9,7 +9,8 @@ pub(crate) use access::{CommitAncestryInspection, CommitAncestryPosture};
 pub use access::{
     RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
     RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
-    RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+    RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+    RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
 };
 pub use authority::HistoryAuthority;
 pub(crate) use commit::{

@@ -32,6 +32,7 @@ pub(super) fn successor_effects(
         },
     )?;
     effects.push(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.instance_migrated_from_relation,
         key: "instance-migrated-from".to_owned(),
         from: EntityReference::Created(successor.clone()),
@@ -39,6 +40,7 @@ pub(super) fn successor_effects(
     });
     for (ordinal, effect) in performed.iter().enumerate() {
         effects.push(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.instance_prior_effect_relation,
             key: format!("instance-prior-effect-{ordinal}"),
             from: EntityReference::Created(successor.clone()),

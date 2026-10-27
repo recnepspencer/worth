@@ -37,6 +37,9 @@ pub(super) fn validate_member_identity_uniqueness(
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 !query_types.insert(definition.query_type())
             }
+            ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+                !query_types.insert(definition.parts().history_type.as_str())
+            }
             ApplicationSchemaMember::ApplicationCapability { contract } => {
                 !capability_names.insert(contract.name())
                     || !capability_types.insert(contract.capability_identity())

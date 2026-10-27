@@ -56,7 +56,7 @@ pub(crate) fn compile_application_contract_spine(
                 }
                 NativeDenial::InvalidAspectKey => DenialKind::ApplicationContractInvalidAspectKey,
                 NativeDenial::InvalidFieldKey => DenialKind::ApplicationContractInvalidFieldKey,
-                NativeDenial::InvalidAspectShape => {
+                NativeDenial::InvalidAspectShape | NativeDenial::UnsupportedRecordBinding => {
                     DenialKind::ApplicationContractInvalidAspectShape
                 }
                 NativeDenial::ProjectionMaskRejected => {

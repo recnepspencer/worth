@@ -48,6 +48,7 @@ pub enum CompositeAncestorSelectionDenial {
     SelectionLimitReached,
     RetiredHistoryGap,
     Allocation(worth_execution::ExecutionAllocationDenial),
+    Request(worth_execution::WorkCeilingDenial),
     Catalog(CompositeHistoryCatalogDenial),
 }
 

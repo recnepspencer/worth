@@ -107,7 +107,8 @@ pub mod history {
     pub use crate::history::{
         RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
         RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
-        RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+        RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+        RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
     };
     pub use crate::history::{
         RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,

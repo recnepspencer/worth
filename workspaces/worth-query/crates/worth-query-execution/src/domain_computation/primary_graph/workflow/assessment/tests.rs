@@ -59,6 +59,7 @@ fn evidence_and_each_dependency_charge_their_field_widths_and_nothing_else_does(
     assert_eq!(charge(created(layout.transition.entity_kind, evidence)), 0);
     assert_eq!(
         charge(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.evidence_dependency_relation,
             key: "evidence-dependency".to_owned(),
             from: EntityReference::Existing(entity(1)),

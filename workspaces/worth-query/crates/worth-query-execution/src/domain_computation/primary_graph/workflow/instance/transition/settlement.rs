@@ -194,12 +194,14 @@ fn visit_transition_facts_from_basis<Error>(
         partition: WorthQueryApplicationCreationPartition::Context(admitted.instance.partition_id),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.instance_transition_relation,
         key: "instance-transition".to_owned(),
         from: EntityReference::Existing(admitted.instance),
         to: EntityReference::Created(transition.clone()),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.transition_node_relation,
         key: "transition-node".to_owned(),
         from: EntityReference::Created(transition.clone()),

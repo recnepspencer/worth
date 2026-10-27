@@ -24,9 +24,9 @@ pub use authority::{
     ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionArrayIntoIter,
     ExecutionAuthority, ExecutionAuthorityConfig, ExecutionByteBuffer, ExecutionImmutableBytes,
     ExecutionLeaseStatus, ExecutionMemoryReservation, ExecutionPhysicalAllocationDenialKind,
-    ExecutionPolicyDenial, ExecutionRequest, ExecutionResourceLease, ExecutionResultMemory,
-    LeaseDenial, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget,
-    SerialRequest,
+    ExecutionPolicyDenial, ExecutionRequest, ExecutionRequestArrayBuilder,
+    ExecutionRequestArrayDenial, ExecutionResourceLease, ExecutionResultMemory, LeaseDenial,
+    LeaseRequest, MemoryLimitDenial, MemoryLimitLevel, SerialMemoryBudget, SerialRequest,
 };
 pub use oracle::{compare_canonical_values, CanonicalBits};
 

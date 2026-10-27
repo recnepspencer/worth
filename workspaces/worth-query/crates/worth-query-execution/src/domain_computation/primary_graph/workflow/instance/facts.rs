@@ -166,18 +166,21 @@ fn visit_start_facts<Error>(
         partition: WorthQueryApplicationCreationPartition::Context(partition),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.instance_lineage_relation,
         key: "instance-lineage".to_owned(),
         from: EntityReference::Created(instance.clone()),
         to: EntityReference::Existing(compiled.lineage()),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.live_instance_lineage_relation,
         key: "live-instance-lineage".to_owned(),
         from: EntityReference::Created(instance.clone()),
         to: EntityReference::Existing(compiled.lineage()),
     })?;
     emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+        fields: Default::default(),
         kind: layout.instance_definition_relation,
         key: "instance-definition".to_owned(),
         from: EntityReference::Created(instance.clone()),
@@ -185,6 +188,7 @@ fn visit_start_facts<Error>(
     })?;
     if matches!(&subject, EntityReference::Created(_)) {
         emit(WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind: layout.instance_subject_relation,
             key: "instance-subject".to_owned(),
             from: EntityReference::Created(instance.clone()),

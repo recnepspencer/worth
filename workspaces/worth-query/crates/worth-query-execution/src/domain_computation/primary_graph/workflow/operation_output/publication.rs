@@ -65,12 +65,14 @@ pub(in crate::domain_computation::primary_graph) fn append_operation_outputs<'ou
             ]),
         });
         effects.push(Effect::CreateRelation {
+            fields: Default::default(),
             kind: output.membership,
             key: format!("{key}-membership"),
             from: EntityReference::Created(transition.clone()),
             to: entry.clone(),
         });
         effects.push(Effect::CreateRelation {
+            fields: Default::default(),
             kind: output.target,
             key: format!("{key}-target"),
             from: entry,

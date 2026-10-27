@@ -80,12 +80,11 @@ impl ProductExactHistoryCursor {
         position: Arc<RetainedExactHistoryPosition>,
     ) -> Result<Self, ProductExactHistoryDenial> {
         let memory = execution
-            .allocation_policy()
-            .reserve_memory(
+            .reserve_retained_memory(
                 (std::mem::size_of::<ExactHistorySource>() + 2 * std::mem::size_of::<usize>())
                     as u64,
             )
-            .map_err(ProductExactHistoryDenial::Allocation)?;
+            .map_err(ProductExactHistoryDenial::Request)?;
         Ok(Self {
             source: Arc::new(ExactHistorySource {
                 target,

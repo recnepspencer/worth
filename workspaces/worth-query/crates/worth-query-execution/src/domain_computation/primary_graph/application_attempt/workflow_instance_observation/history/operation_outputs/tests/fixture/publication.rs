@@ -27,14 +27,21 @@ pub(super) fn batch(
                 key,
                 from,
                 to,
-            } => MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: source.partition_id,
-                kind_id: kind,
-                client_key: ClientKey::raw(key),
-                source: from,
-                target: to,
-                fields: AspectFieldPatch::default(),
-            })),
+                fields,
+            } => {
+                assert!(
+                    fields.is_empty(),
+                    "this fixture's relation grammar has no payload initialization"
+                );
+                MutationIntent::Create(CreateIntent::Relation(RelationSpec {
+                    partition_id: source.partition_id,
+                    kind_id: kind,
+                    client_key: ClientKey::raw(key),
+                    source: from,
+                    target: to,
+                    fields: AspectFieldPatch::default(),
+                }))
+            }
             _ => unreachable!("context publisher emits creations only"),
         });
     }
@@ -255,6 +262,7 @@ fn attach_structural_parent(
         ),
     ] {
         effects.push(Effect::CreateRelation {
+            fields: Default::default(),
             kind,
             key: format!("context-parent-{}", kind.0),
             from,

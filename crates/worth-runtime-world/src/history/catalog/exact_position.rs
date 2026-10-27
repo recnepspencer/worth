@@ -91,10 +91,9 @@ fn reserve_position(
     }
     .check_live()?;
     execution
-        .allocation_policy()
-        .reserve_memory(
+        .reserve_retained_memory(
             (std::mem::size_of::<RetainedExactHistoryPosition>() + 2 * std::mem::size_of::<usize>())
                 as u64,
         )
-        .map_err(Denial::Allocation)
+        .map_err(Denial::Request)
 }

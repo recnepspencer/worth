@@ -3,8 +3,8 @@ use worth_query_declaration::facade::application_schema::ApplicationSchemaBindin
 use crate::application_schema::WorthQueryInstalledApplicationSchemaContractCatalog;
 use crate::domain_operation::{
     WorthQueryOperationEntityTouchScope, WorthQueryOperationFieldTouchScope,
-    WorthQueryOperationRelationTouchScope, WorthQueryOperationTouchContract,
-    WorthQueryOperationTouchScope,
+    WorthQueryOperationRelationFieldInitializationScope, WorthQueryOperationRelationTouchScope,
+    WorthQueryOperationTouchContract, WorthQueryOperationTouchScope,
 };
 use crate::package::WorthQueryPortableOperationTouchScope;
 
@@ -16,6 +16,36 @@ pub(crate) fn install_portable_graph_touches(
     let scopes = portable
         .iter()
         .map(|scope| match scope {
+            WorthQueryPortableOperationTouchScope::InitializeRelationField {
+                relation,
+                from,
+                to,
+                contract,
+                field_path,
+                ..
+            } => {
+                let installed = catalog
+                    .relation_aspect(relation, contract.key().as_str())
+                    .ok_or(())?;
+                if installed.contract() != contract
+                    || field_path.fields().len() != 1
+                    || !installed.contains_field(&field_path.fields()[0])
+                {
+                    return Err(());
+                }
+                Ok(WorthQueryOperationTouchScope::InitializeRelationField(
+                    WorthQueryOperationRelationFieldInitializationScope::new(
+                        WorthQueryOperationRelationTouchScope::new(
+                            binding.clone(),
+                            relation.clone(),
+                            from.clone(),
+                            to.clone(),
+                        ),
+                        installed,
+                        field_path.clone(),
+                    ),
+                ))
+            }
             WorthQueryPortableOperationTouchScope::CreateEntity { entity, .. } => {
                 Ok(WorthQueryOperationTouchScope::CreateEntity(
                     WorthQueryOperationEntityTouchScope::new(binding.clone(), entity.clone()),

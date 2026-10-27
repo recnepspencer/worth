@@ -14,7 +14,8 @@ pub(crate) use ancestry::{CommitAncestryInspection, CommitAncestryPosture};
 pub use aspect_history::{
     RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
     RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
-    RelationalRecordHistoryPageLimits, RelationalRecordHistorySubject,
+    RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+    RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
 };
 pub use bounded_commit_patches::BoundedCanonicalCommitPatchDenial;
 
