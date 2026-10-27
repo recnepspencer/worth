@@ -133,12 +133,13 @@ and the isolation-and-reuse requirements.
 member. Query's installed component definitions use the Native committed aggregate
 identity and lineage owner; that routing key is never their public identity.
 Typed component-set declarations, privileged inspection, scoped operation/decision
-reads and complete one-shot Of/Census Query results are implemented. The
+reads, ordinary invariant proposed/committed selection/enumeration/count and
+complete one-shot Of/Census Query results are implemented. The
 [component guide](../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#component-set-declarations)
 explains visibility, disclosure and retained source evidence.
 
 [Milestone 9.18.1 Phase 5](WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity)
-remains open for ordinary invariant enumeration, the seeded union-find and topology
+remains open for the seeded union-find and topology
 entry merge/split/anchor-removal courts, locality at 10 and 10,000 components,
 replay/parallel identity and lineage evidence, and Proprietary CAD shell adoption.
 Keep this entry until those complete-phase gates pass; remove it when Phase 5

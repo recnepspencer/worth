@@ -262,6 +262,44 @@ exercise typed authoring and fresh schema admission using a real mutation
 binding. Admitted readers consume these installed paths through the scoped
 component methods below. A descriptive declaration alone grants no read.
 
+### Ordinary Invariant Component Reads
+
+Resolve `resolver.typed_component_set(Set::reference())` in the installed invariant
+factory. The binding names the actual installed definition, member kind and every
+physical coupling source. Factory resolution requires the member entity and all
+source relations in **both** the invariant's declared read closure and applicability.
+Missing coverage refuses installation, including a missing create/delete trigger
+for a previously empty set.
+
+Both `planner.proposed()` / `planner.committed()` and the evaluation context's
+matching views expose `component_of(&binding, &member)`, `components(&binding)` and
+`component_count(&binding)`. A selected component retains Native identity and
+complete members; `identity()`, `members()`, `len()` and `is_empty()` perform no
+new graph acquisition. A full collection has `len()`, `is_empty()` and `iter()` in
+Native aggregate identity order; each member iterator uses canonical Native entity
+order. Proposed reads include the genuine commit proposal, while committed reads
+use its before-image. Handles retain their original view/schema affinity.
+
+`component_of` selects one actual Native cohort without a census of unrelated
+components. Complete enumeration/count deliberately scan the exact-view entity
+inventory, including isolated members, untouched components and a genuinely empty
+universe. That work can grow with Native partitions and slots; count has no fixed
+cost promise. All acquisition and retained backing use the original Native request
+and existing payer. A stop refuses the whole read and cannot seal a passing commit.
+
+Preparation admits every actual member and physical coupling edge. Evaluation
+cannot widen those frozen admissions. Entity creation/deletion and coupling edits
+schedule fresh rule preparation through the declared applicability, including after
+an empty census. Counts may decide an ordinary invariant verdict; they add no new
+relation law. The [installed component rule courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/census.rs)
+exercise proposed/committed merges and splits, an untouched isolated component,
+genuine count-based commit refusal and prepared-scope widening. The
+[empty-set CRUD court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/lifecycle.rs)
+creates and deletes a real member through an ordinary admitted operation.
+
+The full Phase 5 seeded union-find, topology-entry, 10/10,000 locality,
+replay/parallel and CAD shell adoption gates remain open.
+
 ### Privileged Component Inspection
 
 The installation-owned `WorthQueryApplicationInvariantProjectionReader` exposes
@@ -581,7 +619,9 @@ edge uniqueness, same-partition endpoints and distinct reachable-target minima.
 Other native symmetry modes are not exposed by these builders. Complete one-shot
 component query results use whole-slot disclosure as described above. Admitted operation
 decision readers support scoped component selection and complete census/count as
-described above; the full Phase 5 acceptance portfolio remains open.
+described above. Ordinary installed invariant views expose complete component
+selection, enumeration and count with actual proposed/committed footprints; the
+full Phase 5 acceptance portfolio remains open.
 Installation-owned projection readers support complete component inspection,
 walks and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair

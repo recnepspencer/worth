@@ -34,10 +34,11 @@ pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAcce
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
 pub use typed_binding::{
-    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
-    WorthQueryApplicationInvariantRelationBinding,
+    WorthQueryApplicationInvariantComponentSetBinding, WorthQueryApplicationInvariantEntityBinding,
+    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
+    WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
     WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
     WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
     WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,

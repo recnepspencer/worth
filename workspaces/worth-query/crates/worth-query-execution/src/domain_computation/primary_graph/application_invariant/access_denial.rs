@@ -11,6 +11,7 @@ pub enum WorthQueryInvariantAccessDenialKind {
     RelationNotInstalled,
     NotOrbitRelation,
     InvalidOrbit,
+    InvalidComponent,
     AggregateSourceUnavailable,
     AggregatePreparationRefused,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),

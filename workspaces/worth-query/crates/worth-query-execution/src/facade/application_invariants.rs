@@ -2,16 +2,18 @@
 
 pub use crate::domain_computation::primary_graph::application_invariant::{
     CustomInvariantInterruption, WorthQueryAggregateIdentity,
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantExecutionError,
-    WorthQueryApplicationInvariantFieldBinding, WorthQueryApplicationInvariantOrbit,
-    WorthQueryApplicationInvariantPreparationError, WorthQueryApplicationInvariantReadView,
-    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantRelationBinding,
-    WorthQueryApplicationInvariantRule, WorthQueryApplicationInvariantScopePlanner,
-    WorthQueryApplicationInvariantVerdict, WorthQueryApplicationInvariantWalk,
-    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
-    WorthQueryEmptyInvariantRefusal, WorthQueryInvariantAccessDenial,
-    WorthQueryInvariantAccessDenialKind, WorthQueryInvariantRefusalDecodeDenial,
+    WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponentSetBinding,
+    WorthQueryApplicationInvariantComponents, WorthQueryApplicationInvariantContext,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantEntityBinding,
+    WorthQueryApplicationInvariantExecutionError, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantPreparationError,
+    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
+    WorthQueryApplicationInvariantRelationBinding, WorthQueryApplicationInvariantRule,
+    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantVerdict,
+    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
+    WorthQueryApplicationInvariantWalkStep, WorthQueryEmptyInvariantRefusal,
+    WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind,
+    WorthQueryInvariantRefusalDecodeDenial,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryInvariantProjectionWork;
 pub use crate::domain_computation::primary_graph::{

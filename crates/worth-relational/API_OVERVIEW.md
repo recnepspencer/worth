@@ -194,3 +194,18 @@ The standalone library surface now uses the job-shaped runtime names directly:
 The exact component artifacts and outcomes available to a later composite
 owner are frozen in [`OWNER_COMPONENT_PORT.md`](./OWNER_COMPONENT_PORT.md).
 
+
+## Complete Custom-Invariant Aggregate Census
+
+`StructuralRelationView::aggregates().of_definition(definition, member)` retains
+one actual proposed/committed cohort. `all_of_definition(definition)` validates
+member/source declared access even when empty, enumerates the exact view's visible
+member kind, then selects each genuine Native cohort once. It returns an
+`AggregateReadCollection` in Native aggregate identity order, with original body
+and collection payer custody. No routing key becomes identity and no second
+partitioner or membership cache is introduced. Individual Of reads never invoke
+this census. A deliberate census can grow with the complete partition/slot
+inventory; original request stops refuse without a partial successful result.
+Application invariants must declare member/source applicability through Query's
+[typed factory binding](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#ordinary-invariant-component-reads)
+so genuine create/delete/coupling changes schedule fresh preparation.

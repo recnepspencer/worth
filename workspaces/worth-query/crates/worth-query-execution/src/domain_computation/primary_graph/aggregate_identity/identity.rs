@@ -62,6 +62,18 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
         )
     }
 
+    pub(in crate::domain_computation::primary_graph) fn from_invariant_component_read(
+        native: &AggregateRead,
+        binding: ApplicationSchemaBindingIdentity,
+    ) -> Self {
+        Self::new(
+            native.definition(),
+            native.identity(),
+            binding,
+            AggregateSource::Component,
+        )
+    }
+
     pub(in crate::domain_computation::primary_graph) fn component_lineage_selection(
         &self,
         binding: &ApplicationSchemaBindingIdentity,

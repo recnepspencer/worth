@@ -2,10 +2,12 @@
 use super::projection::AggregateProjection;
 use super::proposal::{binding_error, AggregateInvocation};
 use super::stored_read::StoredAggregateRead;
+mod census;
 mod port;
 use crate::identity::data::EntityId;
 use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
 use crate::validation::data::{StructuralRelationView, StructuralWalkDenialKind};
+pub use census::AggregateReadCollection;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 use worth_foundational::facade::{

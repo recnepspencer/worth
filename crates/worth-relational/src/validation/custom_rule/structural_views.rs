@@ -128,7 +128,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         super::CustomInvariantReadBudget::new(self.execution, &self.work)
     }
 
-    pub(super) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
+    pub(crate) fn work_meter(&self) -> super::CustomInvariantWorkMeter {
         self.work.clone()
     }
 
