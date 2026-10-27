@@ -134,6 +134,7 @@ fn capacity_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn commit_entities<const N: usize>(

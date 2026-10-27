@@ -54,7 +54,7 @@ fn observe_entry(
     let commit_id = entry
         .root
         .commit_id()
-        .expect("scope validates commit linkage");
+        .expect(/* Proof: Inspection scope admission validates commit linkage and all root axes before constructing its private inventory entries. */ "scope validates commit linkage");
     inventory.commit_ids.insert(commit_id);
     if first_root_observation {
         observe_root(entry, inventory);
@@ -81,7 +81,7 @@ fn observe_entry(
 }
 
 fn observe_root(entry: &BranchSharingScopeEntry, inventory: &mut BranchSharingInventory) {
-    let axes = entry.root.axes().expect("scope validates complete axes");
+    let axes = entry.root.axes().expect(/* Proof: Inspection scope admission validates commit linkage and all root axes before constructing its private inventory entries. */ "scope validates complete axes");
     inventory.reconstructed_region_count = inventory
         .reconstructed_region_count
         .saturating_add(entry.root.region_count() as u64);

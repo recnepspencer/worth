@@ -308,6 +308,7 @@ fn runtime_with_declared_key_identity_registry() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn merge_request() -> MergeExecutionRequest {

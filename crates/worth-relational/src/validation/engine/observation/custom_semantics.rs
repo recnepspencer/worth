@@ -8,38 +8,29 @@ use crate::storage::overlay::CurrentPartitionAccess;
 use super::InvariantObservation;
 
 impl InvariantObservation<'_> {
+    fn custom_suspension_source(&self) -> Option<(&dyn CurrentPartitionAccess, VersionId)> {
+        let version = self.proposal_identity()?.suspension_source_version()?;
+        Some((self.before_image_partition_access()?, version))
+    }
+
     pub(crate) fn custom_uses_suspension_source(&self) -> bool {
-        self.proposal_identity()
-            .and_then(|proposal| proposal.suspension_source_version())
-            .is_some()
-            && self.before_image_partition_access().is_some()
+        self.custom_suspension_source().is_some()
     }
 
     pub(crate) fn custom_enforcement_partition_access(&self) -> &dyn CurrentPartitionAccess {
-        if self.custom_uses_suspension_source() {
-            self.before_image_partition_access()
-                .expect("sealed suspension source exists")
-        } else {
-            self.enforcement_partition_access()
-        }
+        self.custom_suspension_source()
+            .map_or_else(|| self.enforcement_partition_access(), |(source, _)| source)
     }
 
     pub(crate) fn custom_committed_partition_access(&self) -> &dyn CurrentPartitionAccess {
-        if self.custom_uses_suspension_source() {
-            self.before_image_partition_access()
-                .expect("sealed suspension source exists")
-        } else {
-            self.committed_partition_access()
-        }
+        self.custom_suspension_source()
+            .map_or_else(|| self.committed_partition_access(), |(source, _)| source)
     }
 
     pub(crate) fn custom_enforcement_version_id(&self, fallback: VersionId) -> VersionId {
-        if self.custom_uses_suspension_source() {
-            self.proposal_identity()
-                .and_then(|proposal| proposal.suspension_source_version())
-                .expect("sealed suspension source version exists")
-        } else {
-            self.enforcement_version_id(fallback)
-        }
+        self.custom_suspension_source().map_or_else(
+            || self.enforcement_version_id(fallback),
+            |(_, version)| version,
+        )
     }
 }

@@ -13,14 +13,17 @@ fn certification_keeps_owned_admission_error_and_refuses_its_real_heap() {
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(&setup_execution, &runtime, "certification");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.certification.memory".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.certification.memory".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         &setup_execution,
         DerivedIndexBuildRequest {

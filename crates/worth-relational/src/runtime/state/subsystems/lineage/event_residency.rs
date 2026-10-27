@@ -193,17 +193,16 @@ impl EventPageCell {
         match &*state {
             EventPageState::Resident(page) => self.resident_lease(page.clone()).map_err(Into::into),
             EventPageState::Damaged(failure) => Err((*failure).into()),
-            EventPageState::Cold => unreachable!("successful event demand installs its page"),
+            EventPageState::Cold => Err(event_page::failure(
+                &self.descriptor,
+                Cause::SourceUnavailable,
+            )),
         }
     }
 }
 impl EventPageCell {
     fn storage_failure(&self, cause: Cause) -> RelationalStorageUnavailable {
-        let Failure::StorageUnavailable(failure) = event_page::failure(&self.descriptor, cause)
-        else {
-            unreachable!()
-        };
-        failure
+        event_page::storage_failure(&self.descriptor, cause)
     }
     fn resident_lease(
         self: &Arc<Self>,

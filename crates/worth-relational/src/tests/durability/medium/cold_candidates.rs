@@ -26,6 +26,7 @@ fn runtime(
             )],
         })
         .build_durable(attachment)
+        .expect("valid native runtime configuration")
 }
 
 fn recovered(

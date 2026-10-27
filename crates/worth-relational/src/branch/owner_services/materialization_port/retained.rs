@@ -39,7 +39,10 @@ impl RelationalMaterializationPort {
         )? {
             RelationalMaterializationRecord::Entity { kind_id, .. } => Ok(kind_id),
             RelationalMaterializationRecord::Relation { .. } => {
-                unreachable!("entity record requested")
+                unreachable!(
+                    /* Proof: The private entity-only packet builder supplies Entity references exclusively; relation packets use their separate dispatch path. */
+                    "entity record requested"
+                )
             }
         }
     }

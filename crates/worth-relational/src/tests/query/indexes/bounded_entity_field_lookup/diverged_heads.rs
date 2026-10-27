@@ -10,14 +10,17 @@ fn exact_entity_field_lookup_uses_one_branch_root_after_both_heads_diverge() {
     let entity_id = changed_entities(&created)[0];
     let field_locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let exact_value = string_aspect_value("exact-field");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(74),
-        name: "entity.name.branch-root".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: field_locator.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(74),
+            name: "entity.name.branch-root".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: field_locator.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     build_entity_field_generation(execution, &runtime, index.index_id);
     let main_snapshot = snapshot_for_owner_branch(&runtime, &BranchId("main".to_owned()));
 

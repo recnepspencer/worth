@@ -75,7 +75,7 @@ pub(crate) fn plan_checked_invariant_preparation<'state>(
             report,
             ..
         } => {
-            let completed = prefixes.pop().expect("one checked plan");
+            let completed = prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one checked plan");
             Ok((completed.plan, completed.owned_bytes, report))
         }
         ScanOutcome::Stopped {
@@ -116,7 +116,7 @@ fn preparation_ceiling(
         .unwrap_or(u64::MAX);
     lease
         .available_memory_bytes()
-        .expect("the explicit request ceiling supplies finite lineage room")
+        .expect(/* Proof: This branch is entered only with an explicitly finite request memory ceiling; the child lease inherits that finite limit. */ "the explicit request ceiling supplies finite lineage room")
         .saturating_sub(fixed)
         / 2
 }

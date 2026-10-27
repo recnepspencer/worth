@@ -157,7 +157,8 @@ fn published_snapshot_capacity_defers_at_preparation_without_reaching_settlement
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity_outcome(execution, &runtime, "capacity-first");
     let second = create_entity_outcome(execution, &runtime, "capacity-second");
     let before = test_owner_main_basis(&runtime).unwrap();

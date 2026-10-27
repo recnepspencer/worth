@@ -99,7 +99,7 @@ pub(super) fn stage_leased_entity_rows(
         .into_iter()
         .map(|(_, row)| match row {
             ImportStagedRow::Entity { fields } => fields,
-            ImportStagedRow::Relation { .. } => unreachable!("entity packet only"),
+            ImportStagedRow::Relation { .. } => unreachable!(/* Proof: The private entity-only packet builder supplies Entity references exclusively; relation packets use their separate dispatch path. */ "entity packet only"),
         })
         .collect(),
     )

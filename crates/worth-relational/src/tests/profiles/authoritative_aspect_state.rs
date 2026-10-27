@@ -8,7 +8,8 @@ fn fieldless_entity_create_commits_with_absent_authoritative_aspect_state() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         WorkerIntentBatch::new("opaque").push(MutationIntent::Create(CreateIntent::Entity(
@@ -61,10 +62,12 @@ fn authoritative_field_patches_are_order_independent_in_patch_output() {
     .build_registry();
     let left_runtime = RelationalRuntimeApi::builder()
         .schema_registry(order_independent_schema.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let right_runtime = RelationalRuntimeApi::builder()
         .schema_registry(order_independent_schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let mut left_txn = crate::tests::support::test_owner_begin_transaction_for_main(&left_runtime);
     left_txn

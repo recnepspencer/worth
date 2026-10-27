@@ -24,14 +24,17 @@ fn patch_local_field_maintenance_matches_independent_rebuild_and_preserves_prior
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(execution, &runtime, "before");
     let entity = changed_entities(&first)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "maintenance.name".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "maintenance.name".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,
         branch_id: BranchId("main".into()),
@@ -100,14 +103,17 @@ fn exhausted_refresh_and_wrong_before_root_publish_nothing() {
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(execution, &runtime, "first");
     let entity = changed_entities(&first)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "maintenance.denial".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "maintenance.denial".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,
         branch_id: BranchId("main".into()),
@@ -221,7 +227,13 @@ fn ordering_join_and_relation_field_updates_match_rebuild_after_local_changes() 
     ];
     let ids = definitions
         .into_iter()
-        .map(|definition| runtime.index_authority().register(definition).index_id)
+        .map(|definition| {
+            runtime
+                .index_authority()
+                .register(definition)
+                .expect("index fixture has identity capacity")
+                .index_id
+        })
         .collect::<Vec<_>>();
     let request = |commit_id| DerivedIndexBuildRequest {
         source_commit_id: commit_id,

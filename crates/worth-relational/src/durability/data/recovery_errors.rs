@@ -273,3 +273,14 @@ impl DurabilityError {
         self
     }
 }
+
+impl From<crate::storage::data::RelationalStorageUnavailable> for DurabilityError {
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        let mut error = Self::new(
+            RecoveryFailureClass::ColdStorageUnavailable,
+            format!("committed storage unavailable: {failure:?}"),
+        );
+        error.storage_unavailable = Some(failure);
+        error
+    }
+}

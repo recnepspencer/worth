@@ -6,9 +6,9 @@ use crate::validation::data::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct DuplicateCustomInvariantRegistration {
-    pub(crate) identity: CustomInvariantSemanticIdentity,
-    pub(crate) execution_point: InvariantExecutionPoint,
+pub struct DuplicateCustomInvariantRegistration {
+    pub identity: CustomInvariantSemanticIdentity,
+    pub execution_point: InvariantExecutionPoint,
 }
 
 #[derive(Debug, Clone, Default)]

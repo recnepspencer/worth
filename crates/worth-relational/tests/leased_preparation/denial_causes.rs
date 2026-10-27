@@ -8,16 +8,20 @@ fn assert_request_cause(
 ) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (created, _) = support::create_entity(execution, &runtime, "cause-source");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "cause-source.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: support::aspect_field_locator("name"),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "cause-source.name".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: support::aspect_field_locator("name"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let lease = authority()
         .request_lease(request)
         .expect("request policy is admitted");

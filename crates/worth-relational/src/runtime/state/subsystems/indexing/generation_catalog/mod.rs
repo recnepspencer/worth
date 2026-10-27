@@ -47,7 +47,7 @@ impl GenerationCatalog {
             .copied()
             .collect::<Vec<_>>();
         for id in &removals {
-            let generation = self.entries.remove(id).expect("selected retained entry");
+            let generation = self.entries.remove(id).expect(/* Proof: Selection records IDs from this same catalog under exclusive mutation; no intervening removal occurs before consuming the selected entries. */ "selected retained entry");
             self.remove_bindings(&generation);
         }
         removals.len()

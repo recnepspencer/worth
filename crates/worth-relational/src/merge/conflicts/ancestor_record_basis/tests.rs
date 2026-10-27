@@ -74,7 +74,8 @@ fn read_view(
     relations: Vec<RelationReadRecord>,
 ) -> RelationalReadView {
     let runtime =
-        crate::runtime::RelationalRuntime::new(crate::runtime::RelationalRuntimeConfig::default());
+        crate::runtime::RelationalRuntime::new(crate::runtime::RelationalRuntimeConfig::default())
+            .expect("valid native runtime configuration");
     let identity = runtime.main_branch_identity();
     let (_, basis) = runtime.observe_branch(&identity).unwrap();
     let snapshot = runtime

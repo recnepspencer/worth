@@ -117,6 +117,7 @@ fn require_interned_runtime() -> crate::facade::runtime::RelationalRuntime {
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn stage_raw_entity_relation_graph(

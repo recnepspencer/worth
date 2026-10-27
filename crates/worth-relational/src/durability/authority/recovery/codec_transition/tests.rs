@@ -365,7 +365,8 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
                     crate::indexes::data::RelatedEntityOrderingDirection::Ascending,
                 )],
             },
-        });
+        })
+        .expect("index fixture has identity capacity");
     let (mut target, _) = installed(2);
     let initial_id = target.runtime_instance_id();
     let initial_schema = target.config().schema.registry;

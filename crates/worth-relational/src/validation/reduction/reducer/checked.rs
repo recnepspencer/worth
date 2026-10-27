@@ -67,9 +67,9 @@ pub(crate) fn reduce_invariant_execution_checked(
         |child| {
             scan.run(Some(child), (), 0, ceiling, 0, ceiling, |_, input, context| -> Result<((), ReductionOutput), MapKernelFailure<PacketBudgetDenial>> {
             context.checkpoint(0).map_err(MapKernelFailure::Stop)?;
-            let envelopes = input.envelopes.borrow_mut().take().expect("one reduction step");
+            let envelopes = input.envelopes.borrow_mut().take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one reduction step");
             let mut claimed = 0_u64;
-            let reduced = reduce_inner(request, strategy, proof_boundary.borrow_mut().take().expect("one reduction step"), envelopes, |work, bytes| -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
+            let reduced = reduce_inner(request, strategy, proof_boundary.borrow_mut().take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one reduction step"), envelopes, |work, bytes| -> Result<(), MapKernelFailure<PacketBudgetDenial>> {
                 context.checkpoint(work).map_err(MapKernelFailure::Stop)?;
                 claimed = claimed.checked_add(bytes)
                     .filter(|total| *total <= ceiling)
@@ -83,7 +83,7 @@ pub(crate) fn reduce_invariant_execution_checked(
     );
     match outcome {
         ScanOutcome::Complete { mut prefixes, .. } => {
-            Ok(prefixes.pop().expect("one reduction output").reduced)
+            Ok(prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one reduction output").reduced)
         }
         ScanOutcome::Stopped {
             boundary, reason, ..

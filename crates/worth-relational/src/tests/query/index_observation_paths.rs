@@ -94,7 +94,8 @@ fn unique_entity_aspect_field_index_keeps_same_field_key_separate_by_aspect_loca
                 ),
             ],
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let alpha = create_entity_with_aspect_fields(
         execution,
@@ -173,14 +174,17 @@ fn derived_index_build_materializes_latest_visible_entity_field_values() {
     let runtime = runtime_with_test_schema();
     let alpha = create_entity(execution, &runtime, "alpha");
     let create_outcome = update_entity(execution, &runtime, alpha, "gamma");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
 
     let build = runtime.index_authority().build_for_commit(
         execution,
@@ -264,14 +268,17 @@ fn derived_index_build_materializes_declared_struct_field_through_field_projecti
         .commit(execution, &runtime)
         .expect("entity create succeeds");
     let alpha = changed_entities(&outcome)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.summary.title".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("summary"), field_key("title")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.summary.title".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("summary"), field_key("title")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
 
     let build = runtime.index_authority().build_for_commit(
         execution,

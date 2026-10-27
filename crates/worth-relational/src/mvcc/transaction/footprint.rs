@@ -74,7 +74,7 @@ impl RelationalTransactionFootprint {
     ) -> Result<(), Denial> {
         self.reads = self
             .reads
-            .with_inserted(std::iter::once(locus), allocation_policy)?;
+            .with_inserted(std::iter::once(Ok(locus)), allocation_policy)?;
         Ok(())
     }
 

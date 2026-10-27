@@ -129,6 +129,7 @@ fn merge_planning_schema_snapshot_changes_when_schema_semantics_change() {
         RelationalRuntimeApi::builder()
             .schema_registry(registry)
             .build()
+            .expect("valid native runtime configuration")
     }
 
     fn snapshot_digest(

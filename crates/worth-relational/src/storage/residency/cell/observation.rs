@@ -25,7 +25,10 @@ impl RelationalRegionResidency {
                 region.partition.relation_arena.slot_count(),
             ),
             ResidencyState::Damaged { slot_counts } => *slot_counts,
-            _ => unreachable!("a cell without cold backing is born resident"),
+            _ => unreachable!(
+                /* Proof: Cells without cold backing are constructed resident; unload is permitted only when backing exists, so their observation cannot become Cold. */
+                "a cell without cold backing is born resident"
+            ),
         }
     }
     pub(crate) fn resident_inventory(

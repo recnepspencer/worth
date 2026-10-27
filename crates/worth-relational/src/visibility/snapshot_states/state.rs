@@ -113,7 +113,7 @@ impl VisibilitySnapshotBasis {
     pub(crate) fn from_prepared_root(branch_id: BranchId, root: Arc<RelationalBranchRoot>) -> Self {
         let version_id = root
             .canonical_envelope()
-            .expect("prepared commit root has its canonical envelope")
+            .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared commit root has its canonical envelope")
             .commit
             .version_id;
         Self {

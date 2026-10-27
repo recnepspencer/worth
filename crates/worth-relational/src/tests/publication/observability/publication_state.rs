@@ -179,7 +179,10 @@ fn bulk_packets_are_the_primary_read_surface() {
 
     let runtime = runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let plan = runtime
         .storage_access()
         .plan_read_explicit_query_packet(

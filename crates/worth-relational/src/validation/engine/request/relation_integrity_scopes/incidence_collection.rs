@@ -137,7 +137,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 self.check_live()?;
                 self.scopes
                     .get_mut(&metadata.kind_id)
-                    .expect("required relation kind scope must be prepared")
+                    .expect(/* Proof: Scope preparation inserts each required/minimum/deleted relation kind before the corresponding population pass; those private passes do not remove scope entries. */ "required relation kind scope must be prepared")
                     .record_visible_successor(
                         EntityReference::Existing(metadata.source),
                         EntityReference::Existing(metadata.target),

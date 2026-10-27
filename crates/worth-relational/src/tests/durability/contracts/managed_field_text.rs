@@ -57,7 +57,10 @@ fn read_exact(
     let AspectValue::String(InternedString::Symbol(symbol)) = value else {
         panic!("managed text must remain a symbol, never Raw")
     };
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let pinned = runtime
         .read_truth()
         .pin_read_capability(&snapshot, &[], execution)
@@ -98,7 +101,8 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
 
     let recovery_lease = test_execution_lease();
     let execution = &ExecutionRequest::leased(&recovery_lease);
-    let mut restored = crate::runtime::RelationalRuntime::new(recovery_config);
+    let mut restored = crate::runtime::RelationalRuntime::new(recovery_config)
+        .expect("valid native runtime configuration");
     bind_durable_medium(&mut restored, medium.attachment());
     let plan = restored
         .durability()
@@ -217,7 +221,8 @@ fn native_field_text_configuration_requires_current_explicit_readmission() {
     assert_eq!(managed.1.charged_payload_bytes(), Some(JSON.len() as u64));
     let mut config = runtime_with_test_schema().config();
     config.identity.symbol_table = admitted;
-    let restored = crate::runtime::RelationalRuntime::new(config);
+    let restored =
+        crate::runtime::RelationalRuntime::new(config).expect("valid native runtime configuration");
     restored.services.symbols.with_read(|symbols| {
         assert_eq!(symbols.resolve(symbols.symbol(JSON).unwrap()), Some(JSON))
     });

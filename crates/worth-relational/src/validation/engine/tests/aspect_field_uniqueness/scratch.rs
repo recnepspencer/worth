@@ -105,6 +105,7 @@ fn fixture() -> RelationalRuntime {
             )],
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn evaluate(

@@ -86,7 +86,7 @@ pub(super) fn finalize_publication_phase(
     let positioned_commit = runtime
         .history
         .positioned_canonical_commit(commit_id)
-        .expect("performed publication must expose its positioned canonical commit");
+        .expect(/* Proof: Performed publication is issued only after installing the envelope and its positioned owner route; the retained publication witness pins that route. */ "performed publication must expose its positioned canonical commit");
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
         runtime,

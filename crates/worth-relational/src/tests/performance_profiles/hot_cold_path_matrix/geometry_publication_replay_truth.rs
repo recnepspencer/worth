@@ -48,7 +48,10 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
             let hot_commit_micros = hot_commit_started_at.elapsed().as_micros();
             let hot_phase_timing = hot_commit.execution().phase_timing.clone();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let hot_packet = explicit_query_packet(
                 &runtime,
                 &snapshot,
@@ -111,7 +114,10 @@ pub(super) fn certify_geometry_rich_publication_hot_vs_replay_truth(
                 .unwrap();
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
 
-            let recovered_snapshot = recovered.visibility_authority().snapshot();
+            let recovered_snapshot = recovered
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let cold_packet = explicit_query_packet(
                 &recovered,
                 &recovered_snapshot,

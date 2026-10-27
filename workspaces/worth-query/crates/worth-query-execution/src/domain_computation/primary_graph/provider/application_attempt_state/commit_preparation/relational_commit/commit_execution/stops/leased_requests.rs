@@ -150,17 +150,20 @@ fn check_requests(request: LeaseRequest, check: impl Fn(Outcome)) {
 }
 
 fn related_index(runtime: &RelationalRuntime) -> DerivedIndexDefinition {
-    runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "probe.related".to_owned(),
-        branch_scoped: true,
-        kind: DerivedIndexKind::RelatedEntityOrdering {
-            relation_kind: KindId(2),
-            parent_endpoint: RelatedEntityEndpoint::SourceParent,
-            child_kind: KindId(1),
-            ordering: Vec::new(),
-        },
-    })
+    runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "probe.related".to_owned(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(2),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(1),
+                ordering: Vec::new(),
+            },
+        })
+        .expect("index fixture has identity capacity")
 }
 
 fn check_lease(
@@ -170,7 +173,8 @@ fn check_lease(
 ) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let created = transaction(&runtime, "source")
         .commit(execution, &runtime)
         .unwrap();
@@ -317,7 +321,8 @@ fn healthy_fixture_completes_both_leased_preparations() {
         || {
             let runtime = RelationalRuntimeApi::builder()
                 .schema_registry(schema())
-                .build();
+                .build()
+                .expect("valid native runtime configuration");
             let created = transaction(&runtime, "source")
                 .commit(
                     &worth_execution::ExecutionRequest::serial(

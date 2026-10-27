@@ -62,6 +62,7 @@ pub(super) fn fixture_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn string_field_aspect(aspect: &str, field: &str, identity: u64) -> DeclaredAspectContractBinding {

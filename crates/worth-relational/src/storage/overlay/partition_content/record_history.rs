@@ -11,7 +11,7 @@ pub(super) fn update<K: RecordKind>(
 where
     K::Meta: serde::Serialize,
 {
-    let physical = arena.physical_index(slot).expect("selected record exists");
+    let physical = arena.physical_index(slot).expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "selected record exists");
     let prefix = arena.history_prefixes[physical].as_ref();
     let old_physical = previous.and_then(|old| old.physical_index(slot));
     let old_prefix = previous

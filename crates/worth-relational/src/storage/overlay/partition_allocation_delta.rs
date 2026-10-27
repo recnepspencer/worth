@@ -59,7 +59,7 @@ fn update(prior: u64, removed: u64, introduced: u64) -> u64 {
     prior
         .checked_sub(removed)
         .and_then(|bytes| bytes.checked_add(introduced))
-        .expect("owner allocation delta must fit its prior inventory")
+        .expect(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ "owner allocation delta must fit its prior inventory")
 }
 
 #[derive(Default)]

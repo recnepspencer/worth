@@ -104,7 +104,7 @@ fn prepare_policy_value_locator_for_canonical_basis(
     locator: &AspectValueLocator,
 ) -> Option<CanonicalBasisReadyArtifact> {
     let version = CanonicalizationRuleVersion::new("worth.relational.merge.policy_value_basis.v1")
-        .expect("policy value basis canonicalization version is static and non-empty");
+        .expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "policy value basis canonicalization version is static and non-empty");
     match prepare_locator_for_canonical_basis(
         version,
         CanonicalLocatorInput::Value(locator.clone()),

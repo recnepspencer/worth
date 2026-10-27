@@ -108,7 +108,7 @@ fn partition_region_locators(
                     locator.owner_id(),
                     locator
                         .partition_id()
-                        .expect("partition allocation locator"),
+                        .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "partition allocation locator"),
                 )
             })
         })

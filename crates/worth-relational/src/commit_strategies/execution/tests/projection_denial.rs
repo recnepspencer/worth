@@ -32,8 +32,12 @@ fn projection_contract_violation_is_typed_not_panic_bucket() {
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
-        .build();
-    let snapshot = runtime.visibility_authority().snapshot();
+        .build()
+        .expect("valid native runtime configuration");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let request = canonical_request();
 
     let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");

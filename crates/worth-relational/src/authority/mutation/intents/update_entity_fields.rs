@@ -68,7 +68,7 @@ pub(super) fn apply(
         let mut updated_extra = partition
             .entity_arena
             .extra_at(slot)
-            .expect("entity field update requires a materialized slot")
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity field update requires a materialized slot")
             .clone();
         updated_extra.authoritative_aspect_state = new_authoritative_aspect_state.clone();
         partition

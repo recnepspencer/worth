@@ -102,7 +102,7 @@ where
         let stream_index = head.stream_index;
         let (key, item) = current[stream_index]
             .take()
-            .expect("merge head must reference a current stream item");
+            .expect(/* Proof: A heap entry is inserted only together with its current stream item; popping removes that entry before taking the item, then installs both successors together. */ "merge head must reference a current stream item");
         merged.push((key, item));
         if let Some((next_key, next_item)) = iterators[stream_index].next() {
             heap.push(MergeHead {

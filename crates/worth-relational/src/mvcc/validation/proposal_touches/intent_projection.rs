@@ -126,7 +126,10 @@ fn project_entity(
     match intent {
         EntityMutationIntent::UpdateFields(spec) => project_fields(kind, &spec.fields, touches),
         EntityMutationIntent::ApplyAspectPatch(_) => {
-            unreachable!("candidate dispatch owns whole-struct state")
+            unreachable!(
+                /* Proof: The enclosing private dispatcher has already handled whole-struct effects and admits only this field-effect discriminant to this function. */
+                "candidate dispatch owns whole-struct state"
+            )
         }
         EntityMutationIntent::Replace(_) => {
             touches.insert(ValidatedMutationTouch::UnrepresentableEntityMutation { kind });

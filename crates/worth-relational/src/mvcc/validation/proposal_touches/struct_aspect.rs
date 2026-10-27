@@ -14,7 +14,7 @@ pub(super) fn project<'p>(
     work: &mut ValidatedMutationTouchProjectionWork,
 ) -> Result<(), ValidatedMutationTouchProjectionError> {
     let EntityMutationIntent::ApplyAspectPatch(spec) = intent else {
-        unreachable!()
+        unreachable!(/* Proof: The enclosing private dispatcher has already handled whole-struct effects and admits only this field-effect discriminant to this function. */ )
     };
     work.owner_state_lookups += 1;
     let kind = proposal

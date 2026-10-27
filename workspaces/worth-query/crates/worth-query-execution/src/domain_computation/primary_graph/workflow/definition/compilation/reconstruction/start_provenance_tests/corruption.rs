@@ -170,7 +170,8 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
     }
     removed += remove_started_field(&mut arena.extra[slot].authoritative_aspect_state);
     assert!(removed > 0);
-    let mut target = RelationalRuntime::new(config.clone());
+    let mut target =
+        RelationalRuntime::new(config.clone()).expect("valid native runtime configuration");
     let before = native_snapshot(&target);
     let error = target
         .durability_recovery()
@@ -212,7 +213,8 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
         .symbol_table
         .entries
         .retain(|(_, value)| value.as_str() != text);
-    let mut unresolved_target = RelationalRuntime::new(unresolved_config);
+    let mut unresolved_target =
+        RelationalRuntime::new(unresolved_config).expect("valid native runtime configuration");
     let untouched = native_snapshot(&unresolved_target);
     let error = unresolved_target
         .durability_recovery()

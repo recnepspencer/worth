@@ -1,3 +1,4 @@
+// Frontier writers compute both checked ends before replacing either scalar; unwinding cannot publish a partial pair.
 use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Clone, Copy)]
@@ -25,7 +26,7 @@ impl LineageIdentityAllocator {
         let frontier = *self
             .frontier
             .lock()
-            .expect("lineage identity allocator lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         Self {
             frontier: Arc::new(Mutex::new(frontier)),
         }
@@ -39,7 +40,7 @@ impl LineageIdentityAllocator {
         let mut frontier = self
             .frontier
             .lock()
-            .expect("lineage identity allocator lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         let lineage_end = checked_end(frontier.next_lineage_id, lineage_width, "lineage id")?;
         let event_end = checked_end(frontier.next_event_id, event_width, "lineage event id")?;
         let starts = (frontier.next_lineage_id, frontier.next_event_id);
@@ -52,7 +53,7 @@ impl LineageIdentityAllocator {
         let frontier = self
             .frontier
             .lock()
-            .expect("lineage identity allocator lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         (frontier.next_lineage_id, frontier.next_event_id)
     }
 
@@ -60,7 +61,7 @@ impl LineageIdentityAllocator {
         let mut frontier = self
             .frontier
             .lock()
-            .expect("lineage identity allocator lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         frontier.next_lineage_id = next_lineage_id;
         frontier.next_event_id = next_event_id;
     }
@@ -69,7 +70,7 @@ impl LineageIdentityAllocator {
         let mut frontier = self
             .frontier
             .lock()
-            .expect("lineage identity allocator lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         if let Some(next_lineage_id) = next_lineage_id {
             frontier.next_lineage_id = frontier.next_lineage_id.max(next_lineage_id);
         }

@@ -54,8 +54,9 @@ fn unavailable_predicate_snapshot_keeps_masters_kind_and_field_subject() {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let runtime =
-                worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+            let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration");
 
             let read = match read_bounded_root_rows(
                 &runtime,
@@ -125,8 +126,9 @@ fn unavailable_root_path_snapshot_keeps_masters_kind_and_query_subject() {
                     current_controls(&scope),
                 )
                 .unwrap();
-            let runtime =
-                worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+            let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration");
 
             let read = match read_bounded_root_rows(
                 &runtime,

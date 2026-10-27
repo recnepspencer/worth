@@ -1,3 +1,5 @@
+mod registration_denial;
+pub use registration_denial::DerivedIndexRegistrationDenial;
 mod entity_field_page;
 pub use entity_field_page::{
     BoundedEntityFieldBoundary, BoundedEntityFieldPage, BoundedEntityFieldPageStop,

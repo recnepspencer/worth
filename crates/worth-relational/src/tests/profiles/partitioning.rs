@@ -168,7 +168,10 @@ fn cross_context_relations_preserve_partitioned_endpoints() {
         "bridge",
         PartitionId(29),
     );
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)
@@ -211,7 +214,8 @@ fn cross_context_relations_respect_relation_kind_policy() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema_registry)
         .cross_context_policy(CrossContextPolicy::SchemaControlled)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity_in_partition(execution, &runtime, "left", PartitionId(7));
     let target = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

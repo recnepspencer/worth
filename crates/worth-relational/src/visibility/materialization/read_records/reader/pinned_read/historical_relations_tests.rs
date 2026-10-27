@@ -29,7 +29,14 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
         create_endpoint_deletion_relation_fixture(&execution, &runtime, "audit-edge");
     let before = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &execution)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted"),
+            &[],
+            &execution,
+        )
         .unwrap();
     let frontier = BTreeSet::from([source]);
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
@@ -44,7 +51,14 @@ fn pinned_audit_frontier_retains_deleted_target_identity_without_reviving_live_v
     transaction.commit(&execution, &runtime).unwrap();
     let after = runtime
         .read_truth()
-        .pin_read_capability(&runtime.visibility_authority().snapshot(), &[], &execution)
+        .pin_read_capability(
+            &runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted"),
+            &[],
+            &execution,
+        )
         .unwrap();
     let old = before
         .bounded_outgoing_relations_for_frontier(&execution, &frontier, KindId(2), Some(8))

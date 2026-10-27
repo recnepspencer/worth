@@ -110,7 +110,7 @@ where
                 ceiling,
                 |_, input, context| {
                     context.checkpoint(0)?;
-                    let streams = input.streams.borrow_mut().take().expect("one merge step");
+                    let streams = input.streams.borrow_mut().take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one merge step");
                     let (merged, owned_bytes) = merge_checked(
                         streams,
                         context,
@@ -136,7 +136,7 @@ where
     );
     match outcome {
         ScanOutcome::Complete { mut prefixes, .. } => {
-            Ok(prefixes.pop().expect("one merge output").items)
+            Ok(prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one merge output").items)
         }
         ScanOutcome::Stopped {
             boundary, reason, ..
@@ -233,7 +233,7 @@ where
         let stream_index = head.stream_index;
         let (key, item) = current[stream_index]
             .take()
-            .expect("merge head references a current item");
+            .expect(/* Proof: A heap entry is inserted only together with its current stream item; popping removes that entry before taking the item, then installs both successors together. */ "merge head references a current item");
         merged.push(project(key, item));
         if let Some((next_key, next_item)) = iterators[stream_index].next() {
             cloned_key_bytes = cloned_key_bytes.saturating_add(key_clone_bytes(&next_key));

@@ -1,3 +1,4 @@
+// Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use crate::diagnostics::data::{
     DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticsEntry,
 };
@@ -170,7 +171,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                         .instrumentation
                         .complexity_counters
                         .lock()
-                        .expect("complexity counter lock poisoned");
+                        .unwrap_or_else(|error| error.into_inner());
                     counters.retention_entity_slots_scanned += 1;
                 },
                 &mut reclaimed,
@@ -193,7 +194,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                         .instrumentation
                         .complexity_counters
                         .lock()
-                        .expect("complexity counter lock poisoned");
+                        .unwrap_or_else(|error| error.into_inner());
                     counters.retention_relation_slots_scanned += 1;
                 },
                 &mut reclaimed,

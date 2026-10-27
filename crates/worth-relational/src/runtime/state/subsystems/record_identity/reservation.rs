@@ -51,7 +51,7 @@ impl RecordSlotReservation {
         let mut state = self
             .authority
             .lock()
-            .expect("record identity lock poisoned");
+            .expect(/* Proof: The identity mutex protects only native checked reservations and container updates, with no user code or fallible I/O under its guard; overflow returns before mutation. */ "record identity lock poisoned");
         let key = (self.class, self.partition_id, self.slot);
         let exact = state
             .pending
@@ -71,7 +71,7 @@ impl Drop for RecordSlotReservation {
         let mut state = self
             .authority
             .lock()
-            .expect("record identity lock poisoned");
+            .expect(/* Proof: The identity mutex protects only native checked reservations and container updates, with no user code or fallible I/O under its guard; overflow returns before mutation. */ "record identity lock poisoned");
         let key = (self.class, self.partition_id, self.slot);
         let exact = state
             .pending

@@ -41,7 +41,8 @@ fn native_field_text_missing_tail_dictionary_refuses_without_target_or_source_ef
         );
     });
     let malformed = medium.artifact_bytes(tail_position).unwrap();
-    let mut target = crate::runtime::RelationalRuntime::new(config);
+    let mut target =
+        crate::runtime::RelationalRuntime::new(config).expect("valid native runtime configuration");
     bind_durable_medium(&mut target, medium.attachment());
     let identity = target.main_branch_identity();
     let before = target.observe_branch(&identity).unwrap().0;

@@ -234,7 +234,10 @@ fn packetized_plan_key_is_deterministic_for_identical_inputs() {
 #[test]
 fn empty_runtime_query_planning_uses_explicit_genesis_basis() {
     let runtime = runtime_with_test_schema();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let context = runtime
         .read_truth()

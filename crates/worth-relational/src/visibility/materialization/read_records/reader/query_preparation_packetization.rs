@@ -322,7 +322,7 @@ pub(super) fn prepare_traversal_packets(
                     max_depth: *max_depth,
                 }
             }
-            _ => unreachable!("traversal scope checked above"),
+            _ => unreachable!(/* Proof: The traversal-scope discriminant was matched and returned above; this branch can see only the retained selected scope. */ "traversal scope checked above"),
         });
     }
     Ok(packets)

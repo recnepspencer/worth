@@ -94,12 +94,8 @@ fn requested_read_denial(
         Stop::Execution(cause) => {
             crate::domain_computation::primary_graph::output_reuse::read_denial(cause).kind()
         }
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
-        Stop::PreparationMemoryExhausted { .. }
-        | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCapacityExhausted { .. } => {
+        Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        Stop::PreparationMemoryCounterOverflow => {
             WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded
         }
         Stop::Interrupted(event) => match event.interruption() {

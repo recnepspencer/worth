@@ -7,7 +7,8 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (seed, entity_id) = support::create_entity(execution, &runtime, "main-seed");
     let (_, fork_basis) = runtime

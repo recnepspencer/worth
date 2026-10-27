@@ -8,7 +8,10 @@ fn planned_query_execution_supports_aspect_filtered_entity_scans_through_reducer
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let left = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
     let right = create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -77,7 +80,10 @@ fn planned_query_execution_aspect_filter_requires_projected_authoritative_presen
         "declared-without-status",
         PartitionId(7),
     );
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -134,7 +140,10 @@ fn planned_query_execution_aspect_filter_supports_field_mask_presence() {
     .build_runtime();
     let matched = create_entity_with_summary_title(execution, &runtime, "matched", "visible-title");
     create_entity_in_partition(execution, &runtime, "missing-summary", PartitionId(7));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -196,7 +205,10 @@ fn planned_query_execution_supports_aspect_filtered_relation_scans_through_reduc
         create_relation_in_partition(execution, &runtime, left, right, "r1", PartitionId(7));
     let second_relation =
         create_relation_in_partition(execution, &runtime, right, third, "r2", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)

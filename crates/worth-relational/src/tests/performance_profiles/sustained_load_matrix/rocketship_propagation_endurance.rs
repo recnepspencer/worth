@@ -50,7 +50,10 @@ pub(super) fn certify_rocketship_propagation_endurance(
                 let update_micros = update_started_at.elapsed().as_micros();
                 total_update_micros += update_micros;
 
-                let snapshot = runtime.visibility_authority().snapshot();
+                let snapshot = runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted");
                 let context = runtime
                     .read_truth()
                     .query_plan_context(&snapshot)

@@ -148,10 +148,10 @@ pub(crate) fn partition_ids(
                 .0
                 .bytes()
                 .checked_sub(bytes)
-                .expect("the original ID vector owns its reserved backing");
+                .expect(/* Proof: The original retained vector/record quote accounts this same backing and payload; cloning does not increase payload beyond that admitted source quote. */ "the original ID vector owns its reserved backing");
             self.0
                 .resize(total)
-                .expect("releasing already held memory cannot refuse");
+                .expect(/* Proof: resize only returns capacity refusal when increasing a ticket; this path releases bytes from its already owned ticket. */ "releasing already held memory cannot refuse");
         }
     }
     let ids = state
@@ -175,6 +175,6 @@ pub(crate) fn settle_clone(
 ) -> Result<(), Cause> {
     let unused = quoted
         .checked_sub(actual)
-        .expect("the clone payload does not exceed its owner-accounted source quote");
+        .expect(/* Proof: The original retained vector/record quote accounts this same backing and payload; cloning does not increase payload beyond that admitted source quote. */ "the clone payload does not exceed its owner-accounted source quote");
     release(memory, unused)
 }

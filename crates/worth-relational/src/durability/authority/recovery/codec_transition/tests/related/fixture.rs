@@ -142,20 +142,23 @@ fn build_world(
         let (outputs, relations) = produce(execution, &runtime, &receipt, 1);
         (outputs, relations, None)
     };
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: ORDER,
-        name: "unchanged ordered derived children".into(),
-        branch_scoped: true,
-        kind: DerivedIndexKind::RelatedEntityOrdering {
-            relation_kind: KindId(4),
-            parent_endpoint: RelatedEntityEndpoint::SourceParent,
-            child_kind: KindId(3),
-            ordering: vec![RelatedEntityOrderingField::new(
-                locator("order"),
-                RelatedEntityOrderingDirection::Ascending,
-            )],
-        },
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: ORDER,
+            name: "unchanged ordered derived children".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(4),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(3),
+                ordering: vec![RelatedEntityOrderingField::new(
+                    locator("order"),
+                    RelatedEntityOrderingDirection::Ascending,
+                )],
+            },
+        })
+        .expect("index fixture has identity capacity");
     assert_eq!(index.index_id, ORDER);
     build_index(execution, &runtime);
     (

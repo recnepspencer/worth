@@ -26,7 +26,10 @@ impl ProjectionRecordReader<'_> {
         };
         let mut records = Vec::new();
         match visibility {
-            KindScanVisibility::Live => unreachable!("current reads returned through Head"),
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current reads returned through Head"
+            ),
             KindScanVisibility::AtVersion(version) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.entity_arena,
@@ -114,7 +117,10 @@ impl ProjectionRecordReader<'_> {
         };
         let mut records = Vec::new();
         match visibility {
-            KindScanVisibility::Live => unreachable!("current reads returned through Head"),
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current reads returned through Head"
+            ),
             KindScanVisibility::AtVersion(version) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.relation_arena,

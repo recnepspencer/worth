@@ -84,7 +84,10 @@ fn perf_cad_topology_matrix() {
             );
             let bridge_commit_micros = bridge_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let explicit_targets = vec![
                 RecordRef::Entity(nose[1]),
                 RecordRef::Entity(nose[2]),

@@ -206,7 +206,6 @@ pub enum RelationalPublicationDenial {
         actual_runtime_instance_id: u64,
     },
     OwnerMismatch,
-    BranchUnavailable,
     Archived,
     Deleting,
     /// The durable medium refused the commit before any durable effect; it

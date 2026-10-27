@@ -110,10 +110,12 @@ impl PreparedResidentRegion {
             &previous.partition.relation_arena,
             &journal.relation_slots,
         );
-        let unavailable_records = basis
-            .unavailable_records
-            .checked_add_signed(delta)
-            .expect("journal lifecycle delta must fit its previous region");
+        let unavailable_records = basis.unavailable_records.checked_add_signed(delta).ok_or(
+            RegionContentFailure::Storage(RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Region(partition.partition_id),
+                cause: RelationalStorageUnavailableCause::IntegrityMismatch,
+            }),
+        )?;
         let kind_commitment = RelationalRegionKindCommitment::capture(&partition)
             .map_err(|_| RegionContentFailure::Adjacency)?;
         let entity_slots = partition.entity_arena.slot_count();

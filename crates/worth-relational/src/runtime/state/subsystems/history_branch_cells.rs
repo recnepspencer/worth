@@ -71,10 +71,10 @@ impl HistorySubsystem {
                         let previous_root = existing
                             .get(cell.identity().branch_id())
                             .and_then(RelationalBranchReferenceCell::root)
-                            .expect("live empty branch retains its pre-transition root");
+                            .expect(/* Proof: The transition walks the live branch cells under the owner lock and installs a schema root for every empty cell before reading either selected root. */ "live empty branch retains its pre-transition root");
                         let next_root = cell
                             .root()
-                            .expect("transitioned empty branch retains its schema root");
+                            .expect(/* Proof: The transition walks the live branch cells under the owner lock and installs a schema root for every empty cell before reading either selected root. */ "transitioned empty branch retains its schema root");
                         self.reserve_branch_head_retirement(
                             cell.identity(),
                             &previous_root,

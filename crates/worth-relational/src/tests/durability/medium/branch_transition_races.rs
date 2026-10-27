@@ -23,7 +23,8 @@ fn runtime() -> (
         .build_durable(Box::new(SlowFirstPublication {
             contents: contents.attachment(),
             gate: Arc::clone(&gate),
-        }));
+        }))
+        .expect("valid native runtime configuration");
     let request = crate::test_execution_policy::serial_request();
     create_entity(&ExecutionRequest::serial(&request), &runtime, "source");
     create_branch_from_main(&runtime, "other");

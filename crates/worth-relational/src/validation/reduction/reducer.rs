@@ -28,7 +28,7 @@ pub(crate) fn reduce_invariant_execution(
     reduce_inner(request, strategy, proof_boundary, envelopes, |_, _| {
         Ok::<(), ()>(())
     })
-    .expect("unleased reduction has no execution ceiling")
+    .expect(/* Proof: This adapter supplies an always-Ok accounting closure; reduce_inner can return Err only from that closure. */ "unleased reduction has no execution ceiling")
 }
 
 /// The checked caller supplies an admitted checkpoint and capacity claim.
@@ -47,12 +47,12 @@ pub(super) fn reduce_inner<E>(
         let left_identity = &left
             .results
             .first()
-            .expect("worker envelope has a result")
+            .expect(/* Proof: The private worker envelope constructor emits one result even for a failed invariant; empty envelopes are never scheduled for reduction. */ "worker envelope has a result")
             .result_identity;
         let right_identity = &right
             .results
             .first()
-            .expect("worker envelope has a result")
+            .expect(/* Proof: The private worker envelope constructor emits one result even for a failed invariant; empty envelopes are never scheduled for reduction. */ "worker envelope has a result")
             .result_identity;
         (&left.reduction_key, left_identity, left.packet_index).cmp(&(
             &right.reduction_key,

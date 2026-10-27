@@ -99,7 +99,11 @@ pub(super) fn definition_world() -> DefinitionWorld {
 pub(super) fn definition_world_with_bridge_budget(
     retention: worth_runtime_bridge::facade::BridgeConditionalRetentionBudget,
 ) -> DefinitionWorld {
-    let relational = Arc::new(RelationalRuntimeApi::builder().build());
+    let relational = Arc::new(
+        RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration"),
+    );
     let relational_identity = relational.main_branch_identity();
     let (_, relational_basis) = relational.observe_branch(&relational_identity).unwrap();
     let source = RuntimeBridgeRelationalSource::for_graph_role(

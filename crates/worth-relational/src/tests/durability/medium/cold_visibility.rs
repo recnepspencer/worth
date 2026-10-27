@@ -75,7 +75,8 @@ fn cold_and_warm_visibility_preserve_an_observation_across_a_later_commit() {
     let mut runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
-        .build_durable(attachment);
+        .build_durable(attachment)
+        .expect("valid native runtime configuration");
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

@@ -113,6 +113,13 @@ impl EventPageVisitor<'_, '_, '_> {
 }
 
 pub(super) fn failure(descriptor: &RelationalCheckpointLineageEventPage, cause: Cause) -> Failure {
+    storage_failure(descriptor, cause).into()
+}
+
+pub(super) fn storage_failure(
+    descriptor: &RelationalCheckpointLineageEventPage,
+    cause: Cause,
+) -> RelationalStorageUnavailable {
     RelationalStorageUnavailable {
         subject: RelationalStorageSubject::Lineage {
             first: crate::identity::data::LineageId(descriptor.first_node),
@@ -120,7 +127,6 @@ pub(super) fn failure(descriptor: &RelationalCheckpointLineageEventPage, cause: 
         },
         cause,
     }
-    .into()
 }
 
 fn valid_event_shape(event: &crate::lineage::data::LineageEventRecord) -> bool {

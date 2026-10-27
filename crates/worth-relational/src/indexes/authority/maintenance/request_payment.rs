@@ -70,7 +70,7 @@ pub(super) fn run<T>(
             LAST_ALLOCATION_BYTES.with(|bytes| bytes.set(memory.bytes()));
             match outcome {
                 ScanOutcome::Complete { .. } => prepared
-                    .expect("singleton scan prepared one maintenance pass")
+                    .expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "singleton scan prepared one maintenance pass")
                     .map(|value| MaintenancePreparation {
                         value,
                         _memory: memory,
@@ -82,9 +82,9 @@ pub(super) fn run<T>(
                             ..
                         },
                     ..
-                } => match prepared.expect("the failed pass retained its denial") {
+                } => match prepared.expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the failed pass retained its denial") {
                     Err(denial) => Err(denial),
-                    Ok(_) => unreachable!("a domain failure carries the preparation refusal"),
+                    Ok(_) => unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "a domain failure carries the preparation refusal"),
                 },
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
                     MapStop::Admission(denial) => execution::denial::lease_denial(denial),
@@ -97,7 +97,7 @@ pub(super) fn run<T>(
                         MapKernelFailure::Panic => Cause::WorkerFailed,
                         MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
                         MapKernelFailure::Domain(()) => {
-                            unreachable!("the preparation denial is returned above")
+                            unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the preparation denial is returned above")
                         }
                     },
                 })),

@@ -52,7 +52,11 @@ pub(super) struct RealFixture {
 }
 
 pub(super) fn real_fixture(unique_pin_limit: u64, reservation_limit: u64) -> RealFixture {
-    let relational_runtime = Arc::new(RelationalRuntimeApi::builder().build());
+    let relational_runtime = Arc::new(
+        RelationalRuntimeApi::builder()
+            .build()
+            .expect("valid native runtime configuration"),
+    );
     let relational_port = relational_runtime.owner_component_services().basis_port();
     let relational_identity = relational_runtime.main_branch_identity();
     let (_, relational) = relational_runtime

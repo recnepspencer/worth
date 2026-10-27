@@ -54,7 +54,11 @@ fn budgeted_observer_matches_ordinary_authorization_and_held_old_root() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let ordinary = fixture
         .runtime
         .observe_authorization(
@@ -92,7 +96,11 @@ fn budgeted_currentness_preserves_legacy_result_and_carried_refusal() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let evidence = fixture
         .runtime
         .observe_authorization(
@@ -175,7 +183,11 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let observe = |budget: &mut Budget| {
         fixture.runtime.observe_authorization_budgeted(
             allow_plan(snapshot.clone(), fixture.principal, fixture.scope, []),
@@ -214,7 +226,12 @@ fn carried_stop_survives_initial_and_late_work_or_preparation_exhaustion() {
     ));
     assert!(bytes.bytes < measured.bytes);
     assert_eq!(
-        fixture.runtime.visibility_authority().snapshot().version_id,
+        fixture
+            .runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted")
+            .version_id,
         snapshot.version_id
     );
 }
@@ -226,7 +243,11 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
 
     use crate::runtime::RelationalBorrowedRecordReadDenial;
     let fixture = authorization_fixture(execution);
-    let snapshot = fixture.runtime.visibility_authority().snapshot();
+    let snapshot = fixture
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let reconstructed = fixture
         .runtime
         .read_truth()

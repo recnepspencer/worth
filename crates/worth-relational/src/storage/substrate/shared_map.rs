@@ -154,7 +154,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapEntry<'a, K, V> {
         if !self.map.contains_key(&self.key) {
             self.map.insert(self.key, value());
         }
-        self.map.get_mut(&self.key).expect("entry was installed")
+        self.map.get_mut(&self.key).expect(/* Proof: The entry constructor installs this key before returning its exclusive entry handle; the handle exposes no removal operation. */ "entry was installed")
     }
     pub(crate) fn or_insert(self, value: V) -> &'a mut V {
         self.or_insert_with(|| value)

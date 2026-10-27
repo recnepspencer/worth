@@ -156,7 +156,8 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
                     crate::indexes::data::RelatedEntityOrderingDirection::Ascending,
                 )],
             },
-        });
+        })
+        .expect("index fixture has identity capacity");
     let (mut target, _) = installed(2);
     let before = capture(&target);
     let owner = target.runtime_instance_id();

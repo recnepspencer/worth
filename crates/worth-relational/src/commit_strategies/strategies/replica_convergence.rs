@@ -210,7 +210,7 @@ impl ReplicaConvergenceStrategy {
         existing: &StrategyEntityAspectReadRecord,
         desired_replicas: u64,
     ) -> Result<PlannedReplicaFieldPatch, StrategyExecutorFailure> {
-        let replicas = FieldKey::new("replicas").expect("static field key must be valid");
+        let replicas = FieldKey::new("replicas").expect(/* Proof: This constructor receives a fixed nonempty literal in the required grammar and version/domain; it has no runtime-dependent input. */ "static field key must be valid");
         let aspect_key =
             Self::require_lowered_entity_scalar_field(observation, existing, &replicas)?;
         let target = crate::transactions::data::planned_single_field_locator(aspect_key, replicas);
@@ -255,7 +255,12 @@ impl CommitStrategyExecutor for ReplicaConvergenceStrategy {
                 input.entity_id,
                 [replica_field_patch.target.aspect().aspect_key().clone()],
             )?
-            .expect("entity was visible during strategy basis read");
+            .ok_or_else(|| {
+                StrategyExecutorFailure::new(
+                    StrategyExecutorFailureClass::DomainRejection,
+                    "strategy target is unavailable in its selected basis",
+                )
+            })?;
         let desired_replicas_comparison_key =
             authoritative_aspect_value_field_comparison_key(&replica_field_patch.desired_value);
 

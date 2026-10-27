@@ -310,7 +310,8 @@ fn prepared_root_cost_is_observational_and_system_publication_remains_current() 
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let before = test_owner_main_basis(&runtime).unwrap();
     let mut transaction = runtime
         .begin_branch_transaction(&before, RelationalTransactionIntent::ordinary())

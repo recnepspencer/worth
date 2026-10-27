@@ -36,7 +36,8 @@ pub use borrowed_records::{
 };
 pub use contracts::{
     ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
-    ProjectionAspectScope,
+    ProjectionAspectScope, ProjectionContractRefusal, ProjectionRecordDomain,
+    RelationalProjectionContractDenial,
 };
 pub use entity_retirement::RelationalEntityRetirement;
 pub use projection_records::{

@@ -25,7 +25,7 @@ pub(super) fn at_source(
     let origin = birth
         .required_output_origin
         .as_deref()
-        .expect("validated actual producer birth");
+        .expect(/* Proof: Closure admission validates the actual producer birth and complete sorted membership before constructing this private capture; this lookup uses an admitted member ID. */ "validated actual producer birth");
     let positions = &basis.inner.root.output_publication_positions;
     let position = match positions.get(&origin.meaning, context)? {
         Some(position) => Some(position),

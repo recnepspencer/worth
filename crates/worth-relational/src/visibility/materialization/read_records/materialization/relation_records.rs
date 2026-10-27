@@ -32,7 +32,7 @@ pub(crate) fn materialize_current_authoritative_relation_record(
         created_at_version: partition
             .relation_arena
             .created_at_for_slot(slot)
-            .expect("visible relation slot has creation metadata"),
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible relation slot has creation metadata"),
         retired_at_version: relation_slot.retired_at(),
         source: endpoints.source,
         target: endpoints.target,

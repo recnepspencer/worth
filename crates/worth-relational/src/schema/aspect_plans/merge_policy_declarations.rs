@@ -66,7 +66,7 @@ fn validate_policy_contract(
     let aspect = aspects
         .iter()
         .find(|aspect| aspect.aspect_key() == declaration.aspect_key)
-        .expect("merge policy declaration references existing declared aspect");
+        .expect(/* Proof: Schema admission resolves each merge-policy declaration against its declared aspect list before constructing this plan; that list is immutable here. */ "merge policy declaration references existing declared aspect");
     match declaration.policy {
         AspectMergePolicyKind::FailOnConflict | AspectMergePolicyKind::PreferRicher => Ok(()),
         AspectMergePolicyKind::LastWriterWins => {

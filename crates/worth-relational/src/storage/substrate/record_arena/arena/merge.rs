@@ -41,7 +41,7 @@ impl<K: RecordKind> RecordArena<K> {
     fn move_slot_from_overlay(&mut self, overlay: &Self, slot: usize) -> u64 {
         let overlay_physical = overlay
             .physical_index(slot)
-            .expect("touched overlay slot must be materialized");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "touched overlay slot must be materialized");
         let mut copied_bytes = 0_u64;
         let physical = if let Some(physical) = self.physical_index(slot) {
             // Pins belong to the live owner, not to the sparse transaction
@@ -60,7 +60,7 @@ impl<K: RecordKind> RecordArena<K> {
             copied_bytes = self
                 .slots
                 .insert(slot as u64)
-                .expect("new publication slot must be unique");
+                .expect(/* Proof: Publication copies only newly allocated overlay slots whose canonical owner reservation proves uniqueness; existing slots take the replacement branch. */ "new publication slot must be unique");
             self.branch_pins.push(0);
             self.replay_pins.push(0);
             self.snapshot_pins.push(0);

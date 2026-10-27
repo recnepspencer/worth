@@ -32,7 +32,7 @@ impl<'runtime> InspectionAccess<'runtime> {
             | HistoricalInspectionMode::AllowCanonicalReconstruction => {
                 let read_view = self
                     .read_view_for_scope(execution, &InspectionScope::Version(version_id))?
-                    .expect("version scope should always open a read view");
+                    .expect(/* Proof: Version scope dispatch always returns Some(read_view) on success; the optional None result belongs only to scopes that do not read records. */ "version scope should always open a read view");
                 let availability = if direct_available {
                     InspectionAvailability::Direct
                 } else {

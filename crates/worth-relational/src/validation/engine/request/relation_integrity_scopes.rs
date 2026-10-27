@@ -229,7 +229,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             if kinds.contains(&kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
-                    .expect("minimum scope prepared")
+                    .expect(/* Proof: Scope preparation inserts each required/minimum/deleted relation kind before the corresponding population pass; those private passes do not remove scope entries. */ "minimum scope prepared")
                     .created_candidate_entities
                     .insert(created.clone());
             }
@@ -250,7 +250,7 @@ impl<'access, 'runtime, 'scope, 'authority>
             if kinds.contains(&metadata.kind_id) {
                 self.scopes
                     .get_mut(relation_kind)
-                    .expect("minimum scope prepared")
+                    .expect(/* Proof: Scope preparation inserts each required/minimum/deleted relation kind before the corresponding population pass; those private passes do not remove scope entries. */ "minimum scope prepared")
                     .minimum_touched_entities
                     .insert(entity_id);
             }
@@ -329,7 +329,7 @@ impl<'access, 'runtime, 'scope, 'authority>
                 .deleted_relation_count += 1;
             self.scopes
                 .get_mut(&kind_id)
-                .expect("deleted scope prepared")
+                .expect(/* Proof: Scope preparation inserts each required/minimum/deleted relation kind before the corresponding population pass; those private passes do not remove scope entries. */ "deleted scope prepared")
                 .minimum_touched_entities
                 .extend([source, target]);
             self.touched_relation_sources.extend([source, target]);

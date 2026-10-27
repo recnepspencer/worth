@@ -8,7 +8,8 @@ use super::ConflictClass;
 impl ConflictClass {
     pub fn code(&self) -> DiagnosticCode {
         match self {
-            Self::ExecutionAllocationDenied { .. }
+            Self::SymbolIdentityExhausted
+            | Self::ExecutionAllocationDenied { .. }
             | Self::TransactionStagingCardinalityOverflow
             | Self::TransactionInputDirectoryAllocationDenied { .. } => {
                 DiagnosticCode::PreparationFailure
@@ -63,6 +64,7 @@ impl ConflictClass {
 
     pub fn detail(&self) -> String {
         match self {
+            Self::SymbolIdentityExhausted => "native symbol identity space exhausted".to_owned(),
             Self::ExecutionAllocationDenied { denial } => denial.to_string(),
             Self::TransactionStagingCardinalityOverflow => "native staging cardinality overflow".to_owned(),
             Self::TransactionInputDirectoryAllocationDenied { requested_batches } => format!("unadmitted input batch directory could not reserve {requested_batches} batches"),

@@ -38,7 +38,7 @@ pub(crate) fn prepare_tracked_artifact<T>(
                         memory: Some(memory),
                     };
                     let (value, owned_bytes) =
-                        build.take().expect("one artifact preparation")(&mut budget)?;
+                        build.take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one artifact preparation")(&mut budget)?;
                     Ok(PreparedArtifact { value, owned_bytes })
                 },
             )

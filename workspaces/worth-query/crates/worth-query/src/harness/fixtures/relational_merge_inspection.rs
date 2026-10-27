@@ -183,6 +183,7 @@ fn runtime_with_default_merge_registry() -> RelationalRuntime {
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn runtime_with_topology_merge_registry() -> RelationalRuntime {
@@ -190,6 +191,7 @@ fn runtime_with_topology_merge_registry() -> RelationalRuntime {
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(topology_merge_registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn default_merge_registry() -> RelationalSchemaRegistry {

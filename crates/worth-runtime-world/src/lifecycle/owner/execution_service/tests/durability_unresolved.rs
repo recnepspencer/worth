@@ -74,7 +74,9 @@ impl RelationalDurableMedium for UnresolvingMedium {
 fn unresolved_relational_durability_retains_a_possible_effect() {
     let medium = UnresolvingMedium::default();
     let unresolve_next = Arc::clone(&medium.unresolve_next);
-    let relational = RelationalRuntimeApi::builder().build_durable(Box::new(medium));
+    let relational = RelationalRuntimeApi::builder()
+        .build_durable(Box::new(medium))
+        .expect("valid native runtime configuration");
     let mut fixture =
         reference_test_fixture::real_fixture_with_relational_runtime(relational, 12, 12);
     let owner = Arc::new(

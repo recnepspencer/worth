@@ -143,7 +143,7 @@ impl HistorySubsystem {
             .map(|(branch_id, previous_root, next_root)| {
                 let cell = cells
                     .get(&branch_id)
-                    .expect("planned recovery branch remains in detached registry");
+                    .expect(/* Proof: Recovery reserves these branch IDs in its detached registry before this plan executes; no deletion or concurrent writer can access that detached map. */ "planned recovery branch remains in detached registry");
                 self.reserve_branch_head_retirement(
                     cell.identity(),
                     &previous_root,
@@ -163,7 +163,7 @@ impl HistorySubsystem {
         for (branch_id, mut reservation, previous_root, next_root) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: Recovery reserves these branch IDs in its detached registry before this plan executes; no deletion or concurrent writer can access that detached map. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&next_root));
             reservation.transfer_head(&previous_root, &next_root);
             reservation.replace_head(previous_root);
@@ -257,7 +257,7 @@ impl HistorySubsystem {
         for (branch_id, mut reservation, previous_root) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: Recovery reserves these branch IDs in its detached registry before this plan executes; no deletion or concurrent writer can access that detached map. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&canonical_root));
             reservation.transfer_head(&previous_root, &canonical_root);
             reservation.replace_head(previous_root);

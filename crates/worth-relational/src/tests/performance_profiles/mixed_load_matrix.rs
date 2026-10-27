@@ -14,7 +14,10 @@ fn perf_mixed_load_matrix() {
             let created = create_entity_outcome(execution, &runtime, "baseline");
             let created_version_id = created.version_id;
             let entity = changed_entities(&created)[0];
-            let explicit_snapshot = runtime.visibility_authority().snapshot();
+            let explicit_snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let updated = update_entity(execution, &runtime, entity, "mutated");
 
             let serial_snapshot_name = {
@@ -159,14 +162,17 @@ fn perf_mixed_load_matrix() {
                 );
             }
             let commit = create_entity_outcome(execution, &runtime, "anchor");
-            let relation_index = runtime.index_authority().register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: "relation.name".to_string(),
-                kind: DerivedIndexKind::RelationField {
-                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-                },
-                branch_scoped: false,
-            });
+            let relation_index = runtime
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: "relation.name".to_string(),
+                    kind: DerivedIndexKind::RelationField {
+                        field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                    },
+                    branch_scoped: false,
+                })
+                .expect("index fixture has identity capacity");
             runtime.index_authority().build_for_commit(
                 execution,
                 DerivedIndexBuildRequest {

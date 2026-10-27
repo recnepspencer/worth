@@ -1,11 +1,9 @@
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::{DescriptorSemanticsVersion, SchemaId, SchemaVersionId};
 use crate::transactions::data::{
-    AspectFieldTargetRejectionReason, BulkImportRowDomain, BulkImportStage, ConflictClass,
-    EntityAuthoritativeAspectStateDenial, EntityUpdateMissingState,
+    BulkImportRowDomain, BulkImportStage, ConflictClass, EntityUpdateMissingState,
     RelationEndpointUpdateMissingState,
 };
-use worth_foundational::facade::AspectFieldLocator;
 
 #[test]
 fn entity_update_state_conflict_is_typed_not_json() {
@@ -47,33 +45,8 @@ fn bulk_import_domain_mismatch_is_typed_not_json() {
     assert!(conflict.detail().contains("expected entity rows"));
 }
 
-#[test]
-fn authoritative_aspect_state_conflict_carries_typed_target_rejection() {
-    let entity_target = crate::transactions::data::planned_single_field_locator(
-        crate::tests::support::aspect_key("profile.summary"),
-        crate::tests::support::field_key("summary"),
-    );
-    let entity_denial = EntityAuthoritativeAspectStateDenial::UnsupportedAspectFieldTarget {
-        target: entity_target.clone(),
-        reason: AspectFieldTargetRejectionReason::UndeclaredAspect,
-    };
-    assert_eq!(entity_denial_target(&entity_denial), &entity_target);
-
-    let entity_conflict = ConflictClass::EntityAuthoritativeAspectStateDenied {
-        kind_id: KindId(1),
-        denial: entity_denial,
-    };
-    assert!(entity_conflict.detail().contains("profile.summary"));
-    assert!(entity_conflict.detail().contains("summary"));
-    assert!(entity_conflict.detail().contains("undeclared aspect"));
-}
-
-fn entity_denial_target(denial: &EntityAuthoritativeAspectStateDenial) -> &AspectFieldLocator {
-    match denial {
-        EntityAuthoritativeAspectStateDenial::UnsupportedAspectFieldTarget { target, .. } => target,
-        other => panic!("expected unsupported entity authoritative aspect denial, got {other:?}"),
-    }
-}
+// a707a48b1b retired the field-creation producer of UnsupportedAspectFieldTarget.
+// Its constructor-only presentation test is removed with that retired claim.
 
 #[test]
 fn schema_continuity_conflicts_are_typed_not_json() {

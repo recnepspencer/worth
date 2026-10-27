@@ -152,7 +152,9 @@ impl RelationalRuntime {
         let basis = self
             .history
             .branch_cell(identity.branch_id())
-            .expect("observed branch remains registered")
+            .ok_or_else(|| {
+                RelationalBranchBasisDenial::UnknownBranch(identity.branch_id().clone())
+            })?
             .register_basis(basis)?;
         self.services.instrumentation.count_basis(|counters| {
             counters.basis_observations = counters.basis_observations.saturating_add(1);

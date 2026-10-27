@@ -23,7 +23,7 @@ pub(super) fn current_entity_snapshot(
         created_at_version: partition
             .entity_arena
             .created_at_for_slot(entity_id.local_slot.0 as usize)
-            .expect("current entity snapshot has creation metadata"),
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "current entity snapshot has creation metadata"),
         retired_at_version: slot.retired_at(),
         authoritative_aspect_state: slot.extra().authoritative_aspect_state.clone(),
     })

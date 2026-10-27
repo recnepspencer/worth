@@ -23,7 +23,7 @@ impl<T> FragmentSlot<T> {
             .get_mut()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .take()
-            .expect("every canonical query packet completed into its slot")
+            .expect(/* Proof: The scheduler reports success only after every canonical packet has stored its unique completion slot; failed or cancelled execution returns before slot extraction. */ "every canonical query packet completed into its slot")
     }
 }
 

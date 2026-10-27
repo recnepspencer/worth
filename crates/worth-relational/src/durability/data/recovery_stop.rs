@@ -38,12 +38,7 @@ impl From<DurabilityError> for RelationalRecoveryStop {
 
 impl From<crate::storage::data::RelationalStorageUnavailable> for RelationalRecoveryStop {
     fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
-        let mut error = DurabilityError::new(
-            super::RecoveryFailureClass::ColdStorageUnavailable,
-            format!("committed storage unavailable: {failure:?}"),
-        );
-        error.storage_unavailable = Some(failure);
-        Self::Durability(error)
+        Self::Durability(failure.into())
     }
 }
 

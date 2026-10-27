@@ -155,7 +155,7 @@ fn inventory_root(
     for region in root.storage_regions() {
         let partition = root
             .partition_state(region.partition_id)
-            .expect("observed region owns its partition");
+            .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
         let mut payload = PayloadLedger {
             runtime_instance_id,
             partition_id: region.partition_id,

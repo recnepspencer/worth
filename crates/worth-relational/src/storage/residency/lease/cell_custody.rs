@@ -25,7 +25,7 @@ impl Clone for RegionLeaseCustody {
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |count| {
                 count.checked_add(1)
             })
-            .expect("a resident lease count fits the address space");
+            .expect(/* Proof: Every live lease owns a strong Arc to this cell; lease count is bounded by Arc strong count, whose maximum is below usize::MAX. */ "a resident lease count fits the address space");
         Self::accepted(self.cell.clone())
     }
 }

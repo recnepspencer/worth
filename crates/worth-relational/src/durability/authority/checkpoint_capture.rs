@@ -167,7 +167,7 @@ impl CapturedCheckpointBasis {
         let (lineage_event_leases, lineage_event_pages_resident) = runtime
             .lineage
             .capture_resident_event_pages()
-            .map_err(lineage_capture_failure)?;
+            .map_err(DurabilityError::from)?;
         let mut lineage_events = runtime
             .lineage
             .published_rows()
@@ -187,7 +187,7 @@ impl CapturedCheckpointBasis {
                 if let Some(existing) = lineage_events.get(&row.event.event_id())
                     && existing != row
                 {
-                    return Err(lineage_capture_failure(page.binding_failure()));
+                    return Err(DurabilityError::from(page.binding_failure()));
                 }
                 lineage_events
                     .entry(row.event.event_id())
@@ -268,13 +268,4 @@ impl CapturedCheckpointBasis {
             .map_err(super::checkpointing::checkpoint_admission_error)?;
         Ok(captured)
     }
-}
-
-fn lineage_capture_failure(
-    failure: crate::storage::data::RelationalStorageUnavailable,
-) -> DurabilityError {
-    let crate::durability::data::RelationalRecoveryStop::Durability(error) = failure.into() else {
-        unreachable!()
-    };
-    error
 }

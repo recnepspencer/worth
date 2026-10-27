@@ -41,7 +41,9 @@ impl PublicBridgeRuntimeHarness {
     ) -> WorthQueryRuntime {
         record_public_bridge_runtime_bootstrap_invocation(PublicBridgeRuntimeBootstrapPath::Common);
         let relational_runtime = relational_runtime.unwrap_or_else(|| {
-            worth_relational::facade::runtime::RelationalRuntimeBuilder::new().build()
+            worth_relational::facade::runtime::RelationalRuntimeBuilder::new()
+                .build()
+                .expect("valid native runtime configuration")
         });
         let product_world_resources = public_product_world_resources();
         let source =

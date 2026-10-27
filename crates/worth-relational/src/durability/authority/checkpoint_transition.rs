@@ -83,7 +83,7 @@ impl DurabilityRecoveryAuthority<'_> {
                 self.runtime
                     .snapshots()
                     .release_snapshot(&committed.snapshot)
-                    .expect(
+                    .expect(/* Proof: This operation minted and exclusively owns this snapshot handle; the consuming release occurs exactly once before the handle escapes or drops. */
                         "checkpoint transition releases its settled native snapshot exactly once",
                     );
                 self.install_acknowledged_codec_target(&mut recovered);

@@ -160,7 +160,7 @@ impl PendingSymbolMeanings {
                 .import_canonical_snapshot(&SymbolTableSnapshot {
                     entries: vec![(*symbol, text.clone())],
                 })
-                .expect("same-owner pending meanings cannot alias");
+                .expect(/* Proof: The shared owner reservation assigns each text one identity and reserves its frontier before candidate import; same-owner candidate meanings therefore cannot alias. */ "same-owner pending meanings cannot alias");
             self.admitted.insert(*symbol, text.clone());
         }
         self.reserved.extend(
@@ -174,14 +174,11 @@ impl PendingSymbolMeanings {
     pub(crate) fn binding(&self) -> RuntimeSymbolTable {
         let binding = self.binding.detached_owner_snapshot();
         binding.with_write(|symbols| *symbols = self.interner.clone());
-        let mut configuration = binding
-            .configuration_snapshot
-            .write()
-            .unwrap_or_else(|error| error.into_inner());
-        for (symbol, text) in &self.admitted {
-            configuration.insert(text.clone(), *symbol);
-        }
-        drop(configuration);
+        binding.update(|state| {
+            for (symbol, text) in &self.admitted {
+                state.configuration.insert(text.clone(), *symbol);
+            }
+        });
         binding
     }
 
@@ -201,8 +198,12 @@ impl PendingSymbolMeanings {
             .state
             .write()
             .unwrap_or_else(|error| error.into_inner());
-        let (symbol, text, reservation) = if let Some(symbol) = state.symbol(value) {
-            (symbol, state.retained_text(symbol).unwrap().clone(), None)
+        let (symbol, text, reservation) = if let Some(symbol) = state.interner.symbol(value) {
+            (
+                symbol,
+                state.interner.retained_text(symbol).unwrap(/* Proof: The same locked interner resolved this symbol by text immediately above; coherent dictionary updates install forward and reverse mappings together. */ ).clone(),
+                None,
+            )
         } else {
             let mut directory = self
                 .owner
@@ -213,6 +214,7 @@ impl PendingSymbolMeanings {
                 Some(reservation) => reservation,
                 None => {
                     let symbol = state
+                        .interner
                         .reserve_identity()
                         .map_err(|_| SymbolReservationDenial::IdentityExhausted)?;
                     let reservation = Arc::new(ReservedSymbolMeaning {
@@ -237,7 +239,7 @@ impl PendingSymbolMeanings {
             .import_canonical_snapshot(&SymbolTableSnapshot {
                 entries: vec![(symbol, text.clone())],
             })
-            .expect("candidate meaning comes from the shared owner reservation");
+            .expect(/* Proof: The shared owner reservation assigns each text one identity and reserves its frontier before candidate import; same-owner candidate meanings therefore cannot alias. */ "candidate meaning comes from the shared owner reservation");
         if let Some(reservation) = reservation {
             self.reserved.insert(symbol, reservation);
         }

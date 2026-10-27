@@ -24,7 +24,7 @@ pub(super) fn entity_kind(
         return Ok(reads::entity(execution, Some(view), id, work)?.map(|r| r.kind.kind_id));
     }
     work.read()?;
-    work.prepare(view.exact_entity_state_read_work_bound().unwrap(), 0)?;
+    work.prepare(view.exact_entity_state_read_work_bound().unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ), 0)?;
     view.read_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
         .map_err(|denial| match denial {
             crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
@@ -54,10 +54,10 @@ pub(super) fn relation(
         );
     }
     work.read()?;
-    work.prepare(view.exact_relation_metadata_read_work_bound().unwrap(), 0)?;
+    work.prepare(view.exact_relation_metadata_read_work_bound().unwrap(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ ), 0)?;
     view.demand_regions_head(execution, [id.partition_id])
         .map_err(Denial::Execution)?;
-    let root = view.selected_root().expect("exact basis checked");
+    let root = view.selected_root().expect(/* Proof: Maintenance admission requires an exact selected root before constructing this private pass; exact read bounds and metadata are available for that root. */ "exact basis checked");
     let Some(partition) = root.admitted_head_region(id.partition_id) else {
         return Ok(None);
     };

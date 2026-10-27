@@ -79,6 +79,7 @@ fn relation_runtime() -> crate::runtime::RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn request_for_plan<'runtime>(

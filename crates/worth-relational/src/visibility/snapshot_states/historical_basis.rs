@@ -5,8 +5,8 @@ use crate::history::data::BranchId;
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalRuntime;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum HistoricalVisibilityDenial {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub enum HistoricalVisibilityDenial {
     UnknownVersion,
     AuthoringBranchUnavailable,
     MvccIntervalUnavailable,

@@ -280,3 +280,14 @@ impl std::fmt::Display for WorthQueryPrimaryGraphInstallationDenial {
 }
 
 impl std::error::Error for WorthQueryPrimaryGraphInstallationDenial {}
+
+impl From<worth_relational::facade::runtime::RelationalRuntimeConstructionDenial>
+    for WorthQueryPrimaryGraphInstallationDenial
+{
+    fn from(cause: worth_relational::facade::runtime::RelationalRuntimeConstructionDenial) -> Self {
+        Self::new(
+            WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
+            cause.to_string(),
+        )
+    }
+}

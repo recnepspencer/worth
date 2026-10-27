@@ -62,7 +62,7 @@ impl RelationalHeadRetentionObligation {
         self.binding.record_head_transfer();
         self.owner
             .upgrade()
-            .expect("live head obligation retains an available owner")
+            .expect(/* Proof: The enclosing operation retains the strong retention-owner handle for the entire guard lifetime; this Weak refers to that same owner. */ "live head obligation retains an available owner")
             .head_transfer_count
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }

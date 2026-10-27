@@ -54,7 +54,7 @@ impl QueuedInvariantRegistrations {
         }
     }
 
-    fn lower_into_relational_runtime(self) -> RelationalRuntime {
+    fn lower_into_relational_runtime(self) -> Result<RelationalRuntime, WorthQueryRuntimeError> {
         let mut builder = RelationalRuntimeBuilder::new();
         if let Some(invariant_catalog) = self.invariant_catalog {
             builder = builder.invariant_catalog(invariant_catalog.canonicalized());
@@ -62,7 +62,12 @@ impl QueuedInvariantRegistrations {
         for custom_invariant in self.custom_invariants {
             builder = builder.custom_invariant(custom_invariant);
         }
-        builder.build()
+        builder
+            .build()
+            .map_err(|denial| WorthQueryRuntimeError::InvariantRegistration {
+                stage: "relational_runtime_construction",
+                message: denial.to_string(),
+            })
     }
 }
 

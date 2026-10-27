@@ -6,7 +6,8 @@ fn engine_executes_custom_invariant_packets() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
@@ -37,7 +38,8 @@ fn leased_opaque_custom_rule_is_denied_before_evaluation() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
         &runtime,
@@ -75,7 +77,8 @@ fn engine_executes_graph_composition_custom_invariant_packets() {
         .custom_invariant(
             CustomInvariantRegistration::new(GraphCompositionViolatesCustomRule).unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let results = InvariantEngine::new(&runtime).execute_fixture(
         InvariantExecutionRequest::from_profile_with_contract(
@@ -139,7 +142,8 @@ fn engine_executes_custom_packets_against_real_structural_surfaces() {
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(StructuralSurfaceRule).unwrap())
         .custom_invariant(CustomInvariantRegistration::new(RejectsPlannedRelationRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity_of_kind(execution, &runtime, KindId(1), "structural-source");
     let target = create_entity_of_kind(execution, &runtime, KindId(1), "structural-target");
     runtime.performance_access().reset_counters();
@@ -249,7 +253,8 @@ fn engine_captures_custom_prepare_panics_as_typed_failures() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(PanicDuringPrepareRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     runtime.performance_access().reset_counters();
 
     let results = InvariantEngine::new(&runtime).execute_fixture(
@@ -304,7 +309,8 @@ fn engine_captures_custom_evaluate_panics_as_typed_failures() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(PanicDuringEvaluateRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     runtime.performance_access().reset_counters();
 
     let results = InvariantEngine::new(&runtime).execute_fixture(

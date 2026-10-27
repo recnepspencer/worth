@@ -71,7 +71,10 @@ impl<'runtime> IndexAuthority<'runtime> {
         Self { runtime }
     }
 
-    pub fn register(&self, definition: DerivedIndexDefinition) -> DerivedIndexDefinition {
+    pub fn register(
+        &self,
+        definition: DerivedIndexDefinition,
+    ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
         self.runtime.indexes.register_definition(definition)
     }
 

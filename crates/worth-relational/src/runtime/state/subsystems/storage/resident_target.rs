@@ -68,7 +68,10 @@ impl ResidentMirrorTarget {
             .unwrap_or_else(|error| error.into_inner())
         {
             ResidentTargetContents::Resident { lease, .. } => lease.retention(),
-            ResidentTargetContents::Editing => unreachable!("exclusive writer owns this edit"),
+            ResidentTargetContents::Editing => unreachable!(
+                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                "exclusive writer owns this edit"
+            ),
         }
     }
     pub(super) fn promote_full(&self, lease: RelationalResidencyLease<Full>) {
@@ -97,7 +100,10 @@ impl ResidentMirrorTarget {
                 (edit, copied)
             }
             ResidentTargetContents::Editing => {
-                unreachable!("exclusive writer owns every target edit")
+                unreachable!(
+                    /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                    "exclusive writer owns every target edit"
+                )
             }
         }
     }
@@ -108,7 +114,10 @@ impl ResidentMirrorTarget {
             .unwrap_or_else(|error| error.into_inner())
         {
             ResidentTargetContents::Resident { lease, .. } => lease.head_lease(),
-            ResidentTargetContents::Editing => unreachable!("exclusive writer owns target edit"),
+            ResidentTargetContents::Editing => unreachable!(
+                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                "exclusive writer owns target edit"
+            ),
         }
     }
     pub(super) fn begin_metadata_edit(&self) -> (ResidentRegionEdit, bool) {
@@ -124,7 +133,10 @@ impl ResidentMirrorTarget {
                 }
                 (edit, copied)
             }
-            ResidentTargetContents::Editing => unreachable!("exclusive writer owns target edit"),
+            ResidentTargetContents::Editing => unreachable!(
+                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                "exclusive writer owns target edit"
+            ),
         }
     }
     pub(super) fn begin_full_edit(&self) -> Option<(ResidentRegionEdit, bool)> {
@@ -146,7 +158,10 @@ impl ResidentMirrorTarget {
             clear_pins,
         } = std::mem::replace(&mut *contents, ResidentTargetContents::Editing)
         else {
-            unreachable!("checked resident Full custody")
+            unreachable!(
+                /* Proof: This private target was constructed only after successful Full lease admission; Head or Cold custody cannot construct this variant. */
+                "checked resident Full custody"
+            )
         };
         let copied = lease.has_other_observers();
         let mut edit = ResidentRegionEdit::from_full(lease);

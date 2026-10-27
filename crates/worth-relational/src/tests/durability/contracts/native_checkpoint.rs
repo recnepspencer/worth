@@ -287,7 +287,8 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .runtime_name("foreign-runtime")
-        .build_durable(TestDurableMedium::new().attachment());
+        .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration");
 
     let error = recovered
         .durability_recovery()
@@ -341,4 +342,5 @@ fn durable_runtime_with_builder_invariant() -> crate::runtime::RelationalRuntime
         .schema_registry(test_schema_registry())
         .custom_invariant(CustomInvariantRegistration::new(NativeCheckpointRule).unwrap())
         .build_durable(TestDurableMedium::new().attachment())
+        .expect("valid native runtime configuration")
 }

@@ -33,7 +33,10 @@ pub(super) fn certify_local_scene_graph_propagation_wave(
             let update = update_entity(execution, &runtime, updated, "scene-local-updated");
             let update_micros = update_started_at.elapsed().as_micros();
 
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let propagation_packet = PlannedQueryPacket {
                 label: "scene-local-propagation".to_string(),
                 context_id: runtime

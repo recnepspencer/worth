@@ -49,7 +49,12 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     let publication_cell = runtime
         .history
         .branch_cell(&branch_id)
-        .expect("admitted commit branch remains registered")
+        .ok_or_else(|| {
+            publication_outcome_error(format!(
+                "admitted branch {} is no longer registered",
+                branch_id.0
+            ))
+        })?
         .publication_cell();
     let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
     let admitted = admit_commit_execution(runtime, context)?;

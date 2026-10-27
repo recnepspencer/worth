@@ -8,7 +8,9 @@ use crate::tests::support::*;
 /// the shape that used to make an owner's own configuration change impossible.
 #[test]
 fn phase3b_initial_schema_installs_while_a_settlement_port_is_live() {
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let port = runtime.settlement_port();
 
     let receipt = runtime
@@ -40,7 +42,9 @@ fn phase3b_initial_schema_installs_while_a_settlement_port_is_live() {
 /// fact for it to see either.
 #[test]
 fn phase3b_installed_schema_is_the_only_configuration_authority() {
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     let preparation = RelationalPreparationOwnerBinding::from_runtime(&runtime);
     let empty = preparation.runtime_snapshot();
     assert!(empty.config.schema.registry.entity_kinds.is_empty());

@@ -21,7 +21,7 @@ pub(in crate::visibility::materialization::read_records::reader) fn query_execut
     lease: Option<&ExecutionResourceLease<'_>>,
     prior_report: Option<ExecutionReport>,
 ) -> Result<(QueryExecutionOutcome, Option<ExecutionReport>), QueryReadExecutionStop> {
-    let prior = prior_report.expect("packet execution has a charged report");
+    let prior = prior_report.expect(/* Proof: The successful packet runner stores its charged report before assembling this outcome; stopped execution returns through the separate stop path. */ "packet execution has a charged report");
     let child = lease
         .map(|lease| remaining_work_lease(lease, prior))
         .transpose()?;

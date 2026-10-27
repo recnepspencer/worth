@@ -117,12 +117,7 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
 ) -> RetainedFactStop<'static> {
     match stop {
         CompanionPreflightStop::Execution(cause) => RetainedFactStop::Execution(cause),
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
-            RetainedFactStop::Memory
-        }
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => RetainedFactStop::Work,
+
         CompanionPreflightStop::PreparationMemoryCounterOverflow => {
             RetainedFactStop::Execution(NativeReadStop::ChargedBytesOverflow)
         }

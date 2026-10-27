@@ -59,14 +59,14 @@ impl HistoryLedger {
             commit_id
                 .0
                 .checked_add(1)
-                .expect("reserved commit id has successor"),
+                .expect(/* Proof: ID reservation rejects a frontier without a successor before issuing this private reserved commit/version; publication consumes that reservation. */ "reserved commit id has successor"),
         );
         self.next_version_id = self.next_version_id.max(
             commit_reference
                 .version_id
                 .0
                 .checked_add(1)
-                .expect("reserved version id has successor"),
+                .expect(/* Proof: ID reservation rejects a frontier without a successor before issuing this private reserved commit/version; publication consumes that reservation. */ "reserved version id has successor"),
         );
         self.commit_graph.insert(
             commit_id,

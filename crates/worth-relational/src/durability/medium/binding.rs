@@ -210,7 +210,7 @@ impl BindingState {
                 let fate = RelationalDurabilityUnresolved::new(subject, detail);
                 self.unresolved
                     .set(fate.clone())
-                    .expect("one unresolved fate per incarnation");
+                    .expect(/* Proof: An incarnation records at most one unresolved append; after recording it the owner enters unresolved state and admits no second append. */ "one unresolved fate per incarnation");
                 Err(RelationalDurableStepStop::Unresolved(fate))
             }
         }

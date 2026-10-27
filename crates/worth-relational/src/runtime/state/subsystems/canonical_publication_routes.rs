@@ -288,7 +288,7 @@ impl PreparedCanonicalPublicationRoute {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .as_mut()
-            .expect("prepared route retains its handoff until movement")
+            .expect(/* Proof: Prepared route construction installs one handoff; this consuming movement is its only extraction and disarms Drop afterwards. */ "prepared route retains its handoff until movement")
             .publication_cell = Some(publication_cell);
         self.routes.performed_stream.record_with_cutover(
             Arc::clone(&self.route),

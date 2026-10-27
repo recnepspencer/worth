@@ -24,7 +24,8 @@ fn trimmed_birth_uses_created_endpoints_and_refuses_forged_or_missing_evidence()
     let mut runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
         .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(schema.build_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()

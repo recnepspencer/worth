@@ -9,7 +9,10 @@ fn chunked_storage_summary_tracks_visibility_boundaries() {
     let first = create_entity_outcome(execution, &runtime, "e0");
     let entity_a = changed_entities(&first)[0];
     let _second = create_entity_outcome(execution, &runtime, "e1");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let _third = create_entity_outcome(execution, &runtime, "e2");
     let _update = update_entity(execution, &runtime, entity_a, "e0-updated");
 
@@ -42,7 +45,10 @@ fn chunk_diagnostics_and_packet_plans_are_public_and_stable() {
     let second = create_entity_outcome(execution, &runtime, "e1");
     let entity_a = changed_entities(&first)[0];
     let entity_b = changed_entities(&second)[0];
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let packet = explicit_query_packet(
         &runtime,
         &snapshot,

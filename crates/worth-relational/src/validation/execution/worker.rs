@@ -43,7 +43,7 @@ pub(crate) fn evaluate_invariant_packet_checked<'state>(
         return Err(failure);
     }
     if !budget.ensure_result_total(envelope.owned_allocation_capacity_bytes()) {
-        return Err(budget.take_failure().expect("result claim recorded stop"));
+        return Err(budget.take_failure().expect(/* Proof: A rejected result claim stores its typed budget stop before returning false; this branch follows that false result on the same meter. */ "result claim recorded stop"));
     }
     Ok(envelope)
 }

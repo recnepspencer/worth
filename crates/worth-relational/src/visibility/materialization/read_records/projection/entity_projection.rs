@@ -18,6 +18,7 @@ impl VisibilityProjectionView {
             let Some(record) = self.authoritative_entity_record(execution, entity)? else {
                 return Ok(None);
             };
+            self.admit_entity_projection_scope(record.kind.kind_id, scope)?;
             return Ok(project(EntityProjectionRecord::new(&record, scope)));
         };
         self.demand_regions_head(execution, [entity.partition_id])?;
@@ -26,7 +27,11 @@ impl VisibilityProjectionView {
             || self.selected_entity_projection(entity),
             |_| 0,
         )?;
-        Ok(resolved.and_then(|selected| selected.project(scope, &mut project)))
+        let Some(selected) = resolved else {
+            return Ok(None);
+        };
+        self.admit_entity_projection_scope(selected.kind.kind_id, scope)?;
+        Ok(selected.project(scope, &mut project))
     }
 
     /// Borrow one exact-root entity after its caller has admitted the keyed
@@ -50,12 +55,11 @@ impl VisibilityProjectionView {
         if let Err(stop) = admit_work(super::super::read_prices::KEYED_RECORD) {
             return Ok(Err(stop));
         }
-        Ok(Ok(self.selected_entity_projection(entity).and_then(
-            |selected| {
-                self.assert_entity_projection_scope(selected.kind.kind_id, &scope);
-                selected.project(&scope, &mut project)
-            },
-        )))
+        let Some(selected) = self.selected_entity_projection(entity) else {
+            return Ok(Ok(None));
+        };
+        self.admit_entity_projection_scope(selected.kind.kind_id, &scope)?;
+        Ok(Ok(selected.project(&scope, &mut project)))
     }
 
     fn selected_entity_projection(&self, entity: EntityId) -> Option<SelectedEntityProjection<'_>> {
@@ -80,7 +84,7 @@ impl VisibilityProjectionView {
         let created = partition
             .entity_arena()
             .created_at_for_slot(entity.slot_index())
-            .expect("visible entity slot has creation metadata");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "visible entity slot has creation metadata");
         Some(SelectedEntityProjection {
             actual,
             slot,

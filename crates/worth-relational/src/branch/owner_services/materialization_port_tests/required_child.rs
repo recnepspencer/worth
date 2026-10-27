@@ -296,7 +296,10 @@ fn runtime(custom: bool) -> (crate::runtime::RelationalRuntime, [Arc<AtomicUsize
             );
         }
     }
-    (builder.build(), evaluations)
+    (
+        builder.build().expect("valid native runtime configuration"),
+        evaluations,
+    )
 }
 
 fn valid_field_patch(value: bool) -> crate::transactions::data::AspectFieldPatch {

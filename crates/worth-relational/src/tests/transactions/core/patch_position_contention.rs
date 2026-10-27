@@ -37,7 +37,8 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
             max_prepared_candidates: Some(2),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_entity(execution, &runtime, "patch-position-contention-anchor");
     fork_contention_branch(execution, &runtime, "winner");
     fork_contention_branch(execution, &runtime, "loser");

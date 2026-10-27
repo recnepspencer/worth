@@ -220,7 +220,15 @@ fn execute_strategy_replay(
 ) -> Result<Option<StrategyExecutionDraft>, RelationalRecoveryStop> {
     crate::execution::check_request(request).map_err(RelationalRecoveryStop::Request)?;
     let replay_request = expected_artifacts.replay_request();
-    let snapshot = basis_runtime.visibility_authority().snapshot();
+    let snapshot = basis_runtime
+        .visibility_authority()
+        .snapshot()
+        .map_err(|denial| {
+            crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                format!("strategy replay snapshot admission refused: {denial:?}"),
+            )
+        })?;
     match basis_runtime
         .commit_strategies()
         .execute(&replay_request, &snapshot, request)

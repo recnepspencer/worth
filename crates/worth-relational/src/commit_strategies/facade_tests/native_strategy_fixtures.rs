@@ -175,7 +175,9 @@ pub(crate) fn persisted_intent_runtime(
             IntentReconciliationStrategy::execution_registration(&descriptor),
         );
     }
-    builder.build_durable(medium.attachment())
+    builder
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn persisted_intent_runtime_with_failing_executor(
@@ -193,6 +195,7 @@ pub(super) fn persisted_intent_runtime_with_failing_executor(
             DeterministicFailureExecutor,
         ))
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(crate) fn execute_persisted_intent_strategy_commit(
@@ -224,7 +227,10 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -337,7 +343,8 @@ pub(crate) fn lowered_commit_fixture() -> (
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let draft = execution_draft(&request);
     let (input, mut authority) =

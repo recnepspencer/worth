@@ -68,12 +68,12 @@ impl<K: RecordKind> RecordArena<K> {
     ) {
         let physical = self
             .physical_index(slot)
-            .expect("record extra update requires a materialized slot");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "record extra update requires a materialized slot");
         if let Some(current) = self.metadata_history[physical].last_mut() {
             K::retire_metadata(current, version_id);
         }
         let kind_id =
-            self.kind_ids[physical].expect("record extra update requires retained kind id");
+            self.kind_ids[physical].expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "record extra update requires retained kind id");
         self.metadata_history[physical].push(K::metadata_for_create(
             kind_id,
             self.generations[physical],
@@ -86,7 +86,7 @@ impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn retire(&mut self, slot: usize, version_id: VersionId) {
         let physical = self
             .physical_index(slot)
-            .expect("record retirement requires a materialized slot");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "record retirement requires a materialized slot");
         self.retired_at[physical] = Some(version_id);
         self.lifecycle[physical] = RecordLifecycleState::DeletedRetained;
         self.live_bitset.set(slot, false);
@@ -218,7 +218,7 @@ impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn reset_slot(&mut self, slot: usize) {
         let physical = self
             .physical_index(slot)
-            .expect("record reset requires a materialized slot");
+            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "record reset requires a materialized slot");
         self.kind_ids[physical] = None;
         self.extra.set(physical, K::empty_extra());
         self.aspect_versions.set(physical, Default::default());

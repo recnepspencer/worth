@@ -325,12 +325,8 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         | Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
-        | Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
         | Stop::WorkCounterOverflow
-        | Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCapacityExhausted { .. }
         | Stop::Interrupted(_) => false,
     }
 }

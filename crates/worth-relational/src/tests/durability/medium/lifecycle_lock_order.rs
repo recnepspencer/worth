@@ -119,7 +119,8 @@ fn checkpoint_registry_is_readable_while_a_fork_is_durable_not_yet_live() {
             .build_durable(Box::new(SlowFirstPublication {
                 contents: contents.attachment(),
                 gate: Arc::clone(&gate),
-            })),
+            }))
+            .expect("valid native runtime configuration"),
     );
     let request = crate::test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);

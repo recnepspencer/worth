@@ -21,6 +21,11 @@ pub enum WorthQueryProviderSessionProtocolStage {
 /// A provider-session refusal that preserves its protocol or execution cause.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionDenialKind {
+    /// Native projection or historical coverage refused the selected read.
+    NativeReadDenied {
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        partition_identity: Option<u64>,
+    },
     StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     ForeignOperationAttempt,
     ForeignExecutionBasis,

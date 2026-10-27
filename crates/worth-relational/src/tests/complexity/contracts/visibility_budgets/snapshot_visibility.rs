@@ -11,7 +11,10 @@ fn complexity_budget_snapshot_visibility_state_avoids_record_materialization() {
     let _ = create_entity(execution, &runtime, "second");
 
     runtime.performance_access().reset_counters();
-    let _snapshot = runtime.visibility_authority().snapshot();
+    let _snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(
@@ -33,7 +36,10 @@ fn complexity_budget_snapshot_release_uses_only_the_carried_root_obligation() {
     for index in 0..6 {
         let _ = create_entity(execution, &runtime, &format!("e{index}"));
     }
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let target = create_entity(execution, &runtime, "target");
 
     runtime.performance_access().reset_counters();
@@ -64,7 +70,10 @@ fn complexity_budget_active_snapshots_share_one_constant_time_root_lease_per_ver
     }
 
     runtime.performance_access().reset_counters();
-    let first = runtime.visibility_authority().snapshot();
+    let first = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let first_open = runtime.performance_access().counters();
     assert_eq!(first_open.snapshot_pin_adjustments, 0);
     assert_eq!(first_open.visibility_entity_slot_scans, 0);
@@ -72,7 +81,10 @@ fn complexity_budget_active_snapshots_share_one_constant_time_root_lease_per_ver
     assert_eq!(first_open.visibility_cache_snapshot_promotions, 1);
 
     runtime.performance_access().reset_counters();
-    let second = runtime.visibility_authority().snapshot();
+    let second = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let second_open = runtime.performance_access().counters();
     assert_eq!(second_open.snapshot_pin_adjustments, 0);
     assert_eq!(second_open.visibility_cache_snapshot_promotions, 0);
@@ -236,6 +248,7 @@ fn snapshot_registry_scale_runtime() -> RelationalRuntime {
             candidate_max_lifetime_millis: 30_000,
         })
         .build()
+        .expect("valid native runtime configuration")
 }
 
 #[test]
@@ -272,7 +285,10 @@ fn complexity_contract_visibility_scans_are_explicitly_measured() {
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome = create_relation_outcome(execution, &runtime, source, target, "r0");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let historical_version = relation_outcome.version_id;
     let current_version = create_entity_outcome(execution, &runtime, "later").version_id;
 

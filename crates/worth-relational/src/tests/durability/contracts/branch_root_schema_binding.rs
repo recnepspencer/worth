@@ -129,7 +129,8 @@ fn recovery_rejects_a_schema_carrier_swapped_between_exact_roots() {
             }
             .build_registry(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let error = recovered
         .durability_recovery()
         .recover(execution, plan)

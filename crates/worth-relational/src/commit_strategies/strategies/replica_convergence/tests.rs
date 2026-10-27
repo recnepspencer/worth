@@ -52,7 +52,8 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
@@ -69,7 +70,10 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -105,7 +109,8 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -142,7 +147,10 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)

@@ -23,7 +23,10 @@ fn leased_traversal_stops_inside_high_fanout() {
             PartitionId(13),
         );
     }
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime
         .read_truth()
@@ -86,7 +89,10 @@ fn leased_any_of_scan_matches_serial_with_reversed_values() {
     create_entity_in_partition(execution, &runtime, "alpha", PartitionId(7));
     create_entity_in_partition(execution, &runtime, "omega", PartitionId(7));
     create_entity_in_partition(execution, &runtime, "other", PartitionId(7));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let plan = runtime
         .read_truth()

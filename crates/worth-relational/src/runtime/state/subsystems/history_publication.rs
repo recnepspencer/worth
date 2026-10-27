@@ -106,11 +106,11 @@ impl HistorySubsystem {
             .map_err(|denial| format!("recovery head replacement denied: {denial:?}"))?;
         let next_root = next_cell
             .root()
-            .expect("prepared recovered publication installed its captured root");
+            .expect(/* Proof: Recovery preparation installs and pins this captured root in its registered branch before minting the private publication phase. */ "prepared recovered publication installed its captured root");
         self.install_prepared_versioned_accelerators(accelerators, positioned.position());
         // Recovery truth still installs a complete reconstructed owner cell.
         self.branch_cell(&branch_id)
-            .expect("prepared recovery branch remains registered")
+            .expect(/* Proof: Recovery preparation installs and pins this captured root in its registered branch before minting the private publication phase. */ "prepared recovery branch remains registered")
             .replace_state(next_cell.state_snapshot());
         head_retirement.transfer_head(&previous_root, &next_root);
         head_retirement.replace_head(previous_root);

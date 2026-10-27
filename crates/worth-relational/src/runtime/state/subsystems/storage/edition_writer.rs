@@ -171,7 +171,7 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         let TargetEdit { target, edit } = self
             .edits
             .remove(&target.partition_id())
-            .expect("this writer owns the accepted resident target edit");
+            .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted resident target edit");
         let edit = edit.transform(transform);
         self.edits
             .insert(target.partition_id(), TargetEdit { target, edit });
@@ -297,7 +297,7 @@ impl ResidentTargetEditor for PartitionEditionWriter<'_> {
                 .mirror
                 .edition
                 .partition(target.partition_id())
-                .expect("accepted resident target remains in its writer's edition"),
+                .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "accepted resident target remains in its writer's edition"),
         }
     }
 
@@ -305,7 +305,7 @@ impl ResidentTargetEditor for PartitionEditionWriter<'_> {
         self.begin_target_edit(target);
         self.edits
             .get_mut(&target.partition_id())
-            .expect("this writer owns the accepted target edit")
+            .expect(/* Proof: Accepted target creation registers this partition edit in its owning edition writer; the private target retains that writer identity and extraction consumes the registered edit once. */ "this writer owns the accepted target edit")
             .edit
             .partition_mut()
     }

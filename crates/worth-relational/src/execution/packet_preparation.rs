@@ -114,7 +114,7 @@ pub(crate) fn prepare_borrowed_artifact<T>(
                 };
                 budget.checkpoint(0)?;
                 let (value, owned_bytes) =
-                    build.take().expect("one artifact preparation")(&mut budget)?;
+                    build.take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one artifact preparation")(&mut budget)?;
                 Ok(((), PreparedArtifact { value, owned_bytes }))
             })
         },
@@ -122,7 +122,7 @@ pub(crate) fn prepare_borrowed_artifact<T>(
     );
     match outcome {
         ScanOutcome::Complete { mut prefixes, .. } => {
-            Ok(prefixes.pop().expect("one artifact output").value)
+            Ok(prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one artifact output").value)
         }
         ScanOutcome::Stopped {
             boundary, reason, ..
@@ -173,7 +173,7 @@ pub(crate) fn prepare_borrowed_packets<T>(
                         memory: None,
                     };
                     budget.checkpoint(0)?;
-                    let packets = build.take().expect("one packet preparation step")(&mut budget)?;
+                    let packets = build.take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one packet preparation step")(&mut budget)?;
                     Ok(((), PreparedPackets(packets)))
                 },
             )
@@ -186,7 +186,7 @@ pub(crate) fn prepare_borrowed_packets<T>(
             report,
             ..
         } => Ok((
-            prefixes.pop().expect("one packet preparation output").0,
+            prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one packet preparation output").0,
             report,
         )),
         ScanOutcome::Stopped {

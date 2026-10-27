@@ -19,7 +19,7 @@ pub(super) fn restore(
     let directory = checkpoint
         .directory
         .as_ref()
-        .expect("cold restore has a directory")
+        .expect(/* Proof: Cold checkpoint dispatch selects this function only for a checkpoint carrying a validated directory; inline checkpoints take the other restore branch. */ "cold restore has a directory")
         .clone();
     let mut history = runtime.history.detached_owner_snapshot();
     let mut symbols = runtime.services.symbols.interner_snapshot();

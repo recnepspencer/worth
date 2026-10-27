@@ -157,7 +157,7 @@ impl RelationalBranchPublicationStateGuard<'_> {
             .state
             .root
             .take()
-            .expect("live branch publication state carries its selected root");
+            .expect(/* Proof: The private live publication state is constructed with Some(root); this consuming transition is its only take. */ "live branch publication state carries its selected root");
         *self.state = prepared;
         previous_root
     }

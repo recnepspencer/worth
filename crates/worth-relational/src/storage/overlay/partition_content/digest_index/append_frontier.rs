@@ -97,7 +97,7 @@ impl DigestIndex {
                 current = Some(&children[1]);
             } else {
                 assert_eq!(node.bit, 128, "history frontier includes its last key");
-                return node.key.checked_add(1).expect("history index fits u128");
+                return node.key.checked_add(1).expect(/* Proof: The native history key is built from addressable record/history indices, strictly narrower than u128::MAX; advancing its frontier cannot overflow u128. */ "history index fits u128");
             }
         }
         0

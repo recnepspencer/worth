@@ -189,7 +189,7 @@ impl RelationalCommitEnvelopeResidency {
         let _resident = self.demand(execution, limit)?;
         Ok(self
             .positioned_if_resident()
-            .expect("admitted envelope retains its sealed position"))
+            .expect(/* Proof: This private access follows successful envelope demand admission and retains its custody; admission seals both the envelope payload and its exact position. */ "admitted envelope retains its sealed position"))
     }
     pub(crate) fn demand(
         &self,
@@ -205,7 +205,10 @@ impl RelationalCommitEnvelopeResidency {
             return Ok(envelope);
         }
         let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
-            unreachable!("memory history owns its body")
+            unreachable!(
+                /* Proof: Memory history constructs its envelope cell resident without cold backing and retains the performed body; only backed history can unload a body. */
+                "memory history owns its body"
+            )
         };
         let result =
             Self::readmit_positioned(entry, source.as_ref(), execution, limit).map_err(|stop| {

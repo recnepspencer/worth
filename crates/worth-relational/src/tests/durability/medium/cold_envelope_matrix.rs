@@ -135,6 +135,7 @@ fn residency_failure_matrix_envelope_doors_preserve_every_failure_class() {
                             .profile(RelationalRuntimeProfile::ChipSimulation)
                             .schema_registry(test_schema_registry())
                             .build_durable(TestDurableMedium::new().attachment())
+                            .expect("valid native runtime configuration")
                     }
                     _ => durable_runtime_with_test_schema(),
                 };

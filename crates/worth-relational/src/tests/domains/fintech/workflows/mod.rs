@@ -221,7 +221,11 @@ fn fintech_analysis_workflow_preserves_branching_snapshots_and_trade_correction(
 
     let mut world = setup_smoke_world(execution);
     let analysis = open_analysis_branch(execution, &mut world);
-    let baseline_snapshot = world.runtime.visibility_authority().snapshot();
+    let baseline_snapshot = world
+        .runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let baseline_probe = read_snapshot_probe(
         execution,
         &world,

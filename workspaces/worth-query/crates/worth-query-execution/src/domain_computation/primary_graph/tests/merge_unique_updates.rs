@@ -101,7 +101,8 @@ impl UpdateWorld {
     fn new() -> Self {
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(registry())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let index = runtime
             .index_authority()
             .register(DerivedIndexDefinition {
@@ -112,6 +113,7 @@ impl UpdateWorld {
                 },
                 branch_scoped: false,
             })
+            .expect("index fixture has identity capacity")
             .index_id;
         Self { runtime, index }
     }

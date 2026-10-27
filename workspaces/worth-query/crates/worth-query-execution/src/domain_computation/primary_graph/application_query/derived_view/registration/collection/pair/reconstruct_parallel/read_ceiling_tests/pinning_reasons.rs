@@ -98,7 +98,7 @@ fn check(case: Case) {
                 }
                 Case::Snapshot | Case::Predicate => {
                     let other =
-                        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build();
+                        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration");
                     let foreign = other
                         .snapshots()
                         .snapshot_for_observation(

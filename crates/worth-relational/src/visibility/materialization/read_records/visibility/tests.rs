@@ -60,11 +60,13 @@ fn visibility_regression_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(visibility_regression_schema_registry())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 #[test]
 fn stale_entity_id_does_not_materialize_reused_slot_at_current_version() {
-    let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default());
+    let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default())
+        .expect("valid native runtime configuration");
     let partition_id = PartitionId(7);
     let adjacency_policy = runtime.config.storage.adjacency_policy.clone();
     let mut entity_arena = crate::storage::substrate::EntityArena::with_capacity(1);

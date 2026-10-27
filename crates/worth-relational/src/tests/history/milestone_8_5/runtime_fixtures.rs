@@ -74,6 +74,7 @@ pub(super) fn persisted_strategy_runtime(
             ),
         )
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn persisted_replacement_strategy_runtime(
@@ -97,6 +98,7 @@ pub(super) fn persisted_replacement_strategy_runtime(
             ),
         )
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn persisted_strategy_runtime_without_executors(
@@ -131,6 +133,7 @@ pub(super) fn persisted_strategy_runtime_without_executors(
                 .expect("replacement registration"),
         )
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
@@ -183,6 +186,7 @@ pub(super) fn persisted_strategy_runtime_with_failing_intent_executor(
             ),
         )
         .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 fn strategy_schema_registry() -> crate::schema::data::RelationalSchemaRegistry {
@@ -216,7 +220,12 @@ pub(super) fn execute_strategy_commit(
     let snapshot = target_branch
         .as_ref()
         .map(|branch| crate::tests::support::snapshot_for_owner_branch(runtime, branch))
-        .unwrap_or_else(|| runtime.visibility_authority().snapshot());
+        .unwrap_or_else(|| {
+            runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted")
+        });
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)

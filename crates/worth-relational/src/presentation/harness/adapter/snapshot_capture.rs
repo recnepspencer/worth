@@ -29,7 +29,10 @@ pub(super) fn capture_snapshot(
     let clone = runtime
         .fork()
         .expect("settled runtime forks for snapshot capture");
-    let snapshot = clone.visibility_authority().snapshot();
+    let snapshot = clone
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let resolved_version_id = clone
         .read_truth()
         .query_plan_context(&snapshot)

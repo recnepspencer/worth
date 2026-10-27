@@ -40,7 +40,8 @@ fn relation_integrity_commit_boundary_rejects_forbidden_self_edge() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = create_entity(execution, &runtime, "self");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);

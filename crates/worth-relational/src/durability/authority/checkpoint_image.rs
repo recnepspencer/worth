@@ -187,7 +187,7 @@ fn branch_root_images(
                 partition_image_digest,
                 schema_carrier_digest,
             );
-            Ok(DurableBranchRootImage {
+            Ok::<_, DurabilityError>(DurableBranchRootImage {
                 format_version,
                 commit_id: root.commit_id(),
                 partition_images,

@@ -13,7 +13,10 @@ fn planned_query_execution_supports_outgoing_neighborhood_with_canonical_travers
         create_relation_in_partition(execution, &runtime, a, b, "ab", PartitionId(7));
     let second_relation =
         create_relation_in_partition(execution, &runtime, a, c, "ac", PartitionId(13));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -79,7 +82,10 @@ fn planned_query_execution_supports_incoming_neighborhood_with_canonical_travers
         create_relation_in_partition(execution, &runtime, a, c, "ac", PartitionId(7));
     let second_relation =
         create_relation_in_partition(execution, &runtime, b, c, "bc", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -144,7 +150,10 @@ fn planned_query_execution_supports_connectivity_traversal_with_depth_bound() {
         create_relation_in_partition(execution, &runtime, a, b, "ab", PartitionId(7));
     let _second_relation =
         create_relation_in_partition(execution, &runtime, b, c, "bc", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -212,7 +221,10 @@ fn planned_query_execution_normalizes_traversal_seed_order_deterministically() {
         create_relation_in_partition(execution, &runtime, a, c, "ac", PartitionId(7));
     let _second_relation =
         create_relation_in_partition(execution, &runtime, b, c, "bc", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)

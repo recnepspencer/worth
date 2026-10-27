@@ -20,17 +20,13 @@ pub(super) fn require_witnessed_output(
         Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
         Ok(true) => Ok(()),
         Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
-        Err(
-            CompanionPreflightStop::WorkExhausted { .. }
-            | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-            ,
-        ) => Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)),
+
         Err(CompanionPreflightStop::Interrupted(event)) => {
             Err(output_reuse::interruption_denial(event))
         }
         Err(CompanionPreflightStop::WorkCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
         Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
-        Err(CompanionPreflightStop::PreparationMemoryExhausted { .. } | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => Err(output_reuse::memory_denial()),
+        Err => Err(output_reuse::memory_denial()),
         Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
     }
 }

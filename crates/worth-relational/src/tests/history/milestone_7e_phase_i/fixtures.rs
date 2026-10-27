@@ -259,7 +259,9 @@ fn runtime_with_schema_declared_entity_policy_builder(
         .expect("strategy witness registry");
     let builder = RelationalRuntimeApi::builder().schema_registry(registry);
     match medium {
-        Some(medium) => builder.build_durable(medium.attachment()),
-        None => builder.build(),
+        Some(medium) => builder
+            .build_durable(medium.attachment())
+            .expect("valid native runtime configuration"),
+        None => builder.build().expect("valid native runtime configuration"),
     }
 }

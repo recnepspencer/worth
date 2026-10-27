@@ -1,23 +1,8 @@
-use crate::history::data::BranchId;
-
 use super::HistorySubsystem;
-use crate::runtime::RuntimeSubsystem;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use super::RelationalBranchBasisRegistryMetrics;
-
-impl RuntimeSubsystem for HistorySubsystem {
-    type Config = BranchId;
-
-    fn new(config: &Self::Config) -> Self {
-        Self::build_with_main_branch(config.clone())
-    }
-
-    fn fork(&self) -> Self {
-        self.detached_owner_snapshot()
-    }
-}
 
 impl HistorySubsystem {
     pub(crate) fn detached_owner_snapshot(&self) -> Self {
@@ -36,14 +21,14 @@ impl HistorySubsystem {
         for positioned in self.canonical_publication_routes.performed_snapshot() {
             let artifact = self
                 .commit_artifact(positioned.commit.commit_id)
-                .expect("performed owner inventory has its catalog entry");
+                .expect(/* Proof: Owner canonical inventory inserts catalog entries with the performed envelopes; detached import reads that same validated inventory without changing identities or positions. */ "performed owner inventory has its catalog entry");
             canonical_publication_routes
                 .install_recovered(
                     positioned,
                     artifact.envelope_residency(),
                     artifact.roots().clone(),
                 )
-                .expect("owner canonical inventory is valid when detached");
+                .expect(/* Proof: Owner canonical inventory inserts catalog entries with the performed envelopes; detached import reads that same validated inventory without changing identities or positions. */ "owner canonical inventory is valid when detached");
         }
         let mut snapshot = Self {
             runtime_instance_id: self.runtime_instance_id,

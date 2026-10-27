@@ -158,7 +158,7 @@ impl RecordKind for RelationRecordKind {
             endpoints: extra
                 .endpoints
                 .clone()
-                .expect("relation metadata requires endpoints"),
+                .expect(/* Proof: The relation arena constructs extras with endpoints from admitted relation creation; entity extras use the distinct entity arena path. */ "relation metadata requires endpoints"),
             authoritative_aspect_state: extra.authoritative_aspect_state.clone(),
         }
     }

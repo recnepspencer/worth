@@ -15,7 +15,7 @@ impl DurabilityAuthority<'_> {
             .runtime
             .history
             .performed_envelope_residency(id)
-            .expect("performed publication installed its exact route");
+            .expect(/* Proof: Performed publication is issued only after installing the envelope and its positioned owner route; the retained publication witness pins that route. */ "performed publication installed its exact route");
         self.runtime
             .durability
             .push_log_envelope((id, positioned.position(), cell));

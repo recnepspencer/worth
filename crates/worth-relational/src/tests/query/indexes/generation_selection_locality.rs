@@ -10,19 +10,25 @@ fn bounded_generation_selection_does_not_enumerate_retained_builds() {
     let created = create_entity_outcome(execution, &runtime, "selected");
     let entity = changed_entities(&created)[0];
     let field = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.generation-locality".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: field.clone(),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.generation-locality".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: field.clone(),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let receipt = runtime
         .history()
         .immutable_commit_receipt(created.commit.commit_id)
         .unwrap();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     // Repeated cold rebuilds are real native publications. The measured action
     // is the unchanged bounded consumer, not index construction or graph history.
     for retained in 1..=1_000 {

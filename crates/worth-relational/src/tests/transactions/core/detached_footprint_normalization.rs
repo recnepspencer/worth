@@ -12,7 +12,8 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     let raw_source = created_entity("normalized-source");
     let raw_target = created_entity("normalized-target");

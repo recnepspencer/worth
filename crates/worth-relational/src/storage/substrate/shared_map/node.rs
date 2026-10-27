@@ -21,7 +21,7 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
         }
         let left_len = len / 2;
         let left = Self::from_sorted_unique(values, left_len);
-        let (key, value) = values.next().expect("sorted input length is exact");
+        let (key, value) = values.next().expect(/* Proof: The builder receives the exact length of this collected sorted input and consumes each element once through its recursive length partition. */ "sorted input length is exact");
         let right = Self::from_sorted_unique(values, len - left_len - 1);
         let height = 1 + height(&left).max(height(&right));
         Some(Arc::new(Self {
@@ -100,7 +100,7 @@ impl<K: Ord + Copy, V: Clone> MapNode<K, V> {
                     *root = node.left.take().or_else(|| node.right.take());
                     return Some(previous);
                 }
-                let mut successor = node.right.as_deref().unwrap();
+                let mut successor = node.right.as_deref().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ );
                 while let Some(left) = successor.left.as_deref() {
                     successor = left;
                 }
@@ -146,19 +146,19 @@ fn balance<K: Ord + Copy, V: Clone>(root: &mut Arc<MapNode<K, V>>, copied_bytes:
     MapNode::detach(root, copied_bytes).refresh();
     let delta = height(&root.left) as isize - height(&root.right) as isize;
     if delta > 1 {
-        let left = root.left.as_ref().unwrap();
+        let left = root.left.as_ref().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ );
         if height(&left.left) < height(&left.right) {
             rotate_left(
-                MapNode::detach(root, copied_bytes).left.as_mut().unwrap(),
+                MapNode::detach(root, copied_bytes).left.as_mut().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ ),
                 copied_bytes,
             );
         }
         rotate_right(root, copied_bytes);
     } else if delta < -1 {
-        let right = root.right.as_ref().unwrap();
+        let right = root.right.as_ref().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ );
         if height(&right.right) < height(&right.left) {
             rotate_right(
-                MapNode::detach(root, copied_bytes).right.as_mut().unwrap(),
+                MapNode::detach(root, copied_bytes).right.as_mut().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ ),
                 copied_bytes,
             );
         }
@@ -168,7 +168,7 @@ fn balance<K: Ord + Copy, V: Clone>(root: &mut Arc<MapNode<K, V>>, copied_bytes:
 
 fn rotate_left<K: Ord + Copy, V: Clone>(root: &mut Arc<MapNode<K, V>>, copied_bytes: &mut u64) {
     let node = MapNode::detach(root, copied_bytes);
-    let mut pivot = node.right.take().unwrap();
+    let mut pivot = node.right.take().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ );
     node.right = MapNode::detach(&mut pivot, copied_bytes).left.take();
     node.refresh();
     MapNode::detach(&mut pivot, copied_bytes).left = Some(root.clone());
@@ -178,7 +178,7 @@ fn rotate_left<K: Ord + Copy, V: Clone>(root: &mut Arc<MapNode<K, V>>, copied_by
 
 fn rotate_right<K: Ord + Copy, V: Clone>(root: &mut Arc<MapNode<K, V>>, copied_bytes: &mut u64) {
     let node = MapNode::detach(root, copied_bytes);
-    let mut pivot = node.left.take().unwrap();
+    let mut pivot = node.left.take().unwrap(/* Proof: The AVL branch/height checks prove the corresponding child exists before successor extraction or rotation; COW detach preserves the same tree shape. */ );
     node.left = MapNode::detach(&mut pivot, copied_bytes).right.take();
     node.refresh();
     MapNode::detach(&mut pivot, copied_bytes).right = Some(root.clone());

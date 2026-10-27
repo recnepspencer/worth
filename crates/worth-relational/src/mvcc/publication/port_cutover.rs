@@ -159,7 +159,7 @@ impl PreparedBranchPublicationPreflight {
                 |position| {
                     symbol_meanings
                         .publish()
-                        .expect("minted symbol reservations preserve owner meaning");
+                        .expect(/* Proof: The shared owner reservation assigns each text one identity and reserves its frontier before candidate import; same-owner candidate meanings therefore cannot alias. */ "minted symbol reservations preserve owner meaning");
                     // The cutover is the only orchestration this port runs while the
                     // global patch-position reservation is held, so this is where a
                     // concurrent publisher can be made to meet it.
@@ -197,7 +197,7 @@ impl PreparedBranchPublicationPreflight {
         drop(companion_cutover);
         let retired_root = retired_root
             .into_inner()
-            .expect("performed cutover returns the exact previous head root");
+            .expect(/* Proof: The performed cutover consumes the previous live head and returns its retained root; empty/unprepared cells cannot enter this phase. */ "performed cutover returns the exact previous head root");
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
         self.head_retirement.replace_head(retired_root);

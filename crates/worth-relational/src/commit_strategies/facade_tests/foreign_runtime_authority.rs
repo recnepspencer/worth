@@ -19,7 +19,8 @@ fn validate_lowered_plan_denies_foreign_runtime_before_missing_strategy_lookup()
     let runtime_a = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let lowered = {
@@ -37,7 +38,8 @@ fn validate_lowered_plan_denies_foreign_runtime_before_missing_strategy_lookup()
     };
     let runtime_b = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let symbols_before = runtime_b.services.symbols.clone();
     let configured_symbols_before = runtime_b.config().identity.symbol_table.clone();
     let branch_cells_before = runtime_b.history().branch_cells_snapshot();
@@ -76,7 +78,8 @@ fn execute_validated_commit_preserves_foreign_runtime_taxonomy_and_target_state(
     let runtime_a = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let validated = {
@@ -98,7 +101,8 @@ fn execute_validated_commit_preserves_foreign_runtime_taxonomy_and_target_state(
     let runtime_b = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let symbols_before = runtime_b.services.symbols.clone();
     let configured_symbols_before = runtime_b.config().identity.symbol_table.clone();
     let branch_cells_before = runtime_b.history().branch_cells_snapshot();

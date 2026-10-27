@@ -99,7 +99,7 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
     if let Some(first) = packets.first_mut() {
         first.input_bytes = first.input_bytes.saturating_add(retained_plan_bytes);
     }
-    let (proof_boundary, scope_units) = metadata.expect("checked scope fold completed");
+    let (proof_boundary, scope_units) = metadata.expect(/* Proof: The checked fold fills this output on success; every stopped fold returns before this extraction. */ "checked scope fold completed");
     Ok(CheckedPacketPlan {
         packets,
         proof_boundary,

@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
-pub(super) const ASPECT_HISTORY_COMMIT_CEILING: NonZeroUsize = NonZeroUsize::new(4096).unwrap();
+pub(super) const ASPECT_HISTORY_COMMIT_CEILING: NonZeroUsize = NonZeroUsize::new(4096).unwrap(/* Proof: 4096 is a compile-time positive integer representable by usize on all supported targets. */ );
 
 impl HistoryAccess<'_> {
     pub(super) fn demand_branch_history_regions(

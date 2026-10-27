@@ -9,9 +9,7 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         CompanionPreflightStop::Execution(cause) => {
             ConsumedOutputVerificationStop::Execution(cause)
         }
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => {
+        CompanionPreflightStop::WorkCounterOverflow => {
             ConsumedOutputVerificationStop::WorkExhausted
         }
         // Readers wait for the branch cells, but a carried writer meter can
@@ -28,9 +26,7 @@ pub(in crate::domain_computation::primary_graph) fn map_admission_stop(
         | CompanionPreflightStop::RegistrationChanged => {
             ConsumedOutputVerificationStop::Unavailable
         }
-        stop @ (CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. }) => {
+        stop @ (CompanionPreflightStop::PreparationMemoryCounterOverflow) => {
             ConsumedOutputVerificationStop::CapacityExhausted(VerificationCapacityStop::Meter(stop))
         }
         CompanionPreflightStop::Interrupted(event) => {
@@ -128,22 +124,11 @@ mod tests {
 
     use super::*;
 
-    /// Each capacity stop keeps the meter's own typed cause, so its required
-    /// and maximum amounts survive into the caller's denial.
+    /// The surviving counter stop keeps its original typed cause through both
+    /// verification mappings; byte-forecast stops were retired by ee07da2b0e.
     #[test]
     fn capacity_stops_are_not_missing_output_evidence() {
-        for stop in [
-            CompanionPreflightStop::PreparationMemoryExhausted {
-                required: 2,
-                maximum: 1,
-            },
-            CompanionPreflightStop::PreparationMemoryCounterOverflow,
-            CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                requested: 1,
-                retained: 1,
-                maximum: 1,
-            },
-        ] {
+        for stop in [CompanionPreflightStop::PreparationMemoryCounterOverflow] {
             let kept = ConsumedOutputVerificationStop::CapacityExhausted(
                 VerificationCapacityStop::Meter(stop),
             );

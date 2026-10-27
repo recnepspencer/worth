@@ -8,7 +8,8 @@ fn client_key_symbol_policy_retains_preview_meaning_until_publication() {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
         batch_create("intern-me"),
@@ -51,7 +52,8 @@ fn client_key_symbol_policy_skips_symbol_table_snapshot_refresh_when_no_raw_keys
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = create_entity(execution, &runtime, "stable-key");
     let before = runtime.config().identity.symbol_table.clone();
 
@@ -68,7 +70,8 @@ fn client_key_symbol_policy_incrementally_merges_new_snapshot_entries_in_sorted_
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let _ = create_entity(execution, &runtime, "beta");
     let _ = create_entity(execution, &runtime, "alpha");

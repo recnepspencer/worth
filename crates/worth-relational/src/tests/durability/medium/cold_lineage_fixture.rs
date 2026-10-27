@@ -87,7 +87,8 @@ pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) ->
     let mut runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(test_schema_registry())
-        .build_durable(attachment);
+        .build_durable(attachment)
+        .expect("valid native runtime configuration");
     let plan = runtime
         .durability()
         .recovery_plan_from_source(

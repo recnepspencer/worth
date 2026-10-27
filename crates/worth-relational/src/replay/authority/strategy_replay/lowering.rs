@@ -65,12 +65,19 @@ pub(super) fn lower_strategy_replay(
             return Ok(None);
         }
     };
-    let descriptor = basis_runtime
+    let Some(registration) = basis_runtime
         .commit_strategy_registry()
         .get_by_id(replay_request.strategy_id())
-        .expect("replayed strategy request should resolve to a registered descriptor")
-        .descriptor()
-        .clone();
+    else {
+        mismatches.push(strategy_mismatch(
+            ReplayMismatchClass::StrategyLoweringDrift,
+            "replayed strategy descriptor is unavailable".to_owned(),
+            expected_artifacts,
+            None,
+        ));
+        return Ok(None);
+    };
+    let descriptor = registration.descriptor().clone();
     if expected_artifacts.preview_validation_summary().is_some()
         || expected_artifacts.preview_validation_cost().is_some()
         || expected_artifacts.validated_against_version_id().is_some()

@@ -32,7 +32,7 @@ impl RelationalForkPort {
         let target_root = target
             .target_cell
             .root()
-            .expect("prepared fork target retains its selected root");
+            .expect(/* Proof: Only successful fork preparation constructs this private target; it installs the selected source root and immutable fork provenance before returning it. */ "prepared fork target retains its selected root");
         self.owner
             .bind_target_basis_registry_metrics(&mut target.target_cell);
         self.owner

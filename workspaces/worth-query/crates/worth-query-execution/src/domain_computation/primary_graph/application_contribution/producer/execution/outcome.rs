@@ -262,12 +262,8 @@ fn refused_preflight(
     };
     let kind = match stop {
         Stop::SelectedSourceMismatch => Some(WorthQueryOutputDemandDenialKind::PublicationStale),
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
-        Stop::PreparationMemoryExhausted { .. }
-        | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCapacityExhausted { .. } => {
+        Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
+        Stop::PreparationMemoryCounterOverflow => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }
         _ => None,

@@ -289,13 +289,13 @@ impl<'runtime> ReplayAuthority<'runtime> {
             &admission.envelope,
             &admission.verification_plan,
         )
-        .expect("admitted replay envelope continuity must remain valid");
+        .expect(/* Proof: Replay admission validates continuity with this immutable verification plan before constructing admission/reconstruction; the retained envelope cannot change between checks. */ "admitted replay envelope continuity must remain valid");
         let validated_replayed_envelope = validated_replay_continuity_envelope(
             self.runtime,
             &reconstruction.envelope,
             &admission.verification_plan,
         )
-        .expect("reconstructed replay envelope continuity must remain valid");
+        .expect(/* Proof: Replay admission validates continuity with this immutable verification plan before constructing admission/reconstruction; the retained envelope cannot change between checks. */ "reconstructed replay envelope continuity must remain valid");
         compare_replay_surfaces(
             execution,
             self.runtime,

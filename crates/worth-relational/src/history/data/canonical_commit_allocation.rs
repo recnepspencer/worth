@@ -94,7 +94,7 @@ fn optional_canonical_nested_bytes<T: serde::Serialize>(value: &Option<T>) -> u6
         .as_ref()
         .map(|value| {
             rmp_serde::to_vec(value)
-                .expect("canonical authority fields are serializable")
+                .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "canonical authority fields are serializable")
                 .len() as u64
         })
         .unwrap_or(0)

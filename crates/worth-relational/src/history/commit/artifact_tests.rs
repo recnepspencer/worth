@@ -70,14 +70,17 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     use worth_foundational::facade::AspectValue;
 
     let runtime = durable_runtime_with_test_schema();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "touch-index".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "touch-index".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
         .replay()

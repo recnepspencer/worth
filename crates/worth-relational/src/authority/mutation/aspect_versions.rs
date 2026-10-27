@@ -16,7 +16,7 @@ pub(super) fn write_aspect_versions_for_delta(
             let versions = partition
                 .entity_arena
                 .aspect_versions_at_mut(slot)
-                .expect("entity aspect version update requires a materialized slot");
+                .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
                 versions.insert(admitted.aspect(aspect), version_id.0);
             }
@@ -28,7 +28,7 @@ pub(super) fn write_aspect_versions_for_delta(
             let versions = partition
                 .relation_arena
                 .aspect_versions_at_mut(slot)
-                .expect("relation aspect version update requires a materialized slot");
+                .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "relation aspect version update requires a materialized slot");
             for aspect in delta.changed_aspects.iter() {
                 versions.insert(admitted.aspect(aspect), version_id.0);
             }

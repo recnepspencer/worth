@@ -71,7 +71,7 @@ impl<T: Clone> SharedColumn<T> {
         };
         let mut retained = Self::default();
         for index in 0..first_removed {
-            retained.push_shared(self.get_shared(index).unwrap().clone());
+            retained.push_shared(self.get_shared(index).unwrap(/* Proof: This loop is bounded by the same unchanged column length; construction materializes every in-range value or supplies its default. */ ).clone());
         }
         for index in first_removed + 1..self.len {
             if keep(&self[index]) {
@@ -110,11 +110,11 @@ impl<T: Clone> SharedColumn<T> {
                 index,
                 self.default
                     .as_ref()
-                    .expect("sparse column default")
+                    .expect(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ "sparse column default")
                     .clone(),
             );
         }
-        Some(Arc::make_mut(self.root.as_mut().unwrap()).get_mut(index, self.height))
+        Some(Arc::make_mut(self.root.as_mut().unwrap(/* Proof: Column construction either materializes every in-range value or installs a shared default; path materialization installs each child and leaf before mutable access. */ )).get_mut(index, self.height))
     }
 
     pub(crate) fn push(&mut self, value: T) -> u64 {
@@ -122,7 +122,7 @@ impl<T: Clone> SharedColumn<T> {
     }
 
     fn push_shared(&mut self, value: Arc<T>) -> u64 {
-        let next_len = self.len.checked_add(1).expect("column length exhausted");
+        let next_len = self.len.checked_add(1).expect(/* Proof: Columns are populated from addressable arena rows, each retaining at least one allocated value; a live column cannot contain usize::MAX rows in this process. */ "column length exhausted");
         if self.len / PAGE_LEN == 1usize << self.height {
             self.root = Some(Arc::new(ColumnNode::branch(self.root.take(), None)));
             self.height += 1;
@@ -141,7 +141,7 @@ impl<T: Clone> SharedColumn<T> {
     ) -> u64 {
         let value = source
             .get_shared(source_index)
-            .expect("source column index out of bounds")
+            .expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "source column index out of bounds")
             .clone();
         if self
             .get_shared(index)

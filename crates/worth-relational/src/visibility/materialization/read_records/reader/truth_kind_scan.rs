@@ -215,7 +215,7 @@ impl ProjectionRecordReader<'_> {
             state,
             scan.memory
                 .as_mut()
-                .expect("native scan keeps its original loan"),
+                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
         )
         .map_err(NativeScanStop::Request)?;
         for partition_id in partitions {
@@ -231,7 +231,7 @@ impl ProjectionRecordReader<'_> {
         super::super::read_work::record_memory::release(
             scan.memory
                 .as_mut()
-                .expect("native scan keeps its original loan"),
+                .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native scan keeps its original loan"),
             partition_bytes,
         )
         .map_err(NativeScanStop::Request)?;
@@ -276,7 +276,7 @@ impl ProjectionRecordReader<'_> {
                             registry,
                             crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
                         )
-                        .expect("a matching live entity slot must materialize")
+                        .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "a matching live entity slot must materialize")
                     },
                 )?;
             }
@@ -286,13 +286,16 @@ impl ProjectionRecordReader<'_> {
             return Ok(());
         };
         match visibility {
-            KindScanVisibility::Live => unreachable!("current scans returned through Head"),
+            KindScanVisibility::Live => unreachable!(
+                /* Proof: The current-read dispatch returns via Head before this historical branch; only an immutable historical basis reaches this match. */
+                "current scans returned through Head"
+            ),
             KindScanVisibility::AtVersion(version_id) => {
                 let (slots, held) = super::super::read_work::record_memory::occupied_slots(
                     &partition.entity_arena,
                     scan.memory
                         .as_mut()
-                        .expect("native bounded scans carry the initiating result loan"),
+                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "native bounded scans carry the initiating result loan"),
                 )
                 .map_err(NativeScanStop::Request)?;
                 for slot in slots {
@@ -325,14 +328,14 @@ impl ProjectionRecordReader<'_> {
                                 slot,
                                 version_id,
                             )
-                            .expect("a matching historical entity slot must materialize")
+                            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "a matching historical entity slot must materialize")
                         },
                     )?;
                 }
                 super::super::read_work::record_memory::release(
                     scan.memory
                         .as_mut()
-                        .expect("the original loan remains present"),
+                        .expect(/* Proof: The private bounded scan constructor installs its initiating result loan; callbacks only borrow/resize it and no path takes it before scan completion. */ "the original loan remains present"),
                     held,
                 )
                 .map_err(NativeScanStop::Request)?;

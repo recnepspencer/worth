@@ -245,7 +245,7 @@ impl RelationalRetentionGuard {
         let record = state
             .obligations
             .get_mut(&self.obligation_id)
-            .expect("live candidate obligation remains registered through transfer");
+            .expect(/* Proof: The private live candidate token owns this registered obligation until consuming transfer or Drop; no other token can remove its ID. */ "live candidate obligation remains registered through transfer");
         assert_eq!(record.kind, RelationalRetentionObligationKind::Candidate);
         record.kind = RelationalRetentionObligationKind::PerformedSettlement;
         record.root_ids = vec![current_root.id()];
@@ -286,7 +286,7 @@ impl RelationalRetentionGuard {
                 state.active_operations = state
                     .active_operations
                     .checked_sub(1)
-                    .expect("active branch-operation accounting remains balanced");
+                    .expect(/* Proof: Each operation guard increments on construction and decrements once on Drop; guards cannot be copied or released twice. */ "active branch-operation accounting remains balanced");
             }
             record_release(&mut state.counters, record.kind);
             owner.ordinary_counters.record_release(record.kind);
@@ -303,7 +303,7 @@ fn owner_counter(
 ) -> Arc<RelationalBranchRetentionOwnerInner> {
     owner
         .upgrade()
-        .expect("live retention guard keeps its owner available")
+        .expect(/* Proof: The enclosing operation retains the strong retention-owner handle for the entire guard lifetime; this Weak refers to that same owner. */ "live retention guard keeps its owner available")
 }
 
 impl Drop for RelationalRetentionGuard {

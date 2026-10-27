@@ -40,7 +40,7 @@ pub(super) fn derive_aspect_emission_traces(
         .enumerate()
         .map(|(patch_record_index, record)| {
             let delta = delta_index.get(&record.target).copied().unwrap_or_else(|| {
-                panic!(
+                panic!(/* Proof: Patch records and this delta index are derived from the same admitted canonical deltas; emission never creates an additional target. */
                     "missing canonical aspect delta for emitted patch target {:?}",
                     record.target
                 )

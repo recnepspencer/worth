@@ -14,7 +14,10 @@ fn structural_identity_origin_tracks_non_current_scope() {
     let runtime = runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "scoped-identity");
     let version_id = runtime.current_version_id();
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let current = runtime
         .inspect_what_happened()
@@ -60,7 +63,10 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     let replacement_source = create_entity(execution, &runtime, "replacement-source");
     let relation = create_relation(execution, &runtime, original_source, shared_target, "edge");
     let historical_version = runtime.current_version_id();
-    let historical_snapshot = runtime.visibility_authority().snapshot();
+    let historical_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(

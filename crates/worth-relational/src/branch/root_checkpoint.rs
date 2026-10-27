@@ -29,7 +29,7 @@ impl RelationalBranchRootCheckpoint {
         Self { root }
     }
     pub(crate) fn commit_id(&self) -> CommitId {
-        self.root.commit_id().expect("checkpoint root is committed")
+        self.root.commit_id().expect(/* Proof: The private checkpoint root is constructed only after commit linkage and Full region demands have been admitted; its custody retains those regions for this capture. */ "checkpoint root is committed")
     }
     pub(crate) fn regions(&self) -> Vec<RelationalRootRegionCheckpoint> {
         self.root.checkpoint_regions()
@@ -47,7 +47,7 @@ impl RelationalBranchRootCheckpoint {
             .map(|id| {
                 self.root
                     .partition_state(id)
-                    .expect("reconstructive checkpoint requires admitted regions")
+                    .expect(/* Proof: The private checkpoint root is constructed only after commit linkage and Full region demands have been admitted; its custody retains those regions for this capture. */ "reconstructive checkpoint requires admitted regions")
                     .clone()
             })
             .collect()

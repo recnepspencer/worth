@@ -116,6 +116,9 @@ pub struct BoundedStructuralTraversal<'runtime> {
     work: super::CustomInvariantWorkMeter,
 }
 
+// Each budget update is checked before assignment. A read that unwinds can
+// leave spent work, but cannot restore capacity or invalidate the remaining
+// numeric bounds; retaining that prefix is the conservative accounting result.
 impl<'runtime> BoundedStructuralTraversal<'runtime> {
     pub(crate) fn new(
         performance: crate::performance::PerformanceAccess<'runtime>,
@@ -150,7 +153,7 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
     pub(crate) fn summary(&self) -> CustomInvariantTraversalSummary {
         self.budget
             .lock()
-            .expect("custom invariant traversal budget mutex must not be poisoned")
+            .unwrap_or_else(|error| error.into_inner())
             .summary()
     }
 
@@ -163,7 +166,7 @@ impl<'runtime> BoundedStructuralTraversal<'runtime> {
         let mut budget = self
             .budget
             .lock()
-            .expect("custom invariant traversal budget mutex must not be poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         let allowed_depth = budget.checked_depth(max_depth)?;
         budget.charge_frontier(seeds.len())?;
         if !self.work.try_charge(seeds.len().max(1)) {

@@ -15,7 +15,8 @@ fn retained_root_preserves_relation_aspect_history_without_record_pins() {
             reclaim_batch_size: 32,
             retention_backend: RetentionBackend::PinTrackedRetention,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source_outcome = create_entity_outcome(execution, &runtime, "source");
     let target_outcome = create_entity_outcome(execution, &runtime, "target");
     let source = changed_entities(&source_outcome)[0];
@@ -102,7 +103,10 @@ fn delete_relation(
     runtime: &RelationalRuntime,
     relation: crate::facade::identity::RelationId,
 ) -> DeletedAspectRelationEvidence {
-    let created_snapshot = runtime.visibility_authority().snapshot();
+    let created_snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let mut delete_txn = crate::tests::support::test_owner_begin_transaction_for_main(runtime);
     delete_txn
         .push_batch(

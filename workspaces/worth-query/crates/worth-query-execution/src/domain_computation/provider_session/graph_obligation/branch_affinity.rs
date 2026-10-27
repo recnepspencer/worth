@@ -83,7 +83,8 @@ mod tests {
                     })
                     .expect("branch-affinity fixture schema registers"),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let mut transaction = {
             let transaction_validation_input = runtime
                 .admit_branch_basis(&runtime.main_branch_identity())

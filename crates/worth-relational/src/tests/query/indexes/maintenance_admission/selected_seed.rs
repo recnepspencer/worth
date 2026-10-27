@@ -6,14 +6,17 @@ fn request_paid_selected_field_refresh_leaves_unrelated_cold_index_unpublished()
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let (runtime, basis, request) = fixture(execution);
-    let unrelated = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "unrelated-cold-field".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let unrelated = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "unrelated-cold-field".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let selected = request.index_ids[0];
     let observation = basis.observation();
     let mut refused_budget = budget();

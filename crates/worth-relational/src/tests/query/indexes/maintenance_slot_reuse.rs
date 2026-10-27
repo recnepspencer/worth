@@ -40,6 +40,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
                 },
                 branch_scoped: true,
             })
+            .expect("index fixture has identity capacity")
             .index_id
     };
     let cold_id = register("reuse.cold".into());

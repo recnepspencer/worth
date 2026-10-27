@@ -63,7 +63,7 @@ impl RelationalBranchHeadRetentionCell {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .as_mut()
-            .expect("live branch owns its head retention obligation")
+            .expect(/* Proof: A live head cell is constructed with its obligation; only the consuming retirement transition takes it, after excluding further live operations. */ "live branch owns its head retention obligation")
             .transfer(owner_identity, identity, previous_root, next_root);
     }
 
@@ -78,7 +78,7 @@ impl RelationalBranchHeadRetentionCell {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .take()
-            .expect("live branch owns its head retention obligation");
+            .expect(/* Proof: A live head cell is constructed with its obligation; only the consuming retirement transition takes it, after excluding further live operations. */ "live branch owns its head retention obligation");
         obligation.consume(owner_identity, identity, previous_root);
     }
 }

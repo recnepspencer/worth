@@ -62,7 +62,7 @@ pub(crate) fn collect_custom_invariant_execution_receipts(
             };
             registry
                 .get(identity, result.execution_point)
-                .expect("executed custom invariant remains in its frozen registry");
+                .expect(/* Proof: Execution uses the frozen registry retained by this validation input; receipts refer only to entries resolved from that registry. */ "executed custom invariant remains in its frozen registry");
             Some(CustomInvariantExecutionReceipt {
                 identity: identity.clone(),
                 execution_point: result.execution_point,
@@ -74,11 +74,11 @@ pub(crate) fn collect_custom_invariant_execution_receipts(
                 },
                 provenance: result
                     .custom_provenance()
-                    .expect("custom execution results carry candidate provenance")
+                    .expect(/* Proof: Only the custom-invariant execution adapter constructs these result rows, attaching candidate provenance to every custom result. */ "custom execution results carry candidate provenance")
                     .clone(),
                 work_units: result
                     .custom_provenance()
-                    .expect("custom execution results carry candidate provenance")
+                    .expect(/* Proof: Only the custom-invariant execution adapter constructs these result rows, attaching candidate provenance to every custom result. */ "custom execution results carry candidate provenance")
                     .work_units,
             })
         })

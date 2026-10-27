@@ -129,7 +129,7 @@ pub(crate) fn encode_captured(
                 .iter()
                 .map(|(key, member)| {
                     let RelationalCheckpointMember::New { bytes, .. } = member else {
-                        unreachable!("inline member admitted above")
+                        unreachable!(/* Proof: Inline member admission is matched and returned above; this branch is reached only with the other member representation. */ "inline member admitted above")
                     };
                     (*key, ByteString(bytes))
                 })

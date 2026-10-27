@@ -101,7 +101,8 @@ impl World {
         .unwrap();
         let native = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
             .schema_registry(registry)
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let entity_name = if required { "RequiredNode" } else { "Node" };
         let aspect = if required { "RequiredNotes" } else { "Notes" };
         let mut values = std::collections::BTreeMap::new();

@@ -121,7 +121,7 @@ impl RelationalAuthoritativeAllocationAccounting {
                 .saturating_add(region.partition_state_bytes);
             let partition = root
                 .partition_state(region.partition_id)
-                .expect("observed region owns its partition");
+                .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");
             for allocation in
                 crate::inspection::mvcc::partition_allocations::authoritative_partition_allocations(
                     runtime_instance_id,

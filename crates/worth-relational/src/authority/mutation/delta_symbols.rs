@@ -38,12 +38,12 @@ impl<'delta, 'symbols> AdmittedDeltaSymbols<'delta, 'symbols> {
     pub(super) fn aspect(&self, aspect: &AspectKey) -> Symbol {
         self.symbols
             .symbol(aspect.as_str())
-            .expect("delta admission includes this aspect")
+            .expect(/* Proof: Delta symbol admission walks these exact aspect and field keys before constructing this private admitted delta view. */ "delta admission includes this aspect")
     }
 
     pub(super) fn field(&self, field: &FieldKey) -> Symbol {
         self.symbols
             .symbol(field.as_str())
-            .expect("delta admission includes this field")
+            .expect(/* Proof: Delta symbol admission walks these exact aspect and field keys before constructing this private admitted delta view. */ "delta admission includes this field")
     }
 }

@@ -1,3 +1,4 @@
+// Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
 use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
 use crate::runtime::RelationalPreparationRuntime;
@@ -349,7 +350,7 @@ pub(crate) fn record_preparation_counters(
         .instrumentation
         .complexity_counters
         .lock()
-        .expect("complexity counter lock poisoned");
+        .unwrap_or_else(|error| error.into_inner());
     counters.commit_topology_flags = structural_summary.commit_topology.mask();
     counters.partitions_touched_by_commit = working_state.touched_partition_count();
     counters.bulk_entity_slots_reserved = structural_summary.bulk_entity_slots_reserved;
@@ -365,7 +366,7 @@ pub(crate) fn record_mutation_counters(
         .instrumentation
         .complexity_counters
         .lock()
-        .expect("complexity counter lock poisoned");
+        .unwrap_or_else(|error| error.into_inner());
     counters.entity_slots_touched_by_commit = working_state
         .mutation_journal()
         .values()

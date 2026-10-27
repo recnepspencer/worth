@@ -101,6 +101,7 @@ pub(super) fn runtime_with_test_schema_profile_and_custom_invariant(
         .schema_registry(test_schema_registry())
         .custom_invariant(CustomInvariantRegistration::new(MaterializationWaveRule).unwrap())
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn fresh_diagnostics_metrics(

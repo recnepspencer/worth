@@ -40,6 +40,6 @@ impl BranchBoundRelationalTransaction {
         Ok(self
             .last_merged_plan
             .as_ref()
-            .expect("accepted plan remains in this transaction"))
+            .expect(/* Proof: Successful plan acceptance stores Some(plan) immediately before this borrow; no intervening operation clears it. */ "accepted plan remains in this transaction"))
     }
 }

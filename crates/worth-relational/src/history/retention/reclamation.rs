@@ -61,7 +61,7 @@ impl super::RelationalBranchRetentionOwner {
             if let Some(retired) = reclaimable {
                 let root = retired
                     .root
-                    .expect("retired inventory entry owns its exact root");
+                    .expect(/* Proof: Only retirement of a retained head inserts these entries, moving Some(root) into the inventory; extraction consumes the entry once. */ "retired inventory entry owns its exact root");
                 if let Some(commit_id) = root.commit_id() {
                     remove_commit_root(&self.inner, commit_id, root_key, generation);
                 }

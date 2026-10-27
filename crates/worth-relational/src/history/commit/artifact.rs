@@ -251,7 +251,7 @@ impl RelationalCommitArtifact {
     pub(crate) fn envelope(&self) -> Arc<CanonicalCommitEnvelope> {
         self.envelope
             .get()
-            .expect("envelope body requires an accepted demand")
+            .expect(/* Proof: This private access follows successful envelope demand admission and retains its custody; admission seals both the envelope payload and its exact position. */ "envelope body requires an accepted demand")
     }
 
     pub(crate) fn canonical_payload_bytes(&self) -> u64 {
@@ -264,7 +264,7 @@ impl RelationalCommitArtifact {
     pub(crate) fn canonical_payload_digest(&self) -> [u8; 32] {
         self.envelope
             .payload_digest()
-            .expect("payload digest requires an admitted envelope")
+            .expect(/* Proof: This private access follows successful envelope demand admission and retains its custody; admission seals both the envelope payload and its exact position. */ "payload digest requires an admitted envelope")
     }
 
     pub(crate) fn authoritative_allocation_observations(

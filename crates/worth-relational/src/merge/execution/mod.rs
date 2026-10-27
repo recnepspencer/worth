@@ -26,26 +26,36 @@ impl<'runtime> MergeAccess<'runtime> {
     ) -> Result<PreparedMergeExecution, MergeExecutionPreparationError> {
         let source_branch = request.source_branch().clone();
         let target_branch = request.target_branch().clone();
-        let bound =
-            self.runtime
-                .bind_merge_execution_request(request)
-                .map_err(|denial| match denial {
-                    crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(
-                        branch,
-                    ) if branch == source_branch => MergeExecutionPreparationError::Planning(
+        let bound = self
+            .runtime
+            .bind_merge_execution_request(request)
+            .map_err(|denial| match denial {
+                crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(branch)
+                    if branch == source_branch =>
+                {
+                    MergeExecutionPreparationError::Planning(
                         crate::merge::data::MergePlanningError::MissingSourceHead {
                             branch_id: branch,
                         },
-                    ),
-                    crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(
-                        branch,
-                    ) if branch == target_branch => MergeExecutionPreparationError::Planning(
+                    )
+                }
+                crate::merge::data::RelationalMergeRequestBindingDenial::UnknownBranch(branch)
+                    if branch == target_branch =>
+                {
+                    MergeExecutionPreparationError::Planning(
                         crate::merge::data::MergePlanningError::MissingTargetHead {
                             branch_id: branch,
                         },
+                    )
+                }
+                other => MergeExecutionPreparationError::Planning(
+                    crate::merge::data::MergePlanningError::RequestNormalization(
+                        crate::merge::data::RelationalMergeRequestNormalizationDenial::OwnerBinding(
+                            other,
+                        ),
                     ),
-                    other => MergeExecutionPreparationError::OwnerBinding(other),
-                })?;
+                ),
+            })?;
         self.prepare_bound_merge_execution(execution, bound)
     }
 

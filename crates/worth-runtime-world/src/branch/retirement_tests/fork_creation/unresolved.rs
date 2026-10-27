@@ -111,7 +111,8 @@ fn an_unresolved_durable_fork_retains_its_attempt_until_reopen() {
     let journal = Arc::new(Mutex::new(Journal::default()));
     let relational = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .build_durable(Box::new(LostForkAnswer(Arc::clone(&journal))));
+        .build_durable(Box::new(LostForkAnswer(Arc::clone(&journal))))
+        .expect("valid native runtime configuration");
     let mut fixture = crate::branch::reference_test_fixture::real_fixture_with_relational_runtime(
         relational, 12, 12,
     );
@@ -189,7 +190,8 @@ fn an_unresolved_durable_fork_retains_its_attempt_until_reopen() {
     drop(durable);
     let mut reopened = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = reopened
         .durability()
         .recovery_plan_from_source(

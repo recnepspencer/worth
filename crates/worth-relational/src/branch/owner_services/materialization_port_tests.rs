@@ -86,7 +86,10 @@ fn durability_replays_suspended_and_restored_materialization_roots() {
     let (_, recovered_restored) =
         crate::tests::support::recover_with(execution, &runtime, durable_runtime_with_test_schema);
     assert_cold_inventory(&recovered_restored);
-    let current = recovered_restored.visibility_authority().snapshot();
+    let current = recovered_restored
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = recovered_restored
         .read_truth()
         .read_snapshot(&current, execution)

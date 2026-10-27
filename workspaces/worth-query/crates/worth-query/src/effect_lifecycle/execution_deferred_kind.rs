@@ -42,12 +42,8 @@ pub(crate) const fn companion_stop_is_transient(stop: &CompanionPreflightStop) -
         // companion deferral is built, so it never reaches this split.
         CompanionPreflightStop::Interrupted(_)
         | CompanionPreflightStop::ForeignCell
-        | CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
         | CompanionPreflightStop::WorkCounterOverflow
-        | CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => false,
+        | CompanionPreflightStop::PreparationMemoryCounterOverflow => false,
     }
 }
 
@@ -58,12 +54,7 @@ mod tests {
     #[test]
     fn a_resource_refusal_does_not_clear_on_an_unchanged_retry() {
         for stop in [
-            CompanionPreflightStop::WorkExhausted {
-                required: 1,
-                maximum: 0,
-            },
-            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: 0 },
-            CompanionPreflightStop::WorkExhaustedWithoutRequirement { maximum: u64::MAX },
+            CompanionPreflightStop::Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted),
             CompanionPreflightStop::WorkCounterOverflow,
         ] {
             assert!(

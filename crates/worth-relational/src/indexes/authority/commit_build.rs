@@ -38,13 +38,14 @@ impl<'runtime> IndexAuthority<'runtime> {
             return refusal;
         }
         let work_budget = lease.map(|_| crate::execution::RequestWorkBudget::new());
-        let (definitions, checked_inputs, present_indexes, missing_indexes) =
-            if let Some(lease) = lease {
-                match plan_index_packets_checked(
+        let (definitions, checked_inputs, present_indexes, missing_indexes) = if let Some(lease) =
+            lease
+        {
+            match plan_index_packets_checked(
                     self.runtime,
                     &request.index_ids,
                     lease,
-                    work_budget.as_ref().expect("leased index work account"),
+                    work_budget.as_ref().expect(/* Proof: The leased preparation branch creates its work account before this callback; the unleased branch does not invoke this callback. */ "leased index work account"),
                 ) {
                     Ok(planned) => (
                         Vec::new(),
@@ -62,15 +63,15 @@ impl<'runtime> IndexAuthority<'runtime> {
                         };
                     }
                 }
-            } else {
-                let (definitions, missing) =
-                    planned_index_definitions(self.runtime, &request.index_ids);
-                let present: Vec<_> = definitions
-                    .iter()
-                    .map(|definition| definition.index_id)
-                    .collect();
-                (definitions, None, present, missing)
-            };
+        } else {
+            let (definitions, missing) =
+                planned_index_definitions(self.runtime, &request.index_ids);
+            let present: Vec<_> = definitions
+                .iter()
+                .map(|definition| definition.index_id)
+                .collect();
+            (definitions, None, present, missing)
+        };
         failed_indexes.extend(missing_indexes);
 
         let strategy =

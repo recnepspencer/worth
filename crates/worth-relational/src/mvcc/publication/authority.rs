@@ -269,7 +269,7 @@ fn prepare_versioned_publication(
             .root()
             .descriptor()
             .cloned()
-            .expect("prepared branch root has a descriptor"),
+            .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared branch root has a descriptor"),
     );
     validated
         .next_cell

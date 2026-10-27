@@ -22,7 +22,8 @@ fn serial(token: CancellationToken) -> SerialRequest {
 fn cancelled_native_preparation_is_a_control_stop_not_no_kind() {
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = CancellationSource::new();
     let request = serial(source.token());
     let execution = ExecutionRequest::serial(&request);
@@ -59,7 +60,8 @@ fn cancelled_relation_equality_is_a_control_stop_not_false() {
     };
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = CancellationSource::new();
     let request = serial(source.token());
     let execution = ExecutionRequest::serial(&request);

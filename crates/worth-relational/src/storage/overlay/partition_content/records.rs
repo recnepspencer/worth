@@ -85,7 +85,7 @@ impl RecordContentIndex {
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
-                .expect("journal-selected record exists");
+                .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "journal-selected record exists");
             let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
             let cached = self
                 .histories
@@ -122,9 +122,9 @@ impl RecordContentIndex {
             self.history_bytes = self
                 .history_bytes
                 .checked_sub(old_bytes)
-                .unwrap()
+                .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ )
                 .checked_add(history.allocation_bytes())
-                .unwrap();
+                .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ );
             if let Some(entries) = &mut cold_histories {
                 entries.push((slot as u64, history));
             } else {

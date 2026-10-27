@@ -13,7 +13,10 @@ fn subscriber_cdc_is_snapshot_stable_under_hot_rewrite_pressure() {
     let baseline_unpinned = create_entity_outcome(execution, &unpinned_runtime, "baseline");
     let pinned_entity = changed_entities(&baseline_pinned)[0];
     let unpinned_entity = changed_entities(&baseline_unpinned)[0];
-    let pinned_snapshot = pinned_runtime.visibility_authority().snapshot();
+    let pinned_snapshot = pinned_runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     let rewrite_names = ["rewrite-1", "rewrite-2", "rewrite-3", "rewrite-4"];
     let mut pinned_latest = baseline_pinned.clone();

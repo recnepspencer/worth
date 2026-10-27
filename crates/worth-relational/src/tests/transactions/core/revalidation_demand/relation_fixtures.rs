@@ -92,6 +92,7 @@ pub(super) fn runtime() -> RelationalRuntime {
         ))
         .custom_invariant(CustomInvariantRegistration::new(RelationLabelRule).unwrap())
         .build()
+        .expect("valid native runtime configuration")
 }
 pub(super) fn batch(id: RelationId) -> WorkerIntentBatch {
     WorkerIntentBatch::new("judge-unchanged-relation").push(MutationIntent::Relation(

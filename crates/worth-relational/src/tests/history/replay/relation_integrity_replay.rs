@@ -48,7 +48,8 @@ fn replay_contract_preserves_relation_integrity_declared_schema() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let outcome = create_relation_outcome(execution, &runtime, source, target, "guarded");

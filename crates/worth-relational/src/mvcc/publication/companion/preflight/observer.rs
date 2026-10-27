@@ -43,7 +43,10 @@ impl CompanionPublicationCompletionObserver {
             PREPARED => CompanionPublicationCompletion::Prepared,
             INSTALLED => CompanionPublicationCompletion::Installed,
             ABORTED => CompanionPublicationCompletion::Aborted,
-            _ => unreachable!("native completion state has three values"),
+            _ => unreachable!(
+                /* Proof: This private atomic is initialized and written only with the three completion-state constants matched above. */
+                "native completion state has three values"
+            ),
         }
     }
 

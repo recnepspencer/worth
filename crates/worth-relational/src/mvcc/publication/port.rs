@@ -229,7 +229,7 @@ impl PreparedCanonicalBranchMovement {
             symbol_meanings: identities.symbols.seal_for_publication(
                 &root
                     .canonical_envelope()
-                    .expect("prepared root has its canonical envelope")
+                    .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared root has its canonical envelope")
                     .symbol_texts,
             ),
             next_cell,

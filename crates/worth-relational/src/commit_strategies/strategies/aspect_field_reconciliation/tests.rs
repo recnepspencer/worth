@@ -30,6 +30,7 @@ fn strategy_runtime(
             &descriptor,
         ))
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn registry_with_replicas_field() -> crate::schema::data::RelationalSchemaRegistry {
@@ -96,7 +97,10 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -155,7 +159,10 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -208,7 +215,10 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let error = runtime
         .commit_strategies()
         .execute(&request, &snapshot, execution)

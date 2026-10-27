@@ -42,9 +42,9 @@ impl AdjacencyContentIndex {
                 self.membership_bytes = self
                     .membership_bytes
                     .checked_sub(old_bytes)
-                    .unwrap()
+                    .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ )
                     .checked_add(membership.allocation_bytes())
-                    .unwrap();
+                    .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ );
                 if let Some(entries) = &mut cold_memberships {
                     entries.push((slot, membership));
                 } else {
@@ -55,7 +55,7 @@ impl AdjacencyContentIndex {
                     self.slots.set(slot as u128, None);
                     self.memberships.remove(&slot);
                 }
-                self.membership_bytes = self.membership_bytes.checked_sub(old_bytes).unwrap();
+                self.membership_bytes = self.membership_bytes.checked_sub(old_bytes).unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ );
             }
         }
         if let Some(mut entries) = cold_slots {

@@ -143,10 +143,9 @@ impl HistorySubsystem {
         )
     }
 
-    pub(super) fn build_with_main_branch(main_branch: BranchId) -> Self {
+    pub(crate) fn from_main_cell(mut main_cell: RelationalBranchReferenceCell) -> Self {
+        let main_branch = main_cell.identity().branch_id().clone();
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
-        let mut main_cell = RelationalBranchReferenceCell::empty(0, main_branch.clone())
-            .expect("configured main branch must have a valid identity");
         main_cell.bind_basis_registry_metrics(Arc::clone(&basis_registry_metrics));
         Self {
             runtime_instance_id: 0,
@@ -237,24 +236,28 @@ impl HistorySubsystem {
         Ok(())
     }
 
-    pub(crate) fn set_runtime_instance_id(&mut self, runtime_instance_id: u64) {
-        self.runtime_instance_id = runtime_instance_id;
-        self.basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
+    pub(crate) fn set_runtime_instance_id(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+        let metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         self.record_branch_population_scan();
-        let cells = self.branch_cells.take_all();
-        self.branch_cells.restore_all(
-            cells
-                .into_values()
-                .map(|cell| {
-                    let mut rebound = cell
-                        .rebind_runtime(runtime_instance_id)
-                        .expect("existing branch identities must remain valid when rebound");
-                    rebound.bind_basis_registry_metrics(Arc::clone(&self.basis_registry_metrics));
-                    (rebound.identity().branch_id().clone(), rebound)
-                })
-                .collect(),
-        );
+        // Complete every fallible identity rebind before replacing live cells.
+        let cells = self
+            .branch_cells
+            .values()
+            .into_iter()
+            .map(|cell| {
+                let mut rebound = cell.rebind_runtime(runtime_instance_id)?;
+                rebound.bind_basis_registry_metrics(Arc::clone(&metrics));
+                Ok((rebound.identity().branch_id().clone(), rebound))
+            })
+            .collect::<Result<_, crate::branch::RelationalBranchObservationConstructionDenial>>()?;
+        self.branch_cells.restore_all(cells);
+        self.runtime_instance_id = runtime_instance_id;
+        self.basis_registry_metrics = metrics;
         self.reset_retention_owner(runtime_instance_id);
+        Ok(())
     }
 
     pub(crate) fn fork_snapshot(
@@ -320,10 +323,14 @@ impl HistorySubsystem {
         Ok(fork)
     }
 
-    pub(crate) fn bind_fork_runtime(&mut self, runtime_instance_id: u64) {
-        self.set_runtime_instance_id(runtime_instance_id);
+    pub(crate) fn bind_fork_runtime(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+        self.set_runtime_instance_id(runtime_instance_id)?;
         self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
         self.branch_population_scans = Arc::new(AtomicU64::new(0));
+        Ok(())
     }
 
     pub(crate) fn branch_cell(

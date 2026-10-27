@@ -55,7 +55,10 @@ impl<'runtime> MergeAccess<'runtime> {
         let foundational_request =
             self.lower_merge_request_to_foundational(compiled.request().clone());
         let TransitionOutcome::Success(foundational_request) = foundational_request else {
-            panic!("prepared execution request must lower to foundational merge vocabulary");
+            panic!(
+                /* Proof: CompiledMergeExecution can be constructed only after this same request lowers successfully to foundational vocabulary; its request is immutable thereafter. */
+                "prepared execution request must lower to foundational merge vocabulary"
+            );
         };
 
         RelationalMergeProofPacket::retained_execution_admitted(
@@ -100,7 +103,7 @@ fn planning_digest(
     decision_log_digest_basis: &MergePlanningDecisionLogDigestBasis,
 ) -> String {
     let bytes = rmp_serde::to_vec_named(&(digest_basis, decision_log_digest_basis))
-        .expect("merge planning digest basis must encode");
+        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "merge planning digest basis must encode");
     let digest = Sha256::digest(bytes);
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }

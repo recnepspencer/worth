@@ -45,7 +45,8 @@ pub(super) fn installed_with(
     let mut runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
         .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let receipt = runtime
         .prepare_initial_schema_installation()
         .unwrap()
@@ -81,14 +82,17 @@ pub(super) fn world_with_installation(
             )
         }),
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: INDEX,
-        name: "derived canonical equality".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator("derived"),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: INDEX,
+            name: "derived canonical equality".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator("derived"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     assert_eq!(
         index.index_id, INDEX,
         "fresh owner assigns the fixture index"

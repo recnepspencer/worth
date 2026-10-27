@@ -1,5 +1,7 @@
 pub mod builder;
 mod construction;
+mod construction_denial;
+pub use construction_denial::RelationalRuntimeConstructionDenial;
 mod field_text;
 mod guided;
 mod initial_schema_installation;

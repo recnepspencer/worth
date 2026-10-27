@@ -14,7 +14,8 @@ fn sibling_target_denial_precedes_raw_client_key_normalization_and_leaves_zero_r
     let mut runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_entity(execution, &runtime, "shared-root");
     fork_from_main(execution, &mut runtime, "storm");
     fork_from_main(execution, &mut runtime, "maintenance");
@@ -78,7 +79,8 @@ fn unowned_created_endpoint_denial_precedes_normalization_and_leaves_zero_residu
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let missing = CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: KindId(1),

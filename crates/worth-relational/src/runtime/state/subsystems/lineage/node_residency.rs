@@ -167,7 +167,10 @@ impl NodePageCell {
             }
             NodePageState::Damaged(failure) => Err((*failure).into()),
             NodePageState::Cold => {
-                unreachable!("a successful page load installs resident contents")
+                return Err(node_page::failure(
+                    &self.descriptor,
+                    Cause::SourceUnavailable,
+                ))
             }
         }
     }
@@ -200,16 +203,13 @@ impl ResidentLineageNode {
     }
     pub(crate) fn reject_binding(&self) -> Failure {
         if let Some(page) = &self._page {
-            let failure = node_page::failure(&page.cell.descriptor, Cause::Damaged);
-            if let Failure::StorageUnavailable(failure) = failure {
-                *page
-                    .cell
-                    .state
-                    .lock()
-                    .unwrap_or_else(|error| error.into_inner()) = NodePageState::Damaged(failure);
-                return failure.into();
-            }
-            unreachable!("a node binding refusal is a storage failure");
+            let failure = node_page::storage_failure(&page.cell.descriptor, Cause::Damaged);
+            *page
+                .cell
+                .state
+                .lock()
+                .unwrap_or_else(|error| error.into_inner()) = NodePageState::Damaged(failure);
+            return failure.into();
         }
         crate::storage::data::RelationalStorageUnavailable {
             subject: crate::storage::data::RelationalStorageSubject::Lineage {

@@ -94,9 +94,12 @@ pub(super) fn apply_operation(
                 step,
             );
         }
-        ScenarioOperation::CaptureSnapshot => {
-            snapshots.push(runtime.visibility_authority().snapshot())
-        }
+        ScenarioOperation::CaptureSnapshot => snapshots.push(
+            runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted"),
+        ),
         ScenarioOperation::ReleaseSnapshot { snapshot_slot } => {
             release_snapshot(runtime, snapshots, *snapshot_slot);
         }

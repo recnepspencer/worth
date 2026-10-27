@@ -1,6 +1,6 @@
 //! Export exact frame bytes through the same event cell and sticky failure state.
 use super::{
-    event_page, Cause, EventPageCell, EventPageState, Failure, RelationalDurableColdSource,
+    event_page, Cause, EventPageCell, EventPageState, RelationalDurableColdSource,
     RelationalDurableMemberCustody, RelationalDurableMemberLocator, RuntimeLineageEventResidency,
     LINEAGE_EVENT_PAGE_BYTES,
 };
@@ -49,11 +49,7 @@ impl EventPageCell {
         if let Err(cause) = &result
             && cause.is_proven_damage()
         {
-            let Failure::StorageUnavailable(failure) =
-                event_page::failure(&self.descriptor, *cause)
-            else {
-                unreachable!()
-            };
+            let failure = event_page::storage_failure(&self.descriptor, *cause);
             *state = EventPageState::Damaged(failure);
         }
         result

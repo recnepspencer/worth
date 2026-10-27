@@ -15,7 +15,8 @@ fn branch_head_visibility_updates_incrementally_under_branch_churn() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];
@@ -56,7 +57,8 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];

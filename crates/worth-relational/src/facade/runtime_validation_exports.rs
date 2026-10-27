@@ -12,3 +12,5 @@ pub use crate::validation::data::{
     StructuralRelationRecord, StructuralRelationView,
 };
 pub use crate::validation::engine::InvariantExecutionResult;
+
+pub use crate::validation::DuplicateCustomInvariantRegistration;

@@ -46,7 +46,8 @@ pub(super) fn transcript_runtime(
 ) -> WorthQueryRuntime {
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-transcript-product")
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let product_world_resources =
         crate::consumer_kit::test_backend::in_memory_test_product_world_resources();
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(

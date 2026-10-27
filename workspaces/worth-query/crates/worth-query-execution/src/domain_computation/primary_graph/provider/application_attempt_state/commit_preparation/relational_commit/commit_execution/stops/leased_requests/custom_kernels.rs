@@ -97,7 +97,8 @@ fn commit_probe(probe: Probe) -> Outcome {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema())
         .custom_invariant(CustomInvariantRegistration::new(probe).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut lease_request = request(32 * 1024 * 1024, 1_000_000);
     if matches!(probe, Probe::Unchecked) {
         // Unchecked kernels are lawful on serial backing; this refusal needs

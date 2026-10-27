@@ -127,11 +127,11 @@ impl RelationalHeadRetirementReservation {
             .owner
             .retired_roots
             .get_mut(&self.root_key)
-            .expect("reserved root remains in the concurrent inventory");
+            .expect(/* Proof: A live retirement reservation registers this exact root key and pins its inventory entry; reclamation cannot remove an entry with live reservations. */ "reserved root remains in the concurrent inventory");
         entry.reservations = entry
             .reservations
             .checked_sub(1)
-            .expect("retirement reservation accounting remains balanced");
+            .expect(/* Proof: Each non-Clone reservation increments once at construction and decrements once on consuming transfer or Drop; Drop is disarmed after transfer. */ "retirement reservation accounting remains balanced");
         let first_retirement = !entry.retired;
         entry.retired = true;
         drop(entry);
@@ -165,11 +165,11 @@ impl RelationalHeadRetirementReservation {
                 .owner
                 .retired_roots
                 .get_mut(&self.root_key)
-                .expect("live reservation remains in the concurrent inventory");
+                .expect(/* Proof: A live retirement reservation registers this exact root key and pins its inventory entry; reclamation cannot remove an entry with live reservations. */ "live reservation remains in the concurrent inventory");
             entry.reservations = entry
                 .reservations
                 .checked_sub(1)
-                .expect("retirement reservation accounting remains balanced");
+                .expect(/* Proof: Each non-Clone reservation increments once at construction and decrements once on consuming transfer or Drop; Drop is disarmed after transfer. */ "retirement reservation accounting remains balanced");
             entry.reservations == 0 && !entry.retired
         };
         if removable

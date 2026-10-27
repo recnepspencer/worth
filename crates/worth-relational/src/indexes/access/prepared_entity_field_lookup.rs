@@ -39,7 +39,10 @@ impl PreparedEntityFieldLookup {
     }
     pub fn field_locator(&self) -> &AspectFieldLocator {
         let DerivedIndexKind::EntityField { field_locator } = &self.definition.kind else {
-            unreachable!("prepared field definition was checked at admission")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared field definition was checked at admission"
+            )
         };
         field_locator
     }
@@ -67,7 +70,10 @@ impl PreparedEntityFieldLookup {
             .consult()
             .map_err(|cause| denied(Denial::Execution(cause.into()), self.index_id()))?;
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            unreachable!("prepared generation is an entity field index")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared generation is an entity field index"
+            )
         };
         Ok(entries.is_empty())
     }
@@ -107,7 +113,10 @@ impl PreparedEntityFieldLookup {
         let key = AuthoritativeFieldComparisonKey::from_aspect_value(value);
         super::prepared_lookup_admission::admit(execution, self.index_id(), &mut admission)?;
         let DerivedIndexEntries::EntityField(entries) = &self.generation.entries else {
-            unreachable!("prepared generation is an entity field index")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared generation is an entity field index"
+            )
         };
         let mut read = PreparedCollectionRead {
             prepared: self,

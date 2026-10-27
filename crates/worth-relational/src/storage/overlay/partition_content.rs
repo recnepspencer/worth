@@ -186,7 +186,7 @@ fn hash_value(domain: &[u8], value: &impl Serialize) -> [u8; 32] {
     hash.update((domain.len() as u64).to_be_bytes());
     hash.update(domain);
     rmp_serde::encode::write(&mut Sha256Writer(&mut hash), value)
-        .expect("authoritative in-memory values are serializable");
+        .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "authoritative in-memory values are serializable");
     hash.finalize().into()
 }
 

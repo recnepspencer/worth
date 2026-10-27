@@ -5,6 +5,8 @@ use worth_foundational::facade::{AspectFieldLocator, AspectKey, FieldKey};
 
 mod admitted_selection;
 mod cold_checkpoint;
+#[cfg(test)]
+mod identity_exhaustion_tests;
 mod prepared_publication;
 pub(crate) use prepared_publication::PreparedGenerationBatch;
 mod discard;
@@ -269,26 +271,23 @@ impl IndexingSubsystem {
     pub(crate) fn register_definition(
         &self,
         mut definition: DerivedIndexDefinition,
-    ) -> DerivedIndexDefinition {
+    ) -> Result<DerivedIndexDefinition, crate::indexes::data::DerivedIndexRegistrationDenial> {
         let mut state = self.state.write();
         definition.index_id = DerivedIndexId(state.next_index_id);
         state.next_index_id = state
             .next_index_id
             .checked_add(1)
-            .expect("derived index identity exhausted");
+            .ok_or(crate::indexes::data::DerivedIndexRegistrationDenial::IdentityExhausted)?;
         state.insert_definition(definition.clone());
-        definition
+        Ok(definition)
     }
 
     /// Reserve the next generation identity without publishing anything.
-    pub(crate) fn next_generation_id(&self) -> u64 {
+    pub(crate) fn next_generation_id(&self) -> Option<u64> {
         let mut state = self.state.write();
         let generation_id = state.next_generation_id;
-        state.next_generation_id = state
-            .next_generation_id
-            .checked_add(1)
-            .expect("derived generation identity exhausted");
-        generation_id
+        state.next_generation_id = state.next_generation_id.checked_add(1)?;
+        Some(generation_id)
     }
 
     /// Reserve exact generation identities before the candidate can publish.

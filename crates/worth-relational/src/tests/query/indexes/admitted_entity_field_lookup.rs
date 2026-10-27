@@ -11,14 +11,17 @@ fn exact_selected_lookup_preserves_production_and_certification_results() {
     let created = create_entity_outcome(execution, &runtime, "admitted-lookup");
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
     let value = string_aspect_value("admitted-lookup");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(915),
-        name: "entity.name.admitted".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(915),
+            name: "entity.name.admitted".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

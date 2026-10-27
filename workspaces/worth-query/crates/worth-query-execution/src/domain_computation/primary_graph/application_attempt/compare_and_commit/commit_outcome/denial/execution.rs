@@ -212,7 +212,8 @@ pub(super) fn execution_kind(
         Ok(Session::ExecutionIdentitiesNotCanonical { partition_identity }) => {
             Kind::ExecutionIdentitiesNotCanonical { partition_identity }
         }
-        Ok(Session::ForeignOperationAttempt)
+        Ok(Session::NativeReadDenied { .. })
+        | Ok(Session::ForeignOperationAttempt)
         | Ok(Session::ForeignExecutionBasis)
         | Ok(Session::ForeignGraphAuthority)
         | Ok(Session::UndeclaredOperationScope)

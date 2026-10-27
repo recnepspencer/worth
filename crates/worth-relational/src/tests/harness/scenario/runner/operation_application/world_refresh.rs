@@ -6,7 +6,10 @@ pub(crate) fn refresh_live_world(
     entities: &mut Vec<EntityId>,
     relations: &mut Vec<ActiveRelation>,
 ) {
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let read = runtime
         .read_truth()
         .read_snapshot(&snapshot, execution)

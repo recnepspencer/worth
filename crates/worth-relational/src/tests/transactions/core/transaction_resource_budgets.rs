@@ -43,4 +43,5 @@ fn runtime_with_savepoint_limit(maximum_savepoints: usize) -> crate::runtime::Re
             candidate_max_lifetime_millis: 30_000,
         })
         .build()
+        .expect("valid native runtime configuration")
 }

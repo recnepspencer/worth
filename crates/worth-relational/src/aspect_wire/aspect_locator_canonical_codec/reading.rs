@@ -1,10 +1,12 @@
 use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectLocator, AspectValueLocator, BoundarySourceLocator,
-    CanonicalFieldPath, FieldKey, LocatorAuthority,
+    AspectFieldLocator, AspectKey, AspectLocator, AspectValueLocator, CanonicalFieldPath, FieldKey,
+    LocatorAuthority,
 };
 
 use super::error::AspectValueLocatorCanonicalCodecError;
 use super::tags;
+#[cfg(test)]
+use worth_foundational::facade::BoundarySourceLocator;
 
 pub(crate) fn decode_aspect_value_locator(
     bytes: &[u8],
@@ -44,6 +46,7 @@ pub(crate) fn decode_aspect_field_locator(
     }
 }
 
+#[cfg(test)]
 pub(crate) fn decode_boundary_source_locator(
     bytes: &[u8],
 ) -> Result<BoundarySourceLocator, AspectValueLocatorCanonicalCodecError> {

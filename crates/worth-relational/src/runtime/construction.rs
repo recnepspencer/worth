@@ -13,7 +13,7 @@ use crate::validation::FrozenCustomInvariantRegistry;
 use super::state::{
     RelationalRuntimeConfiguration, RelationalRuntimeOwner, RelationalRuntimePublicationOwner,
 };
-use super::RelationalRuntime;
+use super::{RelationalRuntime, RelationalRuntimeConstructionDenial as Denial};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalRuntimeForkDenial {
@@ -23,6 +23,7 @@ pub enum RelationalRuntimeForkDenial {
     },
     IdentityCapacityExhausted,
     CanonicalInventoryInvalid,
+    BranchIdentityRebind(crate::branch::RelationalBranchObservationConstructionDenial),
 }
 
 #[derive(Debug, Default)]
@@ -65,38 +66,30 @@ impl RuntimeExtensions {
     fn build_schema_contract_runtime_subsystem(
         &self,
         config: &super::RelationalRuntimeConfig,
-    ) -> SchemaContractRuntimeSubsystem {
+    ) -> Result<SchemaContractRuntimeSubsystem, Denial> {
         let mut schema_contract_runtime =
             <SchemaContractRuntimeSubsystem as RuntimeSubsystem>::new(config);
         schema_contract_runtime.custom_invariant_registries =
             FrozenCustomInvariantRegistry::from_registrations(self.custom_invariants.clone())
-                .expect(
-                    "custom invariant registrations must have unique semantic identities per execution point at runtime construction",
-                );
-        schema_contract_runtime
+                .map_err(Denial::CustomInvariant)?;
+        Ok(schema_contract_runtime)
     }
 
     fn build_commit_strategy_subsystem(
         &self,
         config: &super::RelationalRuntimeConfig,
-    ) -> CommitStrategiesSubsystem {
-        let mut commit_strategy_subsystem =
-            <CommitStrategiesSubsystem as RuntimeSubsystem>::new(&());
-        commit_strategy_subsystem.registry = FrozenCommitStrategyRegistry::from_registrations(
+    ) -> Result<CommitStrategiesSubsystem, Denial> {
+        let mut subsystem = <CommitStrategiesSubsystem as RuntimeSubsystem>::new(&());
+        subsystem.registry = FrozenCommitStrategyRegistry::from_registrations(
             config.commit_strategies.registrations.clone(),
         )
-        .expect(
-            "commit strategy registrations must have unique runtime identities and persistent names at runtime construction",
-        );
-        commit_strategy_subsystem.executors =
-            FrozenCommitStrategyExecutorRegistry::from_registrations(
-                self.commit_strategy_executors.clone(),
-                &commit_strategy_subsystem.registry,
-            )
-            .expect(
-                "commit strategy executors must bind to registered strategy descriptors without digest drift at runtime construction",
-            );
-        commit_strategy_subsystem
+        .map_err(Denial::CommitStrategy)?;
+        subsystem.executors = FrozenCommitStrategyExecutorRegistry::from_registrations(
+            self.commit_strategy_executors.clone(),
+            &subsystem.registry,
+        )
+        .map_err(Denial::CommitStrategyExecutor)?;
+        Ok(subsystem)
     }
 
     fn build_publication_subsystem(&self) -> PublicationSubsystem {
@@ -113,14 +106,14 @@ impl RuntimeExtensions {
 }
 
 impl RelationalRuntime {
-    pub fn new(config: super::RelationalRuntimeConfig) -> Self {
+    pub fn new(config: super::RelationalRuntimeConfig) -> Result<Self, Denial> {
         Self::build_from_extensions(config, RuntimeExtensions::default())
     }
 
     pub fn new_with_custom_invariants(
         config: super::RelationalRuntimeConfig,
         custom_invariants: Vec<CustomInvariantRegistration>,
-    ) -> Self {
+    ) -> Result<Self, Denial> {
         Self::build_from_extensions(
             config,
             RuntimeExtensions::new(custom_invariants, Vec::new()),
@@ -131,7 +124,7 @@ impl RelationalRuntime {
         config: super::RelationalRuntimeConfig,
         custom_invariants: Vec<CustomInvariantRegistration>,
         commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
-    ) -> Self {
+    ) -> Result<Self, Denial> {
         Self::build_from_extensions(
             config,
             RuntimeExtensions::new(custom_invariants, commit_strategy_executors),
@@ -141,28 +134,49 @@ impl RelationalRuntime {
     pub(crate) fn build_from_extensions(
         config: super::RelationalRuntimeConfig,
         mut extensions: RuntimeExtensions,
-    ) -> Self {
+    ) -> Result<Self, Denial> {
+        let schema_contract_runtime =
+            extensions.build_schema_contract_runtime_subsystem(&config)?;
+        let commit_strategies = extensions.build_commit_strategy_subsystem(&config)?;
+        let mut symbols = crate::symbols::data::StringInterner::default();
+        symbols
+            .import_canonical_snapshot(&config.identity.symbol_table)
+            .map_err(Denial::SymbolTable)?;
+        // Validate against the widest possible runtime prefix before issuing an
+        // identity. Every future rebind then has no longer a decimal prefix.
+        crate::branch::relational_branch_observation(
+            u64::MAX,
+            &config.history.main_branch.0,
+            worth_foundational::FoundationalBranchTarget::empty(),
+            worth_foundational::FoundationalBranchReferenceGeneration::initial(),
+        )
+        .map_err(Denial::MainBranch)?;
+        let main_cell = crate::branch::RelationalBranchReferenceCell::empty(
+            0,
+            config.history.main_branch.clone(),
+        )
+        .map_err(Denial::MainBranch)?;
         let services = extensions.build_runtime_services();
-        services
-            .symbols
-            .initialize_configuration_snapshot(config.identity.symbol_table.clone());
-        let mut history = <HistorySubsystem as RuntimeSubsystem>::new(&config.history.main_branch);
-        history.set_runtime_instance_id(services.runtime_instance_id());
+        services.symbols.replace(symbols);
+        let mut history = HistorySubsystem::from_main_cell(main_cell);
+        history
+            .set_runtime_instance_id(services.runtime_instance_id())
+            .map_err(Denial::MainBranch)?;
         let initial_root = crate::branch::RelationalBranchRoot::empty_with_schema(
             &config.schema.registry,
             crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
         );
+        // The new registry contains exactly one fresh cell, bound to this
+        // runtime, with a nonzero retention budget and no escaped handles.
         history
             .install_branch_root(&config.history.main_branch, initial_root)
-            .expect("the configured main branch fits the initial retention budget");
-        let schema_contract_runtime = extensions.build_schema_contract_runtime_subsystem(&config);
-        let commit_strategies = extensions.build_commit_strategy_subsystem(&config);
+            .expect(/* Proof: The fresh registry has one same-runtime cell, a nonzero retention budget and no escaped handles; its first root installation cannot exceed retention capacity. */ "the configured main branch fits the initial retention budget");
         let mut durability = <DurabilitySubsystem as RuntimeSubsystem>::new(&config);
         if let Some(medium) = extensions.durable_medium.take() {
             durability.attach_medium(medium);
         }
         let visibility = <VisibilitySubsystem as RuntimeSubsystem>::new(&config);
-        Self::from_state(crate::runtime::RelationalRuntimeState {
+        Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
             history,
             indexes: <IndexingSubsystem as RuntimeSubsystem>::new(&()),
@@ -176,14 +190,16 @@ impl RelationalRuntime {
             visibility,
             publication: extensions.build_publication_subsystem(),
             configuration: RelationalRuntimeConfiguration::new(config, schema_contract_runtime),
-        })
+        }))
     }
 
     pub fn fork(&self) -> Result<Self, RelationalRuntimeForkDenial> {
         let mut history = self.history.fork_snapshot()?;
         let services = RuntimeSubsystem::fork(&self.services);
         let runtime_instance_id = services.runtime_instance_id();
-        history.bind_fork_runtime(runtime_instance_id);
+        history
+            .bind_fork_runtime(runtime_instance_id)
+            .map_err(RelationalRuntimeForkDenial::BranchIdentityRebind)?;
         let config = self.config.as_ref().clone();
         let schema_contract_runtime = RuntimeSubsystem::fork(self.schema_contract_runtime.as_ref());
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {

@@ -27,6 +27,7 @@ fn index_builds_use_the_memory_ceiling_of_their_request() {
                     },
                     branch_scoped: true,
                 })
+                .expect("index fixture has identity capacity")
                 .index_id
         })
         .collect();
@@ -96,14 +97,17 @@ fn unleased_builds_keep_cancellation_and_deadline_without_publishing() {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "unleased-stops".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "unleased-stops".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,
         branch_id: BranchId("main".into()),

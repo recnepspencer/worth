@@ -9,13 +9,7 @@ pub(super) fn marked_facts_permit_reuse<'fact>(
 ) -> Result<bool, InputCutoffVerificationStop> {
     match facts_are_current(execution, facts, runtime, snapshot) {
         Ok(current) => Ok(current),
-        Err(
-            InputCutoffVerificationStop::WorkExhausted
-            | InputCutoffVerificationStop::Admission(
-                CompanionPreflightStop::WorkExhausted { .. }
-                | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. },
-            ),
-        ) => {
+        Err(InputCutoffVerificationStop::WorkExhausted) => {
             observation::reach(Gate::HandlerPrefixAllowance);
             Ok(false)
         }

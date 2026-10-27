@@ -17,21 +17,22 @@ fn cancellation_after_backing_admission_refuses_configuration_publication() {
     let source = ExecutionImmutableBytes::from_external_bytes(std::sync::Arc::new(
         b"late-cancelled-text".to_vec().into_boxed_slice(),
     ));
-    let configuration = owner.configuration_snapshot.write().unwrap();
     let (admitted, received) = std::sync::mpsc::sync_channel(0);
+    let (resume, proceed) = std::sync::mpsc::sync_channel(0);
     let result = std::thread::scope(|scope| {
-        let worker = scope.spawn(|| {
+        let request = &request;
+        let source = &source;
+        let worker = scope.spawn(move || {
             let execution = ExecutionRequest::serial(&request);
-            let mut state = owner.state.write().unwrap();
-            state.check_text_capacity("late-cancelled-text").unwrap();
             let text = StoredSymbolText::admit(&execution, &source).unwrap();
-            // Admission has completed; the actual publication lock is still held.
+            // Cancel after backing admission and before dictionary publication.
             admitted.send(()).unwrap();
-            owner.publish_admitted_text(&execution, &mut state, text)
+            proceed.recv().unwrap();
+            owner.update(|state| owner.publish_admitted_text(&execution, state, text))
         });
         received.recv().unwrap();
         cancellation.cancel();
-        drop(configuration);
+        resume.send(()).unwrap();
         worker.join().unwrap()
     });
     assert!(matches!(
@@ -48,13 +49,19 @@ fn cancellation_after_backing_admission_refuses_configuration_publication() {
 fn configuration_snapshot_stays_sorted_and_detached_owners_do_not_share_new_keys() {
     let owner = RuntimeSymbolTable::default();
     owner.normalize_client_keys(|interner| {
-        let beta = interner.intern("beta");
-        let alpha = interner.intern("alpha");
+        let beta = interner
+            .intern("beta")
+            .expect("symbol fixture has identity capacity");
+        let alpha = interner
+            .intern("alpha")
+            .expect("symbol fixture has identity capacity");
         vec![(beta, "beta".to_string()), (alpha, "alpha".to_string())]
     });
     let detached = owner.detached_owner_snapshot();
     owner.normalize_client_keys(|interner| {
-        let gamma = interner.intern("gamma");
+        let gamma = interner
+            .intern("gamma")
+            .expect("symbol fixture has identity capacity");
         vec![(gamma, "gamma".to_string())]
     });
 
@@ -68,4 +75,28 @@ fn configuration_snapshot_stays_sorted_and_detached_owners_do_not_share_new_keys
     };
     assert_eq!(values(&owner), ["alpha", "beta", "gamma"]);
     assert_eq!(values(&detached), ["alpha", "beta"]);
+}
+
+#[test]
+fn interrupted_native_dictionary_edit_preserves_both_views() {
+    let owner = RuntimeSymbolTable::default();
+    owner.normalize_client_keys(|symbols| {
+        vec![(symbols.intern("before").unwrap(), "before".into())]
+    });
+    let before = owner.interner_snapshot();
+    let configuration = owner.configuration_snapshot();
+    let interrupted = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        owner.normalize_client_keys(|symbols| {
+            symbols
+                .intern("discarded")
+                .expect("symbol fixture has identity capacity");
+            panic!("interrupted native dictionary edit")
+        });
+    }));
+    assert!(interrupted.is_err());
+    assert_eq!(owner.interner_snapshot(), before);
+    assert_eq!(owner.configuration_snapshot(), configuration);
+    owner.normalize_client_keys(|symbols| vec![(symbols.intern("after").unwrap(), "after".into())]);
+    assert!(owner.with_read(|symbols| symbols.contains("after")));
+    assert!(!owner.with_read(|symbols| symbols.contains("discarded")));
 }

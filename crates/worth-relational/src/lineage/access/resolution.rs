@@ -58,11 +58,7 @@ impl SelectedRootReachableCommitScope {
         &mut self,
         access: &LineageAccess<'runtime>,
     ) -> &BTreeSet<BranchId> {
-        self.ancestry(access);
-        self.ancestry
-            .as_ref()
-            .expect("reachable ancestry was initialized")
-            .authoring_branches()
+        self.ancestry(access).authoring_branches()
     }
 
     pub(super) fn indexed_branches_for_lineages<'runtime>(
@@ -139,7 +135,7 @@ impl<'runtime> LineageAccess<'runtime> {
                 .runtime
                 .lineage
                 .event(position)
-                .expect("lineage index references a published event");
+                .expect(/* Proof: Historical event demand pins the selected event pages before traversal; event-index entries are installed together with their published events. */ "lineage index references a published event");
             if !event
                 .sources()
                 .iter()

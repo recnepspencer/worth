@@ -150,7 +150,8 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Arc<Node> {
     }
     let node = Arc::make_mut(&mut root);
     let side = direction(key, node.bit);
-    let child = &mut node.children.as_mut().unwrap()[side];
+    let child = &mut node.children.as_mut().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ )
+        [side];
     *child = insert(Some(child.clone()), key, digest);
     refresh(node);
     root
@@ -166,7 +167,7 @@ fn remove(root: Option<Arc<Node>>, key: u128) -> Option<Arc<Node>> {
     }
     let side = direction(key, root.bit);
     let node = Arc::make_mut(&mut root);
-    let children = node.children.as_mut().unwrap();
+    let children = node.children.as_mut().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ );
     if let Some(changed) = remove(Some(children[side].clone()), key) {
         children[side] = changed;
         refresh(node);
@@ -177,7 +178,7 @@ fn remove(root: Option<Arc<Node>>, key: u128) -> Option<Arc<Node>> {
 }
 
 fn refresh(node: &mut Node) {
-    let children = node.children.as_ref().unwrap();
+    let children = node.children.as_ref().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ );
     node.key = children[0].key;
     node.nodes = 1 + children[0].nodes + children[1].nodes;
     node.digest = hash(

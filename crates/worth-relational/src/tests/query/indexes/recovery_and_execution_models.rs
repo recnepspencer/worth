@@ -15,14 +15,17 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
         changed_entities(&target)[0],
         "edge",
     );
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(1),
-        name: "relation.label.lookup".to_string(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(1),
+            name: "relation.label.lookup".to_string(),
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -33,7 +36,10 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
     );
     assert!(build.failed_indexes.is_empty());
 
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -72,7 +78,10 @@ fn derived_index_contract_relation_field_equals_persisted_recovery_preserves_par
         &runtime,
         durable_runtime_with_index_field_aspects,
     );
-    let recovered_snapshot = recovered.visibility_authority().snapshot();
+    let recovered_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let recovered_context = recovered
         .read_truth()
         .query_plan_context(&recovered_snapshot)
@@ -110,14 +119,17 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
 
     let runtime = durable_runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(execution, &runtime, "alpha");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.lookup".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.lookup".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -167,7 +179,10 @@ fn derived_index_contract_persisted_recovery_preserves_entity_field_equals_parit
         &runtime,
         durable_runtime_with_index_field_aspects,
     );
-    let recovered_snapshot = recovered.visibility_authority().snapshot();
+    let recovered_snapshot = recovered
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let recovered_context = recovered
         .read_truth()
         .query_plan_context(&recovered_snapshot)
@@ -212,14 +227,17 @@ fn derived_index_contract_entity_field_equals_is_stable_with_leased_index_build(
     ) {
         let runtime = runtime_with_test_schema();
         let alpha = create_entity_outcome(execution, &runtime, "alpha");
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "entity.name.lookup".to_string(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            },
-            branch_scoped: false,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "entity.name.lookup".to_string(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+                },
+                branch_scoped: false,
+            })
+            .expect("index fixture has identity capacity");
         let request = DerivedIndexBuildRequest {
             source_commit_id: alpha.commit.commit_id,
             branch_id: BranchId("main".to_string()),

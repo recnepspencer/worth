@@ -261,10 +261,11 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = durable_runtime_with_test_schema();
-    let family = runtime
-        .services
-        .symbols
-        .with_write(|symbols| symbols.intern("inspection.structural.family"));
+    let family = runtime.services.symbols.with_write(|symbols| {
+        symbols
+            .intern("inspection.structural.family")
+            .expect("symbol fixture has identity capacity")
+    });
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
     assert!(runtime.set_entity_structural_identity_for_test(

@@ -50,10 +50,11 @@ fn field_text_upgrade_replaces_system_keys_and_last_snapshot_retains_charge() {
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let raw = "native-actor-json";
-    let symbol = runtime
-        .services
-        .symbols
-        .with_write(|symbols| symbols.intern(raw));
+    let symbol = runtime.services.symbols.with_write(|symbols| {
+        symbols
+            .intern(raw)
+            .expect("symbol fixture has identity capacity")
+    });
     let admitted = runtime
         .admit_field_text(&execution, &basis, &external(raw))
         .unwrap();
@@ -162,7 +163,8 @@ fn field_text_symbol_exhaustion_refuses_before_selected_policy_copy() {
         crate::symbols::data::Symbol(u32::MAX - 1),
         "last-symbol".into(),
     )];
-    let runtime = crate::runtime::RelationalRuntime::new(config);
+    let runtime =
+        crate::runtime::RelationalRuntime::new(config).expect("valid native runtime configuration");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();

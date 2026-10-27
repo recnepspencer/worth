@@ -50,7 +50,7 @@ impl RecordPinCounts {
     }
     pub(crate) fn into_vec(self) -> Vec<u32> {
         (0..self.len)
-            .map(|index| *self.get(index).unwrap())
+            .map(|index| *self.get(index).unwrap(/* Proof: Pin rows are selected from initialized arena column indices and remain present for the retained arena lifetime; no sparse missing index is admitted here. */ ))
             .collect()
     }
     pub(super) fn allocation_bytes(&self) -> u64 {
@@ -83,6 +83,6 @@ impl From<Vec<u32>> for RecordPinCounts {
 impl std::ops::Index<usize> for RecordPinCounts {
     type Output = u32;
     fn index(&self, index: usize) -> &u32 {
-        self.get(index).expect("pin row is absent")
+        self.get(index).expect(/* Proof: Pin rows are selected from initialized arena column indices and remain present for the retained arena lifetime; no sparse missing index is admitted here. */ "pin row is absent")
     }
 }

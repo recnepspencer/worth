@@ -65,7 +65,8 @@ fn builder_attaches_custom_invariants_without_polluting_config() {
     let registration = CustomInvariantRegistration::new(BuilderTestRule).unwrap();
     let runtime = RelationalRuntimeBuilder::new()
         .custom_invariant(registration)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     assert_eq!(
         runtime.config.schema.invariant_catalog.registrations.len(),
@@ -114,7 +115,8 @@ fn builder_attaches_frozen_commit_strategy_registry() {
     .expect("valid strategy registration");
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     assert_eq!(runtime.commit_strategy_registry().len(), 1);
     assert_eq!(
@@ -195,7 +197,8 @@ fn runtime_commit_strategy_facade_canonicalizes_requests_against_frozen_registry
     .expect("valid strategy registration");
     let runtime = RelationalRuntimeBuilder::new()
         .commit_strategy(registration)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let request =
         crate::facade::commit_strategies::NativeStrategyCommitRequest::from_native_canonical_bytes(
@@ -241,7 +244,8 @@ fn builder_grouped_setup_sections_apply_overrides() {
                 compact_after_checkpoint: true,
             });
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     assert_eq!(runtime.config().execution.runtime_name, "grouped-runtime");
     assert_eq!(runtime.config().storage.initial_entity_capacity, 42);
@@ -260,3 +264,5 @@ fn builder_grouped_setup_sections_apply_overrides() {
         RelationalDiagnosticsProfile::geometry_operational_hot_path()
     );
 }
+
+mod construction_refusals;

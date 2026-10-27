@@ -32,11 +32,11 @@ impl RelationalRuntime {
         }
         let completion = self
             .execute_pending_settlement(&record, RelationalSettlementResultOwner::Witness)
-            .expect("a performed witness exists only after its reservation is authorized");
+            .expect(/* Proof: The private performed witness is minted after authorizing this reservation and storing its commit result; consuming settlement retains that record until acknowledgement. */ "a performed witness exists only after its reservation is authorized");
         match completion {
             RelationalSettlementCompletion::Performed { committed, .. } => Ok(committed),
             RelationalSettlementCompletion::Repeated { committed, .. } => {
-                let retained = committed.expect(
+                let retained = committed.expect(/* Proof: The private performed witness is minted after authorizing this reservation and storing its commit result; consuming settlement retains that record until acknowledgement. */
                     "a receipt-only executor retains the commit result for its live witness",
                 );
                 Ok(Arc::try_unwrap(retained).unwrap_or_else(|shared| shared.as_ref().clone()))

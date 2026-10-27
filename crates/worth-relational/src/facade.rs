@@ -48,7 +48,10 @@ pub mod commit_strategies {
         ReplicaConvergenceAction, ReplicaConvergenceInput, ReplicaConvergenceOutput,
         ReplicaConvergenceStrategy,
     };
-    pub use crate::commit_strategies::{FrozenCommitStrategyRegistry, StrategyExecutionError};
+    pub use crate::commit_strategies::{
+        CommitStrategyExecutionRegistryError, DuplicateCommitStrategyRegistration,
+        FrozenCommitStrategyRegistry, StrategyExecutionError,
+    };
 }
 
 #[path = "facade/change_source.rs"]
@@ -204,12 +207,12 @@ pub mod runtime {
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
         RelationalPinnedEntityMetadata, RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
-        RelationalRuntime, RelationalRuntimeConfig, RelationalRuntimeForkDenial,
-        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
-        RelationalSnapshotPositionAdmissionStop, ReplaySchemaVersion, RuntimeComplexityCounters,
-        SimulationAccess, SimulationAuthority, SnapshotGuard, SnapshotPositionDenial,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
-        VisibilityRetentionAuthority,
+        RelationalRuntime, RelationalRuntimeConfig, RelationalRuntimeConstructionDenial,
+        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
+        RelationalSchemaTransitionAdmissionDenialKind, RelationalSnapshotPositionAdmissionStop,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,
@@ -230,6 +233,10 @@ pub mod runtime {
         ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
         ProjectionAspectScope, RelationKindTruthReadDenial, RelationKindTruthReadLimitExceeded,
     };
+    pub use crate::visibility::materialization::read_records::{
+        ProjectionContractRefusal, ProjectionRecordDomain, RelationalProjectionContractDenial,
+    };
+    pub use crate::visibility::snapshot_states::HistoricalVisibilityDenial;
 }
 
 #[cfg(test)]
@@ -350,6 +357,7 @@ pub mod storage {
 }
 
 pub mod symbols {
+    pub use crate::symbols::data::RelationalSymbolExhausted;
     pub use crate::symbols::data::{
         ClientKey, ClientKeySymbolPolicy, InternedString, RelationalFieldText,
         RelationalFieldTextAdmissionDenial, StoredSymbolText, StringInterner, Symbol,

@@ -221,7 +221,7 @@ fn hex_bytes(bytes: &[u8]) -> String {
     let mut encoded = String::with_capacity(bytes.len() * 2);
     for byte in bytes {
         use std::fmt::Write;
-        write!(&mut encoded, "{byte:02x}").expect("writing to String cannot fail");
+        write!(&mut encoded, "{byte:02x}").expect(/* Proof: The destination is String and all formatted arguments are native integers; String::write_str always returns Ok and integer formatting introduces no fallible writer. */ "writing to String cannot fail");
     }
     encoded
 }

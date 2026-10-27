@@ -24,16 +24,16 @@ impl<'scope> TraversalGraph<'scope> {
             }
             edge_count = edge_count
                 .checked_add(targets.len())
-                .expect("prepared edge storage has representable cardinality");
+                .expect(/* Proof: Prepared edge storage contains the same real endpoint arrays used here; endpoint and scratch admission checked these cardinalities/layouts before constructing this graph input. */ "prepared edge storage has representable cardinality");
         }
         let vertex_capacity = edge_count
             .checked_mul(2)
-            .expect("borrowed endpoints fit the prepared edge layout");
+            .expect(/* Proof: Prepared edge storage contains the same real endpoint arrays used here; endpoint and scratch admission checked these cardinalities/layouts before constructing this graph input. */ "borrowed endpoints fit the prepared edge layout");
         // Both graph buffers coexist, including the pending vertex allocation.
         // After deduplication search admission adds its exact vertex count to
         // these retained capacities, before allocating visited/frontier storage.
         let bytes = scratch_bytes(edge_count, vertex_capacity)
-            .expect("borrowed traversal storage fits the prepared edge layout");
+            .expect(/* Proof: Prepared edge storage contains the same real endpoint arrays used here; endpoint and scratch admission checked these cardinalities/layouts before constructing this graph input. */ "borrowed traversal storage fits the prepared edge layout");
         if !context.check_scratch_peak(bytes) {
             return None;
         }

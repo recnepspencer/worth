@@ -32,7 +32,8 @@ fn slow_runtime() -> (
         .build_durable(Box::new(SlowFirstPublication {
             contents: contents.attachment(),
             gate: Arc::clone(&gate),
-        }));
+        }))
+        .expect("valid native runtime configuration");
     let request = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let seed = create_entity_outcome(&execution, &runtime, "main-seed");

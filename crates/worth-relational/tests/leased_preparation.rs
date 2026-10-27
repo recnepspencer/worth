@@ -90,7 +90,8 @@ fn commit_preparation_spends_validation_and_later_packet_work_from_one_lease() {
     let _serial = serial();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let attempt = |work_ceiling: u64, validation_only: bool, publish: bool| {
         let lease = authority()
@@ -219,16 +220,20 @@ fn leased_index_and_commit_preparation_preserve_parity_and_stop_before_publicati
     let authority = authority();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (created, _) = support::create_entity(execution, &runtime, "leased-seed");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "leased.entity.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: support::aspect_field_locator("name"),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "leased.entity.name".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: support::aspect_field_locator("name"),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,
         branch_id: BranchId("main".to_owned()),

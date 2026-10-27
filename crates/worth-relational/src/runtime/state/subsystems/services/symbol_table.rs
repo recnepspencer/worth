@@ -1,9 +1,9 @@
 mod cold_pages;
+mod state;
 pub(crate) use cold_pages::ColdSymbolDirectoryDenial;
+use state::RuntimeSymbolState;
 
 use std::sync::{Arc, RwLock};
-
-use im::OrdMap;
 
 use crate::symbols::data::{StoredSymbolText, StringInterner, Symbol, SymbolTableSnapshot};
 
@@ -15,8 +15,7 @@ pub(crate) use reservations::{
 
 #[derive(Debug)]
 pub(crate) struct RuntimeSymbolTable {
-    state: Arc<RwLock<StringInterner>>,
-    configuration_snapshot: Arc<RwLock<OrdMap<StoredSymbolText, Symbol>>>,
+    state: Arc<RwLock<RuntimeSymbolState>>,
     cold: Arc<RwLock<Option<Arc<super::symbol_residency::RuntimeSymbolResidency>>>>,
     reservations: Arc<std::sync::Mutex<reservations::SymbolReservationDirectory>>,
 }
@@ -24,8 +23,7 @@ pub(crate) struct RuntimeSymbolTable {
 impl Default for RuntimeSymbolTable {
     fn default() -> Self {
         Self {
-            state: Arc::new(RwLock::new(StringInterner::default())),
-            configuration_snapshot: Arc::new(RwLock::new(OrdMap::new())),
+            state: Arc::default(),
             cold: Arc::new(RwLock::new(None)),
             reservations: Arc::default(),
         }
@@ -36,7 +34,6 @@ impl Clone for RuntimeSymbolTable {
     fn clone(&self) -> Self {
         Self {
             state: Arc::clone(&self.state),
-            configuration_snapshot: Arc::clone(&self.configuration_snapshot),
             cold: self.cold.clone(),
             reservations: self.reservations.clone(),
         }
@@ -75,20 +72,10 @@ impl RuntimeSymbolTable {
             .read()
             .unwrap_or_else(|error| error.into_inner())
             .clone();
-        let snapshot = || {
-            let state = self
-                .state
-                .read()
-                .expect("runtime symbol table lock poisoned");
-            let configuration = self
-                .configuration_snapshot
-                .read()
-                .expect("runtime symbol configuration snapshot lock poisoned");
-            (state.clone(), configuration.clone())
-        };
+        let snapshot = || self.read_state(Clone::clone);
         // Page admission locks pages before the owner dictionary. Fork uses
         // that same order, so copied admission marks and text are one snapshot.
-        let (cold, (state, configuration)) = match cold {
+        let (cold, state) = match cold {
             Some(pages) => {
                 let (pages, snapshot) = pages.detached_with_owner(snapshot);
                 (Some(Arc::new(pages)), snapshot)
@@ -97,7 +84,6 @@ impl RuntimeSymbolTable {
         };
         Self {
             state: Arc::new(RwLock::new(state)),
-            configuration_snapshot: Arc::new(RwLock::new(configuration)),
             reservations: Arc::default(),
             cold: Arc::new(RwLock::new(cold)),
         }
@@ -106,18 +92,11 @@ impl RuntimeSymbolTable {
         &self,
         normalize: impl FnOnce(&mut StringInterner) -> Vec<(Symbol, String)>,
     ) {
-        let mut interner = self
-            .state
-            .write()
-            .expect("runtime symbol table lock poisoned");
-        let new_entries = normalize(&mut interner);
-        let mut configuration = self
-            .configuration_snapshot
-            .write()
-            .expect("runtime symbol configuration snapshot lock poisoned");
-        for (symbol, value) in new_entries {
-            configuration.insert(value.into(), symbol);
-        }
+        self.update(|state| {
+            for (symbol, value) in normalize(&mut state.interner) {
+                state.configuration.insert(value.into(), symbol);
+            }
+        });
     }
 
     pub(crate) fn admit_field_text(
@@ -137,33 +116,27 @@ impl RuntimeSymbolTable {
                     Denial::Request(cause)
                 }
             })?;
-        let mut state = self
-            .state
-            .write()
-            .expect("runtime symbol table lock poisoned");
-        if self.pending_symbol(raw).is_none() {
-            state.check_text_capacity(raw)?;
-        }
-        let text = StoredSymbolText::admit(execution, input)?;
-        self.publish_admitted_text(execution, &mut state, text)
+        self.update(|state| {
+            if self.pending_symbol(raw).is_none() {
+                state.interner.check_text_capacity(raw)?;
+            }
+            let text = StoredSymbolText::admit(execution, input)?;
+            self.publish_admitted_text(execution, state, text)
+        })
     }
 
     fn publish_admitted_text(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        state: &mut StringInterner,
+        state: &mut RuntimeSymbolState,
         text: StoredSymbolText,
     ) -> Result<(Symbol, StoredSymbolText), crate::symbols::data::RelationalFieldTextAdmissionDenial>
     {
         use crate::symbols::data::RelationalFieldTextAdmissionDenial as Denial;
-        let mut configuration = self
-            .configuration_snapshot
-            .write()
-            .expect("runtime symbol configuration snapshot lock poisoned");
         execution.check_live().map_err(Denial::Stopped)?;
-        let symbol = self.admit_with_pending_identity(state, text.clone())?;
-        configuration.remove(text.as_str());
-        configuration.insert(text.clone(), symbol);
+        let symbol = self.admit_with_pending_identity(&mut state.interner, text.clone())?;
+        state.configuration.remove(text.as_str());
+        state.configuration.insert(text.clone(), symbol);
         Ok((symbol, text))
     }
 
@@ -171,108 +144,56 @@ impl RuntimeSymbolTable {
         &self,
         snapshot: &SymbolTableSnapshot,
     ) -> Result<(), &'static str> {
-        let mut state = self
-            .state
-            .write()
-            .expect("runtime symbol table lock poisoned");
-        let mut configuration = self
-            .configuration_snapshot
-            .write()
-            .expect("runtime symbol configuration snapshot lock poisoned");
-        state.import_canonical_snapshot(snapshot)?;
-        for (symbol, _) in &snapshot.entries {
-            let text = state
-                .retained_text(*symbol)
-                .expect("preflighted canonical symbol");
-            configuration.remove(text.as_str());
-            configuration.insert(text.clone(), *symbol);
-        }
-        Ok(())
+        self.update(|state| {
+            state.interner.import_canonical_snapshot(snapshot)?;
+            for (symbol, _) in &snapshot.entries {
+                // Import validates all meanings before installing both maps.
+                let text = state
+                    .interner
+                    .retained_text(*symbol)
+                    .ok_or("admitted canonical dictionary lacks its symbol")?;
+                state.configuration.remove(text.as_str());
+                state.configuration.insert(text.clone(), *symbol);
+            }
+            Ok(())
+        })
     }
     pub(crate) fn interner_snapshot(&self) -> StringInterner {
-        self.state
-            .read()
-            .expect("runtime symbol table lock poisoned")
-            .clone()
+        self.with_read(Clone::clone)
     }
-
     pub(crate) fn snapshot(&self) -> SymbolTableSnapshot {
-        self.state
-            .read()
-            .expect("runtime symbol table lock poisoned")
-            .snapshot()
+        self.with_read(StringInterner::snapshot)
     }
-
     pub(crate) fn configuration_snapshot(&self) -> SymbolTableSnapshot {
-        let configuration = self
-            .configuration_snapshot
-            .read()
-            .expect("runtime symbol configuration snapshot lock poisoned");
-        SymbolTableSnapshot {
-            entries: configuration
+        self.read_state(|state| SymbolTableSnapshot {
+            entries: state
+                .configuration
                 .iter()
-                .map(|(value, symbol)| (*symbol, value.clone()))
+                .map(|(text, symbol)| (*symbol, text.clone()))
                 .collect(),
-        }
+        })
     }
-
-    pub(crate) fn initialize_configuration_snapshot(&self, snapshot: SymbolTableSnapshot) {
-        self.state
-            .write()
-            .expect("runtime symbol table lock poisoned")
-            .restore_snapshot(snapshot.clone());
-        *self
-            .configuration_snapshot
-            .write()
-            .expect("runtime symbol configuration snapshot lock poisoned") = snapshot
-            .entries
-            .into_iter()
-            .map(|(symbol, value)| (value, symbol))
-            .collect();
-    }
-
     #[cfg(test)]
     pub(crate) fn resolve(&self, symbol: Symbol) -> Option<String> {
-        self.state
-            .read()
-            .expect("runtime symbol table lock poisoned")
-            .resolve(symbol)
-            .map(str::to_owned)
+        self.with_read(|state| state.resolve(symbol).map(str::to_owned))
     }
-
     pub(crate) fn replace(&self, interner: StringInterner) {
         *self.cold.write().unwrap_or_else(|error| error.into_inner()) = None;
-        let snapshot = interner.snapshot();
-        let mut state = self
-            .state
-            .write()
-            .expect("runtime symbol table lock poisoned");
-        let mut configuration = self
-            .configuration_snapshot
-            .write()
-            .expect("runtime symbol configuration snapshot lock poisoned");
-        *state = interner;
-        *configuration = snapshot
-            .entries
-            .into_iter()
-            .map(|(symbol, value)| (value, symbol))
-            .collect();
+        self.update(|state| {
+            state.configuration = interner
+                .snapshot()
+                .entries
+                .into_iter()
+                .map(|(symbol, text)| (text, symbol))
+                .collect();
+            state.interner = interner;
+        });
     }
-
     pub(crate) fn with_read<T>(&self, read: impl FnOnce(&StringInterner) -> T) -> T {
-        let guard = self
-            .state
-            .read()
-            .expect("runtime symbol table lock poisoned");
-        read(&guard)
+        self.read_state(|state| read(&state.interner))
     }
-
     pub(crate) fn with_write<T>(&self, write: impl FnOnce(&mut StringInterner) -> T) -> T {
-        let mut guard = self
-            .state
-            .write()
-            .expect("runtime symbol table lock poisoned");
-        write(&mut guard)
+        self.update(|state| write(&mut state.interner))
     }
 }
 

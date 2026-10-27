@@ -27,7 +27,7 @@ impl WorthQueryExecutionInstallationAuthority {
             phase,
             runtime,
             installed_schema,
-            RelationalRuntimeApi::builder().build(),
+            RelationalRuntimeApi::builder().build()?,
             product_world_resources,
             invariant_factories,
         )

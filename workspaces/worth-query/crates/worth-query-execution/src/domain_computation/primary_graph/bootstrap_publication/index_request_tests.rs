@@ -33,7 +33,8 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plain = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         worth_execution::CancellationToken::new(),
@@ -63,20 +64,23 @@ fn bootstrap_index_build_keeps_the_serial_requests_cancellation() {
         )
         .unwrap();
     let committed = transaction.commit(&setup, &runtime).unwrap();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "bootstrap.source-kind".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: worth_foundational::facade::AspectFieldLocator::new(
-                worth_foundational::facade::LocatorAuthority::Planned,
-                worth_foundational::facade::AspectKey::new("unused").unwrap(),
-                worth_foundational::facade::CanonicalFieldPath::single(
-                    worth_foundational::facade::FieldKey::new("unused").unwrap(),
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "bootstrap.source-kind".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: worth_foundational::facade::AspectFieldLocator::new(
+                    worth_foundational::facade::LocatorAuthority::Planned,
+                    worth_foundational::facade::AspectKey::new("unused").unwrap(),
+                    worth_foundational::facade::CanonicalFieldPath::single(
+                        worth_foundational::facade::FieldKey::new("unused").unwrap(),
+                    ),
                 ),
-            ),
-        },
-        branch_scoped: true,
-    });
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let cancellation = CancellationSource::new();
     let lease = ExecutionResourceLease::serial(LeaseRequest {
         policy: ExecutionRequestPolicy::new(

@@ -43,7 +43,10 @@ pub(super) fn certify_mixed_read_write_frame_churn_window(
                 let update_micros = update_started_at.elapsed().as_micros();
                 total_update_micros += update_micros;
 
-                let snapshot = runtime.visibility_authority().snapshot();
+                let snapshot = runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted");
                 let propagation_packet = PlannedQueryPacket {
                     label: "scene-frame-propagation".to_string(),
                     context_id: runtime

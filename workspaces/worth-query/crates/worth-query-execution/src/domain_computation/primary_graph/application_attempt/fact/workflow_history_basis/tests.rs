@@ -182,6 +182,7 @@ fn history_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn commit(

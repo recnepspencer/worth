@@ -69,11 +69,13 @@ pub(crate) fn changed_fields(
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {
     let mut fields = Vec::new();
-    visit_changed_fields(binding, structural, |field, presence| {
+    let result = visit_changed_fields(binding, structural, |field, presence| {
         fields.push((field.clone(), presence));
         Ok::<(), std::convert::Infallible>(())
-    })
-    .unwrap();
+    });
+    if let Err(impossible) = result {
+        match impossible {}
+    }
     fields
 }
 
@@ -106,11 +108,19 @@ pub(super) fn field_changes_for_evidence(
     structural: crate::publication::patch::data::RecordStructuralChange,
 ) -> Vec<(FieldKey, RelationalFieldPresence)> {
     let mut fields = Vec::new();
-    visit_field_changes_for_evidence(binding, shape, evidence, structural, |field, presence| {
-        fields.push((field.clone(), presence));
-        Ok::<(), std::convert::Infallible>(())
-    })
-    .unwrap();
+    let result = visit_field_changes_for_evidence(
+        binding,
+        shape,
+        evidence,
+        structural,
+        |field, presence| {
+            fields.push((field.clone(), presence));
+            Ok::<(), std::convert::Infallible>(())
+        },
+    );
+    if let Err(impossible) = result {
+        match impossible {}
+    }
     fields
 }
 

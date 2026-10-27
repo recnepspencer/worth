@@ -96,8 +96,8 @@ impl RelationalRegionRetention {
         self.full.get_or_init(|| {
             self.cell
                 .lease_resident_full()
-                .expect("resident lease admission fits the process")
-                .expect("operation must demand a cold region before reading it")
+                .expect(/* Proof: Every live lease owns a strong Arc to this cell; lease count is bounded by Arc strong count, whose maximum is below usize::MAX. */ "resident lease admission fits the process")
+                .expect(/* Proof: Read operations demand Full before accessing this private retention wrapper and retain that custody; newly constructed wrappers start Full, and retained custody prevents unloading. */ "operation must demand a cold region before reading it")
         })
     }
 

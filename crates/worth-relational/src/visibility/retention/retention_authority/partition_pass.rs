@@ -168,7 +168,8 @@ mod tests {
 
     #[test]
     fn sparse_high_slot_retention_scans_one_materialized_chunk() {
-        let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default());
+        let runtime = RelationalRuntime::new(RelationalRuntimeConfig::default())
+            .expect("valid native runtime configuration");
         let partition_id = PartitionId(7);
         let high_slot = 50_000;
         let mut entity_arena = EntityArena::with_capacity(0);

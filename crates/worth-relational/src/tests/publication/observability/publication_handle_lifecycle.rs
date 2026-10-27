@@ -144,7 +144,8 @@ fn publication_handle_retention_is_bounded_by_policy() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
     let before = crate::tests::support::test_owner_main_basis(&runtime).unwrap();
@@ -205,7 +206,8 @@ fn published_handle_and_admitted_observation_remain_exact_until_release() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let first = create_entity_outcome(execution, &runtime, "first");
     let identity = runtime.main_branch_identity();
     let (_, first_basis) = runtime.observe_branch(&identity).unwrap();
@@ -248,7 +250,8 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let parallel = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .publication(PublicationConfig {
@@ -260,7 +263,8 @@ fn leased_commit_preparation_preserves_publication_surfaces() {
             max_prepared_candidates: Some(8),
             candidate_max_lifetime_millis: 30_000,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let _ = create_entity_outcome(execution, &serial, "first");
     let _serial_second = create_entity_outcome(execution, &serial, "second");
