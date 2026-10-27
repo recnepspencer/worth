@@ -10,6 +10,7 @@ use crate::identity::BridgeIdentityEvidence;
 pub enum BridgeCausalEvidenceBindingClass {
     RetainedBridgeRecord,
     ExternalAuthorityReference,
+    RetainedNativeObservation,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -42,6 +43,14 @@ impl BridgeCausalEvidenceBinding {
         )
     }
 
+    pub(super) fn native(reference: &BridgeCausalEvidenceReference) -> Self {
+        Self::new(
+            reference,
+            BridgeCausalEvidenceBindingClass::RetainedNativeObservation,
+            None,
+        )
+    }
+
     fn new(
         reference: &BridgeCausalEvidenceReference,
         binding_class: BridgeCausalEvidenceBindingClass,
@@ -51,15 +60,20 @@ impl BridgeCausalEvidenceBinding {
         let retained_identity = retained_record_identity
             .as_ref()
             .unwrap_or(&external_retained_identity);
-        let binding_identity = compose_bridge_causal_envelope_evidence_identity(
-            BridgeCausalEnvelopeDigestArtifact::EvidenceBinding,
-            &[
-                shape_part(reference.owner().as_str()),
-                shape_part(reference.family().as_str()),
-                evidence_part(reference.reference_evidence_identity()),
-                evidence_part(retained_identity),
-            ],
-        );
+        let mut parts = vec![
+            shape_part(reference.owner().as_str()),
+            shape_part(reference.family().as_str()),
+            evidence_part(reference.reference_evidence_identity()),
+            evidence_part(retained_identity),
+        ];
+        let domain = if binding_class == BridgeCausalEvidenceBindingClass::RetainedNativeObservation
+        {
+            parts.push(shape_part("retained_native_observation"));
+            BridgeCausalEnvelopeDigestArtifact::NativeEvidenceBinding
+        } else {
+            BridgeCausalEnvelopeDigestArtifact::EvidenceBinding
+        };
+        let binding_identity = compose_bridge_causal_envelope_evidence_identity(domain, &parts);
         Self {
             owner: reference.owner(),
             family: reference.family(),

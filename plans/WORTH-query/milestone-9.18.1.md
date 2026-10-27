@@ -1271,6 +1271,17 @@ cause before that unavailability outcome. Portable member45/v1 and selector8/v1
 are additive subgrammars and preserve unextended v18 schema identity and bytes;
 unknown versions refuse before payload fields or allocations.
 
+The Native Bridge assembly prerequisite accepts an actual readonly conditional
+observation at its exact sealed owner before deriving evidence. Its closed source
+context shares the existing envelope engine while preserving legacy Route
+requirements. Native envelopes retain the original immutable observation;
+separate binding/count/summary domains distinguish them from registry records.
+The summary binds the distinct anchor and expected Query observation identities.
+Neither descriptors nor their digests supply fresh permission: generic legacy
+Query materialization refuses `NativeInspectionAdmissionRequired`, including
+reference-only policy. Fresh Host admission and the remaining requirements below
+are still unfinished.
+
 ### Requirements
 
 - A fresh application request can select an actual declared-query observation or

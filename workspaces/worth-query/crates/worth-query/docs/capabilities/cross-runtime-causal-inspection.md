@@ -36,6 +36,27 @@ chain to an application inspection entrance. See
 [Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
 for ownership, funding and release details.
 
+### Native Bridge Assembly Boundary
+
+The lower Bridge owner can assemble an envelope from its actual readonly
+conditional observation. It verifies sealed-owner affinity before projecting
+Native evidence, preserves the original observation backing until the last
+envelope closes, and derives an invalidation reference only when that original
+backing contains an actual performed invalidation. Operational reentry's lack of
+a new performed receipt does not erase the original causal observation.
+
+This uses the same envelope assembly owner as legacy diagnostics, with a closed
+source distinction. Legacy diagnostics still require an actual retained Route;
+Native conditional evidence cannot be reconstructed from that route or from
+reporting identities. Its summary binds both the causal anchor and the distinct
+expected Query observation, rather than treating those different identities as
+equal. A summary is descriptive and cannot substitute fresh read authority.
+
+This is a lower-runtime prerequisite. Ordinary Host inspection, current READ and
+metadata admission, DiagnosticMask checks, comparison and exact producer/source
+association remain unfinished. The generic legacy inspection basis cannot admit
+Native envelope materialization; it receives typed `NativeInspectionAdmissionRequired`.
+
 ### Original Query Binding Custody
 
 An ordinary installed query binding carries the actual immutable catalog binding

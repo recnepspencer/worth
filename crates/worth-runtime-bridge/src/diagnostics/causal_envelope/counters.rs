@@ -14,6 +14,7 @@ pub struct BridgeCausalEnvelopeCounters {
     materialized_detail_count: usize,
     missing_bridge_record_count: usize,
     bridge_record_unindexed_scan_count: usize,
+    retained_native_observation_binding_count: usize,
     counter_identity: BridgeIdentityEvidence,
 }
 
@@ -61,12 +62,29 @@ impl BridgeCausalEnvelopeCounters {
             materialized_detail_count,
             missing_bridge_record_count,
             bridge_record_unindexed_scan_count: 0,
+            retained_native_observation_binding_count: 0,
             counter_identity,
         }
     }
 
     pub fn evidence_reference_count(&self) -> usize {
         self.evidence_reference_count
+    }
+
+    pub(super) fn with_native_bindings(mut self, count: usize) -> Self {
+        self.counter_identity = compose_bridge_causal_envelope_evidence_identity(
+            BridgeCausalEnvelopeDigestArtifact::NativeCounters,
+            &[
+                super::evidence_part(&self.counter_identity),
+                value_part(&count.to_string()),
+            ],
+        );
+        self.retained_native_observation_binding_count = count;
+        self
+    }
+
+    pub fn retained_native_observation_binding_count(&self) -> usize {
+        self.retained_native_observation_binding_count
     }
 
     pub fn lower_runtime_family_count(&self) -> usize {

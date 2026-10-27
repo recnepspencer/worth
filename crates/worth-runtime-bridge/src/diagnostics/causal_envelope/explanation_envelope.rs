@@ -22,6 +22,7 @@ pub struct BridgeCausalExplanationEnvelope {
     counters: BridgeCausalEnvelopeCounters,
     receipt: BridgeCausalEnvelopeReceipt,
     envelope_identity: BridgeIdentityEvidence,
+    retained_native: super::retained_source::RetainedNativeObservation,
 }
 
 impl BridgeCausalExplanationEnvelope {
@@ -74,11 +75,31 @@ impl BridgeCausalExplanationEnvelope {
             counters,
             receipt,
             envelope_identity,
+            retained_native: Default::default(),
         }
     }
 
     pub fn identity(&self) -> &BridgeCausalEnvelopeIdentity {
         &self.identity
+    }
+
+    pub(super) fn retain_native(
+        mut self,
+        observation: crate::conditional_execution::BridgeConditionalCausalObservation,
+    ) -> Self {
+        self.retained_native.0 = Some(observation);
+        self
+    }
+
+    /// Confirms exact retained custody; descriptive digest equality cannot do so.
+    pub fn retains_native_observation(
+        &self,
+        observation: &crate::conditional_execution::BridgeConditionalCausalObservation,
+    ) -> bool {
+        self.retained_native
+            .0
+            .as_ref()
+            .is_some_and(|retained| retained.same_observation(observation))
     }
 
     pub fn admission_summary_kind(&self) -> BridgeCausalInspectionAdmissionSummaryKind {

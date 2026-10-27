@@ -28,6 +28,7 @@ pub use causal_envelope::{
     BridgeCausalEvidenceOwner, BridgeCausalEvidenceReference,
     BridgeCausalEvidenceReferenceIdentity, BridgeCausalExplanationEnvelope,
     BridgeCausalInspectionAdmissionSummary, BridgeCausalInspectionAdmissionSummaryKind,
+    BridgeConditionalCausalEnvelopeRequest,
 };
 pub use continuity::{
     BridgeCanonicalContinuityRecord, BridgeContinuityExplanation, BridgeContinuityReplaySummary,

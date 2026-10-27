@@ -1,4 +1,4 @@
-mod assembly;
+pub(crate) mod assembly;
 mod authority;
 mod binding;
 mod counters;
@@ -9,10 +9,11 @@ mod explanation_envelope;
 mod identity;
 mod receipt;
 pub(crate) mod retained_mapping;
+mod retained_source;
 
 pub use assembly::{
     BridgeCausalEnvelopeAssemblyRequest, BridgeCausalInspectionAdmissionSummary,
-    BridgeCausalInspectionAdmissionSummaryKind,
+    BridgeCausalInspectionAdmissionSummaryKind, BridgeConditionalCausalEnvelopeRequest,
 };
 pub use authority::{BridgeCausalEvidenceFamily, BridgeCausalEvidenceOwner};
 pub use binding::{BridgeCausalEvidenceBinding, BridgeCausalEvidenceBindingClass};
