@@ -113,20 +113,5 @@ pub use standard_path::{
     BridgeStandardSessionExplanation, BridgeTruthViewEvaluation, BridgeTruthViewEvaluationRequest,
 };
 
-#[doc(hidden)]
-pub mod everyday {
-    pub use super::*;
-}
-
-#[doc(hidden)]
-pub mod advanced {
-    pub use super::*;
-}
-
-#[doc(hidden)]
-pub mod specialist {
-    pub use super::*;
-}
-
 #[cfg(test)]
 pub(crate) mod tests;

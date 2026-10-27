@@ -22,6 +22,9 @@ Inside that single facade, the product still has three categories of work:
 - replay and certification
 
 Those categories are about usage shape, not competing public identities.
+Import each category's types directly from `worth_runtime_bridge::facade`;
+there are no category alias modules beneath it. The standalone root remains
+the supported entry for substantive replay and certification capabilities too.
 
 ## Standard Path
 

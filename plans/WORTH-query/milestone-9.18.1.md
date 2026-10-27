@@ -1,7 +1,7 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–3 accepted on 2026-10-26; Phases 4–6 remain unfinished.
-> Phase 7 accepted on 2026-10-26. Phases 8–11 remain unfinished.
+> Phases 7 and 11 accepted on 2026-10-26. Phases 8–10 remain unfinished.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -68,8 +68,8 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 | Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
 | Native record/aspect history has no bounded application endpoint | `worth-relational/src/history/access/aspect_history_queries.rs` selects canonical changes but collects a branch-wide scan into `Vec` | Phase 10 supplies native continuation and a disclosed record/aspect history query on an exact retained product observation |
-| Stale Relational identity planning catalogs remain exported | `identity_authority/phase_one_{family_map,compile_fail_targets,root_break_targets}.rs` have no discovered callers; listed UI paths do not exist | Phase 11 deletes those three catalogs and their exports, preserving actual identity authority and tests |
-| Bridge has unused duplicate facade names | `facade::{everyday,advanced,specialist}` each wildcard-re-exports the same parent | Phase 11 removes the three aliases; the standalone `worth_runtime_bridge::facade` remains supported |
+| Relational identity planning inventories retired | The three string-only Phase 1 catalogs and their module/export declarations have been removed | Phase 11 preserves actual identity authority, selection/receipt issuance and real compile-boundary tests |
+| Bridge uses one facade import | The three hidden wildcard alias modules have been removed | Phase 11 retains the standalone `worth_runtime_bridge::facade` and its substantive control, replay and certification capabilities |
 
 This extension completes existing runtime capabilities at their application
 boundary. It does not add a second async engine, causal evidence store, history
@@ -1096,6 +1096,17 @@ remain supported by their original owners.
 Independent of the new runtime integrations; implement both cleanup findings in
 one reviewed batch. Cleanup of orchestration displaced by Phases 8–9 belongs to
 those integration phases, not this batch.
+
+**Accepted, 2026-10-26.** The three Relational planning catalogs and the three
+hidden Bridge facade aliases are removed together. Source/caller inventory finds
+no executable references to the retired symbols. The existing grouped World
+delivery and owned-async courts preserve native source selection/receipt delivery,
+supported root-facade consumption and World/source-owner refusal. Actual identity
+authority, kinds, categories, owner implementations and compile-boundary tests
+remain unchanged. The current
+[Relational source-identity contract](../../crates/worth-relational/API_OVERVIEW.md#exact-source-identity-and-receipt-authority)
+and [Bridge import guidance](../../crates/worth-runtime-bridge/API_OVERVIEW.md#public-surface-map)
+replace the stale planning/import guidance.
 
 ### Requirements
 
