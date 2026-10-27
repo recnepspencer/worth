@@ -17,6 +17,29 @@ pub(in crate::application_schema) fn validate_closure(
     stored_relations: &BTreeSet<(&str, &str, &str)>,
     operations: &BTreeSet<&str>,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    let domains: BTreeMap<_, _> = members
+        .iter()
+        .filter_map(|member| match member {
+            ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+                Some((definition.parts().domain.as_str(), definition.parts()))
+            }
+            _ => None,
+        })
+        .collect();
+    let endpoint_exists =
+        |endpoint: &crate::application_schema::ApplicationGraphMemberMeaning| match endpoint {
+            crate::application_schema::ApplicationGraphMemberMeaning::Entity(name) => {
+                entities.contains(name.as_str())
+            }
+            crate::application_schema::ApplicationGraphMemberMeaning::Projected(name) => {
+                domains.contains_key(name.as_str())
+            }
+        };
+    let minimum_domains: BTreeSet<_> = entities
+        .iter()
+        .copied()
+        .chain(domains.keys().copied())
+        .collect();
     let mut definitions = BTreeMap::new();
     for member in members {
         if let ApplicationSchemaMember::DerivedRelation { definition } = member {
@@ -28,29 +51,52 @@ pub(in crate::application_schema) fn validate_closure(
     }
     for (name, definition) in &definitions {
         let parts = definition.parts();
-        for identifier in [&parts.relation, &parts.from, &parts.to] {
+        for identifier in [parts.relation.as_str(), parts.from.name(), parts.to.name()] {
             validate_simple_identifier(identifier)?;
         }
         definition.validate().map_err(|cause| denial(name, cause))?;
-        if !entities.contains(parts.from.as_str())
-            || !entities.contains(parts.to.as_str())
-            || !parts.laws.borrowed().minimum_kinds_are_valid(entities)
+        if !endpoint_exists(&parts.from)
+            || !endpoint_exists(&parts.to)
+            || !parts
+                .laws
+                .borrowed()
+                .minimum_kinds_are_valid(&minimum_domains)
         {
             return Err(denial(name, Cause::MissingSource));
         }
         for node in &parts.expression.nodes {
+            if let ApplicationDerivedRelationNode::CarrierLift {
+                domain,
+                carrier,
+                case,
+            } = node
+            {
+                if !domains.get(domain.as_str()).is_some_and(|parts| {
+                    parts.carrier == *carrier && parts.cases.binary_search(case).is_ok()
+                }) {
+                    return Err(denial(name, Cause::ForeignCase));
+                }
+                continue;
+            }
             let ApplicationDerivedRelationNode::Source(source) = node else {
                 continue;
             };
-            for identifier in [&source.relation, &source.from, &source.to] {
+            for identifier in [
+                source.relation.as_str(),
+                source.from.name(),
+                source.to.name(),
+            ] {
                 validate_simple_identifier(identifier)?;
             }
             let found = match source.kind {
-                ApplicationDerivedRelationSourceKind::Stored => stored_relations.contains(&(
-                    source.relation.as_str(),
-                    source.from.as_str(),
-                    source.to.as_str(),
-                )),
+                ApplicationDerivedRelationSourceKind::Stored => {
+                    match (source.from.entity(), source.to.entity()) {
+                        (Some(from), Some(to)) => {
+                            stored_relations.contains(&(source.relation.as_str(), from, to))
+                        }
+                        _ => false,
+                    }
+                }
                 ApplicationDerivedRelationSourceKind::Derived => definitions
                     .get(source.relation.as_str())
                     .is_some_and(|definition| {
@@ -114,6 +160,7 @@ pub(in crate::application_schema) fn validate_member_identifiers(
     member: &ApplicationSchemaMember,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     match member {
+        ApplicationSchemaMember::DerivedComponentSet { definition } => definition.validate(),
         ApplicationSchemaMember::DerivedRelation { definition } => definition
             .validate()
             .map_err(|cause| denial(&definition.parts().relation, cause)),

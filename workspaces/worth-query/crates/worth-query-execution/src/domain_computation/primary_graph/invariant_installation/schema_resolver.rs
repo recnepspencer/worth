@@ -53,16 +53,22 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
     > {
         use worth_query_declaration::facade::application_schema::ApplicationInvariantScopeTarget as Target;
         let layout = self.layout.component_set(set.name())?;
-        if layout.member.as_ref() != set.member()
-            || self.layout.entity_kind(set.member()) != Some(layout.member_kind)
-        {
+        let member_domain = self.layout.member_binding(set.member_selector())?;
+        let member_kind = match &member_domain {
+            super::super::schema_layout::MemberDomainBinding::Entity(kind) => *kind,
+            super::super::schema_layout::MemberDomainBinding::Projected(domain) => {
+                domain.parts().carrier
+            }
+        };
+        if layout.member.as_ref() != set.member() || member_kind != layout.member_kind {
             return None;
         }
         let covered = |target: Target| {
             self.descriptor.read_closure().contains(&target)
                 && self.descriptor.applicability().contains(&target)
         };
-        if !covered(Target::Entity(layout.member.to_string()))
+        let member_name = self.layout.entity_name(member_kind)?;
+        if !covered(Target::Entity(member_name.to_owned()))
             || layout
                 .sources
                 .iter()
@@ -70,9 +76,26 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
         {
             return None;
         }
+        if layout
+            .carriers
+            .iter()
+            .any(|(name, _)| !covered(Target::Entity(name.to_string())))
+        {
+            return None;
+        }
+        if let Some(source) = &layout.source {
+            for (_, from, to) in source.physical_sources() {
+                if !covered(Target::Entity(self.layout.entity_name(*from)?.to_owned()))
+                    || !covered(Target::Entity(self.layout.entity_name(*to)?.to_owned()))
+                {
+                    return None;
+                }
+            }
+        }
         Some(super::super::application_invariant::WorthQueryApplicationInvariantComponentSetBinding {
             binding_identity: self.binding_identity.clone(),
             definition: layout.definition, member_kind: layout.member_kind,
+            member_domain, source: layout.source.clone(),
             sources: layout.sources.clone(), _marker: PhantomData,
         })
     }

@@ -1,25 +1,26 @@
 //! Naming policy over complete partitions, independent of publication timing.
 use std::collections::{BTreeMap, BTreeSet};
 
-use sha2::{Digest, Sha256};
 pub(crate) use worth_foundational::facade::AggregateLineageKind;
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};
 
+use crate::graph_member::NativeMemberKey as Member;
 use crate::history::data::CommitId;
-use crate::identity::data::EntityId;
+mod mint;
+pub(super) use mint::mint;
 #[cfg(test)]
 mod tests;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct PriorAggregate {
     pub(crate) identity: AggregateIdentity,
-    pub(crate) members: BTreeSet<EntityId>,
+    pub(crate) members: BTreeSet<Member>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct AggregateAssignment {
     pub(crate) identity: AggregateIdentity,
-    pub(crate) members: BTreeSet<EntityId>,
+    pub(crate) members: BTreeSet<Member>,
     pub(crate) born: bool,
 }
 
@@ -44,26 +45,35 @@ pub(crate) enum AggregateTransitionDenial {
     OverlappingMembership,
     DuplicateIdentity,
     MintCollision,
+    SizeOverflow,
 }
 
 pub(crate) fn transition<E: From<AggregateTransitionDenial>>(
     definition: AggregateDefinitionIdentity,
     occurrence: CommitId,
     prior: &[PriorAggregate],
-    mut proposed: Vec<BTreeSet<EntityId>>,
+    mut proposed: Vec<BTreeSet<Member>>,
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
 ) -> Result<AggregateTransition, E> {
     let (old_members, old_identities) = index_prior(prior, checkpoint)?;
     if proposed.iter().any(BTreeSet::is_empty) {
         return Err(AggregateTransitionDenial::EmptyAggregate.into());
     }
-    proposed.sort_by_key(|members| *members.first().expect("nonempty checked"));
+    for members in &proposed {
+        member_checkpoint(
+            members.first().expect("nonempty checked"),
+            proposed.len(),
+            checkpoint,
+        )?;
+    }
+    proposed.sort_by(|left, right| left.first().cmp(&right.first()));
     let new_members = index_groups(&proposed, checkpoint)?;
     let mut keepers = Vec::with_capacity(prior.len());
     for old in prior {
         let mut keeper = None;
         for member in &old.members {
             checkpoint(1)?;
+            member_checkpoint(member, new_members.len(), checkpoint)?;
             if let Some(&group) = new_members.get(member) {
                 keeper = Some(group);
                 break;
@@ -80,7 +90,7 @@ pub(crate) fn transition<E: From<AggregateTransitionDenial>>(
     for (group, members) in proposed.into_iter().enumerate() {
         checkpoint(1)?;
         let fragments = incoming_fragments(&members, &old_members, checkpoint)?;
-        let winner = fragments.iter().min_by_key(|(_, anchor)| *anchor);
+        let winner = fragments.iter().min_by(|(_, a), (_, b)| a.cmp(b));
         let retained = winner
             .filter(|(old, _)| keepers[**old] == Some(group))
             .map(|(old, _)| prior[*old].identity);
@@ -88,7 +98,7 @@ pub(crate) fn transition<E: From<AggregateTransitionDenial>>(
             mint(
                 definition,
                 occurrence,
-                *members.first().expect("nonempty checked"),
+                members.first().expect("nonempty checked").clone(),
             )
         });
         if !assigned.insert(identity) || (retained.is_none() && old_identities.contains(&identity))
@@ -133,7 +143,7 @@ pub(crate) fn transition<E: From<AggregateTransitionDenial>>(
 fn index_prior<E: From<AggregateTransitionDenial>>(
     prior: &[PriorAggregate],
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
-) -> Result<(BTreeMap<EntityId, usize>, BTreeSet<AggregateIdentity>), E> {
+) -> Result<(BTreeMap<Member, usize>, BTreeSet<AggregateIdentity>), E> {
     let mut identities = BTreeSet::new();
     let mut members = BTreeMap::new();
     for (group, old) in prior.iter().enumerate() {
@@ -144,9 +154,10 @@ fn index_prior<E: From<AggregateTransitionDenial>>(
         if old.members.is_empty() {
             return Err(AggregateTransitionDenial::EmptyAggregate.into());
         }
-        for &member in &old.members {
+        for member in &old.members {
             checkpoint(1)?;
-            if members.insert(member, group).is_some() {
+            member_checkpoint(member, members.len(), checkpoint)?;
+            if members.insert(member.clone(), group).is_some() {
                 return Err(AggregateTransitionDenial::OverlappingMembership.into());
             }
         }
@@ -155,17 +166,18 @@ fn index_prior<E: From<AggregateTransitionDenial>>(
 }
 
 fn index_groups<E: From<AggregateTransitionDenial>>(
-    groups: &[BTreeSet<EntityId>],
+    groups: &[BTreeSet<Member>],
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
-) -> Result<BTreeMap<EntityId, usize>, E> {
+) -> Result<BTreeMap<Member, usize>, E> {
     let mut members = BTreeMap::new();
     for (group, entries) in groups.iter().enumerate() {
         if entries.is_empty() {
             return Err(AggregateTransitionDenial::EmptyAggregate.into());
         }
-        for &member in entries {
+        for member in entries {
             checkpoint(1)?;
-            if members.insert(member, group).is_some() {
+            member_checkpoint(member, members.len(), checkpoint)?;
+            if members.insert(member.clone(), group).is_some() {
                 return Err(AggregateTransitionDenial::OverlappingMembership.into());
             }
         }
@@ -173,32 +185,35 @@ fn index_groups<E: From<AggregateTransitionDenial>>(
     Ok(members)
 }
 
-fn incoming_fragments<E>(
-    members: &BTreeSet<EntityId>,
-    old_members: &BTreeMap<EntityId, usize>,
+fn incoming_fragments<E: From<AggregateTransitionDenial>>(
+    members: &BTreeSet<Member>,
+    old_members: &BTreeMap<Member, usize>,
     checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
-) -> Result<BTreeMap<usize, EntityId>, E> {
+) -> Result<BTreeMap<usize, Member>, E> {
     let mut fragments = BTreeMap::new();
     for member in members {
         checkpoint(1)?;
+        member_checkpoint(member, old_members.len(), checkpoint)?;
         if let Some(&old) = old_members.get(member) {
-            fragments.entry(old).or_insert(*member);
+            fragments.entry(old).or_insert_with(|| member.clone());
         }
     }
     Ok(fragments)
 }
 
-pub(super) fn mint(
-    definition: AggregateDefinitionIdentity,
-    occurrence: CommitId,
-    anchor: EntityId,
-) -> AggregateIdentity {
-    let mut hash = Sha256::new();
-    hash.update(b"WORTH_GRAPH_AGGREGATE_ID_V1\0");
-    hash.update(definition.bytes());
-    hash.update(occurrence.0.to_be_bytes());
-    hash.update(anchor.partition_value_u64().to_be_bytes());
-    hash.update(anchor.local_slot_value().to_be_bytes());
-    hash.update(anchor.generation_value().to_be_bytes());
-    AggregateIdentity::from_bytes(hash.finalize().into())
+/// Physical comparisons retain their old fixed cost. Logical comparisons must
+/// read semantic domain/case bytes through the original transition checkpoint.
+fn member_checkpoint<E: From<AggregateTransitionDenial>>(
+    member: &Member,
+    count: usize,
+    checkpoint: &mut impl FnMut(u64) -> Result<(), E>,
+) -> Result<(), E> {
+    let units = member
+        .comparison_work(count)
+        .and_then(|units| u64::try_from(units).ok())
+        .ok_or(AggregateTransitionDenial::SizeOverflow)?;
+    if units != 0 {
+        checkpoint(units)?;
+    }
+    Ok(())
 }

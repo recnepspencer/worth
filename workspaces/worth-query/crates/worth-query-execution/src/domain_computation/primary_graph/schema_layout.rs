@@ -21,11 +21,14 @@ mod equality_fields;
 mod field_optionality;
 mod installation_primitives;
 mod kind_lookup;
+mod member_domain;
+pub(in crate::domain_computation::primary_graph) use member_domain::MemberDomainBinding;
 mod native_outputs;
 mod platform_entity_lowering;
 mod platform_identity_allocator;
 mod principal_binding;
 mod program_activation;
+mod projected_member_domain;
 mod provider_aftermath_causality;
 mod provider_dispatch_outbox;
 mod provider_idempotency;
@@ -79,6 +82,7 @@ pub(in crate::domain_computation) struct WorthQueryPrimaryGraphLayout {
     relation_kinds: BTreeMap<String, WorthQueryPrimaryRelationLayout>,
     component_sets: BTreeMap<String, ComponentSetLayout>,
     derived_relations: BTreeMap<String, derived_relation::DerivedRelationLayout>,
+    projected_domains: BTreeMap<String, projected_member_domain::ProjectedMemberDomainLayout>,
     application_entity_kinds: BTreeSet<KindId>,
     signing: signed_entities::SignedEntityLayout,
     pub(in crate::domain_computation::primary_graph) signing_lifecycle:
@@ -192,6 +196,20 @@ impl WorthQueryPrimaryGraphLayout {
             entity_kinds.values().copied().collect(),
         )?;
         let principal_bindings = lower_principal_bindings(schema, &entity_kinds, &relation_kinds)?;
+        let (registry, projected_domains) = projected_member_domain::lower(
+            registry,
+            schema,
+            (&schema_id, schema_version_id),
+            &entity_kinds,
+        )?;
+        let (registry, derived_relations) = derived_relation::lower(
+            registry,
+            schema,
+            (&schema_id, schema_version_id),
+            &entity_kinds,
+            &relation_kinds,
+            &projected_domains,
+        )?;
         let (registry, component_sets) = aggregate_identity::lower(
             registry,
             schema,
@@ -202,13 +220,6 @@ impl WorthQueryPrimaryGraphLayout {
             &relation_kinds,
         )?;
         let relation_layouts = lower_relation_layouts(schema, &entity_kinds, &relation_kinds)?;
-        let (registry, derived_relations) = derived_relation::lower(
-            registry,
-            schema,
-            (&schema_id, schema_version_id),
-            &entity_kinds,
-            &relation_kinds,
-        )?;
         let application_entity_kinds = entity_kinds.values().copied().collect();
         let signing = signed_entities::lower(schema, &entity_kinds)?;
         let signing_lifecycle = signing_lifecycle::SigningLifecycleLayout::lower(
@@ -240,6 +251,7 @@ impl WorthQueryPrimaryGraphLayout {
                 relation_kinds: relation_layouts,
                 component_sets,
                 derived_relations,
+                projected_domains,
                 application_entity_kinds,
                 signing,
                 signing_lifecycle,

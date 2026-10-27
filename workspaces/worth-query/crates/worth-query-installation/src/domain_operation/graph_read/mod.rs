@@ -1,4 +1,6 @@
 mod component_scope;
+mod derived_source_scope;
+pub use derived_source_scope::WorthQueryOperationDerivedSourceReadScope;
 mod contract;
 pub use component_scope::WorthQueryOperationComponentReadScope;
 mod native_projection;

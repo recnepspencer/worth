@@ -15,6 +15,9 @@ use worth_query_declaration::facade::application_schema::{
     WorthQueryPortableDerivedRelationParts,
 };
 
+mod extended;
+pub(super) use extended::{decode_member_domain, write_member_domain};
+
 use super::super::wire_vocabulary::{decode_optional, write_optional};
 
 pub(super) fn require_shape(member: &Member) -> Result<(), Denial> {
@@ -34,25 +37,15 @@ pub(super) fn require_shape(member: &Member) -> Result<(), Denial> {
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, member: &Member) -> Result<(), Denial> {
     match member {
         Member::DerivedRelation { definition } => {
+            if !definition.is_legacy_shape() {
+                return extended::write(output, definition);
+            }
             let parts = definition.parts();
-            for text in [&parts.relation, &parts.from, &parts.to] {
+            for text in [parts.relation.as_str(), parts.from.name(), parts.to.name()] {
                 output.text(text)?;
             }
             write_sequence(output, &parts.expression.nodes, write_node)?;
-            super::relation_graph::write_prefix(
-                output,
-                parts.laws.endpoints,
-                parts.laws.cardinality,
-            )?;
-            write_bool(output, parts.laws.acyclic)?;
-            write_bool(output, parts.laws.symmetric)?;
-            write_bool(output, parts.laws.orbit)?;
-            write_bool(output, parts.laws.same_partition_endpoints)?;
-            write_optional(
-                output,
-                parts.laws.reaches_at_least.as_ref(),
-                super::relation_graph::write_minimum,
-            )
+            write_laws(output, &parts.laws)
         }
         Member::RuleReadableCollection { association } => {
             for text in [&association.relation, &association.feature] {
@@ -93,30 +86,20 @@ pub(super) fn decode(
             let from = input.text()?.to_owned();
             let to = input.text()?.to_owned();
             let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input))?;
-            let (endpoints, cardinality) = super::relation_graph::decode_prefix(input)?;
-            let laws = ApplicationRelationGraphLaws {
-                endpoints,
-                cardinality,
-                acyclic: decode_bool(input)?,
-                symmetric: decode_bool(input)?,
-                orbit: decode_bool(input)?,
-                same_partition_endpoints: decode_bool(input)?,
-                reaches_at_least: decode_optional(input, |input| {
-                    super::relation_graph::decode_minimum(input, budget)
-                })?,
-            };
+            let laws = decode_laws(input, budget)?;
             Member::DerivedRelation {
                 definition: ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
                     WorthQueryPortableDerivedRelationParts {
                         relation,
-                        from,
-                        to,
+                        from: from.into(),
+                        to: to.into(),
                         expression: ApplicationDerivedRelationExpression { nodes },
                         laws,
                     },
                 ),
             }
         }
+        47 => return extended::decode(input, budget),
         42 => Member::RuleReadableCollection {
             association: ApplicationRuleReadableCollectionAssociation {
                 relation: input.text()?.to_owned(),
@@ -147,7 +130,11 @@ fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), De
                 SourceKind::Stored => 1,
                 SourceKind::Derived => 2,
             })?;
-            for text in [&source.relation, &source.from, &source.to] {
+            for text in [
+                source.relation.as_str(),
+                source.from.name(),
+                source.to.name(),
+            ] {
                 output.text(text)?;
             }
             Ok(())
@@ -165,6 +152,9 @@ fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), De
             })?;
             output.u64(*input as u64)
         }
+        Node::CarrierLift { .. } | Node::Union { .. } | Node::Intersection { .. } => {
+            Err(Denial::new(Kind::InvalidRecordShape))
+        }
     }
 }
 
@@ -177,8 +167,8 @@ fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             },
             relation: input.text()?.to_owned(),
-            from: input.text()?.to_owned(),
-            to: input.text()?.to_owned(),
+            from: input.text()?.into(),
+            to: input.text()?.into(),
         }),
         2 => Node::Compose {
             left: decode_index(input)?,
@@ -196,4 +186,38 @@ fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
 
 fn decode_index(input: &mut BinaryInput<'_>) -> Result<usize, Denial> {
     usize::try_from(input.u64()?).map_err(|_| Denial::new(Kind::InvalidRecordShape))
+}
+
+fn write_laws(
+    output: &mut dyn BinaryEncodingSink,
+    laws: &ApplicationRelationGraphLaws,
+) -> Result<(), Denial> {
+    super::relation_graph::write_prefix(output, laws.endpoints, laws.cardinality)?;
+    write_bool(output, laws.acyclic)?;
+    write_bool(output, laws.symmetric)?;
+    write_bool(output, laws.orbit)?;
+    write_bool(output, laws.same_partition_endpoints)?;
+    write_optional(
+        output,
+        laws.reaches_at_least.as_ref(),
+        super::relation_graph::write_minimum,
+    )
+}
+
+fn decode_laws(
+    input: &mut BinaryInput<'_>,
+    budget: &mut RecordDecodeAttempt,
+) -> Result<ApplicationRelationGraphLaws, Denial> {
+    let (endpoints, cardinality) = super::relation_graph::decode_prefix(input)?;
+    Ok(ApplicationRelationGraphLaws {
+        endpoints,
+        cardinality,
+        acyclic: decode_bool(input)?,
+        symmetric: decode_bool(input)?,
+        orbit: decode_bool(input)?,
+        same_partition_endpoints: decode_bool(input)?,
+        reaches_at_least: decode_optional(input, |input| {
+            super::relation_graph::decode_minimum(input, budget)
+        })?,
+    })
 }

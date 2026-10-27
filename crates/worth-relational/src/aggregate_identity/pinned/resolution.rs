@@ -1,7 +1,7 @@
 //! Current identity follows validated merge coordinates, never split edges or rescans.
 use super::super::{cohorts::StoredAggregate, funding::AggregateWork, AggregateLineageEvent};
 use super::*;
-use crate::schema::data::AggregateIdentityContractDeclaration;
+use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use std::collections::BTreeSet;
 use worth_foundational::facade::AggregateIdentity;
 
@@ -15,6 +15,7 @@ pub(super) fn resolve(
     view: &InvariantStateView<'_>,
     mut current: StoredAggregate,
     contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Resolution> {
     let mut ids = BTreeSet::new();
@@ -27,13 +28,19 @@ pub(super) fn resolve(
         if !ids.insert(current.record.identity) || !rows.insert(current.entity) {
             return work.invalid(PlanDenial::LineageCycle);
         }
-        let next =
-            super::super::stored_lineage::visit(view, &current, contract, work, |event, _| {
+        let next = super::super::stored_lineage::visit(
+            view,
+            &current,
+            contract,
+            registry,
+            work,
+            |event, _| {
                 if initial {
                     incident.insert(event);
                 }
                 Ok(())
-            })?;
+            },
+        )?;
         match next {
             Some(next) => {
                 steps.push(next.event);
@@ -47,6 +54,7 @@ pub(super) fn resolve(
                     latest: current
                         .record
                         .current_anchor
+                        .as_ref()
                         .map(|_| current.record.identity),
                 })
             }

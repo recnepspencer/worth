@@ -28,6 +28,7 @@ pub(super) fn append_member(
             projected_member_domain::append(basis, &prefix, definition)
         }
         ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::DerivedComponentSet { .. }
         | ApplicationSchemaMember::RuleReadableCollection { .. }
         | ApplicationSchemaMember::OperationDerivedRead { .. } => {
             derived_relation::append(basis, &prefix, member)

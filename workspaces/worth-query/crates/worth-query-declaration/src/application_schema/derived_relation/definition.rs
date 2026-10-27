@@ -1,5 +1,5 @@
 //! Portable derived relation meaning; no stored-edge deletion or write authority.
-use crate::application_schema::ApplicationRelationGraphLaws;
+use crate::application_schema::{ApplicationGraphMemberMeaning, ApplicationRelationGraphLaws};
 
 use super::denial::ApplicationDerivedRelationDefinitionDenial as Denial;
 use super::expression::ApplicationDerivedRelationExpression;
@@ -8,8 +8,8 @@ use super::expression::ApplicationDerivedRelationExpression;
 /// Untrusted owned recipe, endpoint and law meaning for fresh readmission.
 pub struct WorthQueryPortableDerivedRelationParts {
     pub relation: String,
-    pub from: String,
-    pub to: String,
+    pub from: ApplicationGraphMemberMeaning,
+    pub to: ApplicationGraphMemberMeaning,
     pub expression: ApplicationDerivedRelationExpression,
     pub laws: ApplicationRelationGraphLaws,
 }
@@ -33,30 +33,62 @@ impl ErasedApplicationDerivedRelationDefinition {
 
     /// Validates local syntax, endpoint continuity and graph-law shape.
     pub fn validate(&self) -> Result<(), Denial> {
-        for identifier in [&self.parts.relation, &self.parts.from, &self.parts.to] {
+        for identifier in [
+            self.parts.relation.as_str(),
+            self.parts.from.name(),
+            self.parts.to.name(),
+        ] {
             super::super::identifier_validation::validate_simple_identifier(identifier)
                 .map_err(|_| Denial::InvalidIdentifier)?;
         }
         for node in &self.parts.expression.nodes {
+            if let super::ApplicationDerivedRelationNode::CarrierLift {
+                domain,
+                carrier,
+                case,
+            } = node
+            {
+                for identifier in [domain, carrier, case] {
+                    super::super::identifier_validation::validate_simple_identifier(identifier)
+                        .map_err(|_| Denial::InvalidIdentifier)?;
+                }
+            }
             if let super::ApplicationDerivedRelationNode::Source(source) = node {
-                for identifier in [&source.relation, &source.from, &source.to] {
+                if source.kind == super::ApplicationDerivedRelationSourceKind::Stored
+                    && (source.from.entity().is_none() || source.to.entity().is_none())
+                {
+                    return Err(Denial::MissingSource);
+                }
+                for identifier in [
+                    source.relation.as_str(),
+                    source.from.name(),
+                    source.to.name(),
+                ] {
                     super::super::identifier_validation::validate_simple_identifier(identifier)
                         .map_err(|_| Denial::InvalidIdentifier)?;
                 }
             }
         }
         let endpoints = self.parts.expression.validate()?;
-        if endpoints != (self.parts.from.as_str(), self.parts.to.as_str()) {
+        if endpoints != (self.parts.from.borrowed(), self.parts.to.borrowed()) {
             return Err(Denial::WrongDefinitionEndpoints);
         }
         if !self
             .parts
             .laws
             .borrowed()
-            .is_valid(&self.parts.from, &self.parts.to)
+            .is_valid(self.parts.from.name(), self.parts.to.name())
+            || (self.parts.laws.orbit && self.parts.from != self.parts.to)
         {
             return Err(Denial::InvalidGraphLaws);
         }
         Ok(())
+    }
+
+    /// Exact legacy wire eligibility; extended meaning has one distinct grammar.
+    pub fn is_legacy_shape(&self) -> bool {
+        self.parts.from.entity().is_some()
+            && self.parts.to.entity().is_some()
+            && self.parts.expression.is_legacy_shape()
     }
 }

@@ -44,7 +44,7 @@ impl ApplicationComponentSetMeaning {
 /// A name selected by a schema, never permission to inspect its members.
 pub struct ApplicationComponentSetRef<Schema, Set, Entity> {
     name: &'static str,
-    member: &'static str,
+    member: super::ApplicationGraphMemberSelector<'static>,
     _marker: PhantomData<fn() -> (Schema, Set, Entity)>,
 }
 impl<Schema, Set, Entity> Copy for ApplicationComponentSetRef<Schema, Set, Entity> {}
@@ -61,7 +61,7 @@ impl<Schema, Set, Entity> ApplicationComponentSetRef<Schema, Set, Entity> {
     pub const fn from_schema_identifiers(name: &'static str, member: &'static str) -> Self {
         Self {
             name,
-            member,
+            member: super::ApplicationGraphMemberSelector::Entity(member),
             _marker: PhantomData,
         }
     }
@@ -69,7 +69,20 @@ impl<Schema, Set, Entity> ApplicationComponentSetRef<Schema, Set, Entity> {
         self.name
     }
     pub const fn member(&self) -> &'static str {
+        self.member.name()
+    }
+    pub const fn member_selector(&self) -> super::ApplicationGraphMemberSelector<'static> {
         self.member
+    }
+    pub const fn projected<Carrier>(
+        name: &'static str,
+        domain: super::ApplicationProjectedMemberDomainRef<Schema, Entity, Carrier>,
+    ) -> Self {
+        Self {
+            name,
+            member: super::ApplicationGraphMemberSelector::Projected(domain.name()),
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -96,7 +109,7 @@ impl<Schema, Set, Entity> ApplicationComponentSetDefinition<Schema, Set, Entity>
         ApplicationComponentSetMeaning::from_untrusted_parts(
             WorthQueryPortableApplicationComponentSetParts {
                 name: self.reference.name.into(),
-                member: self.reference.member.into(),
+                member: self.reference.member.name().into(),
                 relations: self.relations,
             },
         )

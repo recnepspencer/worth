@@ -12,7 +12,7 @@ use crate::runtime::{
 /// installs a new one meanwhile.
 #[derive(Clone)]
 pub(crate) struct InvariantRuntimeView<'a> {
-    pub(crate) selected_registry: crate::derived_relation::catalog::DerivedRegistryCustody,
+    pub(crate) selected_registry: crate::schema::SchemaRegistryCustody,
     pub(crate) custom_kernel_posture: worth_foundational::ExecutionPosture,
     pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
@@ -31,7 +31,7 @@ pub(crate) struct InvariantRuntimeView<'a> {
 impl<'a> InvariantRuntimeView<'a> {
     pub(crate) fn from_runtime(runtime: &'a RelationalRuntime) -> Self {
         Self {
-            selected_registry: crate::derived_relation::catalog::DerivedRegistryCustody::Runtime(
+            selected_registry: crate::schema::SchemaRegistryCustody::Runtime(
                 std::sync::Arc::clone(&runtime.config),
             ),
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,
@@ -54,7 +54,7 @@ impl<'a> InvariantRuntimeView<'a> {
         state: &crate::branch::RelationalBranchRootState,
     ) -> Self {
         Self {
-            selected_registry: crate::derived_relation::catalog::DerivedRegistryCustody::Selected(
+            selected_registry: crate::schema::SchemaRegistryCustody::Selected(
                 state.root().schema_authority().registry_arc(),
             ),
             custom_kernel_posture: worth_foundational::ExecutionPosture::Serial,

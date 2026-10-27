@@ -18,6 +18,14 @@ pub(crate) fn install_portable_graph_reads(
     let mut scopes = Vec::with_capacity(reads.len());
     for read in reads {
         let scope = match read {
+            WorthQueryPortableOperationGraphReadScope::DerivedSource { relation, .. } => {
+                WorthQueryOperationGraphReadScope::DerivedSource(
+                    crate::domain_operation::WorthQueryOperationDerivedSourceReadScope::new(
+                        binding.clone(),
+                        relation.clone(),
+                    ),
+                )
+            }
             WorthQueryPortableOperationGraphReadScope::Components { definition, .. } => {
                 WorthQueryOperationGraphReadScope::Components(
                     crate::domain_operation::WorthQueryOperationComponentReadScope::new(

@@ -177,11 +177,12 @@ Cases have canonical names independent of authoring order. Empty/duplicate
 cases, foreign case selectors, missing stored carriers and entity/domain name
 collisions refuse through typed declaration/readmission outcomes.
 
-This is a portable meaning prerequisite. Installation currently returns
-`ProjectedMemberDomainUnavailable` because the Native member issuer and actual
-Query consumers are not installed yet. It is not CAD shell adoption. The
+The logical-source extension binds this meaning to registered Native domain and
+case handles. Genuine proposed/committed invariant views and admitted operation
+reads issue the live observations; descriptive coordinates cannot construct them.
+This extension is undergoing runtime qualification and is not CAD shell adoption. The
 [actual typed authoring and transport court](../worth-query-package-archive/src/record/application_schema/tests/projected_member_domain.rs)
-and [installed refusal court](../worth-query-installation/src/application_schema_tests/projected_member_domain.rs)
+and [installed binding court](../worth-query-installation/src/application_schema_tests/projected_member_domain.rs)
 exercise these boundaries.
 
 Archive member tag44 carries its own v1 subgrammar under the existing Frame18

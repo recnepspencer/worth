@@ -11,7 +11,10 @@ fn component_sources_normalize_and_refuse_empty_private_or_non_homogeneous_kinds
         .aggregate_identity
         .as_ref()
         .unwrap();
-    assert_eq!(contract.source.relations(), [KindId(2), KindId(6)]);
+    assert_eq!(
+        contract.source.stored_relations().unwrap(),
+        [KindId(2), KindId(6)]
+    );
     assert!(base
         .clone()
         .register_relation_kind(installed.clone())

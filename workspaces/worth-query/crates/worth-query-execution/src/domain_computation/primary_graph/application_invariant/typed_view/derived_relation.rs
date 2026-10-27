@@ -16,6 +16,7 @@ pub struct WorthQueryApplicationInvariantDerivedRelation<Schema, Relation, From,
     from: Entity<Schema, From>,
     to: Entity<Schema, To>,
     _relation: PhantomData<fn() -> Relation>,
+    _source: worth_relational::facade::runtime::PreparedDerivedRelationRead,
 }
 impl<Schema, Relation, From, To>
     WorthQueryApplicationInvariantDerivedRelation<Schema, Relation, From, To>
@@ -40,7 +41,15 @@ impl<Schema> View<'_, Schema> {
         Denial,
     > {
         self.check_binding(&binding.binding_identity)?;
-        self.check_entity_affinity(root, binding.definition.parts().from)?;
+        let from_kind = binding
+            .from
+            .entity_kind()
+            .ok_or_else(|| Denial::new(Kind::WrongEntityKind, "entity-only derived source"))?;
+        let to_kind = binding
+            .to
+            .entity_kind()
+            .ok_or_else(|| Denial::new(Kind::WrongEntityKind, "entity-only derived target"))?;
+        self.check_entity_affinity(root, from_kind)?;
         let key = self
             .relations
             .derived_read_identity(&binding.definition, root.entity_id)
@@ -79,8 +88,14 @@ impl<Schema> View<'_, Schema> {
                 .map_err(|cause| Denial::from_native_read(cause, "derived endpoint result"))?;
             result.push(WorthQueryApplicationInvariantDerivedRelation {
                 from: root.clone(),
-                to: self.entity(*endpoint, binding.definition.parts().to),
+                to: self.entity(
+                    endpoint.entity().ok_or_else(|| {
+                        Denial::new(Kind::WrongEntityKind, "entity-only derived endpoint")
+                    })?,
+                    to_kind,
+                ),
                 _relation: PhantomData,
+                _source: prepared.clone(),
             });
         }
         self.relations
@@ -114,6 +129,10 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
                 | Definition::CyclicDefinitions
                 | Definition::InvalidExpression
                 | Definition::InvalidPhysicalSource(_) => Kind::RelationNotInstalled,
+                Definition::InvalidMemberDomain | Definition::InvalidMemberCase => {
+                    Kind::WrongEntityKind
+                }
+                Definition::InvalidGraphLaws => Kind::RelationNotInstalled,
             };
             Denial::new(kind, format!("derived relation read: {cause:?}"))
         }
@@ -124,3 +143,5 @@ pub(in crate::domain_computation::primary_graph::application_invariant) fn nativ
 mod native_fixture;
 #[cfg(test)]
 mod native_snapshot;
+#[cfg(test)]
+mod native_source_shapes;

@@ -4,9 +4,11 @@ use super::preparation::{AggregateWork, BuildResult};
 use super::projection::ChangedProjection;
 use super::record::{lineage_fields, AggregateRecord};
 use super::retention_extent as extent;
+use crate::graph_member::NativeMemberKey as Member;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, PartitionId, RelationId};
-use crate::schema::data::AggregateIdentityContractDeclaration;
+mod membership;
+use crate::schema::data::{AggregateIdentityContractDeclaration, RelationalSchemaRegistry};
 use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
     AspectFieldPatch, CreateIntent, CreatedEntityRef, DeleteRelationIntent, EntityMutationIntent,
@@ -55,6 +57,7 @@ impl ConsequencePlan {
 pub(super) fn append(
     plan: &mut ConsequencePlan,
     contract: &AggregateIdentityContractDeclaration,
+    registry: &RelationalSchemaRegistry,
     occurrence: CommitId,
     cohorts: CollectedCohorts,
     after: &InvariantStateView<'_>,
@@ -106,35 +109,37 @@ pub(super) fn append(
     }
     let mut new_membership = BTreeMap::new();
     for (assignment_index, assignment) in result.assignments.iter().enumerate() {
-        let anchor = *assignment
+        let anchor = assignment
             .members
             .first()
-            .expect("complete nonempty aggregate");
+            .expect("complete nonempty aggregate")
+            .clone();
         let row = if assignment.born {
             AggregateRecord {
                 identity: assignment.identity,
                 definition: contract.definition,
                 born: occurrence,
-                seed: anchor,
-                current_anchor: Some(anchor),
+                seed: anchor.clone(),
+                current_anchor: Some(anchor.clone()),
                 retired: None,
             }
         } else {
             let mut row = cohorts.rows[&assignment.identity].record.clone();
-            row.current_anchor = Some(anchor);
+            row.current_anchor = Some(anchor.clone());
             row
         };
         work.retain(extent::row_mutation())?;
         if assignment.born {
             work.retain(extent::identity_target())?;
-            let reference = create_row(plan, contract, anchor.partition_id, row, work)?;
+            let reference = create_row(plan, contract, anchor.carrier().partition_id, row, work)?;
             targets.insert(assignment.identity, reference);
         } else if row != cohorts.rows[&assignment.identity].record {
             update_row(plan, cohorts.rows[&assignment.identity].entity, row, work)?;
         }
-        for &member in &assignment.members {
-            work.retain(extent::assignment_member())?;
-            new_membership.insert(member, assignment_index);
+        for member in &assignment.members {
+            super::membership::key_lookup(member, new_membership.len(), work)?;
+            work.retain(extent::tree_entry::<Member, usize>())?;
+            new_membership.insert(member.clone(), assignment_index);
         }
     }
     for identity in &result.retired {
@@ -145,64 +150,17 @@ pub(super) fn append(
         work.retain(extent::row_mutation())?;
         update_row(plan, old.entity, row, work)?;
     }
-    for (&member, &(relation, old)) in &cohorts.memberships {
-        work.checkpoint(1)?;
-        if new_membership
-            .get(&member)
-            .map(|&index| result.assignments[index].identity)
-            == Some(old)
-        {
-            continue;
-        }
-        // Member deletion may already have retired this private edge for audit.
-        // Never restore that business consequence from the before image.
-        if after.relation_metadata(relation).is_some() {
-            work.retain(extent::demand())?;
-            plan.demands.relations.insert(relation);
-            plan.demands.partitions.insert(relation.partition_id);
-            plan.endpoint(&EntityReference::Existing(member));
-            plan.endpoint(&targets[&old]);
-            plan.push(
-                MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
-                    relation_id: relation,
-                })),
-                work,
-            )?;
-        }
-    }
-    for (&member, &assignment_index) in &new_membership {
-        let identity = result.assignments[assignment_index].identity;
-        work.checkpoint(1)?;
-        if cohorts
-            .memberships
-            .get(&member)
-            .is_some_and(|(_, old)| *old == identity)
-        {
-            continue;
-        }
-        work.retain(extent::membership_mutation())?;
-        let source = EntityReference::Existing(member);
-        let target = targets[&identity].clone();
-        plan.endpoint(&source);
-        plan.endpoint(&target);
-        plan.push(
-            MutationIntent::Create(CreateIntent::Relation(RelationSpec {
-                partition_id: member.partition_id,
-                kind_id: contract.membership_kind,
-                client_key: ClientKey::raw(format!(
-                    "aggregate-member:{}:{}:{}:{}",
-                    contract.membership_kind.0,
-                    member.partition_value(),
-                    member.local_slot_value(),
-                    member.generation_value()
-                )),
-                source,
-                target,
-                fields: Default::default(),
-            })),
-            work,
-        )?;
-    }
+    membership::append(
+        plan,
+        registry,
+        contract,
+        &targets,
+        &cohorts.memberships,
+        &new_membership,
+        &result,
+        after,
+        work,
+    )?;
     for event in &result.lineage {
         work.retain(extent::lineage_mutation())?;
         let source = targets[&event.from].clone();
@@ -248,12 +206,13 @@ fn create_row(
         client_key: key.clone(),
     });
     plan.demands.partitions.insert(partition);
+    let fields = AspectFieldPatch::new(row.fields(work)?);
     plan.push(
         MutationIntent::Create(CreateIntent::Entity(EntitySpec {
             partition_id: partition,
             kind_id: contract.storage.aggregate_kind,
             client_key: key,
-            fields: AspectFieldPatch::new(row.fields()),
+            fields,
         })),
         work,
     )?;
@@ -267,11 +226,12 @@ fn update_row(
 ) -> BuildResult<()> {
     plan.demands.entities.insert(entity);
     plan.demands.partitions.insert(entity.partition_id);
+    let fields = AspectFieldPatch::new(row.fields(work)?);
     plan.push(
         MutationIntent::Entity(EntityMutationIntent::UpdateFields(
             UpdateEntityFieldsIntent {
                 entity_id: entity,
-                fields: AspectFieldPatch::new(row.fields()),
+                fields,
             },
         )),
         work,

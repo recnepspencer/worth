@@ -3,30 +3,46 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use super::{DerivedRelationDefinitionParts as Parts, DerivedRelationDenial as Denial};
 use super::{DerivedRelationIdentity as Identity, DerivedRelationNode as Node};
+use crate::graph_member::NativeMemberDomain as Domain;
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
+
+pub(super) struct ValidatedExpression {
+    pub(super) dependencies: BTreeSet<Identity>,
+    pub(super) endpoints: Vec<(Domain, Domain)>,
+}
 
 pub(super) fn expression(
     parts: &Parts,
     definitions: &BTreeMap<Identity, Parts>,
     registry: &RelationalSchemaRegistry,
-) -> Result<BTreeSet<Identity>, Denial> {
+) -> Result<ValidatedExpression, Denial> {
     if parts.identity.name.trim().is_empty()
         || parts.identity.name.trim() != parts.identity.name
         || parts.identity.schema.0.is_empty()
     {
         return Err(Denial::InvalidIdentity);
     }
-    for kind in [parts.from, parts.to] {
-        entity_kind(registry, &parts.identity, kind)?;
+    for domain in [&parts.from, &parts.to] {
+        endpoint_domain(registry, &parts.identity, domain)?;
     }
-    let mut endpoints: Vec<(KindId, KindId)> = Vec::new();
+    if let Some(laws) = &parts.laws {
+        if !laws.valid(&parts.from, &parts.to) {
+            return Err(Denial::InvalidGraphLaws);
+        }
+        if let Some(minimum) = &laws.reaches_at_least {
+            for domain in &minimum.target_domains {
+                endpoint_domain(registry, &parts.identity, domain)?;
+            }
+        }
+    }
+    let mut endpoints: Vec<(Domain, Domain)> = Vec::new();
     let mut dependencies = BTreeSet::new();
     for node in &parts.nodes {
         let prior = |index: usize| {
             endpoints
                 .get(index)
-                .copied()
+                .cloned()
                 .ok_or(Denial::InvalidExpression)
         };
         let pair = match node {
@@ -49,14 +65,14 @@ pub(super) fn expression(
                 {
                     return Err(Denial::InvalidPhysicalSource(*relation));
                 }
-                (*from, *to)
+                ((*from).into(), (*to).into())
             }
             Node::Derived(identity) => {
                 let target = definitions
                     .get(identity)
                     .ok_or_else(|| Denial::MissingDefinition(identity.clone()))?;
                 dependencies.insert(identity.clone());
-                (target.from, target.to)
+                (target.from.clone(), target.to.clone())
             }
             Node::Compose { left, right } => {
                 let left = prior(*left)?;
@@ -77,10 +93,36 @@ pub(super) fn expression(
                 }
                 pair
             }
+            Node::CarrierLift { domain, case } => {
+                let registered = registry
+                    .projected_member_domain(domain)
+                    .ok_or(Denial::InvalidMemberDomain)?;
+                if domain.schema != parts.identity.schema
+                    || domain.version != parts.identity.version
+                {
+                    return Err(Denial::InvalidMemberDomain);
+                }
+                if registered.case(case).is_none() {
+                    return Err(Denial::InvalidMemberCase);
+                }
+                (
+                    Domain::Entity(registered.parts().carrier),
+                    Domain::Projected {
+                        projected: domain.clone(),
+                    },
+                )
+            }
+            Node::Union { left, right } | Node::Intersection { left, right } => {
+                let pair = prior(*left)?;
+                if pair != prior(*right)? {
+                    return Err(Denial::DiscontinuousEndpoints);
+                }
+                pair
+            }
         };
         endpoints.push(pair);
     }
-    if endpoints.last() != Some(&(parts.from, parts.to)) {
+    if endpoints.last() != Some(&(parts.from.clone(), parts.to.clone())) {
         return Err(Denial::InvalidExpression);
     }
     let mut visited = BTreeSet::new();
@@ -90,15 +132,39 @@ pub(super) fn expression(
             continue;
         }
         match parts.nodes[index] {
-            Node::Compose { left, right } => pending.extend([left, right]),
+            Node::Compose { left, right }
+            | Node::Union { left, right }
+            | Node::Intersection { left, right } => pending.extend([left, right]),
             Node::Reverse { input } | Node::WithoutSelfEdges { input } => pending.push(input),
-            Node::Stored { .. } | Node::Derived(_) => {}
+            Node::Stored { .. } | Node::Derived(_) | Node::CarrierLift { .. } => {}
         }
     }
     if visited.len() != parts.nodes.len() {
         return Err(Denial::InvalidExpression);
     }
-    Ok(dependencies)
+    Ok(ValidatedExpression {
+        dependencies,
+        endpoints,
+    })
+}
+
+fn endpoint_domain(
+    registry: &RelationalSchemaRegistry,
+    identity: &Identity,
+    domain: &Domain,
+) -> Result<(), Denial> {
+    match domain {
+        Domain::Entity(kind) => entity_kind(registry, identity, *kind),
+        Domain::Projected { projected } => {
+            let registered = registry
+                .projected_member_domain(projected)
+                .ok_or(Denial::InvalidMemberDomain)?;
+            if projected.schema != identity.schema || projected.version != identity.version {
+                return Err(Denial::InvalidMemberDomain);
+            }
+            entity_kind(registry, identity, registered.parts().carrier)
+        }
+    }
 }
 
 fn entity_kind(

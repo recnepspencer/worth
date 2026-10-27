@@ -6,7 +6,7 @@ pub(super) fn key_entities_are_in_scope(
     scope: &super::super::super::read_scope::WorthQueryApplicationReadScope,
 ) -> bool {
     match key {
-        WorthQueryApplicationFactKey::ComponentSelection(key)=>scope.admits(key.root()) && match key.subject() {crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Of(member)=>scope.admits(member),crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Census=>true},
+        WorthQueryApplicationFactKey::ComponentSelection(key)=>scope.admits(key.root()) && match key.subject() {crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Of(member)=>scope.admits(member),crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::DerivedOf(member)=>scope.admits(member.carrier()),crate::domain_computation::primary_graph::component_selection::ComponentSelectionSubject::Census=>true},
         WorthQueryApplicationFactKey::Aggregate(key) => scope.admits(key.member()),
         WorthQueryApplicationFactKey::StructuralWalk(key) => {
             key.roots().iter().all(|id| scope.admits(*id))

@@ -7,6 +7,12 @@ pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const INTEGRITY: ApplicationRelationIntegrity;
     const RELATION_PAYLOAD: bool = false;
     const DERIVED_RELATIONS: bool = false;
+    const LOGICAL_RELATIONS: bool = false;
+    const LOGICAL_CENSUS: bool = true;
+    fn logical_read_observer() -> Option<std::sync::Arc<dyn Fn(bool,
+    worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork) + Send + Sync>>{
+        None
+    }
     const CUSTOM_DERIVED_OWNER: bool = false;
     const FEEDS_INTEGRITY: ApplicationRelationIntegrity =
         ApplicationRelationIntegrity::same_context_unbounded_retain_dangling();

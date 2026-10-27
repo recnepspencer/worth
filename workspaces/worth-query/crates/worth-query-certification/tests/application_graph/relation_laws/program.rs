@@ -109,6 +109,11 @@ impl<L: LawPolicy> ApplicationSchemaContribution<GraphSchema<L>> for GraphContri
         } else {
             schema
         };
+        let schema = if L::LOGICAL_RELATIONS {
+            super::logical::declare(schema)
+        } else {
+            schema
+        };
         L::observation_members(schema)
     }
 }
@@ -128,6 +133,9 @@ impl<L: LawPolicy> WorthQueryApplicationContribution<GraphSchema<L>> for GraphCo
         if L::DERIVED_RELATIONS {
             super::derived::configure(setup)?;
         }
+        if L::LOGICAL_RELATIONS {
+            super::logical::configure(setup)?;
+        }
         Ok(())
     }
 }
@@ -141,6 +149,8 @@ impl<L: LawPolicy> ApplicationProgramRulesShape<GraphSchema<L>> for GraphRules<L
     fn rules() -> Vec<ApplicationProgramRuleDeclaration> {
         if L::DERIVED_RELATIONS {
             super::derived::program_rules::<L>()
+        } else if L::LOGICAL_RELATIONS {
+            super::logical::program_rules::<L>()
         } else {
             Vec::new()
         }
@@ -161,13 +171,20 @@ impl<L: LawPolicy> ApplicationProgramDefinition<GraphSchema<L>> for GraphProgram
             .finish_action()
             .native_action::<FeedsBinding<L>>()
             .finish_action();
-        let feature = if L::DERIVED_RELATIONS {
+        let feature = if L::DERIVED_RELATIONS || L::LOGICAL_RELATIONS {
             feature
                 .native_action::<super::derived::CountBinding<L>>()
                 .finish_action()
                 .derived_artifact::<super::derived::Artifact>()
                 .managed_computation::<super::derived::CountComputation>()
                 .derived_collection::<super::derived::CountCollection>()
+        } else {
+            feature
+        };
+        let feature = if L::LOGICAL_RELATIONS {
+            feature
+                .native_action::<super::logical::CheckBinding<L>>()
+                .finish_action()
         } else {
             feature
         };

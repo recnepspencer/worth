@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::AggregateDefinitionIdentity;
+use worth_query_declaration::facade::application_schema::ApplicationGraphMemberSelector as Member;
 use worth_query_installation::facade::{
     ApplicationSchemaMember, ErasedApplicationSchemaDeclaration,
     WorthQueryInstalledApplicationSchemaContractCatalog,
@@ -11,7 +12,8 @@ use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     register_aggregate_identity_storage, register_aggregate_membership,
     AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
-    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+    AggregateProjectedMemberStorage, NativeMemberDomain, RelationalSchemaRegistry, SchemaId,
+    SchemaVersionId,
 };
 
 use super::{
@@ -21,6 +23,7 @@ use super::{
 mod component_layout;
 mod definitions;
 pub(in crate::domain_computation::primary_graph) use component_layout::ComponentSetLayout;
+pub(super) use definitions::derived_orbit_identity;
 #[cfg(test)]
 mod tests;
 
@@ -40,7 +43,7 @@ pub(super) fn lower(
     WorthQueryPrimaryGraphInstallationDenial,
 > {
     let mut components = BTreeMap::new();
-    let definitions = definitions::collect(schema, relation_kinds)?;
+    let definitions = definitions::collect(schema, relation_kinds, &registry)?;
     if definitions.is_empty() {
         return Ok((registry, components));
     }
@@ -66,19 +69,54 @@ pub(super) fn lower(
         lineage_kind: next_kind(2)?,
         aggregate_aspect,
         lineage_aspect,
+        projected: if definitions
+            .iter()
+            .any(|definition| matches!(definition.member, Member::Projected(_)))
+        {
+            let [coordinate_aspect, membership_aspect] =
+                super::platform_identity_allocator::allocate_projected_aggregate_aspect_identities(
+                    contracts,
+                )?;
+            Some(AggregateProjectedMemberStorage {
+                coordinate_aspect,
+                membership_aspect,
+            })
+        } else {
+            None
+        },
     };
     registry = register_aggregate_identity_storage(registry, schema_id, version, storage)
         .map_err(relational_schema_denial)?;
     for (index, definition) in definitions.into_iter().enumerate() {
-        let member_kind = required_kind(entity_kinds, definition.member)?;
+        let member_kind = match definition.member {
+            Member::Entity(name) => required_kind(entity_kinds, name)?,
+            Member::Projected(name) => {
+                let Some(source) = definition.native_source.as_ref() else {
+                    return Err(super::invalid_member(name));
+                };
+                let NativeMemberDomain::Projected { projected } = &source.parts().from else {
+                    return Err(super::invalid_member(name));
+                };
+                registry
+                    .projected_member_domain(projected)
+                    .ok_or_else(|| super::invalid_member(name))?
+                    .parts()
+                    .carrier
+            }
+        };
         let offset = u32::try_from(index)
             .ok()
             .and_then(|index| index.checked_add(3))
             .ok_or_else(kind_space_exhausted)?;
         let membership_kind = next_kind(offset)?;
-        if let Some((name, layout)) =
-            component_layout::retain(&definition, member_kind, membership_kind)
-        {
+        if let Some((name, layout)) = component_layout::retain(
+            &definition,
+            member_kind,
+            membership_kind,
+            &registry,
+            entity_kinds,
+            relation_kinds,
+        )? {
             components.insert(name, layout);
         }
         registry = register_aggregate_membership(

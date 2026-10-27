@@ -1,22 +1,41 @@
 //! Prepared reads retain their genuine observation and original native payer.
-use super::affinity::DerivedSourceAffinity;
 use super::{DerivedRelationData, DerivedRelationHandle};
-use crate::identity::data::EntityId;
+use crate::graph_member::NativeMemberKey;
+use crate::validation::engine::InvariantSourceAffinity;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+
+/// The complete source interpretation admitted by a genuine structural view.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+pub enum DerivedRelationReadShape {
+    Adjacency { reverse: bool },
+    Reachable { reverse: bool },
+    Component,
+}
+
+/// A descriptive step retained by an actual admitted breadth-first traversal.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct DerivedRelationWalkStep {
+    pub member: NativeMemberKey,
+    pub distance: usize,
+}
 
 /// A sealed lookup identity for one definition/root/posture/observation.
 /// It cannot be deserialized or reconstructed from diagnostic coordinates.
 #[derive(Clone, Debug)]
 pub struct DerivedRelationReadIdentity {
-    pub(super) source: DerivedSourceAffinity,
+    pub(super) source: InvariantSourceAffinity,
     pub(super) definition: DerivedRelationHandle,
-    pub(super) root: EntityId,
+    pub(super) root: NativeMemberKey,
+    pub(super) shape: DerivedRelationReadShape,
 }
 
 impl DerivedRelationReadIdentity {
-    pub const fn root(&self) -> EntityId {
-        self.root
+    pub const fn root(&self) -> &NativeMemberKey {
+        &self.root
+    }
+    pub const fn shape(&self) -> DerivedRelationReadShape {
+        self.shape
     }
 }
 impl PartialEq for DerivedRelationReadIdentity {
@@ -24,6 +43,7 @@ impl PartialEq for DerivedRelationReadIdentity {
         self.source == other.source
             && self.definition == other.definition
             && self.root == other.root
+            && self.shape == other.shape
     }
 }
 impl Eq for DerivedRelationReadIdentity {}
@@ -36,6 +56,7 @@ impl Hash for DerivedRelationReadIdentity {
         self.source.committed.hash(state);
         self.source.version.hash(state);
         self.root.hash(state);
+        self.shape.hash(state);
     }
 }
 
@@ -49,6 +70,7 @@ pub struct PreparedDerivedRelationRead {
 
 pub(super) struct PreparedBody {
     pub(super) data: DerivedRelationData,
+    pub(super) steps: Vec<DerivedRelationWalkStep>,
     // Backing precedes its original meter so its reservation survives last drop.
     pub(super) _retention: crate::validation::CustomInvariantWorkMeter,
 }

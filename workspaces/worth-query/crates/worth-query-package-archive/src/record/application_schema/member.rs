@@ -11,6 +11,7 @@ use super::super::decode_budget::RecordDecodeAttempt;
 mod authorization;
 mod capability;
 mod component_set;
+mod derived_component_set;
 mod derived_relation;
 mod history;
 mod inspection;
@@ -28,6 +29,9 @@ fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(),
     projected_member_domain::require_shape(member)?;
     inspection::require_shape(member)?;
     derived_relation::require_shape(member)?;
+    if let ApplicationSchemaMember::DerivedComponentSet { definition } = member {
+        derived_component_set::require_shape(definition)?;
+    }
     schema::require_supported_field_codec(member)?;
     if let ApplicationSchemaMember::RelationAspect { definition } = member {
         relation_aspect::require_supported_field_codec(definition)?;
@@ -53,6 +57,7 @@ pub(super) fn require_encoding_contract(
             | ApplicationSchemaMember::ApplicationQueryInspection { .. }
             | ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::ComponentSet { .. }
+            | ApplicationSchemaMember::DerivedComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
             | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
@@ -79,6 +84,9 @@ pub(super) fn write(
     require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::DerivedComponentSet { definition } => {
+            derived_component_set::write(output, definition)
+        }
         ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
             projected_member_domain::write(output, definition)
         }
@@ -145,6 +153,8 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        46 => derived_component_set::decode(input, budget),
+        47 => derived_relation::decode(47, input, budget),
         45 => inspection::decode(input, budget),
         44 => projected_member_domain::decode(input, budget),
         tag @ 41..=43 => derived_relation::decode(tag, input, budget),
@@ -177,7 +187,8 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
         ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,
-        ApplicationSchemaMember::DerivedRelation { .. } => 41,
+        ApplicationSchemaMember::DerivedRelation { definition } => if definition.is_legacy_shape() { 41 } else { 47 },
+        ApplicationSchemaMember::DerivedComponentSet { .. } => 46,
         ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
         ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,

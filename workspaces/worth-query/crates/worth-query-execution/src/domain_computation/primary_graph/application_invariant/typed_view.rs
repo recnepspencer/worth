@@ -15,14 +15,27 @@ use super::{
 use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
-mod component;
+pub(super) mod component;
+mod derived_component;
+pub use derived_component::{
+    WorthQueryApplicationInvariantGraphComponent, WorthQueryApplicationInvariantGraphComponents,
+};
+mod derived_orbit;
 pub(super) mod derived_relation;
+mod derived_source;
 pub use component::{
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
 };
+pub use derived_orbit::WorthQueryApplicationInvariantDerivedOrbit;
 pub use derived_relation::WorthQueryApplicationInvariantDerivedRelation;
+pub use derived_source::{
+    WorthQueryApplicationInvariantDerivedMemberRelation, WorthQueryApplicationInvariantDerivedWalk,
+    WorthQueryApplicationInvariantDerivedWalkStep,
+};
 mod entity_reobservation;
 mod field_reads;
+mod graph_member;
+pub use graph_member::WorthQueryApplicationInvariantGraphMember;
 mod interruption;
 mod orbit;
 mod relation_reads;

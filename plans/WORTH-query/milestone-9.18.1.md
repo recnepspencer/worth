@@ -682,6 +682,11 @@ laws with same-context physical leaves, proposed-state refusal, exact read
 access, managed-cache invalidation/rebuild and genuine Native/Query recovery.
 Full law/walk/orbit/component composition, logical member domains, differential
 and growth evidence, and CAD adoption remain required below.
+The logical-source composition substrate now has source-reviewed Native and
+Query owners plus authored law, lifecycle, recovery, replay, worker and growth
+courts. Their runtime qualification is pending; this is not additional accepted
+evidence. The actual grant-authority adversary and private CAD adoption remain
+separate required consumers.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 
@@ -748,19 +753,20 @@ let neighbours = reader.derived_relations_from(FaceAdjacency::reference(), &face
 
 ## CAD Shell Member Domain
 
-This contract governs the unfinished CAD shell adoption in Phases 5–6. It does
-not advertise an implemented projected-member API. The existing component
-declaration and Native membership storage accept physical entities; the first
-derived-relation runtime slice also has physical entity endpoints. Those are
-necessary foundations, not sufficient representations of the CAD shell domain.
+This contract governs the unfinished CAD shell adoption in Phases 5–6. The first
+qualified derived-relation runtime slice has physical entity endpoints. The
+logical-source extension adds finite carrier/case members through the same
+Native evaluator and aggregate coordinator, with runtime qualification pending.
+Generic projected membership alone is insufficient evidence of CAD shell adoption.
 
 The finite projected-domain meaning prerequisite provides typed carrier/case
 declaration, canonical portable readmission and Archive tag44/v1 transport.
 Existing entity-domain member bytes and absent-domain schema identities remain
 unchanged; older Frame18 readers reject tag44 as an unsupported variant. Actual
-schema binding still refuses `ProjectedMemberDomainUnavailable` until Native
-can issue these members. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
-This prerequisite does not close the runtime or CAD obligations below.
+schema binding now resolves the registered Native domain/case owner; only a
+genuine selected view can issue member observations. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
+Neither the meaning prerequisite nor the pending logical-source qualification
+closes the CAD obligations below.
 
 ### Actual Consumer And Decisive Proof
 

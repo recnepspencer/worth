@@ -20,6 +20,9 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut component_reads = BTreeSet::new();
     for member in members {
         let duplicate = match member {
+            ApplicationSchemaMember::DerivedComponentSet { definition } => {
+                !component_sets.insert(definition.name.as_str())
+            }
             ApplicationSchemaMember::ComponentSet { definition } => {
                 !component_sets.insert(definition.name())
             }

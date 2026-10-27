@@ -30,11 +30,12 @@ impl<Schema, Set, Row> WorthQueryApplicationQueryComponent<'_, Schema, Set, Row>
 pub struct WorthQueryApplicationQueryComponents<'a, Schema, Set, Row> {
     selected: &'a DeclaredComponentSelection,
     rows: &'a [Row],
+    cohorts: &'a [Arc<AggregateObservation>],
     _marker: PhantomData<fn() -> (Schema, Set)>,
 }
 impl<Schema, Set, Row> WorthQueryApplicationQueryComponents<'_, Schema, Set, Row> {
     pub fn len(&self) -> usize {
-        self.selected.body.aggregates().len()
+        self.cohorts.len()
     }
     pub fn is_empty(&self) -> bool {
         self.len() == 0
@@ -44,7 +45,7 @@ impl<Schema, Set, Row> WorthQueryApplicationQueryComponents<'_, Schema, Set, Row
     ) -> impl ExactSizeIterator<Item = WorthQueryApplicationQueryComponent<'_, Schema, Set, Row>>
     {
         ComponentIter {
-            cohorts: self.selected.body.aggregates().iter(),
+            cohorts: self.cohorts.iter(),
             remaining: self.rows,
             binding: &self.selected.binding,
             _marker: PhantomData,
@@ -86,9 +87,8 @@ pub(super) fn inspect<'a, Schema, Query, Slot, Set, Entity, Row>(
     if selected.meaning.as_ref() != reference.meaning() {
         return None;
     }
-    let count = selected
-        .body
-        .aggregates()
+    let cohorts = selected.body.physical_aggregates()?;
+    let count = cohorts
         .iter()
         .try_fold(0usize, |count, body| count.checked_add(body.native().len()))?;
     if count != rows.len() {
@@ -97,6 +97,7 @@ pub(super) fn inspect<'a, Schema, Query, Slot, Set, Entity, Row>(
     Some(WorthQueryApplicationQueryComponents {
         selected,
         rows,
+        cohorts,
         _marker: PhantomData,
     })
 }

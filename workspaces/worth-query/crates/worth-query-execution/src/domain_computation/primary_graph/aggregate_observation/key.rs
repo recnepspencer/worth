@@ -5,12 +5,12 @@ use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) struct AggregateKey {
-    subject: Arc<str>,
-    entity_kind: KindId,
-    selection: AggregateSelection,
-    member: EntityId,
-    definition: AggregateDefinitionIdentity,
+pub(in crate::domain_computation::primary_graph) struct AggregateKey<Member = EntityId> {
+    pub(super) subject: Arc<str>,
+    pub(super) entity_kind: KindId,
+    pub(super) selection: AggregateSelection,
+    pub(super) member: Member,
+    pub(super) definition: AggregateDefinitionIdentity,
 }
 impl AggregateKey {
     pub(super) fn new(
@@ -28,15 +28,6 @@ impl AggregateKey {
             definition,
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn subject(&self) -> &str {
-        &self.subject
-    }
-    pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {
-        self.entity_kind
-    }
-    pub(in crate::domain_computation::primary_graph) fn orbit_relation(&self) -> Option<KindId> {
-        self.selection.orbit_relation()
-    }
     pub(super) fn native_scope(
         &self,
     ) -> worth_relational::facade::runtime::PinnedAggregateReadScope<'static> {
@@ -44,11 +35,6 @@ impl AggregateKey {
     }
     pub(in crate::domain_computation::primary_graph) fn member(&self) -> EntityId {
         self.member
-    }
-    pub(in crate::domain_computation::primary_graph) fn definition(
-        &self,
-    ) -> AggregateDefinitionIdentity {
-        self.definition
     }
     pub(in crate::domain_computation::primary_graph) fn write_locator(
         &self,
@@ -82,5 +68,22 @@ impl AggregateKey {
             write!(output, "{byte:02x}")?;
         }
         Ok(())
+    }
+}
+
+impl<Member> AggregateKey<Member> {
+    pub(in crate::domain_computation::primary_graph) fn subject(&self) -> &str {
+        &self.subject
+    }
+    pub(in crate::domain_computation::primary_graph) fn entity_kind(&self) -> KindId {
+        self.entity_kind
+    }
+    pub(in crate::domain_computation::primary_graph) fn orbit_relation(&self) -> Option<KindId> {
+        self.selection.orbit_relation()
+    }
+    pub(in crate::domain_computation::primary_graph) fn definition(
+        &self,
+    ) -> AggregateDefinitionIdentity {
+        self.definition
     }
 }

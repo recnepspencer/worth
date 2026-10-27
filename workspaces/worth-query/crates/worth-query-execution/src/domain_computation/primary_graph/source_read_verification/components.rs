@@ -22,9 +22,17 @@ impl SourceReadVerification<'_> {
         {
             return Ok(false);
         }
-        for aggregate in body.aggregates() {
-            if !self.check_aggregate(aggregate, execution, control)? {
-                return Ok(false);
+        match body.aggregate_bodies() {
+            crate::domain_computation::primary_graph::component_selection::ComponentAggregateBodies::Physical(aggregates)=>{
+                for aggregate in aggregates {if !self.check_aggregate(aggregate,execution,control)? {return Ok(false);}}
+            },
+            crate::domain_computation::primary_graph::component_selection::ComponentAggregateBodies::Derived(aggregates)=>{
+                let result=execution.run_native_with_checkpoint(|context| {
+                    for aggregate in aggregates {if !aggregate.remains_equal_at(&self.pin,execution,context,control)? {return Ok(false);}}
+                    Ok(true)
+                });
+                let equal=match result {Ok((value,_))=>value?,Err(stop)=>return Err(Failure::Execution(stop.into()))};
+                if !equal {return Ok(false);}
             }
         }
         for source in body.facts() {

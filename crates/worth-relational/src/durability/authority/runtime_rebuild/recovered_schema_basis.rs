@@ -164,6 +164,9 @@ fn canonical_authority_snapshot(
     snapshot
         .derived_relations
         .sort_by(|left, right| left.identity.cmp(&right.identity));
+    snapshot
+        .projected_member_domains
+        .sort_by(|left, right| left.identity.cmp(&right.identity));
     if snapshot != envelope.schema_authority {
         return Err(schema_mismatch(
             envelope,
@@ -177,6 +180,20 @@ fn canonical_authority_snapshot(
         ));
     }
     let mut definitions = BTreeSet::new();
+    let mut domains = BTreeSet::new();
+    for domain in &snapshot.projected_member_domains {
+        if !domains.insert(&domain.identity)
+            || snapshot.primary_schema_id.as_ref() != Some(&domain.identity.schema)
+            || snapshot.primary_schema_version_id != Some(domain.identity.version)
+            || domain.cases.is_empty()
+            || domain.cases.windows(2).any(|pair| pair[0] >= pair[1])
+        {
+            return Err(schema_mismatch(
+                envelope,
+                "schema authority contains noncanonical or mixed-basis projected domains",
+            ));
+        }
+    }
     for definition in &snapshot.derived_relations {
         if !definitions.insert(&definition.identity)
             || snapshot.primary_schema_id.as_ref() != Some(&definition.identity.schema)

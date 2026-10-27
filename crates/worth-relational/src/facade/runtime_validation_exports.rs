@@ -1,13 +1,14 @@
 pub use crate::aggregate_identity::{
-    AggregateRead, AggregateReadCollection, AggregateReadDenial, AggregateReadLineageEvent,
-    AggregateReadObservations, AggregateReadPort, PinnedAggregateLineageRead,
-    PinnedAggregateLineageScope, PinnedAggregateRead, PinnedAggregateReadDenial,
-    PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
+    AggregateCensusRead, AggregateCensusReadIdentity, AggregateRead, AggregateReadCollection,
+    AggregateReadDenial, AggregateReadLineageEvent, AggregateReadObservations, AggregateReadPort,
+    PinnedAggregateLineageRead, PinnedAggregateLineageScope, PinnedAggregateRead,
+    PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, PinnedAggregateReadScope,
+    PreparedAggregateCensus,
 };
 pub use crate::derived_relation::{
     DerivedRelationAdjacency, DerivedRelationData, DerivedRelationReadDenial,
-    DerivedRelationReadIdentity, DerivedRelationReads, PinnedDerivedRelationRead,
-    PreparedDerivedRelationRead,
+    DerivedRelationReadIdentity, DerivedRelationReadShape, DerivedRelationReads,
+    DerivedRelationWalkStep, PinnedDerivedRelationRead, PreparedDerivedRelationRead,
 };
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,

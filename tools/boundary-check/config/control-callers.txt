@@ -1,5 +1,7 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
+# Logical source court observes only real closed-count retention lifecycle.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/history_reapplication.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_adoption.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/fork_head_cleanup.rs

@@ -37,15 +37,20 @@ pub use typed_binding::{
     WorthQueryApplicationInvariantComponentSetBinding,
     WorthQueryApplicationInvariantDerivedRelationBinding,
     WorthQueryApplicationInvariantEntityBinding, WorthQueryApplicationInvariantFieldBinding,
+    WorthQueryApplicationInvariantProjectedCaseBinding,
     WorthQueryApplicationInvariantRelationBinding,
 };
 pub use typed_view::{
     WorthQueryApplicationInvariantComponent, WorthQueryApplicationInvariantComponents,
-    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantDerivedRelation,
-    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantOrbit,
-    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
-    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
-    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantDerivedMemberRelation,
+    WorthQueryApplicationInvariantDerivedOrbit, WorthQueryApplicationInvariantDerivedRelation,
+    WorthQueryApplicationInvariantDerivedWalk, WorthQueryApplicationInvariantDerivedWalkStep,
+    WorthQueryApplicationInvariantEntity, WorthQueryApplicationInvariantGraphComponent,
+    WorthQueryApplicationInvariantGraphComponents, WorthQueryApplicationInvariantGraphMember,
+    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
+    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
+    WorthQueryApplicationInvariantWalkStep,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

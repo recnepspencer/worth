@@ -50,3 +50,6 @@ mod payload;
 mod derived;
 #[path = "relation_laws/history.rs"]
 mod history;
+
+#[path = "relation_laws/logical.rs"]
+mod logical;

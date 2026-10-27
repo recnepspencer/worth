@@ -20,6 +20,17 @@ pub(super) fn allocate_aggregate_aspect_identities(
     ])
 }
 
+pub(super) fn allocate_projected_aggregate_aspect_identities(
+    catalog: &WorthQueryInstalledApplicationSchemaContractCatalog,
+) -> Result<[AspectIdentity; 2], WorthQueryPrimaryGraphInstallationDenial> {
+    let aggregate = allocate_aggregate_aspect_identities(catalog)?;
+    let last = aggregate[1].0;
+    Ok([
+        AspectIdentity(last.checked_add(1).ok_or_else(contract_space_exhausted)?),
+        AspectIdentity(last.checked_add(2).ok_or_else(contract_space_exhausted)?),
+    ])
+}
+
 fn allocate_after(
     maximum_application_identity: Option<AspectIdentity>,
 ) -> Result<[AspectIdentity; 18], WorthQueryPrimaryGraphInstallationDenial> {

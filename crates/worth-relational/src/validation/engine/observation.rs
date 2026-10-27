@@ -2,8 +2,10 @@ use crate::runtime::PartitionEdition;
 use crate::storage::overlay::{OverlayStateView, PartitionAccess, WorkingState};
 use serde::{Deserialize, Serialize};
 
+mod affinity;
 mod custom_semantics;
 mod identity;
+pub(crate) use affinity::InvariantSourceAffinity;
 pub(crate) use identity::InvariantObservationIdentity;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]

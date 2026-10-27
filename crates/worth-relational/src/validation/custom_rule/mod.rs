@@ -10,6 +10,7 @@ pub use read_budget::CustomInvariantReadBudget;
 mod provenance_decode_tests;
 mod registration;
 mod scope_planner;
+mod structural_source;
 mod structural_views;
 #[cfg(test)]
 mod tests;

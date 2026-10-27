@@ -6,6 +6,7 @@ use worth_query_installation::facade::{
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(super) enum ComponentSelectionOrigin {
     Operation(WorthQueryOperationComponentReadScope),
+    Derived(worth_query_installation::facade::WorthQueryOperationDerivedSourceReadScope),
     Query {
         binding: ApplicationSchemaBindingIdentity,
         graph: worth_foundational::facade::CanonicalDigestId,

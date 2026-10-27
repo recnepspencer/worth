@@ -84,7 +84,7 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
             vec![RelationalEntityMaterialization {
                 entity_id: rows[0].0,
                 kind_id: KindId(3),
-                fields: AspectFieldPatch::new(rows[0].1.fields()),
+                fields: AspectFieldPatch::new(rows[0].1.base_fields()),
             }],
             relations,
         )

@@ -91,7 +91,7 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
         .pin_read_capability(&matching_snapshot, &[], &execution)
         .unwrap();
     assert_eq!(matching_pin.derived_relations_from(&execution, &installed_handle, root, None)
-        .unwrap().data().endpoints(), [target],
+        .unwrap().data().endpoints(), [target.into()],
         "exact readmission preserves the actual installed source issuer, not a rebuilt equal handle");
     let mut restored = RelationalRuntimeApi::builder()
         .schema_registry(changed.clone())
@@ -122,7 +122,7 @@ fn checkpoint_restores_exact_derived_meaning_instead_of_rebinding_a_changed_reci
             .unwrap()
             .data()
             .endpoints(),
-        [target]
+        [target.into()]
     );
     let foreign = changed.derived_relation(&identity(2)).unwrap();
     assert_eq!(

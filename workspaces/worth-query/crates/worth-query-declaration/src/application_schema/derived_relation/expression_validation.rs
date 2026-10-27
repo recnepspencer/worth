@@ -1,14 +1,15 @@
 //! Iterative transport validation keeps finite recipe syntax acyclic and closed.
 use super::denial::ApplicationDerivedRelationDefinitionDenial as Denial;
 use super::expression::{ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode};
+use crate::application_schema::ApplicationGraphMemberSelector as Member;
 
 impl ApplicationDerivedRelationExpression {
     /// Checks finite postorder syntax and returns the final endpoint kinds.
-    pub fn validate(&self) -> Result<(&str, &str), Denial> {
+    pub fn validate(&self) -> Result<(Member<'_>, Member<'_>), Denial> {
         if self.nodes.is_empty() {
             return Err(Denial::EmptyExpression);
         }
-        let mut endpoints: Vec<(&str, &str)> = Vec::with_capacity(self.nodes.len());
+        let mut endpoints = Vec::with_capacity(self.nodes.len());
         for (index, node) in self.nodes.iter().enumerate() {
             let before = |input: usize| {
                 (input < index)
@@ -17,7 +18,7 @@ impl ApplicationDerivedRelationExpression {
             };
             let pair = match node {
                 ApplicationDerivedRelationNode::Source(source) => {
-                    (source.from.as_str(), source.to.as_str())
+                    (source.from.borrowed(), source.to.borrowed())
                 }
                 ApplicationDerivedRelationNode::Compose { left, right } => {
                     let left = before(*left)?;
@@ -38,6 +39,17 @@ impl ApplicationDerivedRelationExpression {
                     }
                     pair
                 }
+                ApplicationDerivedRelationNode::CarrierLift {
+                    domain, carrier, ..
+                } => (Member::Entity(carrier), Member::Projected(domain)),
+                ApplicationDerivedRelationNode::Union { left, right }
+                | ApplicationDerivedRelationNode::Intersection { left, right } => {
+                    let pair = before(*left)?;
+                    if pair != before(*right)? {
+                        return Err(Denial::DiscontinuousEndpoints);
+                    }
+                    pair
+                }
             };
             endpoints.push(pair);
         }
@@ -48,8 +60,11 @@ impl ApplicationDerivedRelationExpression {
                 return Err(Denial::UnusedExpressionNode);
             }
             match node {
-                ApplicationDerivedRelationNode::Source(_) => {}
-                ApplicationDerivedRelationNode::Compose { left, right } => {
+                ApplicationDerivedRelationNode::Source(_)
+                | ApplicationDerivedRelationNode::CarrierLift { .. } => {}
+                ApplicationDerivedRelationNode::Compose { left, right }
+                | ApplicationDerivedRelationNode::Union { left, right }
+                | ApplicationDerivedRelationNode::Intersection { left, right } => {
                     reached[*left] = true;
                     reached[*right] = true;
                 }

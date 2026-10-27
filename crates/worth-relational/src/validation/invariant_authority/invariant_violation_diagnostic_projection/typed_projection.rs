@@ -2,6 +2,7 @@ use crate::diagnostics::data::RelationalDiagnosticValue;
 
 use super::{violation_diagnostic_object, InvariantViolationDiagnosticProjection};
 
+mod derived_projection;
 mod relation_projection;
 mod typed_value_helpers;
 
@@ -10,6 +11,10 @@ impl InvariantViolationDiagnosticProjection<'_> {
         &self,
     ) -> RelationalDiagnosticValue {
         match self {
+            Self::DerivedRelationGraph {
+                definition,
+                violation,
+            } => derived_projection::graph(definition, violation),
             Self::None => violation_diagnostic_object(
                 "none",
                 std::iter::empty::<(String, RelationalDiagnosticValue)>(),

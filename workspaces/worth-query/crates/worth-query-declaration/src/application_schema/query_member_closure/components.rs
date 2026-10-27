@@ -10,7 +10,8 @@ pub(super) fn validate(
         matches!(member,
             ApplicationSchemaMember::ComponentSet { definition: set }
             if set.name() == selection.set() && set.member() == selection.member()
-        )
+        ) || matches!(member, ApplicationSchemaMember::DerivedComponentSet { definition: set }
+            if set.name == selection.set() && set.member.entity() == Some(selection.member()))
     }) {
         Ok(())
     } else {

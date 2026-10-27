@@ -15,7 +15,6 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     InspectionUnavailable,
     OperationInstallationDenied,
     DerivedSourceUnavailable,
-    ProjectedMemberDomainUnavailable,
     FieldBindingMissing,
     FieldBindingUnexpected,
     FieldBindingContractMismatch,

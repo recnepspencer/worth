@@ -59,7 +59,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
         let members = self.installed_schema.installed_declaration().members();
         let compatible=members.iter().any(|member|matches!(member,
             ApplicationSchemaMember::DerivedRelation { definition } if definition.parts().relation==relation.name()
-                && definition.parts().from==relation.from() && definition.parts().to==relation.to()))
+                && definition.parts().from.borrowed()==relation.from_member() && definition.parts().to.borrowed()==relation.to_member()
+                && definition.parts().from.entity().is_some()))
             && members.iter().any(|member|matches!(member,
                 ApplicationSchemaMember::OperationDerivedRead { operation,relation:declared }
                     if operation==Operation::IDENTIFIER && declared==relation.name()));

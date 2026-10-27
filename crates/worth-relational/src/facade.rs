@@ -316,48 +316,8 @@ pub mod replay {
     };
 }
 
-pub mod schema {
-    pub use crate::derived_relation::{
-        DerivedRelationDefinitionParts, DerivedRelationDenial, DerivedRelationHandle,
-        DerivedRelationIdentity, DerivedRelationNode,
-    };
-    pub use crate::schema::aggregate_identity::{
-        register_aggregate_identity_storage, register_aggregate_membership,
-    };
-    pub use crate::schema::data::{
-        AcyclicityContractDeclaration, AggregateIdentityContractDeclaration,
-        AggregateIdentitySource, AggregateIdentityStorage, AllowedCycleClass, AspectBinding,
-        AspectContractPlanRevision, AspectDeclarationTrace, AspectDeclarationTraceRow,
-        AspectLoweringTrace, AspectLoweringTraceRow, CardinalityContractDeclaration,
-        ConnectivityMinimumContractDeclaration, ConnectivityMinimumEnforcement, ContractId,
-        DeclaredAspectContractBinding, DescriptorCanonicalBasisSupportPolicy,
-        DescriptorCanonicalBasisVersion, DescriptorSemanticsSupportPolicy,
-        DescriptorSemanticsVersion, DirectedTraversalKind, EndpointDeletionIntegrityDeclaration,
-        EndpointDeletionIntegrityMode, EndpointKindContractDeclaration, EntityKindRegistration,
-        FreeFormSchemaDiffIntent, HistoricalInterpretationSensitivity,
-        KindAspectContractDeclarations, KindResolution, LoweredAcyclicityContract,
-        LoweredAspectContractBinding, LoweredAspectContractPlan, LoweredCardinalityMaximumContract,
-        LoweredCardinalityMinimumContract, LoweredConnectivityMinimumContract,
-        LoweredEndpointDeletionIntegrityContract, LoweredEndpointKindContract,
-        LoweredPartitionIsolationContract, LoweredRelationIntegrityPlan,
-        LoweredSchemaTransitionPlan, LoweredSymmetryContract, LoweredUniquenessContract,
-        MinimumCardinalityEnforcement, PairMinimumSemantics, PartitionIsolationContractDeclaration,
-        PartitionIsolationMode, ProposedSchemaTransition, RelationIntegrityDeclarations,
-        RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, RelationKindRegistration,
-        RelationalAspectChangeKind, RelationalSchemaRegistry, SchemaAuthoritySnapshot,
-        SchemaBoundaryFingerprint, SchemaBridgeDescriptor, SchemaBridgeabilityClassification,
-        SchemaContinuationAdmissionObservation, SchemaContinuationClassification,
-        SchemaContinuationDescriptor, SchemaDiffAtom, SchemaDiffDetail, SchemaElementKind,
-        SchemaElementRef, SchemaId, SchemaLineageArtifact, SchemaLineageOrderingSemantics,
-        SchemaPublicationImpact, SchemaReconciliationClassification,
-        SchemaReconciliationDescriptor, SchemaReconciliationOrderingMode,
-        SchemaReconciliationPolicy, SchemaRegistryError, SchemaRegistryErrorClass, SchemaStratum,
-        SchemaSubscriberImpact, SchemaTransitionArtifact, SchemaTransitionBarrier,
-        SchemaTransitionSummary, SchemaVersionId, SubscriberBoundaryVisibility,
-        SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
-        ValidatedSchemaTransition,
-    };
-}
+#[path = "facade/schema.rs"]
+pub mod schema;
 
 pub mod snapshots {
     pub use crate::snapshots::data::{

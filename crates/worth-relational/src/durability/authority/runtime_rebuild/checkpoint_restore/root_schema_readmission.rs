@@ -123,7 +123,11 @@ impl RootSchemaReadmissionCatalog {
             )));
         }
         let configured = &restored.config.schema.registry;
-        let registry = if !envelope.schema_authority.derived_relations.is_empty()
+        let registry = if (!envelope.schema_authority.derived_relations.is_empty()
+            || !envelope
+                .schema_authority
+                .projected_member_domains
+                .is_empty())
             && configured.authority_snapshot() == envelope.schema_authority
         {
             // Installed typed rules/layouts already retain these genuine entry

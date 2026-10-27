@@ -193,6 +193,11 @@ fn hash_graph_participation(
 
 fn hash_application_read_scope(hasher: &mut impl Sink, scope: &WorthQueryOperationGraphReadScope) {
     match scope {
+        WorthQueryOperationGraphReadScope::DerivedSource(scope) => {
+            hash_text_field(hasher, "graph-read-scope", "derived-source-v1");
+            hash_binding(hasher, scope.schema());
+            hash_text_field(hasher, "graph-read-derived-relation", scope.relation());
+        }
         WorthQueryOperationGraphReadScope::Components(scope) => {
             hash_text_field(hasher, "graph-read-scope", "components");
             hash_binding(hasher, scope.schema());

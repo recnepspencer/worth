@@ -1,15 +1,17 @@
-//! Pure source meaning cannot install an absent proposed-state runtime owner.
+//! Complete derived meaning binds; the closed count Input stays entity-rooted.
 use super::*;
 use worth_query_declaration::facade::application_program::*;
 use worth_query_declaration::facade::application_schema::{
     ApplicationDerivedRelation, ApplicationDerivedRelationRef, ApplicationRelationGraphLaws,
 };
 
-struct DerivedSchema;
+struct DerivedSchema<const LOGICAL: bool = false>;
+struct Uses;
+struct Side;
 struct TwoSteps;
-impl OperationReads<TestOperation<DerivedSchema>> for TwoSteps {}
+impl<const L: bool> OperationReads<TestOperation<DerivedSchema<L>>> for TwoSteps {}
 
-impl ApplicationSchema for DerivedSchema {
+impl<const L: bool> ApplicationSchema for DerivedSchema<L> {
     const OWNER: &'static str = "typed-test";
     const NAME: &'static str = "DerivedSchema";
     const MAJOR: u32 = 1;
@@ -19,6 +21,28 @@ impl ApplicationSchema for DerivedSchema {
         ApplicationSchemaDeclaration<Self>,
         worth_query_declaration::facade::application_schema::ApplicationSchemaDeclarationDenial,
     > {
+        if L {
+            use worth_query_declaration::facade::application_schema::{
+                ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
+                ApplicationProjectedMemberDomainRef,
+            };
+            let carrier = ApplicationEntityRef::<Self, FixtureEntity<Self>>::from_schema_identifier(
+                "TestEntity",
+            );
+            let domain =
+                ApplicationProjectedMemberDomainRef::<Self, Uses, FixtureEntity<Self>>::new(
+                    "Uses", carrier,
+                );
+            let side = ApplicationProjectedMemberCaseRef::<Self, Uses, Side>::new(domain, "Side");
+            let relation = ApplicationDerivedRelationRef::<Self, TwoSteps, Uses, Uses>::projected(
+                "TwoSteps", domain,
+            );
+            return test_schema_members::<Self>(None)
+                .projected_member_domain(ApplicationProjectedMemberDomainDefinition::new(domain).case(side).unwrap())
+                .derived_relation(relation,ApplicationDerivedRelation::carrier_case(domain,side).unwrap().reversed().then(ApplicationDerivedRelation::carrier_case(domain,side).unwrap()),ApplicationRelationGraphLaws::unbounded())
+                .operation_read_derived_relation(ApplicationOperationRef::<Self,TestOperation<Self>,TestInput>::from_declaration(),relation)
+                .rule_readable_collection::<Feature,Collection,_,_,_>(relation).build();
+        }
         let edge = ApplicationRelationRef::<Self, MappingTarget, FixtureEntity<Self>, FixtureEntity<Self>>::from_schema_identifiers(
             "MappingTarget", "TestEntity", "TestEntity",
             worth_query_declaration::facade::application_schema::ApplicationRelationIntegrity::same_context_unbounded_retain_dangling(),
@@ -45,8 +69,8 @@ impl ApplicationSchema for DerivedSchema {
 }
 
 #[test]
-fn unsupported_derived_law_refuses_real_installation_with_an_ordinary_twin() {
-    let declaration = DerivedSchema::declaration().unwrap();
+fn complete_derived_law_binds_real_installation_with_an_ordinary_twin() {
+    let declaration = DerivedSchema::<false>::declaration().unwrap();
     let association = declaration.erased().members().iter().find_map(|member| {
         let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::RuleReadableCollection {association} = member else { return None };
         Some(association)
@@ -79,7 +103,7 @@ fn unsupported_derived_law_refuses_real_installation_with_an_ordinary_twin() {
         1,
         0,
     ))
-    .application_schema(DerivedSchema::declaration().unwrap())
+    .application_schema(DerivedSchema::<false>::declaration().unwrap())
     .validate()
     .unwrap();
     let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
@@ -91,15 +115,7 @@ fn unsupported_derived_law_refuses_real_installation_with_an_ordinary_twin() {
         [admitted],
     )
     .unwrap();
-    let denial = index
-        .bind_application_schema(declaration)
-        .err()
-        .expect("this authored derived acyclicity law has no enforcement owner yet");
-    assert_eq!(
-        denial.kind(),
-        WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable
-    );
-    assert_eq!(denial.subject(), "TwoSteps");
+    index.bind_application_schema(declaration).unwrap();
     // The ordinary installed schema still obtains its actual runtime binding.
     installed_index()
         .bind_application_schema(TestSchema::declaration().unwrap())
@@ -113,13 +129,13 @@ struct Artifact;
 struct Output;
 struct Contract;
 
-impl ApplicationFeature<DerivedSchema> for Feature {
+impl<const L: bool> ApplicationFeature<DerivedSchema<L>> for Feature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "derived.fixture.feature";
     const MAJOR: u16 = 2;
     const MINOR: u16 = 3;
 }
-impl ApplicationOutputPort<DerivedSchema, Feature> for Output {
+impl<const L: bool> ApplicationOutputPort<DerivedSchema<L>, Feature> for Output {
     type Value = TestInputBinding;
     const IDENTITY: &'static str = "derived.fixture.output";
 }
@@ -127,7 +143,7 @@ impl ApplicationLocalityScope for Contract {
     const IDENTITY: &'static str = "derived.fixture.locality";
     const GRANULE: ApplicationLocalityGranule = ApplicationLocalityGranule::Neighborhood;
 }
-impl ApplicationDerivedArtifact<DerivedSchema, Feature> for Artifact {
+impl<const L: bool> ApplicationDerivedArtifact<DerivedSchema<L>, Feature> for Artifact {
     type Output = Output;
     type Locality = Contract;
     const IDENTITY: &'static str = "derived.fixture.artifact";
@@ -149,7 +165,7 @@ impl ApplicationComputationReuse for Contract {
 impl ApplicationComputationStopped for Contract {
     const IDENTITY: &'static str = "derived.fixture.stopped";
 }
-impl ApplicationManagedComputation<DerivedSchema, Feature> for Computation {
+impl<const L: bool> ApplicationManagedComputation<DerivedSchema<L>, Feature> for Computation {
     type Input = Contract;
     type Output = Artifact;
     type Partition = ApplicationSingleComputationPartition;
@@ -180,7 +196,7 @@ impl ApplicationCollectionCompleteness for Contract {
         Ok(())
     }
 }
-impl ApplicationDerivedCollection<DerivedSchema, Feature> for Collection {
+impl<const L: bool> ApplicationDerivedCollection<DerivedSchema<L>, Feature> for Collection {
     type Computation = Computation;
     type Completeness = Contract;
     type Contributor = Contract;
@@ -192,4 +208,35 @@ impl ApplicationDerivedCollection<DerivedSchema, Feature> for Collection {
     const INCOMPLETE: ApplicationCollectionIncompletePosture =
         ApplicationCollectionIncompletePosture::RetainPending;
     const INCREMENTAL_UPDATE: &'static str = "derived.fixture.invalidation";
+}
+
+#[test]
+fn logical_root_closed_count_refuses_its_actual_input_limitation() {
+    let declaration = DerivedSchema::<true>::declaration().unwrap();
+    let package = WorthQueryPortableDomainPackage::new(WorthQueryPortableDomainIdentity::new(
+        "typed-test",
+        1,
+        0,
+    ))
+    .application_schema(DerivedSchema::<true>::declaration().unwrap())
+    .validate()
+    .unwrap();
+    let admitted = WorthQueryInstallationAdmissionProfile::new("support", "configuration")
+        .admit(package)
+        .unwrap();
+    let index = WorthQueryInstalledPackageIndex::build(
+        WorthQueryInstallationRuntimeIdentity::fresh(),
+        WorthQueryInstallationGeneration::initial(),
+        [admitted],
+    )
+    .unwrap();
+    let denial = index
+        .bind_application_schema(declaration)
+        .err()
+        .expect("closed Input requires a genuine EntityIdentity");
+    assert_eq!(
+        denial.kind(),
+        WorthQueryInstalledApplicationSchemaDenialKind::DerivedSourceUnavailable
+    );
+    assert_eq!(denial.subject(), "TwoSteps");
 }
