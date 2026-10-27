@@ -2,7 +2,7 @@
 use worth_relational::facade::{
     branch::RelationalBranchBasisDescriptor,
     durability::{RelationalCheckpointMember, RelationalNativeCheckpoint},
-    runtime::RelationalRuntimeApi,
+    runtime::RelationalRuntime,
 };
 
 #[derive(Debug)]
@@ -21,7 +21,7 @@ impl PartialEq for PublishedCheckpoint {
 }
 impl Eq for PublishedCheckpoint {}
 
-pub(crate) fn capture(runtime: &RelationalRuntimeApi) -> PublishedCheckpoint {
+pub(crate) fn capture(runtime: &RelationalRuntime) -> PublishedCheckpoint {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
