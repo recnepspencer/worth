@@ -3189,3 +3189,7 @@ The strict Query owner and UI-binding repair clippy lanes both pass, as do dirty
 ### Full UI workspace integration check
 
 The optional full UI all-target check first failed in mimalloc's C++ build. A minimal actual MSVC compile succeeds directly and fails through sccache with `/WX-` treated as a source file (`msvc-cache-reproducer.log`); the command-local `--config build.rustc-wrapper=""` bypasses that broken native cache wrapper and passes allocator compilation without changing dependencies or features. The resumed check then found three UI runtime fixture callers still passing a bare NonZero history ceiling to publish_source's Option argument. Preserve each finite ceiling with Some; no test claim or production policy changes. These are mechanical stale fixture callers, not justification to skip the broader lane.
+
+The refreshed Bank clippy exposes its two nested adoption patterns after the rich-evidence layout cutover. Match the owned box once and preserve both exact World recovery/publication dispatches; no remedy or typed cause changes. This is a downstream product caller correction for d2c0ba62b7.
+
+`repair-bank-rich-adoption-clippy.log` passes strict whole-workspace/all-target Bank clippy after the nested match correction. Formatting, dirty caps and agent-context pass. The dispatch retains all prior typed remedies; complete Bank tests remain in the sequential final queue.
