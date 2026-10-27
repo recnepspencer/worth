@@ -3,11 +3,11 @@ use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
 use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
 use crate::history::data::CommitId;
-use crate::identity::data::KindId;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
 use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, TransactionCommitError};
 use crate::validation::engine::state_view::InvariantStateView;
+use worth_foundational::facade::AggregateDefinitionIdentity;
 
 use super::changes::AggregateChanges;
 pub(super) use super::funding::{AggregateWork, BuildResult, PlanDenial};
@@ -83,22 +83,29 @@ pub(super) fn prepare(
             .registry()
             .relation_kinds
             .values()
-            .filter_map(|kind| kind.relation_integrity.aggregate_identity)
+            .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
         {
             work.checkpoint(1)?;
-            work.retain(super::retention_extent::tree_entry::<
-                KindId,
-                DefinitionProjection,
-            >())?;
-            let changed = match cohorts::collect(contract, &before, &after, effect, work)? {
-                Some(cohorts) => Some(consequence_plan::append(
-                    &mut plan, contract, occurrence, cohorts, &after, work,
-                )?),
-                None => None,
-            };
+            work.retain(
+                super::retention_extent::tree_entry::<
+                    AggregateDefinitionIdentity,
+                    DefinitionProjection,
+                >()
+                .saturating_add(contract.source.owned_bytes()),
+            )?;
+            let changed =
+                match cohorts::collect(execution, contract, &before, &after, effect, work)? {
+                    Some(cohorts) => Some(consequence_plan::append(
+                        &mut plan, contract, occurrence, cohorts, &after, work,
+                    )?),
+                    None => None,
+                };
             projection.definitions.insert(
-                contract.source_relation,
-                DefinitionProjection { contract, changed },
+                contract.definition,
+                DefinitionProjection {
+                    contract: contract.clone(),
+                    changed,
+                },
             );
         }
         if plan.intents.is_empty() {

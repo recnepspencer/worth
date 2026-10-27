@@ -1,4 +1,6 @@
 //! Schema binding for Native-owned aggregate records requested by an installed contract.
+mod source_binding;
+
 use crate::aggregate_identity::record::{
     AGGREGATE_ASPECT, AGGREGATE_FIELDS, LINEAGE_ASPECT, LINEAGE_FIELDS,
 };
@@ -53,14 +55,14 @@ pub fn register_aggregate_identity_storage(
     })
 }
 
-/// Bind an installed permutation definition to its Native-owned membership kind.
+/// Bind an installed graph definition to its Native-owned membership kind.
 pub fn register_aggregate_membership(
     registry: RelationalSchemaRegistry,
     schema: &SchemaId,
     version: SchemaVersionId,
     contract: AggregateIdentityContractDeclaration,
 ) -> Result<RelationalSchemaRegistry, SchemaRegistryError> {
-    let integrity = membership_integrity(contract);
+    let integrity = membership_integrity(&contract);
     registry.register_relation_kind(RelationKindRegistration {
         kind_id: contract.membership_kind,
         kind_name: format!("worth-aggregate-membership-{}", contract.membership_kind.0),
@@ -74,7 +76,7 @@ pub fn register_aggregate_membership(
 }
 
 fn membership_integrity(
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
 ) -> RelationIntegrityDeclarations {
     let mut integrity = endpoints(
         "aggregate-membership",
@@ -94,44 +96,21 @@ fn membership_integrity(
             pair_min_semantics: PairMinimumSemantics::ObservedDirectedPairs,
             minimum_enforcement: MinimumCardinalityEnforcement::CommitBoundary,
         });
-    integrity.with_aggregate_identity(contract)
+    integrity.with_aggregate_identity(contract.clone())
 }
 
 pub(crate) fn validate_binding(
     registry: &RelationalSchemaRegistry,
     relation: &RelationKindRegistration,
 ) -> Result<(), SchemaRegistryError> {
-    let Some(contract) = relation.relation_integrity.aggregate_identity else {
+    let Some(contract) = relation.relation_integrity.aggregate_identity.as_ref() else {
         return Ok(());
     };
     let invalid = || {
         SchemaRegistryError::invalid_relation_integrity_declaration(
-        relation.kind_id, "aggregate identity must bind a homogeneous permutation and its exact reserved record grammar",
+        relation.kind_id, "aggregate identity must bind homogeneous graph sources and its exact reserved record grammar",
     )
     };
-    let source = registry
-        .relation_kinds
-        .get(&contract.source_relation)
-        .ok_or_else(invalid)?;
-    let homogeneous = source
-        .relation_integrity
-        .endpoint_kind_contracts
-        .iter()
-        .any(|endpoints| {
-            endpoints.allowed_source_kinds == [contract.member_kind]
-                && endpoints.allowed_target_kinds == [contract.member_kind]
-        });
-    let exact = source
-        .relation_integrity
-        .cardinality_contracts
-        .iter()
-        .any(|count| {
-            count.source_min == Some(1)
-                && count.source_max == Some(1)
-                && count.target_min == Some(1)
-                && count.target_max == Some(1)
-                && count.minimum_enforcement == MinimumCardinalityEnforcement::CommitBoundary
-        });
     let aggregate = registry
         .entity_kinds
         .get(&contract.storage.aggregate_kind)
@@ -171,23 +150,12 @@ pub(crate) fn validate_binding(
     expected_membership.cascade_delete_policy = CascadeDeletePolicy::RetainDanglingForAudit;
     let expected_membership =
         crate::schema::canonicalize_relation_registration(expected_membership)?;
-    let kinds = [
-        contract.source_relation,
-        contract.member_kind,
-        contract.storage.aggregate_kind,
-        contract.storage.lineage_kind,
-        contract.membership_kind,
-    ];
-    let distinct: std::collections::BTreeSet<_> = kinds.into_iter().collect();
     if relation.kind_id != contract.membership_kind
-        || !homogeneous
-        || !exact
-        || distinct.len() != kinds.len()
+        || !source_binding::valid(registry, contract)
         || aggregate.aspect_contract_declarations != expected_aggregate.aspect_contract_declarations
         || lineage != &expected_lineage
         || membership != &expected_membership
         || lineage.relation_integrity.aggregate_identity.is_some()
-        || source.relation_integrity.aggregate_identity.is_some()
         || !membership
             .relation_integrity
             .cardinality_contracts
@@ -196,7 +164,7 @@ pub(crate) fn validate_binding(
         || registry
             .relation_kinds
             .values()
-            .filter_map(|entry| entry.relation_integrity.aggregate_identity)
+            .filter_map(|entry| entry.relation_integrity.aggregate_identity.as_ref())
             .any(|old| {
                 old.definition == contract.definition
                     || old.membership_kind == contract.membership_kind

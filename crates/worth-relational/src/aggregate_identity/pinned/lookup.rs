@@ -9,7 +9,7 @@ use worth_foundational::facade::AggregateIdentity;
 pub(super) fn find(
     root: &RelationalBranchRoot,
     view: &InvariantStateView<'_>,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     identity: AggregateIdentity,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<StoredAggregate> {

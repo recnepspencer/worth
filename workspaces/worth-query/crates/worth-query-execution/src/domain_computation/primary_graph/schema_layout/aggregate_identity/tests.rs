@@ -82,6 +82,7 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
         .unwrap()
         .relation_integrity
         .aggregate_identity
+        .as_ref()
         .is_none()));
     let contracts: Vec<_> = orbit
         .relation_kinds
@@ -92,11 +93,12 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
                 .unwrap()
                 .relation_integrity
                 .aggregate_identity
+                .as_ref()
         })
         .collect();
     assert_eq!(contracts.len(), 2);
     assert_ne!(contracts[0].definition, contracts[1].definition);
-    assert_ne!(contracts[0].source_relation, contracts[1].source_relation);
+    assert_ne!(contracts[0].source, contracts[1].source);
     assert_eq!(contracts[0].storage, contracts[1].storage);
     assert_eq!(orbit.entity_kinds.len(), ordinary.entity_kinds.len() + 1);
     assert_eq!(
@@ -107,6 +109,6 @@ fn actual_orbit_declaration_installs_private_namespaced_native_owners_only_when_
         assert!(!layout.is_application_entity_kind(contract.storage.aggregate_kind));
         assert!(!layout.is_application_relation_kind(contract.storage.lineage_kind));
         assert!(!layout.is_application_relation_kind(contract.membership_kind));
-        assert!(layout.is_application_relation_kind(contract.source_relation));
+        assert!(layout.is_application_relation_kind(contract.source.orbit_relation().unwrap()));
     }
 }

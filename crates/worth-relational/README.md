@@ -26,7 +26,7 @@ Start here:
 
 - [`QUICKSTART.md`](./QUICKSTART.md)
 - [`DAILY_WORKFLOWS.md`](./DAILY_WORKFLOWS.md)
-- [`API_OVERVIEW.md`](./API_OVERVIEW.md)
+- [`API_OVERVIEW.md`](./API_OVERVIEW.md), including [persistent aggregate identity](./API_OVERVIEW.md#persistent-aggregate-identity)
 - [`BRANCH_LOCAL_MVCC.md`](./BRANCH_LOCAL_MVCC.md)
 - [`OWNER_COMPONENT_PORT.md`](./OWNER_COMPONENT_PORT.md)
 - [`TESTING_WORLDS.md`](./TESTING_WORLDS.md)

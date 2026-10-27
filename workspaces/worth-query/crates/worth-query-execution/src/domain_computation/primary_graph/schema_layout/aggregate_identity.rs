@@ -10,8 +10,8 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     register_aggregate_identity_storage, register_aggregate_membership,
-    AggregateIdentityContractDeclaration, AggregateIdentityStorage, RelationalSchemaRegistry,
-    SchemaId, SchemaVersionId,
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
 };
 
 use super::{
@@ -82,7 +82,7 @@ pub(super) fn lower(
             version,
             AggregateIdentityContractDeclaration {
                 definition: definition_identity(schema, relation),
-                source_relation: required_kind(relation_kinds, relation)?,
+                source: AggregateIdentitySource::Orbit(required_kind(relation_kinds, relation)?),
                 member_kind: required_kind(entity_kinds, member)?,
                 membership_kind: next_kind(offset)?,
                 storage,

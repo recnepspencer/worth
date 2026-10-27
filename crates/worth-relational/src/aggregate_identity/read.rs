@@ -2,7 +2,8 @@
 use super::projection::AggregateProjection;
 use super::proposal::{binding_error, AggregateInvocation};
 use super::stored_read::StoredAggregateRead;
-use crate::identity::data::{EntityId, KindId};
+mod port;
+use crate::identity::data::EntityId;
 use crate::transactions::data::{CommitExecutionDenialKind, TransactionCommitError};
 use crate::validation::data::{StructuralRelationView, StructuralWalkDenialKind};
 use std::collections::BTreeSet;
@@ -12,7 +13,7 @@ use worth_foundational::facade::{
 };
 
 /// A port borrowed from one Native custom planner/context view. It grants no
-/// metadata access beyond aggregate values of the declared business relation.
+/// metadata access beyond aggregate values of the installed business graph.
 pub struct AggregateReadPort<'view, 'runtime> {
     view: &'view StructuralRelationView<'runtime>,
 }
@@ -39,7 +40,7 @@ pub struct AggregateRead {
 enum ReadBacking {
     Proposed {
         projection: Arc<AggregateProjection>,
-        relation: KindId,
+        definition: AggregateDefinitionIdentity,
         assignment: usize,
     },
     Stored(Arc<StoredAggregateRead>),
@@ -59,120 +60,14 @@ impl<'read> AggregateReadLineageEvent<'read> {
     }
 }
 
-impl<'view, 'runtime> AggregateReadPort<'view, 'runtime> {
-    pub(crate) fn new(view: &'view StructuralRelationView<'runtime>) -> Self {
-        Self { view }
-    }
-
-    /// Read one aggregate of the installed stored source relation. Shared
-    /// proposal preparation is paid once by the original Native request. A
-    /// committed/unaffected group costs O((v+a) log(v+a)) per deliberate read,
-    /// debiting this rule's existing allowance and the request once each.
-    pub fn of_source_relation(
-        &self,
-        relation: KindId,
-        member: EntityId,
-    ) -> Result<AggregateRead, AggregateReadDenial> {
-        let budget = self.view.read_budget();
-        budget.check_live().map_err(AggregateReadDenial::Budget)?;
-        self.view
-            .require_relation_kind(relation)
-            .map_err(|error| AggregateReadDenial::Budget(budget.refusal(error)))?;
-        let actual_kind = self
-            .view
-            .entity_kind(member)
-            .map_err(|error| AggregateReadDenial::Budget(budget.refusal(error)))?;
-        let (state, execution, source) = self.view.aggregate_read_parts();
-        let (source, committed) = source.ok_or(AggregateReadDenial::SourceUnavailable)?;
-        budget
-            .checkpoint(source.contract_count(committed).saturating_add(1))
-            .map_err(AggregateReadDenial::Budget)?;
-        let contract = source
-            .contract(relation, committed)
-            .ok_or(AggregateReadDenial::NotAggregateRelation)?;
-        if actual_kind != contract.member_kind {
-            return Err(AggregateReadDenial::WrongMemberKind);
-        }
-        if !committed && source.is_logical_mutation() {
-            let projection = source
-                .projection_in_custom_scope(&execution)
-                .map_err(from_preparation)?;
-            let definition =
-                projection.data.definitions.get(&relation).ok_or_else(|| {
-                    inconsistent(source, "prepared aggregate definition is absent")
-                })?;
-            if definition.contract.definition != contract.definition {
-                return Err(inconsistent(
-                    source,
-                    "prepared aggregate definition affinity differs",
-                ));
-            }
-            if let Some(changed) = &definition.changed {
-                let entries = changed
-                    .member_assignments
-                    .len()
-                    .saturating_add(changed.prior_memberships.len());
-                budget
-                    .checkpoint((usize::BITS - entries.max(1).leading_zeros()) as u64 * 22 + 1)
-                    .map_err(AggregateReadDenial::Budget)?;
-                if let Some(&assignment) = changed.member_assignments.get(&member) {
-                    if changed
-                        .transition
-                        .assignments
-                        .get(assignment)
-                        .is_none_or(|group| !group.members.contains(&member))
-                    {
-                        return Err(inconsistent(
-                            source,
-                            "prepared member assignment differs from its transition",
-                        ));
-                    }
-                    budget.check_live().map_err(AggregateReadDenial::Budget)?;
-                    return Ok(AggregateRead {
-                        backing: ReadBacking::Proposed {
-                            projection,
-                            relation,
-                            assignment,
-                        },
-                    });
-                }
-                if changed.prior_memberships.contains_key(&member) {
-                    return Err(inconsistent(
-                        source,
-                        "affected proposed member has no current assignment",
-                    ));
-                }
-            }
-            // The complete actual affected-cohort proof excludes this member.
-            // Only this proven-unaffected path may read its committed binding.
-        }
-        let mut allowance = |units| budget.debit_native_rule_work(units);
-        let stored = super::stored_read::in_custom_scope(
-            &execution,
-            state,
-            contract,
-            member,
-            &mut allowance,
-        )
-        .map_err(|error| {
-            source.latch_failure(error.clone());
-            from_preparation(error)
-        })?;
-        budget.check_live().map_err(AggregateReadDenial::Budget)?;
-        Ok(AggregateRead {
-            backing: ReadBacking::Stored(stored),
-        })
-    }
-}
-
 impl AggregateRead {
     pub fn definition(&self) -> AggregateDefinitionIdentity {
         match &self.backing {
             ReadBacking::Proposed {
                 projection,
-                relation,
+                definition,
                 ..
-            } => projection.data.definitions[relation].contract.definition,
+            } => projection.data.definitions[definition].contract.definition,
             ReadBacking::Stored(stored) => stored.contract.definition,
         }
     }
@@ -180,10 +75,10 @@ impl AggregateRead {
         match &self.backing {
             ReadBacking::Proposed {
                 projection,
-                relation,
+                definition,
                 assignment,
             } => {
-                projection.data.definitions[relation]
+                projection.data.definitions[definition]
                     .changed
                     .as_ref()
                     .expect("proposed assignment")
@@ -221,10 +116,10 @@ impl AggregateRead {
         let events = match &self.backing {
             ReadBacking::Proposed {
                 projection,
-                relation,
+                definition,
                 ..
             } => Some(
-                &projection.data.definitions[relation]
+                &projection.data.definitions[definition]
                     .changed
                     .as_ref()
                     .expect("proposed assignment")
@@ -245,10 +140,10 @@ impl AggregateRead {
         match &self.backing {
             ReadBacking::Proposed {
                 projection,
-                relation,
+                definition,
                 assignment,
             } => {
-                &projection.data.definitions[relation]
+                &projection.data.definitions[definition]
                     .changed
                     .as_ref()
                     .expect("proposed assignment")

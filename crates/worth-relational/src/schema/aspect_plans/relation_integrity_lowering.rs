@@ -38,7 +38,7 @@ pub(super) fn lower_relation_integrity_plan(
         .into_iter()
         .collect::<Vec<_>>();
     LoweredRelationIntegrityPlan {
-        aggregate_identity: declarations.aggregate_identity,
+        aggregate_identity: declarations.aggregate_identity.clone(),
         kind_id,
         plan_revision,
         endpoint_kind_contracts: declarations

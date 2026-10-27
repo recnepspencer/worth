@@ -26,7 +26,7 @@ pub(crate) fn ordinary_plan(
     for contract in registry
         .relation_kinds
         .values()
-        .filter_map(|kind| kind.relation_integrity.aggregate_identity)
+        .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
     {
         work.checkpoint(1)?;
         let private = |kind: KindId| {

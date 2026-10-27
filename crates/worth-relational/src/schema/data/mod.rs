@@ -42,14 +42,15 @@ pub use continuity::{
 pub use registry_errors::{SchemaRegistryError, SchemaRegistryErrorClass};
 pub(crate) use relation_integrity::derive_relation_integrity_plan_revision;
 pub use relation_integrity::{
-    AggregateIdentityContractDeclaration, AggregateIdentityStorage, CardinalityContractDeclaration,
-    ContractId, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
-    EndpointKindContractDeclaration, LoweredCardinalityMaximumContract,
-    LoweredCardinalityMinimumContract, LoweredEndpointDeletionIntegrityContract,
-    LoweredEndpointKindContract, LoweredRelationIntegrityPlan, LoweredSymmetryContract,
-    LoweredUniquenessContract, MinimumCardinalityEnforcement, PairMinimumSemantics,
-    RelationIntegrityDeclarations, RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision,
-    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
+    AggregateIdentityContractDeclaration, AggregateIdentitySource, AggregateIdentityStorage,
+    CardinalityContractDeclaration, ContractId, EndpointDeletionIntegrityDeclaration,
+    EndpointDeletionIntegrityMode, EndpointKindContractDeclaration,
+    LoweredCardinalityMaximumContract, LoweredCardinalityMinimumContract,
+    LoweredEndpointDeletionIntegrityContract, LoweredEndpointKindContract,
+    LoweredRelationIntegrityPlan, LoweredSymmetryContract, LoweredUniquenessContract,
+    MinimumCardinalityEnforcement, PairMinimumSemantics, RelationIntegrityDeclarations,
+    RelationIntegrityPlanCatalog, RelationIntegrityPlanRevision, SymmetryContractDeclaration,
+    SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
 };
 pub use structural_invariants::{
     AcyclicityContractDeclaration, AllowedCycleClass, ConnectivityMinimumContractDeclaration,

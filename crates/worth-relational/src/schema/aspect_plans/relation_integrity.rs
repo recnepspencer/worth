@@ -12,7 +12,10 @@ pub(super) fn canonicalize_relation_integrity_declarations(
     declarations: RelationIntegrityDeclarations,
 ) -> Result<RelationIntegrityDeclarations, SchemaRegistryError> {
     let mut seen_contract_ids = BTreeSet::new();
-    let aggregate_identity = declarations.aggregate_identity;
+    let mut aggregate_identity = declarations.aggregate_identity;
+    if let Some(contract) = aggregate_identity.as_mut() {
+        contract.source.canonicalize();
+    }
     let mut endpoint_kind_contracts = declarations.endpoint_kind_contracts;
     let mut cardinality_contracts = declarations.cardinality_contracts;
     let mut uniqueness_contracts = declarations.uniqueness_contracts;

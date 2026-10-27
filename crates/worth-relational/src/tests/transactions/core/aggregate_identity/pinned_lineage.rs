@@ -212,6 +212,7 @@ fn definition_qualification_reads_legal_shared_source_and_split_history_does_not
     let mut other = descriptor();
     other.definition = AggregateDefinitionIdentity::from_bytes([8; 32]);
     other.membership_kind = KindId(6);
+    let other_definition = other.definition;
     let registry = crate::schema::aggregate_identity::register_aggregate_membership(
         registry(),
         &SchemaId("test".into()),
@@ -259,7 +260,7 @@ fn definition_qualification_reads_legal_shared_source_and_split_history_does_not
     assert_eq!(
         active
             .iter()
-            .filter(|(_, row)| row.definition == other.definition)
+            .filter(|(_, row)| row.definition == other_definition)
             .count(),
         2
     );

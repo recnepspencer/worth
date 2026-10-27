@@ -4,7 +4,6 @@ use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
 use super::projection::AggregateProjection;
 use crate::authority::mutation::MutationEffect;
 use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
-use crate::identity::data::KindId;
 use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalMutationProposalIdentity};
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::overlay::WorkingState;
@@ -217,9 +216,9 @@ impl AggregateInvocation<'_> {
 
     pub(super) fn contract(
         &self,
-        relation: KindId,
+        selection: super::selection::AggregateSelection,
         committed: bool,
-    ) -> Option<AggregateIdentityContractDeclaration> {
+    ) -> Option<&AggregateIdentityContractDeclaration> {
         let authority = if committed {
             self.source.owner.selected.state().root().schema_authority()
         } else {
@@ -229,8 +228,8 @@ impl AggregateInvocation<'_> {
             .registry()
             .relation_kinds
             .values()
-            .filter_map(|kind| kind.relation_integrity.aggregate_identity)
-            .find(|contract| contract.source_relation == relation)
+            .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
+            .find(|contract| selection.matches(contract))
     }
 
     /// A custom planner/worker already runs under the original packet's work

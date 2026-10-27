@@ -1,4 +1,5 @@
 mod admission;
+mod components;
 mod fixtures;
 mod lifecycle;
 mod maintenance;

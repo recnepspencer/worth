@@ -11,6 +11,7 @@ mod projection;
 mod proposal;
 mod read;
 mod retention_extent;
+mod selection;
 mod stored_lineage;
 mod stored_read;
 mod stored_record;

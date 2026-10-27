@@ -8,6 +8,7 @@ pub(in crate::aggregate_identity) enum PlanDenial {
     Execution(Cause),
     OrdinaryMetadataWrite,
     InvalidPermutation,
+    InvalidComponentGraph,
     InvalidStoredIdentity,
     IncompleteStoredMembership,
     InvalidStoredLineage,

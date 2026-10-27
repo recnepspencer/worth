@@ -14,7 +14,7 @@ pub(super) struct Resolution {
 pub(super) fn resolve(
     view: &InvariantStateView<'_>,
     mut current: StoredAggregate,
-    contract: AggregateIdentityContractDeclaration,
+    contract: &AggregateIdentityContractDeclaration,
     work: &mut AggregateWork<'_, '_, '_, '_>,
 ) -> BuildResult<Resolution> {
     let mut ids = BTreeSet::new();

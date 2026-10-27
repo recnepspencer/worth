@@ -6,8 +6,9 @@ use worth_foundational::facade::AggregateIdentity;
 
 use super::retention_extent as extent;
 use super::transition::AggregateTransition;
-use crate::identity::data::{EntityId, KindId, RelationId};
+use crate::identity::data::{EntityId, RelationId};
 use crate::schema::data::AggregateIdentityContractDeclaration;
+use worth_foundational::facade::AggregateDefinitionIdentity;
 
 pub(super) struct ChangedProjection {
     pub(super) transition: AggregateTransition,
@@ -25,7 +26,7 @@ pub(super) struct DefinitionProjection {
 
 #[derive(Default)]
 pub(super) struct ProjectionData {
-    pub(super) definitions: BTreeMap<KindId, DefinitionProjection>,
+    pub(super) definitions: BTreeMap<AggregateDefinitionIdentity, DefinitionProjection>,
 }
 
 pub(super) struct AggregateProjection {
@@ -38,14 +39,17 @@ pub(super) struct AggregateProjection {
 impl ProjectionData {
     pub(super) fn owned_bytes(&self) -> u64 {
         self.definitions.values().fold(
-            self.definitions.len() as u64 * extent::tree_entry::<KindId, DefinitionProjection>(),
+            self.definitions.len() as u64
+                * extent::tree_entry::<AggregateDefinitionIdentity, DefinitionProjection>(),
             |bytes, definition| {
-                bytes.saturating_add(
-                    definition
-                        .changed
-                        .as_ref()
-                        .map_or(0, ChangedProjection::owned_bytes),
-                )
+                bytes
+                    .saturating_add(definition.contract.source.owned_bytes())
+                    .saturating_add(
+                        definition
+                            .changed
+                            .as_ref()
+                            .map_or(0, ChangedProjection::owned_bytes),
+                    )
             },
         )
     }
