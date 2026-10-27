@@ -50,6 +50,7 @@ pub(in crate::domain_computation) struct WorthQueryApplicationObservedRelation {
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactKey {
     StructuralWalk(super::super::structural_walk::StructuralWalkKey),
+    Aggregate(super::super::aggregate_observation::AggregateKey),
     SourcePublication(SourcePublicationRead),
     Entity {
         entity: String,
@@ -80,6 +81,10 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryApplicationFactK
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation) enum WorthQueryApplicationObservedFact {
+    /// Actual Native aggregate identity and complete membership at the original source.
+    Aggregate {
+        observation: std::sync::Arc<super::super::aggregate_observation::AggregateObservation>,
+    },
     /// Exact complete Native observation, issued under the original projection.
     StructuralWalk {
         observation: std::sync::Arc<super::super::structural_walk::StructuralWalkObservation>,

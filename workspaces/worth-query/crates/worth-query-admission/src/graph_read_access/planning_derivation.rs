@@ -20,6 +20,7 @@ use row_construction::build_row;
 enum RelationRequirementBasis {
     DirectionalAdjacency,
     ReverseAdjacency,
+    AggregateSelection,
     TraversalWorkset,
 }
 
@@ -56,6 +57,15 @@ fn visit_specs<'a, S: RowSink<'a>>(
         sink.visit()?;
         for operator in relation.operators() {
             sink.visit()?;
+            if *operator == WorthQueryGraphReadTraversalOperator::AggregateSelection {
+                sink.row(RowSpec::Relation {
+                    relation,
+                    operator,
+                    kind: super::WorthQueryGraphReadAccessRequirementKind::AggregateSelection,
+                    basis: RelationRequirementBasis::AggregateSelection,
+                })?;
+                continue;
+            }
             let forward = RowSpec::Relation {
                 relation,
                 operator,
@@ -76,6 +86,7 @@ fn visit_specs<'a, S: RowSink<'a>>(
                     sink.row(forward)?;
                     sink.row(reverse)?;
                 }
+                WorthQueryGraphReadTraversalOperator::AggregateSelection => {}
                 WorthQueryGraphReadTraversalOperator::DeclarationTraversal
                 | WorthQueryGraphReadTraversalOperator::CompleteClosure
                 | WorthQueryGraphReadTraversalOperator::DirectEdge => match relation.direction() {

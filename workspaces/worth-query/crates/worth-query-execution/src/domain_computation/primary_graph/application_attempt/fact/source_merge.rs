@@ -63,6 +63,19 @@ impl Fact {
     ) -> Result<bool, super::super::retained_decision_facts::StoreDenial> {
         match (self, duplicate) {
             (
+                Fact::Aggregate { observation: first },
+                Fact::Aggregate {
+                    observation: second,
+                },
+            ) => {
+                control.check_live()?;
+                if std::sync::Arc::ptr_eq(first, &second) {
+                    Ok(true)
+                } else {
+                    first.same_truth_with_poll(&second, || control.check_live())
+                }
+            }
+            (
                 Fact::StructuralWalk { observation: first },
                 Fact::StructuralWalk {
                     observation: second,

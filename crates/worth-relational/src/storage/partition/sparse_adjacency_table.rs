@@ -11,6 +11,11 @@ pub(crate) struct SparseAdjacencyTable {
 }
 
 impl SparseAdjacencyTable {
+    pub(crate) fn adoption_allocation_bound(&self, slots: usize) -> Option<u64> {
+        self.entries
+            .adoption_allocation_bound()?
+            .checked_mul(slots as u64)
+    }
     pub(crate) fn merge_slots_from(
         &mut self,
         overlay: &Self,

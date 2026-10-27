@@ -62,6 +62,8 @@ pub use merge_branch_basis_foundational::{
 };
 pub(crate) use positioned_canonical_commit::PositionedCanonicalCommit;
 
+/// Identifies a committed occurrence within its Native history. This value is
+/// descriptive and grants no read, mutation or history-disclosure authority.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct CommitId(pub u64);
 

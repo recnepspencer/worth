@@ -37,6 +37,11 @@ Use `.same_partition_endpoints()` to declare endpoint partition isolation, and
 entity reference with `.name()`, or use its declared name directly. The completed
 schema rejects zero minima, empty kind sets and unknown entity names.
 
+Use `.orbit()` on a stored homogeneous relation to require exactly one
+successor and one predecessor for every live member of that kind. The completed
+schema rejects different source and target kinds. The law remains conjunctive
+with the relation's endpoint, cardinality and deletion policies.
+
 For refusals, use `worth_query_host::facade::primary_graph`:
 `WorthQueryApplicationCommitDenial::relation_law()` returns an optional borrowed
 `WorthQueryRelationLawDenial`. Bootstrap publication refusals expose the same
@@ -91,6 +96,118 @@ kind or changing the minimum does.
 Law meaning participates in canonical schema and program identity. Changing
 the law is a schema/program change; reusing the same names does not authorize
 an installed application to acquire different meaning on restore.
+
+An orbit is a permutation, so initial publication must include every member's
+successor and predecessor. An isolated new member refuses; creating it with a
+self-edge is lawful when the independently declared endpoint policy allows
+self-edges. Duplicate physical edges violate the exactly-one constraint even
+when they connect the same pair. Rewire all affected successors in one mutation
+to split or merge cycles. These changes preserve the permutation law.
+
+The stored orbit law also enables platform-owned committed aggregate identity
+and lineage records. Birth identity depends on the definition, commit occurrence
+and least member at birth; removing that member does not rename a whole orbit.
+On a split, the part containing the least surviving old member keeps its identity.
+On a merge, the participant with the least current anchor keeps its identity.
+Mixed rewiring conceptually splits first, then compares the incoming old fragments.
+If the winning fragment does not contain its old identity's least surviving member,
+the result gets a newly minted final identity; it cannot take the keeper part's
+identity. Split and merge events name the actual final identities and commit
+occurrence. Applications cannot write these private records.
+
+Installed invariant planner/context views expose `orbit(&binding, &member)` and
+`orbit_of(&binding, &member)` for the actual declared orbit relation. The orbit
+retains Native identity truth and complete business topology; `members()` yields
+successor order from its current least member, `len()` reports its size, and
+`identity()` returns its persistent typed name. Both methods admit every member
+and physical successor edge through the ordinary prepared scope. A name's bytes
+grant no read or write access.
+
+The compiled [topology invariant](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
+uses ordered orbit windows and processes each affected orbit once. Its former
+successor lookup is deleted. Application read observations describe business
+walk/field acquisitions; private Native identity preparation is outside them.
+Ordinary projection readers also expose `reader.orbit(Next::reference(), &member)`
+and `orbit_of(..)`. The result retains actual Native aggregate and complete walk
+owners from the selected snapshot. `members()`, `member(index)`, `relations()`,
+`identity()` and `len()` borrow that materialized result without graph reads.
+Operation readers require `OperationReads` for the relation and admit every
+returned member through the original projection's realized scope. These are
+inspection reads; they do not record publication decision dependencies. The
+compiled [projection examples](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/projection.rs)
+exercise ordinary and operation readers, including a retained basis after an edit.
+Handler `DecisionReader::orbit` / `orbit_of` and computation readers record two
+original Native facts: persistent identity with complete canonical membership,
+and the complete successor walk with physical edges. Lower-level admitted
+operation readers call `decision_orbit` / `decision_orbit_of`. Both values remain
+bound to their original admission, installed contracts and realized scope; a
+selector alone cannot reconstruct them at sealing. Fresh comparison detects
+identity changes even when membership is restored by later edits. Incidental
+stored lineage is outside orbit-answer equality. The compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+and [currentness court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/currentness.rs)
+exercise this path. Aggregate inputs currently require full verification and a
+fresh computation; live fact bodies cannot be reconstructed from checkpoints.
+
+A declared `Many` query can select one complete orbit with
+`builder.orbit(ApplicationQueryOrbitRef::new("loop", NextFin::reference()))`.
+The query's root and scope must be the same entity kind. Its returned rows stay
+in successor order from the Native anchor. `result.orbit(loop_slot())` returns
+the exact declared slot's `identity()`, `len()` and borrowed `members()`; the
+getter performs no graph read and survives conversion into a disclosed result
+or output-demand source. The selector has schema, query, slot, relation and
+entity marker types; see the compiled [query declaration and result court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries.rs).
+
+Whole-orbit metadata is one disclosure slot. A governed contract must provide
+`orbit_by(slot, disclosure_value, influence)` for identity, length, membership
+and order together; member fields keep their own disclosure rules. An omitted
+orbit slot refuses before group selection. Filtering, root-path unions,
+explicit ordering, continuation and live lanes cannot turn a complete orbit
+into a partial answer. Row and result-set sources retain the original Native
+aggregate and complete walk; portable record grammar 17 preserves this meaning
+and refuses older record grammars.
+
+Privileged snapshot projections can inspect a retained name with
+`reader.lineage(NextFin::reference(), &loop_identity)`. The operation-specific
+inspection reader additionally requires the relation's `OperationReads`
+contract. The installation-minted projection authority and freshly selected
+snapshot authorize the read; the name is only a selector. This performs a Native
+schema/occupied-slot scan followed by incident-lineage visits along merge hops.
+An admitted handler can use `reader.reader().lineage(..)` through that same
+operation inspection reader; the compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+does so alongside its tracked orbit reads. The raw reader marks opaque context
+and therefore cannot qualify the handler for completed decision reuse.
+
+The owned `WorthQueryAggregateLineage` retains that actual Native result.
+`events()` borrows incident split and merge records; `resolution_steps()`
+borrows the ordered merge path. Each exposes the original commit `occurrence()`,
+`kind()` and typed `from()`/`to()` names. `latest_identity()` follows merges only:
+a split keeper remains current, and a retired terminal without a successor
+returns `None`. An identity absent from the selected snapshot instead refuses
+with `AggregateIdentityUnavailable`. `version()` describes the selected source
+and cannot rebind the retained body. See the compiled [lineage inspection court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/lineage.rs).
+
+These inspection reads grant no governed history disclosure and record no
+publication decision dependencies. A typed name can be retained across edits
+inside its installation; this API does not restore arbitrary portable names
+after a fresh installation. Scoped/governed lineage reads and tracked lineage
+decisions remain separate unavailable capabilities. Proprietary's actual sheet
+boundary-edit, split/merge and stored-face adoption courts qualify Phase 4 against
+current private `main`, preserving its cold-read and retirement contracts. See the
+[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md).
+Generic Native branch reconciliation has separate existing execution limitations
+and retains its typed refusal.
+The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
+exercises native refusals and atomic lawful mutations through the ordinary
+authenticated program.
+
+An orbit's cardinality refusal exposes
+`WorthQueryRelationLawDenial::Cardinality` with the original `member`,
+`boundary`, `count`, `limit` and `contract_id` (`relation:orbit`).
+`RelationCardinalityBoundary` is available through the host's
+`application_invariants` facade. Another independent policy may refuse first
+and retains its original cause, such as `SelfEdge` for a forbidden singleton.
 
 ## How It Executes
 
@@ -302,7 +419,8 @@ The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
 Other native symmetry modes are not exposed by these builders. They do not
-provide general traversal, orbit or component query operations.
+provide component query operations. Use projection readers for complete walks
+and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
 plan. Native evaluation has no application-authored depth limit; it remains
 subject to the original execution request's resource and interruption policy.

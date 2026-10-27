@@ -169,3 +169,5 @@ fn deadline_is_checked_at_kernel_safe_points() {
 }
 
 mod closure;
+
+mod declared_orbit;

@@ -1,6 +1,7 @@
 //! The reader an owner reads its input through, lent from the handler that
 //! runs the computation.
 
+mod orbit;
 mod output_availability;
 mod structural_walk;
 

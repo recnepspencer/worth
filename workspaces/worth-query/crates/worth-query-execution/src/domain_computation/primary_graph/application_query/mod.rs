@@ -35,6 +35,8 @@ pub(in crate::domain_computation::primary_graph) use native_access::ApplicationQ
 pub(in crate::domain_computation::primary_graph) mod observed_source;
 pub(in crate::domain_computation) use observed_source::ObservedQueryExpressionContext;
 mod one_shot;
+mod orbit_result;
+pub use orbit_result::WorthQueryApplicationQueryOrbit;
 mod output_source_observation;
 pub(in crate::domain_computation::primary_graph) use one_shot::WorthQueryAdmittedOneShotStop;
 pub(in crate::domain_computation::primary_graph) use output_source_observation::{

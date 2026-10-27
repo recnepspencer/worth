@@ -7,7 +7,7 @@ fn third_hop_only_edge_replacement_requires_the_fresh_custom_violation_and_its_l
     let world = world::install(world::Graph::three_hops(true, vec![4]));
     let request = super::super::super::fixture::live_scope();
     let hostile = program::replace_next(&world, &request, 4);
-    let before = world.checkpoint();
+    let before = world.committed_version();
     let edges = world.edges();
     world.observation.arm();
     exact_violation(
@@ -19,7 +19,7 @@ fn third_hop_only_edge_replacement_requires_the_fresh_custom_violation_and_its_l
         },
     );
     assert_deep_callbacks(&world);
-    assert_eq!(world.checkpoint(), before);
+    assert_eq!(world.committed_version(), before);
     assert_eq!(world.edges(), edges);
 
     let lawful = program::replace_next(&world, &request, 5);
@@ -42,7 +42,7 @@ fn root_activation_requires_deep_entity_admission_and_its_lawful_twin() {
         ));
         let request = super::super::super::fixture::live_scope();
         let program = program::set_active(&world, &request, true);
-        let before = world.checkpoint();
+        let before = world.committed_version();
         let edges = world.edges();
         world.observation.arm();
         let outcome = commit(&world, &request, program, 214);
@@ -55,13 +55,13 @@ fn root_activation_requires_deep_entity_admission_and_its_lawful_twin() {
                     distance: 3,
                 },
             );
-            assert_eq!(world.checkpoint(), before);
+            assert_eq!(world.committed_version(), before);
         } else {
             assert!(matches!(
                 outcome,
                 WorthQueryApplicationCommitOutcome::Committed(_)
             ));
-            assert_ne!(world.checkpoint(), before);
+            assert_ne!(world.committed_version(), before);
         }
         assert_deep_callbacks(&world);
         assert_eq!(world.edges(), edges);

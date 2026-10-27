@@ -92,10 +92,29 @@ fn enforce_snapshot_invariant(
         .prepared_mut()
         .proposal_identity()
         .clone();
-    let (validated, created_entities) = mutated.publication_validation_parts();
-    let (admitted, working_state) = validated.prepared_mut().mutation_parts();
+    let (validated, created_entities, aggregate_plan) = mutated.publication_validation_parts();
+    let (admitted, working_state, aggregate_source) = validated.prepared_mut().mutation_parts();
     let prevalidated_snapshot_publication = admitted.take_prevalidated_snapshot_publication();
     let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
+    let merged_plan = aggregate_plan.unwrap_or(merged_plan);
+    let final_mutation = if aggregate_plan.is_some() {
+        let final_mutation = runtime
+            .invariant_authority()
+            .enforce_mutation_sensitive_for_working_state(
+                &selected_branch_state,
+                working_state,
+                version_id,
+                merged_plan,
+                Some(&proposal_identity),
+                aggregate_source,
+                execution,
+                control,
+            )?;
+        commit_log.record_invariant_outcomes(&final_mutation);
+        Some(final_mutation)
+    } else {
+        None
+    };
     let invariant = enforce_snapshot_publication_phase(
         runtime,
         commit_log,
@@ -106,10 +125,14 @@ fn enforce_snapshot_invariant(
         version_id,
         merged_plan,
         Some(&proposal_identity),
+        aggregate_source,
         prevalidated_snapshot_publication,
         execution,
         control,
     )?;
+    if let Some(final_mutation) = final_mutation {
+        mutated.validated_mut().push_invariant(final_mutation);
+    }
     mutated.validated_mut().push_invariant(invariant);
     Ok(())
 }

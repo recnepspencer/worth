@@ -59,7 +59,6 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        let lease = crate::authority::commit::pipeline::request_lease(execution);
         let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
             &transaction.control,
@@ -117,8 +116,9 @@ impl RelationalPreparationRuntime {
             &prepared.working_state,
             &prepared.merged_plan,
             prepared.schema_authority.as_ref(),
-            proposed_version,
-            lease,
+            &proposal_identity,
+            execution,
+            validation_input.intent().materialization_mode(),
         )?;
         let commit_boundary = self
             .invariant_authority()
@@ -128,6 +128,7 @@ impl RelationalPreparationRuntime {
                 proposed_version,
                 &prepared.merged_plan,
                 Some(&proposal_identity),
+                proposed_invariant_state.aggregate_source(),
                 execution,
                 &scope_control,
             )?;

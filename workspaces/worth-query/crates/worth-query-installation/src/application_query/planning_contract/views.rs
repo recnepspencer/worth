@@ -48,7 +48,8 @@ pub(super) fn root_relation_count(meaning: &WorthQueryInstalledGraphReadMeaning)
         .root_paths
         .iter()
         .map(|path| path.steps().len())
-        .sum()
+        .sum::<usize>()
+        + usize::from(meaning.orbit.is_some())
 }
 
 pub(super) fn root_relation(
@@ -56,6 +57,12 @@ pub(super) fn root_relation(
     index: usize,
 ) -> Option<WorthQueryReadGraphRelationView<'_>> {
     let mut remaining = index;
+    if let Some(orbit) = &meaning.orbit {
+        if remaining == 0 {
+            return Some(orbit_view(orbit));
+        }
+        remaining -= 1;
+    }
     for path in &meaning.root_paths {
         if let Some(step) = path.steps().get(remaining) {
             return Some(root_step_view(step));
@@ -117,11 +124,25 @@ pub(super) fn ordering(
     meaning.ordering.get(index).map(ordering_view)
 }
 
+pub(super) fn orbit_view(
+    orbit: &worth_query_declaration::facade::application_query::ApplicationQueryOrbitMeaning,
+) -> WorthQueryReadGraphRelationView<'_> {
+    WorthQueryReadGraphRelationView {
+        relation: orbit.relation(),
+        direction: WorthQueryReadGraphRelationDirection::Forward,
+        complete_closure: true,
+        aggregate_selection: true,
+        cardinality: ApplicationQueryCardinality::Many,
+        depth: 1,
+    }
+}
+
 pub(super) fn root_step_view(
     step: &WorthQueryInstalledRootPathStep,
 ) -> WorthQueryReadGraphRelationView<'_> {
     WorthQueryReadGraphRelationView {
         relation: step.relation(),
+        aggregate_selection: false,
         complete_closure: step.traversal() == worth_query_declaration::facade::application_query::ApplicationQueryRootPathTraversal::Closure,
         direction: match step.direction() {
             RelationDirection::Forward => WorthQueryReadGraphRelationDirection::Forward,
@@ -138,6 +159,7 @@ pub(super) fn result_relation_view(
     WorthQueryReadGraphRelationView {
         relation: relation.relation(),
         complete_closure: false,
+        aggregate_selection: false,
         direction: match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => {
                 WorthQueryReadGraphRelationDirection::Forward

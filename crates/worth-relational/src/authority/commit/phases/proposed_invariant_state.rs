@@ -9,8 +9,24 @@ use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan, Transa
 pub(crate) struct AppliedInvariantState {
     working_state: WorkingState,
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
+    record_allocations: Option<crate::runtime::PendingRecordAllocations>,
+    aggregate: Option<crate::aggregate_identity::AggregateProposal>,
 }
 impl AppliedInvariantState {
+    pub(crate) fn aggregate_source(
+        &self,
+    ) -> Option<crate::aggregate_identity::AggregateProposalBorrow<'_>> {
+        self.aggregate
+            .as_ref()
+            .map(|owner| owner.borrow(&self.working_state))
+    }
+
+    pub(crate) fn take_record_allocations(&mut self) -> crate::runtime::PendingRecordAllocations {
+        self.record_allocations
+            .take()
+            .expect("move proposed allocation custody once")
+    }
+
     pub(crate) fn working_state(&self) -> &WorkingState {
         &self.working_state
     }
@@ -33,9 +49,12 @@ pub(crate) fn prepare_proposed_invariant_state(
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
     schema_authority: &crate::branch::RelationalBranchRootSchemaAuthority,
-    version_id: crate::identity::data::VersionId,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
+    proposal: &crate::mvcc::RelationalMutationProposalIdentity,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    materialization_mode: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
 ) -> Result<AppliedInvariantState, TransactionCommitError> {
+    let version_id = proposal.proposed_version_id();
+    let lease = crate::authority::commit::pipeline::request_lease(execution);
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
         version_id,
@@ -47,12 +66,20 @@ pub(crate) fn prepare_proposed_invariant_state(
         cross_context_policy: runtime.config.storage.cross_context_policy,
     };
     let mut proposed = working_state.clone();
+    crate::aggregate_identity::guard::ordinary_plan(
+        execution,
+        runtime.commit_work_budget.as_ref(),
+        schema_authority.registry(),
+        &crate::validation::engine::state_view::InvariantStateView::new(
+            selected_state,
+            selected_state.version_id(),
+        ),
+        &merged_plan.merged_intents,
+        materialization_mode,
+    )?;
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &proposed, merged_plan);
     let mut symbols = runtime.services.symbols.interner_snapshot();
-    let mut record_allocations = crate::runtime::PendingRecordAllocations::new(
-        crate::runtime::RuntimeSubsystem::fork(&runtime.record_identity),
-        None,
-    );
+    let mut record_allocations = runtime.record_identity.begin_allocations();
     let applied = apply_plan_to_working_state(
         &mut proposed,
         &apply_plan,
@@ -65,13 +92,29 @@ pub(crate) fn prepare_proposed_invariant_state(
         lease,
         runtime.commit_work_budget.clone(),
     )?;
+    record_allocations
+        .prepare_reapplication()
+        .map_err(|denial| {
+            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
+                crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+            ))
+        })?;
     crate::authority::mutation::apply_adjacency_deltas(
         &mut proposed,
         &applied.effect.adjacency.deltas,
         version_id,
     );
+    let aggregate = crate::aggregate_identity::AggregateProposal::capture(
+        schema_authority,
+        selected_state,
+        proposal,
+        applied.effect,
+        materialization_mode,
+    );
     Ok(AppliedInvariantState {
         working_state: proposed,
         created_entities: applied.created_entities,
+        record_allocations: Some(record_allocations),
+        aggregate,
     })
 }

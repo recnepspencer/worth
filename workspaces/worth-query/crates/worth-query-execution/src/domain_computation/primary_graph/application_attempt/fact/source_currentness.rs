@@ -18,8 +18,8 @@ impl WorthQueryApplicationObservedFact {
         runtime: &'runtime worth_relational::facade::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-        walks: &mut Option<
-            crate::domain_computation::primary_graph::structural_walk::StructuralWalkVerification<
+        reads: &mut Option<
+            crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification<
                 'runtime,
             >,
         >,
@@ -34,24 +34,32 @@ impl WorthQueryApplicationObservedFact {
         if let Some(control) = control {
             control().map_err(CompanionPreflightStop::Execution)?;
         }
-        let Self::StructuralWalk { observation } = self else {
+        if !matches!(self, Self::Aggregate { .. } | Self::StructuralWalk { .. }) {
             return self.source_currentness_in(runtime, execution, snapshot);
-        };
+        }
         check_request(execution)?;
         super::super::super::fact_verification_observation::source_currentness();
-        if walks.is_none() {
-            match crate::domain_computation::primary_graph::structural_walk::StructuralWalkVerification::open(runtime, execution, snapshot) {
-                Ok(value) => *walks = Some(value),
+        if reads.is_none() {
+            match crate::domain_computation::primary_graph::source_read_verification::SourceReadVerification::open(runtime, execution, snapshot) {
+                Ok(value) => *reads = Some(value),
                 Err(stop) => return comparison_result(Err(stop)),
             }
         }
-        let walks = walks
+        let reads = reads
             .as_mut()
             .expect("the extent admitted its selected image");
-        if !walks.answers_image(runtime, snapshot) {
+        if !reads.answers_image(runtime, snapshot) {
             return Ok(Err(WorthQuerySourceCurrentnessFailure::Unavailable));
         }
-        comparison_result(walks.check(observation, execution, control))
+        comparison_result(match self {
+            Self::Aggregate { observation } => {
+                reads.check_aggregate(observation, execution, control)
+            }
+            Self::StructuralWalk { observation } => {
+                reads.check_walk(observation, execution, control)
+            }
+            _ => unreachable!("other facts were handled before the read extent"),
+        })
     }
 
     /// Compare at the genuine selected snapshot under the original execution request.

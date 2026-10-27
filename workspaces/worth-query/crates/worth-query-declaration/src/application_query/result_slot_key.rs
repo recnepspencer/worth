@@ -13,6 +13,13 @@ pub struct ApplicationQueryResultSlotKey {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ApplicationQueryResultSlotContract {
+    /// Identity, full membership/length and anchor-forward order are one result.
+    Orbit {
+        relation: String,
+        from: String,
+        to: String,
+        output_name: String,
+    },
     Field {
         entity: String,
         aspect: String,
@@ -52,6 +59,25 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn orbit(
+        query: WorthQueryPortableTypeIdentity,
+        slot: WorthQueryPortableTypeIdentity,
+        relation: &str,
+        from: &str,
+        to: &str,
+        output_name: &str,
+    ) -> Self {
+        Self {
+            query,
+            slot,
+            contract: ApplicationQueryResultSlotContract::Orbit {
+                relation: relation.into(),
+                from: from.into(),
+                to: to.into(),
+                output_name: output_name.into(),
+            },
+        }
+    }
     pub fn query_identity(&self) -> WorthQueryPortableTypeIdentity {
         self.query.clone()
     }

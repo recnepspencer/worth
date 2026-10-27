@@ -116,15 +116,19 @@ fn relations(
                     WorthQueryAdmittedGraphReadRelationDirection::Ancestor
                 }
             };
+            let mut operators = vec![if relation.complete_closure {
+                WorthQueryGraphReadTraversalOperator::CompleteClosure
+            } else {
+                WorthQueryGraphReadTraversalOperator::DirectEdge
+            }];
+            if relation.aggregate_selection {
+                operators.push(WorthQueryGraphReadTraversalOperator::AggregateSelection);
+            }
             WorthQueryGraphReadPlanningRelation::from_admitted_reference(
                 relation.relation,
                 direction,
                 relation.depth,
-                vec![if relation.complete_closure {
-                    WorthQueryGraphReadTraversalOperator::CompleteClosure
-                } else {
-                    WorthQueryGraphReadTraversalOperator::DirectEdge
-                }],
+                operators,
             )
         })
         .collect()

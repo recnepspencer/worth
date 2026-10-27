@@ -37,6 +37,7 @@ impl RootPathSourceBuilder {
             aspects: self.aspects.clone(),
             adjacencies: self.adjacencies.clone(),
             walks: self.walks.clone(),
+            orbit: self.orbit.clone(),
             allocation: allocation.cloned(),
         })
     }

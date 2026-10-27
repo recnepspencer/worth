@@ -20,6 +20,7 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub parameters: Vec<ApplicationQueryParameterDefinition>,
     pub result_shape: ApplicationQueryResultShape,
     pub root_paths: Vec<ApplicationQueryRootPathMeaning>,
+    pub orbit: Option<super::super::ApplicationQueryOrbitMeaning>,
     pub cardinality: ApplicationQueryCardinality,
     pub predicates: Vec<ApplicationQueryPredicate>,
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
@@ -66,6 +67,10 @@ impl WorthQueryPortableApplicationQueryParts {
 
     pub fn result_shape(&self) -> &ApplicationQueryResultShape {
         &self.result_shape
+    }
+
+    pub fn orbit(&self) -> Option<&crate::application_query::ApplicationQueryOrbitMeaning> {
+        self.orbit.as_ref()
     }
 
     pub fn root_paths(&self) -> &[ApplicationQueryRootPathMeaning] {
@@ -126,6 +131,7 @@ impl WorthQueryPortableApplicationQueryParts {
             parameters: definition.parameters,
             result_shape: definition.result_shape,
             root_paths: definition.root_paths,
+            orbit: definition.orbit,
             cardinality: definition.cardinality,
             predicates: definition.predicates,
             ordering: definition.ordering,
@@ -152,6 +158,7 @@ impl WorthQueryPortableApplicationQueryParts {
             parameters: definition.parameters.clone(),
             result_shape: definition.result_shape.clone(),
             root_paths: definition.root_paths.clone(),
+            orbit: definition.orbit.clone(),
             cardinality: definition.cardinality,
             predicates: definition.predicates.clone(),
             ordering: definition.ordering.clone(),

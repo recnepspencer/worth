@@ -8,6 +8,7 @@ mod allocation_delta;
 mod bulk_bootstrap;
 mod iteration;
 mod node;
+mod preallocation;
 #[cfg(test)]
 mod tests;
 mod traits;

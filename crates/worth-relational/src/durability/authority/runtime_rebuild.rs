@@ -115,9 +115,7 @@ pub(super) fn rebuild_runtime_from_plan(
         )?;
         finalized_tail.push(positioned);
     }
-    restored
-        .record_identity
-        .release_unconsumed_restored_reservations();
+    restored.record_identity.release_unowned_reservations();
     let recovered_checkpoint = restored.durability.latest_checkpoint();
     let mut recovered_canonical_commits = recovered_checkpoint
         .iter()

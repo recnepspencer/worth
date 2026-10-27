@@ -1,3 +1,9 @@
+pub use crate::aggregate_identity::{
+    AggregateRead, AggregateReadDenial, AggregateReadLineageEvent, AggregateReadObservations,
+    AggregateReadPort, PinnedAggregateLineageRead, PinnedAggregateLineageScope,
+    PinnedAggregateRead, PinnedAggregateReadDenial, PinnedAggregateReadDenialKind,
+    PinnedAggregateReadScope,
+};
 pub use crate::validation::data::{
     CompleteStructuralWalk, CustomInvariantAccessContract, CustomInvariantDescriptor,
     CustomInvariantExecutionContext, CustomInvariantExecutionError, CustomInvariantInterruption,
@@ -14,3 +20,4 @@ pub use crate::validation::data::{
     StructuralWalkDenialKind, StructuralWalkReads, StructuralWalkStep,
 };
 pub use crate::validation::engine::InvariantExecutionResult;
+pub use worth_foundational::facade::AggregateLineageKind;

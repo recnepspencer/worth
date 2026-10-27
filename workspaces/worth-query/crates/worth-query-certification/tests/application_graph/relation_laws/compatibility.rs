@@ -26,6 +26,7 @@ fn changing_only_the_relation_law_changes_the_same_named_program_revision() {
     changed_revision::<Unrestricted, SymmetricDirectedUnique>();
     changed_revision::<CrossPartition, Isolated>();
     changed_revision::<Unrestricted, MinimumTwo>();
+    changed_revision::<Unrestricted, Orbit>();
 }
 fn changed_revision<Old: LawPolicy, L: LawPolicy>() {
     let old = program::<Old>();
@@ -78,6 +79,7 @@ fn omitting_completed_schema_cannot_bypass_law_binding_at_installation() {
     unbound_refused::<SymmetricDirectedUnique>();
     unbound_refused::<Isolated>();
     unbound_refused::<MinimumTwo>();
+    unbound_refused::<Orbit>();
 }
 fn unbound_refused<L: LawPolicy>() {
     let unbound = ApplicationProgramAuthoring::<GraphSchema<L>, GraphProgram<L>>::begin()
@@ -133,6 +135,7 @@ fn an_installed_checkpoint_cannot_silently_acquire_a_new_relation_law() {
     checkpoint_laws::<Unrestricted, SymmetricDirectedUnique>(&[]);
     checkpoint_laws::<CrossPartition, Isolated>(&[]);
     checkpoint_laws::<Unrestricted, MinimumTwo>(&[(0, 1), (1, 2), (2, 0)]);
+    checkpoint_laws::<Unrestricted, Orbit>(&[(0, 1), (1, 2), (2, 0)]);
 }
 fn checkpoint_laws<Old: LawPolicy, L: LawPolicy>(edges: &[(u64, u64)]) {
     // This graph is lawful under either policy: refusal must concern installed meaning.

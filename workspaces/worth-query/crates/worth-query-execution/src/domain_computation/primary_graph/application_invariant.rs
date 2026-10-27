@@ -29,6 +29,7 @@ mod read_observation;
 mod registration;
 mod typed_binding;
 mod typed_view;
+pub use super::aggregate_identity::WorthQueryAggregateIdentity;
 pub use access_denial::{WorthQueryInvariantAccessDenial, WorthQueryInvariantAccessDenialKind};
 pub(super) use program_selection::WorthQueryProgramRuleSelection;
 pub(super) use registration::ErasedApplicationInvariantRule;
@@ -38,9 +39,10 @@ pub use typed_binding::{
 };
 pub use typed_view::{
     WorthQueryApplicationInvariantContext, WorthQueryApplicationInvariantEntity,
-    WorthQueryApplicationInvariantReadView, WorthQueryApplicationInvariantRelation,
-    WorthQueryApplicationInvariantScopePlanner, WorthQueryApplicationInvariantWalk,
-    WorthQueryApplicationInvariantWalkIter, WorthQueryApplicationInvariantWalkStep,
+    WorthQueryApplicationInvariantOrbit, WorthQueryApplicationInvariantReadView,
+    WorthQueryApplicationInvariantRelation, WorthQueryApplicationInvariantScopePlanner,
+    WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
+    WorthQueryApplicationInvariantWalkStep,
 };
 
 /// Supplies domain validation without supplying its own installation authority.

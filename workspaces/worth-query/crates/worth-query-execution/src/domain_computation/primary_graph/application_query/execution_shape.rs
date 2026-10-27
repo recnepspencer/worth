@@ -87,7 +87,8 @@ pub(super) fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Sc
         _ => false,
     };
     let declared_path_selection = !graph.root_paths().is_empty() && graph.predicates().is_empty();
-    let declared_result = !graph.projections().is_empty() || !graph.relations().is_empty();
+    let declared_result =
+        graph.orbit().is_some() || !graph.projections().is_empty() || !graph.relations().is_empty();
     if declared_result
         && ((exact_root_scope && graph.root_paths().is_empty() && bounded_exact_selection)
             || declared_path_selection)

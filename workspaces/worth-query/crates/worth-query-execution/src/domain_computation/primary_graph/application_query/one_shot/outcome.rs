@@ -119,7 +119,7 @@ where
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
     let result_set_footprint = set_footprint.materialize();
     let branch = std::sync::Arc::new(basis_identity.branch_id().clone());
-    let mut source_comparisons = crate::domain_computation::primary_graph::structural_walk::StructuralWalkEquivalence::default();
+    let mut source_comparisons = crate::domain_computation::primary_graph::source_read_equivalence::SourceReadEquivalence::default();
     let source_control = || {
         match request.interruption() {
         None => Ok(()),

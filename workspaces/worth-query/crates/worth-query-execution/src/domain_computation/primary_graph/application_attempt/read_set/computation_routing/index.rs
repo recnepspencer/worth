@@ -8,6 +8,7 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactIndex {
     pub(super) calls: ExecutionOrderedMap<ComputationRead, Vec<WorthQueryApplicationFactKey>>,
     pub(super) observation_work: Option<u64>,
     pub(super) structural_walk: bool,
+    pub(super) aggregate: bool,
 }
 impl ComputationFactIndex {
     pub(super) fn build(
@@ -18,7 +19,9 @@ impl ComputationFactIndex {
         let mut grouped: BTreeMap<_, Vec<_>> = BTreeMap::new();
         let mut observation_work = policy.uses_accounting().then_some(0u64);
         let mut structural_walk = false;
+        let mut aggregate = false;
         for (key, fact) in facts {
+            aggregate |= matches!(key, WorthQueryApplicationFactKey::Aggregate(_));
             structural_walk |= matches!(key, WorthQueryApplicationFactKey::StructuralWalk(_));
             super::super::super::super::fact_verification_observation::sealed_computation_index();
             observation_work = observation_work.and_then(|work| {
@@ -42,6 +45,7 @@ impl ComputationFactIndex {
             calls,
             observation_work,
             structural_walk,
+            aggregate,
         })
     }
     pub(in crate::domain_computation::primary_graph) fn keys(

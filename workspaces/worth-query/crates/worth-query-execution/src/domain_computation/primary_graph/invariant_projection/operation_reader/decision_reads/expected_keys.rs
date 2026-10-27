@@ -6,6 +6,7 @@ use std::{collections::BTreeSet, sync::Arc};
 
 pub(in crate::domain_computation::primary_graph) struct ExpectedFactKeys {
     walks: super::structural_walks::IssuedWalkValues,
+    aggregates: super::aggregates::IssuedAggregateValues,
     handler: Arc<BTreeSet<Key>>,
     source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
     // Last: retains original authoring payment until every authoring map drops.
@@ -17,13 +18,28 @@ impl ExpectedFactKeys {
         computation: Arc<ComputationFactAttribution>,
         source_publications: Option<Arc<super::source_publications::IssuedSourcePublicationValues>>,
         walks: super::structural_walks::IssuedWalkValues,
+        aggregates: super::aggregates::IssuedAggregateValues,
     ) -> Self {
         Self {
             handler,
             computation,
             source_publications,
             walks,
+            aggregates,
         }
+    }
+    pub(in crate::domain_computation::primary_graph) fn aggregate(
+        &self,
+        key: &crate::domain_computation::primary_graph::aggregate_observation::AggregateKey,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<
+            worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+        >,
+        snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::aggregate_observation::AggregateObservation>,
+    > {
+        self.aggregates.get(key, admission, contracts, snapshot)
     }
     pub(in crate::domain_computation::primary_graph) fn structural_walk(
         &self,

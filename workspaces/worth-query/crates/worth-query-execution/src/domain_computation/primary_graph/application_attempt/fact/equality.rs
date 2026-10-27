@@ -22,6 +22,13 @@ impl WorthQueryApplicationObservedFact {
         };
         check_request()?;
         let equal = match self {
+            Self::Aggregate { observation } => observation.remains_equal(runtime,execution,snapshot,None)
+                .map_err(|cause| match cause {
+                    super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),
+                    super::WorthQuerySourceCurrentnessFailure::Execution(cause) => SelfDenial::relational_read_stopped(cause,"aggregate comparison"),
+                    super::WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::DecisionFactBudgetExceeded,"aggregate comparison"),
+                    super::WorthQuerySourceCurrentnessFailure::Unavailable => SelfDenial::new(super::super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact,"aggregate comparison"),
+                })?,
             Self::StructuralWalk { observation } => observation.remains_equal(runtime,execution,snapshot)
                 .map_err(|cause| match cause {
                     super::WorthQuerySourceCurrentnessFailure::OutputObservation(stop) => SelfDenial::output_observation(stop),

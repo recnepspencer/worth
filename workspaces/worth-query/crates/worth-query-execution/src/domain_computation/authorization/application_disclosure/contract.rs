@@ -181,6 +181,17 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         ApplicationQueryDisclosureSelector::Relation { .. } => {
             admit_result_rule(query, rule.selector(), installed, result_rules, false)?;
         }
+        ApplicationQueryDisclosureSelector::Orbit(orbit) => {
+            let slot = orbit.slot_key();
+            if !query
+                .read_graph()
+                .orbit()
+                .is_some_and(|expected| expected.slot_key() == slot)
+                || result_rules.insert(slot, installed).is_some()
+            {
+                return Err(denial(orbit.slot_type()));
+            }
+        }
     }
     Ok(())
 }
@@ -267,7 +278,10 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     rules: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
 ) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
-    let expected = query.read_graph().projections().len() + query.read_graph().relations().len();
+    let orbit = query.read_graph().orbit();
+    let expected = query.read_graph().projections().len()
+        + query.read_graph().relations().len()
+        + usize::from(orbit.is_some());
     let exact = query
         .read_graph()
         .projections()
@@ -281,7 +295,8 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
                 .map(|relation| relation.slot_key_identity()),
         )
         .all(|slot| rules.contains_key(slot.as_ref()));
-    (expected == rules.len() && exact)
+    let orbit_exact = orbit.is_none_or(|orbit| rules.contains_key(&orbit.slot_key()));
+    (expected == rules.len() && exact && orbit_exact)
         .then_some(())
         .ok_or_else(|| denial(query.name()))
 }

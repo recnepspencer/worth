@@ -1,8 +1,12 @@
+mod aggregate_identity;
 mod aspect_value;
 mod references;
 mod scalar_kind;
 mod scalar_wrappers;
 
+pub use aggregate_identity::{
+    AggregateDefinitionIdentity, AggregateIdentity, AggregateLineageKind,
+};
 pub use aspect_value::AspectValue;
 pub use references::{ContentRefId, EntityId, Generation, LocalSlot, PartitionId};
 pub use scalar_kind::ScalarAspectType;

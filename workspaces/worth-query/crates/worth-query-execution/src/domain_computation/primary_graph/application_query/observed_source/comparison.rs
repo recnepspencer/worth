@@ -1,7 +1,7 @@
 //! Compare row/set source bodies without repeating a shared walk per row.
 use super::*;
-use crate::domain_computation::primary_graph::structural_walk::{
-    StructuralWalkEquivalence, StructuralWalkObservation,
+use crate::domain_computation::primary_graph::{
+    source_read_equivalence::SourceReadEquivalence, structural_walk::StructuralWalkObservation,
 };
 use std::sync::Arc;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
@@ -9,7 +9,7 @@ use worth_relational::facade::transactions::RelationalExecutionDenialCause as Ca
 pub(in crate::domain_computation::primary_graph::application_query) fn equal(
     left: &WorthQueryObservedSourceFootprint,
     right: &WorthQueryObservedSourceFootprint,
-    walks: &mut StructuralWalkEquivalence,
+    walks: &mut SourceReadEquivalence,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     control: &dyn Fn() -> Result<(), Cause>,
 ) -> Result<bool, Cause> {
@@ -37,13 +37,30 @@ pub(in crate::domain_computation::primary_graph::application_query) fn equal(
                 {
                     return Ok(false);
                 }
+                match (&left.orbit, &right.orbit) {
+                    (None, None) => {}
+                    (Some(left), Some(right)) => {
+                        if left.meaning != right.meaning
+                            || left.binding != right.binding
+                            || !walks.equal_aggregate(
+                                &left.aggregate,
+                                &right.aggregate,
+                                context,
+                                control,
+                            )?
+                        {
+                            return Ok(false);
+                        }
+                    }
+                    _ => return Ok(false),
+                }
                 let left = left.walks.as_ref().map_or(&[][..], |w| w.values());
                 let right = right.walks.as_ref().map_or(&[][..], |w| w.values());
                 if left.len() != right.len() {
                     return Ok(false);
                 }
                 for (left, right) in left.iter().zip(right) {
-                    if !walks.equal(left, right, execution, context, control)? {
+                    if !walks.equal_walk(left, right, execution, context, control)? {
                         return Ok(false);
                     }
                 }

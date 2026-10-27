@@ -21,6 +21,12 @@ pub(super) fn leaf_with_poll<E>(
     fact: &Fact,
     poll: impl FnMut() -> Result<(), E>,
 ) -> Result<Derived, E> {
+    if let Fact::Aggregate { observation } = fact {
+        super::super::super::fact_verification_observation::content_leaf();
+        let entries =
+            super::canonical_encoding::aggregate::entries_checked(ordinal, observation, poll)?;
+        return Ok(derive_identity(LEAF, entries));
+    }
     if let Fact::StructuralWalk { observation } = fact {
         super::super::super::fact_verification_observation::content_leaf();
         let entries = super::canonical_encoding::structural_walk::entries_checked(

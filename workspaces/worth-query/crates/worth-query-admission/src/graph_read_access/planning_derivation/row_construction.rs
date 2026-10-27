@@ -80,6 +80,12 @@ fn relation_dimensions(
             Complexity::ReverseRelationLookup,
             Memory::RelationDegreeBound,
         ),
+        RelationRequirementBasis::AggregateSelection => (
+            Rebuild::AuthoritativeRelationTruth,
+            Invalidation::AuthoritativeRelationDelta,
+            Complexity::CompleteTraversalWorkset,
+            Memory::DiscoveredWorkset,
+        ),
         RelationRequirementBasis::TraversalWorkset => (
             Rebuild::OperationResolutionProof,
             Invalidation::ReadGraphProofDelta,

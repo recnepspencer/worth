@@ -15,11 +15,14 @@ use super::{
 use super::super::invariant_projection::WorthQueryInvariantProjectionWork;
 use super::read_observation::InvariantReadObservation;
 
+mod entity_reobservation;
 mod field_reads;
 mod interruption;
+mod orbit;
 mod relation_reads;
 mod touched_entities;
 mod walk;
+pub use orbit::WorthQueryApplicationInvariantOrbit;
 pub use walk::{
     WorthQueryApplicationInvariantWalk, WorthQueryApplicationInvariantWalkIter,
     WorthQueryApplicationInvariantWalkStep,
@@ -147,7 +150,8 @@ impl<'borrow, 'runtime, Schema>
         self.admission.freeze(self.lower.read_budget())
     }
 
-    /// Actual reads made during preparation so far, across proposed and committed views.
+    /// Application field and business-structure acquisitions during preparation.
+    /// Native private identity preparation is outside these observations.
     /// Observations grant no access and do not affect the rule's verdict.
     pub fn reads(&self) -> WorthQueryInvariantProjectionWork {
         self.reads.reads()
@@ -198,7 +202,8 @@ impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, '
         }
     }
 
-    /// Actual preparation reads plus reads made by this evaluation so far.
+    /// Observed application preparation acquisitions plus evaluation acquisitions.
+    /// Native private identity preparation is outside these observations.
     /// Each evaluation starts from the same immutable preparation observation;
     /// creating another view does not reset it. Counts do not affect the verdict.
     pub fn reads(&self) -> WorthQueryInvariantProjectionWork {

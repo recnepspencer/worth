@@ -20,6 +20,17 @@ pub(in crate::application_query) fn prepare_definition_basis(
     let mut entries = definition_header(definition);
     append_parameters(&mut entries, definition);
     append_root_paths(&mut entries, definition);
+    if let Some(orbit) = definition.orbit() {
+        entries.extend([
+            text("orbit.query", orbit.query_type()),
+            text("orbit.slot", orbit.slot_type()),
+            text("orbit.relation", orbit.relation()),
+            text("orbit.from", orbit.from()),
+            text("orbit.to", orbit.to()),
+            text("orbit.output", orbit.output_name()),
+            text("orbit.order", "anchor-forward-v1"),
+        ]);
+    }
     append_result_shape(&mut entries, definition.result_shape(), "result");
     append_predicates(&mut entries, definition);
     append_ordering(&mut entries, definition);

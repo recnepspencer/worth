@@ -60,6 +60,7 @@ impl<Schema> WorthQueryApplicationInvariantSchemaResolver<'_, Schema> {
                 relation_kind: layout.kind,
                 from_kind: layout.from,
                 to_kind: layout.to,
+                orbit: layout.orbit,
                 _marker: PhantomData,
             },
         )

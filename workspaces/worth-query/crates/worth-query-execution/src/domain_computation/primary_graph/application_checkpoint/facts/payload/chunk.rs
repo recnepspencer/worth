@@ -113,6 +113,7 @@ pub(super) fn deep_clone_bytes(fact: &Fact) -> Option<u64> {
         Fact::WorkflowInstanceCapacity { instances, .. } => bytes(instances),
         Fact::SourcePublication { .. }
         | Fact::StructuralWalk { .. }
+        | Fact::Aggregate { .. }
         | Fact::SourceEntity { .. }
         | Fact::Entity { .. }
         | Fact::SourceAdjacencyRevision { .. }

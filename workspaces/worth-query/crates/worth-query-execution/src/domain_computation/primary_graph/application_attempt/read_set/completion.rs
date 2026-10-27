@@ -73,6 +73,29 @@ impl<Schema, Operation, Input, Scope, Phase>
                     return false;
                 }
                 if let (
+                    super::super::fact::WorthQueryApplicationFactKey::Aggregate(key),
+                    super::super::fact::WorthQueryApplicationObservedFact::Aggregate {
+                        observation,
+                    },
+                ) = (fact_key, fact)
+                {
+                    if !self
+                        .expected_facts
+                        .as_ref()
+                        .and_then(|expected| {
+                            expected.aggregate(
+                                key,
+                                self.admission.admission_identity(),
+                                &self.admission.retain_graph_contract(),
+                                self.lease.snapshot(),
+                            )
+                        })
+                        .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
+                    {
+                        return false;
+                    }
+                }
+                if let (
                     super::super::fact::WorthQueryApplicationFactKey::StructuralWalk(key),
                     super::super::fact::WorthQueryApplicationObservedFact::StructuralWalk {
                         observation,

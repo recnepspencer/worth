@@ -89,10 +89,14 @@ fn append_relations(
             cardinality_name(relation.cardinality),
             relation.depth,
             relation.complete_closure,
+            relation.aggregate_selection,
         )
     });
     for (index, relation) in relations.into_iter().enumerate() {
         let path = format!("relation[{index}]");
+        if relation.aggregate_selection {
+            entries.push(text(format!("{path}.aggregate-selection"), "whole-orbit"));
+        }
         if relation.complete_closure {
             entries.push(text(format!("{path}.traversal"), "closure"));
         }

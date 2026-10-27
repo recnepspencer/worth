@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::application_query::read_execution:
 mod closure;
 mod evidence;
 mod guards;
+mod orbit;
 mod path_union;
 mod source_allocation;
 mod step_reads;
@@ -58,6 +59,10 @@ pub(super) fn select_bounded_roots(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
     let contract = plan.contract;
+    if contract.orbit().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return orbit::select(execution, runtime, graph, plan, &mut work);
+    }
     if !contract.root_paths().is_empty() {
         return path_union::select_root_path_union(
             execution,

@@ -82,7 +82,7 @@ pub(in crate::domain_computation::primary_graph) use super::super::entity_resolu
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
 pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{
-    tree_clone_bytes, RootPathAllocation,
+    tree_clone_bytes, DeclaredOrbitSelection, RootPathAllocation,
 };
 pub(in crate::domain_computation::primary_graph) use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,

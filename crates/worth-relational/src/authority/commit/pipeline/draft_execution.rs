@@ -15,6 +15,12 @@ pub(super) struct PreparedCommitExecution {
 }
 
 impl PreparedCommitExecution {
+    pub(super) fn take_proposed_record_allocations(
+        &mut self,
+    ) -> crate::runtime::PendingRecordAllocations {
+        self.proposed_invariant_state.take_record_allocations()
+    }
+
     pub(super) fn admitted_mut(&mut self) -> &mut AdmittedCommitExecution {
         &mut self.admitted
     }
@@ -36,8 +42,13 @@ impl PreparedCommitExecution {
     ) -> (
         &mut AdmittedCommitExecution,
         &mut crate::storage::overlay::WorkingState,
+        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
-        (&mut self.admitted, &mut self.working_state)
+        (
+            &mut self.admitted,
+            &mut self.working_state,
+            self.proposed_invariant_state.aggregate_source(),
+        )
     }
 
     pub(super) fn boundary_parts(
@@ -47,12 +58,14 @@ impl PreparedCommitExecution {
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
         &crate::mvcc::RelationalMutationProposalIdentity,
+        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
             &mut self.admitted,
             self.proposed_invariant_state.working_state(),
             self.proposed_version_id,
             &self.proposal_identity,
+            self.proposed_invariant_state.aggregate_source(),
         )
     }
 
@@ -79,7 +92,6 @@ pub(super) fn prepare_commit_execution(
     mut admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Draft)?;
-    let lease = super::request_lease(execution);
     let merge_parent_count = admitted
         .merge_history_plan()
         .map(|plan| plan.requested_merge_parent_count)
@@ -129,8 +141,9 @@ pub(super) fn prepare_commit_execution(
             &working_state,
             admitted.merged_plan(),
             admitted.validation_input().schema_authority(),
-            proposed_version_id,
-            lease,
+            &proposal_identity,
+            execution,
+            admitted.validation_input().intent().materialization_mode(),
         )?,
     };
     admitted.phase_timing_mut().draft_structural_summary_micros =

@@ -2,6 +2,7 @@
 pub enum WorthQueryGraphReadAccessRequirementKind {
     DirectionalAdjacency,
     ReverseAdjacency,
+    AggregateSelection,
     PredicateSupport,
     OrderingSupport,
     TraversalWorkset,
@@ -19,6 +20,7 @@ impl WorthQueryGraphReadAccessRequirementKind {
         &[
             Self::DirectionalAdjacency,
             Self::ReverseAdjacency,
+            Self::AggregateSelection,
             Self::PredicateSupport,
             Self::OrderingSupport,
             Self::TraversalWorkset,
@@ -36,6 +38,7 @@ impl WorthQueryGraphReadAccessRequirementKind {
         match self {
             Self::DirectionalAdjacency => "directional_adjacency",
             Self::ReverseAdjacency => "reverse_adjacency",
+            Self::AggregateSelection => "aggregate_selection",
             Self::PredicateSupport => "predicate_support",
             Self::OrderingSupport => "ordering_support",
             Self::TraversalWorkset => "traversal_workset",

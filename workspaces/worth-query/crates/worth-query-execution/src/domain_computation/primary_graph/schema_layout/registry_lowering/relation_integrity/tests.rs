@@ -247,3 +247,43 @@ fn decoded_owned_minimum_names_use_the_same_native_lowerer() {
     assert_eq!(minimum.target_kind_ids, vec![KindId(12)]);
     assert_eq!(minimum.minimum_reachable_targets, 2);
 }
+
+#[test]
+fn orbit_adds_exact_native_cardinality_without_replacing_independent_policies() {
+    let declared = ApplicationRelationIntegrity::new(
+        ApplicationRelationEndpoints::same_context(false),
+        ApplicationRelationCardinality::new(None, Some(2), None, None, None, Some(1)),
+        ApplicationRelationDeletionPolicy::RequireRelationRetirement,
+    );
+    let lower = |value: ApplicationRelationIntegrity, targets| {
+        lower_relation_integrity("Next", KindId(11), targets, &value.into(), None)
+    };
+    let original = lower(declared, vec![KindId(11)]).unwrap();
+    let orbit = lower(declared.orbit(), vec![KindId(11)]).unwrap();
+    assert_eq!(
+        orbit.endpoint_kind_contracts,
+        original.endpoint_kind_contracts
+    );
+    assert_eq!(
+        orbit.endpoint_deletion_integrity_contracts,
+        original.endpoint_deletion_integrity_contracts
+    );
+    assert_eq!(orbit.cardinality_contracts.len(), 2);
+    assert_eq!(
+        orbit.cardinality_contracts[0],
+        original.cardinality_contracts[0]
+    );
+    let exact = &orbit.cardinality_contracts[1];
+    assert_eq!(exact.contract_id.as_str(), "Next:orbit");
+    assert_eq!((exact.source_min, exact.source_max), (Some(1), Some(1)));
+    assert_eq!((exact.target_min, exact.target_max), (Some(1), Some(1)));
+    assert_eq!((exact.pair_min, exact.pair_max), (None, None));
+    assert_eq!(
+        exact.minimum_enforcement,
+        super::MinimumCardinalityEnforcement::CommitBoundary
+    );
+    assert_ne!(orbit.plan_revision, original.plan_revision);
+    for targets in [vec![], vec![KindId(12)], vec![KindId(11), KindId(12)]] {
+        assert!(lower(declared.orbit(), targets).is_err());
+    }
+}

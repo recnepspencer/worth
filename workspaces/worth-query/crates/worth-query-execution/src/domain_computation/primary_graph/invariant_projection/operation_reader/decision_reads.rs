@@ -2,6 +2,7 @@
 //! partitioned computation read in which owner call.
 
 use std::collections::BTreeSet;
+mod aggregates;
 mod aspect_presence;
 mod computation_inputs;
 mod expected_keys;
@@ -43,6 +44,7 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     deposit: Option<ComputationDeposit>,
     // Last: authoring collections must drop before their original reservation.
     walks: structural_walks::IssuedWalkValues,
+    aggregates: aggregates::IssuedAggregateValues,
     failed_walk: bool,
 }
 
@@ -159,6 +161,7 @@ impl DecisionReads {
             runs,
             deposit,
             mut walks,
+            aggregates,
             failed_walk,
             ..
         } = self;
@@ -177,6 +180,7 @@ impl DecisionReads {
             std::sync::Arc::clone(&computation),
             source_publications,
             walks,
+            aggregates,
         );
         let result = match runs {
             ComputationRuns::None => (

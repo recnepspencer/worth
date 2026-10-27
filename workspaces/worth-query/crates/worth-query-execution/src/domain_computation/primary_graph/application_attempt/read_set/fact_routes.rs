@@ -249,6 +249,10 @@ impl FactRoutes {
         }
         let matches = match (old, new) {
             (
+                Some(Fact::Aggregate { observation: a }),
+                Some(Fact::Aggregate { observation: b }),
+            ) => Arc::ptr_eq(a, b),
+            (
                 Some(Fact::StructuralWalk { observation: a }),
                 Some(Fact::StructuralWalk { observation: b }),
             ) => Arc::ptr_eq(a, b),
@@ -301,6 +305,7 @@ impl FactRoutes {
                 Some(
                     Fact::Entity { .. }
                     | Fact::StructuralWalk { .. }
+                    | Fact::Aggregate { .. }
                     | Fact::Relation { .. }
                     | Fact::Adjacency { .. }
                     | Fact::IndexedEntitySelection { .. },
@@ -313,6 +318,7 @@ impl FactRoutes {
                     Fact::Entity { .. }
                     | Fact::Relation { .. }
                     | Fact::StructuralWalk { .. }
+                    | Fact::Aggregate { .. }
                     | Fact::Adjacency { .. }
                     | Fact::IndexedEntitySelection { .. },
                 ),

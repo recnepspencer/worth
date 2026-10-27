@@ -11,7 +11,7 @@ use worth_query_package_archive::facade::*;
 use fixture::{collection_operation_package, operation_package};
 
 #[test]
-fn version_fourteen_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
+fn version_seventeen_domain_operation_frame_matches_and_decodes_the_frozen_vector() {
     let original =
         decode_hex(include_str!("domain_operation_record/domain_operation_v6.hex").trim());
     let denial =
@@ -51,6 +51,33 @@ fn version_fourteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 13);
 
+    let retained =
+        decode_hex(include_str!("domain_operation_record/domain_operation_v14.hex").trim());
+    let mut old_decoder =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
+    let refusal = old_decoder.decode_frame(&retained).unwrap_err();
+    assert_eq!(
+        refusal.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(refusal.compatibility().unwrap().observed_version(), 14);
+    assert_eq!(
+        old_decoder.work(),
+        WorthQueryPackageArchiveDecodeWork::default()
+    );
+
+    let retained16 =
+        decode_hex(include_str!("domain_operation_record/domain_operation_v16.hex").trim());
+    let denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&retained16)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
+
     let source = operation_package();
     let exported = source.export_typed_records().unwrap();
     let operation = exported
@@ -59,7 +86,7 @@ fn version_fourteen_domain_operation_frame_matches_and_decodes_the_frozen_vector
         .unwrap();
     let bytes = encode_record_frame(operation, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
     let golden =
-        decode_hex(include_str!("domain_operation_record/domain_operation_v14.hex").trim());
+        decode_hex(include_str!("domain_operation_record/domain_operation_v17.hex").trim());
     assert_eq!(bytes, golden);
     let decoded =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)

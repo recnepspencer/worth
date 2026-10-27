@@ -1,5 +1,7 @@
 use super::{
-    views::{guard_view, ordering_view, predicate_view, result_relation_view, root_step_view},
+    views::{
+        guard_view, orbit_view, ordering_view, predicate_view, result_relation_view, root_step_view,
+    },
     WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingView,
     WorthQueryReadGraphPredicateView, WorthQueryReadGraphRelationView,
 };
@@ -31,7 +33,7 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
             (1, 2),
         ])?;
         admit(count_visits, 0).map_err(WorthQueryPlanningInventoryStop::Admission)?;
-        let mut root_step_count = 0usize;
+        let mut root_step_count = usize::from(meaning.orbit.is_some());
         let mut guard_count = 0usize;
         for path in &meaning.root_paths {
             root_step_count = root_step_count
@@ -95,11 +97,13 @@ impl<'a> WorthQueryAdmittedReadGraphPlanningInventory<'a> {
         ])?;
         admit(visits, 0).map_err(WorthQueryPlanningInventoryStop::Admission)?;
         let meaning = self.meaning;
-        Ok(meaning
-            .root_paths
-            .iter()
-            .flat_map(|path| path.steps().iter().map(root_step_view))
-            .chain(meaning.relations.iter().map(result_relation_view)))
+        Ok(meaning.orbit.iter().map(|orbit| orbit_view(orbit)).chain(
+            meaning
+                .root_paths
+                .iter()
+                .flat_map(|path| path.steps().iter().map(root_step_view))
+                .chain(meaning.relations.iter().map(result_relation_view)),
+        ))
     }
 
     pub fn predicates_admitted<Stop>(

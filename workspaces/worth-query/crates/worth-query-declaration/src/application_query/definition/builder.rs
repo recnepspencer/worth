@@ -48,6 +48,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 parameters: Vec::new(),
                 result_shape: parts.result_shape,
                 root_paths: Vec::new(),
+                orbit: None,
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
                 ordering: Vec::new(),
@@ -77,6 +78,16 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub fn root_path<Root>(mut self, path: ApplicationQueryRootPath<Schema, Scope, Root>) -> Self {
         self.definition.root_paths.push(path.into_meaning());
+        self
+    }
+
+    /// Select one complete stored orbit from the admitted scope member.
+    /// It cannot be combined with path unions, predicates, ordering or paging.
+    pub fn orbit<Slot, Relation>(
+        mut self,
+        orbit: super::super::ApplicationQueryOrbitRef<Schema, Query, Slot, Relation, Scope>,
+    ) -> Self {
+        self.definition.orbit = Some(orbit.into_meaning());
         self
     }
 

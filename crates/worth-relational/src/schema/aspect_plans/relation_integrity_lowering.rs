@@ -21,6 +21,7 @@ pub(super) fn lower_relation_integrity_plan(
         &declarations.acyclicity_contracts,
         &declarations.partition_isolation_contracts,
         &declarations.connectivity_minimum_contracts,
+        declarations.aggregate_identity.as_ref(),
     );
     let candidate_source_kinds = declarations
         .endpoint_kind_contracts
@@ -37,6 +38,7 @@ pub(super) fn lower_relation_integrity_plan(
         .into_iter()
         .collect::<Vec<_>>();
     LoweredRelationIntegrityPlan {
+        aggregate_identity: declarations.aggregate_identity,
         kind_id,
         plan_revision,
         endpoint_kind_contracts: declarations

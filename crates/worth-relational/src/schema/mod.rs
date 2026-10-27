@@ -1,3 +1,4 @@
+pub(crate) mod aggregate_identity;
 mod aspect_plans;
 mod continuity;
 pub mod data;

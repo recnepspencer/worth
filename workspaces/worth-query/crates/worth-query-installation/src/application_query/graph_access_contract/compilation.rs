@@ -92,6 +92,7 @@ impl WorthQueryInstalledGraphReadContract {
                     .iter()
                     .map(|path| path.steps().len()),
             )
+            .chain(definition.orbit().map(|_| 1))
             .max()
             .unwrap_or(0);
         let meaning = WorthQueryInstalledGraphReadMeaning {
@@ -101,6 +102,7 @@ impl WorthQueryInstalledGraphReadContract {
             projections,
             relations,
             root_paths,
+            orbit: definition.orbit().map(|orbit| Arc::new(orbit.clone())),
             predicates,
             ordering,
             maximum_traversal_depth,

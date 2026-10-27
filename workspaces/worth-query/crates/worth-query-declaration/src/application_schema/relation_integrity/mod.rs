@@ -27,6 +27,8 @@ pub struct ApplicationRelationIntegrity {
     pub acyclic: bool,
     /// Each surviving directed edge must have its reverse on this same relation.
     pub symmetric: bool,
+    /// Every member has exactly one successor and predecessor of its own kind.
+    pub orbit: bool,
     /// Physical edge multiplicity is bounded by the declared semantic scope.
     pub unique: Option<ApplicationRelationUniquenessScope>,
     /// Every surviving edge must connect entities in the same native partition.
@@ -47,6 +49,7 @@ impl ApplicationRelationIntegrity {
             deletion,
             acyclic: false,
             symmetric: false,
+            orbit: false,
             unique: None,
             same_partition_endpoints: false,
             reaches_at_least: None,
@@ -85,6 +88,13 @@ impl ApplicationRelationIntegrity {
         self
     }
 
+    /// Require a permutation of the relation's homogeneous entity kind.
+    /// Existing endpoint, cardinality and deletion policies remain conjunctive.
+    pub const fn orbit(mut self) -> Self {
+        self.orbit = true;
+        self
+    }
+
     /// Require distinct reachable targets at the proposed publication boundary.
     /// Kind names can be obtained from typed entity references with `.name()`.
     pub const fn reaches_at_least(mut self, minimum: u32, kinds: &'static [&'static str]) -> Self {
@@ -114,8 +124,8 @@ pub(super) fn validate_relation_integrity(
     if members.iter().any(|member| {
         matches!(
             member,
-            ApplicationSchemaMember::Relation { integrity, .. }
-                if !integrity.cardinality.is_valid()
+            ApplicationSchemaMember::Relation { integrity, from, to, .. }
+                if !integrity.cardinality.is_valid() || (integrity.orbit && from != to)
         )
     }) {
         Err(ApplicationSchemaDeclarationDenial::InvalidRelationIntegrity)

@@ -9,15 +9,11 @@ mod currentness;
 mod dependencies;
 pub(in crate::domain_computation::primary_graph) use dependencies::StructuralWalkDependencies;
 mod commitment;
-mod equivalence;
 mod key;
 pub(in crate::domain_computation::primary_graph) mod memory;
 mod read;
-mod verification;
-pub(in crate::domain_computation::primary_graph) use equivalence::StructuralWalkEquivalence;
 pub(in crate::domain_computation::primary_graph) use key::StructuralWalkKey;
 pub(in crate::domain_computation::primary_graph) use read::StructuralWalkQuery;
-pub(in crate::domain_computation::primary_graph) use verification::StructuralWalkVerification;
 
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct StructuralWalkObservation {

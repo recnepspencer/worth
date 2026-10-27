@@ -457,10 +457,12 @@ exports = [
 [[facades]]
 package = "worth-query-host::primary_graph"
 exports = [
+    "AggregateLineageKind",
     "BridgeConditionalDenialKind",
     "BridgeCorrespondenceDeliveryStop",
     "BridgeExecutionBasisFinalizationFailureKind",
     "CandidateWriter",
+    "CommitId",
     "CompanionPreflightStop",
     "CompositeAncestorSelectionDenial",
     "CompositeHistoryCatalogDenial",
@@ -522,6 +524,9 @@ exports = [
     "WorthQueryAftermathCausalRole",
     "WorthQueryAftermathCausalityReadDenial",
     "WorthQueryAftermathDerivationFailure",
+    "WorthQueryAggregateIdentity",
+    "WorthQueryAggregateLineage",
+    "WorthQueryAggregateLineageEvent",
     "WorthQueryApplicationAttemptDenial",
     "WorthQueryApplicationAttemptDenialKind",
     "WorthQueryApplicationAuthorizationExplanationCause",
@@ -620,6 +625,7 @@ exports = [
     "WorthQueryApplicationQueryContinuation",
     "WorthQueryApplicationQueryFreshness",
     "WorthQueryApplicationQueryOmissionPosture",
+    "WorthQueryApplicationQueryOrbit",
     "WorthQueryApplicationQueryResumeControls",
     "WorthQueryApplicationQueryRootPathStepRead",
     "WorthQueryApplicationQueryWorkEvidence",
@@ -813,6 +819,7 @@ exports = [
     "WorthQueryInvariantMutationTarget",
     "WorthQueryInvariantProjectionDenial",
     "WorthQueryInvariantProjectionDenialKind",
+    "WorthQueryInvariantProjectionOrbit",
     "WorthQueryInvariantProjectionTraversalDenial",
     "WorthQueryInvariantProjectionTraversalDenialKind",
     "WorthQueryInvariantProjectionWalk",

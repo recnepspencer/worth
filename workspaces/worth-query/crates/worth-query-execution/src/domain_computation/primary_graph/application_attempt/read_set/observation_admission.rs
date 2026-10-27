@@ -109,6 +109,10 @@ pub(super) fn graph_read_scope_matches_key(
     match (scope, key) {
         (
             WorthQueryOperationGraphReadScope::Relation(scope),
+            WorthQueryApplicationFactKey::Aggregate(key),
+        ) => scope.relation() == key.relation(),
+        (
+            WorthQueryOperationGraphReadScope::Relation(scope),
             WorthQueryApplicationFactKey::StructuralWalk(key),
         ) => scope.relation() == key.relation(),
         (

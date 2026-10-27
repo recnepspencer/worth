@@ -26,6 +26,14 @@ pub(super) fn validate(
 fn validate_root_selection(
     definition: &ErasedApplicationQueryDefinition,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    if let Some(orbit) = definition.orbit() {
+        validate_identifiers([
+            orbit.relation(),
+            orbit.from(),
+            orbit.to(),
+            orbit.output_name(),
+        ])?;
+    }
     for path in definition.root_paths() {
         validate_identifiers([path.start_entity(), path.terminal_entity()])?;
         for step in path.steps() {

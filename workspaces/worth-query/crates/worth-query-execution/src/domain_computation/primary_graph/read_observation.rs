@@ -10,6 +10,8 @@
 /// and field reads after acquiring the aspect state, even if decoding then fails.
 /// Reads refused before acquisition add no observation. These are Query boundary
 /// observations, not storage-engine I/O or authorization work.
+/// Private Native orbit identity storage acquisitions are outside these business
+/// read observations; the complete successor walk contributes its actual reads.
 ///
 /// Endpoint counts describe explicit metadata observation operations, including
 /// result-tree nodes and metadata rejected after acquisition. Fetching a record

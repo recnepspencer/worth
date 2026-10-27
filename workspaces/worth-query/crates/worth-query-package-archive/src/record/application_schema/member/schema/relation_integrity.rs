@@ -48,6 +48,7 @@ pub(super) fn write(
     })?;
     write_bool(output, record.acyclic)?;
     write_bool(output, record.symmetric)?;
+    write_bool(output, record.orbit)?;
     write_optional(output, record.unique.as_ref(), |output, scope| {
         output.u16(match scope {
             ApplicationRelationUniquenessScope::DirectedSemanticEdge => 1,
@@ -97,6 +98,7 @@ pub(super) fn decode(
     };
     let acyclic = decode_bool(input)?;
     let symmetric = decode_bool(input)?;
+    let orbit = decode_bool(input)?;
     let unique = decode_optional(input, decode_unique_scope)?;
     let same_partition_endpoints = decode_bool(input)?;
     let reaches_at_least = decode_optional(input, |input| decode_minimum(input, budget))?;
@@ -106,6 +108,7 @@ pub(super) fn decode(
         deletion,
         acyclic,
         symmetric,
+        orbit,
         unique,
         same_partition_endpoints,
         reaches_at_least,

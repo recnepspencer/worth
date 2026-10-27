@@ -89,6 +89,10 @@ fn write_selector(
     selector: &ApplicationQueryDisclosureSelector,
 ) -> Result<(), Denial> {
     match selector {
+        ApplicationQueryDisclosureSelector::Orbit(orbit) => {
+            output.u16(4)?;
+            super::orbit::write(output, orbit)
+        }
         ApplicationQueryDisclosureSelector::InternalField {
             entity,
             aspect,
@@ -157,6 +161,7 @@ fn decode_selector(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
+        4 => ApplicationQueryDisclosureSelector::Orbit(super::orbit::decode(input)?),
         1 => ApplicationQueryDisclosureSelector::InternalField {
             entity: input.text()?.to_owned(),
             aspect: input.text()?.to_owned(),

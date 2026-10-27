@@ -11,8 +11,6 @@ mod evaluation;
 mod preparation;
 #[path = "planar_invariant/read_observation.rs"]
 mod read_observation;
-#[path = "planar_invariant/successors.rs"]
-mod successors;
 pub use read_observation::{PlanarInvariantReadEvent, PlanarInvariantReadObserver};
 
 pub const INVARIANT_PROBE_STANDARD: usize = 0;

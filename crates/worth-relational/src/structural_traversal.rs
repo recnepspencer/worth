@@ -3,7 +3,7 @@ use std::collections::{BTreeSet, VecDeque};
 
 use crate::identity::data::EntityId;
 
-pub(super) trait BreadthFirstRead {
+pub(crate) trait BreadthFirstRead {
     type Error;
 
     fn seed(&mut self, entity: EntityId) -> Result<(), Self::Error>;
@@ -21,7 +21,7 @@ pub(super) trait BreadthFirstRead {
 
 /// O((v + e) log v) frontier work, O(v) scratch. Policies own read/retention
 /// admission; the driver never constructs another request or allowance.
-pub(super) fn walk<Read: BreadthFirstRead>(
+pub(crate) fn walk<Read: BreadthFirstRead>(
     seeds: &[EntityId],
     read: &mut Read,
 ) -> Result<BTreeSet<EntityId>, Read::Error> {

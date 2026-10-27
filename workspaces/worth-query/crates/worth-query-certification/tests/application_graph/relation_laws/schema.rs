@@ -25,6 +25,22 @@ impl LawPolicy for Unrestricted {
 }
 
 #[derive(Clone, Debug)]
+pub struct Orbit;
+impl LawPolicy for Orbit {
+    // compiled-orbit-example: begin
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_unbounded_retain_dangling().orbit();
+    // compiled-orbit-example: end
+}
+#[derive(Clone, Debug)]
+pub struct NoSelfOrbit;
+impl LawPolicy for NoSelfOrbit {
+    const INTEGRITY: ApplicationRelationIntegrity =
+        ApplicationRelationIntegrity::same_context_no_self_edges_unbounded_retain_dangling()
+            .orbit();
+}
+
+#[derive(Clone, Debug)]
 pub struct Symmetric;
 impl LawPolicy for Symmetric {
     const INTEGRITY: ApplicationRelationIntegrity =

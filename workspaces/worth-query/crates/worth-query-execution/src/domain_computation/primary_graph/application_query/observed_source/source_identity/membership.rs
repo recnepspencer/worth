@@ -237,6 +237,7 @@ mod tests {
                 vec![adjacency.clone()],
                 None,
                 None,
+                None,
             ))),
             adjacencies: vec![adjacency],
         }

@@ -22,7 +22,8 @@ use crate::domain_computation::primary_graph::{
 pub(super) fn observation_work_bound(key: &WorthQueryApplicationFactKey) -> Option<u64> {
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
-        | WorthQueryApplicationFactKey::StructuralWalk(_) => None,
+        | WorthQueryApplicationFactKey::StructuralWalk(_)
+        | WorthQueryApplicationFactKey::Aggregate(_) => None,
         WorthQueryApplicationFactKey::Entity { .. }
         | WorthQueryApplicationFactKey::Field { .. }
         | WorthQueryApplicationFactKey::AspectPresence { .. } => Some(1),
@@ -68,7 +69,8 @@ fn observe_fact_inner(
 ) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
     match key {
         WorthQueryApplicationFactKey::SourcePublication(_)
-        | WorthQueryApplicationFactKey::StructuralWalk(_) => Err(denial(
+        | WorthQueryApplicationFactKey::StructuralWalk(_)
+        | WorthQueryApplicationFactKey::Aggregate(_) => Err(denial(
             WorthQueryApplicationAttemptDenialKind::UndeclaredDecisionRead,
             "fresh source-query read required",
         )),

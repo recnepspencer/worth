@@ -67,7 +67,7 @@ fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Case {
         source.token(),
     );
     let program = program::set_active(&world, &request, true);
-    let before = world.checkpoint();
+    let before = world.committed_version();
     probe.arm();
     reports();
     place(if leased {
@@ -85,7 +85,7 @@ fn run(leased: bool, roots: usize, ceiling: Option<u64>, cancel: bool) -> Case {
     assert_eq!(requests.len(), 1, "one original funded application attempt");
     let charged = requests[0].as_ref().unwrap().charged_work();
     if matches!(outcome, WorthQueryApplicationCommitOutcome::Denied(_)) {
-        assert_eq!(world.checkpoint(), before);
+        assert_eq!(world.committed_version(), before);
     }
     let read = *observations
         .lock()

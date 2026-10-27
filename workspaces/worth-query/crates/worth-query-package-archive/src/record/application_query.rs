@@ -22,6 +22,7 @@ use super::sequence::{decode_sequence, write_sequence};
 
 mod controls;
 mod disclosure;
+mod orbit;
 mod result_shape;
 mod root_selection;
 pub(in crate::record) use root_selection::{
@@ -54,6 +55,7 @@ pub(super) fn write(
     write_sequence(output, parts.parameters(), write_parameter)?;
     result_shape::write(output, parts.result_shape())?;
     write_sequence(output, parts.root_paths(), root_selection::write_path)?;
+    write_optional(output, parts.orbit(), orbit::write)?;
     controls::write_cardinality(output, parts.cardinality())?;
     write_sequence(output, parts.predicates(), write_predicate)?;
     write_sequence(output, parts.ordering(), write_ordering)?;
@@ -94,6 +96,7 @@ fn decode_with_shape_depth(
     let parameters = decode_sequence(input, budget, 10, |input, _| decode_parameter(input))?;
     let result_shape = result_shape::decode_at_depth(input, budget, depth)?;
     let root_paths = decode_sequence(input, budget, 12, root_selection::decode_path)?;
+    let orbit = decode_optional(input, orbit::decode)?;
     let cardinality = controls::decode_cardinality(input)?;
     let predicates = decode_sequence(input, budget, 18, |input, _| decode_predicate(input))?;
     let ordering = decode_sequence(input, budget, 28, |input, _| decode_ordering(input))?;
@@ -115,6 +118,7 @@ fn decode_with_shape_depth(
             parameters,
             result_shape,
             root_paths,
+            orbit,
             cardinality,
             predicates,
             ordering,
