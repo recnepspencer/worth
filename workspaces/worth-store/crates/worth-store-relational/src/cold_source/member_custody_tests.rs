@@ -111,7 +111,6 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         "the producer-written native basis still has its index member"
     );
     let provider_owner = source.retain_members(&remaining).unwrap();
-    drop(records);
     drop(source);
     let serving = match Arc::try_unwrap(serving) {
         Err(serving) => serving,
