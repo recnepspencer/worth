@@ -19,7 +19,8 @@ admission and materialization have one Execution owner.
 
 Completed application-query publication receipts retain an opaque native
 observation when their disclosed source owner supplies one. It carries original
-source, parameter, scope and basis evidence, without a snapshot pin or current
+source, original bound interpretation, parameter, scope and basis evidence,
+without a snapshot pin or current
 permission. The ordinary Decl/Host inspection entrance and fresh governed
 disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
 builder described here does not provide that application admission.
@@ -34,6 +35,27 @@ disclosure authority. This retention does not yet connect the complete producer
 chain to an application inspection entrance. See
 [Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
 for ownership, funding and release details.
+
+### Original Query Binding Custody
+
+An ordinary installed query binding carries the actual immutable catalog binding
+into its query, including after `into_query`. Completed row and result-set sources
+share that interpretation with their original admitted parameters in one capsule.
+Cloning or retyping a source preserves it; retaining the application query
+observation does not acquire a Native reader. No descriptor or parameter values
+are copied for this binding handoff.
+
+Two bindings can name the same query while differing in input, result, scope or
+principal meaning. A matching query identity cannot substitute for the original
+catalog binding. Queries issued through the raw certification owner retain no
+binding, and later inspection cannot infer one. The carrier stays opaque: it
+exposes neither protected metadata nor permission through the application receipt.
+The [Native query court](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs)
+executes two actual same-query bindings and an unbound query, preserving their
+distinct custody after operational query bases have closed.
+
+This prerequisite supplies the original interpretation for fresh Host admission;
+it does not complete that admission, producer-chain association or Phase 9.
 
 ### Optional Query Inspection Metadata Meaning
 

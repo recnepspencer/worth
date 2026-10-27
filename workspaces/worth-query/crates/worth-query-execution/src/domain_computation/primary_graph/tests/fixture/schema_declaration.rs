@@ -126,6 +126,7 @@ worth_query_declaration::worth_query_application_contribution! {
                     .allow(Principal::reference())],
                 )
                 .application_query_binding::<TestAccountSourceBinding>()
+                .application_query_binding::<AlternateAccountSourceBinding>()
                 .application_query(application_queries::account_summary_definition())
                 .application_query(application_queries::scoped_account_summary_definition())
                 .application_query(application_queries::public_scoped_definition())

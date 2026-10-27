@@ -5,6 +5,14 @@ use super::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
+    pub(in crate::domain_computation::primary_graph) fn original_binding(
+        &self,
+    ) -> Option<
+        &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation,
+    > {
+        self.parameters.binding_observation()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn retained_scope_selector(
         &self,
     ) -> &WorthQueryObservedScopeSelector {

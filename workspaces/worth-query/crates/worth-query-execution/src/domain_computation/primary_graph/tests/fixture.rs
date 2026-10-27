@@ -78,7 +78,9 @@ pub(in crate::domain_computation::primary_graph) use application_queries::{
     status_parameter, AccountSummaryParameters, AccountSummaryResult, CrossRootQuery,
     PublicScopedAccountSummaryQuery,
 };
-pub(in crate::domain_computation::primary_graph) use current_output_source::TestAccountSourceBinding;
+pub(in crate::domain_computation::primary_graph) use current_output_source::{
+    AlternateAccountSourceBinding, TestAccountSourceBinding,
+};
 pub(super) use filtered_activity_query::{
     selected_activity_parameters, SelectedActivityParameters, SelectedActivityQuery,
     SelectedActivityResult,

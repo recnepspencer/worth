@@ -1025,6 +1025,7 @@ worth-query-installation/src/application_query/
   async_resource/                                           M installed declarations
   history/                                                  N schema/disclosure binding
   inspection.rs                                             N validate exact compiled binding before issuer admission
+  binding/observation.rs                                    N opaque original compiled-binding custody
 worth-query-package-archive/src/record/
   application_schema/member/inspection.rs                   N additive member45/v1
   application_query/disclosure/inspection.rs                N additive selector8/v1
@@ -1036,6 +1037,7 @@ worth-query-execution/src/domain_computation/
     async_resource/                                         M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
+    application_query/observed_source/retained_parameters.rs M original binding and admitted parameters shared once
 worth-query-publication/src/application_entry/
   resource/                                                 N governed retained requests
   inspection/                                               N receipt-rooted inspection
@@ -1196,6 +1198,17 @@ it does not retain a snapshot reader or operational reentry core. See
 [Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
 Fresh Host admission, connected producer-chain references and the application
 inspection journey remain required below; this prerequisite does not close Phase 9.
+
+Bound-query issuance now preserves its actual compiled catalog binding through
+the installed query, including `into_query`, and the completed source's shared
+parameter capsule. Rows, result sets, clones and the opaque application query
+observation retain that original interpretation without copying the descriptor
+or pinning Native truth. Two bindings of the same query remain distinct. A raw
+certification query has no original binding; matching query identity cannot fill
+that absence. This is descriptive custody, not inspection admission. Fresh Host
+inspection must match the original installed binding before considering its
+metadata contract; public receipt equality supplies no such proof. See
+[original query binding custody](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-query-binding-custody).
 
 Optional inspection meaning belongs to the existing ordinary query binding:
 `ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata

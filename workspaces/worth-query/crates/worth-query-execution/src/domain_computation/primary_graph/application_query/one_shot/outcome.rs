@@ -182,7 +182,10 @@ where
     let capture = capture(&kernel.raw.rows, &plan)?;
     let scope_selector = plan.scope.retain_scope_selector();
     let source_parameters = std::sync::Arc::new(
-        super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
+        super::super::observed_source::WorthQueryRetainedObservedParameters::new(
+            plan.parameters,
+            plan.query.binding_observation().cloned(),
+        ),
     );
 
     let query_identifier = std::sync::Arc::new(plan.query.name().to_owned());
