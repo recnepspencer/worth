@@ -3,7 +3,7 @@ mod assessment;
 #[path = "workflow/authentication.rs"]
 mod authentication;
 #[path = "workflow/contract.rs"]
-mod contract;
+pub(super) mod contract;
 #[path = "workflow/declaration.rs"]
 pub(super) mod declaration;
 #[path = "workflow/definition.rs"]

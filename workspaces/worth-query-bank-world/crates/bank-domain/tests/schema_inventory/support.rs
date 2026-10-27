@@ -181,6 +181,15 @@ fn program_target(target: &ApplicationOperationProgramTarget) -> String {
         ApplicationOperationProgramTarget::Link { relation, from, to } => {
             format!("link:{relation}:{from}->{to}")
         }
+        ApplicationOperationProgramTarget::InitializeRelationField {
+            relation,
+            from,
+            to,
+            aspect,
+            field,
+        } => {
+            format!("initialize-relation:{relation}:{from}->{to}/{aspect}/{field}")
+        }
         ApplicationOperationProgramTarget::Unlink { relation, from, to } => {
             format!("unlink:{relation}:{from}->{to}")
         }

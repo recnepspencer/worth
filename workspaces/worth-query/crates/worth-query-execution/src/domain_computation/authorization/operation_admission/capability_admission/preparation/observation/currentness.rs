@@ -18,7 +18,6 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryPrincipalCurrentnessDependency,
 };
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::{
     validate_freshness_at_snapshot, WorthQueryApprovedElevation,
     WorthQueryPrimaryPrincipalBindingLayout, WorthQueryPrincipalResolutionMode,

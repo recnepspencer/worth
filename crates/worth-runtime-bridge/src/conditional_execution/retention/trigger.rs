@@ -1,4 +1,3 @@
-use super::identity::identity;
 use super::semantic_payload::{self as payload, visit};
 use super::{
     arc_slice_charge, array_charge, sum, BridgeRetentionDenial as D, BridgeRetentionLedger,
@@ -79,6 +78,16 @@ fn charge(
         }
     }
     Ok(size)
+}
+
+fn identity<Tag>(identity: &crate::identity::BridgeIdentity<Tag>) -> Result<u64, D> {
+    let size = arc_slice_charge::<u8>(identity.as_str().len())?;
+    match identity.payload() {
+        crate::identity::BridgeIdentityPayload::RelationalBranch { branch_id } => {
+            sum(&[size, arc_slice_charge::<u8>(branch_id.len())?])
+        }
+        _ => Ok(size),
+    }
 }
 
 fn source_identities(

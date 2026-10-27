@@ -1,4 +1,5 @@
 mod output_availability_candidate;
+mod retention;
 pub(in crate::domain_computation::primary_graph) use output_availability_candidate::{
     ObservedOutputCandidate, ObservedOutputPosture,
 };
@@ -172,28 +173,6 @@ pub struct WorthQueryInvariantRelation<Schema, Relation, From, To> {
     from: WorthQueryInvariantEntityIdentity<Schema, From>,
     to: WorthQueryInvariantEntityIdentity<Schema, To>,
     _relation: PhantomData<fn() -> Relation>,
-}
-
-impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema>
-where
-    Schema: ApplicationSchema,
-{
-    pub fn retain_invariant_projection_authority(
-        &self,
-    ) -> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-        WorthQueryApplicationInvariantProjectionAuthority {
-            value_bindings: self.value_bindings.clone(),
-            graph: self.graph.integration_handle(),
-            layout: Arc::clone(&self.graph.layout),
-            runtime_authority: self.runtime_authority,
-            binding_identity: self.graph.binding_identity().clone(),
-            entity_resolution: self.graph.retain_entity_resolution_context(),
-            program_activation: self.program_activation.clone(),
-            authority_identity: NEXT_INVARIANT_PROJECTION_AUTHORITY
-                .fetch_add(1, std::sync::atomic::Ordering::Relaxed),
-            _schema: PhantomData,
-        }
-    }
 }
 
 impl<Schema> WorthQueryApplicationInvariantProjectionAuthority<Schema>

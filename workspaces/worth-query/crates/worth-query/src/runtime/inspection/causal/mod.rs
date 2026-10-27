@@ -71,10 +71,6 @@ pub use materialization::{
     QueryCausalTemporalAsyncExplanation, QueryCausalTemporalAsyncExplanationKind,
 };
 pub use observation_identity::{CausalEvidenceReferenceDigest, CausalObservationAnchorDigest};
-#[cfg(test)]
-pub(crate) use observation_identity::{
-    CausalObservationTargetHandle, CausalResultShapeContextHandle,
-};
 pub use receipt_types::{
     CausalInspectionReason, CausalObservationEvidenceIdentity, CausalObservationOutcome,
     QueryObservationReceiptFamily,

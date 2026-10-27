@@ -65,15 +65,17 @@ pub mod diagnostics {
 
 pub mod durability {
     pub use crate::durability::data::{
-        CheckpointCoverage, CheckpointRestoreWork, CompactionOutcome, CompactionPlan,
-        CompactionPolicy, DurabilityError, DurabilityMode, DurableCheckpoint, DurableCheckpointId,
-        DurableCheckpointManifest, DurableIntegrityStatus, DurableSegmentId,
-        DurableSegmentManifest, DurableStore, DurableStoreLayout, NativeCheckpointSectionBytes,
-        PartitionCheckpointImage, RecoveryAuthorityContinuityCheck,
-        RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
-        RecoveryCursor, RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan,
-        RecoveryVerificationMode, RecoveryVerificationOutcome, RecoveryVerificationPlan,
-        RelationIntegrityContractFamily, RelationalNativeCheckpoint,
+        CheckpointAllocatorInspection, CheckpointCoverage, CheckpointRecordFrontier,
+        CheckpointRecordIdentity, CheckpointReservationAdvanceDenial, CheckpointRestoreWork,
+        CompactionOutcome, CompactionPlan, CompactionPolicy, DurabilityError, DurabilityMode,
+        DurableCheckpoint, DurableCheckpointId, DurableCheckpointManifest, DurableIntegrityStatus,
+        DurableSegmentId, DurableSegmentManifest, DurableStore, DurableStoreLayout,
+        NativeCheckpointModelBytes, NativeCheckpointSectionBytes, PartitionCheckpointImage,
+        RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch,
+        RecoveryAuthorityParity, RecoveryCoverage, RecoveryCursor, RecoveryFailureClass,
+        RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode,
+        RecoveryVerificationOutcome, RecoveryVerificationPlan, RelationIntegrityContractFamily,
+        RelationalCheckpointInspection, RelationalNativeCheckpoint,
         RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop, SegmentRetentionClass,
     };
     pub use crate::durability::{
@@ -82,6 +84,7 @@ pub mod durability {
         RecoveredCheckpointTransitionRepairError, RecoveredRelationalBranchBasis,
         RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
     };
+    pub use crate::history::data::RecordAllocationClass;
 }
 
 pub mod errors {

@@ -71,8 +71,8 @@ pub(super) fn prepare_installation(
         *successor.revision(),
         *successor_p2.revision(),
     ];
-    let declaration =
-        BankSchema::declaration().map_err(BankIdentityRuntimeBuildError::SchemaDeclaration)?;
+    let declaration = BankSchema::declaration()
+        .map_err(|denial| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(denial)))?;
     let limits = bank_application_limits();
     let mut invariant_projection = None;
     let initialize =

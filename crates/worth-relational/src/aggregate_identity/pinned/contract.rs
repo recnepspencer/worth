@@ -20,10 +20,9 @@ pub(super) fn resolve(
                 contract.source_relation == relation
                     && definition.is_none_or(|id| contract.definition == id)
             })
+            && selected.replace(found).is_some()
         {
-            if selected.replace(found).is_some() {
-                return work.invalid(PlanDenial::AmbiguousAggregateRelation);
-            }
+            return work.invalid(PlanDenial::AmbiguousAggregateRelation);
         }
     }
     selected.ok_or(MapKernelFailure::Domain(if definition.is_some() {

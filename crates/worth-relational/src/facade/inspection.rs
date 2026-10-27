@@ -34,3 +34,7 @@ pub use crate::inspection::mvcc::sharing::{
 };
 pub use crate::inspection::InspectionAccess;
 pub use crate::runtime::RelationalBranchSharingCostCounters;
+
+pub use crate::runtime::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};

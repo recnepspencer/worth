@@ -58,12 +58,4 @@ impl Observation {
             self.0.deep.load(Ordering::SeqCst),
         ]
     }
-
-    pub(super) fn roots(&self) -> Vec<Entity> {
-        self.0.roots.lock().unwrap().clone()
-    }
-
-    pub(super) fn reads(&self) -> Vec<WorthQueryInvariantProjectionWork> {
-        self.0.reads.lock().unwrap().clone()
-    }
 }

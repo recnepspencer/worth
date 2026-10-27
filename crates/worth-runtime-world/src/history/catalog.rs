@@ -31,6 +31,7 @@ use super::retention::{
 };
 use super::{CompositeCommitParent, CompositeRuntimeWorldCommit, PublicationRevision};
 
+pub(crate) use ancestry::AncestorSelectionPath;
 pub use ancestry::{CompositeAncestorSelectionDenial, RetainedCompositeAncestor};
 pub use counters::HistoryCatalogCounters;
 pub use denial::CompositeHistoryCatalogDenial;

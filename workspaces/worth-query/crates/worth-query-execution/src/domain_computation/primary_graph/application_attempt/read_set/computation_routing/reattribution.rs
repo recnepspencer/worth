@@ -14,6 +14,10 @@ impl SealedComputationFacts {
     /// The caller already established real completed-run/native-pin closure.
     /// Every changed call is replaced, not unioned with its old readers. Keys
     /// cannot enter/leave the completed computation through this fixed-key door.
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     pub(super) fn reattribute(
         &self,
         calls: &BTreeSet<ComputationRead>,

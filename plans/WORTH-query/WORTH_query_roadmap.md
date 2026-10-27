@@ -5749,7 +5749,7 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-26:** Phases 1–4 are accepted: actual-read observations,
+**Progress, 2026-10-27:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
 query closure steps, stored orbits, persistent aggregate identity/lineage and
 qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6
@@ -5762,8 +5762,25 @@ native source commit, refuses empty sources before Signal admission and preserve
 request custody through completion and revalidation. Phase 11 is accepted: the
 three obsolete Relational planning catalogs and three hidden Bridge facade aliases
 are removed, preserving actual identity issuance and the standalone root facade.
-Phases 8–10 remain unfinished; the application resource endpoint is Phase 8.
-These additions do not reopen the original phases.
+Phase 10 is accepted on 2026-10-27: entity/relation history captures
+disclosed exact generations and pages canonical changes through genuine World
+ancestry with fresh SubjectRead and independent metadata admission at current
+security. Its facade audit covers equal writes, fork/sibling exclusion,
+ordered/filtered physical relations, replacement, retired gaps, cancellation and
+final custody release. The Native ten/10,000 retained-change court preserves
+identical finite page limits and actual per-page work maxima while traversing every
+unrelated prefix. Phase 8 is accepted on 2026-10-27: installed typed resources
+use the ordinary Decl/Host start, fresh inspection, progression and close path,
+with finite provider/ingress/result custody and genuine owned-effect recovery.
+Its combined workflow qualifies populated forks, burned prepared adoptions and
+sibling publications against the actual Native source. Phase 9 remains unfinished.
+These additions do not reopen the original phases. The 2026-10-27 Proprietary
+report against SDK `ba86433627` adds required Phases 12–18: retained spatial
+range reads for preparation and candidate validation, honest compiler and
+unobserved-write refusals, large-body invariant locality, cell-version/live-at-k
+qualification, fresh ordinary proposal acceptance, and mandatory Rust 1.99.x
+qualification with adoption of the current qualified stable toolchain. All
+eighteen phases are required; the report's pin is provenance, not a pin update.
 
 ### Goal
 
@@ -5776,6 +5793,9 @@ source identity, expose bounded native record/aspect history, and remove the two
 identified obsolete catalog/alias surfaces in one cleanup batch. All of it is
 domain-neutral and reached through Query declarations and ordinary governed
 requests, never through raw runtime handles or receipt-reconstructed authority.
+The Proprietary follow-through adds basis-bound spatial range reads, honest
+failure causes, demonstrated cell/invariant locality and storage cost, fresh
+proposal acceptance, and qualification on the current stable Rust toolchain.
 
 ### Specification
 
@@ -5805,6 +5825,15 @@ The governing milestone spec is
 - one cleanup batch deleting the three stale Relational identity catalogs and
   Bridge's unused `everyday`, `advanced` and `specialist` facade aliases; surviving
   identity authority and standalone Bridge APIs remain supported
+- one retained spatial range view available on the committed preparation basis
+  and candidate invariant basis, maintained from changes and published atomically
+- typed compiler-qualification and unobserved-field-write causes preserved to
+  ordinary callers instead of accounting overflow or cause-erased rejection
+- real CAD locality at 50,000 faces and cell-version/storage/live-at-k evidence
+  at 1, 100 and 10,000 features, without private platform workarounds
+- proposal acceptance reissuing fresh ordinary requests with replay kept cert-only
+- mandatory exact-release Rust 1.99.x sort qualification and current qualified
+  stable workspace/CI/Proprietary toolchains
 
 ### Acceptance Evidence
 
@@ -5824,12 +5853,22 @@ The eager-scan/truncate and branch-version-as-commit mutants must fail the dispu
 assertions. Exact caller/export inventory qualifies the single cleanup batch.
 Reuse existing grouped targets; a spec-only revision checks links and path claims.
 
+The added Proprietary courts compare 1,000/2,000-vertex local edits in both
+spatial readers, reject new non-incident contact without changing committed
+truth or index state, and discover only touched pairs beside 50,000 unrelated
+faces. Independent references expose stale roots, absent-range dependency loss
+and global rebuilds. Installed write and compiler probes preserve their exact
+causes; proposal acceptance refuses revoked/stale authority through ordinary
+admission. Exact official Rust release/commit qualification preserves canonical
+ordering, work/storage bounds and versioned digest meaning; adding an allowlist
+entry or retaining Rust 1.98 alone cannot satisfy this milestone.
+
 Phases 7–11 consume the completed composite-world/request and inbound contracts
 without delaying the original graph dependencies. Existing 9.4 async and older
 causal-inspection implementations move into the split owners; they are not rebuilt
 as parallel engines. 9.18 keeps correction/pre-image authority, 9.21 keeps new
 decision attachments/summaries, and Store-backed archives/restart remain successor
-work. All eleven phases must close before 9.18.1 closes.
+work. All eighteen phases must close before 9.18.1 closes.
 
 ## Milestone 9.19: Managed Advanced Access And Verified Footprints
 

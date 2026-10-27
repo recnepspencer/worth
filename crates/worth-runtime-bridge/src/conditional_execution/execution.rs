@@ -129,14 +129,7 @@ impl BridgeOwnedSignalRuntime {
         };
         self.validate_evaluation_session(session, &request)
             .map_err(|denial| denial.with_bridge_execution_counters(counters))?;
-        let decision_reservation = super::retention::reserve_decision(
-            &self.retention,
-            &request,
-            session
-                .source_snapshot
-                .as_ref()
-                .map(|source| source.snapshot_identity()),
-        )?;
+        let decision_reservation = super::retention::reserve_decision(&self.retention, &request)?;
         let context_reservation = super::retention::reserve_context(&self.retention, &request)?;
         let execution = execution_request
             .in_scope(|_| {
@@ -349,38 +342,20 @@ fn retain_bridge_decision(
         counters,
         performed_signal_invalidation,
     } = outcome;
-    let bridge_snapshot_identity = source_snapshot
-        .as_ref()
-        .map(|source| source.snapshot_identity().clone());
-    let observation = std::sync::Arc::new(
-        super::causal_observation::BridgeRetainedConditionalObservation {
+    BridgeConditionalDecisionEvidence {
+        _reservation: reservation.evidence,
+        core: std::sync::Arc::new(BridgeRetainedConditionalDecisionCore {
             _reservation: reservation.core,
             bridge_runtime_key,
-            lowering_projection: request.lowering.projection().clone(),
-            _definition_retention: request
-                .lowering
-                ._definition_retention
-                .as_ref()
-                .map(std::sync::Arc::clone),
-            bridge_snapshot_identity,
+            lowering: std::sync::Arc::clone(request.lowering),
+            source_snapshot,
             signal_snapshot_projection: request.snapshot_identity.into(),
             signal_execution_projection: request.execution_identity.into(),
             attempt: request.attempt,
             signal,
-            performed_signal_invalidation: performed_signal_invalidation
-                .as_ref()
-                .map(SignalInvalidationExecutionReceipt::retain_causal_observation),
             semantic_observations: observations,
             bridge_execution_counters: counters,
             triggering_change_set: None,
-        },
-    );
-    BridgeConditionalDecisionEvidence {
-        _reservation: reservation.evidence,
-        core: std::sync::Arc::new(BridgeRetainedConditionalDecisionCore {
-            lowering: std::sync::Arc::clone(request.lowering),
-            source_snapshot,
-            observation,
         }),
         query_binding_identity: request.query_binding_identity.into(),
         query_capability_identity: request.query_capability_identity,

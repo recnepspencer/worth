@@ -1,11 +1,14 @@
 use std::sync::Arc;
 
+use worth_signal::facade::SignalConditionalDecisionEvidence;
+
 use super::{
     BridgeConditionalDecisionEvidence, BridgeConditionalDenial, BridgeConditionalDenialKind,
     BridgeInstalledConditionalLowering, BridgeOwnedSignalRuntime,
 };
 
 pub(super) struct BridgeRetainedConditionalDecisionCore {
+    pub(super) bridge_runtime_key: u64,
     pub(super) lowering: Arc<BridgeInstalledConditionalLowering>,
     // Exact admitted reader custody, including pool return on final core drop.
     // This is not a transfer of a source owner's registration retention lease.
@@ -14,7 +17,14 @@ pub(super) struct BridgeRetainedConditionalDecisionCore {
             crate::snapshot::AdmittedSnapshotContext<Box<dyn crate::snapshot::TruthSnapshotReader>>,
         >,
     >,
-    pub(super) observation: Arc<super::causal_observation::BridgeRetainedConditionalObservation>,
+    pub(super) signal_snapshot_projection: Arc<str>,
+    pub(super) signal_execution_projection: Arc<str>,
+    pub(super) attempt: u64,
+    pub(super) signal: SignalConditionalDecisionEvidence,
+    pub(super) semantic_observations: super::observation_retention::BridgeRetainedObservations,
+    pub(super) bridge_execution_counters: super::BridgeConditionalExecutionCounters,
+    pub(super) triggering_change_set: Option<super::retention::BridgeRetainedTrigger>,
+    pub(super) _reservation: super::retention::BridgeRetentionReservation,
 }
 
 impl BridgeRetainedConditionalDecisionCore {
@@ -52,7 +62,7 @@ impl BridgeOwnedSignalRuntime {
         let core = &request.seed.core;
         self.validate_retained_core(core, request.lowering, &mut counters)?;
         counters.snapshot_identity_checks = 2;
-        if core.observation.signal_snapshot_projection.as_ref() != request.snapshot_identity
+        if core.signal_snapshot_projection.as_ref() != request.snapshot_identity
             || core.bridge_snapshot_identity() != request.bridge_snapshot_identity
         {
             return Err(BridgeConditionalDenial::new(
@@ -81,7 +91,7 @@ impl BridgeOwnedSignalRuntime {
         counters: &mut super::BridgeConditionalReentryCounters,
     ) -> Result<(), BridgeConditionalDenial> {
         counters.runtime_key_checks = 1;
-        if core.observation.bridge_runtime_key != self.bridge.signal_runtime_key {
+        if core.bridge_runtime_key != self.bridge.signal_runtime_key {
             return Err(BridgeConditionalDenial::new(
                 BridgeConditionalDenialKind::StaleLowering,
                 "retained conditional decision belongs to another Bridge runtime",
@@ -109,7 +119,7 @@ impl BridgeOwnedSignalRuntime {
         }
         counters.signal_contract_checks = 1;
         lowering
-            .validate_signal_decision_contract(&core.observation.signal)
+            .validate_signal_decision_contract(&core.signal)
             .map_err(|denial| denial.with_reentry_counters(*counters))
     }
 }

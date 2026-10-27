@@ -17,14 +17,6 @@ pub struct BridgeConditionalDecisionEvidence {
 }
 
 impl BridgeConditionalDecisionEvidence {
-    /// Share the actual immutable observation without retaining this decision's
-    /// admitted source reader, query continuation or operational reentry core.
-    pub fn retain_causal_observation(&self) -> super::BridgeConditionalCausalObservation {
-        super::BridgeConditionalCausalObservation::from_issued(std::sync::Arc::clone(
-            &self.core.observation,
-        ))
-    }
-
     pub fn lowering_projection(&self) -> &super::BridgeConditionalLoweringProjectionIdentity {
         self.core.lowering.projection()
     }
@@ -45,15 +37,15 @@ impl BridgeConditionalDecisionEvidence {
     }
 
     pub fn signal_snapshot_projection(&self) -> &str {
-        &self.core.observation.signal_snapshot_projection
+        &self.core.signal_snapshot_projection
     }
 
     pub fn signal_execution_projection(&self) -> &str {
-        &self.core.observation.signal_execution_projection
+        &self.core.signal_execution_projection
     }
 
     pub fn attempt(&self) -> u64 {
-        self.core.observation.attempt
+        self.core.attempt
     }
 
     pub fn bridge_snapshot_identity(&self) -> Option<&crate::snapshot::TruthSnapshotIdentity> {
@@ -68,19 +60,19 @@ impl BridgeConditionalDecisionEvidence {
     }
 
     pub fn signal(&self) -> &SignalConditionalDecisionEvidence {
-        &self.core.observation.signal
+        &self.core.signal
     }
 
     pub fn semantic_observation_reads(&self) -> usize {
-        self.core.observation.semantic_observations.len()
+        self.core.semantic_observations.len()
     }
 
     pub fn semantic_observations(&self) -> &[super::BridgeConditionalSemanticObservation] {
-        &self.core.observation.semantic_observations
+        &self.core.semantic_observations
     }
 
     pub fn bridge_execution_counters(&self) -> super::BridgeConditionalExecutionCounters {
-        self.core.observation.bridge_execution_counters
+        self.core.bridge_execution_counters
     }
 
     pub const fn reentry_counters(&self) -> BridgeConditionalReentryCounters {
@@ -110,7 +102,6 @@ impl BridgeConditionalDecisionEvidence {
         candidate: &crate::correspondence::BridgeDeliveredCorrespondenceChangeSet,
     ) -> bool {
         self.core
-            .observation
             .triggering_change_set
             .as_ref()
             .is_some_and(|retained| retained.retains_same_delivery_as(candidate))
@@ -123,15 +114,14 @@ impl BridgeConditionalDecisionEvidence {
         self.retains_exact_lowering(admission.lowering)
             && self.query_binding_identity.as_ref() == admission.query_binding_identity
             && self.query_capability_identity == admission.query_capability_identity
-            && self.core.observation.signal_snapshot_projection.as_ref()
-                == admission.signal_snapshot_projection
+            && self.core.signal_snapshot_projection.as_ref() == admission.signal_snapshot_projection
             && self.core.bridge_snapshot_identity() == admission.bridge_snapshot_identity
-            && self.core.observation.signal_execution_projection.as_ref()
+            && self.core.signal_execution_projection.as_ref()
                 == admission.signal_execution_projection
-            && self.core.observation.attempt == admission.attempt
+            && self.core.attempt == admission.attempt
             && admission
                 .lowering
-                .validate_signal_decision_contract(&self.core.observation.signal)
+                .validate_signal_decision_contract(&self.core.signal)
                 .is_ok()
     }
 }

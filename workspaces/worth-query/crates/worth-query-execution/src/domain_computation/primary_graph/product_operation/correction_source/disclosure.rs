@@ -109,7 +109,7 @@ where
         .product_runtime
         .owner
         .observation_port()
-        .select_product_branch_ancestor(
+        .select_retained_product_branch_ancestor(
             &execution,
             target.product().observation(),
             source.ancestry().source().identity(),

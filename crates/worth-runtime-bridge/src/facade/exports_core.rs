@@ -11,8 +11,8 @@ pub use crate::adapter::{
 pub use crate::builder::RuntimeBridgeBuilder;
 pub use crate::conditional_execution::{
     BridgeAppliedConditionalInstallationExtension, BridgeAsyncEffectsIndeterminateObservation,
-    BridgeConditionalCausalObservation, BridgeConditionalComparatorProvider,
-    BridgeConditionalComparisonWork, BridgeConditionalComputeProvider, BridgeConditionalCondition,
+    BridgeConditionalComparatorProvider, BridgeConditionalComparisonWork,
+    BridgeConditionalComputeProvider, BridgeConditionalCondition,
     BridgeConditionalConditionProvider, BridgeConditionalContinuityDenial,
     BridgeConditionalContinuityMismatch, BridgeConditionalContract, BridgeConditionalContractParts,
     BridgeConditionalDecisionEvidence, BridgeConditionalDecisionReentryRequest,

@@ -119,7 +119,9 @@ fn decode_draft(member: &str) -> Option<Box<[u8]>> {
     }
     member
         .as_bytes()
-        .chunks_exact(2)
+        .as_chunks::<2>()
+        .0
+        .iter()
         .map(|pair| {
             let digit = |byte: u8| match byte {
                 b'0'..=b'9' => Some(byte - b'0'),
@@ -161,7 +163,9 @@ fn decode_operands(mut text: &str) -> Option<Box<[WorkflowConditionOperand]>> {
         return None;
     }
     let operands = fields
-        .chunks_exact(OPERAND_FIELDS)
+        .as_chunks::<OPERAND_FIELDS>()
+        .0
+        .iter()
         .map(|operand| WorkflowConditionOperand {
             name: operand[0].clone(),
             query: operand[1].clone(),

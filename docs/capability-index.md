@@ -305,7 +305,7 @@ Choose a task and follow its guide for the exact calls and result handling.
 | Record complete reachability as an operation decision dependency | Handler and computation readers accept `walk`, `closure` and `reaches`; the raw operation reader uses their `decision_*` forms. Original issued Native values pass through sealing and complete current-snapshot comparison. Structural computation inputs currently force a fresh run; live carried-value and checkpoint reuse remain unsupported. | [Recorded decision walks](../workspaces/worth-query/crates/worth-query/docs/foundations/invariant-walks.md#recorded-decision-walks) |
 | Select complete reachability in a declared query | Compose `ApplicationQueryRootPath::forward_closure` or `reverse_closure` over an endorelation with ordinary hops and guards. Original Native complete bodies support row/set currentness; `receipt().root_path_steps()` reports actual per-step reads. | [Declared query closure](../workspaces/worth-query/crates/worth-query/docs/foundations/declared-query-closure.md) |
 | Observe reads by a declared query | `result.receipt().reads()` returns the same `WorthQueryInvariantProjectionWork` on one-shot results, continuation pages and live refreshes. It reports actual field, adjacency, endpoint and index reads separately from projection capacity and authorization work. Reused computation facts add no historical reads; fallback preserves reads already performed. | [Read observations](../workspaces/worth-query/crates/worth-query/docs/foundations/invariants-and-read-observations.md#inspection-and-debugging) |
-| Declare original source-inspection meaning independently of correction | Implement `ApplicationSourceDisclosureBinding<Schema>` and add `inspection_disclosure Binding,` to the mutation binding. The actual source captures its genuine scope and admitted query parameters under the original execution request, without retaining business input solely for inspection. The portable `ApplicationQueryBindingReference` is descriptive and resolves against installed inventory. Output-readiness delivery privately retains the actual read-only Native conditional/invalidation observation without pinning its snapshot reader. Fresh ordinary/governed Host causal inspection and connected producer evidence remain unfinished in 9.18.1 Phase 9. | [Source disclosure and causal inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#what-this-feature-is) |
+| Declare original source-inspection meaning independently of correction | Implement `ApplicationSourceDisclosureBinding<Schema>` and add `inspection_disclosure Binding,` to the mutation binding. The actual source captures its genuine scope and admitted query parameters under the original execution request, without retaining business input solely for inspection. The portable `ApplicationQueryBindingReference` is descriptive and resolves against installed inventory. Fresh ordinary/governed Host causal inspection and connected producer evidence remain unfinished in 9.18.1 Phase 9. | [Source disclosure and causal inspection](../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#what-this-feature-is) |
 | Declare a foreign domain value through its entry facade | `decl::application_schema::ValueSeedDelegate` supplies the root grammar via `ApplicationCanonicalValueContract::delegated`, `encode_delegated_canonical_value`, and the bounded or admitted delegated decoder. The existing canonical codec borrows the foreign value without requiring a platform trait on its pure owner. | [Typed invariant refusals](build-an-application.md#typed-refusal-from-installed-invariants) |
 | Configure World resources | Pass `RuntimeWorldBudgets`, a clock, invalidation resources and an execution policy to `host::runtime::WorthQueryProductWorldResources::new`. Use `RuntimeWorldBudgets::without_policy_limits()` for standard installation, or install deliberate finite policies. | [World resources](build-an-application.md#runtime-world-policy-ceilings) |
 | Configure Query reads and output settlement | Use `WorthQueryApplicationQueryResourceProfile::new(concurrency)` for graph-work concurrency and `WorthQueryOutputDemandResourceProfile::standard()` for settlement. Convenience settlement continues on `Progressed`, parks on `Pending`, and returns `Settled` when complete. Retain returned owners for later advancement or close. | [Query resource policies](build-an-application.md#ordinary-query-resource-policies) |
@@ -559,8 +559,8 @@ action requirements and explicit disclosure slots. `schema.installed_resource`
 resolves this meaning against actual typed recipes and the installed principal
 and scope binding. A transported codec description grants no provider, action or
 completion authority. The Host endpoint and its public provider/cleanup journeys
-are implemented and runtime-qualified on the Phase 8 work branch, pending phase
-integration; see [application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
+are accepted in milestone 9.18.1 Phase 8; see
+[application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
 
 Installed resource access purposes carry only their actual action and requested
 disclosure facets. Close has no Inspect or result obligation; detailed close adds
@@ -580,7 +580,7 @@ process-local retention. Its move-owned release consumes only that producer's
 genuine terminal/queue/completion custody, preserving both owners on refusal and
 returning distinct released evidence on success. This is a lower-owner Phase 8
 prerequisite. Host uses it to release actual row custody before returning its
-Native slot; the complete endpoint still requires its phase evidence gate.
+Native slot under fresh action and disclosure admission.
 
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
@@ -619,11 +619,24 @@ drop. It retains the canonical envelope without copying
 its patches. This native cursor does not establish World product ancestry or
 application disclosure. World's `open_exact_product_history` and staged one-parent
 pages supply genuine retained product ancestry, fork inheritance and exact
-component evidence, with typed refusal at retired gaps. They retain the pinned
-source instead of reading a newer live head; see
+component evidence, with typed refusal at retired gaps. The existing
+`select_product_branch_ancestor` also requires an unbroken raw-parent path.
+For endpoint ancestry without missing intermediate contents, use World's explicit
+`select_retained_product_branch_ancestor`: the same owner follows only its recorded
+retirement splices, retains the actual source, rejects siblings/foreign owners and
+honors the original request and finite selection bound. Query's recorded-source
+correction uses this endpoint proof alongside independent Native evidence and
+disclosure checks. Exact selectors and pages keep refusing retired gaps.
+They retain the pinned source instead of reading a newer live head; see
 [exact product history](../crates/worth-runtime-world/README.md#exact-retained-product-history).
-The declared Decl/Host history query remains unfinished
-in [Phase 10](../plans/WORTH-query/milestone-9.18.1.md#phase-10-bounded-record-and-aspect-change-history).
+The installed Decl/Host route declares an
+`ApplicationHistoryQueryDefinition` over a real `SubjectRead`, captures only its
+disclosed exact generations, and opens/continues a bounded cursor at a pinned
+product with fresh SubjectRead and independent metadata admission. The compiled
+facade audit qualifies this route in
+[Phase 10](../plans/WORTH-query/milestone-9.18.1.md#phase-10-bounded-record-and-aspect-change-history).
+See [installed capture and paging](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
+for the API, separate capability decisions, typed gaps and final release.
 See [native paging and retention](../crates/worth-relational/API_OVERVIEW.md#bounded-record-and-aspect-history).
 
 ### Graph-read admission in the default Query workspace
@@ -634,3 +647,54 @@ typed async, persistent-index, capability-registration or unsupported refusals.
 The execution receipt retains the admitted plan and executor observations.
 Use inline execution for supported synchronous reads; an asynchronous requirement
 returns its typed refusal when native asynchronous support is unavailable.
+
+### Retain privileged read authority when restoring a program
+
+The composition root calls `application_installation::in_memory_program_from_checkpoint_with_projection`
+on `worth-query-host` to receive the restored runtime and its
+`WorthQueryApplicationInvariantProjectionAuthority`. This is the same read-only
+capability retained during bootstrap; it grants no initial-state authoring on
+restore. Ordinary runtime holders cannot mint it. Restoration and admission use
+the existing checkpoint owner and resource limits.
+
+### Inspect checkpoints and rejected-proposal reservations
+
+`WorthQueryPrimaryGraphApplicationRuntime::inspect_application_checkpoint`
+accepts an advancement phase and checkpoint bytes. It returns a typed
+`WorthQueryApplicationCheckpointInspection`: exact non-allocator model value
+bytes, typed allocator frontiers/high-waters and the live entity/relation census.
+Query framing and native fields/arenas have their single codec owners. This is
+reconstructive diagnostic inspection, not recovery admission or mutation
+permission. Unknown fields fail closed; codec projections exhaustively classify
+their actual decoded types. Ordinary reads should use query/projection APIs.
+
+`observe_record_reservations` on that runtime starts an owned, bounded observer
+for actual Native reservations in this runtime on the current thread. Drop ends
+it, including on unwind. Its explicit diagnostic allocation policy funds fixed
+backing; `report(policy)` seals a funded immutable prefix. Reports retain entity
+and relation coordinates even when the proposal refuses. Capacity, request and
+physical allocation failures return typed incomplete-evidence failures; no
+partial report is certified as complete. Other runtimes/threads are excluded.
+Observer recording costs O(active observers) per reservation; starting reserves
+O(maximum records), and sealing a report copies O(observed records). The observer
+never changes allocation or publication semantics. Scope it around the proposal
+being diagnosed; concurrent proposals on other threads are independent.
+
+`CheckpointAllocatorInspection::verify_reported_advance(after, reservations)`
+owns the allocator comparison for both Native and Query consumers. Pass the
+before/after decoded frontier and generation slices and the complete observer
+report, converting records with `CheckpointRecordIdentity::from`. It accepts
+only contiguous appends and one generation step per reservation; duplicate,
+missing, backward or unreported coordinates return a typed
+`CheckpointReservationAdvanceDenial`. It is reconstructive diagnostic work,
+O((A+R) log(A+R)) time and O(A+R) scratch. Applications separately compare their
+model bytes; they must not reimplement allocator arithmetic.
+
+Checkpoint restore deliberately refuses unknown fields in the Native checkpoint,
+allocator, partition, arena, frontier and generation rows as `CorruptCheckpoint`
+before publishing any state. Inspection uses that same closed grammar. Current
+and supported legacy writers emit only their declared fields, so their bytes
+remain accepted; no checkpoint version was reinterpreted or migrated. A payload
+with extra fields that an older reader happened to ignore is outside this
+compatibility window and now refuses. Future field additions require an explicit
+protocol/version admission decision rather than silent forward compatibility.

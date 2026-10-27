@@ -7,9 +7,9 @@ fn two_failing_children_are_taken_by_their_own_outer_members() {
     let _serial = TEST_LOCK.lock().unwrap();
     for width in [0, 1, 2, 4] {
         let parent = authority()
-            .request_lease(request(width.max(1), 2_000, 100))
+            .request_lease(accounted_request(width.max(1), 100))
             .unwrap();
-        let child = parent.child(request(1, 1_000, 100)).unwrap();
+        let child = parent.child(accounted_request(1, 100)).unwrap();
         let outer = run_checked_batch(
             Some(&parent),
             &batch(&[1, 2], 0),
@@ -27,7 +27,9 @@ fn two_failing_children_are_taken_by_their_own_outer_members() {
                 );
                 assert_eq!(
                     context.take_nested_computation_stop(),
-                    Some(NestedComputationStop::DomainFailure)
+                    Some(NestedComputationStop::DomainFailure),
+                    "width={width}, member={value}, nested stop={:?}",
+                    nested.stop
                 );
                 assert_eq!(context.take_nested_computation_stop(), None);
                 let Some(BatchStop::Failure {

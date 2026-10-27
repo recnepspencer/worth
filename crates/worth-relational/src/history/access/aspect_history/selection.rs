@@ -23,6 +23,11 @@ struct RetainedSubject {
 }
 
 impl RelationalRecordHistorySubject {
+    /// New fixed subject backing only; the admitted observation/root stays shared.
+    pub const fn owned_backing_bytes() -> usize {
+        size_of::<RetainedSubject>() + 2 * size_of::<usize>()
+    }
+
     pub fn record(&self) -> &RecordRef {
         &self.owner.record
     }
@@ -51,7 +56,7 @@ impl RelationalRuntime {
         }
         require_exact_subject(basis, &record)?;
         let memory = execution
-            .reserve_retained_memory((size_of::<RetainedSubject>() + 2 * size_of::<usize>()) as u64)
+            .reserve_retained_memory(RelationalRecordHistorySubject::owned_backing_bytes() as u64)
             .map_err(Denial::Request)?;
         let retained = self
             .retain_observation_snapshot(basis)

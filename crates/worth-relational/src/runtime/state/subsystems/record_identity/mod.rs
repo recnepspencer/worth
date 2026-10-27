@@ -1,3 +1,7 @@
+mod observation;
+pub use observation::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};
 mod pending_allocations;
 mod reclaimed;
 mod record_ref;
@@ -137,6 +141,7 @@ impl RecordIdentitySubsystem {
                 origin: canonical_origin,
             },
         );
+        observation::reserved(&self.state, class, partition_id, slot, generation);
         Ok((
             RecordSlotReservation::new(
                 Arc::clone(&self.state),

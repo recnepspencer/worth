@@ -53,3 +53,7 @@ pub(crate) use visibility::{
     PublishedSnapshotSlotReservation, ReplayRetentionState, SnapshotHandleBinding,
     VisibilityResidency, VisibilitySubsystem,
 };
+
+pub use record_identity::{
+    RecordReservationObservation, RecordReservationObservationDenial, RecordReservationReport,
+};

@@ -1,5 +1,6 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
+use crate::durability::data::{CheckpointAllocatorInspection, CheckpointRecordIdentity};
 #[path = "retirement/ordinary.rs"]
 mod ordinary;
 
@@ -231,6 +232,10 @@ fn cold_replacement(
         .durability_authority()
         .native_checkpoint(execution.allocation_policy())
         .unwrap();
+    let reservations = runtime
+        .inspect_what_happened()
+        .observe_record_reservations(16, execution.allocation_policy())
+        .unwrap();
     // Existing spellings still request fresh native allocations. Equal keys
     // cannot authorize Birth, and ordinary key interning is not this court.
     let (batch, targets) = creates(["new-left", "new-right"]);
@@ -258,13 +263,32 @@ fn cold_replacement(
         absence.is_none(),
         "a published route requires its exact predecessor"
     );
+    let after = runtime
+        .durability_authority()
+        .native_checkpoint(execution.allocation_policy())
+        .unwrap();
+    let report = reservations.report(execution.allocation_policy()).unwrap();
     assert_eq!(
-        runtime
-            .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
-            .unwrap(),
-        before
+        report.records().len(),
+        2,
+        "the rejected Birth reserved two entities"
     );
+    let before = before.inspect(execution).unwrap();
+    let after = after.inspect(execution).unwrap();
+    assert_eq!(before.model, after.model);
+    assert_eq!(before.live_records, after.live_records);
+    CheckpointAllocatorInspection {
+        frontiers: &before.frontiers,
+        generations: &before.generations,
+    }
+    .verify_reported_advance(
+        &CheckpointAllocatorInspection {
+            frontiers: &after.frontiers,
+            generations: &after.generations,
+        },
+        report.records().map(CheckpointRecordIdentity::from),
+    )
+    .unwrap();
     let roles = replacement_ids
         .into_iter()
         .enumerate()

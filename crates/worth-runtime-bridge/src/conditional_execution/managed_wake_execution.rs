@@ -83,10 +83,8 @@ impl BridgeOwnedSignalRuntime {
             compute_context,
         )?;
         if let Some(trigger) = retained_trigger {
-            let core = std::sync::Arc::get_mut(&mut evidence.core)
-                .expect("new managed decision core is uniquely owned");
-            std::sync::Arc::get_mut(&mut core.observation)
-                .expect("new managed observation is uniquely owned")
+            std::sync::Arc::get_mut(&mut evidence.core)
+                .expect("new managed decision core is uniquely owned")
                 .triggering_change_set = Some(trigger);
         }
         Ok(evidence)

@@ -240,17 +240,6 @@ impl WorthQueryManagedGraphWorkSession {
             .map(WorthQueryApplicationSnapshotLease::product)
     }
 
-    pub(in crate::domain_computation) fn product(
-        &self,
-    ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
-        match &self.basis {
-            WorthQueryGraphWorkBasis::ProductRead { read, .. } => Some(&read.product),
-            WorthQueryGraphWorkBasis::Mutation(lease) => {
-                lease.as_ref().map(|lease| lease.product().read_lease_ref())
-            }
-        }
-    }
-
     /// Query truth can remain historical while authorization uses the exact
     /// security Product supplied when this genuine session was admitted.
     pub(in crate::domain_computation) fn authorization_product(

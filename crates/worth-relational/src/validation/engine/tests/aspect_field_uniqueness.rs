@@ -254,3 +254,5 @@ pub(super) fn whole_summary_patch(
         value: ContractValidationInput::Struct(value),
     }])
 }
+
+mod holes;

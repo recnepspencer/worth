@@ -14,6 +14,9 @@ pub enum BankOperationInstallationDenialKind {
     MutationBindingIdempotencyMeaningChanged,
     MutationBindingOutputMeaningChanged,
     MutationSourceQueryNotInstalled,
+    InvalidSourceDisclosureBinding,
+    SourceDisclosureQueryNotInstalled,
+    SourceDisclosureMeaningChanged,
     InvalidMutationBindingIdentity,
     InvalidMutationHandlerIdentity,
     InvalidMutationIdempotencyIdentity,
@@ -74,6 +77,9 @@ impl BankOperationInstallationDenial {
             }
             Bank::MutationBindingOutputMeaningChanged => "mutation-binding-output-meaning-changed",
             Bank::MutationSourceQueryNotInstalled => "mutation-source-query-not-installed",
+            Bank::InvalidSourceDisclosureBinding => "invalid-source-disclosure-binding",
+            Bank::SourceDisclosureQueryNotInstalled => "source-disclosure-query-not-installed",
+            Bank::SourceDisclosureMeaningChanged => "source-disclosure-meaning-changed",
             Bank::InvalidMutationBindingIdentity => "invalid-mutation-binding-identity",
             Bank::InvalidMutationHandlerIdentity => "invalid-mutation-handler-identity",
             Bank::InvalidMutationIdempotencyIdentity => "invalid-mutation-idempotency-identity",
@@ -131,6 +137,9 @@ impl BankOperationInstallationDenial {
                 Bank::MutationBindingOutputMeaningChanged
             }
             QueryKind::MutationSourceQueryNotInstalled => Bank::MutationSourceQueryNotInstalled,
+            QueryKind::InvalidSourceDisclosureBinding => Bank::InvalidSourceDisclosureBinding,
+            QueryKind::SourceDisclosureQueryNotInstalled => Bank::SourceDisclosureQueryNotInstalled,
+            QueryKind::SourceDisclosureMeaningChanged => Bank::SourceDisclosureMeaningChanged,
             QueryKind::InvalidMutationBindingIdentity => Bank::InvalidMutationBindingIdentity,
             QueryKind::InvalidMutationHandlerIdentity => Bank::InvalidMutationHandlerIdentity,
             QueryKind::InvalidMutationIdempotencyIdentity => {

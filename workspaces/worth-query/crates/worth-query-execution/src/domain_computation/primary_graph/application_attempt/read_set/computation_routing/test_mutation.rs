@@ -4,6 +4,10 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use std::sync::Arc;
 
 impl SealedComputationFacts {
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     pub(super) fn at_seal(
         attribution: ComputationFactAttribution,
         observed: &BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
@@ -50,6 +54,10 @@ impl SealedComputationFacts {
         self.move_key(key, to, true);
     }
 
+    #[expect(
+        clippy::mutable_key_type,
+        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+    )]
     fn move_key(
         &mut self,
         key: &WorthQueryApplicationFactKey,

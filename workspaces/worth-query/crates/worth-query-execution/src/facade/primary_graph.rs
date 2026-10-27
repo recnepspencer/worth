@@ -55,15 +55,15 @@ pub use crate::domain_computation::primary_graph::{
 
 pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
 
-pub use worth_relational::facade::indexes::{
-    DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
+pub use worth_relational::facade::{
+    indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
+    lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::{
+        CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+    },
+    publication::RecordStructuralChange,
+    transactions::RelationalExecutionDenialCause,
 };
-pub use worth_relational::facade::lineage::{LineageEventKind, LineageEventRecord};
-pub use worth_relational::facade::mvcc::{
-    CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
-};
-pub use worth_relational::facade::publication::RecordStructuralChange;
-pub use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
 pub use crate::domain_computation::application_aftermath::{
     compensate_recovery_handle, dispose_recovery_handle, expire_recovery_handle,
@@ -96,7 +96,8 @@ pub use crate::domain_computation::primary_graph::{
     CandidateWriter, DecisionReader, HandlerExecutionDenial, HandlerFailure, HandlerInterruption,
     HandlerResult, MutationHandlerExecutionDenial, OperationHandler, VerificationCapacityStop,
     WorthQueryAdmittedApplicationCapabilityAccess,
-    WorthQueryAdmittedApplicationConditionalDefinition, WorthQueryAdmittedApplicationOperation,
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdmittedApplicationQueryControls, WorthQueryAdmittedApplicationQueryPlan,
     WorthQueryAdmittedDisclosedApplicationResult, WorthQueryAdmittedInboundOccurrence,
     WorthQueryAdmittedOutputDemand, WorthQueryAdmittedProgramMigration,
@@ -124,8 +125,12 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationEntityIdentity,
     WorthQueryApplicationEntityKey, WorthQueryApplicationEntityKeyDenial,
-    WorthQueryApplicationEntitySeed, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationEntitySeed, WorthQueryApplicationHistoryCaptureLimits,
+    WorthQueryApplicationHistoryCaptureResult, WorthQueryApplicationHistoryCursor,
+    WorthQueryApplicationHistoryDenial, WorthQueryApplicationHistoryEntry,
+    WorthQueryApplicationHistoryPage, WorthQueryApplicationHistoryPageLimits,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
+    WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind,
     WorthQueryApplicationInvariantProjectionAuthority,
     WorthQueryApplicationInvariantProjectionReader,
@@ -174,11 +179,12 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
     WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
     WorthQueryBridgeGranularDeliveryCounters, WorthQueryCapabilityRevocationProgram,
-    WorthQueryClosedBranchSetAdoption, WorthQueryCommittedDispatchOutboxObservation,
-    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
-    WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,
-    WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryCompletedInvariantProjection,
-    WorthQueryCompletedMutationCandidate, WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCapturedApplicationHistorySubjects, WorthQueryClosedBranchSetAdoption,
+    WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
+    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
+    WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
+    WorthQueryCompletedInvariantProjection, WorthQueryCompletedMutationCandidate,
+    WorthQueryCompletedOperationInvariantProjection,
     WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
@@ -316,7 +322,7 @@ pub use crate::domain_computation::{
 pub use worth_runtime_bridge::facade::RelationalBridgeRecordIdentityParts;
 pub use worth_runtime_world::facade::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, NoEffectCause,
-    ProductBranchAncestorSelectionDenial, ProductUnpublishedNextAction,
+    ProductBranchAncestorSelectionDenial, ProductExactHistoryDenial, ProductUnpublishedNextAction,
     ProductUnpublishedRecoveryHandle, RecoveryContinuationContract,
     RuntimeWorldBranchAdmissionDenial, RuntimeWorldRecoveryCursor, RuntimeWorldRecoveryDenial,
     RuntimeWorldRecoveryPage, RuntimeWorldServiceDenial,
@@ -349,44 +355,45 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
 };
 
-/// Owns this thread's Signal checkpoint observation; grants no request authority.
-pub use worth_signal::facade::SignalRequestWorkObservation;
-
-/// Owns this thread's actual World read observation; grants no publication authority.
-pub use worth_runtime_world::facade::RuntimeWorldReadObservation;
+/// Passive execution, World and Signal observations grant no request or publication authority.
+pub use {
+    crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
+    worth_runtime_world::facade::RuntimeWorldReadObservation,
+    worth_signal::facade::SignalRequestWorkObservation,
+};
 
 pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
 
-/// Owns passive execution observation without granting request authority.
-pub use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
 /// Native delivery causes carried by the Query host audience.
 pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
 pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
 
-pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;
-
-pub use crate::domain_computation::primary_graph::conditional_intent_read_is_active_for_test;
-
 pub use crate::domain_computation::primary_graph::{
+    conditional_intent_read_is_active_for_test, principal_target_reads_on_this_thread_for_test,
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     WorthQueryRecoveredProgramSourceDeliveryForTest,
 };
 
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
-};
 pub use crate::domain_computation::{
-    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
+    primary_graph::{
+        WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
+        WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
+    },
+    WorthQueryManagedRunCleanupFailureKind, WorthQueryMutationCleanupFailure,
+    WorthQueryMutationCleanupFailureKind,
 };
-
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-};
-
-pub use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind;
 
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 pub use crate::domain_computation::primary_graph::{
     WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};
+
+pub use crate::domain_computation::primary_graph::{
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
+    WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
+    WorthQueryCheckpointRecordClass, WorthQueryRecordReservationObservation,
+    WorthQueryRecordReservationObservationDenial, WorthQueryRecordReservationObservationFailure,
+    WorthQueryRecordReservationReport, WorthQueryReservedRecord,
 };

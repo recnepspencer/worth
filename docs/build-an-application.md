@@ -1848,9 +1848,9 @@ on it. Its own methods:
 Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
-Managed asynchronous resource requests are under qualification in
-[9.18.1 Phase 8 integration](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host)
-through Decl/Host. [Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
+Managed asynchronous resource requests are available through Decl/Host following
+[9.18.1 Phase 8 acceptance](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+[Application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md)
 documents the concrete `request.resources()` start/advance/inspection/close path,
 installed provider, finite ingress, exact selector reclaim and recovery handoff.
 Resource declarations and installed typed-profile lookup separate Start/Inspect/Advance/Close authority
@@ -1860,8 +1860,7 @@ plain Close requires no Inspect or payload disclosure. Their ResourceRead plans
 retain genuine provider capacity until terminal release, but grant no lifecycle
 action or payload permission by themselves.
 Availability is boolean existence; protected queue/provider counts belong to
-cleanup detail and require Count as well as Explanation influence. The ordinary
-Host endpoint still requires its complete phase evidence gate. A receipt is
+cleanup detail and require Count as well as Explanation influence. A receipt is
 process-local selection provenance; fresh original-branch action and requested
 facet admission precede protected row/provider/clock access. Explicit runtime
 close refuses allocated rows and preserves their owners. Rust Drop/process
@@ -5197,6 +5196,7 @@ Use the declarations and host functions exported by `worth-query-decl` and
 | Every workflow call, budget, denial, and a worked example | [Workflows](../workspaces/worth-query/crates/worth-query/docs/foundations/workflows.md) |
 | Feature capsules, ports, connections, and the authoring rule | [Feature Capsule Authoring](../workspaces/worth-query/crates/worth-query/docs/authoring/feature-capsule-authoring.md) |
 | Application action preparation, execution, recovery and cleanup | [Ordinary Application Front Door](../workspaces/worth-query/crates/worth-query/docs/foundations/ordinary-application-front-door.md) |
+| Disclosed record generations, bounded canonical history, fresh payload and metadata permission | [Record And Aspect History](../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md) |
 | Contribution composition, installation and output demand | [`worth-query-host` README](../workspaces/worth-query/crates/worth-query-host/README.md) |
 | Declaration surface | [`worth-query-decl` README](../workspaces/worth-query/crates/worth-query-decl/README.md) |
 | The complete pure-facade reference application | [Bank public consumer contract](../workspaces/worth-query-bank-world/docs/public-consumer-contract.md) |

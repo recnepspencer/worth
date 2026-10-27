@@ -23,8 +23,7 @@ pub use invalidation::{
     FrontierInclusionBasis, FrontierSeedCause, FrontierValidationDecision,
     InvalidationExecutionSummary, InvalidationFoundationalReceiptDenial,
     InvalidationPlanningEstimate, InvalidationSeed, InvalidationSeedBatch, InvalidationTraceRecord,
-    SignalInvalidationCausalObservation, SignalInvalidationExecutionObservation,
-    SignalInvalidationExecutionReceipt,
+    SignalInvalidationExecutionObservation, SignalInvalidationExecutionReceipt,
 };
 pub(crate) use invalidation::{
     FrontierDiagnosticsProjection, FrontierDiagnosticsSidecar, FrontierPlan,

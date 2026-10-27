@@ -5,7 +5,8 @@ use worth_query_installation::facade::WorthQueryInstalledResourceAccessContract;
 
 pub(super) struct ProductReadBasis {
     pub(super) identity: WorthQueryApplicationBasisIdentity,
-    pub(super) product: crate::basis::WorthQueryProductObservationLease,
+    // Retain query-truth custody separately from current authorization custody.
+    pub(super) _product: crate::basis::WorthQueryProductObservationLease,
     pub(super) authorization_product: crate::basis::WorthQueryProductObservationLease,
     pub(super) port: WorthQueryGraphReadOwnerPort,
 }
@@ -102,7 +103,7 @@ impl WorthQueryManagedGraphWorkSession {
                 intent,
                 read: ProductReadBasis {
                     identity: basis.clone(),
-                    product,
+                    _product: product,
                     authorization_product: authorization_product.retained_clone(),
                     port,
                 },

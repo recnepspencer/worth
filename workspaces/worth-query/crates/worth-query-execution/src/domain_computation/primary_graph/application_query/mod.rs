@@ -30,6 +30,14 @@ mod execution_validation;
 #[cfg(test)]
 mod governance_affinity_tests;
 mod graph_read_plan_binding;
+mod history;
+pub use history::{
+    WorthQueryAdmittedApplicationHistoryCapture, WorthQueryApplicationHistoryCaptureLimits,
+    WorthQueryApplicationHistoryCursor, WorthQueryApplicationHistoryDenial,
+    WorthQueryApplicationHistoryEntry, WorthQueryApplicationHistoryPage,
+    WorthQueryApplicationHistoryPageLimits, WorthQueryCapturedApplicationHistorySubjects,
+};
+pub use one_shot::WorthQueryApplicationHistoryCaptureResult;
 mod installed_schema_currentness;
 mod live;
 mod native_access;

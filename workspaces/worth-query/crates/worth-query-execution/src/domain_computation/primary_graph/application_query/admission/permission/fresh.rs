@@ -15,6 +15,8 @@ use crate::domain_computation::primary_graph::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 
+mod access;
+
 type Parameters<Schema, Binding> =
     <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
 type ResultValue<Schema, Binding> =
@@ -70,38 +72,30 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Binding: ApplicationQueryBinding<Schema>,
     {
-        // The controls are the only request owner for this preparation. A
-        // separate caller request could change principal/scope acceptance.
         let request = controls.request_scope();
-        let principal = selected
-            .resolve_authenticated_principal_issued(
-                execution,
-                installed.principal_binding(),
-                external,
-                request,
-                WorthQueryPrincipalResolutionMode::Ordinary,
-                validated_principal,
-            )
-            .map_err(FreshQueryPermissionStop::Principal)?;
-        let scope = selected
-            .resolve_retained_query_scope_issued(
-                execution,
-                Binding::scope_field(),
-                observed.retained_scope_selector(),
-                request,
-            )
-            .map_err(FreshQueryPermissionStop::Scope)?;
-        let access =
-            WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
-        let query = installed.query();
-        let source = self
-            .prepare_application_query_from_observed(query, &access, observed, controls)
-            .map_err(FreshQueryPermissionStop::Query)?;
-        let permission = self
-            .prepare_application_query_permission(
-                execution, query, access, source, selected, request, &principal, &scope,
-            )
-            .map_err(FreshQueryPermissionStop::Query)?;
-        inspect(permission).map_err(FreshQueryPermissionStop::Inspect)
+        self.with_fresh_retained_query_access(
+            execution,
+            installed,
+            validated_principal,
+            external,
+            observed,
+            selected,
+            controls,
+            |access, source, principal, scope| {
+                let permission = self
+                    .prepare_application_query_permission(
+                        execution,
+                        installed.query(),
+                        access,
+                        source,
+                        selected,
+                        request,
+                        principal,
+                        scope,
+                    )
+                    .map_err(FreshQueryPermissionStop::Query)?;
+                inspect(permission).map_err(FreshQueryPermissionStop::Inspect)
+            },
+        )
     }
 }

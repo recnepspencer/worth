@@ -15,8 +15,7 @@ pub use crate::data::proof::{
     attach_foundational_invalidation_performance_receipt,
     FoundationalInvalidationPerformanceReceipt, InvalidationExecutionSummary,
     InvalidationFoundationalReceiptDenial, InvalidationPlanningEstimate,
-    SignalInvalidationCausalObservation, SignalInvalidationExecutionObservation,
-    SignalInvalidationExecutionReceipt,
+    SignalInvalidationExecutionObservation, SignalInvalidationExecutionReceipt,
 };
 #[allow(deprecated)]
 pub use crate::data::proof::{

@@ -36,10 +36,9 @@ pub(in crate::application_schema) fn validate_closure(members: &[Member]) -> Res
             {
                 return Err(Denial::InvalidApplicationRelationAspect);
             }
-            if let Some(unit) = &field.unit {
-                if !members.iter().any(|member| matches!(member, Member::Unit { unit: installed } if installed == unit)) {
-                    return Err(Denial::MissingUnit);
-                }
+            if let Some(unit) = &field.unit
+                && !members.iter().any(|member| matches!(member, Member::Unit { unit: installed } if installed == unit)) {
+                return Err(Denial::MissingUnit);
             }
         }
     }

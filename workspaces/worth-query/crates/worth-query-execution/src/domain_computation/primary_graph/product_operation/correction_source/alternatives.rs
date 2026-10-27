@@ -297,7 +297,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .product_runtime
             .owner
             .observation_port()
-            .select_product_branch_ancestor(
+            .select_retained_product_branch_ancestor(
                 &execution,
                 self.product().observation(),
                 source.world(),

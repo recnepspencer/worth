@@ -64,7 +64,13 @@ that genuine product occurrence. `prepare_exact_product_history_page` follows
 one authoritative parent step and retains its exact component bases, including
 inherited fork ancestry. It reads no current head or reconstructed historical
 branch generation. Missing/retired raw parents return a typed history gap;
-retirement splices remain confined to the older inspection traversal.
+exact pages never substitute retirement splices for missing raw commits.
+`select_product_branch_ancestor` likewise requires the complete raw-parent path.
+The explicit `select_retained_product_branch_ancestor` selector can instead follow
+owner-recorded splices to prove ancestry between retained endpoints. It discloses
+no retired contents and grants no exact-history page. Both selectors retain the
+source under the original request and bound the visited ancestry positions;
+`parent_links_followed` counts the selected raw or retained edges separately.
 
 Accept the prepared page through its originating cursor to receive `(page,
 successor)` under the stored original request. The original cursor stays intact
@@ -79,11 +85,12 @@ their genuine history/component custody on drop. Component publication evidence
 distinguishes new native changes from `RetainExact` reuse; this owner does not
 invent a native event for every product occurrence. See the
 [exact history courts](tests/runtime_world_certification/court/exact_history.rs).
-The declared application history query and fresh disclosure remain Phase 10 work.
+The declared application history query and fresh disclosure are available through
+[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md).
 
 ## Owned async source binding
 
-`RuntimeWorldOwner::admit_owned_async_request` first checks the World owner and
+`RuntimeWorldOwner::admit_managed_owned_async_request` first checks the World owner and
 the exact retained Bridge source observation. It derives the source commit from
 that admitted Relational observation's immutable reference target. A populated
 fork may have branch truth version zero while still selecting a committed source;
@@ -98,7 +105,10 @@ the remaining lifecycle, including exact-request completion, timeout/retry and
 cleanup. The grouped
 [owned async court](tests/runtime_world_certification/owned_async.rs) exercises
 the native reference equality, empty/committed twins and active-request release.
-The application resource entry is a separate Query integration contract.
+The returned managed admission preserves genuine Bridge custody, including
+post-admission refusal. The application resource entry uses its own installed
+provider and fresh action/disclosure contract through
+[Query Host](../../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
 
 `admit_unqueued_owned_async_request` is the custody-preserving internal engine
 route. It applies the same exact World source validation and returns the genuine

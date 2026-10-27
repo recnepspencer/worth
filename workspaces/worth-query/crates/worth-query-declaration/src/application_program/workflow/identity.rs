@@ -90,7 +90,7 @@ impl ApplicationWorkflowDefinitionContentIdentity {
             return None;
         }
         let mut bytes = [0; 32];
-        for (byte, pair) in bytes.iter_mut().zip(digits.chunks_exact(2)) {
+        for (byte, pair) in bytes.iter_mut().zip(digits.as_chunks::<2>().0) {
             *byte = u8::from_str_radix(std::str::from_utf8(pair).ok()?, 16).ok()?;
         }
         Some(Self(bytes))

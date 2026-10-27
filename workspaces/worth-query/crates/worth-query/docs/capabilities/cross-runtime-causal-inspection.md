@@ -24,17 +24,6 @@ permission. The ordinary Decl/Host inspection entrance and fresh governed
 disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
 builder described here does not provide that application admission.
 
-Output-readiness delivery also privately retains the actual Native conditional
-observation. Its immutable Bridge backing preserves the real Signal decision,
-semantic observations, admitted snapshot identity and Signal-issued invalidation
-observation, without keeping the operational snapshot reader or reentry seed.
-The unique performed invalidation receipt still transfers only once; the
-read-only observer shares its original funded backing and grants no execution or
-disclosure authority. This retention does not yet connect the complete producer
-chain to an application inspection entrance. See
-[Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
-for ownership, funding and release details.
-
 An application mutation may independently declare its original source-disclosure
 meaning with `ApplicationSourceDisclosureBinding<Schema>` and the mutation macro's
 `inspection_disclosure Binding,` clause. The binding names the actual source and
