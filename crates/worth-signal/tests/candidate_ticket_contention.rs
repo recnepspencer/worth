@@ -1,9 +1,7 @@
-//! A competing host reservation taken while an evaluator runs is met with a
-//! typed refusal, never a partial publication. Since `20a4797833` a checked
-//! epoch admits its callback results, apply map and candidate lookup map
-//! from actual measured bytes after the callback returns, so host room taken
-//! during the callback stops the epoch before anything is published, and the
-//! same evaluation succeeds once the room is released.
+//! D12 reserves checked-result custody and publication maps before callbacks.
+//! This ports master's post-callback refusal court (`2075ce36c1`): contention
+//! before admission refuses without effects; contention after admission cannot
+//! steal the epoch's custody; an oversized result violates its declared contract.
 //!
 //! The competitor fills the whole process memory, so this test owns its
 //! process and its authority: no other test can starve beside it.
@@ -25,8 +23,9 @@ use worth_foundational::{
 use worth_signal::facade::adapters::NodeContract;
 use worth_signal::facade::{
     Aspect, AspectVersion, BoundedSignalInputs, ChangedRegion, DeclaredSignalInput, DependencyEdge,
-    NodeEvaluationResult, PartitionSubscription, RunMode, ScopePath, SignalError,
-    SignalExecutionStopReason, SignalGraph, SignalLeaseDenial, SignalPublicationDisposition,
+    NodeEvaluationResult, NodeId, PartitionSubscription, RunMode, ScopePath, SignalError,
+    SignalExecutionFailure, SignalExecutionStopReason, SignalGraph, SignalLeaseDenial,
+    SignalPublicationDisposition,
 };
 
 const VALUE: Aspect = Aspect::new(0);
@@ -110,15 +109,15 @@ fn hold_remaining_host_memory(release: mpsc::Receiver<()>, ready: mpsc::Sender<b
     drop(held);
 }
 
-#[test]
-fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
+fn subscribed_graph(maximum: u64) -> (SignalGraph, NodeId) {
     let mut graph = SignalGraph::new();
     let producer = graph
         .node()
         .with_contract(
             NodeContract::wildcard()
                 .with_produces(VALUE)
-                .with_bounded_inputs(BoundedSignalInputs::default()),
+                .with_bounded_inputs(BoundedSignalInputs::default())
+                .with_max_checked_result_heap_bytes(maximum),
         )
         .build();
     let consumer = graph
@@ -144,8 +143,26 @@ fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
         )
         .unwrap();
     assert_eq!(graph.subscribers_of(producer).unwrap(), &[consumer]);
-    let before = graph.node_aspect_version(producer).unwrap().get(VALUE);
+    (graph, producer)
+}
 
+fn saturate_host() -> (mpsc::Sender<()>, JoinHandle<()>) {
+    let (ready_tx, ready_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let thread = std::thread::spawn(move || hold_remaining_host_memory(release_rx, ready_tx));
+    assert!(
+        ready_rx
+            .recv()
+            .expect("host reservation arrives before callback returns"),
+        "the competitor must exhaust host memory for any later admission"
+    );
+    (release_tx, thread)
+}
+
+#[test]
+fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
+    let (mut graph, producer) = subscribed_graph(4096);
+    let before = graph.node_aspect_version(producer).unwrap().get(VALUE);
     let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
     let calls = AtomicUsize::new(0);
     let blocker = Mutex::<Option<(mpsc::Sender<()>, JoinHandle<()>)>>::new(None);
@@ -157,18 +174,7 @@ fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
             &|_| {
                 // Only the first evaluation meets a saturated host.
                 if calls.fetch_add(1, Ordering::SeqCst) == 0 {
-                    let (ready_tx, ready_rx) = mpsc::channel();
-                    let (release_tx, release_rx) = mpsc::channel();
-                    let thread = std::thread::spawn(move || {
-                        hold_remaining_host_memory(release_rx, ready_tx)
-                    });
-                    assert!(
-                        ready_rx
-                            .recv()
-                            .expect("host reservation arrives before callback returns"),
-                        "the competitor must exhaust host memory for any later admission"
-                    );
-                    *blocker.lock().unwrap() = Some((release_tx, thread));
+                    *blocker.lock().unwrap() = Some(saturate_host());
                 }
                 Ok(
                     NodeEvaluationResult::from_version(AspectVersion::zero().with(VALUE, 7))
@@ -178,11 +184,12 @@ fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
             worth_execution::ExecutionRequest::leased(&lease),
         )
     };
-    let contended = evaluate(&mut graph);
-    let (release, thread) = blocker.lock().unwrap().take().expect("callback ran once");
+    // Insufficient process room at admission must prevent callback effects.
+    let (release, thread) = saturate_host();
+    let refused = evaluate(&mut graph);
     release.send(()).unwrap();
     thread.join().unwrap();
-    let error = contended.expect_err("measured results are admitted after the callback");
+    let error = refused.expect_err("D12 admits custody before callback effects");
     let SignalError::ExecutionStopped(stop) = error else {
         panic!("host contention is a typed execution stop: {error:?}");
     };
@@ -207,15 +214,69 @@ fn host_contention_during_the_callback_refuses_the_epoch_before_publication() {
         SignalPublicationDisposition::WorkerLocal
     );
     assert_eq!(stop.publication_progress().completed_tasks(), 0);
-    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert_eq!(
         graph.node_aspect_version(producer).unwrap().get(VALUE),
         before
     );
 
-    // The refusal published nothing, so the released host admits the same epoch.
+    // After admission, a competitor cannot steal the retained result/map tickets.
+    let contended = evaluate(&mut graph);
+    let (release, thread) = blocker.lock().unwrap().take().expect("callback ran once");
+    release.send(()).unwrap();
+    thread.join().unwrap();
+    let report = contended.expect("D12 settles the original reserved custody");
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    assert_eq!(report.tasks_executed, 1);
+    assert_eq!(graph.node_aspect_version(producer).unwrap().get(VALUE), 7);
+
+    // Releasing the competitor also admits the same evaluation again.
     let report = evaluate(&mut graph).expect("released host memory admits the epoch");
     assert_eq!(calls.load(Ordering::SeqCst), 2);
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(producer).unwrap().get(VALUE), 7);
+
+    // Callback effects can precede a typed declaration violation, never a late
+    // memory-capacity refusal. The invalid result still publishes nothing.
+    let (mut bounded, producer) = subscribed_graph(0);
+    let before = bounded.node_aspect_version(producer).unwrap().get(VALUE);
+    let effects = AtomicUsize::new(0);
+    let error = bounded
+        .evaluate_checked(
+            &[producer],
+            RunMode::Default,
+            &(),
+            &|context| {
+                assert_eq!(context.result_capacity_bytes(), Some(0));
+                effects.fetch_add(1, Ordering::SeqCst);
+                Ok(
+                    NodeEvaluationResult::from_version(AspectVersion::zero().with(VALUE, 7))
+                        .with_label("exceeds the declared zero heap bound"),
+                )
+            },
+            worth_execution::ExecutionRequest::leased(&lease),
+        )
+        .unwrap_err();
+    let SignalError::ExecutionStopped(stop) = error else {
+        panic!("result declaration violation is a typed execution stop: {error:?}");
+    };
+    assert!(
+        matches!(stop.reason(), SignalExecutionStopReason::Failure {
+        cause: SignalExecutionFailure::Domain(error), ..
+    } if matches!(error.as_ref(), SignalError::CheckedResultCapacityExceeded {
+        required, declared: 0
+    } if *required > 0)),
+        "{:?}",
+        stop.reason()
+    );
+    assert_eq!(
+        stop.disposition(),
+        SignalPublicationDisposition::WorkerLocal
+    );
+    assert_eq!(stop.publication_progress().completed_tasks(), 0);
+    assert_eq!(effects.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        bounded.node_aspect_version(producer).unwrap().get(VALUE),
+        before
+    );
 }
