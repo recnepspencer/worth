@@ -20,6 +20,17 @@ pub struct NativeHistoryCourt {
 
 impl NativeHistoryCourt {
     pub fn install(execution: worth_execution::ExecutionRequest<'_, '_>) -> Self {
+        Self::install_with_records(execution, 5)
+    }
+
+    pub fn install_with_records(
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        records: usize,
+    ) -> Self {
+        assert!(
+            records >= 2,
+            "the genuine seed relation needs two endpoints"
+        );
         // Aspect lexical order intentionally disagrees with patch grammar rank.
         let contracts = contracts();
         let registry = RelationalSchemaRegistry::new()
@@ -63,7 +74,7 @@ impl NativeHistoryCourt {
             .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
             .unwrap();
         let mut batch = WorkerIntentBatch::new("seed-history-records");
-        for index in 0..5 {
+        for index in 0..records {
             batch = batch.push(MutationIntent::Create(CreateIntent::EntityAspects(
                 EntityAspectCreateIntent {
                     partition_id: PartitionId::main(),

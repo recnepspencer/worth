@@ -2,8 +2,8 @@
 
 Application code declares history through `worth-query-decl` and executes it
 through `worth-query-host::facade::primary_graph`. The compiled facade audit
-journeys linked below qualify this route. Phase 10 remains open for its explicit
-ten/10,000 retained-change growth court.
+journeys and Native growth court linked below qualify this bounded capture and
+paging route.
 
 ## Declare the subject and metadata meaning
 
@@ -120,6 +120,12 @@ The existing `application_graph` target contains the facade-only
 and [authored sequence, independent revocation and retired gap journeys](../../../worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs).
 Their helpers show complete public and governed admission, bounded continuation,
 independent committed payload/receipt oracles, cancellation and final pin release.
+
+The [Native growth court](../../../../../../crates/worth-runtime-world/tests/runtime_world_certification/court/record_history/growth.rs)
+compares ten and 10,000 unrelated retained record changes with identical finite
+page limits, backing and actual per-page request-work maxima. It traverses every
+empty incomplete prefix before the one independently selected matching record.
+Total traversal still grows with the retained source.
 
 The [correction history](../execution/recorded-source-correction.md) remains the
 owner of inverse, pre-image and reapplication meaning.

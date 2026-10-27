@@ -1,8 +1,8 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
-> Phases 7 and 11 accepted on 2026-10-26. Phases 8–10 remain unfinished.
-> Phase 10's application route is qualified; its explicit retained-history growth court remains open.
+> Phases 7 and 11 accepted on 2026-10-26; Phase 10 accepted on 2026-10-27.
+> Phases 8–9 remain unfinished.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
 > 9.18 does not block this milestone. Every phase lists its own dependencies, and
@@ -1040,8 +1040,7 @@ ordinary installed query/disclosure and request controls. Independent of Phases
 7–9 and unfinished graph phases. Previously optional in the audit, this capability
 is now required milestone scope by the 2026-10-26 extension.
 
-**Application route qualified, 2026-10-27; phase remains open.** The installed
-Decl/Host route captures exact disclosed
+**Accepted, 2026-10-27.** The installed Decl/Host route captures exact disclosed
 entity and physical-relation generations from complete one-shot reads, then pages
 canonical changes at a pinned product with fresh SubjectRead and independently
 governed history metadata. The [facade audit journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
@@ -1052,10 +1051,12 @@ cancellation and final Native/World release. Native and World owner courts quali
 finite source visits, page backing and immutable request-bound successors.
 Partial ordered/live capture and restart-persistent continuations remain outside
 this contract. The [capability guide](../../workspaces/worth-query/crates/worth-query/docs/capabilities/record-and-aspect-history.md)
-describes the supported route and its explicit work/storage limits. Final phase
-acceptance still requires the courtroom's literal ten/10,000 unrelated retained
-changes with identical finite page limits; existing bounded-source evidence does
-not stand in for that exercise.
+describes the supported route and its explicit work/storage limits. The
+[Native growth court](../../crates/worth-runtime-world/tests/runtime_world_certification/court/record_history/growth.rs)
+compares ten and 10,000 real unrelated retained record changes with identical
+one-entry/one-visit/page-backing limits. Individual request work maxima remain
+equal, and the exact full traversal reaches the independently selected last
+record after every empty incomplete prefix.
 
 ### Requirements
 

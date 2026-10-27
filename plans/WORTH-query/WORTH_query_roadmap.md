@@ -5762,14 +5762,15 @@ native source commit, refuses empty sources before Signal admission and preserve
 request custody through completion and revalidation. Phase 11 is accepted: the
 three obsolete Relational planning catalogs and three hidden Bridge facade aliases
 are removed, preserving actual identity issuance and the standalone root facade.
-Phase 10's application route is qualified on 2026-10-27: entity/relation history captures
+Phase 10 is accepted on 2026-10-27: entity/relation history captures
 disclosed exact generations and pages canonical changes through genuine World
 ancestry with fresh SubjectRead and independent metadata admission at current
 security. Its facade audit covers equal writes, fork/sibling exclusion,
 ordered/filtered physical relations, replacement, retired gaps, cancellation and
-final custody release. Phase 10 remains open for the explicit ten/10,000 retained
-change growth court. Phases 8–9 remain unfinished; the application resource
-endpoint is Phase 8.
+final custody release. The Native ten/10,000 retained-change court preserves
+identical finite page limits and actual per-page work maxima while traversing every
+unrelated prefix. Phases 8–9 remain unfinished; the application resource endpoint
+is Phase 8.
 These additions do not reopen the original phases.
 
 ### Goal
