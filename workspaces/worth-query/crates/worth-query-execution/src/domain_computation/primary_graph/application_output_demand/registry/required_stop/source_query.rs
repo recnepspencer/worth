@@ -60,6 +60,7 @@ pub(super) fn execution_is_row(kind: WorthQueryApplicationOneShotDenialKind) -> 
     use WorthQueryApplicationOneShotDenialKind as Kind;
     match kind {
         Kind::ExecutionRequest(_)
+        | Kind::SourceObservationAllocation { .. }
         | Kind::StalePrincipal
         | Kind::StaleScope
         | Kind::Authorization(_)

@@ -1037,7 +1037,7 @@ worth-query-execution/src/domain_computation/
     async_resource/                                         M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
-    application_query/observed_source/retained_parameters.rs M original binding and admitted parameters shared once
+    application_query/observed_source/retained_parameters.rs M original binding, parameters and exact row-meaning roster shared once
 worth-query-publication/src/application_entry/
   resource/                                                 N governed retained requests
   inspection/                                               N receipt-rooted inspection
@@ -1209,6 +1209,19 @@ that absence. This is descriptive custody, not inspection admission. Fresh Host
 inspection must match the original installed binding before considering its
 metadata contract; public receipt equality supplies no such proof. See
 [original query binding custody](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-query-binding-custody).
+
+Completion also retains every real row source meaning in one fixed pointer roster
+inside that same capsule. The original execution request admits and funds its
+backing before publication; row headers share the exact interned meanings. The
+opaque observation retains these original field and adjacency footprints after
+business rows drop, without copying facts or pinning Native truth. The distinct
+set-selection meaning is preserved, including for zero results; set membership
+must never stand in for projected row reads. Capture failure preserves the actual
+request or physical allocation cause instead of publishing partial evidence.
+The [row evidence custody and courts](../../workspaces/worth-query/crates/worth-query/docs/capabilities/cross-runtime-causal-inspection.md#original-query-row-evidence)
+cover one, many and empty results, original storage funding and final-owner release.
+Fresh metadata admission must precede footprint traversal; this custody alone does
+not implement fresh Host inspection or connect a producer cause.
 
 Optional inspection meaning belongs to the existing ordinary query binding:
 `ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata

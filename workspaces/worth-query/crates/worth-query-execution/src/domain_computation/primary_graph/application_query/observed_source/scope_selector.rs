@@ -5,6 +5,14 @@ use super::WorthQueryObservedSource;
 use crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector;
 
 impl<Query> WorthQueryObservedSource<Query> {
+    /// Original completed rows, distinct from the result-set selection meaning.
+    /// Descriptive custody only; callers must admit metadata before traversal.
+    pub(in crate::domain_computation::primary_graph) fn original_row_footprints(
+        &self,
+    ) -> impl ExactSizeIterator<Item = &super::WorthQueryObservedSourceFootprint> {
+        self.parameters.row_footprints()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn original_binding(
         &self,
     ) -> Option<

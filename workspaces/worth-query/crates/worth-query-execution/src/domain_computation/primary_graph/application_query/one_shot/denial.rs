@@ -66,6 +66,13 @@ pub enum WorthQueryApplicationOneShotDenialKind {
     WorkLimitExceeded,
     /// The runtime ran out of observed-source identities.
     SourceIdentityExhausted,
+    /// Physical storage refused the complete original row-evidence roster.
+    /// Request memory, work and control refusals remain `ExecutionRequest`
+    /// or the corresponding interruption kind.
+    SourceObservationAllocation {
+        kind: worth_execution::ExecutionPhysicalAllocationDenialKind,
+        requested_payload_bytes: Option<u64>,
+    },
 }
 
 /// Refusal to execute an admitted one-shot query read.

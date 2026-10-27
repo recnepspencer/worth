@@ -57,6 +57,30 @@ distinct custody after operational query bases have closed.
 This prerequisite supplies the original interpretation for fresh Host admission;
 it does not complete that admission, producer-chain association or Phase 9.
 
+### Original Query Row Evidence
+
+Query completion retains the exact immutable source meaning for every completed
+row, once per invocation alongside the original binding and admitted parameters.
+Each row source and the result-set source share that capsule. The opaque query
+observation therefore preserves the original field and adjacency reads after
+business rows and operational query bases have dropped. This capture copies no
+business rows or footprint facts and retains no Native reader.
+
+The roster owns fixed pointer storage admitted by the original execution request;
+cloning a receipt shares that same backing and reservation. A failed capture
+returns the original request refusal or a typed physical allocation refusal,
+including its known byte quote. It never publishes incomplete observation evidence.
+The [native custody court](../../../worth-query-execution/src/domain_computation/primary_graph/application_query/observed_source/retained_parameters/tests.rs)
+checks actual backing funding, meaning sharing and release at the last receipt.
+
+Result-set membership remains a separate meaning. Its selection footprint is not
+a union of projected row reads: many rows retain their own exact field footprints,
+and an empty result has an empty row roster with its original selection evidence.
+The [many and empty query court](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs)
+executes both through actual query admission and completion. A future inspector
+must admit requested metadata before traversing these retained footprints. This
+capture grants no fresh permission and does not yet associate a producer chain.
+
 ### Optional Query Inspection Metadata Meaning
 
 The declaration facade exposes

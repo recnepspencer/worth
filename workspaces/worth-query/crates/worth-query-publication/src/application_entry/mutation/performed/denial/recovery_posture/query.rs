@@ -234,6 +234,13 @@ fn admission_posture(kind: AdmissionKind) -> WorthQueryRequiredOutputRecoveryPos
 fn execution_posture(kind: ExecutionKind) -> WorthQueryRequiredOutputRecoveryPosture {
     use WorthQueryRequiredOutputRecoveryPosture::{Retryable, Terminal};
     match kind {
+        ExecutionKind::SourceObservationAllocation { kind, .. } => match kind {
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Allocator => Retryable,
+            worth_execution::ExecutionPhysicalAllocationDenialKind::Layout
+            | worth_execution::ExecutionPhysicalAllocationDenialKind::CapacityMismatch
+            | worth_execution::ExecutionPhysicalAllocationDenialKind::WriteBeyondReserved
+            | worth_execution::ExecutionPhysicalAllocationDenialKind::IncompleteSeal => Terminal,
+        },
         ExecutionKind::Cancelled
         | ExecutionKind::DeadlineExceeded
         | ExecutionKind::BasisUnavailable

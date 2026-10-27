@@ -173,6 +173,7 @@ pub(super) fn one_shot(
         | Kind::ExpressionContextIncomplete
         | Kind::Projection(..)
         | Kind::ResultBufferLimitExceeded
+        | Kind::SourceObservationAllocation { .. }
         | Kind::WorkLimitExceeded
         | Kind::SourceIdentityExhausted => reconstruction_denial(
             WorthQueryConditionalRuntimeInstallationDenialKind::ReconstructionQuery,
