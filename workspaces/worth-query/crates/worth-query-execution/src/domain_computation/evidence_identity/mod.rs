@@ -28,3 +28,8 @@ pub use scope::WorthQueryEvidenceScope;
 pub use tag::WorthQueryEvidenceTag;
 
 pub use encoder::worth_query_evidence_identity;
+
+mod digest_hash;
+pub use digest_hash::{canonical_hash_parts, digest_hash_parts, hash_parts};
+mod observation_context;
+pub use observation_context::{WorthQueryAuthorityLane, WorthQueryReadExecutionEngine};

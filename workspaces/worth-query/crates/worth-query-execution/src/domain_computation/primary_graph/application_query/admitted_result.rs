@@ -204,6 +204,17 @@ impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryRes
         )
     }
 
+    /// Retains the actual completed query's source, parameters and observation
+    /// for a later freshly governed inspection. Receipt display fields cannot
+    /// manufacture this carrier.
+    pub fn retain_inspection_observation(
+        &self,
+    ) -> Option<super::super::causal_inspection::WorthQueryApplicationQueryObservation> {
+        super::super::causal_inspection::WorthQueryApplicationQueryObservation::from_disclosed_source(
+            self,
+        )
+    }
+
     pub fn rows(&self) -> &[QueryResult] {
         &self.rows
     }

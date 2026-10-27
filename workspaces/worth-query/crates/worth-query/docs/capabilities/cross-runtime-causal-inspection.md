@@ -10,6 +10,20 @@ and signal boundaries. It starts from an observation receipt plus a sealed
 inspection-basis capability, then produces an admitted explanation plan and an
 inspectable artifact.
 
+The operational implementation lives in
+`worth-query-execution/src/domain_computation/primary_graph/causal_inspection/`.
+The older engine preserves its supported receipt constructors through a
+directional adapter containing one Execution receipt; it retains only old-receipt
+translation and historical certification. Anchoring, reference resolution,
+admission and materialization have one Execution owner.
+
+Completed application-query publication receipts retain an opaque native
+observation when their disclosed source owner supplies one. It carries original
+source, parameter, scope and basis evidence, without a snapshot pin or current
+permission. The ordinary Decl/Host inspection entrance and fresh governed
+disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
+builder described here does not provide that application admission.
+
 This is different from `workspace.inspections()?.inspect(...)`, which explains one retained
 workspace target. Use causal inspection when the question crosses runtime
 boundaries.

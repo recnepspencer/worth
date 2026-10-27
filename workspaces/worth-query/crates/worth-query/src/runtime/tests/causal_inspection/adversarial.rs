@@ -84,15 +84,16 @@ fn common_path_missing_evidence_matrix_fails_before_admission() {
         CausalEvidenceFamily::SignalEvaluation,
         CausalEvidenceFamily::SignalReplayCursor,
     ] {
-        let error = CausalInspection::for_test_observation(receipt_with_evidence(
-            CausalObservationOutcome::Changed,
-            &[(CausalEvidenceFamily::QueryInspection, "query-inspection")],
-        ))
-        .why_changed()
-        .reference_only()
-        .evidence_families([CausalEvidenceFamily::QueryInspection, missing_family])
-        .plan()
-        .expect_err("missing requested evidence should fail before admission");
+        let error =
+            crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_evidence(
+                CausalObservationOutcome::Changed,
+                &[(CausalEvidenceFamily::QueryInspection, "query-inspection")],
+            ))
+            .why_changed()
+            .reference_only()
+            .evidence_families([CausalEvidenceFamily::QueryInspection, missing_family])
+            .plan()
+            .expect_err("missing requested evidence should fail before admission");
 
         assert_eq!(error.kind(), CausalInspectionPlanErrorKind::MissingEvidence);
         assert!(!error.failure_digest().is_empty());
@@ -108,7 +109,7 @@ fn future_explanation_families_deny_without_bridge_assembly() {
         CausalInspection::store_backed_replay,
     ] {
         let plan = family_builder(
-            CausalInspection::for_test_observation(receipt_with_evidence(
+            crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_evidence(
                 CausalObservationOutcome::Changed,
                 &[(CausalEvidenceFamily::QueryInspection, "query-inspection")],
             ))
@@ -183,7 +184,7 @@ fn redaction_and_materialization_policy_matrix_preserves_causal_identity() {
                     ),
                 ],
             );
-            let plan = CausalInspection::for_test_observation(receipt)
+            let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt)
                 .why_changed()
                 .reference_only()
                 .redaction(redaction_policy)
