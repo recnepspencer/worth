@@ -70,7 +70,7 @@ pub(in super::super::super) fn seed(
         &["document-retention-operator"],
     );
 }
-fn seed_grant(
+pub(in crate::document_retention_model) fn seed_grant(
     graph: &mut WorthQueryPrimaryGraphBootstrap<DocumentRetentionSchema>,
     grant: &str,
     action: &str,

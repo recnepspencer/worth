@@ -144,6 +144,8 @@ pub struct WorthQueryApplicationCommitAuthorityBinding {
     idempotency_binding: WorthQueryApplicationIdempotencyBinding,
     retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
     original_program: Option<Arc<super::super::OriginalProgramMeaning>>,
+    original_inspection_disclosure:
+        Option<Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>>,
 }
 
 impl WorthQueryApplicationCommitAuthorityBinding {
@@ -192,6 +194,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
             idempotency_binding,
             retained_governed_input,
             original_program: admission.original_program().cloned(),
+            original_inspection_disclosure: admission.original_inspection_disclosure().cloned(),
         }
     }
 
@@ -242,6 +245,12 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         &self,
     ) -> Option<&WorthQueryRetainedGovernedInput> {
         self.retained_governed_input.as_ref()
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn original_inspection_disclosure(
+        &self,
+    ) -> Option<&super::super::source_disclosure::OriginalSourceInspectionDisclosure> {
+        self.original_inspection_disclosure.as_deref()
     }
 
     #[cfg(test)]

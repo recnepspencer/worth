@@ -176,6 +176,18 @@ fn exact_query_observation_reuses_its_live_snapshot_for_fresh_security_stages() 
     assert!(result.receipt().basis_released());
     assert_eq!(observer.observe().acquisitions(), before.acquisitions());
     assert_eq!(observer.observe().active(), before.active() - 1);
+
+    let source = result.into_admitted_disclosed().into_output_demand_source();
+    let observation = source
+        .retain_inspection_observation()
+        .expect("a completed query retains its genuine result-set source");
+    let retained = observation.clone();
+    drop(source);
+    assert_eq!(observer.observe().active(), before.active() - 1);
+    assert_eq!(observer.observe().acquisitions(), before.acquisitions());
+    observation.close();
+    retained.close();
+    assert_eq!(observer.observe().active(), before.active() - 1);
 }
 
 #[test]

@@ -5,16 +5,20 @@ use worth_query_declaration::facade::application_operation::{
 pub(crate) struct WorthQueryCompiledApplicationMutationBinding {
     descriptor: ApplicationMutationBindingDescriptor,
     inverse: Option<std::sync::Arc<crate::application_aftermath::InstalledCorrectionBinding>>,
+    inspection:
+        Option<std::sync::Arc<crate::application_operation::InstalledSourceDisclosureBinding>>,
 }
 
 impl WorthQueryCompiledApplicationMutationBinding {
     pub(crate) fn new(
         descriptor: ApplicationMutationBindingDescriptor,
         inverse: Option<crate::application_aftermath::InstalledCorrectionBinding>,
+        inspection: Option<crate::application_operation::InstalledSourceDisclosureBinding>,
     ) -> Self {
         Self {
             descriptor,
             inverse: inverse.map(std::sync::Arc::new),
+            inspection: inspection.map(std::sync::Arc::new),
         }
     }
 
@@ -35,5 +39,12 @@ impl WorthQueryCompiledApplicationMutationBinding {
         &self,
     ) -> Option<std::sync::Arc<crate::application_aftermath::InstalledCorrectionBinding>> {
         self.inverse.clone()
+    }
+
+    pub(crate) fn retain_inspection_disclosure(
+        &self,
+    ) -> Option<std::sync::Arc<crate::application_operation::InstalledSourceDisclosureBinding>>
+    {
+        self.inspection.clone()
     }
 }

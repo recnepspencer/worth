@@ -7,6 +7,7 @@ pub(crate) mod artifact_owner;
 pub(crate) mod authorization;
 pub(crate) mod convergence_epoch;
 mod domain_evidence_binding;
+pub(crate) mod evidence_identity;
 mod evidence_material;
 mod execution_resource_attempt;
 pub(crate) mod execution_runtime;

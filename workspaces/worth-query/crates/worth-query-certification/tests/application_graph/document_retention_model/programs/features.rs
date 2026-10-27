@@ -8,6 +8,8 @@ pub(super) fn retention_feature_specs() -> Vec<ApplicationFeatureSpec> {
             .finish_action()
             .action::<SetRetentionBinding, RetentionCompletion>()
             .finish_action()
+            .action::<super::super::record_history::reaffirm::Binding, RetentionCompletion>()
+            .finish_action()
             .action::<ReviewedSetRetentionBinding, RetentionCompletion>()
             .finish_action()
             .action::<OccurrenceSetRetentionBinding, RetentionCompletion>()

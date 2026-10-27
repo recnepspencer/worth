@@ -237,6 +237,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         decision,
                         &phase_request,
                         allocation_control.policy(),
+                        runtime.installed_schema().value_bindings(),
                     )
                 })();
                 WorthQueryMutationHandlerExecutionReport::new(

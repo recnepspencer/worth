@@ -6,6 +6,12 @@ pub mod retention;
 
 pub use access::{BoundedCanonicalCommitPatchDenial, HistoryAccess};
 pub(crate) use access::{CommitAncestryInspection, CommitAncestryPosture};
+pub use access::{
+    RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
+    RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
+    RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
+    RelationalRecordHistorySelectionLimits, RelationalRecordHistorySubject,
+};
 pub use authority::HistoryAuthority;
 pub(crate) use commit::{
     RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind, RelationalCommitCatalog,

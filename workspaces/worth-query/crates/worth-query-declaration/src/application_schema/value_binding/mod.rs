@@ -37,8 +37,8 @@ pub use primitive::{
     StringApplicationValueBinding, U64ApplicationValueBinding,
 };
 pub use recipe::{
-    ApplicationFieldBindingLocus, ApplicationFieldBindingRecipe, ErasedApplicationValueEncode,
-    ErasedApplicationValueValidation,
+    ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,
+    ErasedApplicationValueEncode, ErasedApplicationValueValidation,
 };
 pub use representation_identity::{ApplicationFrameIdentity, ApplicationUnitIdentity};
 pub use scalar::{

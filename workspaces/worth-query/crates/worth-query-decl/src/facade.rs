@@ -35,8 +35,8 @@ pub use worth_query_declaration::{
     worth_query_operation_reads, worth_query_operation_requires, worth_query_operation_unlinks,
     worth_query_operation_writes, worth_query_policy, worth_query_portable_type,
     worth_query_principal_binding, worth_query_query_binding, worth_query_relation,
-    worth_query_structured_value_binding, worth_query_unit, worth_query_value_binding,
-    worth_query_workflow,
+    worth_query_relation_field, worth_query_structured_value_binding, worth_query_unit,
+    worth_query_value_binding, worth_query_workflow,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

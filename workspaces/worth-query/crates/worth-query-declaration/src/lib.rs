@@ -66,6 +66,8 @@ mod application_schema_macro;
 #[macro_use]
 mod application_field_macro;
 #[macro_use]
+mod application_relation_field_macro;
+#[macro_use]
 mod application_relation_macro;
 #[macro_use]
 mod application_operation_macro;

@@ -100,11 +100,16 @@ where
                 &descriptors,
                 schema.member_provenance.query_bindings(),
             )?;
+            let inspection = crate::application_operation::source_disclosure::resolve(
+                descriptor,
+                schema.member_provenance.query_bindings(),
+            )?;
             Ok((
                 identity.clone(),
                 Arc::new(WorthQueryCompiledApplicationMutationBinding::new(
                     (*descriptor).clone(),
                     inverse,
+                    inspection,
                 )),
             ))
         })
@@ -238,7 +243,7 @@ where
                 && binding.binding_type() == recipe.binding_type()
                 && binding.value_type() == recipe.value_type()
         });
-    if exact_member && exact_binding {
+    if recipe.locus().owner_kind().is_entity() && exact_member && exact_binding {
         Ok(())
     } else {
         Err(denial(
@@ -290,7 +295,7 @@ where
                 && binding.value_type() == recipe.value_type()
                 && binding.is_identity()
         });
-    if exact_member && exact_binding {
+    if recipe.locus().owner_kind().is_entity() && exact_member && exact_binding {
         Ok(())
     } else {
         Err(denial(

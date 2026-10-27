@@ -136,6 +136,7 @@ where
                         .program
                         .retain_performed_correction_input::<Intent::Binding>(
                             &access,
+                            phase,
                             self.request.application,
                             candidate.identities.encoded_input(),
                         )
@@ -236,10 +237,11 @@ where
         let (mut program, result) = completed.into_parts();
         let publication_access =
             worth_query_execution::publication_boundary::program_publication_access();
-        if program.requires_original_input_retention(&publication_access) {
+        if program.requires_original_source_capture(&publication_access) {
             program = program
                 .retain_original_mutation_input::<Intent::Binding>(
                     &publication_access,
+                    phase,
                     self.request.application,
                     identities.encoded_input(),
                 )

@@ -306,8 +306,10 @@ mod tests;
 mod handler;
 mod publication;
 mod retained_result;
+mod scope;
 pub(in crate::domain_computation::primary_graph) use handler::managed_advancement_denial;
-pub(in crate::domain_computation::primary_graph) use publication::publication_execution_kind;
+pub(in crate::domain_computation) use publication::publication_execution_kind;
+pub(in crate::domain_computation) use scope::scope_stop_kind;
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.
 pub(in crate::domain_computation) fn advancement_scope_stop(

@@ -12,7 +12,7 @@ fn common_changed_observation_plans_and_materializes_admitted() {
             resource_request,
         )
         .unwrap();
-    let plan = CausalInspection::for_test_observation(receipt_with_route(
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_route(
         CausalObservationOutcome::Changed,
         routed.route_identity().bridge_admission_evidence(),
     ))
@@ -64,7 +64,7 @@ fn common_suppressed_observation_uses_reason_helper() {
             resource_request,
         )
         .unwrap();
-    let plan = CausalInspection::for_test_observation(receipt_with_route(
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_route(
         CausalObservationOutcome::Suppressed,
         routed.route_identity().bridge_admission_evidence(),
     ))
@@ -93,7 +93,7 @@ fn materialized_detail_common_path_is_advisory_before_bridge_materialization() {
             resource_request,
         )
         .unwrap();
-    let plan = CausalInspection::for_test_observation(receipt_with_route(
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_route(
         CausalObservationOutcome::Changed,
         routed.route_identity().bridge_admission_evidence(),
     ))
@@ -139,7 +139,7 @@ fn common_path_preserves_core_digests_from_explicit_pipeline() {
         CausalObservationOutcome::Changed,
         routed.route_identity().bridge_admission_evidence(),
     );
-    let plan = CausalInspection::for_test_observation(receipt.clone())
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt.clone())
         .why_changed()
         .reference_only()
         .evidence_families([

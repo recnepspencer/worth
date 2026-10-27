@@ -12,7 +12,7 @@ use worth_query_installation::facade::{
     ApplicationFieldUnit, OptionalApplicationFieldValue, RequiredApplicationFieldValue,
     WorthQueryInstalledGraphProjection, WorthQueryInstalledGraphRelation,
 };
-use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::{EntityId, RelationId};
 
 mod disclosure_boundary;
 
@@ -42,6 +42,7 @@ pub(in crate::domain_computation::primary_graph::application_query) struct Worth
 pub(in crate::domain_computation::primary_graph::application_query) struct WorthQueryApplicationProjectionNode
 {
     entity_id: EntityId,
+    incoming_relation: Option<RelationId>,
     source_path: Option<Arc<str>>,
     source_dependencies_complete: bool,
     fields: Vec<WorthQueryApplicationProjectedField>,
@@ -58,6 +59,7 @@ impl WorthQueryApplicationProjectionNode {
     ) -> Self {
         Self {
             entity_id,
+            incoming_relation: None,
             source_path,
             source_dependencies_complete,
             fields,
@@ -69,6 +71,23 @@ impl WorthQueryApplicationProjectionNode {
         &self,
     ) -> EntityId {
         self.entity_id
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) const fn incoming_relation(
+        &self,
+    ) -> Option<RelationId> {
+        self.incoming_relation
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn attach_incoming_relation(
+        &mut self,
+        relation: RelationId,
+    ) -> bool {
+        if self.incoming_relation.is_some() {
+            return false;
+        }
+        self.incoming_relation = Some(relation);
+        true
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn result_path(
@@ -128,6 +147,7 @@ impl WorthQueryApplicationProjectionNode {
     ) -> usize {
         let Self {
             entity_id: _entity_id,
+            incoming_relation: _incoming_relation,
             source_path: _source_path,
             source_dependencies_complete: _source_dependencies_complete,
             fields,
@@ -288,6 +308,12 @@ impl WorthQueryApplicationProjectedRelation {
         &self,
     ) -> &str {
         &self.slot_type
+    }
+
+    pub(in crate::domain_computation::primary_graph::application_query) fn slot_key(
+        &self,
+    ) -> &ApplicationQueryResultSlotKey {
+        self.slot_key.as_ref()
     }
 
     pub(in crate::domain_computation::primary_graph::application_query) fn rows(

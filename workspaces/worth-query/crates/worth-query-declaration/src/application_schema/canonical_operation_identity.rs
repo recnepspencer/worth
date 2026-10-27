@@ -28,6 +28,24 @@ pub(super) fn append_operation_target(
         ApplicationOperationProgramTarget::Link { relation, from, to } => {
             append_relation_target(basis, prefix, "link", relation, from, to);
         }
+        ApplicationOperationProgramTarget::InitializeRelationField {
+            relation,
+            from,
+            to,
+            aspect,
+            field,
+        } => {
+            append_relation_target(
+                basis,
+                prefix,
+                "initialize-relation-field",
+                relation,
+                from,
+                to,
+            );
+            basis.text(format!("{prefix}.aspect"), aspect);
+            basis.text(format!("{prefix}.field"), field);
+        }
         ApplicationOperationProgramTarget::Unlink { relation, from, to } => {
             append_relation_target(basis, prefix, "unlink", relation, from, to);
         }

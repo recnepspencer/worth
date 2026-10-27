@@ -86,7 +86,7 @@ where
 {
     let prepared = prepare_identity_and_graph_work(execution, bound)?;
     let observed = observe_current_authorization(execution, prepared)?;
-    Ok(construct_admitted_operation(observed))
+    construct_admitted_operation(execution, observed)
 }
 
 fn prepare_identity_and_graph_work<
@@ -230,6 +230,7 @@ where
 }
 
 fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     observed: ObservedConventionalAdmission<
         '_,
         Schema,
@@ -239,7 +240,10 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         Input,
         Scope,
     >,
-) -> WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> {
+) -> Result<
+    WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    WorthQueryOperationAuthorizationDenial,
+> {
     let ObservedConventionalAdmission {
         preparation,
         authorization,
@@ -254,7 +258,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         WorthQueryCanonicalWorkEvidence::zero(),
         WorthQueryCanonicalWorkEvidence::zero(),
     );
-    WorthQueryAdmittedApplicationOperation {
+    Ok(WorthQueryAdmittedApplicationOperation {
         runtime_authority: preparation.runtime.runtime.authority_identity(),
         binding_identity: preparation.operation.binding_identity().clone(),
         operation: preparation.operation.operation().to_string(),
@@ -270,7 +274,11 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
                 preparation.scope,
                 preparation.operation,
             ),
-        original_scope: super::original_input::retain_original_scope(preparation.scope, &contracts),
+        original_scope: super::original_input::retain_original_scope(
+            execution,
+            preparation.scope,
+            &contracts,
+        )?,
         canonical_work,
         scope_entity_id: preparation.scope.entity_id(),
         scope_entity_kind: preparation.scope.entity_kind(),
@@ -282,6 +290,7 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         authorization: Some(authorization),
         governed_input_identity: None,
         original_input: None,
+        original_inspection_disclosure: None,
         authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
         graph_work: preparation.graph_work,
         source_partition_identity: None,
@@ -290,5 +299,5 @@ fn construct_admitted_operation<Schema, Principal, PrincipalIdentity, Operation,
         query_context: None,
         required_output_demand: None,
         _marker: PhantomData,
-    }
+    })
 }

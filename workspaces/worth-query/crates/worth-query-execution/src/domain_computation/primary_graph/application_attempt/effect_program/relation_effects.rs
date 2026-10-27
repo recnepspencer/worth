@@ -107,6 +107,16 @@ impl<Schema, Operation, Input, Scope>
         from: &WorthQueryApplicationEffectEntity<Schema, From>,
         to: &WorthQueryApplicationEffectEntity<Schema, To>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.link_at_target_index(target, key, from, to).map(|_| ())
+    }
+
+    pub(super) fn link_at_target_index<From, To>(
+        &mut self,
+        target: &ApplicationOperationProgramTarget,
+        key: impl Into<String>,
+        from: &WorthQueryApplicationEffectEntity<Schema, From>,
+        to: &WorthQueryApplicationEffectEntity<Schema, To>,
+    ) -> Result<usize, WorthQueryApplicationAttemptDenial> {
         let ApplicationOperationProgramTarget::Link {
             relation,
             from: from_name,
@@ -140,14 +150,16 @@ impl<Schema, Operation, Input, Scope>
         }
         self.reserve_effects(1)?;
         self.keys.insert((kind, key.clone()));
+        let position = self.effects.len();
         self.effects
             .push(WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields: Default::default(),
                 kind,
                 key,
                 from: from.reference.clone(),
                 to: to.reference.clone(),
             });
-        Ok(())
+        Ok(position)
     }
 
     pub fn unlink<Relation, From, To>(

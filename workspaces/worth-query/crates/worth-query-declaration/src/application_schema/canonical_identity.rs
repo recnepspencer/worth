@@ -29,6 +29,25 @@ pub(super) fn canonical_field_meaning(
     ApplicationSchemaIdentity::from_canonical_basis(basis)
 }
 
+pub(super) fn canonical_relation_field_meaning(
+    relation: &str,
+    aspect: &str,
+    field: &super::ApplicationRelationFieldDefinition,
+) -> ApplicationSchemaIdentity {
+    let mut basis =
+        ApplicationSchemaCanonicalBasis::with_capacity_and_limits(1, 0, u64::MAX, u64::MAX);
+    member::append_relation_field(&mut basis, "member[0]", relation, aspect, field);
+    let (entries, _) = basis
+        .into_entries()
+        .expect("declared relation field meaning has finite source");
+    let version = CanonicalizationRuleVersion::new("worth-query-relation-field-meaning-v1")
+        .expect("the field rule is fixed");
+    let basis = prepare_canonical_basis_sequence(version, APPLICATION_SCHEMA_DOMAIN, entries)
+        .into_result()
+        .expect("relation field meaning uses unique typed loci");
+    ApplicationSchemaIdentity::from_canonical_basis(basis)
+}
+
 pub(super) struct ApplicationSchemaCanonicalHeader<'a> {
     pub owner: &'a str,
     pub name: &'a str,

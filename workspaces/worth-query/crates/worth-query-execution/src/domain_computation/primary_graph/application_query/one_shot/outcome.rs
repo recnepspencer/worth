@@ -48,7 +48,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
         PrincipalIdentity,
         Scope,
     >,
-    mut kernel: RawNonLiveKernelOutcome,
+    kernel: RawNonLiveKernelOutcome,
     authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
     read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
     project: impl FnOnce(
@@ -64,8 +64,76 @@ pub(in crate::domain_computation::primary_graph::application_query) fn complete_
 where
     Schema: ApplicationSchema,
 {
+    complete_one_shot_with_capture(
+        execution,
+        application,
+        decode,
+        plan,
+        kernel,
+        authorization_work,
+        read_proof,
+        project,
+        |_, _| Ok(()),
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::application_query) fn complete_one_shot_with_capture<
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Projected,
+    Capture,
+    E,
+>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    decode: &ValueDecodeState,
+    plan: WorthQueryAdmittedApplicationQueryPlan<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >,
+    mut kernel: RawNonLiveKernelOutcome,
+    authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
+    read_proof: crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof,
+    project: impl FnOnce(
+        RawNonLiveKernelOutcome,
+        &super::super::disclosure::WorthQueryApplicationQueryGovernance,
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        &str,
+    ) -> Result<
+        super::super::read_execution::ProjectedNonLiveKernelOutcome<Projected>,
+        WorthQueryApplicationOneShotDenial,
+    >,
+    capture: impl FnOnce(
+        &super::super::projection::WorthQueryApplicationDisclosedProjectionTree,
+        &WorthQueryAdmittedApplicationQueryPlan<
+            '_,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+    ) -> Result<Capture, E>,
+) -> Result<CompletedOneShotRead<Query, Projected, Capture>, E>
+where
+    Schema: ApplicationSchema,
+    E: From<WorthQueryApplicationOneShotDenial>,
+{
     if let Some(cause) = decode.denial() {
-        return Err(value_decode_denial(cause, plan.query.name()));
+        return Err(value_decode_denial(cause, plan.query.name()).into());
     }
     let request_affinity =
         super::super::admitted_result::WorthQueryApplicationQueryRequestAffinity::new(
@@ -111,6 +179,7 @@ where
     let basis_version = plan.basis.version_id();
     let parameter_binding_identity = *plan.parameters.identity();
     admit_request(request, plan.query.name())?;
+    let capture = capture(&kernel.raw.rows, &plan)?;
     let scope_selector = plan.scope.retain_scope_selector();
     let source_parameters = std::sync::Arc::new(
         super::super::observed_source::WorthQueryRetainedObservedParameters::new(plan.parameters),
@@ -229,7 +298,8 @@ where
             WorthQueryApplicationOneShotDenialKind::BasisReleaseFailed,
             plan.query.name(),
             plan.query.name(),
-        ));
+        )
+        .into());
     }
     validate_basis_lifetime(&plan.controls, plan.query.name())?;
     admit_request(request, plan.query.name())?;
@@ -286,6 +356,7 @@ where
             request_affinity,
             receipt,
         },
+        capture,
         authorization: plan.authorization,
     })
 }

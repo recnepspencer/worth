@@ -12,6 +12,8 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
+mod history;
+pub(in crate::domain_computation) use history::compile_history_disclosure_contract;
 
 #[derive(Clone, Debug)]
 pub(super) struct WorthQueryAdmittedApplicationDisclosureField {
@@ -161,6 +163,9 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         field,
     });
     match rule.selector() {
+        ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
+            return Err(denial(metadata.slot_type()))
+        }
         ApplicationQueryDisclosureSelector::InternalField { .. } => {
             let field = installed
                 .field()

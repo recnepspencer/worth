@@ -9,7 +9,7 @@ use super::super::{
         WorthQueryApplicationQueryGovernanceDenialKind, WorthQueryPendingApplicationQueryGovernance,
     },
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationQueryAdmissionDenial,
-    WorthQueryApplicationQueryAdmissionDenialKind, WorthQueryApplicationQueryControls,
+    WorthQueryApplicationQueryAdmissionDenialKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
@@ -40,7 +40,7 @@ pub(in crate::domain_computation::primary_graph::application_query) fn prepare_g
         Operation,
         Input,
     >,
-    controls: &WorthQueryApplicationQueryControls<'_, Schema>,
+    request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPendingApplicationQueryGovernance, WorthQueryApplicationQueryAdmissionDenial>
 where
     Schema: ApplicationSchema,
@@ -58,7 +58,7 @@ where
             query.name(),
         ));
     }
-    validate_admission_request(controls.request_scope(), query.name())?;
+    validate_admission_request(request, query.name())?;
     let capability_name = capability.capability_name().to_string();
     let capability_type = capability.capability_type().to_string();
     let authorization_canonical_work = capability.admission_canonical_work();
@@ -77,7 +77,7 @@ where
     ))
 }
 
-pub(super) fn governance_denial(
+pub(in crate::domain_computation::primary_graph::application_query) fn governance_denial(
     kind: WorthQueryApplicationQueryGovernanceDenialKind,
     subject: &str,
 ) -> WorthQueryApplicationQueryAdmissionDenial {

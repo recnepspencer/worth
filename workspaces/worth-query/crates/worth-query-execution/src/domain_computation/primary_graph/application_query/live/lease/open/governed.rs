@@ -63,7 +63,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
 
         let (application, product, application_basis) = self.into_parts();
         let access = WorthQueryApplicationQueryAccessContext::new(principal, &scope);
-        let query_controls = WorthQueryApplicationQueryControls::product_live(
+        let query_controls = WorthQueryApplicationQueryControls::<Schema>::product_live(
             product.read_lease(),
             application
                 .retain_product_application_basis(execution, product.observation())
@@ -76,9 +76,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             controls.maximum_materialized_record_count(),
             controls.request(),
         );
-        let pending =
-            prepare_governed_access(application, &query, &access, capability, &query_controls)
-                .map_err(open_admission_denial)?;
+        let pending = prepare_governed_access(
+            application,
+            &query,
+            &access,
+            capability,
+            query_controls.request_scope(),
+        )
+        .map_err(open_admission_denial)?;
         drop(query_controls);
         application.open_application_query_live_with_governance::<
             Query,

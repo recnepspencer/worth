@@ -84,6 +84,34 @@ fn collect_declared_fields(
 > {
     let mut declared = BTreeMap::new();
     for member in declaration.members() {
+        if let ApplicationSchemaMember::RelationAspect { definition } = member {
+            let aspect = definition.parts();
+            for field in &aspect.fields {
+                let locus = ApplicationFieldBindingLocus::for_relation(
+                    &aspect.relation,
+                    &aspect.aspect,
+                    &field.field,
+                );
+                if declared
+                    .insert(
+                        locus.clone(),
+                        (
+                            field.scalar_family,
+                            field.value_type.as_str(),
+                            field.unit.as_deref(),
+                            field.frame.as_deref(),
+                            field.canonical.as_ref(),
+                            field.codec_digest(&aspect.relation, &aspect.aspect),
+                            field.presence,
+                        ),
+                    )
+                    .is_some()
+                {
+                    return Err(denial(DenialKind::ContractMismatch, &locus));
+                }
+            }
+            continue;
+        }
         let ApplicationSchemaMember::Field {
             entity,
             aspect,
@@ -145,7 +173,7 @@ fn validate_contract(
         return Err(denial(DenialKind::ContractMismatch, locus));
     }
     let native = native_contracts
-        .aspect(locus.entity(), locus.aspect())
+        .aspect_for_owner(locus.owner_kind(), locus.record_name(), locus.aspect())
         .ok_or_else(|| denial(DenialKind::NativeContractMissing, locus))?;
     let contains_field = native.fields().any(|field| field.as_str() == locus.field());
     if !contains_field {

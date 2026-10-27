@@ -22,15 +22,17 @@ fn support_discovery_names_supported_advisory_and_deferred_lanes() {
 #[test]
 fn unsupported_durable_family_denies_without_bridge_assembly() {
     let runtime = bridge_runtime();
-    let plan = CausalInspection::for_test_observation(QueryObservationReceipt::fixture(
-        CausalObservationOutcome::Changed,
-        vec![CausalObservationEvidenceIdentity::new(
-            CausalEvidenceFamily::QueryInspection,
-            crate::runtime::tests::causal_inspection::causal_test_reference_digest(
-                "query-inspection:durable-denied",
-            ),
-        )],
-    ))
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(
+        QueryObservationReceipt::fixture(
+            CausalObservationOutcome::Changed,
+            vec![CausalObservationEvidenceIdentity::new(
+                CausalEvidenceFamily::QueryInspection,
+                crate::runtime::tests::causal_inspection::causal_test_reference_digest(
+                    "query-inspection:durable-denied",
+                ),
+            )],
+        ),
+    )
     .why_changed()
     .durable_archive()
     .plan()
@@ -80,7 +82,7 @@ fn unsupported_durable_family_denies_without_bridge_assembly() {
 #[test]
 fn bridge_envelope_denial_materializes_denied_artifact_with_bridge_fields() {
     let runtime = bridge_runtime();
-    let plan = CausalInspection::for_test_observation(receipt_with_route(
+    let plan = crate::runtime::tests::causal_inspection::inspect_fixture(receipt_with_route(
         CausalObservationOutcome::Changed,
         crate::runtime::tests::causal_inspection::bridge_external_evidence(
             "route:causal-dx-missing",

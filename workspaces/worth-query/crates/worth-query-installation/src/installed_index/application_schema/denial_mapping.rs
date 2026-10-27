@@ -182,7 +182,8 @@ pub(in crate::installed_index) fn map_catalog_denial_to_index_denial(
         | CatalogDenialKind::InvalidFieldKey
         | CatalogDenialKind::InvalidAspectShape
         | CatalogDenialKind::ProjectionMaskRejected
-        | CatalogDenialKind::CanonicalContractRejected => {
+        | CatalogDenialKind::CanonicalContractRejected
+        | CatalogDenialKind::UnsupportedRecordBinding => {
             WorthQueryInstalledPackageIndexDenialKind::ApplicationSchemaInvalidAspectContract
         }
     };

@@ -12,6 +12,21 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, scope: &Scope) -> Result<(), Denial> {
     match scope {
+        Scope::InitializeRelationField {
+            schema,
+            relation,
+            from,
+            to,
+            contract,
+            field_path,
+        } => {
+            output.u16(6)?;
+            for text in [schema, relation, from, to] {
+                output.text(text)?;
+            }
+            super::super::foundational_aspect::write_aspect_contract(output, contract)?;
+            super::super::foundational_aspect::write_field_path(output, field_path)
+        }
         Scope::CreateEntity { schema, entity } => tagged_entity(output, 1, schema, entity),
         Scope::DeleteEntity { schema, entity } => tagged_entity(output, 2, schema, entity),
         Scope::WriteField {
@@ -74,6 +89,14 @@ pub(super) fn decode(
         },
         4 => decode_relation(input, RelationTouch::Link)?,
         5 => decode_relation(input, RelationTouch::Unlink)?,
+        6 => Scope::InitializeRelationField {
+            schema: input.text()?.to_owned(),
+            relation: input.text()?.to_owned(),
+            from: input.text()?.to_owned(),
+            to: input.text()?.to_owned(),
+            contract: super::super::foundational_aspect::decode_aspect_contract(input, budget)?,
+            field_path: super::super::foundational_aspect::decode_field_path(input, budget)?,
+        },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
 }
@@ -98,6 +121,31 @@ fn same_variant_order(left: &Scope, right: &Scope) -> Ordering {
             },
         ) => (schema, entity).cmp(&(other_schema, other_entity)),
         (Scope::WriteField { .. }, Scope::WriteField { .. }) => write_field_order(left, right),
+        (
+            Scope::InitializeRelationField {
+                schema,
+                relation,
+                from,
+                to,
+                contract,
+                field_path,
+            },
+            Scope::InitializeRelationField {
+                schema: other_schema,
+                relation: other_relation,
+                from: other_from,
+                to: other_to,
+                contract: other_contract,
+                field_path: other_path,
+            },
+        ) => (schema, relation, from, to, contract.key(), field_path).cmp(&(
+            other_schema,
+            other_relation,
+            other_from,
+            other_to,
+            other_contract.key(),
+            other_path,
+        )),
         (Scope::LinkRelation { .. }, Scope::LinkRelation { .. })
         | (Scope::UnlinkRelation { .. }, Scope::UnlinkRelation { .. }) => {
             relation_order(left, right)
@@ -199,5 +247,6 @@ const fn rank(scope: &Scope) -> u8 {
         Scope::WriteField { .. } => 3,
         Scope::LinkRelation { .. } => 4,
         Scope::UnlinkRelation { .. } => 5,
+        Scope::InitializeRelationField { .. } => 6,
     }
 }

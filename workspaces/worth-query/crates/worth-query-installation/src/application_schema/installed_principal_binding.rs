@@ -218,7 +218,8 @@ where
         }
         let installed_value_binding = located
             .filter(|installed| {
-                installed.binding_type() == recipe.binding_type()
+                recipe.locus().owner_kind().is_entity()
+                    && installed.binding_type() == recipe.binding_type()
                     && installed.value_type() == recipe.value_type()
                     && installed.identity() == recipe.binding_identity()
                     && installed.is_identity()

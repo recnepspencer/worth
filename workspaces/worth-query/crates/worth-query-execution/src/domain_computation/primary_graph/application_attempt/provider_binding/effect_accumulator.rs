@@ -37,8 +37,6 @@ pub(super) struct WorthQueryRegisteredProviderEffects {
     emissions: WorthQueryAdmittedApplicationEmissionBatch,
     output_correspondence: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     mutation_partition: worth_relational::facade::identity::PartitionId,
-    // Last to drop: physical backing releases before its retained grant.
-
 }
 
 impl<'facts, 'layout, Facts: FactSequence + ?Sized>

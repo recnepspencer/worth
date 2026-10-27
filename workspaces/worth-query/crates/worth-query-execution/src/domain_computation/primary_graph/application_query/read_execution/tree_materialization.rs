@@ -29,6 +29,7 @@ mod collection_selection;
 pub(super) use collection_selection::*;
 mod relation_attachment;
 mod relation_distribution;
+mod relation_occurrence;
 mod relation_target_filter;
 mod source_footprint;
 mod work;

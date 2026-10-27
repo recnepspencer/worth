@@ -9,6 +9,7 @@ mod derived_view;
 mod disclosure_contract;
 mod erased_definition;
 mod expression_snapshot;
+mod history;
 mod lane_eligibility;
 mod live_cause;
 mod marker_identity;
@@ -32,7 +33,8 @@ pub use authorization_requirement::ApplicationQueryAuthorizationRequirement;
 pub use basis_support::ApplicationQueryBasisSupport;
 pub use binding::{
     ApplicationLiveQueryIntent, ApplicationQueryBinding, ApplicationQueryBindingDescriptor,
-    ApplicationQueryBindingLimits, ApplicationQueryFieldScope, ApplicationQueryIntent,
+    ApplicationQueryBindingLimits, ApplicationQueryBindingReference,
+    ApplicationQueryBindingReferenceParts, ApplicationQueryFieldScope, ApplicationQueryIntent,
     ApplicationQueryPrincipalBindingContract, ApplicationQueryPrincipalScope,
     ApplicationQueryScopeBinding, ApplicationQueryScopeContract, ApplicationQueryScopeResolution,
     ApplicationQueryScopeResolutionMode,
@@ -60,6 +62,14 @@ pub use erased_definition::{
     ErasedApplicationQueryDefinition, WorthQueryPortableApplicationQueryParts,
 };
 pub use expression_snapshot::ApplicationQueryExpressionSnapshot;
+pub use history::{
+    ApplicationHistoryAspectSelection, ApplicationHistoryMetadataFacet,
+    ApplicationHistoryMetadataMeaning, ApplicationHistoryMetadataRef,
+    ApplicationHistoryQueryBinding, ApplicationHistoryQueryDefinition,
+    ApplicationHistoryQueryDefinitionBuilder, ApplicationHistoryQueryDefinitionDenial,
+    ApplicationHistoryTarget, ErasedApplicationHistoryQueryDefinition,
+    WorthQueryPortableApplicationHistoryQueryParts,
+};
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{
     ApplicationQueryLiveCauseBinding, ApplicationQueryLiveCauseContract,

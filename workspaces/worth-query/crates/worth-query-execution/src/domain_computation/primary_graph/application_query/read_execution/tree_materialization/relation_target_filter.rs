@@ -4,7 +4,6 @@ use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicat
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
 use worth_query_installation::facade::WorthQueryInstalledGraphRelation;
 use worth_relational::facade::{
-    identity::EntityId,
     runtime::{ProjectionAspectRequirement, ProjectionAspectScope},
     storage::RecordLifecycleState,
 };
@@ -15,14 +14,15 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphLayout,
 };
 
-pub(super) fn retain_matching_targets(
+pub(super) fn retain_matching_targets<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     projection: &worth_relational::facade::runtime::VisibilityProjectionView,
     graph: &WorthQueryPrimaryGraphLayout,
     governance: &WorthQueryApplicationQueryGovernance,
     parameters: &WorthQueryAdmittedApplicationQueryParameters,
     relation: &WorthQueryInstalledGraphRelation,
-    targets: &mut Vec<EntityId>,
+    targets: &mut Vec<T>,
+    entity: impl Fn(&T) -> worth_relational::facade::identity::EntityId,
     work: &mut ResultTreeWork,
 ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
     let Some(predicate) = relation.predicate() else {
@@ -59,10 +59,10 @@ pub(super) fn retain_matching_targets(
         BTreeSet::from([predicate.field_key().clone()]),
     )]);
     let candidates = std::mem::take(targets);
-    for entity_id in candidates {
+    for target in candidates {
         work.charge_relation_predicate(relation.result_path())?;
         let matches = projection
-            .entity_record_with_projection_scope(execution, entity_id, scope.clone(), |record| {
+            .entity_record_with_projection_scope(execution, entity(&target), scope.clone(), |record| {
                 (record.kind_id() == layout.entity_kind
                     && record.lifecycle() == RecordLifecycleState::Live)
                     .then(|| {
@@ -73,7 +73,7 @@ pub(super) fn retain_matching_targets(
             }).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?
             .ok_or_else(|| projection_denial(relation.result_path()))?;
         if matches {
-            targets.push(entity_id);
+            targets.push(target);
         }
     }
     Ok(())

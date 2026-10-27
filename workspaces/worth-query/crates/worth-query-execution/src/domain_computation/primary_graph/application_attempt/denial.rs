@@ -16,6 +16,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     ValueDecode(super::super::value_decode::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(crate::domain_computation::WorthQueryProviderSessionDenialKind),
+    /// The original handler request refused new retained effect backing or work.
+    EffectExecution(worth_execution::WorkCeilingDenial),
     Cancelled,
     DeadlineExceeded,
     ForeignApplication,
@@ -30,6 +32,8 @@ pub enum WorthQueryApplicationAttemptDenialKind {
     DecisionDependencyMismatch,
     /// Required original correction interpretation could not be retained.
     CorrectionCaptureDenied,
+    /// An explicitly declared original source disclosure could not be captured.
+    SourceDisclosureCaptureDenied,
     DecisionFactBudgetExceeded,
     /// Fresh inline payload backing was refused by its allocation owner.
     AllocationDenied,
@@ -181,6 +185,7 @@ pub struct WorthQueryApplicationAttemptDenial {
 /// Inspection preserves the original owner cause.
 #[derive(Debug)]
 enum AttemptDenialCause {
+    SourceDisclosureParameters(Box<worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial>),
     IndexedLookup(Box<worth_relational::facade::indexes::BoundedEntityFieldLookupDenial>),
     OutputObservation(Box<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop>),
     None,
@@ -348,6 +353,7 @@ impl std::fmt::Display for WorthQueryApplicationAttemptDenial {
 }
 
 mod output_observation;
+mod source_disclosure;
 
 impl std::error::Error for WorthQueryApplicationAttemptDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {

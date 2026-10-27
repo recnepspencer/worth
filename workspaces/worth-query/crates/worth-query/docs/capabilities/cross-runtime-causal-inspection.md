@@ -10,6 +10,40 @@ and signal boundaries. It starts from an observation receipt plus a sealed
 inspection-basis capability, then produces an admitted explanation plan and an
 inspectable artifact.
 
+The operational implementation lives in
+`worth-query-execution/src/domain_computation/primary_graph/causal_inspection/`.
+The older engine preserves its supported receipt constructors through a
+directional adapter containing one Execution receipt; it retains only old-receipt
+translation and historical certification. Anchoring, reference resolution,
+admission and materialization have one Execution owner.
+
+Completed application-query publication receipts retain an opaque native
+observation when their disclosed source owner supplies one. It carries original
+source, parameter, scope and basis evidence, without a snapshot pin or current
+permission. The ordinary Decl/Host inspection entrance and fresh governed
+disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
+builder described here does not provide that application admission.
+
+An application mutation may independently declare its original source-disclosure
+meaning with `ApplicationSourceDisclosureBinding<Schema>` and the mutation macro's
+`inspection_disclosure Binding,` clause. The binding names the actual source and
+installed disclosure query, and maps the original typed input to query parameters.
+Installation checks that query's scope and principal interpretation against the
+source. `ApplicationQueryBindingReference` is the portable descriptive association;
+it grants no permission and must resolve against the actual installed inventory.
+
+Original source capture retains the genuine scope and admitted disclosure
+parameters on the source receipt's existing owner. Accounted requests, including
+an actual accounted ancestor, fund framework retention through their original
+execution request; an opaque application
+parameter mapper's returned heap is admitted after materialization, before
+framework retention. Unaccounted serial requests keep their native posture and
+original control checkpoints, without a fabricated accounting reservation.
+Inspection alone retains neither the business input nor a correction contract.
+Correction keeps its additional input/inverse custody where required. These
+captures provide evidence for later fresh admission; the ordinary and governed
+Host inspection entrances and connected producer-chain journey remain unfinished.
+
 This is different from `workspace.inspections()?.inspect(...)`, which explains one retained
 workspace target. Use causal inspection when the question crosses runtime
 boundaries.

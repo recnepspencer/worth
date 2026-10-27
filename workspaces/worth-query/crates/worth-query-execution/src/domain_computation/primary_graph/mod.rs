@@ -83,6 +83,7 @@ mod resolution_denial;
 mod root;
 mod schema_layout;
 pub(crate) mod settlement_repair;
+pub(in crate::domain_computation) mod source_disclosure;
 mod typed_bootstrap;
 mod value_decode;
 pub(in crate::domain_computation) mod workflow;
@@ -187,3 +188,4 @@ pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
 mod record_reservations;
+pub(crate) mod causal_inspection;

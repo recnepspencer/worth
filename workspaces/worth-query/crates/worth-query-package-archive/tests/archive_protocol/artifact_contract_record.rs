@@ -23,6 +23,18 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
     );
     assert_eq!(denial.compatibility().unwrap().observed_version(), 16);
 
+    let retained17 =
+        decode_hex(include_str!("artifact_contract_record/artifact_contract_v17.hex").trim());
+    let denial =
+        WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT)
+            .decode_frame(&retained17)
+            .unwrap_err();
+    assert_eq!(
+        denial.kind(),
+        WorthQueryPackageArchiveDenialKind::UnsupportedRecordVersion
+    );
+    assert_eq!(denial.compatibility().unwrap().observed_version(), 17);
+
     let source = artifact_package();
     let exported = source.export_typed_records().unwrap();
     let limits = WorthQueryPackageArchiveLimits::DEFAULT;
@@ -64,7 +76,7 @@ fn artifact_contract_frame_is_deterministic_exact_and_freshly_readmitted() {
 }
 
 #[test]
-fn version_seventeen_artifact_contract_frame_matches_the_frozen_vector() {
+fn version_eighteen_artifact_contract_frame_matches_the_frozen_vector() {
     let original =
         decode_hex(include_str!("artifact_contract_record/artifact_contract_v6.hex").trim());
     let denial =
@@ -123,9 +135,9 @@ fn version_seventeen_artifact_contract_frame_matches_the_frozen_vector() {
     let exported = source.export_typed_records().unwrap();
     let artifact = artifact_view(&exported);
     let bytes = encode_record_frame(artifact, WorthQueryPackageArchiveLimits::DEFAULT).unwrap();
-    let golden = include_str!("artifact_contract_record/artifact_contract_v17.hex").trim();
+    let golden = include_str!("artifact_contract_record/artifact_contract_v18.hex").trim();
     assert_eq!(encode_hex(&bytes), golden);
-    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 17);
+    assert_eq!(u16::from_be_bytes(bytes[0..2].try_into().unwrap()), 18);
     assert_eq!(u16::from_be_bytes(bytes[2..4].try_into().unwrap()), 7);
     assert_eq!(
         u32::from_be_bytes(bytes[4..8].try_into().unwrap()),

@@ -168,6 +168,16 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 application_query::validate(definition)?;
             }
+            ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
+                definition.validate().map_err(|_| {
+                    ApplicationSchemaDeclarationDenial::InvalidApplicationHistoryQuery
+                })?;
+            }
+            ApplicationSchemaMember::RelationAspect { definition } => {
+                definition.validate().map_err(|_| {
+                    ApplicationSchemaDeclarationDenial::InvalidApplicationRelationAspect
+                })?;
+            }
             ApplicationSchemaMember::ApplicationCapability { contract } => {
                 validate_capability_identifiers(contract)?;
             }
@@ -355,6 +365,13 @@ fn validate_program_target_identifiers(
             validate_identifiers([relation, from, to])
         }
         ApplicationOperationProgramTarget::Emit { effect } => validate_simple_identifier(effect),
+        ApplicationOperationProgramTarget::InitializeRelationField {
+            relation,
+            from,
+            to,
+            aspect,
+            field,
+        } => validate_identifiers([relation, from, to, aspect, field]),
     }
 }
 

@@ -107,3 +107,11 @@ pub(in crate::runtime::tests::causal_inspection) fn bridge_advisory_summary(
     )
     .expect("query advisory summary should be valid")
 }
+
+// These fixture adapters exercise only the historical diagnostic protocol.
+pub(in crate::runtime::tests) fn inspect_fixture(
+    receipt: crate::runtime::QueryObservationReceipt,
+) -> crate::runtime::CausalInspection {
+    let basis = receipt.inspection_basis_for_test();
+    crate::runtime::CausalInspection::for_observation(receipt, basis)
+}

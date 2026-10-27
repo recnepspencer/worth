@@ -10,6 +10,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::EntityId;
 
 use super::relation_distribution::distribute_relation_rows;
+use super::relation_occurrence::{attach_occurrences, RelationProjectionTarget};
 use super::relation_target_filter::retain_matching_targets;
 use super::{
     project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork, TargetedCollectionChild,
@@ -97,14 +98,20 @@ pub(super) fn attach_relation(
         read.endpoint_records_reserved(),
         relation.result_path(),
     )?;
-    let mut targets = BTreeMap::<EntityId, Vec<EntityId>>::new();
+    let mut targets = BTreeMap::<EntityId, Vec<RelationProjectionTarget>>::new();
     for record in read.into_records() {
         work.checkpoint(relation.result_path())?;
         let (parent, child) = match relation.direction() {
             ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
             ApplicationQueryResultTraversalDirection::Reverse => (record.target, record.source),
         };
-        targets.entry(parent).or_default().push(child);
+        targets
+            .entry(parent)
+            .or_default()
+            .push(RelationProjectionTarget {
+                entity: child,
+                relation: record.relation_id,
+            });
     }
     let predicate_counts = if relation.predicate().is_some() {
         parents
@@ -122,7 +129,7 @@ pub(super) fn attach_relation(
                     .get(&parent.entity_id())
                     .into_iter()
                     .flatten()
-                    .copied()
+                    .map(|target| target.entity)
             })
             .collect::<Vec<_>>()
     } else {
@@ -130,7 +137,15 @@ pub(super) fn attach_relation(
     };
     for target in targets.values_mut() {
         retain_matching_targets(
-            execution, projection, graph, governance, parameters, relation, target, work,
+            execution,
+            projection,
+            graph,
+            governance,
+            parameters,
+            relation,
+            target,
+            |target| target.entity,
+            work,
         )?;
     }
     let counts = parents
@@ -141,7 +156,7 @@ pub(super) fn attach_relation(
             Ok(count)
         })
         .collect::<Result<Vec<_>, WorthQueryApplicationReadExecutionDenial>>()?;
-    let child_ids = parents
+    let selected_targets = parents
         .iter()
         .flat_map(|parent| {
             targets
@@ -150,7 +165,11 @@ pub(super) fn attach_relation(
                 .flat_map(|ids| ids.iter().copied())
         })
         .collect::<Vec<_>>();
-    let children = project_nodes(
+    let child_ids = selected_targets
+        .iter()
+        .map(|target| target.entity)
+        .collect::<Vec<_>>();
+    let mut children = project_nodes(
         execution,
         runtime,
         projection,
@@ -164,6 +183,12 @@ pub(super) fn attach_relation(
         &child_ids,
         work,
         collection_selection,
+    )?;
+    attach_occurrences(
+        &mut children,
+        &selected_targets,
+        relation.result_path(),
+        work,
     )?;
     distribute_relation_rows(
         parents,
@@ -248,6 +273,7 @@ fn attach_targeted_relation(
         parameters,
         relation,
         &mut filtered_target,
+        |entity| *entity,
         work,
     )?;
     if filtered_target.len() != 1 {

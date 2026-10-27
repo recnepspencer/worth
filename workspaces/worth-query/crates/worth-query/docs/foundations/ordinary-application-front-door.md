@@ -106,6 +106,24 @@ outputs use `prepare_performed`. The
 [recorded source correction guide](../execution/recorded-source-correction.md)
 provides the declaration, request, retention, delivery and recovery examples.
 
+### Inspect record and aspect history
+
+Install an `ApplicationHistoryQueryBinding` over its actual `SubjectRead` binding.
+Capture subjects only from a successful complete disclosed read; those retained
+subjects preserve exact entity or physical-relation generations. Select the
+retained truth product explicitly and supply current security from the same
+branch. Every bounded page freshly admits SubjectRead and independent history
+metadata before traversal or protected continuation details.
+
+The cursor stays on that selected truth while current security changes. Its
+immutable staged continuation advances only after the original request succeeds;
+a refused or cancelled page preserves the last accepted position. Drop captured
+subjects, pages and cursors when finished to release their retained Native and
+World pins. The [installed history guide](../capabilities/record-and-aspect-history.md)
+documents limits and typed gaps. Compiled [entity audit journeys](../../../worth-query-certification/tests/application_graph/document_retention_model/record_history/court.rs)
+and the [physical relation journey](../../../worth-query-certification/tests/application_graph/relation_laws/history/court.rs)
+show capture, fresh permission, continuation and final release through Decl/Host.
+
 ### Keep the original branch across a host default switch
 
 A fixed owner exposes its original issued selector through `branch()`. If the host

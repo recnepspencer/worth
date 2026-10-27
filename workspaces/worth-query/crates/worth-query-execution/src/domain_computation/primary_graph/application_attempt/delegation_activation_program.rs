@@ -129,6 +129,7 @@ fn lower_effect(
             from,
             to,
         } => WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
             kind,
             key,
             from,
@@ -174,12 +175,14 @@ fn effect_is_exact(
         }
         (
             WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields,
                 kind,
                 key,
                 from,
                 to,
             },
             WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields: expected_fields,
                 kind: expected_kind,
                 key: expected_key,
                 from: expected_from,
@@ -190,6 +193,7 @@ fn effect_is_exact(
                 && key == expected_key
                 && from == expected_from
                 && to == expected_to
+                && fields == expected_fields
         }
         _ => false,
     }

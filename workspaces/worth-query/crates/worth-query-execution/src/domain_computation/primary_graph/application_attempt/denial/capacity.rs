@@ -9,6 +9,9 @@ impl ChargedBytes for WorthQueryApplicationAttemptDenial {
             cause,
         } = self;
         let nested = match cause {
+            AttemptDenialCause::SourceDisclosureParameters(cause) => {
+                (std::mem::size_of_val(cause.as_ref()) as u64).saturating_add(cause.owned_allocation_capacity_bytes() as u64)
+            }
             AttemptDenialCause::IndexedLookup(_) => std::mem::size_of::<
                 worth_relational::facade::indexes::BoundedEntityFieldLookupDenial,
             >() as u64,

@@ -1,5 +1,7 @@
 //! Borrowed request authority with scoped execution and fixed-size backing metadata.
 
+mod retained_memory;
+
 use super::{ExecutionResourceLease, SerialRequest};
 use crate::{ExecutionWorkCeiling, WorkCeilingDenial};
 use worth_foundational::{ExecutionPhysicalReport, ExecutionPosture, ExecutionReport};

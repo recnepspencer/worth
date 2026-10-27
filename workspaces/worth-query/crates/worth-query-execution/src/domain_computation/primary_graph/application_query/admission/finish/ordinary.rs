@@ -60,7 +60,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             parameters,
             controls,
             pending_governance,
-            |basis| {
+            |basis, _security| {
                 admit_application_query_basis(execution, self, basis)
                     .map(|basis| (basis, WorthQueryQueryIndexPosture::HistoricalAllPrimary))
             },
