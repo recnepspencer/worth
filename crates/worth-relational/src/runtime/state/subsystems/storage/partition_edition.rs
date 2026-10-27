@@ -67,6 +67,7 @@ impl PartitionEdition {
     }
 
     /// Retain Full custody already admitted by an operation, without storage I/O.
+    #[cfg(test)]
     pub(crate) fn shared_partition(
         &self,
         id: PartitionId,

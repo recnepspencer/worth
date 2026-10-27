@@ -49,6 +49,12 @@ pub(super) fn preparation_failure_cause(
     use WorthQueryGeneratedOutputRestorationFailureCause as Cause;
     let error = match error {
         RelationalMaterializationError::Commit(error) => error,
+        RelationalMaterializationError::Read(cause) => {
+            return match relational_execution_denial::relational_execution_kind(*cause, None) {
+                Ok(kind) => Cause::ExecutionDenied(kind),
+                Err(kind) => Cause::ExecutionControlStopped(kind),
+            };
+        }
         RelationalMaterializationError::OwnerUnavailable
         | RelationalMaterializationError::SourceCommitMismatch
         | RelationalMaterializationError::SourceIsNotCompleteCreatePublication

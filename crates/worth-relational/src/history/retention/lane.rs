@@ -237,7 +237,7 @@ impl RelationalRetentionGuard {
         self.release()
     }
 
-    pub(crate) fn transfer_to_performed_settlement(
+    pub(super) fn transfer_to_performed_settlement(
         &mut self,
         current_root: Arc<RelationalBranchRoot>,
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
