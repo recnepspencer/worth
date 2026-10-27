@@ -186,6 +186,17 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
 }
 
 impl<Query, QueryResult> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
+    /// Retains the actual completed query's source, parameters and observation
+    /// for a later freshly governed inspection. Receipt display fields cannot
+    /// manufacture this carrier.
+    pub fn retain_inspection_observation(
+        &self,
+    ) -> Option<super::super::causal_inspection::WorthQueryApplicationQueryObservation> {
+        super::super::causal_inspection::WorthQueryApplicationQueryObservation::from_disclosed_source(
+            self,
+        )
+    }
+
     /// Inspect the exact whole-orbit slot already disclosed by this result.
     pub fn orbit<Schema, Slot, Relation, Entity>(
         &self,

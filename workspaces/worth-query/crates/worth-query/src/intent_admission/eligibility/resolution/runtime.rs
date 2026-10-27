@@ -317,6 +317,7 @@ fn capability_violation_for_denial(
             WorthQueryAuthorityLane::AuthoritativeTruth => {
                 "declared-authority-lane-is-not-admitted-for-this-covered-entrypoint"
             }
+            _ => "declared-authority-lane-is-not-admitted-for-this-covered-entrypoint",
         },
         _ => "runtime-intent-floor-capability-violation",
     };

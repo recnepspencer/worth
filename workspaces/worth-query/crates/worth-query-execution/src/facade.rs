@@ -15,6 +15,12 @@ pub mod evidence_identity {
     pub use crate::domain_computation::evidence_identity::*;
 }
 
+/// Operational causal inspection owner; application entry still requires native receipts.
+#[doc(hidden)]
+pub mod causal_inspection {
+    pub use crate::domain_computation::primary_graph::causal_inspection::*;
+}
+
 pub mod domain_computation {
     pub use super::primary_graph::*;
     pub use crate::domain_computation::artifact_owner::*;
