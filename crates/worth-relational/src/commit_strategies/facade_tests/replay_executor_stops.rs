@@ -56,7 +56,15 @@ fn executor_memory_refusal_is_returned_by_value_without_a_verification_outcome()
     let (input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &canonical, &execution_draft(&canonical), input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &canonical,
+            &execution_draft(&canonical),
+            input,
+        )
         .unwrap();
     let validated = authority
         .validate_lowered_plan(&execution, &runtime, lowered)

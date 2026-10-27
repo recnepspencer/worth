@@ -22,9 +22,27 @@ impl Default for StringInterner {
 }
 
 impl StringInterner {
+    pub(crate) fn identity_frontier(&self) -> u32 {
+        self.next_symbol
+    }
+
+    /// Spend an identity without publishing any text meaning. The runtime owns
+    /// pending reservation lifetime and never restores this frontier on abort.
+    pub(crate) fn reserve_identity(
+        &mut self,
+    ) -> Result<Symbol, super::RelationalFieldTextAdmissionDenial> {
+        let next = self
+            .next_symbol
+            .checked_add(1)
+            .ok_or(super::RelationalFieldTextAdmissionDenial::SymbolExhausted)?;
+        let symbol = Symbol(self.next_symbol);
+        self.next_symbol = next;
+        Ok(symbol)
+    }
+
     pub(crate) fn reserve_frontier(&mut self, frontier: u32) -> Result<(), &'static str> {
-        if frontier == u32::MAX || frontier == 0 {
-            return Err("symbol frontier is exhausted or empty");
+        if frontier == 0 {
+            return Err("symbol frontier is empty");
         }
         self.next_symbol = self.next_symbol.max(frontier);
         Ok(())

@@ -140,6 +140,7 @@ impl ContinuityLineageSource for InMemoryRelationalBridgeSource {
     fn historical_lineage(
         &self,
         request: BridgeHistoricalLineageRequest,
+        _execution: worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<BridgeHistoricalLineageAuthority, BridgeLineageSourceError> {
         self.state
             .read()

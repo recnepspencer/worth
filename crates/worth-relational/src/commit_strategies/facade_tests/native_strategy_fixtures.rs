@@ -232,7 +232,13 @@ pub(crate) fn execute_persisted_intent_strategy_commit(
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(runtime, None);
     let lowered = authority
-        .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            request_execution,
+            runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let validated = authority
         .validate_lowered_plan(request_execution, runtime, lowered)
@@ -337,7 +343,15 @@ pub(crate) fn lowered_commit_fixture() -> (
     let (input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &draft, input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &draft,
+            input,
+        )
         .unwrap();
     (runtime, lowered)
 }

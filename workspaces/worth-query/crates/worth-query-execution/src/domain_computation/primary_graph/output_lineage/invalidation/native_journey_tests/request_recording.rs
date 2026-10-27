@@ -176,7 +176,8 @@ pub(super) fn account_witness(
     let mut facts = vec![WorthQueryApplicationObservedFact::Entity {
         entity_id: entity,
         kind: truth
-            .exact_snapshot_live_entity_kind(snapshot, entity)
+            .read_exact_snapshot_live_entity_kind(execution, snapshot, entity)
+            .unwrap()
             .unwrap(),
     }];
     for aspect in layout.native_output_aspects("Account") {
@@ -184,7 +185,8 @@ pub(super) fn account_witness(
             entity_id: entity,
             aspect: aspect.clone(),
             native_revision: truth
-                .exact_snapshot_entity_aspect_version(snapshot, entity, aspect)
+                .read_exact_snapshot_entity_aspect_version(execution, snapshot, entity, aspect)
+                .unwrap()
                 .unwrap(),
         });
     }

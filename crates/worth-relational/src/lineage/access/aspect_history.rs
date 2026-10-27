@@ -6,21 +6,27 @@ use crate::visibility::materialization::read_records::ProjectionAspectFilter;
 impl<'runtime> LineageAccess<'runtime> {
     pub fn entity_aspect_history(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: HistoricalResolutionRequest,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> Option<LineageAspectHistory> {
-        self.entity_aspect_history_with_trace(request, filter)
-            .history
+    ) -> Result<Option<LineageAspectHistory>, crate::execution::RelationalExecutionDenialCause>
+    {
+        Ok(self
+            .entity_aspect_history_with_trace(execution, request, filter)?
+            .history)
     }
 
     pub fn entity_aspect_history_with_trace(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: HistoricalResolutionRequest,
         filter: Option<&ProjectionAspectFilter>,
-    ) -> LineageAspectHistoryQueryResult {
+    ) -> Result<LineageAspectHistoryQueryResult, crate::execution::RelationalExecutionDenialCause>
+    {
         self.runtime
             .history()
             .lineage_entity_aspect_history_with_trace(
+                execution,
                 &request.branch_id,
                 request.lineage_id,
                 filter,

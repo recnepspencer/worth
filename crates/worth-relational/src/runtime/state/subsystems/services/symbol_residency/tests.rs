@@ -1,4 +1,6 @@
 use super::*;
+#[path = "routing_tests.rs"]
+mod routing_tests;
 use crate::durability::data::{
     RelationalCheckpointDirectory, RelationalCheckpointManifest, RelationalCheckpointMember,
 };
@@ -6,6 +8,26 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+#[test]
+fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
+    use super::super::symbol_table::SymbolReservationDenial;
+    let (table, _, source, snapshot) = dictionary();
+    let (existing, value) = snapshot.entries.last().unwrap();
+    let before = table.interner_snapshot();
+    let mut candidate = table.begin_pending_meanings();
+    assert!(matches!(
+        candidate.reserve(value.as_str()),
+        Err(SymbolReservationDenial::ColdBucket(_))
+    ));
+    assert_eq!(table.interner_snapshot(), before);
+    assert_eq!(source.reads.load(Ordering::SeqCst), 0);
+    let request = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&request);
+    table.demand_text(&execution, value.as_str()).unwrap();
+    assert_eq!(candidate.reserve(value.as_str()).unwrap(), *existing);
+    let meanings = candidate.interner().snapshot();
+    candidate.seal_for_publication(&meanings).publish().unwrap();
+}
 mod region_admission_tests;
 
 #[derive(Debug)]
@@ -13,9 +35,17 @@ struct PageSource {
     members: BTreeMap<RelationalDurableMemberLocator, Arc<[u8]>>,
     reads: AtomicUsize,
     corrupt: AtomicBool,
+    failed_member: Mutex<Option<RelationalDurableMemberLocator>>,
     failure: Mutex<Option<Cause>>,
 }
 impl RelationalDurableColdSource for PageSource {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -28,6 +58,9 @@ impl RelationalDurableColdSource for PageSource {
             });
         }
         self.reads.fetch_add(1, Ordering::SeqCst);
+        if self.failed_member.lock().unwrap().as_ref() == Some(&locator) {
+            return Err(Cause::Damaged);
+        }
         if let Some(cause) = *self.failure.lock().unwrap() {
             return Err(cause);
         }
@@ -80,9 +113,24 @@ fn dictionary() -> (
         .unwrap();
     let outcome = transaction.commit(&execution, &runtime).unwrap();
     release_test_commit_snapshot(&runtime, &outcome);
+    checkpoint_dictionary(&execution, &runtime)
+}
+
+fn checkpoint_dictionary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &crate::runtime::RelationalRuntime,
+) -> (
+    RuntimeSymbolTable,
+    RelationalCheckpointDirectory,
+    Arc<PageSource>,
+    crate::symbols::data::SymbolTableSnapshot,
+) {
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     #[derive(serde::Deserialize)]
     struct DirectoryInput {
@@ -108,9 +156,11 @@ fn dictionary() -> (
             .collect(),
         reads: AtomicUsize::new(0),
         corrupt: AtomicBool::new(false),
+        failed_member: Mutex::new(None),
         failure: Mutex::new(None),
     });
     let directory = RelationalCheckpointDirectory {
+        history_members: input.manifest.readmit_history_members().unwrap(),
         manifest: input.manifest,
         source: source.clone(),
     };
@@ -206,3 +256,5 @@ fn retryable_page_failure(cause: Cause) {
     table.demand_symbol_ids(&execution, [symbol]).unwrap();
     assert!(table.with_read(|symbols| symbols.retained_text(symbol).is_some()));
 }
+#[path = "placement_tests.rs"]
+mod placement_tests;

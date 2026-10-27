@@ -56,7 +56,7 @@ fn run(posture: Posture) {
                 )
             })
             .collect::<Vec<_>>();
-        println!("BANK_CELL:{place}:{charged:?}");
+        println!("\nBANK_CELL:{place}:{charged:?}");
         let (postings, report) = observer.journal();
         assert_eq!(
             postings,

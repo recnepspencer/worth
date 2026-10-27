@@ -12,8 +12,8 @@ use super::super::super::derived_index_surface::{
 use super::super::lineage_authority::published_lineage_artifacts_match;
 use super::super::surface_comparison::{
     compare_descriptor_surface, compare_replay_surface, surface_basis_for_branch_head,
-    surface_basis_for_diagnostics, surface_basis_for_history, surface_basis_for_patch,
-    surface_basis_for_published_lineage, surface_basis_for_snapshot, surface_basis_for_strategy,
+    surface_basis_for_history, surface_basis_for_patch, surface_basis_for_published_lineage,
+    surface_basis_for_snapshot, surface_basis_for_strategy,
 };
 use super::super::{SelectedPublishedLineageAuthority, ValidatedReplayContinuityEnvelope};
 
@@ -53,18 +53,12 @@ pub(super) fn compare_replay_surfaces(
         || format!("{:?}", envelope.patch),
         || format!("{:?}", replayed_envelope.patch),
     );
-    compare_replay_surface(
+    super::diagnostic_comparison::compare(
         runtime,
         verification_plan,
         mismatches,
-        ReplayObservableSurface::Diagnostics,
-        ReplayMismatchClass::DiagnosticsDrift,
-        surface_basis_for_diagnostics(envelope),
-        surface_basis_for_diagnostics(replayed_envelope),
-        "diagnostics summary differed",
-        || envelope.diagnostics_summary == replayed_envelope.diagnostics_summary,
-        || format!("{:?}", envelope.diagnostics_summary),
-        || format!("{:?}", replayed_envelope.diagnostics_summary),
+        envelope,
+        replayed_envelope,
     );
     compare_replay_surface(
         runtime,
@@ -266,10 +260,14 @@ pub(super) fn compare_replay_surfaces(
     }
     if compared_surfaces.contains(&DERIVED_INDEX_SURFACE) {
         let original_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            runtime.index_generations_at_version(envelope.commit.version_id),
+            runtime
+                .read_index_generations_at_version(execution, envelope.commit.version_id)
+                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
         );
         let replayed_derived_index_artifacts = crate::indexes::data::DerivedIndexArtifacts::new(
-            replay_runtime.index_generations_at_version(envelope.commit.version_id),
+            replay_runtime
+                .read_index_generations_at_version(execution, envelope.commit.version_id)
+                .map_err(crate::durability::data::RelationalRecoveryStop::Request)?,
         );
         compare_replay_surface(
             runtime,

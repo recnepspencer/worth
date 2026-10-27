@@ -1,142 +1,312 @@
-use crate::storage::residency::RelationalRegionRetention;
+//! One exclusive writer preserves current target metadata and old editions.
+mod resident_entry;
+pub(crate) use resident_entry::ResidentPartitionEntry;
+use resident_entry::ResidentTargetEditor;
+use std::collections::BTreeMap;
 use std::sync::RwLockWriteGuard;
 
 use crate::identity::data::PartitionId;
-use crate::storage::overlay::PartitionState;
+use crate::runtime::state::subsystems::RuntimeInstrumentation;
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionState};
+#[cfg(test)]
+use crate::storage::residency::{RelationalRegionRetention, ResidentRegionLease};
+use crate::storage::residency::{ResidentHistoryReadmission, ResidentRegionEdit};
 
 use super::edition_copy_lane::{PartitionCopyTally, PartitionEditionCopyLane};
-use super::partition_edition::{PartitionEdition, PartitionMap};
-use crate::runtime::state::subsystems::RuntimeInstrumentation;
+use super::{CurrentMirror, MirrorRegion, PartitionMap, ResidentMirrorTarget};
 
-/// Exclusive authority to install the next edition of the record substrate.
-///
-/// The guard deliberately exposes no `DerefMut`. Every mutable entry point can
-/// copy, and a copy that reaches Theta(partitions) or Theta(slots) must not
-/// hide behind something that reads like a field access.
-///
-/// Two distinct copies can happen here and both are charged. The map spine is
-/// copied at most once per guard, when a reader edition of the same map is
-/// still outstanding. Each partition reached through that spine is copied out
-/// of structural sharing the first time it is mutated while an observer still
-/// holds it -- that copy is Theta(the partition's slots) and is the larger of
-/// the two whenever a partition holds more than a handful of records. When
-/// nothing observes the substrate, mutation happens in place and neither copy
-/// occurs.
 pub(crate) struct PartitionEditionWriter<'subsystem> {
-    edition: RwLockWriteGuard<'subsystem, PartitionEdition>,
+    mirror: RwLockWriteGuard<'subsystem, CurrentMirror>,
     instrumentation: &'subsystem RuntimeInstrumentation,
     lane: PartitionEditionCopyLane,
     copies: PartitionCopyTally,
+    edits: BTreeMap<PartitionId, TargetEdit>,
+}
+
+struct TargetEdit {
+    target: ResidentMirrorTarget,
+    edit: ResidentRegionEdit,
+}
+
+/// Exclusive, load-free access to a mirror whose entire edition is Full.
+pub(crate) struct ResidentPartitionEditionWriter<'subsystem> {
+    writer: PartitionEditionWriter<'subsystem>,
+    targets: Vec<ResidentMirrorTarget>,
+}
+
+impl ResidentPartitionEditionWriter<'_> {
+    pub(crate) fn visit_partitions(
+        &mut self,
+        mut visit: impl FnMut(
+            ResidentPartitionEntry<'_>,
+        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        for target in &self.targets {
+            visit(ResidentPartitionEntry {
+                target,
+                writer: &mut self.writer,
+            })?;
+        }
+        Ok(())
+    }
 }
 
 impl<'subsystem> PartitionEditionWriter<'subsystem> {
     pub(super) fn new(
-        edition: RwLockWriteGuard<'subsystem, PartitionEdition>,
+        mirror: RwLockWriteGuard<'subsystem, CurrentMirror>,
         instrumentation: &'subsystem RuntimeInstrumentation,
         lane: PartitionEditionCopyLane,
     ) -> Self {
         Self {
-            edition,
+            mirror,
             instrumentation,
             lane,
             copies: PartitionCopyTally::default(),
+            edits: BTreeMap::new(),
         }
     }
 
-    /// Exclusive access to the whole map, copying the spine once if observed.
-    ///
-    /// This buys ownership of the pointers, not of what they point at: the
-    /// copied spine holds the same partition arcs the outstanding reader does.
-    /// It is deliberately private: a caller holding `&mut PartitionMap` could
-    /// reach `Arc::make_mut` on a partition itself, and that copy would be the
-    /// one cost on this guard nobody counted.
+    pub(super) fn accept_resident(
+        mut self,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Result<ResidentPartitionEditionWriter<'subsystem>, Self> {
+        let mut targets = Vec::new();
+        for id in self.mirror.edition.partition_ids() {
+            if !matches!(
+                crate::storage::overlay::PartitionAccess::probe_full_partition(
+                    &self.mirror.edition.with_symbol_admission(symbols),
+                    id
+                ),
+                crate::storage::residency::PartitionProbe::Resident(_)
+            ) {
+                return Err(self);
+            }
+            match self.mirror.admit_target(id) {
+                Ok(Some(target)) => targets.push(target),
+                _ => return Err(self),
+            }
+        }
+        Ok(ResidentPartitionEditionWriter {
+            writer: self,
+            targets,
+        })
+    }
+
     fn map_mut(&mut self) -> &mut PartitionMap {
-        let (map, copied) = self.edition.map_mut();
+        let (map, copied) = self.mirror.edition.map_mut();
         if copied {
             self.copies.record_spine_copy();
         }
         map
     }
 
-    /// Exclusive access to one partition's authoritative state, copying that
-    /// partition out of structural sharing only when a reader still holds the
-    /// previous edition of it.
-    pub(crate) fn partition_mut(
-        &mut self,
-        partition_id: PartitionId,
-    ) -> Option<&mut PartitionState> {
-        let Self {
-            edition, copies, ..
-        } = self;
-        let (map, spine_copied) = edition.map_mut();
-        if spine_copied {
-            copies.record_spine_copy();
+    fn begin_target_edit(&mut self, target: &ResidentMirrorTarget) -> bool {
+        let id = target.partition_id();
+        if let Some(entry) = self.edits.get_mut(&id) {
+            return entry.edit.full_partition_mut().is_some();
         }
-        map.get_mut(&partition_id)
-            .and_then(|partition| own_partition(copies, partition))
+        if !target.is_full() {
+            return false;
+        }
+        debug_assert!(matches!(self.mirror.regions.get(&id),
+            Some(MirrorRegion::Resident(current)) if current.same_target(target)));
+        // The cached edition is an owner projection, not another observer.
+        // An external edition retains its old map and payload independently.
+        drop(self.map_mut().remove(&id));
+        let Some((edit, copied)) = target.begin_full_edit() else {
+            return false;
+        };
+        if copied {
+            self.copies.record_partition_copy(
+                edit.partition().entity_arena.slot_count(),
+                edit.partition().relation_arena.slot_count(),
+            );
+        }
+        self.edits.insert(
+            id,
+            TargetEdit {
+                target: target.clone(),
+                edit,
+            },
+        );
+        true
     }
 
-    /// Exclusive access to every partition, copying each one that an observer
-    /// still holds. This is Theta(all slots in the substrate) in the worst
-    /// case, which is why the copies it performs are counted individually
-    /// rather than summarized as one event.
+    fn begin_current_target_edit(
+        &mut self,
+        target: &ResidentMirrorTarget,
+        readmission: ResidentHistoryReadmission,
+    ) {
+        let id = target.partition_id();
+        if self.edits.contains_key(&id) {
+            return;
+        }
+        debug_assert!(
+            matches!(self.mirror.regions.get(&id), Some(MirrorRegion::Resident(current)) if current.same_target(target))
+        );
+        drop(self.map_mut().remove(&id));
+        let (edit, copied) = target.begin_current_edit(readmission);
+        if copied {
+            self.copies.record_partition_copy(
+                edit.partition().entity_arena.slot_count(),
+                edit.partition().relation_arena.slot_count(),
+            );
+        }
+        self.edits.insert(
+            id,
+            TargetEdit {
+                target: target.clone(),
+                edit,
+            },
+        );
+    }
+
+    pub(crate) fn transform_target(
+        &mut self,
+        target: &ResidentMirrorTarget,
+        readmission: ResidentHistoryReadmission,
+        transform: impl FnOnce(PartitionState) -> PartitionState,
+    ) {
+        self.begin_current_target_edit(target, readmission);
+        let TargetEdit { target, edit } = self
+            .edits
+            .remove(&target.partition_id())
+            .expect("this writer owns the accepted resident target edit");
+        let edit = edit.transform(transform);
+        self.edits
+            .insert(target.partition_id(), TargetEdit { target, edit });
+    }
+
+    pub(crate) fn install_target(&mut self, target: ResidentMirrorTarget) {
+        let retained = target.retention();
+        let id = target.partition_id();
+        self.mirror
+            .regions
+            .insert(id, MirrorRegion::Resident(target));
+        self.map_mut().insert(id, retained);
+    }
+
+    pub(crate) fn current_lease(
+        &mut self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalResidencyLease<crate::storage::residency::Head>>
+    {
+        self.mirror
+            .admit_current_target(id)
+            .ok()
+            .flatten()
+            .map(|target| target.current_lease())
+    }
+
+    /// Runtime pin/lifecycle metadata changes add no field meanings or history.
+    pub(crate) fn partition_metadata_mut(
+        &mut self,
+        id: PartitionId,
+    ) -> Option<&mut PartitionState> {
+        if !self.edits.contains_key(&id) {
+            let target = self.mirror.admit_current_target(id).ok().flatten()?;
+            drop(self.map_mut().remove(&id));
+            let (edit, copied) = target.begin_metadata_edit();
+            if copied {
+                self.copies.record_partition_copy(
+                    edit.partition().entity_arena.slot_count(),
+                    edit.partition().relation_arena.slot_count(),
+                );
+            }
+            self.edits.insert(id, TargetEdit { target, edit });
+        }
+        self.edits
+            .get_mut(&id)
+            .map(|entry| entry.edit.partition_mut())
+    }
+
+    pub(crate) fn partition_mut(&mut self, id: PartitionId) -> Option<&mut PartitionState> {
+        if !self.edits.contains_key(&id) {
+            let target = self.mirror.admit_target(id).ok().flatten()?;
+            if !self.begin_target_edit(&target) {
+                return None;
+            }
+        }
+        self.edits
+            .get_mut(&id)
+            .and_then(|entry| entry.edit.full_partition_mut())
+    }
+
     pub(crate) fn resident_partitions_mut(
         &mut self,
     ) -> impl Iterator<Item = &mut PartitionState> + use<'_> {
-        let Self {
-            edition, copies, ..
-        } = self;
-        let (map, spine_copied) = edition.map_mut();
-        if spine_copied {
-            copies.record_spine_copy();
+        for id in self.mirror.edition.partition_ids() {
+            if let Ok(Some(target)) = self.mirror.admit_target(id) {
+                self.begin_target_edit(&target);
+            }
         }
-        map.values_mut()
-            .filter_map(move |partition| own_partition(copies, partition))
+        self.edits
+            .values_mut()
+            .filter_map(|entry| entry.edit.full_partition_mut())
     }
 
-    pub(crate) fn insert(&mut self, partition_id: PartitionId, partition: PartitionState) {
+    #[cfg(test)]
+    pub(crate) fn insert(&mut self, id: PartitionId, partition: PartitionState) {
+        let retained = RelationalRegionRetention::resident(partition);
+        let lease = retained
+            .pin_lease()
+            .expect("newly owned Full contents are resident");
+        if let Some(entry) = self.edits.remove(&id) {
+            entry
+                .target
+                .restore(ResidentRegionLease::Full(lease.clone()));
+        } else if let Some(MirrorRegion::Resident(target)) = self.mirror.regions.get(&id) {
+            target.restore(ResidentRegionLease::Full(lease.clone()));
+        } else {
+            self.mirror.regions.insert(
+                id,
+                MirrorRegion::Resident(ResidentMirrorTarget::new(lease.clone(), false)),
+            );
+        }
         self.map_mut()
-            .insert(partition_id, RelationalRegionRetention::resident(partition));
-    }
-
-    pub(crate) fn remove(
-        &mut self,
-        partition_id: PartitionId,
-    ) -> Option<RelationalRegionRetention> {
-        self.map_mut().remove(&partition_id)
+            .insert(id, RelationalRegionRetention::from_lease(lease));
     }
 
     pub(crate) fn install(&mut self, partitions: PartitionMap) {
-        *self.edition = PartitionEdition::new(partitions);
+        self.finish_edits();
+        *self.mirror = CurrentMirror::from_cells(partitions);
+    }
+
+    fn finish_edits(&mut self) {
+        for (id, entry) in std::mem::take(&mut self.edits) {
+            let lease = entry.edit.freeze();
+            let retained = lease.retention();
+            entry.target.restore(lease);
+            self.map_mut().insert(id, retained);
+        }
     }
 }
 
 impl Drop for PartitionEditionWriter<'_> {
-    /// Settle once for the whole guard. Instrumentation is taken under a lock,
-    /// so charging per copied partition would put a lock acquisition on every
-    /// partition of a substrate-wide pass.
     fn drop(&mut self) {
+        self.finish_edits();
         self.lane.settle(self.instrumentation, self.copies);
     }
 }
 
-/// Take sole ownership of one partition, tallying the copy if the arc was
-/// shared.
-///
-/// The sharing test happens before the copy rather than being inferred from it,
-/// so a partition the guard already owns outright is never charged for work
-/// nobody performed.
-fn own_partition<'partition>(
-    copies: &mut PartitionCopyTally,
-    partition: &'partition mut RelationalRegionRetention,
-) -> Option<&'partition mut PartitionState> {
-    let copied = !partition.is_uniquely_owned();
-    let partition = partition.make_mut()?;
-    if copied {
-        copies.record_partition_copy(
-            partition.entity_arena.slot_count(),
-            partition.relation_arena.slot_count(),
-        );
+impl ResidentTargetEditor for PartitionEditionWriter<'_> {
+    fn read_target(&self, target: &ResidentMirrorTarget) -> &PartitionState {
+        match self.edits.get(&target.partition_id()) {
+            Some(entry) => entry.edit.partition(),
+            None => self
+                .mirror
+                .edition
+                .partition(target.partition_id())
+                .expect("accepted resident target remains in its writer's edition"),
+        }
     }
-    Some(partition)
+
+    fn edit_target(&mut self, target: &ResidentMirrorTarget) -> &mut PartitionState {
+        self.begin_target_edit(target);
+        self.edits
+            .get_mut(&target.partition_id())
+            .expect("this writer owns the accepted target edit")
+            .edit
+            .partition_mut()
+    }
 }

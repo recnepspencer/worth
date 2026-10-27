@@ -149,7 +149,8 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
     .unwrap();
     let baseline = runtime
         .storage_access()
-        .storage_stats()
+        .storage_stats(request_execution)
+        .unwrap()
         .published_snapshot_handle_count;
     assert_eq!(baseline, 0);
 
@@ -177,7 +178,8 @@ fn receipt_only_mutations_release_each_bounded_published_snapshot() {
     assert_eq!(
         runtime
             .storage_access()
-            .storage_stats()
+            .storage_stats(request_execution)
+            .unwrap()
             .published_snapshot_handle_count,
         baseline
     );

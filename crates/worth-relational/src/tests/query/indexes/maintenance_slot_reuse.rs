@@ -23,7 +23,7 @@ fn reused_slot_cold_and_retained_generations_match_rebuild_then_accept_local_edi
     release_test_commit_snapshot(&runtime, &original);
     let deleted = delete_entity(execution, &runtime, old_id);
     release_test_commit_snapshot(&runtime, &deleted);
-    runtime.retention().run_pass();
+    runtime.retention().run_pass(execution).unwrap();
     let replacement = create_entity_outcome(execution, &runtime, "replacement");
     let new_id = changed_entities(&replacement)[0];
     assert_eq!(old_id.local_slot, new_id.local_slot);

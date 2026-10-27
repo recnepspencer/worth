@@ -7,6 +7,8 @@ use crate::tests::support::*;
 
 #[test]
 fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
         .client_key_symbol_policy(ClientKeySymbolPolicy::RequireInterned)
@@ -62,21 +64,31 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
         .is_some());
 
     let merged_intents = transaction
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .expect("raw created graph normalizes")
         .merged_intents
         .clone();
     let normalized_source = normalized_entity(
         &merged_intents,
-        &runtime.services.symbols.interner_snapshot(),
+        transaction
+            .pending_symbols
+            .as_ref()
+            .expect("preview retains its dictionary custody")
+            .interner(),
         "normalized-source",
     );
     let normalized_target = normalized_entity(
         &merged_intents,
-        &runtime.services.symbols.interner_snapshot(),
+        transaction
+            .pending_symbols
+            .as_ref()
+            .expect("preview retains its dictionary custody")
+            .interner(),
         "normalized-target",
     );
     let normalized_relation = normalized_relation(&merged_intents);
@@ -101,17 +113,28 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
         normalized_relation.target,
         EntityReference::Created(normalized_target.clone())
     );
-    for (key, expected) in [
+    let expected_symbols = [
         (&normalized_source.client_key, "normalized-source"),
         (&normalized_target.client_key, "normalized-target"),
         (&normalized_relation.client_key, "normalized-relation"),
-    ] {
-        let symbol = key.as_symbol().expect("RequireInterned emits symbols");
+    ]
+    .map(|(key, expected)| {
+        (
+            key.as_symbol().expect("RequireInterned emits symbols"),
+            expected,
+        )
+    });
+    for (symbol, expected) in expected_symbols {
         assert_eq!(
-            runtime.services.symbols.resolve(symbol).as_deref(),
+            transaction
+                .pending_symbols
+                .as_ref()
+                .unwrap()
+                .interner()
+                .resolve(symbol),
             Some(expected)
         );
-        assert!(runtime
+        assert!(!runtime
             .config()
             .identity
             .symbol_table
@@ -145,6 +168,22 @@ fn require_interned_normalizes_plan_and_created_footprint_to_identical_symbols()
             .collect::<std::collections::BTreeSet<_>>(),
         expected_writes
     );
+    let committed = transaction
+        .commit(execution, &runtime)
+        .expect("preview's exact dictionary custody reaches publication");
+    for (symbol, expected) in expected_symbols {
+        assert_eq!(
+            runtime.services.symbols.resolve(symbol).as_deref(),
+            Some(expected)
+        );
+        assert!(runtime
+            .config()
+            .identity
+            .symbol_table
+            .entries
+            .contains(&(symbol, expected.into())));
+    }
+    release_test_commit_snapshot(&runtime, &committed);
 }
 
 fn created_entity(client_key: &str) -> CreatedEntityRef {

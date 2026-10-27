@@ -2,6 +2,23 @@
 use super::super::symbol_residency::RuntimeSymbolResidency;
 use super::*;
 
+#[derive(Debug)]
+pub(crate) enum ColdSymbolDirectoryDenial {
+    Invalid(&'static str),
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
+}
+
+impl ColdSymbolDirectoryDenial {
+    pub(crate) fn into_recovery_stop(self) -> crate::durability::data::RelationalRecoveryStop {
+        match self {
+            Self::Invalid(message) => {
+                crate::durability::checkpoints::region_directory::corrupt(message).into()
+            }
+            Self::StorageUnavailable(failure) => failure.into(),
+        }
+    }
+}
+
 impl RuntimeSymbolTable {
     pub(crate) fn demand_region_symbols(
         &self,
@@ -20,6 +37,17 @@ impl RuntimeSymbolTable {
         Ok(())
     }
 
+    pub(crate) fn region_symbols_admitted(
+        &self,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+    ) -> bool {
+        self.cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .as_ref()
+            .is_none_or(|pages| pages.region_is_admitted(region))
+    }
+
     pub(crate) fn checkpoint_contents_resident(&self) -> bool {
         self.cold
             .read()
@@ -36,7 +64,7 @@ impl RuntimeSymbolTable {
     pub(crate) fn install_cold_pages(
         &self,
         directory: &crate::durability::data::RelationalCheckpointDirectory,
-    ) -> Result<(), &'static str> {
+    ) -> Result<(), ColdSymbolDirectoryDenial> {
         let frontier = directory
             .manifest
             .symbols
@@ -47,18 +75,43 @@ impl RuntimeSymbolTable {
         let frontier = u32::try_from(frontier)
             .ok()
             .and_then(|last| last.checked_add(1))
-            .ok_or("checkpoint symbol frontier is exhausted")?;
-        self.with_write(|symbols| symbols.reserve_frontier(frontier))?;
+            .ok_or(ColdSymbolDirectoryDenial::Invalid(
+                "checkpoint symbol frontier is exhausted",
+            ))?;
+        let frontier = frontier.max(directory.manifest.symbol_identity_frontier);
+        let pages = RuntimeSymbolResidency::new(
+            directory.manifest.symbols.clone(),
+            directory.manifest.symbol_buckets.clone(),
+            directory.source.clone(),
+        )
+        .map_err(ColdSymbolDirectoryDenial::StorageUnavailable)?;
+        self.with_write(|symbols| symbols.reserve_frontier(frontier))
+            .map_err(ColdSymbolDirectoryDenial::Invalid)?;
         *self
             .cold
             .write()
-            .unwrap_or_else(|poisoned| poisoned.into_inner()) =
-            Some(Arc::new(RuntimeSymbolResidency::new(
-                directory.manifest.symbols.clone(),
-                directory.manifest.symbol_buckets.clone(),
-                directory.source.clone(),
-            )));
+            .unwrap_or_else(|poisoned| poisoned.into_inner()) = Some(Arc::new(pages));
         Ok(())
+    }
+
+    pub(crate) fn checkpoint_export_sources(
+        &self,
+    ) -> std::collections::BTreeMap<
+        crate::durability::medium::RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    > {
+        let Some(pages) = self
+            .cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+        else {
+            return Default::default();
+        };
+        pages.export_sources()
     }
 
     pub(crate) fn demand_symbol_ids(

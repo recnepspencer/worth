@@ -107,7 +107,8 @@ fn replay_and_recovery_preserve_aspect_bearing_truth_across_a_hostile_mixed_work
 
     let start_lineage = runtime
         .lineage_access()
-        .for_record(anchor)
+        .for_record(execution, anchor)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -256,7 +257,8 @@ fn hostile_commit_replay_equivalence_test() {
 
     let anchor_lineage = runtime
         .lineage_access()
-        .for_record(anchor)
+        .for_record(execution, anchor)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let original_bundle = capture_aspect_truth_bundle(
@@ -275,7 +277,9 @@ fn hostile_commit_replay_equivalence_test() {
     );
     let original_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let replay = runtime
         .replay_authority()
@@ -335,7 +339,9 @@ fn hostile_commit_replay_equivalence_test() {
     );
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(merge.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()

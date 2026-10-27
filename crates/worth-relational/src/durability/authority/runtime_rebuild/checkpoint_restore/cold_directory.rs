@@ -28,12 +28,17 @@ pub(super) fn restore(
     paged_symbols.replace(symbols);
     paged_symbols
         .install_cold_pages(&directory)
-        .map_err(corrupt)?;
+        .map_err(crate::runtime::ColdSymbolDirectoryDenial::into_recovery_stop)?;
     let mut regions = ReadmittedRegionDirectory::new(directory.clone(), paged_symbols.clone())?;
     let heads = checkpoint
         .envelopes
         .iter()
         .map(|entry| (entry.commit.commit_id, Arc::clone(entry.canonical_arc())))
+        .collect::<BTreeMap<_, _>>();
+    let positioned = checkpoint
+        .envelopes
+        .iter()
+        .map(|entry| (entry.commit.commit_id, entry.clone()))
         .collect::<BTreeMap<_, _>>();
     let mut catalog = RelationalCommitCatalog::default();
     for entry in &directory.manifest.commits {
@@ -41,13 +46,22 @@ pub(super) fn restore(
             .append_indexed_recovery(
                 entry.clone(),
                 directory.source.clone(),
-                heads.get(&entry.commit.commit_id).cloned(),
+                positioned.get(&entry.commit.commit_id).cloned(),
             )
             .map_err(|denial| corrupt(format!("indexed commit admission: {denial:?}")))?;
     }
+    let head_cells = heads
+        .keys()
+        .map(|id| {
+            catalog
+                .get(*id)
+                .map(|artifact| (*id, artifact.envelope_residency()))
+                .ok_or_else(|| corrupt("admitted head has no catalog entry"))
+        })
+        .collect::<Result<_, _>>()?;
     history.with_ledger_mut(|ledger| {
         ledger.commit_catalog = catalog;
-        ledger.commit_envelopes = heads.clone();
+        ledger.commit_envelopes = head_cells;
         ledger.commit_graph = directory
             .manifest
             .commits
@@ -145,9 +159,10 @@ pub(super) fn restore(
     runtime.record_identity = record_identity;
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
+    runtime.lineage.install_cold_pages(&directory)?;
     runtime
         .indexes
-        .install_cold_checkpoint(directory.clone(), &runtime.history);
+        .install_cold_checkpoint(directory.clone(), &runtime.history)?;
     runtime.durability.checkpoint_selection().restore(directory);
     Ok(())
 }

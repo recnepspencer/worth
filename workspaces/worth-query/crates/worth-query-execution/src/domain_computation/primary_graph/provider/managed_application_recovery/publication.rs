@@ -136,6 +136,6 @@ fn adoption_denial(
 ) -> Denial {
     match denial {
         PublicationDenial::Stopped(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
-        PublicationDenial::Refused(denial) => Denial::Adoption(denial),
+        PublicationDenial::Refused(denial) => Denial::Adoption(Box::new(denial)),
     }
 }

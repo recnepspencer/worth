@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use crate::history::data::{CanonicalCommitEnvelope, CommitId, VersionNode};
+use crate::history::data::{CommitId, VersionNode};
 use crate::history::RelationalCommitCatalog;
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -20,7 +20,8 @@ pub(crate) struct HistoryLedger {
     pub(crate) commit_graph: BTreeMap<CommitId, VersionNode>,
     /// Durable recovery sidecar holding the same sealed envelope the catalog
     /// already admitted. It cannot mint a branch cell or a fork basis.
-    pub(crate) commit_envelopes: BTreeMap<CommitId, Arc<CanonicalCommitEnvelope>>,
+    pub(crate) commit_envelopes:
+        BTreeMap<CommitId, Arc<crate::history::RelationalCommitEnvelopeResidency>>,
     pub(crate) patch_stream_index: BTreeMap<PatchStreamPosition, CommitId>,
     pub(crate) next_commit_id: u64,
     pub(crate) next_version_id: u64,
@@ -44,11 +45,11 @@ impl HistoryLedger {
         &mut self,
         commit_id: CommitId,
         commit_reference: crate::history::data::RelationalCommitReceipt,
-        envelope: Arc<CanonicalCommitEnvelope>,
         artifact: crate::history::RelationalCommitArtifact,
         patch_position: PatchStreamPosition,
         recovery_readmission: bool,
     ) {
+        let envelope = artifact.envelope_residency();
         if recovery_readmission {
             self.commit_catalog.install_prepared_recovery(artifact);
         } else {

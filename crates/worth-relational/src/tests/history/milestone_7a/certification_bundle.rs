@@ -106,19 +106,23 @@ pub(super) fn run_merge_ready_history_shape_certification(
 
     let parent_list_serialization = ParentListSerializationArtifact {
         root_commit_id: root.commit.commit_id.0,
-        root_parents: authoritative_parent_ids(&runtime, root.commit.commit_id),
+        root_parents: authoritative_parent_ids(execution, &runtime, root.commit.commit_id),
         linear_commit_id: linear.commit.commit_id.0,
-        linear_parents: authoritative_parent_ids(&runtime, linear.commit.commit_id),
+        linear_parents: authoritative_parent_ids(execution, &runtime, linear.commit.commit_id),
         feature_commit_id: feature.commit.commit_id.0,
-        feature_parents: authoritative_parent_ids(&runtime, feature.commit.commit_id),
+        feature_parents: authoritative_parent_ids(execution, &runtime, feature.commit.commit_id),
         merge_ready_commit_id: merge.commit.commit_id.0,
-        merge_ready_parents: authoritative_parent_ids(&runtime, merge.commit.commit_id),
+        merge_ready_parents: authoritative_parent_ids(execution, &runtime, merge.commit.commit_id),
         replayed_merge_ready_parents: replay
             .commit
             .as_ref()
             .map(|commit| commit_parent_ids(commit.ordered_parents().as_slice()))
             .unwrap_or_default(),
-        recovered_merge_ready_parents: authoritative_parent_ids(&recovered, merge.commit.commit_id),
+        recovered_merge_ready_parents: authoritative_parent_ids(
+            execution,
+            &recovered,
+            merge.commit.commit_id,
+        ),
     };
 
     let ancestry_query_matrix = AncestryQueryMatrix {
@@ -182,13 +186,16 @@ pub(super) fn run_merge_ready_history_shape_certification(
 }
 
 fn authoritative_parent_ids(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> Vec<u64> {
     commit_parent_ids(
         runtime
             .replay()
-            .canonical_commit_envelope(commit_id)
+            .canonical_commit_envelope(execution, commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .ordered_parents()

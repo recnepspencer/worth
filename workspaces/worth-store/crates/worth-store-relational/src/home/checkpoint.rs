@@ -66,13 +66,13 @@ impl RelationalStoreHome {
     /// recovery basis in one durable decision.
     pub fn checkpoint(
         &self,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalStoreCheckpoint, RelationalStoreCheckpointFailure> {
         let members = self.cold_source.member_locators();
         let checkpoint = self
             .runtime
             .durability_authority()
-            .native_checkpoint_with_policy(policy, worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &members, source: Some(self.cold_source.clone()) })
+            .native_checkpoint_with_policy(execution, execution.allocation_policy(), worth_relational::facade::durability::RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &members, source: Some(self.cold_source.clone()) })
             .map_err(RelationalStoreCheckpointFailure::Capture)?;
         let covered = checkpoint
             .covered_position()

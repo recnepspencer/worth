@@ -36,7 +36,7 @@ pub(crate) fn checkpoint_into_medium(
 ) {
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .expect("native checkpoint captures");
     attached_test_medium(runtime).file_checkpoint(native);
 }

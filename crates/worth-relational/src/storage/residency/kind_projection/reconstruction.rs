@@ -1,4 +1,5 @@
 use super::*;
+use crate::identity::data::KindId;
 
 /// Owned relations are reconstructed from record metadata. Peer relations use
 /// only the projection authenticated by this region's canonical root leaf.
@@ -18,7 +19,7 @@ pub(in crate::storage::residency) fn rebuild(
         // Discard every supplied claim about locally owned history, and derive
         // it again from the authenticated arena, including retired generations.
         expected.retain(|id, _| id.partition_id != partition.partition_id);
-        project_owned_history(partition, &mut expected);
+        project_owned_history(partition, &mut expected)?;
         if expected.values().cloned().collect::<Vec<_>>() != projection {
             return Err(Cause::IntegrityMismatch);
         }
@@ -45,13 +46,39 @@ pub(in crate::storage::residency) fn rebuild(
                 entry.relation,
                 entry.kind,
                 view.extra().endpoints.as_ref().ok_or(Cause::Damaged)?,
-            );
+            )?;
             if local.get(&entry.relation) != Some(entry) {
                 return Err(Cause::IntegrityMismatch);
             }
         }
     }
     Ok(())
+}
+
+/// The digest is authenticated by the caller. Head can corroborate current
+/// owned claims; Full must later reconstruct all owned historical claims.
+pub(in crate::storage::residency) fn rebuild_head_history(
+    partition: &mut PartitionState,
+    projection: &[RegionRelationProjection],
+) -> Result<(), Cause> {
+    let mut expected = BTreeMap::new();
+    for entry in projection {
+        if expected.insert(entry.relation, entry.clone()).is_some() {
+            return Err(Cause::Damaged);
+        }
+    }
+    let mut known = BTreeMap::new();
+    project_owned_history(partition, &mut known)?;
+    for (relation, claim) in known {
+        let supplied = expected.get(&relation).ok_or(Cause::IntegrityMismatch)?;
+        if claim.kind != supplied.kind
+            || !claim.outgoing.is_subset(&supplied.outgoing)
+            || !claim.incoming.is_subset(&supplied.incoming)
+        {
+            return Err(Cause::IntegrityMismatch);
+        }
+    }
+    install_projection(partition, &expected, AdjacencyKindBasis::Historical)
 }
 
 fn install_projection(
@@ -109,7 +136,7 @@ fn add_owned(
     relation: RelationId,
     kind: KindId,
     endpoints: &crate::storage::substrate::RelationEndpoints,
-) {
+) -> Result<(), Cause> {
     let entry = target
         .entry(relation)
         .or_insert_with(|| RegionRelationProjection {
@@ -118,6 +145,9 @@ fn add_owned(
             outgoing: BTreeSet::new(),
             incoming: BTreeSet::new(),
         });
+    if entry.kind != kind {
+        return Err(Cause::IntegrityMismatch);
+    }
     if endpoints.source.partition_id == partition.partition_id
         && partition
             .adjacency
@@ -137,6 +167,7 @@ fn add_owned(
     if entry.outgoing.is_empty() && entry.incoming.is_empty() {
         target.remove(&relation);
     }
+    Ok(())
 }
 
 pub(in crate::storage::residency) fn canonical_history(
@@ -147,15 +178,16 @@ pub(in crate::storage::residency) fn canonical_history(
         .filter(|entry| entry.relation.partition_id != partition.partition_id)
         .map(|entry| (entry.relation, entry))
         .collect();
-    project_owned_history(partition, &mut expected);
+    project_owned_history(partition, &mut expected)?;
     Ok(expected.into_values().collect())
 }
 
 fn project_owned_history(
     partition: &PartitionState,
     expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
-) {
+) -> Result<(), Cause> {
     for slot in partition.relation_arena.occupied_slots() {
+        project_prefix(partition, slot, expected)?;
         for metadata in partition
             .relation_arena
             .metadata_history_at(slot)
@@ -168,7 +200,7 @@ fn project_owned_history(
                 RelationId::new(partition.partition_id, slot as u64, metadata.generation),
                 metadata.kind_id,
                 &metadata.endpoints,
-            );
+            )?;
         }
         if let Some(view) = partition.relation_arena.get_slot(slot)
             && let (Some(kind), Some(endpoints)) = (view.kind_id(), view.extra().endpoints.as_ref())
@@ -179,7 +211,55 @@ fn project_owned_history(
                 RelationId::new(partition.partition_id, slot as u64, view.generation()),
                 kind,
                 endpoints,
-            );
+            )?;
         }
     }
+    Ok(())
+}
+
+fn project_prefix(
+    partition: &PartitionState,
+    slot: usize,
+    expected: &mut BTreeMap<RelationId, RegionRelationProjection>,
+) -> Result<(), Cause> {
+    let physical = partition.relation_arena.physical_index(slot).unwrap();
+    let Some(prefix) = &partition.relation_arena.history_prefixes[physical] else {
+        return Ok(());
+    };
+    for claim in &prefix.history_opening.historical_relations {
+        if claim.relation.partition_id != partition.partition_id
+            || claim.relation.slot_index() != slot
+        {
+            return Err(Cause::IntegrityMismatch);
+        }
+        let entry = expected
+            .entry(claim.relation)
+            .or_insert_with(|| RegionRelationProjection {
+                relation: claim.relation,
+                kind: claim.kind,
+                outgoing: BTreeSet::new(),
+                incoming: BTreeSet::new(),
+            });
+        if entry.kind != claim.kind {
+            return Err(Cause::IntegrityMismatch);
+        }
+        entry.outgoing.extend(
+            claim
+                .outgoing
+                .iter()
+                .filter(|&&slot| partition.adjacency.get(slot).is_some())
+                .copied(),
+        );
+        entry.incoming.extend(
+            claim
+                .incoming
+                .iter()
+                .filter(|&&slot| partition.reverse_adjacency.get(slot).is_some())
+                .copied(),
+        );
+        if entry.outgoing.is_empty() && entry.incoming.is_empty() {
+            expected.remove(&claim.relation);
+        }
+    }
+    Ok(())
 }

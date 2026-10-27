@@ -68,6 +68,7 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
             let artifact = recovered
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     recovered_commit.commit_id,
                     vec![
                         PartitionId(7),

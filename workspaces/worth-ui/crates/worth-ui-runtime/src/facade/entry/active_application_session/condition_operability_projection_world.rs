@@ -306,7 +306,7 @@ pub(super) fn status(
     owner
         .publish_source(
             WorthUiScalarProjectionSourceRecord::new(status, revision).unwrap(),
-            std::num::NonZeroUsize::new(64).expect("finite fixture history policy"),
+            Some(std::num::NonZeroUsize::new(64).expect("finite fixture history policy")),
         )
         .unwrap()
         .into_projection_observation()

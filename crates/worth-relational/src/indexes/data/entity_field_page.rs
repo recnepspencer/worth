@@ -8,7 +8,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct BoundedEntityFieldBoundary {
     pub(crate) runtime: u64,
-    pub(crate) basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
+    pub(crate) basis: crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis,
     pub(crate) generation: Arc<DerivedIndexGeneration>,
     pub(crate) kind: KindId,
     pub(crate) key: crate::storage::data::AuthoritativeFieldComparisonKey,

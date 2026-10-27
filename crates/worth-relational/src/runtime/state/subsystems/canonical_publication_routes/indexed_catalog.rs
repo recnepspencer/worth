@@ -22,11 +22,37 @@ impl RelationalCanonicalPublicationRoutes {
                 .collect(),
         );
     }
+    pub(crate) fn performed_envelope_residency(
+        &self,
+        id: CommitId,
+    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.by_commit
+            .get(&id)
+            .filter(|route| route.is_visible())
+            .map(|route| route.envelope.clone())
+    }
+    pub(crate) fn demand_envelope(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: CommitId,
+    ) -> Result<
+        Option<Arc<CanonicalCommitEnvelope>>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        let cell = self.performed_envelope_residency(id).or_else(|| {
+            self.checkpoint_catalog
+                .read()
+                .unwrap_or_else(|error| error.into_inner())
+                .get(&id)
+                .map(|artifact| artifact.envelope_residency())
+        });
+        cell.map(|cell| cell.demand(execution, 1 << 30)).transpose()
+    }
     pub(crate) fn indexed_receipt(&self, id: CommitId) -> Option<RelationalCommitReceipt> {
         if let Some(route) = self.by_commit.get(&id)
             && route.is_visible()
         {
-            return Some(route.envelope.commit.clone());
+            return Some(route.commit.clone());
         }
         self.checkpoint_catalog
             .read()
@@ -40,7 +66,7 @@ impl RelationalCanonicalPublicationRoutes {
                 .read()
                 .unwrap_or_else(|error| error.into_inner())
                 .get(&commit_id)
-                .and_then(|artifact| artifact.resident_envelope().cloned())
+                .and_then(|artifact| artifact.resident_envelope())
         })
     }
 
@@ -88,19 +114,39 @@ impl RelationalCanonicalPublicationRoutes {
         self.performed_stream.after(after_position, max_commits)
     }
 
+    pub(crate) fn latest_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.performed_stream.latest_references(limit)
+    }
+
     pub(crate) fn stream_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
-        let route = self
-            .by_commit
+        if let Some(route) = self.by_commit.get(&commit_id)
+            && route.is_visible()
+        {
+            return route.position();
+        }
+        self.checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
             .get(&commit_id)
-            .map(|entry| Arc::clone(entry.value()))?;
-        route.is_visible().then(|| route.position()).flatten()
+            .and_then(|artifact| artifact.envelope_residency().journal_index())
+            .map(|entry| entry.position)
     }
 
     pub(crate) fn positioned_commit(
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<PositionedCanonicalCommit>> {
-        self.performed_stream.positioned(commit_id)
+        self.performed_stream.positioned(commit_id).or_else(|| {
+            self.checkpoint_catalog
+                .read()
+                .unwrap_or_else(|error| error.into_inner())
+                .get(&commit_id)
+                .and_then(|artifact| artifact.envelope_residency().positioned_if_resident())
+                .map(Arc::new)
+        })
     }
 
     pub(crate) fn requires_settlement(&self, commit_id: CommitId) -> bool {

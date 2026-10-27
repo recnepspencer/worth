@@ -158,6 +158,6 @@ pub(super) fn plan_lineage_packet(
         .plan_continuity_requests_from_planned_route(&route)
         .map_err(|error| error.to_string())?;
     bridge
-        .plan_historical_lineage_packet(&requests)
+        .plan_historical_lineage_packet(&requests, execution)
         .map_err(|error| error.to_string())
 }

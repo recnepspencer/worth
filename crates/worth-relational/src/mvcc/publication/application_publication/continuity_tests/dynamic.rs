@@ -197,7 +197,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
     // runtime position image using the exact cold-admitted before-basis custody.
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let mut reopened = runtime_with_test_schema();
     let initial_receipt = reopened

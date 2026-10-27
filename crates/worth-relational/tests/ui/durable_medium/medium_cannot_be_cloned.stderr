@@ -1,16 +1,16 @@
-error[E0599]: the method `clone` exists for struct `Box<dyn RelationalDurableMedium>`, but its trait bounds were not satisfied
-  --> tests/ui/durable_medium/medium_cannot_be_cloned.rs:39:71
-   |
-39 |     let _first = RelationalRuntimeApi::builder().build_durable(medium.clone());
-   |                                                                       ^^^^^ method cannot be called on `Box<dyn RelationalDurableMedium>` due to unsatisfied trait bounds
-   |
-  ::: src/durability/medium.rs
-   |
-   | pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
-   | ---------------------------------------------------------------- doesn't satisfy `dyn RelationalDurableMedium: Clone` or `dyn RelationalDurableMedium: Sized`
-   |
-   = note: the following trait bounds were not satisfied:
-           `dyn RelationalDurableMedium: Sized`
-           which is required by `Box<dyn RelationalDurableMedium>: Clone`
-           `dyn RelationalDurableMedium: Clone`
-           which is required by `Box<dyn RelationalDurableMedium>: Clone`
+error[E0599]: the method `clone` exists for struct `Box<dyn worth_relational::facade::durability::RelationalDurableMedium>`, but its trait bounds were not satisfied
+ --> tests/ui/durable_medium/medium_cannot_be_cloned.rs:9:71
+  |
+9 |     let _first = RelationalRuntimeApi::builder().build_durable(medium.clone());
+  |                                                                       ^^^^^ method cannot be called due to unsatisfied trait bounds
+  |
+ ::: src/durability/medium.rs
+  |
+  | pub trait RelationalDurableMedium: Send + Sync + std::fmt::Debug {
+  | ---------------------------------------------------------------- doesn't satisfy `_: Clone` or `_: Sized`
+  |
+  = note: the following trait bounds were not satisfied:
+          `dyn worth_relational::facade::durability::RelationalDurableMedium: Sized`
+          which is required by `Box<dyn worth_relational::facade::durability::RelationalDurableMedium>: Clone`
+          `dyn worth_relational::facade::durability::RelationalDurableMedium: Clone`
+          which is required by `Box<dyn worth_relational::facade::durability::RelationalDurableMedium>: Clone`

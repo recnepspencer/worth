@@ -44,18 +44,14 @@ pub(super) fn execute_lowered_mutation(
     let mut commit_authority = runtime.commit_strategies_authority();
     let lowered = commit_authority
         .lower_execution(
+            request_execution,
             runtime,
             &canonical,
             &execution,
             &transaction_validation_input,
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
-        .map_err(|error| {
-            lower_runtime_error(
-                error,
-                EffectExecutionDenialKind::RelationalStrategyAuthorityLoweringFailed,
-            )
-        })?;
+        .map_err(super::relational_execution_deferred::strategy_lowering)?;
     let validated = commit_authority
         .validate_lowered_plan(request_execution, runtime, lowered)
         .map_err(super::relational_execution_deferred::transaction_commit)?;

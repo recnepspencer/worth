@@ -42,7 +42,14 @@ pub(super) fn replay_envelope_effect(
                 published_partition_delta,
                 Arc::clone(positioned.canonical_arc()),
             )
-            .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;
+            .map_err(|denial| match denial {
+                crate::mvcc::PublicationPreparationDenial::StorageUnavailable(failure) => {
+                    RelationalRecoveryStop::from(failure)
+                }
+                crate::mvcc::PublicationPreparationDenial::Invalid(detail) => {
+                    DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail).into()
+                }
+            })?;
         prepared_recovery
             .install_recovered(restored, positioned)
             .map_err(|detail| DurabilityError::new(RecoveryFailureClass::ReplayFailure, detail))?;

@@ -54,7 +54,7 @@ pub struct CommitPhaseTiming {
     pub publication_index_refresh_micros: u64,
     pub publication_history_publish_micros: u64,
     pub publication_visibility_pin_micros: u64,
-    pub publication_retention_trim_micros: u64,
+    pub publication_retention_reconcile_micros: u64,
     pub publication_compaction_micros: u64,
     pub publication_bundle_publish_micros: u64,
     pub publication_retention_pass_micros: u64,

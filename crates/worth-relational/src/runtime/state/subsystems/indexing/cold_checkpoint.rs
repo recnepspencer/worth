@@ -1,4 +1,5 @@
 //! A retained index image is admitted explicitly, before an operation uses it.
+mod member_export;
 use super::super::RuntimeOwnedState;
 use super::{IndexDefinitionReadBinding, IndexingState, IndexingSubsystem};
 use crate::durability::data::RelationalCheckpointDirectory;
@@ -14,6 +15,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug)]
 pub(super) struct DeferredIndexImage {
     directory: Arc<RelationalCheckpointDirectory>,
+    _placement: crate::durability::medium::RelationalDurableMemberCustody,
     history: HistorySubsystem,
     admitted: Mutex<Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>>,
 }
@@ -94,17 +96,34 @@ impl IndexingSubsystem {
         &self,
         directory: Arc<RelationalCheckpointDirectory>,
         history: &HistorySubsystem,
-    ) {
+    ) -> Result<(), RelationalStorageUnavailable> {
+        let placement = directory
+            .source
+            .retain_members(&[directory.manifest.derived_indexes])
+            .map_err(|cause| RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Index(
+                    directory
+                        .manifest
+                        .index_definitions
+                        .first()
+                        .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
+                            definition.index_id
+                        }),
+                ),
+                cause,
+            })?;
         let mut state = IndexingState::default();
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
+            _placement: placement,
             directory,
             history: history.detached_owner_snapshot(),
             admitted: Mutex::new(None),
         }));
         self.install(state);
+        Ok(())
     }
     pub(crate) fn carried_checkpoint_image(
         &self,
@@ -149,4 +168,21 @@ fn demand(
         state.cold_checkpoint = None;
     }
     Ok(())
+}
+
+impl IndexingState {
+    pub(crate) fn demand_checkpoint_image(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), Failure> {
+        let Some(image) = self.cold_checkpoint.clone() else {
+            return Ok(());
+        };
+        let admitted = image.readmit(execution)?;
+        for generation in admitted.generations.all() {
+            self.restore_generation(generation.as_ref().clone());
+        }
+        self.cold_checkpoint = None;
+        Ok(())
+    }
 }

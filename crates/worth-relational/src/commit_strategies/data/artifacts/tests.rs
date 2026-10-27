@@ -104,7 +104,15 @@ fn lowered_bundle() -> StrategyCommitArtifactBundle {
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
 
     StrategyCommitArtifactBundle::from_lowered(&lowered, &descriptor(), runtime.runtime_config())
@@ -120,7 +128,15 @@ fn strategy_commit_artifact_bundle_carries_consistent_typed_artifacts() {
     let (transaction_validation_input, mut authority) =
         crate::tests::support::test_owner_strategy_authority(&runtime, None);
     let lowered = authority
-        .lower_execution_with_input(&runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let bundle = StrategyCommitArtifactBundle::from_lowered(
         &lowered,

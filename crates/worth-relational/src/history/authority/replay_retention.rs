@@ -43,7 +43,28 @@ impl<'runtime> HistoryAuthority<'runtime> {
             return Ok(false);
         };
         let state = ensure_historical_state(execution, self.runtime, basis, false)?;
-        let pin_leases = self.runtime.visibility_pins().pin_replay_state(&state)?;
+        let pins = self
+            .runtime
+            .visibility_pins()
+            .demand_replay_pins(execution, state)?;
+        let diagnostic = replay_retention_diagnostic(
+            DiagnosticCode::ReplayRetentionPinned,
+            "replay retention pinned historical visibility state",
+            version_id,
+            pins.state(),
+        );
+        let retention_fence = self
+            .runtime
+            .visibility
+            .retention_fence_version(self.runtime.current_version_id());
+        let installed = self
+            .runtime
+            .visibility
+            .retain_resident_replay(version_id, pins, |pins| {
+                self.runtime
+                    .visibility_pins()
+                    .pin_replay_state(pins, retention_fence);
+            });
         if self
             .runtime
             .config
@@ -53,25 +74,14 @@ impl<'runtime> HistoryAuthority<'runtime> {
         {
             bump_replay_ref(self.runtime, version_id, 1);
         }
-        self.runtime
-            .publication_authority()
-            .diagnostic(DiagnosticsScope::Retention)
-            .minimal_summary()
-            .entries([replay_retention_diagnostic(
-                DiagnosticCode::ReplayRetentionPinned,
-                "replay retention pinned historical visibility state",
-                version_id,
-                &state,
-            )])
-            .emit();
-        self.runtime.visibility.insert_replay_retention(
-            version_id,
-            crate::runtime::ReplayRetentionState {
-                ref_count: 1,
-                pin_leases,
-                pinned_state: state,
-            },
-        );
+        if installed {
+            self.runtime
+                .publication_authority()
+                .diagnostic(DiagnosticsScope::Retention)
+                .minimal_summary()
+                .entries([diagnostic])
+                .emit();
+        }
         Ok(true)
     }
 
@@ -79,35 +89,26 @@ impl<'runtime> HistoryAuthority<'runtime> {
         &self,
         version_id: crate::identity::data::VersionId,
     ) -> bool {
-        let Some(mut retained) = self.runtime.visibility.take_replay_retention(version_id) else {
-            return false;
-        };
-        if retained.ref_count > 1 {
-            retained.ref_count -= 1;
-            self.runtime
-                .visibility
-                .restore_replay_retention(version_id, retained);
-            if self
-                .runtime
-                .config
-                .visibility
-                .cache_policy
-                .protect_replay_retained
-            {
-                bump_replay_ref(self.runtime, version_id, -1);
-            }
-            return true;
-        }
-        let state = retained.pinned_state.clone();
-        if self
+        let retention_fence = self
             .runtime
-            .visibility_pins()
-            .unpin_replay_state(&state, &retained.pin_leases)
-            .is_err()
-        {
-            self.runtime
-                .visibility
-                .restore_replay_retention(version_id, retained);
+            .visibility
+            .retention_fence_version(self.runtime.current_version_id());
+        let mut diagnostic = None;
+        let released = self
+            .runtime
+            .visibility
+            .release_resident_replay(version_id, |pins| {
+                self.runtime
+                    .visibility_pins()
+                    .unpin_replay_state(pins, retention_fence);
+                diagnostic = Some(replay_retention_diagnostic(
+                    DiagnosticCode::ReplayRetentionReleased,
+                    "replay retention released historical visibility state",
+                    version_id,
+                    pins.state(),
+                ));
+            });
+        if !released {
             return false;
         }
         if self
@@ -118,19 +119,19 @@ impl<'runtime> HistoryAuthority<'runtime> {
             .protect_replay_retained
         {
             bump_replay_ref(self.runtime, version_id, -1);
-            evict_cache_if_needed(self.runtime);
+            if diagnostic.is_some() {
+                evict_cache_if_needed(self.runtime);
+            }
         }
-        self.runtime
-            .publication_authority()
-            .diagnostic(DiagnosticsScope::Retention)
-            .minimal_summary()
-            .entries([replay_retention_diagnostic(
-                DiagnosticCode::ReplayRetentionReleased,
-                "replay retention released historical visibility state",
-                version_id,
-                &state,
-            )])
-            .emit();
+        if let Some(diagnostic) = diagnostic {
+            self.runtime
+                .publication_authority()
+                .diagnostic(DiagnosticsScope::Retention)
+                .minimal_summary()
+                .entries([diagnostic])
+                .emit();
+        }
+
         true
     }
 }

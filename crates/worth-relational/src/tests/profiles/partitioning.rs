@@ -256,7 +256,10 @@ fn partition_registry_and_stats_expose_partition_owned_state() {
         create_relation_in_partition(execution, &runtime, left, right, "bridge", PartitionId(29));
 
     let partition_ids = runtime.storage_access().partition_ids();
-    let stats = runtime.storage_access().partition_storage_stats();
+    let stats = runtime
+        .storage_access()
+        .partition_storage_stats(execution)
+        .unwrap();
 
     assert_eq!(
         partition_ids,

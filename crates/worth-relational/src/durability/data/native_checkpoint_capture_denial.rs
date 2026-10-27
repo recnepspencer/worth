@@ -7,6 +7,7 @@ use super::DurabilityError;
 pub enum RelationalNativeCheckpointCaptureDenial {
     Durability(DurabilityError),
     Allocation(ExecutionAllocationDenial),
+    Request(crate::execution::RelationalExecutionDenialCause),
 }
 
 impl From<DurabilityError> for RelationalNativeCheckpointCaptureDenial {
@@ -25,6 +26,7 @@ impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Durability(error) => write!(formatter, "native checkpoint durability: {error:?}"),
+            Self::Request(cause) => write!(formatter, "native checkpoint request: {cause:?}"),
             Self::Allocation(error) => write!(formatter, "native checkpoint allocation: {error}"),
         }
     }
@@ -34,7 +36,55 @@ impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Allocation(error) => Some(error),
-            Self::Durability(_) => None,
+            Self::Durability(_) | Self::Request(_) => None,
+        }
+    }
+}
+
+impl
+    From<
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    > for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(
+        error: crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial,
+    ) -> Self {
+        use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactEncodeDenial as Encode;
+        match error {
+            Encode::Allocation(error) => Self::Allocation(error),
+            Encode::StorageUnavailable(failure) => {
+                let super::RelationalRecoveryStop::Durability(error) = failure.into() else {
+                    unreachable!()
+                };
+                Self::Durability(error)
+            }
+            error => Self::Durability(super::DurabilityError::new(
+                super::RecoveryFailureClass::CorruptCheckpoint,
+                format!("inline canonical artifact encoding: {error}"),
+            )),
+        }
+    }
+}
+
+impl From<crate::storage::data::RelationalStorageUnavailable>
+    for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        let super::RelationalRecoveryStop::Durability(error) = failure.into() else {
+            unreachable!()
+        };
+        Self::Durability(error)
+    }
+}
+
+impl From<crate::storage::residency::RelationalResidencyDemandFailure>
+    for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(failure: crate::storage::residency::RelationalResidencyDemandFailure) -> Self {
+        use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+        match failure {
+            Failure::StorageUnavailable(failure) => failure.into(),
+            Failure::Request(cause) => Self::Request(cause),
         }
     }
 }

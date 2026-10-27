@@ -33,6 +33,16 @@ struct Journal {
 #[derive(Debug)]
 struct LostForkAnswer(Arc<Mutex<Journal>>);
 impl RelationalDurableColdSource for LostForkAnswer {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<
+        worth_relational::facade::durability::RelationalDurableMemberCustody,
+        RelationalStorageUnavailableCause,
+    > {
+        Ok(worth_relational::facade::durability::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         _locator: RelationalDurableMemberLocator,
@@ -64,6 +74,9 @@ impl RelationalDurableColdSource for LostForkAnswer {
     }
 }
 impl RelationalDurableMedium for LostForkAnswer {
+    fn cold_source(&self) -> Arc<dyn RelationalDurableColdSource> {
+        Arc::new(Self(self.0.clone()))
+    }
     fn read_transition(
         &self,
         sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,

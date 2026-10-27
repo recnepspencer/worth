@@ -62,7 +62,8 @@ pub(super) fn certify_commit_query_churn_stability(
                 .version_id;
             let final_entity_count = runtime
                 .read_truth()
-                .project_historical_version(latest_version)
+                .try_project_historical_version(latest_version)
+                .unwrap()
                 .all_authoritative_entity_records(execution)
                 .expect("read request remains live")
                 .len();

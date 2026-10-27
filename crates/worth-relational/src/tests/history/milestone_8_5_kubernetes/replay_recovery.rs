@@ -134,7 +134,9 @@ pub(super) fn recover_stage_from_final_history(
         .filter_map(|commit_id| {
             let position = source.history().canonical_stream_position(commit_id)?;
             replay_access
-                .canonical_commit_envelope(commit_id)
+                .canonical_commit_envelope(execution, commit_id)
+                .unwrap()
+                .map(|envelope| envelope.as_ref().clone())
                 .map(|envelope| {
                     crate::history::data::PositionedCanonicalCommit::for_test(
                         position,
@@ -211,7 +213,8 @@ pub(super) fn recover_stage_from_final_history(
     {
         let base_version_id = recovered
             .history()
-            .commit_envelope(base_commit_id)
+            .demand_commit_envelope(execution, base_commit_id)
+            .unwrap()
             .map(|envelope| envelope.commit.version_id);
         if let Some(base_version_id) = base_version_id {
             recovered

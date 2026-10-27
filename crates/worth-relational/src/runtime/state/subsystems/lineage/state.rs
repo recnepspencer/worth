@@ -12,7 +12,7 @@ use super::resolution_indexes::LineageResolutionIndexes;
 pub(crate) struct LineageState {
     pub(crate) nodes: BTreeMap<crate::identity::data::LineageId, LineageNode>,
     published_events: Vec<PublishedLineageEvent>,
-    published_event_ids: BTreeSet<u64>,
+    published_event_positions: BTreeMap<u64, usize>,
     resolution_indexes: LineageResolutionIndexes,
     pub(crate) identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator,
 }
@@ -40,23 +40,65 @@ impl LineageState {
         Self {
             nodes: BTreeMap::new(),
             published_events: Vec::new(),
-            published_event_ids: BTreeSet::new(),
+            published_event_positions: BTreeMap::new(),
             resolution_indexes: LineageResolutionIndexes::default(),
             identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator::new(),
         }
     }
 
     fn record_event(&mut self, event: LineageEventRecord, publication_commit_id: CommitId) {
+        self.record_shared_event(Arc::new(event), publication_commit_id);
+    }
+
+    fn record_shared_event(
+        &mut self,
+        event: Arc<LineageEventRecord>,
+        publication_commit_id: CommitId,
+    ) {
         let event_position = self.published_events.len();
         assert!(
-            self.published_event_ids.insert(event.event_id()),
+            self.published_event_positions
+                .insert(event.event_id(), event_position)
+                .is_none(),
             "validated lineage event id must remain unique until installation"
         );
         self.resolution_indexes.append_event(event_position, &event);
         self.published_events.push(PublishedLineageEvent {
-            event: Arc::new(event),
+            event,
             publication_commit_id,
         });
+    }
+
+    pub(super) fn admit_readmitted_events(
+        &mut self,
+        rows: impl Clone + Iterator<Item = (Arc<LineageEventRecord>, CommitId)>,
+    ) -> Result<(), crate::storage::data::RelationalStorageUnavailableCause> {
+        use crate::storage::data::RelationalStorageUnavailableCause as Cause;
+        let mut fresh = 0;
+        for (event, publication_commit_id) in rows.clone() {
+            if let Some(position) = self.published_event_positions.get(&event.event_id()) {
+                let existing = &self.published_events[*position];
+                if existing.event != event
+                    || existing.publication_commit_id != publication_commit_id
+                {
+                    return Err(Cause::Damaged);
+                }
+            } else {
+                fresh += 1;
+            }
+        }
+        self.published_events
+            .try_reserve(fresh)
+            .map_err(|_| Cause::MemoryExhausted)?;
+        for (event, publication_commit_id) in rows {
+            if !self
+                .published_event_positions
+                .contains_key(&event.event_id())
+            {
+                self.record_shared_event(event, publication_commit_id);
+            }
+        }
+        Ok(())
     }
 
     pub(crate) fn install_validated_event_batch(
@@ -82,7 +124,10 @@ impl LineageState {
                         .to_owned(),
                 );
             }
-            if self.published_event_ids.contains(&event.event_id()) {
+            if self
+                .published_event_positions
+                .contains_key(&event.event_id())
+            {
                 return Err(format!(
                     "recovered lineage event id {} was already installed",
                     event.event_id()
@@ -183,6 +228,13 @@ impl LineageState {
             .map(|published| published.event.as_ref())
     }
 
+    pub(crate) fn published_rows(&self) -> Vec<(Arc<LineageEventRecord>, CommitId)> {
+        self.published_events
+            .iter()
+            .map(|row| (row.event.clone(), row.publication_commit_id))
+            .collect()
+    }
+
     pub(crate) fn shared_events(&self) -> Vec<Arc<LineageEventRecord>> {
         self.published_events
             .iter()
@@ -191,10 +243,11 @@ impl LineageState {
     }
 
     pub(crate) fn rebuild_derived_indexes(&mut self) {
-        self.published_event_ids = self
+        self.published_event_positions = self
             .published_events
             .iter()
-            .map(|published| published.event.event_id())
+            .enumerate()
+            .map(|(position, published)| (published.event.event_id(), position))
             .collect();
         let nodes = self.nodes.values();
         let events = self
@@ -218,7 +271,7 @@ impl LineageState {
     pub(crate) fn drain_events(
         &mut self,
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
-        self.published_event_ids.clear();
+        self.published_event_positions.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
             .map(|published| {
@@ -242,7 +295,7 @@ impl Clone for LineageState {
         Self {
             nodes: self.nodes.clone(),
             published_events: self.published_events.clone(),
-            published_event_ids: self.published_event_ids.clone(),
+            published_event_positions: self.published_event_positions.clone(),
             resolution_indexes: self.resolution_indexes.clone(),
             identity_allocator: self.identity_allocator.detached(),
         }

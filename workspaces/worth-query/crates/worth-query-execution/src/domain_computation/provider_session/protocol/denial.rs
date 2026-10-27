@@ -21,6 +21,7 @@ pub enum WorthQueryProviderSessionProtocolStage {
 /// A provider-session refusal that preserves its protocol or execution cause.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProviderSessionDenialKind {
+    StorageUnavailable(worth_relational::facade::storage::RelationalStorageUnavailable),
     ForeignOperationAttempt,
     ForeignExecutionBasis,
     ForeignGraphAuthority,

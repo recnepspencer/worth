@@ -181,7 +181,7 @@ fn three_members_apply_by_producer_and_source_epoch_under_a_constructed_schedule
     let _guard = checkpoint_recovery_test_guard();
     if let Ok(width) = std::env::var("WORTH_THREE_MEMBER_WIDTH") {
         println!(
-            "WORTH_THREE_MEMBER_HISTORY:{:?}",
+            "\nWORTH_THREE_MEMBER_HISTORY:{:?}",
             run(width.parse().unwrap())
         );
         return;

@@ -117,8 +117,15 @@ pub(super) fn row(
             .ok_or(Denial::ExactBasisRequired)?,
     )?;
     let relation = projection
-        .exact_relation_metadata(entry.relation_id())
-        .map_err(|_| Denial::ExactBasisRequired)?
+        .read_exact_relation_metadata(execution, entry.relation_id())
+        .map_err(|denial| match denial {
+            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                Denial::ExactBasisRequired
+            }
+            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                Denial::Read(cause)
+            }
+        })?
         .ok_or_else(&corrupt)?;
     let (parent, child) = match parent_endpoint {
         RelatedEntityEndpoint::SourceParent => (relation.source, relation.target),
@@ -138,8 +145,15 @@ pub(super) fn row(
             .ok_or(Denial::ExactBasisRequired)?,
     )?;
     let actual_child = projection
-        .with_exact_entity_state(child, |metadata, _| metadata)
-        .map_err(|_| Denial::ExactBasisRequired)?
+        .read_exact_entity_state(execution, child, |metadata, _| metadata)
+        .map_err(|denial| match denial {
+            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                Denial::ExactBasisRequired
+            }
+            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                Denial::Read(cause)
+            }
+        })?
         .ok_or_else(&corrupt)?;
     if actual_child.kind_id != *child_kind {
         return Err(corrupt());

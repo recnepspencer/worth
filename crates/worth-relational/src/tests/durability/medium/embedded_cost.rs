@@ -84,7 +84,7 @@ fn measured_restore(partitions: u32) -> usize {
     }
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(&execution, execution.allocation_policy())
         .unwrap();
     let mut receiving = durable_runtime_with_test_schema();
     let allocations = stats_alloc::Region::new(&stats_alloc::INSTRUMENTED_SYSTEM);

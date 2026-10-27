@@ -69,6 +69,7 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
                 let artifact = runtime
                     .compiled_artifacts_authority()
                     .compile_execution_artifact(
+                        execution,
                         commit.commit_id,
                         vec![
                             PartitionId(7),

@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 use std::sync::Arc;
 
 use crate::authority::intent_merge::canonical_intent_key;
-use crate::symbols::data::{ClientKey, ClientKeySymbolPolicy, StringInterner};
+use crate::symbols::data::ClientKey;
 use crate::transactions::data::{
     bulk_lineage_plan_digest, bulk_naming_plan_digest, bulk_provenance_plan_digest,
     BulkMutationLineagePlan, BulkMutationLocalityFootprint, BulkMutationNamingPlan,
@@ -15,14 +15,11 @@ use crate::transactions::data::{
 
 pub(crate) fn canonical_bulk_mutation_intents(
     batches: &[WorkerIntentBatch],
-    client_key_symbol_policy: ClientKeySymbolPolicy,
-    interner: StringInterner,
 ) -> Vec<MutationIntent> {
     let mut intents = batches
         .iter()
         .flat_map(|batch| batch.intents.iter().cloned())
         .collect::<Vec<_>>();
-    normalize_intents_for_bulk_plan(&mut intents, client_key_symbol_policy, interner);
     intents.sort_by_key(canonical_intent_key);
     intents
 }
@@ -310,31 +307,5 @@ pub(crate) fn bulk_mutation_provenance(
         worker_partition_keys: worker_partition_keys.into(),
         worker_local_only_flags: worker_local_only_flags.into(),
         provenance_digest,
-    }
-}
-
-fn normalize_intents_for_bulk_plan(
-    intents: &mut [MutationIntent],
-    client_key_symbol_policy: ClientKeySymbolPolicy,
-    mut interner: StringInterner,
-) {
-    if !client_key_symbol_policy.interns_requested_strings() {
-        return;
-    }
-
-    let mut raw_values = BTreeSet::new();
-    for intent in intents.iter() {
-        intent
-            .collect_raw_client_keys(
-                &mut raw_values,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
-            .expect("explicit System key scan cannot refuse physical admission");
-    }
-    for raw in raw_values {
-        interner.intern(&raw);
-    }
-    for intent in intents {
-        intent.normalize_client_keys(&mut interner, client_key_symbol_policy);
     }
 }

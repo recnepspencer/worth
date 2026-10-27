@@ -17,6 +17,7 @@ pub(crate) struct InvariantRuntimeView<'a> {
     pub(crate) config: std::sync::Arc<crate::runtime::RelationalRuntimeConfig>,
     pub(crate) schema_contract_runtime: std::sync::Arc<SchemaContractRuntimeSubsystem>,
     instrumentation: &'a RuntimeInstrumentation,
+    counter_sink: Option<&'a std::sync::Mutex<crate::performance::data::RuntimeComplexityCounters>>,
     shared_candidate_inputs:
         Option<std::sync::Arc<super::input_preparation::SharedCandidateInputs>>,
     #[cfg(test)]
@@ -35,6 +36,7 @@ impl<'a> InvariantRuntimeView<'a> {
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
             instrumentation: &runtime.services.instrumentation,
+            counter_sink: None,
             shared_candidate_inputs: None,
             #[cfg(test)]
             current_version_id: runtime.current_version_id(),
@@ -55,6 +57,7 @@ impl<'a> InvariantRuntimeView<'a> {
             config: std::sync::Arc::clone(&runtime.config),
             schema_contract_runtime: std::sync::Arc::clone(&runtime.schema_contract_runtime),
             instrumentation: &runtime.services.instrumentation,
+            counter_sink: None,
             shared_candidate_inputs: None,
             #[cfg(test)]
             current_version_id: runtime.current_version_id(),
@@ -66,7 +69,23 @@ impl<'a> InvariantRuntimeView<'a> {
     }
 
     pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'a> {
-        crate::performance::PerformanceAccess::from_instrumentation(self.instrumentation)
+        crate::performance::PerformanceAccess::from_counters(
+            self.counter_sink
+                .unwrap_or(&self.instrumentation.complexity_counters),
+        )
+    }
+
+    pub(crate) fn with_counter_sink<'round>(
+        &self,
+        counters: &'round std::sync::Mutex<crate::performance::data::RuntimeComplexityCounters>,
+    ) -> InvariantRuntimeView<'round>
+    where
+        'a: 'round,
+    {
+        let mut view: InvariantRuntimeView<'round> = self.clone();
+        view.counter_sink = Some(counters);
+        view.shared_candidate_inputs = None;
+        view
     }
 
     pub(crate) fn with_candidate_input_plan<'state>(
@@ -82,6 +101,7 @@ impl<'a> InvariantRuntimeView<'a> {
             config: std::sync::Arc::clone(&self.config),
             schema_contract_runtime: std::sync::Arc::clone(&self.schema_contract_runtime),
             instrumentation: self.instrumentation,
+            counter_sink: self.counter_sink,
             shared_candidate_inputs:
                 super::input_preparation::SharedCandidateInputs::from_installed(self, request)
                     .map(std::sync::Arc::new),

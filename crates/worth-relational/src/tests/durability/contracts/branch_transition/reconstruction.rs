@@ -64,6 +64,11 @@ struct CountedTransitionReads {
 }
 
 impl RelationalDurableMedium for CountedTransitionReads {
+    fn cold_source(
+        &self,
+    ) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> {
+        self.medium.cold_source()
+    }
     fn read_transition(
         &self,
         sequence: Sequence,
@@ -109,7 +114,7 @@ fn replay_reads_only_the_gap_after_its_checkpoint() {
         }
         runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap();
         let target = create_entity_outcome_on_branch(
             execution,
@@ -140,7 +145,7 @@ fn recovery_plan_after_native_capture_keeps_covered_forks() {
     let target = create_entity_outcome_on_branch(execution, &runtime, "on-A", BranchId("A".into()));
     runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let plan = runtime
         .durability()
@@ -174,7 +179,7 @@ fn a_memory_fork_can_replay_its_compacted_durable_source() {
     let target = create_entity_outcome_on_branch(execution, &runtime, "on-A", BranchId("A".into()));
     runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let speculative = runtime.fork().unwrap();
     assert!(

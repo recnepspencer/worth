@@ -50,7 +50,7 @@ fn a_shared_full_load_requires_a_separate_admitted_view_for_each_root() {
         reads,
         "roots share the member load"
     );
-    for view in [first.full_view(), second.full_view()] {
+    for view in [first.lease().full_view(), second.lease().full_view()] {
         assert_eq!(
             view.partition()
                 .entity_arena

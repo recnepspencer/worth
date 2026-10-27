@@ -11,6 +11,7 @@ pub(crate) struct RelationalRegionRetention {
     cell: Arc<RelationalRegionResidency>,
     authority: Option<Arc<super::RelationalRegionKindAuthority>>,
     full: OnceLock<RelationalResidencyLease<Full>>,
+    head: OnceLock<RelationalResidencyLease<super::Head>>,
     clear_pins_on_write: bool,
 }
 
@@ -23,6 +24,7 @@ impl RelationalRegionRetention {
             cell,
             authority,
             full: OnceLock::new(),
+            head: OnceLock::new(),
             clear_pins_on_write: false,
         }
     }
@@ -38,8 +40,35 @@ impl RelationalRegionRetention {
             cell,
             authority: None,
             full: OnceLock::from(lease),
+            head: OnceLock::new(),
             clear_pins_on_write: false,
         }
+    }
+
+    pub(crate) fn from_head_lease(lease: RelationalResidencyLease<super::Head>) -> Self {
+        Self {
+            cell: lease.cell().clone(),
+            authority: None,
+            full: OnceLock::new(),
+            head: OnceLock::from(lease),
+            clear_pins_on_write: false,
+        }
+    }
+
+    pub(super) fn capture_region(
+        &self,
+    ) -> Result<Option<&super::ResidentRegion>, crate::storage::data::RelationalStorageUnavailable>
+    {
+        self.cell.check_damage()?;
+        if let Some(lease) = self.full.get() {
+            return Ok(Some(lease.resident_region()));
+        }
+        if self.head.get().is_none()
+            && let Some(lease) = self.cell.lease_resident_head()?
+        {
+            let _ = self.head.set(lease);
+        }
+        Ok(self.head.get().map(|lease| lease.resident_region()))
     }
 
     pub(crate) fn cell(&self) -> &Arc<RelationalRegionResidency> {
@@ -51,6 +80,9 @@ impl RelationalRegionRetention {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<(), super::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
         if self.full.get().is_none() {
             let lease = self
                 .cell
@@ -69,10 +101,76 @@ impl RelationalRegionRetention {
         })
     }
 
+    /// Lend only a previously admitted full view. A probe records `None` as a
+    /// miss and discards its provisional result before any demand can run.
+    pub(crate) fn admitted_partition(&self) -> Option<&PartitionState> {
+        self.cell.check_damage().ok()?;
+        if self.full.get().is_none() {
+            let lease = self.cell.lease_resident_full().ok().flatten()?;
+            let _ = self.full.set(lease);
+        }
+        self.full.get().map(|lease| lease.full_view().partition())
+    }
+
+    /// Borrow custody already accepted by this immutable root. Fresh operations
+    /// must demand first; later transport damage cannot revoke this lease.
+    pub(crate) fn accepted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
+        self.full
+            .get()
+            .map(|lease| lease.head_view())
+            .or_else(|| self.head.get().map(|lease| lease.head_view()))
+    }
+
+    pub(crate) fn admitted_head_view(&self) -> Option<super::RelationalRegionHeadView<'_>> {
+        self.cell.check_damage().ok()?;
+        if let Some(full) = self.full.get() {
+            return Some(full.head_view());
+        }
+        if self.head.get().is_none() {
+            let lease = self.cell.lease_resident_head().ok().flatten()?;
+            let _ = self.head.set(lease);
+        }
+        self.head.get().map(|lease| lease.head_view())
+    }
+
+    pub(crate) fn head_symbols_admitted(
+        &self,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> bool {
+        let identity = self
+            .full
+            .get()
+            .map(|lease| lease.head_symbol_admission_identity())
+            .or_else(|| {
+                self.head
+                    .get()
+                    .map(|lease| lease.head_symbol_admission_identity())
+            });
+        identity.is_some_and(|identity| symbols.region_symbols_admitted(identity))
+    }
+
+    pub(crate) fn demand_head_cached(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<(), super::RelationalResidencyDemandFailure> {
+        crate::execution::check_request(execution)
+            .map_err(super::RelationalResidencyDemandFailure::Request)?;
+        self.cell.check_damage()?;
+        if self.full.get().is_none() && self.head.get().is_none() {
+            let lease = self
+                .cell
+                .demand_head(execution, limit, self.authority.as_deref())?;
+            let _ = self.head.set(lease);
+        }
+        Ok(())
+    }
+
     pub(crate) fn pin_lease(
         &self,
     ) -> Result<RelationalResidencyLease<Full>, crate::storage::data::RelationalStorageUnavailable>
     {
+        self.cell.check_damage()?;
         if let Some(lease) = self.full.get() {
             return Ok(lease.clone());
         }
@@ -86,8 +184,39 @@ impl RelationalRegionRetention {
             })
     }
 
+    /// Clone custody already accepted by this immutable root, without a fresh
+    /// admission decision. A cold cell alone supplies no witness here.
+    pub(crate) fn accepted_head_lease(&self) -> Option<RelationalResidencyLease<super::Head>> {
+        self.head
+            .get()
+            .cloned()
+            .or_else(|| self.full.get().map(|lease| lease.as_head()))
+    }
+
+    pub(crate) fn pin_head_lease(
+        &self,
+    ) -> Result<
+        RelationalResidencyLease<super::Head>,
+        crate::storage::data::RelationalStorageUnavailable,
+    > {
+        self.cell.check_damage()?;
+        self.head
+            .get()
+            .cloned()
+            .or_else(|| self.full.get().map(|lease| lease.as_head()))
+            .ok_or(crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(
+                    self.cell.partition_id,
+                ),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            })
+    }
+
     pub(crate) fn kind_authority(&self) -> Option<Arc<super::RelationalRegionKindAuthority>> {
         self.authority.clone()
+    }
+    pub(crate) fn admitted_full_lease(&self) -> Option<RelationalResidencyLease<Full>> {
+        self.full.get().cloned()
     }
     pub(crate) fn demand_head(
         &self,
@@ -95,67 +224,27 @@ impl RelationalRegionRetention {
         limit: u64,
     ) -> Result<super::RelationalResidencyLease<super::Head>, super::RelationalResidencyDemandFailure>
     {
+        self.demand_head_cached(execution, limit)?;
+        if let Some(head) = self.head.get() {
+            return Ok(head.clone());
+        }
         self.cell
             .demand_head(execution, limit, self.authority.as_deref())
     }
 
-    pub(crate) fn full_view(&self) -> super::RelationalRegionFullView<'_> {
-        self.lease().full_view()
-    }
     pub(crate) fn is_uniquely_owned(&self) -> bool {
-        Arc::strong_count(&self.cell) == 1 + usize::from(self.full.get().is_some())
-    }
-
-    pub(crate) fn into_partition(self) -> PartitionState {
-        let full = self.full.into_inner();
-        if self.cell.has_cold_backing() {
-            return full
-                .expect("cold publication requires its admitted root view")
-                .full_view()
-                .partition()
-                .clone();
-        }
-        drop(full);
-        match Arc::try_unwrap(self.cell) {
-            Ok(cell) => cell.into_partition(),
-            Err(cell) => cell
-                .lease_resident_full()
-                .expect("resident lease admission fits the process")
-                .expect("publication requires resident substrate")
-                .full_view()
-                .partition()
-                .clone(),
-        }
-    }
-
-    /// A cold retention cannot produce mutable access. Its operation must first
-    /// acquire a Full lease through the explicit, fallible demand boundary.
-    pub(crate) fn make_mut(&mut self) -> Option<&mut PartitionState> {
-        let lease = self
-            .full
-            .take()
-            .or_else(|| self.cell.lease_resident_full().ok().flatten())?;
-        let retained = lease.retained_region();
-        drop(lease);
-        if self.cell.has_cold_backing() || Arc::get_mut(&mut self.cell).is_none() {
-            let lease = RelationalRegionResidency::resident_uncommitted(retained.partition.clone());
-            self.cell = lease.cell().clone();
-            drop(lease);
-            self.authority = None;
-        }
-        drop(retained);
-        let partition = Arc::get_mut(&mut self.cell)?.partition_mut()?;
-        if self.clear_pins_on_write {
-            partition.clear_runtime_pin_counters();
-            self.clear_pins_on_write = false;
-        }
-        Some(partition)
+        Arc::strong_count(&self.cell)
+            == 1 + usize::from(self.full.get().is_some()) + usize::from(self.head.get().is_some())
     }
 
     pub(crate) fn fork(&self) -> Self {
         let mut fork = self.clone();
         fork.clear_pins_on_write = true;
         fork
+    }
+
+    pub(crate) fn clears_pins_on_write(&self) -> bool {
+        self.clear_pins_on_write
     }
 }
 
@@ -165,10 +254,15 @@ impl Clone for RelationalRegionRetention {
         if let Some(lease) = self.full.get() {
             let _ = full.set(lease.clone());
         }
+        let head = OnceLock::new();
+        if let Some(lease) = self.head.get() {
+            let _ = head.set(lease.clone());
+        }
         Self {
             cell: self.cell.clone(),
             authority: self.authority.clone(),
             full,
+            head,
             clear_pins_on_write: self.clear_pins_on_write,
         }
     }

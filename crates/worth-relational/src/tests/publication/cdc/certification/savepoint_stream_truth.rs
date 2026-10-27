@@ -95,10 +95,13 @@ fn cdc_certification_savepoint_abandoned_work_never_leaks_into_stream_truth() {
 
     let patch_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(PatchStreamPosition(2)),
-            max_commits: 32,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(PatchStreamPosition(2)),
+                max_commits: 32,
+            },
+        )
         .unwrap();
     assert_eq!(subscriber, patch_batch.patches);
 

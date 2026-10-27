@@ -30,10 +30,15 @@ impl RelationalCheckpointManifestSelection {
         &self,
         manifest: RelationalCheckpointManifest,
         source: Arc<dyn RelationalDurableColdSource>,
+        history_members: Arc<crate::durability::data::RelationalHistoryMemberDirectory>,
     ) -> RelationalCheckpointManifestPublication {
         RelationalCheckpointManifestPublication {
             selection: self.clone(),
-            directory: Arc::new(RelationalCheckpointDirectory { manifest, source }),
+            directory: Arc::new(RelationalCheckpointDirectory {
+                manifest,
+                source,
+                history_members,
+            }),
         }
     }
     pub(crate) fn restore(&self, directory: Arc<RelationalCheckpointDirectory>) {

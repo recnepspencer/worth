@@ -19,6 +19,13 @@ struct ForgedSource {
 }
 
 impl RelationalDurableColdSource for ForgedSource {
+    fn retain_members(
+        &self,
+        _members: &[RelationalDurableMemberLocator],
+    ) -> Result<crate::durability::medium::RelationalDurableMemberCustody, Cause> {
+        Ok(crate::durability::medium::RelationalDurableMemberCustody::new(()))
+    }
+
     fn read_member(
         &self,
         locator: RelationalDurableMemberLocator,
@@ -48,6 +55,7 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],

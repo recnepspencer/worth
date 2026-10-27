@@ -5,11 +5,11 @@ use worth_foundational::{
 
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId};
+use crate::runtime::RuntimeSymbolTable;
 use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
-use crate::symbols::data::StringInterner;
 use crate::transactions::data::AspectDeltaFailureFields;
 
 use super::super::data::CanonicalAspectDeltaEvidence;
@@ -48,7 +48,7 @@ fn entity_field_patch_evidence_denial_carries_typed_target() {
 fn entity_field_delta_requires_authoritative_state() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let schema = RelationalSchemaRegistry::new();
     let mut catalog = AspectContractPlanCatalog::empty();
     catalog.entity_plans.insert(

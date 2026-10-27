@@ -74,9 +74,7 @@ fn forked_cells_checkpoint_into_two_homes_without_foreign_carried_locators() {
         let first = seeded_home(&root.join("first"), &execution);
         let mut second = seeded_home(&root.join("second"), &execution);
         if checkpoint_before_fork {
-            first
-                .checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-                .unwrap();
+            first.checkpoint(&execution).unwrap();
         }
         // Both journals contain the real seed. Their live roots now share
         // cells, while Store membership is owned by each destination home.
@@ -84,8 +82,7 @@ fn forked_cells_checkpoint_into_two_homes_without_foreign_carried_locators() {
         for _ in 0..2 {
             for home in [&first, &second] {
                 let before = home.cold_storage_reads();
-                home.checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
-                    .unwrap();
+                home.checkpoint(&execution).unwrap();
                 assert_eq!(
                     home.cold_storage_reads(),
                     before,

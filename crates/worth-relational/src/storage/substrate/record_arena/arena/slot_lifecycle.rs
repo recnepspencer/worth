@@ -15,6 +15,7 @@ impl<K: RecordKind> RecordArena<K> {
         self.extra
             .set(physical, K::unavailable_extra(&self.extra[physical]));
         self.metadata_history.set(physical, Default::default());
+        self.history_prefixes.set(physical, None);
         self.aspect_versions.set(physical, Default::default());
         self.field_revisions.set(physical, None);
         self.diagnostics_enrichment
@@ -197,6 +198,7 @@ impl<K: RecordKind> RecordArena<K> {
             )]
             .into(),
         );
+        self.history_prefixes.push(None);
         self.created_at.push(version_id);
         self.retired_at.push(None);
         self.extra.push(extra);

@@ -15,17 +15,18 @@ impl<'runtime> InspectionAccess<'runtime> {
         target: RecordRef,
     ) -> Result<Option<StructuralIdentityEvidence>, crate::execution::RelationalExecutionDenialCause>
     {
+        let resident = self.demand_mirror(execution)?;
         self.count_structural_identity_lookup();
         let version_id = self.scope_version_id(&scope);
         Ok(match target {
             RecordRef::Entity(entity_id) => {
-                let Some(read) =
-                    self.scoped_authoritative_entity_record(execution, &scope, entity_id)?
+                let Some(read) = self
+                    .scoped_authoritative_entity_record(&resident, execution, &scope, entity_id)?
                 else {
                     return Ok(None);
                 };
                 let (lineage_id, structural_fingerprint) =
-                    self.entity_structural_sidecars(entity_id);
+                    self.entity_structural_sidecars(&resident, entity_id);
                 let mut degradations = Vec::new();
                 if structural_fingerprint.is_none() {
                     degradations.push(InspectionDegradation::MissingStructuralFingerprint);
@@ -49,8 +50,12 @@ impl<'runtime> InspectionAccess<'runtime> {
                 })
             }
             RecordRef::Relation(relation_id) => {
-                let Some(read) =
-                    self.scoped_authoritative_relation_record(execution, &scope, relation_id)?
+                let Some(read) = self.scoped_authoritative_relation_record(
+                    &resident,
+                    execution,
+                    &scope,
+                    relation_id,
+                )?
                 else {
                     return Ok(None);
                 };

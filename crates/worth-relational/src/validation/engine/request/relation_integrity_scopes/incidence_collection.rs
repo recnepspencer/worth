@@ -18,12 +18,11 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 if !scanned_sources.insert(entity_id) {
                     continue;
                 }
-                if let Some(partition) = self.partitions.get_partition(entity_id.partition_id) {
-                    let outgoing = partition
-                        .adjacency
-                        .get(entity_id.slot_index())
-                        .map(|set| set.current_ids().to_vec())
-                        .unwrap_or_default();
+                if let Some(partition) = self
+                    .partitions
+                    .get_current_partition(entity_id.partition_id)
+                {
+                    let outgoing = partition.outgoing_candidates(entity_id).to_vec();
                     self.scan_relation_ids(outgoing)?;
                 }
                 continue;
@@ -32,12 +31,11 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
                 if !scanned_targets.insert(entity_id) {
                     continue;
                 }
-                if let Some(partition) = self.partitions.get_partition(entity_id.partition_id) {
-                    let incoming = partition
-                        .reverse_adjacency
-                        .get(entity_id.slot_index())
-                        .map(|set| set.current_ids().to_vec())
-                        .unwrap_or_default();
+                if let Some(partition) = self
+                    .partitions
+                    .get_current_partition(entity_id.partition_id)
+                {
+                    let incoming = partition.incoming_candidates(entity_id).to_vec();
                     self.scan_relation_ids(incoming)?;
                 }
                 continue;

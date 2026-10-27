@@ -18,8 +18,9 @@ impl VisibilityProjectionView {
             runtime_identity: runtime.runtime_instance_id(),
             current_version: runtime.current_version_id(),
             instrumentation: runtime.services.instrumentation.clone(),
-            symbols: runtime.services.symbols.interner_snapshot(),
+            symbols: runtime.services.symbols.clone(),
             schema,
+            resident: None,
             basis,
         }
     }

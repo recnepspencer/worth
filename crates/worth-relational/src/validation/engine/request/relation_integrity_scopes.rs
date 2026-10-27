@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::RelationScopeRequirement;
 use super::{PlannedRelationEdge, PreparedRelationIntegrityScope, PreparedRelationIntegrityScopes};
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{EntityReference, MergedCommitPlan};
 
 mod incidence_collection;
@@ -13,7 +13,7 @@ use crate::transactions::data::TransactionCommitError;
 
 pub(crate) fn prepare_relation_integrity_scopes(
     merged_plan: Option<&MergedCommitPlan>,
-    partitions: &dyn PartitionAccess,
+    partitions: &dyn CurrentPartitionAccess,
     version_id: crate::identity::data::VersionId,
     requirements: BTreeMap<KindId, RelationScopeRequirement>,
     performance: &crate::performance::PerformanceAccess<'_>,
@@ -49,7 +49,7 @@ fn include_existing_entity_reference(
 }
 
 struct RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority> {
-    partitions: &'access dyn PartitionAccess,
+    partitions: &'access dyn CurrentPartitionAccess,
     state_view: crate::validation::engine::state_view::InvariantStateView<'access>,
     performance: &'access crate::performance::PerformanceAccess<'runtime>,
     control: &'access InvariantPreparationControl<'scope, 'authority>,
@@ -68,7 +68,7 @@ impl<'access, 'runtime, 'scope, 'authority>
     RelationIntegrityScopeAccumulator<'access, 'runtime, 'scope, 'authority>
 {
     fn new(
-        partitions: &'access dyn PartitionAccess,
+        partitions: &'access dyn CurrentPartitionAccess,
         version_id: crate::identity::data::VersionId,
         requirements: BTreeMap<KindId, RelationScopeRequirement>,
         performance: &'access crate::performance::PerformanceAccess<'runtime>,

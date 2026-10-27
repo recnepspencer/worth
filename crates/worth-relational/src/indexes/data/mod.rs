@@ -26,7 +26,9 @@ pub use maintenance::{
 mod bounded_entity_field_lookup;
 mod bounded_related_entity_ordered_lookup;
 mod bounded_relation_join_lookup;
+mod generation_residency;
 mod generation_selection_counters;
+pub use generation_residency::DerivedIndexGenerationResidency;
 mod related_entity_ordering;
 mod relation_join;
 

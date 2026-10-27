@@ -33,7 +33,7 @@ fn branch_head_visibility_updates_incrementally_under_branch_churn() {
         let _ = update_entity(execution, &runtime, entity, &format!("base-r{revision}"));
     }
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.protected_visibility_version_count, 2);
@@ -70,7 +70,7 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
         .unwrap();
     let _ = update_entity(execution, &runtime, entity, "base-updated");
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(stats.protected_visibility_version_count, 2);
     assert_eq!(stats.cached_visibility_version_count, 0);
@@ -80,7 +80,7 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
         .read_truth()
         .read_version(execution, base.version_id)
         .expect("read request remains live");
-    let warmed_stats = runtime.storage_access().storage_stats();
+    let warmed_stats = runtime.storage_access().storage_stats(execution).unwrap();
     assert_eq!(warmed_stats.cached_visibility_version_count, 0);
     assert_eq!(warmed_stats.protected_visibility_version_count, 2);
 }

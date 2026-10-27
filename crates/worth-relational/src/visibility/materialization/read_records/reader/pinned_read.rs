@@ -6,7 +6,9 @@ use crate::query::data::QueryPlanContextId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::snapshots::data::SnapshotHandle;
 use crate::symbols::data::StringInterner;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
+use crate::visibility::snapshot_states::{
+    ResidentVisibilitySnapshotBasis, VisibilitySnapshotBasis,
+};
 use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(test)]
@@ -59,7 +61,7 @@ pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) current_version: crate::identity::data::VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
-    pub(super) basis: VisibilitySnapshotBasis,
+    pub(super) basis: ResidentVisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
     pub(super) symbols: StringInterner,
     pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
@@ -73,7 +75,7 @@ pub(crate) struct PinnedIndex {
 
 #[derive(Debug)]
 pub enum RelationalPinnedReadAdmissionDenial {
-    Request(worth_execution::MapKernelStop),
+    Request(crate::execution::RelationalExecutionDenialCause),
     SnapshotUnavailable,
     IndexNotInstalled(DerivedIndexId),
 }
@@ -105,7 +107,7 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
             .get(&index)
             .map(|entry| entry.definition.as_ref())
     }
-    /// `None` retains a cold index's absence at pin time.
+    /// `None` records genuine generation absence after checkpoint admission.
     pub fn index_generation(&self, index: DerivedIndexId) -> Option<DerivedIndexGenerationId> {
         self.indexes
             .get(&index)?
@@ -120,6 +122,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         self.context.runtime_instance_id
     }
     pub(crate) fn pinned_basis(&self) -> &VisibilitySnapshotBasis {
+        self.basis.basis()
+    }
+    pub(crate) fn resident_basis(&self) -> &ResidentVisibilitySnapshotBasis {
         &self.basis
     }
     pub(crate) fn pinned_current_version(&self) -> crate::identity::data::VersionId {
@@ -139,6 +144,22 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     }
 }
 impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPinnedRead<Snapshot> {
+    // Construction already admitted and retained the complete immutable source.
+    // Reading an accepted pin checks request life, without reacquiring cold truth.
+    fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)
+    }
+    fn demand_regions_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        _partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)
+    }
+
     fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
         Some(self.basis.root())
     }

@@ -9,12 +9,14 @@ use crate::durability::data::{DurabilityError, DurableCheckpoint};
 impl<'runtime> DurabilityAuthority<'runtime> {
     pub fn native_checkpoint(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::durability::data::RelationalNativeCheckpoint,
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
         self.native_checkpoint_with_policy(
+            execution,
             policy,
             crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
         )
@@ -22,6 +24,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
 
     pub fn native_checkpoint_with_policy(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
     ) -> Result<
@@ -29,17 +32,21 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
         policy.check_live()?;
+        crate::execution::check_request(execution)
+            .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
         let captured = self.capture_checkpoint_basis()?.build_native_capture(
+            execution,
             policy,
             self.runtime.durability.cold_source(),
             &artifact_policy,
         )?;
         let manifest_publication = if !artifact_policy.is_embedded() {
             artifact_policy.publication_source().map(|source| {
-                self.runtime
-                    .durability
-                    .checkpoint_selection()
-                    .prepare(captured.manifest.clone(), source)
+                self.runtime.durability.checkpoint_selection().prepare(
+                    captured.manifest.clone(),
+                    source,
+                    captured.history_members.clone(),
+                )
             })
         } else {
             None
@@ -81,7 +88,9 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        let captured = self.capture_checkpoint_basis()?;
+        let captured = self
+            .capture_checkpoint_basis()?
+            .demand_memory_image(self.runtime, execution)?;
         self.finalize_captured_checkpoint(captured)
     }
 

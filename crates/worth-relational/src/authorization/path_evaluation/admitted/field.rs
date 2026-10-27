@@ -22,10 +22,10 @@ pub(super) fn live<A: RelationalAuthorizationObservationAdmission>(
     state.counters.entity_records_inspected += 1;
     Ok(context
         .view
-        .with_exact_entity_state(entity, |metadata, _| {
+        .read_exact_entity_state(execution, entity, |metadata, _| {
             metadata.kind_id == kind && metadata.lifecycle == RecordLifecycleState::Live
         })
-        .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?
+        .map_err(admission::borrowed_denial)?
         .unwrap_or(false))
 }
 
@@ -104,7 +104,7 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
     admission::prepare(state.admission, 1, 0)?;
     let value = context
         .view
-        .with_exact_entity_state(entity, |metadata, authoritative| {
+        .read_exact_entity_state(execution, entity, |metadata, authoritative| {
             if metadata.kind_id != kind || metadata.lifecycle != RecordLifecycleState::Live {
                 return Ok(None);
             }
@@ -140,6 +140,6 @@ pub(super) fn observe<A: RelationalAuthorizationObservationAdmission>(
             )?;
             Ok(Some(value.clone()))
         })
-        .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?;
+        .map_err(admission::borrowed_denial)?;
     value.unwrap_or(Ok(None))
 }

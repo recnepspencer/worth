@@ -1,8 +1,7 @@
 use crate::config::data::MutationConfig;
 use crate::schema::data::{AspectContractPlanCatalog, RelationalSchemaRegistry};
 use crate::storage::overlay::WorkingState;
-use crate::symbols::data::StringInterner;
-use crate::transactions::data::{AuthoritativeApplyPlan, CommitConflict, TransactionCommitError};
+use crate::transactions::data::{AuthoritativeApplyPlan, CommitConflict};
 
 use super::effect_assembly::assemble_effect;
 use super::intents::dispatch_intent;
@@ -23,12 +22,12 @@ pub(crate) fn apply_plan_to_working_state(
     config: &MutationConfig,
     schema_registry: &RelationalSchemaRegistry,
     aspect_plans: &AspectContractPlanCatalog,
-    symbols: &mut StringInterner,
+    symbols: &mut crate::runtime::PendingSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     record_allocations: &mut crate::runtime::PendingRecordAllocations,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::execution::RequestWorkBudget>,
-) -> Result<MutationApplyOutcome, TransactionCommitError> {
+) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     let mut workspace = MutationWorkspace::new(
         state,
         symbols,

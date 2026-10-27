@@ -37,7 +37,7 @@ fn intact_member_with_forged_current_kind_cannot_serve_false_absence() {
     cold.head = member.0;
     let source = source_with_member(&fixture.source, member);
     cold.source = source.clone();
-    let cell = RelationalRegionResidency::cold(cold);
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
     let failure = head_demand(&cell, 1 << 24).unwrap_err();
     assert_eq!(failure.cause, Cause::IntegrityMismatch);
     let reads = source.reads.load(Ordering::SeqCst);
@@ -59,8 +59,8 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     )
     .unwrap();
     let mut history: RegionHistoryImage = rmp_serde::from_slice(frame.payload).unwrap();
-    assert!(!history.relations[0].is_empty());
-    history.relations[0].clear();
+    assert!(!history.relations[0].earlier.is_empty());
+    history.relations[0].earlier.clear();
     let member = RelationalRegionImage::encode(
         cold.partition_id,
         cold.schema_carrier_digest,
@@ -70,7 +70,7 @@ fn intact_history_cannot_omit_authoritative_kind_membership() {
     .unwrap();
     cold.history = member.0;
     cold.source = source_with_member(&fixture.source, member);
-    let cell = RelationalRegionResidency::cold(cold);
+    let cell = RelationalRegionResidency::cold(cold).unwrap();
     assert!(head_demand(&cell, 1 << 24)
         .unwrap()
         .head_view()

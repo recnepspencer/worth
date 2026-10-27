@@ -1,5 +1,6 @@
 mod application_publication;
 mod authority;
+mod preparation_denial;
 pub use application_publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use application_publication::{origin_denial, RequiredOutputPublicationAdmission};
 pub use application_publication::{
@@ -7,6 +8,7 @@ pub use application_publication::{
     RequiredOutputProducingImplementation, RequiredOutputPublication,
     RequiredOutputPublicationMeaning, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
+pub(crate) use preparation_denial::PublicationPreparationDenial;
 mod candidate;
 mod candidate_consumption;
 mod candidate_preparation;

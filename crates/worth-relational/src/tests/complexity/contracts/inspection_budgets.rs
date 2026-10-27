@@ -217,11 +217,15 @@ fn complexity_budget_retention_summary_reports_bounded_slot_scans() {
     runtime.performance_access().reset_counters();
     let summary = runtime
         .inspect_what_happened()
-        .retention_summary(&RetentionInspectionRequest {
-            max_entity_slots_scanned: 32,
-            max_relation_slots_scanned: 32,
-            max_work_units: 128,
-        });
+        .retention_summary(
+            execution,
+            &RetentionInspectionRequest {
+                max_entity_slots_scanned: 32,
+                max_relation_slots_scanned: 32,
+                max_work_units: 128,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(
@@ -276,15 +280,19 @@ fn complexity_budget_commit_inspection_reads_are_index_explicit_and_bounded() {
     runtime.performance_access().reset_counters();
     let commit = runtime
         .inspect_what_happened()
-        .inspect_commit(latest_commit)
+        .inspect_commit(execution, latest_commit)
+        .unwrap()
         .expect("commit inspection");
-    let recent =
-        runtime
-            .inspect_what_happened()
-            .inspect_recent_commits(&RecentCommitInspectionRequest {
+    let recent = runtime
+        .inspect_what_happened()
+        .inspect_recent_commits(
+            execution,
+            &RecentCommitInspectionRequest {
                 branch_id: Some(crate::facade::history::BranchId("main".to_string())),
                 limit: 2,
-            });
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(commit.commit.commit_id, latest_commit);

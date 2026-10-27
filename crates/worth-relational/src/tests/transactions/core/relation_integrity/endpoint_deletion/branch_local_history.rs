@@ -31,12 +31,14 @@ fn relation_integrity_endpoint_deletion_history_stays_branch_local_under_diverge
     );
 
     let main_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("main".to_string()),
         relation,
         None,
     );
     let feature_digest = relation_aspect_history_digest_on_branch(
+        execution,
         &runtime,
         &BranchId("feature".to_string()),
         relation,

@@ -1,4 +1,3 @@
-use super::RelationalObservationReadDenial;
 use crate::history::data::CommitId;
 use crate::history::CommitAncestryPosture;
 use crate::mvcc::RelationalBranchObservation;
@@ -162,7 +161,7 @@ impl RelationalRuntime {
         observation: &RelationalBranchObservation,
     ) -> Result<CommitId, RelationalCommitSelectionDenial> {
         self.admit_observation_read(observation).map_err(
-            |RelationalObservationReadDenial::ForeignObservation| {
+            |super::observation_read::ForeignObservation| {
                 RelationalCommitSelectionDenial::ForeignObservation
             },
         )?;

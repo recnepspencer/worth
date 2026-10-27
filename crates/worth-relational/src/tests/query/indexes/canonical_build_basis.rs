@@ -57,11 +57,13 @@ fn exact_basis_index_build_rejects_each_mixed_axis_without_publication() {
         );
         assert!(runtime
             .index_access()
-            .latest_generation(index.index_id, &actual_branch)
+            .read_latest_generation(execution, index.index_id, &actual_branch)
+            .unwrap()
             .is_none());
         assert!(runtime
             .index_access()
-            .latest_generation(index.index_id, &claimed_sibling)
+            .read_latest_generation(execution, index.index_id, &claimed_sibling)
+            .unwrap()
             .is_none());
     }
     release_test_commit_snapshot(&runtime, &main);
@@ -118,7 +120,8 @@ fn derived_index_build_rejects_branch_claim_that_disagrees_with_source_commit() 
     );
     assert!(runtime
         .index_access()
-        .latest_generation(index.index_id, &BranchId("feature".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("feature".to_string()))
+        .unwrap()
         .is_none());
     release_test_commit_snapshot(&runtime, &main);
     release_test_commit_snapshot(&runtime, &feature);

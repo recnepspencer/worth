@@ -108,11 +108,12 @@ impl TestDurableMedium {
         covered_transitions: RelationalBranchTransitionSequence,
         checkpoint: RelationalNativeCheckpoint,
     ) {
-        self.journal().checkpoint = Some(RelationalDurableCheckpointSource::new(
-            covered,
-            covered_transitions,
-            checkpoint,
-        ));
+        self.journal()
+            .file_checkpoint(RelationalDurableCheckpointSource::new(
+                covered,
+                covered_transitions,
+                checkpoint,
+            ));
     }
 
     /// What a home would hand Relational on reopen: the filed checkpoint and

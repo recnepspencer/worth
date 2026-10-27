@@ -72,7 +72,8 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     );
     assert!(runtime
         .index_access()
-        .latest_generation(definition.index_id, &BranchId("main".into()))
+        .read_latest_generation(execution, definition.index_id, &BranchId("main".into()))
+        .unwrap()
         .is_none());
     let next_host = crate::test_execution_policy::serial_request();
     let next_request = &worth_execution::ExecutionRequest::serial(&next_host);
@@ -182,7 +183,8 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
     assert_eq!(retry_kind, Some(Denial::Execution(Cause::WorkExhausted)));
     assert!(runtime
         .index_access()
-        .latest_generation(index, &BranchId("main".into()))
+        .read_latest_generation(execution, index, &BranchId("main".into()))
+        .unwrap()
         .is_none());
     let mut charges = 0;
     let rendezvous = crate::indexes::at_next_charges(move || {
@@ -209,10 +211,20 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
             Some(Denial::Execution(Cause::Cancelled))
         )
     );
-    assert!(runtime
-        .index_access()
-        .latest_generation(index, &BranchId("main".into()))
-        .is_none());
+    assert_eq!(
+        runtime
+            .index_access()
+            .read_latest_generation(execution, index, &BranchId("main".into()))
+            .unwrap_err(),
+        Cause::Cancelled
+    );
+    assert_eq!(
+        runtime
+            .index_access()
+            .generation_residency_for_observation(index, &basis.observation()),
+        crate::indexes::data::DerivedIndexGenerationResidency::Absent
+    );
+
     release_test_commit_snapshot(&runtime, &created);
 }
 

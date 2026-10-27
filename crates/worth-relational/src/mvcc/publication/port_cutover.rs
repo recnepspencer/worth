@@ -145,17 +145,21 @@ impl PreparedBranchPublicationPreflight {
             Some(_) => crate::runtime::PatchPositionReservationAdmission::WaitWithin(execution),
             None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
+        let symbol_meanings = self.movement.symbol_meanings;
         let positioned_commit = match self
             .movement
             .canonical_publication_route
             .record_performed_with_cutover(
                 self.publication_cell.clone(),
                 admission,
-                |positioned| match &medium {
-                    Some(medium) => medium.publish(positioned, durable_policy),
-                    None => Ok(()),
+                |positioned, roots| match &medium {
+                    Some(medium) => medium.publish(positioned, roots, durable_policy).map(Some),
+                    None => Ok(None),
                 },
                 |position| {
+                    symbol_meanings
+                        .publish()
+                        .expect("minted symbol reservations preserve owner meaning");
                     // The cutover is the only orchestration this port runs while the
                     // global patch-position reservation is held, so this is where a
                     // concurrent publisher can be made to meet it.

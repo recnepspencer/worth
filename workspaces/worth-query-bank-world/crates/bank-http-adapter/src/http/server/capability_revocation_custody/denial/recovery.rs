@@ -11,10 +11,12 @@ pub(super) fn managed(cause: WorthQueryManagedApplicationRecoveryDenial) -> Bank
             cause,
         )),
         D::World(cause) => world(cause),
-        D::Adoption(RuntimeWorldSettledRelationalAdoptionDenial::Recovery(cause)) => world(cause),
-        D::Adoption(RuntimeWorldSettledRelationalAdoptionDenial::Publication(cause)) => {
-            adoption(cause.cause())
-        }
+        D::Adoption(cause) => match *cause {
+            RuntimeWorldSettledRelationalAdoptionDenial::Recovery(cause) => world(cause),
+            RuntimeWorldSettledRelationalAdoptionDenial::Publication(cause) => {
+                adoption(cause.cause())
+            }
+        },
         D::ProviderBusy | D::ProviderCapacity | D::ProductUnavailable => unavailable(),
         D::ForeignAdmission | D::BindingMismatch => operator(),
     }

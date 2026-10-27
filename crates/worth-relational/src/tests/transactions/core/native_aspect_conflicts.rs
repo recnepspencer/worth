@@ -122,9 +122,11 @@ fn native_create_merge_is_stable_across_batch_permutations() {
         )
         .expect("test staging stays within configured resource budgets");
     let intents_a = transaction_a
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_a,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .merged_intents
@@ -156,9 +158,11 @@ fn native_create_merge_is_stable_across_batch_permutations() {
         )
         .expect("test staging stays within configured resource budgets");
     let intents_b = transaction_b
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime_b,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .merged_intents

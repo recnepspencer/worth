@@ -135,7 +135,7 @@ impl<'runtime, 'budget> InvariantExecutionContext<'runtime, 'budget> {
         )
     }
 
-    pub fn partition_access(&self) -> &dyn crate::storage::overlay::PartitionAccess {
+    pub fn partition_access(&self) -> &dyn crate::storage::overlay::CurrentPartitionAccess {
         self.observation.committed_partition_access()
     }
 

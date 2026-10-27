@@ -9,6 +9,7 @@ mod execution_admission;
 mod history_binding;
 mod history_resolution_phase;
 mod invariant_phase;
+mod merge_draft;
 mod mutation_execution;
 mod publication_execution;
 mod rejection;

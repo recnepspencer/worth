@@ -22,17 +22,19 @@ fn merge_proof_packet_canonical_basis_parity_survives_publication_and_recovery()
     let outcome = execute_merge(execution, &runtime);
     let live_packet = outcome.execution_summary.proof_packet().clone();
     let live_basis = lower_packet(&runtime, &live_packet);
-    let published_packet = published_merge_authority(&runtime, outcome.commit.commit.commit_id)
-        .execution_summary
-        .proof_packet
-        .clone();
+    let published_packet =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id)
+            .execution_summary
+            .proof_packet
+            .clone();
     let published_basis = lower_packet(&runtime, &published_packet);
     let (_recovery, recovered) =
         checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_packet = published_merge_authority(&recovered, outcome.commit.commit.commit_id)
-        .execution_summary
-        .proof_packet
-        .clone();
+    let recovered_packet =
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id)
+            .execution_summary
+            .proof_packet
+            .clone();
     let recovered_basis = lower_packet(&recovered, &recovered_packet);
 
     assert_eq!(live_basis, published_basis);
@@ -238,12 +240,15 @@ fn execute_merge(
 }
 
 fn published_merge_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> crate::transactions::data::PublishedMergeExecutionAuthority {
     runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

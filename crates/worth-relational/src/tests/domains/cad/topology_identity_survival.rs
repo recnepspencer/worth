@@ -16,7 +16,8 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -24,17 +25,21 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     let replaced_entity = changed_entities(&replacement)[0];
     let replacement_lineage = runtime
         .lineage_access()
-        .for_record(replaced_entity)
+        .for_record(execution, replaced_entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         resolution.digest_basis().digest_mode(),
@@ -44,14 +49,18 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
     assert_eq!(resolution.resolved[0], replacement_lineage);
     assert_eq!(resolution.metrics.resolved_lineage_count, 1);
 
-    let history = runtime.lineage_access().entity_aspect_history(
-        HistoricalResolutionRequest {
-            branch_id: BranchId("main".to_string()),
-            lineage_id: start_lineage,
-            boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-        },
-        None,
-    );
+    let history = runtime
+        .lineage_access()
+        .entity_aspect_history(
+            execution,
+            HistoricalResolutionRequest {
+                branch_id: BranchId("main".to_string()),
+                lineage_id: start_lineage,
+                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
+            },
+            None,
+        )
+        .unwrap();
     let history = history.expect("lineage aspect history");
     assert_lineage_history_origin_invariants(&history.entries, start_lineage);
 
@@ -68,14 +77,17 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
         .recover(execution, plan)
         .unwrap();
 
-    let recovered_resolution =
-        recovered
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let recovered_resolution = recovered
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     assert_eq!(
         recovered_resolution.digest_basis(),
         resolution.digest_basis()

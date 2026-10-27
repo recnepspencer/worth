@@ -75,6 +75,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -117,6 +118,7 @@ fn merge_planning_distinguishes_disjoint_aspect_intent_from_strategy_intent_conf
             );
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -242,6 +244,7 @@ fn merge_planning_classifies_same_declared_aspect_field_as_strategy_intent_confl
         let mut authority = runtime.commit_strategies_authority();
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,

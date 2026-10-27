@@ -16,6 +16,7 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -99,6 +100,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
             crate::tests::support::test_owner_strategy_authority(&runtime, Some(child));
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -160,6 +162,7 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -223,6 +226,7 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -302,6 +306,7 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,

@@ -17,7 +17,9 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
     let before_bundle = capture_aspect_truth_bundle(execution, &runtime, &[], &[], &[]);
     let merge_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
 
     let (_recovery, recovered) =
@@ -25,7 +27,9 @@ fn execute_prepared_merge_survives_durability_append_and_recovery() {
     let recovered_bundle = capture_aspect_truth_bundle(execution, &recovered, &[], &[], &[]);
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
 
     assert_eq!(before_bundle.visible_truth, recovered_bundle.visible_truth);

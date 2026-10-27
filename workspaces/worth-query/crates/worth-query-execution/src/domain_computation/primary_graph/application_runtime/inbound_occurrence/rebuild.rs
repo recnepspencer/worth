@@ -80,6 +80,9 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .primary_provider
             .completion_row_from_commit_patch(execution, relational, maximum_changed_records)
             .map_err(|denial| match denial {
+                WorthQueryInboundCompletionReadDenial::ReadRequest(cause) => {
+                    Denial::ReadRequest(cause)
+                }
                 WorthQueryInboundCompletionReadDenial::ReconstructionWorkExhausted => {
                     Denial::ReconstructionWorkExhausted
                 }
@@ -123,6 +126,12 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 /// Explicit repair result; ordinary exact lookup never invokes this lane.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundIndexRepairDenial {
+    ExecutionDenied(
+        Result<
+            crate::domain_computation::WorthQueryProviderSessionDenialKind,
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+        >,
+    ),
     ForeignPhase,
     ForeignVerifier,
     IndexUnavailable,
@@ -166,6 +175,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             maximum_ancestry_commits_per_completion,
         )
         .map_err(|denial| match denial {
+            Denial::ReadRequest(cause) => WorthQueryInboundIndexRepairDenial::ExecutionDenied(
+                crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None),
+            ),
             Denial::IndexUnavailable | Denial::NotExpired => {
                 WorthQueryInboundIndexRepairDenial::IndexUnavailable
             }

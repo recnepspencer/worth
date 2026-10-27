@@ -1,6 +1,7 @@
 use crate::branch::{RelationalBranchReferenceObservation, RelationalBranchVersion};
+#[cfg(test)]
 use crate::history::data::CanonicalCommitEnvelope;
-use crate::history::data::{BranchId, CommitId, CommittedVersionSummary, RelationalCommitReceipt};
+use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::publication::patch::data::PatchStreamPosition;
 
 use super::HistoryAccess;
@@ -111,46 +112,20 @@ impl<'runtime> HistoryAccess<'runtime> {
             })
     }
 
-    /// Transitional immutable version lookup for existing Query consumers.
-    pub fn historical_committed_version(
+    /// Resolve immutable version identity from the catalog index without loading a body.
+    pub fn immutable_commit_receipt_for_version(
         &self,
         version_id: crate::identity::data::VersionId,
-    ) -> Option<CommittedVersionSummary> {
-        self.commit_envelope_for_version(version_id)
-            .or_else(|| {
-                self.runtime
-                    .history
-                    .canonical_envelope_for_version(version_id)
-                    .map(|envelope| envelope.as_ref().clone())
-            })
-            .map(|envelope| {
-                CommittedVersionSummary::new(
-                    envelope.commit.clone(),
-                    envelope.patch.authoritative_record_patches.len(),
-                )
-            })
-    }
-
-    pub(crate) fn commit_envelope(&self, commit_id: CommitId) -> Option<CanonicalCommitEnvelope> {
-        self.runtime
-            .history
-            .canonical_envelope(commit_id)
-            .map(|envelope| envelope.as_ref().clone())
-    }
-
-    pub(crate) fn commit_envelope_for_version(
-        &self,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<CanonicalCommitEnvelope> {
+    ) -> Option<RelationalCommitReceipt> {
         self.runtime
             .history
             .commit_artifact_for_version(version_id)
-            .map(|artifact| artifact.envelope().as_ref().clone())
+            .map(|artifact| artifact.receipt())
             .or_else(|| {
                 self.runtime
                     .history
                     .canonical_envelope_for_version(version_id)
-                    .map(|envelope| envelope.as_ref().clone())
+                    .map(|envelope| envelope.commit.clone())
             })
     }
 
@@ -189,6 +164,7 @@ impl<'runtime> HistoryAccess<'runtime> {
                 .is_some()
     }
 
+    #[cfg(test)]
     pub(crate) fn commit_envelopes_snapshot(&self) -> Vec<CanonicalCommitEnvelope> {
         let mut envelopes = self
             .runtime
@@ -201,17 +177,6 @@ impl<'runtime> HistoryAccess<'runtime> {
             envelopes.insert(envelope.commit.commit_id, envelope.as_ref().clone());
         }
         envelopes.into_values().collect()
-    }
-
-    pub(crate) fn positioned_commits_snapshot(
-        &self,
-    ) -> Vec<crate::history::data::PositionedCanonicalCommit> {
-        self.runtime
-            .history
-            .positioned_canonical_commits_snapshot()
-            .into_iter()
-            .map(|commit| commit.as_ref().clone())
-            .collect()
     }
 
     pub(crate) fn branch_cells_snapshot(
@@ -274,13 +239,6 @@ impl<'runtime> HistoryAccess<'runtime> {
             .or_else(|| self.latest_commit().map(|commit| commit.commit_id))
     }
 
-    pub(crate) fn committed_version(
-        &self,
-        version_id: crate::identity::data::VersionId,
-    ) -> Option<CommittedVersionSummary> {
-        self.historical_committed_version(version_id)
-    }
-
     pub(crate) fn branch_reference_state(
         &self,
         branch_id: &BranchId,
@@ -300,41 +258,38 @@ impl<'runtime> HistoryAccess<'runtime> {
         limit: usize,
     ) -> Vec<CommitId> {
         match branch_id {
-            Some(branch_id) => self
-                .branch_commit_envelopes(branch_id)
-                .into_iter()
-                .rev()
-                .take(limit)
-                .map(|envelope| envelope.commit.commit_id)
-                .collect(),
-            None => self
-                .positioned_commits_snapshot()
-                .into_iter()
-                .rev()
-                .take(limit)
-                .map(|positioned| positioned.envelope().commit.commit_id)
-                .collect(),
+            Some(branch_id) => {
+                let Some(head) = self.branch_head(branch_id) else {
+                    return Vec::new();
+                };
+                let mut receipts = self
+                    .ancestor_set(head.commit_id)
+                    .into_iter()
+                    .filter_map(|id| self.immutable_commit_receipt(id))
+                    .filter(|receipt| receipt.branch_id == *branch_id)
+                    .collect::<Vec<_>>();
+                receipts.sort_by_key(|receipt| (receipt.version_id.0, receipt.commit_id.0));
+                receipts
+                    .into_iter()
+                    .rev()
+                    .take(limit)
+                    .map(|receipt| receipt.commit_id)
+                    .collect()
+            }
+            None => {
+                let mut references = self
+                    .runtime
+                    .history
+                    .latest_recorded_patch_references(limit)
+                    .into_iter()
+                    .collect::<std::collections::BTreeMap<_, _>>();
+                references.extend(
+                    self.runtime
+                        .history
+                        .latest_canonical_patch_references(limit),
+                );
+                references.into_values().rev().take(limit).collect()
+            }
         }
-    }
-
-    pub(super) fn branch_commit_envelopes(
-        &self,
-        branch_id: &BranchId,
-    ) -> Vec<CanonicalCommitEnvelope> {
-        let Some(head) = self.branch_head(branch_id) else {
-            return Vec::new();
-        };
-        let branch_commits = self.ancestor_set(head.commit_id);
-        let mut envelopes = self
-            .commit_envelopes_snapshot()
-            .into_iter()
-            .filter(|envelope| {
-                branch_commits.contains(&envelope.commit.commit_id)
-                    && envelope.commit.branch_id == *branch_id
-            })
-            .collect::<Vec<_>>();
-        envelopes
-            .sort_by_key(|envelope| (envelope.commit.version_id.0, envelope.commit.commit_id.0));
-        envelopes
     }
 }

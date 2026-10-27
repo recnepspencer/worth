@@ -13,6 +13,10 @@ use crate::storage::data::{
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
+mod member_export;
+mod page_shape;
+use page_shape::{SymbolPageSelection, SymbolPageShape};
+
 #[cfg(test)]
 mod tests;
 
@@ -22,29 +26,65 @@ pub(super) struct RuntimeSymbolResidency {
     by_id: Vec<RelationalCheckpointPage>,
     by_value: Vec<RelationalCheckpointSymbolBucket>,
     source: Arc<dyn RelationalDurableColdSource>,
-    pages:
-        Mutex<BTreeMap<RelationalDurableMemberLocator, Result<(), RelationalStorageUnavailable>>>,
+    _placement: crate::durability::medium::RelationalDurableMemberCustody,
+    pages: Mutex<
+        BTreeMap<
+            RelationalDurableMemberLocator,
+            Result<SymbolPageShape, RelationalStorageUnavailable>,
+        >,
+    >,
 }
 
 impl RuntimeSymbolResidency {
+    pub(super) fn region_is_admitted(
+        &self,
+        region: crate::storage::residency::RelationalRegionSymbolAdmissionIdentity,
+    ) -> bool {
+        self.regions
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .contains(&region)
+    }
+
     pub(super) fn all_id_pages_resident(&self) -> bool {
         let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
         self.by_id
             .iter()
-            .all(|page| matches!(pages.get(&page.member), Some(Ok(()))))
+            .all(|page| matches!(pages.get(&page.member), Some(Ok(_))))
     }
     pub(super) fn new(
         by_id: Vec<RelationalCheckpointPage>,
         by_value: Vec<RelationalCheckpointSymbolBucket>,
         source: Arc<dyn RelationalDurableColdSource>,
-    ) -> Self {
-        Self {
+    ) -> Result<Self, RelationalStorageUnavailable> {
+        let members = by_id
+            .iter()
+            .map(|page| page.member)
+            .chain(
+                by_value
+                    .iter()
+                    .flat_map(|bucket| bucket.pages.iter().copied()),
+            )
+            .collect::<BTreeSet<_>>();
+        let placement = source
+            .retain_members(&members.into_iter().collect::<Vec<_>>())
+            .map_err(|cause| {
+                unavailable(
+                    RelationalStorageSubject::Symbols {
+                        first: Symbol(by_id.first().map_or(0, |page| page.first as u32)),
+                        last: Symbol(by_id.last().map_or(0, |page| page.last as u32)),
+                    },
+                    cause,
+                )
+            })?;
+        Ok(Self {
             regions: Mutex::new(HashSet::new()),
             by_id,
             by_value,
             source,
+            _placement: placement,
             pages: Mutex::new(BTreeMap::new()),
-        }
+        })
     }
 
     pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
@@ -59,6 +99,7 @@ impl RuntimeSymbolResidency {
                 by_id: self.by_id.clone(),
                 by_value: self.by_value.clone(),
                 source: self.source.clone(),
+                _placement: self._placement.clone(),
                 pages: Mutex::new(pages.clone()),
             },
             owner,
@@ -84,16 +125,22 @@ impl RuntimeSymbolResidency {
         if admitted.contains(&region) {
             return Ok(());
         }
-        admitted.try_reserve(1).map_err(|_| {
-            unavailable(
-                RelationalStorageSubject::Symbols {
-                    first: Symbol(0),
-                    last: Symbol(u32::MAX - 1),
-                },
-                Cause::MemoryExhausted,
-            )
-        })?;
+        let covered_head = region.covered_head();
+        admitted
+            .try_reserve(1 + usize::from(covered_head.is_some()))
+            .map_err(|_| {
+                unavailable(
+                    RelationalStorageSubject::Symbols {
+                        first: Symbol(0),
+                        last: Symbol(u32::MAX - 1),
+                    },
+                    Cause::MemoryExhausted,
+                )
+            })?;
         self.demand_ids(owner, execution, ids())?;
+        if let Some(head) = covered_head {
+            admitted.insert(head);
+        }
         admitted.insert(region);
         Ok(())
     }
@@ -108,12 +155,8 @@ impl RuntimeSymbolResidency {
             if owner.with_read(|symbols| symbols.retained_text(id).is_some()) {
                 continue;
             }
-            let position = self.by_id.partition_point(|page| page.last < id.0 as u64);
-            let page = self
-                .by_id
-                .get(position)
-                .filter(|page| page.first <= id.0 as u64)
-                .ok_or_else(|| {
+            let page =
+                RelationalCheckpointPage::find(&self.by_id, u64::from(id.0)).ok_or_else(|| {
                     unavailable(
                         RelationalStorageSubject::Symbols {
                             first: id,
@@ -126,9 +169,14 @@ impl RuntimeSymbolResidency {
                 owner,
                 execution,
                 page.member,
-                RelationalStorageSubject::Symbols {
+                SymbolPageSelection::IdRange {
                     first: Symbol(page.first as u32),
                     last: Symbol(page.last as u32),
+                    id_digest: SymbolPageShape::digest_ids(
+                        (0..256)
+                            .map(|offset| page.range() * 256 + offset + 1)
+                            .filter(|id| page.contains(*id)),
+                    ),
                 },
             )?;
             if owner.with_read(|symbols| symbols.retained_text(id).is_none()) {
@@ -164,10 +212,7 @@ impl RuntimeSymbolResidency {
                 owner,
                 execution,
                 *locator,
-                RelationalStorageSubject::Symbols {
-                    first: Symbol(0),
-                    last: Symbol(u32::MAX - 1),
-                },
+                SymbolPageSelection::HashBucket(bucket),
             )?;
             if owner.with_read(|symbols| symbols.contains(value)) {
                 break;
@@ -176,20 +221,57 @@ impl RuntimeSymbolResidency {
         Ok(())
     }
 
+    /// A probe may reserve a new text only after every candidate bucket page
+    /// has proved that no prior spelling owns the identity.
+    pub(super) fn value_bucket_is_resident(
+        &self,
+        value: &str,
+    ) -> Result<bool, RelationalStorageUnavailable> {
+        use sha2::{Digest, Sha256};
+        let bucket = Sha256::digest(value.as_bytes())[0];
+        let Some(bucket) = self.by_value.iter().find(|entry| entry.bucket == bucket) else {
+            return Ok(true);
+        };
+        let mut pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
+        for locator in &bucket.pages {
+            match pages.get(locator).copied() {
+                Some(Ok(shape)) => {
+                    let selection = SymbolPageSelection::HashBucket(bucket.bucket);
+                    if let Err(cause) = shape.validate(selection) {
+                        let failure = unavailable(selection.subject(), cause);
+                        pages.insert(*locator, Err(failure));
+                        return Err(failure);
+                    }
+                }
+                Some(Err(failure)) => return Err(failure),
+                None => return Ok(false),
+            }
+        }
+        Ok(true)
+    }
+
     fn demand_page(
         &self,
         owner: &RuntimeSymbolTable,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         locator: RelationalDurableMemberLocator,
-        subject: RelationalStorageSubject,
+        selection: SymbolPageSelection,
     ) -> Result<(), Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
+        let subject = selection.subject();
         let mut pages = self
             .pages
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
-        if let Some(result) = pages.get(&locator) {
-            return (*result).map_err(Into::into);
+        if let Some(result) = pages.get(&locator).copied() {
+            return match result {
+                Ok(shape) => shape.validate(selection).map_err(|cause| {
+                    let failure = unavailable(subject, cause);
+                    pages.insert(locator, Err(failure));
+                    failure.into()
+                }),
+                Err(failure) => Err(failure.into()),
+            };
         }
         let result = (|| {
             let bytes = self
@@ -199,14 +281,19 @@ impl RuntimeSymbolResidency {
             let snapshot = crate::durability::checkpoints::symbol_pages::readmit(
                 execution, &bytes, locator, subject,
             )?;
+            let shape =
+                SymbolPageShape::read(&snapshot).map_err(|cause| unavailable(subject, cause))?;
+            shape
+                .validate(selection)
+                .map_err(|cause| unavailable(subject, cause))?;
             owner
                 .import_canonical_snapshot(&snapshot)
                 .map_err(|_| unavailable(subject, Cause::Damaged))?;
-            Ok(())
+            Ok(shape)
         })();
         match &result {
-            Ok(()) => {
-                pages.insert(locator, Ok(()));
+            Ok(shape) => {
+                pages.insert(locator, Ok(*shape));
             }
             Err(Failure::StorageUnavailable(failure)) if failure.cause.is_proven_damage() => {
                 pages.insert(locator, Err(*failure));
@@ -214,7 +301,7 @@ impl RuntimeSymbolResidency {
             Err(Failure::StorageUnavailable(_)) => {}
             Err(Failure::Request(_)) => {}
         }
-        result
+        result.map(|_| ())
     }
 }
 

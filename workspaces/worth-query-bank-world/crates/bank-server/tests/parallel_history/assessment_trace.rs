@@ -146,7 +146,7 @@ impl Trace {
                 )
             })
             .collect::<Vec<_>>();
-        println!("BANK_ASSESSMENT:{name}:{judged:?}");
+        println!("\nBANK_ASSESSMENT:{name}:{judged:?}");
         result
     }
 }

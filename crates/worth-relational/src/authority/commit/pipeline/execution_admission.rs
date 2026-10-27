@@ -102,6 +102,16 @@ impl AdmittedCommitExecution {
         self.prepared_scope.take()
     }
 
+    pub(super) fn accept_merge_draft(
+        &mut self,
+        draft: super::merge_draft::AcceptedMergeDraft,
+    ) -> super::authority_context::PreparedAuthorityScope {
+        self.prevalidated_commit_boundary = Some(draft.boundary);
+        self.prevalidated_mutation_sensitive = Some(draft.mutation_sensitive);
+        self.prevalidated_snapshot_publication = Some(draft.publication);
+        draft.scope
+    }
+
     pub(super) fn take_prevalidated_boundary(
         &mut self,
     ) -> Option<crate::validation::engine::InvariantExecutionResult> {
@@ -205,7 +215,7 @@ pub(super) fn admit_commit_execution(
         context
             .prepared_scope
             .as_ref()
-            .and_then(|scope| scope.proposal_identity.as_ref()),
+            .map(|scope| &scope.mutation_proposal.0),
     )?;
     let selected_branch_state = context
         .prepared_scope

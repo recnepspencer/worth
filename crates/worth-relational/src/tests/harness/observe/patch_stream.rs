@@ -4,13 +4,15 @@ use crate::facade::publication::{
 use crate::facade::runtime::RelationalRuntime;
 
 pub(crate) fn collect_patch_stream_from_head(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     window_size: usize,
 ) -> Vec<PublishedAuthoritativePatchEnvelope> {
-    collect_patch_stream_after(runtime, None, window_size)
+    collect_patch_stream_after(execution, runtime, None, window_size)
 }
 
 pub(crate) fn collect_patch_stream_after(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     after_position: Option<PatchStreamPosition>,
     window_size: usize,
@@ -21,10 +23,13 @@ pub(crate) fn collect_patch_stream_after(
     loop {
         let batch = runtime
             .publication()
-            .read_patch_stream(PatchStreamRequest {
-                after_position: after,
-                max_commits: window_size,
-            })
+            .read_patch_stream(
+                execution,
+                PatchStreamRequest {
+                    after_position: after,
+                    max_commits: window_size,
+                },
+            )
             .unwrap();
 
         if batch.patches.is_empty() {

@@ -115,7 +115,9 @@ fn fintech_branch_divergence_merge_and_savepoint_verbs_stay_case_local() {
     let (merge_parent_branches, merge_base_count, parent_count) = {
         let replay = world.runtime.replay();
         let envelope = replay
-            .canonical_commit_envelope(merged.commit.commit_id)
+            .canonical_commit_envelope(execution, merged.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .expect("merged commit should have canonical envelope");
         (
             envelope.merge_parent_branches.clone(),
@@ -282,7 +284,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     let corrected_lineage = world
         .runtime
         .lineage_access()
-        .for_record(corrected_trade)
+        .for_record(execution, corrected_trade)
+        .unwrap()
         .expect("corrected trade lineage")
         .lineage_id();
     let _audit = emit_trade_correction_audit_record(execution, &mut world, analysis.clone());
@@ -299,7 +302,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     let (recovered, _outcome) = recover_persisted_world(execution, &world).unwrap();
     let index_access = recovered.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("analysis".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("analysis".to_string()))
+        .unwrap()
         .expect("analysis index generation should recover");
 
     assert!(build.failed_indexes.is_empty());
@@ -308,7 +312,8 @@ fn fintech_index_and_lineage_authority_survive_hostile_workflow_recovery() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(corrected_trade)
+            .for_record(execution, corrected_trade)
+            .unwrap()
             .expect("recovered corrected trade lineage")
             .lineage_id(),
         corrected_lineage

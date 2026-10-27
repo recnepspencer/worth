@@ -10,12 +10,32 @@ use crate::publication::patch::data::PatchStreamPosition;
 #[derive(Debug, Default)]
 pub(super) struct TestDurableJournal {
     artifacts: BTreeMap<u64, Box<[u8]>>,
+    checkpoint_members:
+        BTreeMap<crate::durability::medium::RelationalDurableMemberLocator, std::sync::Arc<[u8]>>,
     pub(super) checkpoint: Option<RelationalDurableCheckpointSource>,
     pub(super) scripted: VecDeque<ScriptedPublication>,
     pub(super) offered: Vec<RelationalCanonicalCommitArtifact>,
 }
 
 impl TestDurableJournal {
+    pub(super) fn file_checkpoint(&mut self, checkpoint: RelationalDurableCheckpointSource) {
+        for member in checkpoint.checkpoint().members() {
+            if let crate::durability::data::RelationalCheckpointMember::New { locator, bytes } =
+                member
+            {
+                self.checkpoint_members.insert(*locator, bytes.clone());
+            }
+        }
+        self.checkpoint = Some(checkpoint);
+    }
+
+    pub(super) fn member_bytes(
+        &self,
+        locator: crate::durability::medium::RelationalDurableMemberLocator,
+    ) -> Option<&[u8]> {
+        self.checkpoint_members.get(&locator).map(AsRef::as_ref)
+    }
+
     pub(super) fn head(&self) -> PatchStreamPosition {
         PatchStreamPosition(self.artifacts.keys().next_back().copied().unwrap_or(0))
     }

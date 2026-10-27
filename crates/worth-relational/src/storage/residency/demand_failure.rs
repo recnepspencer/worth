@@ -14,6 +14,17 @@ impl From<RelationalStorageUnavailable> for RelationalResidencyDemandFailure {
     }
 }
 
+impl From<RelationalResidencyDemandFailure> for crate::execution::RelationalExecutionDenialCause {
+    fn from(failure: RelationalResidencyDemandFailure) -> Self {
+        match failure {
+            RelationalResidencyDemandFailure::StorageUnavailable(failure) => {
+                Self::StorageUnavailable(failure)
+            }
+            RelationalResidencyDemandFailure::Request(cause) => cause,
+        }
+    }
+}
+
 impl From<RelationalResidencyDemandFailure> for crate::durability::data::RelationalRecoveryStop {
     fn from(failure: RelationalResidencyDemandFailure) -> Self {
         match failure {

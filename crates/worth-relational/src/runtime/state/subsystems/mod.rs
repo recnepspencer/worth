@@ -30,7 +30,7 @@ pub(crate) use history::{
     PreparedCanonicalPublicationRoute, PreparedRecoveredVersionedArtifactPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     RelationalCanonicalPublicationRoutes, RelationalForkMaterializationCost,
-    RelationalForkOwnerBinding, RelationalPreparationHistory,
+    RelationalForkOwnerBinding, RelationalPreparationHistory, RetainedCanonicalPosition,
 };
 pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
 pub use history::{
@@ -39,7 +39,10 @@ pub use history::{
 pub(crate) use indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };
-pub(crate) use lineage::{LineageState, LineageSubsystem, ValidatedLineageEventBatch};
+pub(crate) use lineage::{
+    LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,
+    ValidatedLineageEventBatch,
+};
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use owned_state::RuntimeOwnedState;
 pub(crate) use publication::PublicationSubsystem;
@@ -48,13 +51,17 @@ pub(crate) use record_identity::{
     PendingRecordAllocations, ReclaimedRecordSlot, RecordIdentitySubsystem,
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
-pub(crate) use services::{RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable};
+pub(crate) use services::{
+    ColdSymbolDirectoryDenial, PendingSymbolMeanings, PreparedSymbolPublication,
+    RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable, SymbolReservationDenial,
+};
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,
-    PartitionEditionWriter, StorageSubsystem,
+    PartitionEditionWriter, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
+    StorageSubsystem,
 };
 pub(crate) use visibility::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,
-    PublishedSnapshotSlotReservation, ReplayRetentionState, SnapshotHandleBinding,
-    VisibilityResidency, VisibilitySubsystem,
+    PublishedSnapshotSlotReservation, SnapshotHandleBinding, VisibilityResidency,
+    VisibilitySubsystem,
 };

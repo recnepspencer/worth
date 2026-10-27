@@ -26,7 +26,38 @@ impl PartitionAccess for HistoricalProjectionStorage<'_> {
             Self::EmptyGenesis => None,
         }
     }
+}
 
+impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionStorage<'_> {
+    fn get_current_partition(
+        &self,
+        id: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        match self {
+            Self::Retained(root) => root.get_current_partition(id),
+            Self::EmptyGenesis => None,
+        }
+    }
+    fn probe_head_partition(
+        &self,
+        id: PartitionId,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        match self {
+            Self::Retained(root) => root.probe_head_partition(id),
+            Self::EmptyGenesis => crate::storage::residency::PartitionHeadProbe::Absent,
+        }
+    }
+    fn demand_head_partition(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        id: PartitionId,
+    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
+        match self {
+            Self::Retained(root) => root.demand_head_partition(execution, id),
+            Self::EmptyGenesis => crate::execution::check_request(execution)
+                .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request),
+        }
+    }
     fn partition_ids(&self) -> Vec<PartitionId> {
         match self {
             Self::Retained(root) => root.partition_ids(),
@@ -68,6 +99,7 @@ impl<'view> HistoricalProjectionReader<'view> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_entity_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_entity_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
@@ -147,6 +179,7 @@ impl<'view> HistoricalProjectionReader<'view> {
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_relation_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_relation_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,

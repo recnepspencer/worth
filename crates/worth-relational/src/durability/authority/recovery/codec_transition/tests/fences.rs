@@ -38,7 +38,7 @@ fn changed_authored_source_codec_cannot_acquire_derived_retirement_permission() 
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
     let before = protected_payload(&target, world.authored);
@@ -115,7 +115,7 @@ fn actual_incident_relation_refuses_retirement_without_cascading_protected_paylo
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
     let selected = basis(&target);
@@ -181,7 +181,7 @@ fn affected_installed_custom_invariant_refuses_before_restoring_source_into_targ
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap_err();
     let crate::durability::data::RelationalRecoveryStop::Durability(denied) = denied else {

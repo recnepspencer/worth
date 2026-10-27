@@ -20,7 +20,7 @@ impl SealedNativeOutputWitness {
         snapshot: &SnapshotHandle,
         facts: &(impl FactSequence + ?Sized),
     ) -> Result<bool, super::super::invalidation::SettlementVerificationStop> {
-        if !self.unchanged_in(relational, snapshot)? {
+        if !self.unchanged_in(relational, snapshot, execution)? {
             return Ok(false);
         }
         for fact in facts.iter() {

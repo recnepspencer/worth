@@ -6,7 +6,7 @@ use worth_execution::MapKernelFailure;
 
 use crate::authority::mutation::AdjacencyDelta;
 use crate::history::data::RelationalDescriptiveTouch as Touch;
-use crate::storage::overlay::{PartitionAccess, PartitionCloneMode};
+use crate::storage::overlay::{CurrentPartitionAccess, PartitionCloneMode};
 
 use super::{Failure, TouchBudget};
 
@@ -31,8 +31,8 @@ pub(super) fn append(
     }
     for (&partition_id, journal) in working.mutation_journal() {
         budget.checkpoint(1)?;
-        let previous = selected.get_partition(partition_id);
-        let Some(next) = working.get_partition(partition_id) else {
+        let previous = selected.get_current_partition(partition_id);
+        let Some(next) = working.get_current_partition(partition_id) else {
             return Ok(false);
         };
         for &slot in &journal.entity_slots {
@@ -43,8 +43,8 @@ pub(super) fn append(
                 working,
                 partition_id,
                 slot,
-                previous.map(|partition| &partition.entity_arena),
-                &next.entity_arena,
+                previous.map(|partition| partition.entity_arena()),
+                next.entity_arena(),
                 touches,
                 budget,
             )? {
@@ -59,8 +59,8 @@ pub(super) fn append(
                 working,
                 partition_id,
                 slot,
-                previous.map(|partition| &partition.relation_arena),
-                &next.relation_arena,
+                previous.map(|partition| partition.relation_arena()),
+                next.relation_arena(),
                 touches,
                 budget,
             )? {

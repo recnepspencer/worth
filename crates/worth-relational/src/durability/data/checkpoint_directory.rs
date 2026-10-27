@@ -9,6 +9,7 @@ use crate::durability::medium::RelationalDurableColdSource;
 pub(crate) struct RelationalCheckpointDirectory {
     pub(crate) manifest: RelationalCheckpointManifest,
     pub(crate) source: Arc<dyn RelationalDurableColdSource>,
+    pub(crate) history_members: Arc<super::RelationalHistoryMemberDirectory>,
 }
 
 impl PartialEq for RelationalCheckpointDirectory {

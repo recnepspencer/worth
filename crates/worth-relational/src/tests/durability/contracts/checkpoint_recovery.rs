@@ -37,7 +37,9 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
     assert_eq!(
         recovered
             .replay()
-            .canonical_commit_envelope(main.commit.commit_id)
+            .canonical_commit_envelope(execution, main.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .commit_id,
@@ -84,7 +86,8 @@ fn durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity() {
     assert_eq!(
         recovered
             .storage_access()
-            .storage_stats()
+            .storage_stats(execution)
+            .unwrap()
             .published_snapshot_handle_count,
         0,
         "replay closeout must not consume the live published-snapshot budget"
@@ -266,7 +269,8 @@ fn durability_contract_checkpoint_recovers_index_metadata() {
 
     let index_access = recovered.index_access();
     let generation = index_access
-        .latest_generation(index.index_id, &BranchId("main".to_string()))
+        .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+        .unwrap()
         .unwrap();
     assert_eq!(generation.generation_id, build.generations[0].generation_id);
     assert_eq!(generation.source_commit_id, commit.commit.commit_id);
@@ -284,12 +288,14 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     let second_entity = changed_entities(&second)[0];
     let first_lineage = runtime
         .lineage_access()
-        .for_record(first_entity)
+        .for_record(execution, first_entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let second_lineage = runtime
         .lineage_access()
-        .for_record(second_entity)
+        .for_record(execution, second_entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
     let checkpoint = crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
@@ -351,7 +357,7 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
             traversal_basis:
                 crate::facade::lineage::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
         },
-    );
+    ).unwrap();
 
     assert_eq!(graph.nodes.len(), 2);
     assert_eq!(graph.events.len(), 2);
@@ -362,7 +368,8 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(first_entity)
+            .for_record(execution, first_entity)
+            .unwrap()
             .unwrap()
             .lineage_id(),
         first_lineage
@@ -370,7 +377,8 @@ fn durability_contract_checkpoint_recovers_lineage_authority() {
     assert_eq!(
         recovered
             .lineage_access()
-            .for_record(second_entity)
+            .for_record(execution, second_entity)
+            .unwrap()
             .unwrap()
             .lineage_id(),
         second_lineage

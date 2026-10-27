@@ -1,3 +1,4 @@
+#[cfg(test)]
 use crate::capabilities::DurabilityRead;
 use crate::durability::access::retained_recovery_plan::retained_recovery_plan;
 use crate::durability::data::{RecoveryPlan, RecoveryVerificationMode};
@@ -49,7 +50,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
     }
 
     pub fn durable_commit_count(&self) -> usize {
-        DurabilityRead::durable_log(self.runtime).len()
+        self.runtime.durability.log_len()
     }
 
     #[cfg(test)]

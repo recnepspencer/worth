@@ -78,7 +78,9 @@ fn perf_recoverability_policy_matrix() {
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let recovered_envelope = recovered
                 .replay()
-                .canonical_commit_envelope(hot_commit.commit.commit_id)
+                .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
+                .unwrap()
+                .map(|envelope| envelope.as_ref().clone())
                 .expect("policy recovered geometry envelope");
 
             PerfMeasurement {
@@ -187,6 +189,7 @@ fn perf_recoverability_policy_matrix() {
             let hot_artifact = runtime
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     latest_commit.commit_id,
                     vec![
                         PartitionId(7),
@@ -237,6 +240,7 @@ fn perf_recoverability_policy_matrix() {
             let cold_artifact = recovered
                 .compiled_artifacts_authority()
                 .compile_execution_artifact(
+                    execution,
                     recovered_commit.commit_id,
                     vec![
                         PartitionId(7),

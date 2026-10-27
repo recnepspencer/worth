@@ -53,10 +53,20 @@ pub(super) fn apply_authoritative_commit_artifacts(
         .history
         .recorded_commit_envelope(envelope.commit.commit_id)
         .unwrap_or_else(|| Arc::clone(positioned.canonical_arc()));
+    let resident = Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
+        canonical.clone(),
+        canonical
+            .encode_authoritative_payload()
+            .map(Arc::from)
+            .map_err(|error| {
+                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
+            })?,
+    ));
+    resident.bind_performed(positioned, None);
     runtime.history.with_ledger_mut(|ledger| {
         ledger
             .commit_envelopes
-            .insert(envelope.commit.commit_id, Arc::clone(&canonical));
+            .insert(envelope.commit.commit_id, resident);
         ledger
             .patch_stream_index
             .insert(positioned.position(), envelope.commit.commit_id);
@@ -77,6 +87,20 @@ pub(super) fn apply_authoritative_commit_artifacts(
         return Err(error);
     }
 
+    let artifact = runtime
+        .history
+        .commit_artifact(envelope.commit.commit_id)
+        .ok_or_else(|| {
+            DurabilityError::new(
+                RecoveryFailureClass::CorruptCheckpoint,
+                "readmitted canonical commit has no catalog entry",
+            )
+        })?;
+    runtime.history.with_ledger_mut(|ledger| {
+        ledger
+            .commit_envelopes
+            .insert(envelope.commit.commit_id, artifact.envelope_residency());
+    });
     apply_envelope_derived_index_artifacts(runtime, envelope);
     Ok(())
 }
@@ -85,9 +109,9 @@ pub(super) fn validate_recovered_history_parity(
     runtime: &mut RelationalRuntime,
     durable_envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), DurabilityError> {
-    let replay_access = runtime.replay();
-    let Some(recovered_envelope) =
-        replay_access.canonical_commit_envelope(durable_envelope.commit.commit_id)
+    let Some(recovered_envelope) = runtime
+        .history
+        .canonical_envelope(durable_envelope.commit.commit_id)
     else {
         return Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,
@@ -153,6 +177,9 @@ fn canonical_effect_drift(
     }
     if durable.record_allocations() != replayed.record_allocations() {
         drifted.push("record_allocations");
+    }
+    if durable.revision_symbol_references != replayed.revision_symbol_references {
+        drifted.push("revision_symbol_references");
     }
     compare!(patch);
     if durable.published_lineage() != replayed.published_lineage() {

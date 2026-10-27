@@ -21,13 +21,16 @@ fn lineage_graph_delete_emits_retire_event() {
     let created = create_entity_outcome(execution, &runtime, "retired");
     let entity = changed_entities(&created)[0];
     let deleted = delete_entity(execution, &runtime, entity);
-    let graph = runtime.lineage_access().graph(
-        execution,
-        LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        },
-    );
+    let graph = runtime
+        .lineage_access()
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         graph.traversal_basis,
@@ -70,13 +73,16 @@ fn lineage_graph_replace_emits_replace_edge() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
-    let graph = runtime.lineage_access().graph(
-        execution,
-        LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        },
-    );
+    let graph = runtime
+        .lineage_access()
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         graph.traversal_basis,
@@ -138,13 +144,16 @@ fn lineage_graph_same_shape_replacements_do_not_cross_wire_targets() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
-    let graph = runtime.lineage_access().graph(
-        execution,
-        LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        },
-    );
+    let graph = runtime
+        .lineage_access()
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
+        .unwrap();
     let replace_events = graph
         .events
         .iter()
@@ -212,7 +221,9 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
     let outcome = txn.commit(execution, &runtime).unwrap();
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert!(envelope

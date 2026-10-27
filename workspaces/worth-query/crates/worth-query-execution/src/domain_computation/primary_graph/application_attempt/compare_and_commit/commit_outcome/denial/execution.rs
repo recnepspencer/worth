@@ -92,7 +92,8 @@ impl Denial {
                     Err(stop) => return Some(Err(stop)),
                 };
                 match kind {
-                    kind @ (Session::ExecutionResource { .. }
+                    kind @ (Session::StorageUnavailable(_)
+                    | Session::ExecutionResource { .. }
                     | Session::ExecutionNestedPatternStopped { .. }
                     | Session::ExecutionWorkerPanicked { .. }
                     | Session::ExecutionUncheckedCustomKernel { .. }
@@ -189,6 +190,7 @@ pub(super) fn execution_kind(
 ) -> Kind {
     use crate::domain_computation::WorthQueryProviderSessionDenialKind as Session;
     match cause {
+        Ok(Session::StorageUnavailable(failure)) => Kind::StorageUnavailable(failure),
         Ok(Session::ExecutionResource {
             denial,
             partition_identity,

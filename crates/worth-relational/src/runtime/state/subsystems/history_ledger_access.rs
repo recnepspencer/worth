@@ -53,7 +53,7 @@ impl HistorySubsystem {
             .commit_catalog
             .snapshot()
             .into_iter()
-            .map(|artifact| Arc::clone(artifact.envelope()))
+            .map(|artifact| artifact.envelope())
             .collect()
     }
 
@@ -89,7 +89,11 @@ impl HistorySubsystem {
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.ledger.read().commit_envelopes.get(&commit_id).cloned()
+        self.ledger
+            .read()
+            .commit_envelopes
+            .get(&commit_id)
+            .and_then(|cell| cell.get())
     }
 
     pub(crate) fn recorded_commit_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
@@ -97,7 +101,7 @@ impl HistorySubsystem {
             .read()
             .commit_envelopes
             .values()
-            .cloned()
+            .filter_map(|cell| cell.get())
             .collect()
     }
 
@@ -141,6 +145,20 @@ impl HistorySubsystem {
             .patch_stream_index
             .range((start, std::ops::Bound::Unbounded))
             .take(max_commits)
+            .map(|(position, commit_id)| (*position, *commit_id))
+            .collect()
+    }
+
+    pub(crate) fn latest_recorded_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.ledger
+            .read()
+            .patch_stream_index
+            .iter()
+            .rev()
+            .take(limit)
             .map(|(position, commit_id)| (*position, *commit_id))
             .collect()
     }

@@ -117,7 +117,12 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     assert!(old.failed_indexes.is_empty());
     let retained = runtime
         .index_access()
-        .published_generation_for_observation(fixture.index.index_id, &historical.observation())
+        .read_published_generation_for_observation(
+            execution,
+            fixture.index.index_id,
+            &historical.observation(),
+        )
+        .unwrap()
         .unwrap();
     let weak = Arc::downgrade(&retained);
     let sibling = create_branch_from_main(runtime, "discard-sibling");
@@ -157,7 +162,8 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
             .build_for_basis(execution, unrelated_request, &current);
     let untouched = runtime
         .index_access()
-        .latest_generation(unrelated.index_id, &BranchId("main".into()))
+        .read_latest_generation(execution, unrelated.index_id, &BranchId("main".into()))
+        .unwrap()
         .unwrap();
     assert_eq!(unrelated_build.generations.len(), 1);
     let selected_count = runtime
@@ -193,13 +199,19 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
     for basis in [&historical, &sibling_basis, &current] {
         assert!(runtime
             .index_access()
-            .published_generation_for_observation(fixture.index.index_id, &basis.observation())
+            .read_published_generation_for_observation(
+                execution,
+                fixture.index.index_id,
+                &basis.observation()
+            )
+            .unwrap()
             .is_none());
     }
     for branch in [BranchId("main".into()), sibling] {
         assert!(runtime
             .index_access()
-            .latest_generation(fixture.index.index_id, &branch)
+            .read_latest_generation(execution, fixture.index.index_id, &branch)
+            .unwrap()
             .is_none());
     }
     fixture.assert_cold(execution, &historical_snapshot);
@@ -213,7 +225,8 @@ fn discard_all_bases_keeps_readers_and_rebuilds_complete_ordered_content() {
         &untouched,
         &runtime
             .index_access()
-            .latest_generation(unrelated.index_id, &BranchId("main".into()))
+            .read_latest_generation(execution, unrelated.index_id, &BranchId("main".into()))
+            .unwrap()
             .unwrap()
     ));
 

@@ -24,14 +24,20 @@ const PUBLICATION_DEADLINE_MILLIS: u64 = 30_000;
 pub(crate) struct StoreJournalMedium {
     serving: Arc<ServingPhysicalRuntime>,
     placement: AdmittedRecordPlacementPolicy,
+    cold_source: Arc<crate::cold_source::StoreColdSource>,
 }
 
 impl StoreJournalMedium {
     pub(crate) fn new(
         serving: Arc<ServingPhysicalRuntime>,
         placement: AdmittedRecordPlacementPolicy,
+        cold_source: Arc<crate::cold_source::StoreColdSource>,
     ) -> Self {
-        Self { serving, placement }
+        Self {
+            serving,
+            placement,
+            cold_source,
+        }
     }
 
     /// Append `bytes` at `entry` of the borrowed journal.
@@ -77,6 +83,11 @@ impl std::fmt::Debug for StoreJournalMedium {
 }
 
 impl RelationalDurableMedium for StoreJournalMedium {
+    fn cold_source(
+        &self,
+    ) -> Arc<dyn worth_relational::facade::durability::RelationalDurableColdSource> {
+        self.cold_source.clone()
+    }
     fn read_transition(
         &self,
         sequence: worth_relational::facade::branch::RelationalBranchTransitionSequence,

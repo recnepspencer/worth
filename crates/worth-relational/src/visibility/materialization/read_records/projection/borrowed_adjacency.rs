@@ -18,15 +18,20 @@ pub enum RelationalAdjacencyVisit {
 impl VisibilityProjectionView {
     /// Exact selected list revision; the caller admits the anchor metadata and
     /// list visits. No kind names or read records are materialized.
-    pub fn exact_adjacency_structural_revision(
+    pub fn read_exact_adjacency_structural_revision(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
     ) -> Result<Option<VersionId>, RelationalBorrowedRecordReadDenial> {
-        match self.exact_adjacency_structural_revision_admitted(anchor, kind, direction, |_| {
-            Ok::<(), std::convert::Infallible>(())
-        }) {
+        match self.read_exact_adjacency_structural_revision_admitted(
+            execution,
+            anchor,
+            kind,
+            direction,
+            |_| Ok::<(), std::convert::Infallible>(()),
+        ) {
             Ok(result) => result,
             Err(never) => match never {},
         }
@@ -34,21 +39,25 @@ impl VisibilityProjectionView {
 
     /// Admit each exact-root read before using the selected entity and
     /// adjacency trees. The unrestricted entry shares this authority core.
-    pub fn exact_adjacency_structural_revision_admitted<Stop>(
+    pub fn read_exact_adjacency_structural_revision_admitted<Stop>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         anchor: EntityId,
         kind: KindId,
         direction: RelationalAdjacencyDirection,
         mut admit: impl FnMut(u64) -> Result<(), Stop>,
     ) -> Result<Result<Option<VersionId>, RelationalBorrowedRecordReadDenial>, Stop> {
-        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+        let SnapshotStateBasis::Exact(_) = &self.basis else {
             return Ok(Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired));
         };
+        if let Err(cause) = self.demand_regions_head(execution, [anchor.partition_id]) {
+            return Ok(Err(RelationalBorrowedRecordReadDenial::Execution(cause)));
+        }
         let Some(entity_work) = self.exact_entity_state_read_work_bound() else {
             return Ok(Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired));
         };
         admit(entity_work)?;
-        match self.with_exact_entity_state(anchor, |_, _| ()) {
+        match self.read_exact_entity_state(execution, anchor, |_, _| ()) {
             Ok(Some(())) => {}
             Ok(None) => return Ok(Ok(None)),
             Err(denial) => return Ok(Err(denial)),
@@ -58,10 +67,10 @@ impl VisibilityProjectionView {
             RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
             RelationalAdjacencyDirection::Incoming => AdjacencyDirection::Incoming,
         };
-        let Some(partition) = basis.root().get_partition(anchor.partition_id) else {
+        let Some(partition) = self.admitted_head_region(anchor.partition_id) else {
             return Ok(Ok(None));
         };
-        let table = direction.table(partition);
+        let table = partition.adjacency(direction);
         admit(table.navigation_work_bound() as u64)?;
         let Some(adjacency) = table.get(anchor.slot_index()) else {
             return Ok(Ok(None));
@@ -80,6 +89,24 @@ impl VisibilityProjectionView {
         direction: RelationalAdjacencyDirection,
         mut visit: impl FnMut(RelationalAdjacencyVisit) -> Result<(), Stop>,
     ) -> Result<Result<(), Stop>, crate::execution::RelationalExecutionDenialCause> {
+        if self.is_exact_basis() {
+            self.demand_regions_head(execution, [entity.partition_id])?;
+            let head = self.admitted_head_region(entity.partition_id);
+            return crate::visibility::materialization::read_records::read_request::checked(
+                execution,
+                || {
+                    super::current_adjacency::visit(
+                        head,
+                        entity,
+                        kind,
+                        direction,
+                        &self.instrumentation,
+                        visit,
+                    )
+                },
+            );
+        }
+        self.demand_regions_full(execution, [entity.partition_id])?;
         crate::visibility::materialization::read_records::read_request::checked(execution, || {
             visit(RelationalAdjacencyVisit::List)?;
             visit(RelationalAdjacencyVisit::Prepare { work: 33, bytes: 0 })?;

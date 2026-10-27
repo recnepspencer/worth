@@ -35,7 +35,8 @@ fn v2_latest_replay_matches_the_canonical_envelope_and_reconstructs() {
     let envelope = world
         .runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
         .unwrap()
         .clone();
     let latest = world.runtime.publication().latest_replay().unwrap().clone();
