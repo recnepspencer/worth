@@ -82,7 +82,7 @@ fn prove_stage(
     let markers = tempfile::tempdir().unwrap();
     let label = PathBuf::from(stage.label());
     let bytes = wal_segment_bytes.map(|bytes| PathBuf::from(bytes.get().to_string()));
-    let mut environment = vec![
+    let mut environment: Vec<(&str, &std::path::Path)> = vec![
         (STAGE_ENV, &label),
         (LOCATION_ENV, &killed.location),
         (MARKERS_ENV, markers.path()),

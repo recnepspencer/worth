@@ -169,7 +169,7 @@ pub(crate) fn launch_with_wal_segment_bytes(stop: Stop, bytes: Option<NonZeroU64
     let role = PathBuf::from(stop.label());
     let ready = markers.join("ready");
     let bytes = bytes.map(|bytes| PathBuf::from(bytes.get().to_string()));
-    let mut environment = vec![
+    let mut environment: Vec<(&str, &std::path::Path)> = vec![
         (ROLE_ENV, &role),
         (LOCATION_ENV, &location),
         (MARKERS_ENV, &markers),
