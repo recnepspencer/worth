@@ -1,5 +1,6 @@
 mod canonical_contract;
 mod correction_binding;
+mod derived_relation;
 mod fixture;
 mod history;
 mod invariant;

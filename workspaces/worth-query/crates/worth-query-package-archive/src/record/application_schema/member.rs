@@ -10,16 +10,19 @@ use super::super::decode_budget::RecordDecodeAttempt;
 
 mod authorization;
 mod capability;
+mod derived_relation;
 mod history;
 mod invariant;
 mod mutation_description;
 mod operation;
 mod relation_aspect;
+mod relation_graph;
 mod schema;
 mod source_disclosure;
 mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    derived_relation::require_shape(member)?;
     schema::require_supported_field_codec(member)?;
     if let ApplicationSchemaMember::RelationAspect { definition } = member {
         relation_aspect::require_supported_field_codec(definition)?;
@@ -35,6 +38,7 @@ pub(super) fn require_encoding_contract(
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
+            | ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
             | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
@@ -61,6 +65,11 @@ pub(super) fn write(
     require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::DerivedRelation { .. }
+        | ApplicationSchemaMember::RuleReadableCollection { .. }
+        | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+            derived_relation::write(output, member)
+        }
         ApplicationSchemaMember::ApplicationMutation { description } => {
             mutation_description::write(output, description)
         }
@@ -110,6 +119,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        tag @ 41..=43 => derived_relation::decode(tag, input, budget),
         36 => history::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
         37 => relation_aspect::decode(input, budget)
@@ -133,6 +143,9 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::DerivedRelation { .. } => 41,
+        ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
+        ApplicationSchemaMember::OperationDerivedRead { .. } => 43,
         ApplicationSchemaMember::ApplicationHistoryQuery { .. } => 36,
         ApplicationSchemaMember::RelationAspect { .. } => 37,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,

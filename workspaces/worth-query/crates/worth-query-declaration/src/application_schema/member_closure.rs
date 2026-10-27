@@ -43,6 +43,12 @@ pub(super) fn validate_member_closure(
     super::operation_definition::validate_operation_bodies(members)?;
     validate_application_query_members(members)?;
     super::relation_aspect::validate_closure(members)?;
+    super::derived_relation::validate_closure(
+        members,
+        &index.entities,
+        &index.relations,
+        &index.operations,
+    )?;
     validate_application_capability_members(members)?;
     validate_projection_work_budgets(members, &index.operations)?;
     Ok(())

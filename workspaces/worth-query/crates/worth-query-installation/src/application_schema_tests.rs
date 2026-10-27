@@ -26,6 +26,7 @@ mod aftermath_coverage;
 mod conditional_application_operation;
 pub(crate) use conditional_application_operation::complete_typed_package_fixture;
 mod declaration_provenance;
+mod derived_relation;
 mod effect_fixture;
 mod field_references;
 mod mutation_binding;

@@ -116,6 +116,16 @@ pub enum ApplicationSchemaMember {
     RelationAspect {
         definition: super::ErasedApplicationRelationAspectDefinition,
     },
+    DerivedRelation {
+        definition: super::ErasedApplicationDerivedRelationDefinition,
+    },
+    RuleReadableCollection {
+        association: super::ApplicationRuleReadableCollectionAssociation,
+    },
+    OperationDerivedRead {
+        operation: String,
+        relation: String,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,

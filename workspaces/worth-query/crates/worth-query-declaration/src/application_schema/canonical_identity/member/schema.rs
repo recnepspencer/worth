@@ -60,50 +60,8 @@ fn append_relation_integrity(
     prefix: &str,
     integrity: &crate::application_schema::ApplicationRelationIntegrityRecord,
 ) {
-    use crate::application_schema::{
-        ApplicationRelationCrossContextPolicy as CrossContext,
-        ApplicationRelationDeletionPolicy as Deletion,
-    };
-    // No enabled law preserves the pre-existing relation meaning.
-    for (law, value) in integrity.enabled_laws() {
-        use crate::application_schema::relation_integrity::ApplicationRelationLawValue;
-        match value {
-            ApplicationRelationLawValue::Number(value) => {
-                basis.u64(format!("{prefix}.laws.{law}"), value)
-            }
-            value @ ApplicationRelationLawValue::KindSet(_) => {
-                basis.text(format!("{prefix}.laws.{law}"), &value.canonical_text())
-            }
-        }
-    }
-    basis.text(
-        format!("{prefix}.endpoints.cross_context"),
-        match integrity.endpoints.cross_context_policy {
-            CrossContext::AllowExplicit => "allow-explicit",
-            CrossContext::SchemaControlled => "schema-controlled",
-            CrossContext::Forbid => "forbid",
-        },
-    );
-    basis.u64(
-        format!("{prefix}.endpoints.self_edges_allowed"),
-        u64::from(integrity.endpoints.self_edges_allowed),
-    );
-    for (name, value) in [
-        ("source_min", integrity.cardinality.source_min),
-        ("source_max", integrity.cardinality.source_max),
-        ("target_min", integrity.cardinality.target_min),
-        ("target_max", integrity.cardinality.target_max),
-        ("pair_min", integrity.cardinality.pair_min),
-        ("pair_max", integrity.cardinality.pair_max),
-    ] {
-        basis.text(
-            format!("{prefix}.cardinality.{name}.presence"),
-            if value.is_some() { "some" } else { "none" },
-        );
-        if let Some(value) = value {
-            basis.u64(format!("{prefix}.cardinality.{name}.value"), value);
-        }
-    }
+    use crate::application_schema::ApplicationRelationDeletionPolicy as Deletion;
+    super::relation_graph::append(basis, prefix, integrity.graph_laws(), integrity.unique);
     basis.text(
         format!("{prefix}.deletion"),
         match integrity.deletion {

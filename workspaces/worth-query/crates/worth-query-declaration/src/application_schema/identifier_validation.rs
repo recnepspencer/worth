@@ -40,6 +40,11 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::DerivedRelation { .. }
+            | ApplicationSchemaMember::RuleReadableCollection { .. }
+            | ApplicationSchemaMember::OperationDerivedRead { .. } => {
+                super::derived_relation::validate_member_identifiers(member)?;
+            }
             ApplicationSchemaMember::OperationBody { operation, body } => {
                 validate_simple_identifier(operation)?;
                 for step in body.scope_fields() {

@@ -386,6 +386,17 @@ incremental state, mark a row complete only from current contributor evidence
 observed through one retained request observation, and must reproduce the same
 rows on reconstruction.
 
+**Derived relation meaning (Phase 6 prerequisite).** Declaration can describe a
+typed endpoint-set recipe with `ApplicationDerivedRelation` and associate its
+named definition with the actual managed collection identities. Fresh schema
+validation checks physical/named source closure, endpoint continuity and named
+dependency cycles; archive tags 41–43 preserve that meaning. This descriptive
+prerequisite does not install a rule-readable source: Installation returns
+`DerivedSourceUnavailable` until the genuine proposed/committed Native source,
+managed collection owner and rule/decision readers are connected. A committed
+derived-view cache cannot supply that missing authority. See the
+[graph obligation guide](domain-capabilities/canonical-graph-obligation-progression.md#derived-relation-meaning).
+
 Ordinary handlers return the installed owner's `decision_plan`, which carries
 that same request through preparation, computation and completion. Use
 `checkpoint.poll()` for a control-only safe point; `advance(work)` deliberately

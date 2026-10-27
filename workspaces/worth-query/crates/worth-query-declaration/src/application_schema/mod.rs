@@ -23,6 +23,15 @@ mod decision_read_authoring;
 mod declaration;
 mod declaration_denial;
 mod declared_operation;
+mod derived_relation;
+pub use derived_relation::{
+    ApplicationDerivedRelation, ApplicationDerivedRelationDefinitionDenial,
+    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode,
+    ApplicationDerivedRelationOperand, ApplicationDerivedRelationRef,
+    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceKind,
+    ApplicationRuleReadableCollectionAssociation, ErasedApplicationDerivedRelationDefinition,
+    WorthQueryPortableDerivedRelationParts,
+};
 mod effect_authoring;
 mod effect_binding;
 mod effect_marker_identity;
@@ -61,6 +70,7 @@ pub use relation_aspect::{
     ApplicationRelationFieldRef, ErasedApplicationRelationAspectDefinition,
     WorthQueryPortableRelationAspectParts,
 };
+pub use relation_integrity::ApplicationRelationGraphLaws;
 pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;

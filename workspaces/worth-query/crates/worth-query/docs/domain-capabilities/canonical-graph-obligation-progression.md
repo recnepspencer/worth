@@ -74,6 +74,24 @@ basis.
 
 ## How It Executes
 
+### Derived relation meaning
+
+The Phase 6 declaration prerequisite names a derived endpoint set with
+`ApplicationDerivedRelationRef` and builds its recipe with
+`ApplicationDerivedRelation`. Recipes compose actual stored or named-derived
+references, reverse direction, and optionally exclude self edges. Completed
+schema validation checks the named dependency DAG and exact endpoint kinds.
+`ApplicationRelationGraphLaws` describes endpoint-set graph obligations; stored
+edge deletion and physical uniqueness remain with stored relations.
+
+`rule_readable_collection` records the existing Feature, Collection, Computation,
+output artifact and completeness identities. `operation_read_derived_relation`
+records an operation's declared source read. These associations grant no read,
+publication or capability authority. Until the actual Native proposed source
+and managed collection/read owners are connected, binding such a schema refuses
+with `DerivedSourceUnavailable`. Ordinary schemas keep their existing installed
+path. Rule-readable runtime execution and CAD adoption remain unfinished.
+
 Read-only application work follows one path:
 
 ```text

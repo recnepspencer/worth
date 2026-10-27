@@ -28,6 +28,10 @@ pub enum ApplicationSchemaDeclarationDenial {
     MissingApplicationHistoryDependency,
     DuplicateApplicationHistoryQuery,
     InvalidApplicationRelationAspect,
+    InvalidApplicationDerivedRelation {
+        relation: String,
+        cause: super::ApplicationDerivedRelationDefinitionDenial,
+    },
     MissingApplicationRelationAspectDependency,
     DuplicateApplicationCapability,
     MissingApplicationCapabilityDependency,
