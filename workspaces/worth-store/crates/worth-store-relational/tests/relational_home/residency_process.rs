@@ -1,14 +1,7 @@
 //! Cold serving and interrupted cold readmission use the existing kill driver.
-use super::{
-    durable_run, killed_child, media_faults, residency_fixture::Fixture, schema_transition,
-    workload,
-};
-use std::{fs, num::NonZeroU64, path::PathBuf, time::Duration};
+use super::{durable_run, killed_child, residency_fixture::Fixture, schema_transition, workload};
+use std::{fs, path::PathBuf};
 use worth_execution::ExecutionRequest;
-use worth_store::physical_runtime::{
-    certification::{MediaFaultDirective, MediaOperationRole},
-    FilesystemAccessPosture, FilesystemMediaAdmission,
-};
 use worth_store_relational::{RelationalStoreHome, RelationalStoreHomeRequest};
 
 const ROLE: &str = "WORTH_RESIDENCY_CHILD";
@@ -39,25 +32,32 @@ fn a_killed_home_stays_cold_and_an_interrupted_cold_restore_reopens_again() {
             ),
             killed_child::ChildEnd::KilledAtPark
         );
+        let stage = fs::read_to_string(markers.join("ready")).unwrap();
         fs::remove_file(markers.join("ready")).unwrap();
+        stage
     };
     launch("idle");
-    // Measure a production open with the same media observers used by sweeps.
-    // The last positioned read is the selected head's journal payload inside
-    // native cold-checkpoint readmission; no payload members are read at open.
-    let media = media_faults::FaultedMedia::admit(&media_faults::counters()).unwrap();
-    media.arm();
-    let (home, counters) = media.open(&location, schema_transition::SOURCE, &execution);
-    let reads = media_faults::counts(&counters)
-        .into_iter()
-        .find(|(role, _)| *role == MediaOperationRole::PositionedRead)
+    let home = durable_run::open(&location, &execution).unwrap();
+    assert_eq!(home.cold_storage_reads().member_reads, 0);
+    assert_eq!(home.cold_storage_reads().commit_reads, 1);
+    let head = home
+        .certification_serving()
+        .canonical_commits()
         .unwrap()
-        .1;
-    assert!(reads > 0);
+        .head()
+        .unwrap()
+        .unwrap()
+        .position();
+    assert_eq!(head, 96, "the selected head of the history-bearing fixture");
     fixture.assert_reads(&home, &execution);
     home.close();
-    fs::write(markers.join("read-ordinal"), reads.to_string()).unwrap();
-    launch("restore");
+    fs::write(markers.join("head-position"), head.to_string()).unwrap();
+    let stage = launch("restore");
+    assert_eq!(
+        stage,
+        format!("selected-head-payload {head}: commits=1 members=0")
+    );
+    eprintln!("killed inside cold readmission: {stage}");
     for _ in 0..2 {
         let home = durable_run::open(&location, &execution).unwrap();
         fixture.assert_reads(&home, &execution);
@@ -86,49 +86,34 @@ fn residency_child() {
         killed_child::park();
     }
     assert_eq!(role, "restore");
-    let ordinal = fs::read_to_string(markers.join("read-ordinal"))
+    let head = fs::read_to_string(markers.join("head-position"))
         .unwrap()
-        .parse()
+        .parse::<u64>()
         .unwrap();
-    let media =
-        FilesystemMediaAdmission::certification(FilesystemAccessPosture::CoordinatedServiceAccount);
-    let authority = media.fault_schedule_authority();
-    let gate = authority.pause_gate();
-    let activation = authority.one_shot_activation();
-    let rule = authority
-        .rule(
-            MediaOperationRole::PositionedRead,
-            1,
-            MediaFaultDirective::PauseAfter(gate.clone()),
-        )
-        .for_nth_identified_operation_after_activation(
-            activation.clone(),
-            NonZeroU64::new(ordinal).unwrap(),
-        );
-    let media = media.with_fault_schedule(authority.schedule(vec![rule]).unwrap());
-    activation.arm().unwrap();
-    std::thread::scope(|scope| {
-        let worker = scope.spawn(|| {
-            let host = workload::serial_request();
-            let execution = ExecutionRequest::serial(&host);
-            RelationalStoreHome::certification_open_with_media(
-                RelationalStoreHomeRequest::new(
-                    &location,
-                    workload::runtime_builder(schema_transition::SOURCE),
-                ),
-                media,
-                &execution,
-            )
-        });
-        while gate.reached_context().is_none() {
-            assert!(
-                !worker.is_finished(),
-                "cold restore completed without its measured read"
+    let opened = RelationalStoreHome::certification_open_with_readmission_observer(
+        RelationalStoreHomeRequest::new(
+            &location,
+            workload::runtime_builder(schema_transition::SOURCE),
+        ),
+        move |position, reads| {
+            assert_eq!(position.0, head, "readmission requests the selected head");
+            assert_eq!(reads.commit_reads, 1, "first cold-port journal payload");
+            assert_eq!(
+                reads.member_reads, 0,
+                "readmission has not demanded regions"
             );
-            std::thread::sleep(Duration::from_millis(10));
-        }
-        assert!(activation.is_consumed());
-        killed_child::announce(&markers.join("ready"), b"cold readmission parked");
-        killed_child::park();
-    });
+            killed_child::announce(
+                &markers.join("ready"),
+                format!(
+                    "selected-head-payload {}: commits={} members={}",
+                    position.0, reads.commit_reads, reads.member_reads
+                )
+                .as_bytes(),
+            );
+            killed_child::park();
+        },
+        &execution,
+    );
+    let completed = opened.map(RelationalStoreHome::close);
+    panic!("cold restore completed without its selected-head pause: {completed:?}");
 }
