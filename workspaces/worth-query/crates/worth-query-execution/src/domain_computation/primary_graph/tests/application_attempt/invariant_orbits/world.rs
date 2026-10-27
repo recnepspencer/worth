@@ -110,6 +110,16 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
                 .unwrap();
         }
         for (index, (from, to)) in graph.edges.into_iter().enumerate() {
+            // Stable independent visibility is authored at bootstrap. Later Next
+            // publications alter coupling without rewriting these source paths.
+            bootstrap
+                .bind_relation(WorthQueryApplicationRelationSeed::new(
+                    super::decision::components::binding::Visible::reference(),
+                    format!("visible-{index}"),
+                    node_key::<O>(from),
+                    node_key::<O>(to),
+                ))
+                .unwrap();
             bootstrap
                 .bind_relation(WorthQueryApplicationRelationSeed::new(
                     Next::reference(),
@@ -121,6 +131,7 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
         }
         super::declared_queries::capability::seed(&mut bootstrap);
         super::decision::handler::install(&schema, &mut bootstrap);
+        super::decision::components::handler::install(&schema, &mut bootstrap);
         let invariant = bootstrap.retain_invariant_projection_authority();
         let application = bootstrap
             .publish_application_runtime(

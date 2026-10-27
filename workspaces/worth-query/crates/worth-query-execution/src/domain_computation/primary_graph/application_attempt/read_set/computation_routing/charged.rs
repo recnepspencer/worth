@@ -27,7 +27,10 @@ impl ChargedBytes for WorthQueryApplicationFactKey {
     fn additional_charged_bytes(&self) -> u64 {
         match self {
             // The native read retains its own actual backing and custody.
-            Self::SourcePublication(_) | Self::StructuralWalk(_) | Self::Aggregate(_) => 0,
+            Self::ComponentSelection(_)
+            | Self::SourcePublication(_)
+            | Self::StructuralWalk(_)
+            | Self::Aggregate(_) => 0,
             Self::Entity { entity, .. } => bytes(entity.capacity()),
             Self::AspectPresence {
                 entity, locator, ..
@@ -72,7 +75,8 @@ impl ChargedBytes for WorthQueryApplicationObservedFact {
                 .saturating_add(bytes(value.owned_allocation_capacity_bytes()))
                 .saturating_add(list(candidates)),
             Self::WorkflowInstanceCapacity { instances, .. } => list(instances),
-            Self::SourcePublication { .. }
+            Self::ComponentSelection { .. }
+            | Self::SourcePublication { .. }
             | Self::StructuralWalk { .. }
             | Self::Aggregate { .. }
             | Self::SourceEntity { .. }

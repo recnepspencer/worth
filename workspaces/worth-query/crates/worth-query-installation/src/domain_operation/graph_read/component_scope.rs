@@ -10,6 +10,7 @@ pub struct WorthQueryOperationComponentReadScope {
     schema: ApplicationSchemaBindingIdentity,
     meaning: Arc<ApplicationOperationComponentReadMeaning>,
     paths: Arc<[WorthQueryInstalledRootPath]>,
+    meaning_identity: [u8; 32],
 }
 
 impl WorthQueryOperationComponentReadScope {
@@ -17,6 +18,8 @@ impl WorthQueryOperationComponentReadScope {
         schema: ApplicationSchemaBindingIdentity,
         meaning: ApplicationOperationComponentReadMeaning,
     ) -> Self {
+        use sha2::{Digest, Sha256};
+        let meaning_identity = Sha256::digest(meaning.canonical_record().as_bytes()).into();
         let paths = meaning
             .paths()
             .iter()
@@ -26,6 +29,7 @@ impl WorthQueryOperationComponentReadScope {
             schema,
             meaning: Arc::new(meaning),
             paths,
+            meaning_identity,
         }
     }
 
@@ -35,6 +39,11 @@ impl WorthQueryOperationComponentReadScope {
 
     pub fn meaning(&self) -> &ApplicationOperationComponentReadMeaning {
         &self.meaning
+    }
+
+    /// Canonical visibility meaning, independent of Native component naming.
+    pub const fn meaning_identity(&self) -> [u8; 32] {
+        self.meaning_identity
     }
 
     pub fn paths(&self) -> &[WorthQueryInstalledRootPath] {

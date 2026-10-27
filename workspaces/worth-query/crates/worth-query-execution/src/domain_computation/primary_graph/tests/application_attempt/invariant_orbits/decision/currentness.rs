@@ -12,7 +12,7 @@ type Schema = OrbitSchema<true>;
 type Binding = CheckOrbitBinding<Schema>;
 type Program = WorthQueryApplicationEffectProgram<Schema, CheckOrbit, CheckOrbitInput, Node>;
 
-fn prepare(
+pub(super) fn prepare(
     world: &World,
     request: &WorthQueryRequestScope,
     root: u64,
@@ -62,7 +62,7 @@ fn prepare(
         })
         .unwrap()
 }
-fn publish(
+pub(super) fn publish(
     world: &World,
     request: &WorthQueryRequestScope,
     program: Program,

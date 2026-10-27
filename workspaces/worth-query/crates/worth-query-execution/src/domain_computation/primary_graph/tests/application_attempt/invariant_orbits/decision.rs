@@ -3,3 +3,5 @@ pub(super) mod binding;
 mod currentness;
 pub(super) mod handler;
 pub(in crate::domain_computation::primary_graph) mod identity;
+
+pub(super) mod components;

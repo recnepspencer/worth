@@ -37,19 +37,21 @@ worth_query_mutation_binding!(pub CheckOrbitBinding for CheckOrbitInput,
 pub(in super::super) fn declare<S: OrbitModel>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
-    schema
-        .operation(
-            CheckOrbit::reference()
-                .definition()
-                .no_external_effect()
-                .no_aftermath()
-                .finish(),
-        )
-        .operation_read_entity(CheckOrbit::reference(), Node::reference())
-        .operation_read_field(CheckOrbit::reference(), NodeKey::reference())
-        .operation_read_field(CheckOrbit::reference(), Marked::reference())
-        .operation_read_relation(CheckOrbit::reference(), Next::reference())
-        .operation_expected_fact(CheckOrbit::reference(), Marked::reference())
-        .operation_write(CheckOrbit::reference(), Marked::reference())
-        .application_mutation_binding::<CheckOrbitBinding<S>>()
+    super::components::binding::declare(
+        schema
+            .operation(
+                CheckOrbit::reference()
+                    .definition()
+                    .no_external_effect()
+                    .no_aftermath()
+                    .finish(),
+            )
+            .operation_read_entity(CheckOrbit::reference(), Node::reference())
+            .operation_read_field(CheckOrbit::reference(), NodeKey::reference())
+            .operation_read_field(CheckOrbit::reference(), Marked::reference())
+            .operation_read_relation(CheckOrbit::reference(), Next::reference())
+            .operation_expected_fact(CheckOrbit::reference(), Marked::reference())
+            .operation_write(CheckOrbit::reference(), Marked::reference())
+            .application_mutation_binding::<CheckOrbitBinding<S>>(),
+    )
 }

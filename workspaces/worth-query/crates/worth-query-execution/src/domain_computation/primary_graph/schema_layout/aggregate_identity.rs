@@ -71,13 +71,16 @@ pub(super) fn lower(
         .map_err(relational_schema_denial)?;
     for (index, definition) in definitions.into_iter().enumerate() {
         let member_kind = required_kind(entity_kinds, definition.member)?;
-        if let Some((name, layout)) = component_layout::retain(&definition, member_kind) {
-            components.insert(name, layout);
-        }
         let offset = u32::try_from(index)
             .ok()
             .and_then(|index| index.checked_add(3))
             .ok_or_else(kind_space_exhausted)?;
+        let membership_kind = next_kind(offset)?;
+        if let Some((name, layout)) =
+            component_layout::retain(&definition, member_kind, membership_kind)
+        {
+            components.insert(name, layout);
+        }
         registry = register_aggregate_membership(
             registry,
             schema_id,
@@ -86,7 +89,7 @@ pub(super) fn lower(
                 definition: definition.identity,
                 source: definition.source,
                 member_kind,
-                membership_kind: next_kind(offset)?,
+                membership_kind,
                 storage,
             },
         )

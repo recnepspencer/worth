@@ -15,6 +15,7 @@ mod borrowed;
 mod prepared_inputs;
 pub(in crate::domain_computation::primary_graph) use borrowed::BorrowedOperationProjection;
 pub(in crate::domain_computation::primary_graph) use prepared_inputs::PreparedCurrentInputs;
+mod component_reads;
 mod computation_calls;
 mod current_output;
 pub(super) use current_output::CertifiedOutputCorrespondence;
@@ -78,6 +79,7 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
+    admitted_root: Option<admitted::AdmittedReadRoot>,
     admitted_principal: Option<worth_relational::facade::identity::EntityId>,
     query_context: Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
     operation_scope:
@@ -170,6 +172,7 @@ where
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_root: None,
                         admitted_principal: None,
                         query_context: None,
                         operation_scope: None,
@@ -221,6 +224,7 @@ where
                         runtime_authority: self.runtime_authority,
                         binding_identity: &self.binding_identity,
                         admission_identity: None,
+                        admitted_root: None,
                         admitted_principal: None,
                         query_context: None,
                         operation_scope: None,

@@ -78,10 +78,12 @@ pub(in crate::domain_computation) use application_attempt::retained_decision_fac
 pub(in crate::domain_computation::primary_graph) use provider::OutstandingDispatchInFlightLease;
 pub(in crate::domain_computation) use provider::PrimaryDecisionReadSetComparison;
 pub(in crate::domain_computation) use provider::RegisteredPrimaryRead;
+mod component_selection;
 mod request_local;
 mod resolution;
 mod resolution_denial;
 mod root;
+mod root_path_selection;
 mod schema_layout;
 pub(crate) mod settlement_repair;
 pub(in crate::domain_computation) mod source_disclosure;

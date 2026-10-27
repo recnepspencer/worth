@@ -6,6 +6,15 @@ impl SourceFacts {
         &self,
         digest: &mut Sha256,
     ) {
+        self.append_descriptor_with_poll(digest, || Ok::<(), std::convert::Infallible>(()))
+            .unwrap();
+    }
+    pub(in crate::domain_computation::primary_graph) fn append_descriptor_with_poll<E>(
+        &self,
+        digest: &mut Sha256,
+        mut poll: impl FnMut() -> Result<(), E>,
+    ) -> Result<(), E> {
+        poll()?;
         let Self {
             entities,
             aspects,
@@ -14,10 +23,12 @@ impl SourceFacts {
         } = self;
         digest.update((entities.len() as u64).to_be_bytes());
         for entity in entities {
+            poll()?;
             encode_entity(digest, *entity);
         }
         digest.update((aspects.len() as u64).to_be_bytes());
         for aspect in aspects {
+            poll()?;
             encode_entity(digest, aspect.entity);
             encode_text(digest, &aspect.entity_name);
             encode_text(digest, aspect.aspect.as_str());
@@ -27,6 +38,7 @@ impl SourceFacts {
         }
         digest.update((adjacencies.len() as u64).to_be_bytes());
         for adjacency in adjacencies {
+            poll()?;
             encode_entity(digest, adjacency.anchor);
             digest.update(adjacency.relation_kind.as_u32().to_be_bytes());
             digest.update([match adjacency.direction {
@@ -37,6 +49,7 @@ impl SourceFacts {
             digest.update((adjacency.comparison_work_limit as u64).to_be_bytes());
             digest.update((adjacency.endpoints.len() as u64).to_be_bytes());
             for endpoint in &adjacency.endpoints {
+                poll()?;
                 encode_entity(digest, *endpoint);
             }
         }
@@ -46,9 +59,12 @@ impl SourceFacts {
             digest.update(b"complete-structural-walks:v1");
             digest.update((walks.values().len() as u64).to_be_bytes());
             for walk in walks.values() {
+                poll()?;
                 digest.update(walk.commitment());
             }
         }
+        poll()?;
+        Ok(())
     }
 }
 

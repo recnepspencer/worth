@@ -4,7 +4,9 @@ use crate::domain_computation::primary_graph::aggregate_observation::AggregateOb
 use worth_query_declaration::facade::application_schema::RelationDirection;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
-    pub(super) fn admit_component_members<Entity>(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn admit_component_members<
+        Entity,
+    >(
         &mut self,
         layout: &ComponentSetLayout,
         aggregate: &AggregateObservation,

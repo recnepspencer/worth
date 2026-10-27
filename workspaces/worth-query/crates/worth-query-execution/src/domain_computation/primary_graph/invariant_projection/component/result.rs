@@ -7,7 +7,7 @@ use std::{marker::PhantomData, sync::Arc};
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::KindId;
 
-/// A complete component inspected under broad installation projection authority.
+/// A complete component admitted by its issuing projection reader.
 /// Retention preserves the original Native request custody, not read authority.
 pub struct WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
     aggregate: Arc<AggregateObservation>,
@@ -18,7 +18,7 @@ pub struct WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
     _entity: PhantomData<fn() -> Entity>,
 }
 impl<Schema, Set, Entity> WorthQueryInvariantProjectionComponent<Schema, Set, Entity> {
-    pub(super) fn new(
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn new(
         aggregate: Arc<AggregateObservation>,
         layout: &ComponentSetLayout,
         binding: ApplicationSchemaBindingIdentity,

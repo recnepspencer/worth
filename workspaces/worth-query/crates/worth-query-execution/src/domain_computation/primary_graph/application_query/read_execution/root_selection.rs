@@ -9,9 +9,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 
-mod closure;
 mod evidence;
-mod guards;
 mod orbit;
 mod path_union;
 mod step_reads;

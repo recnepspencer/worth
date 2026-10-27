@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) struct SourceReadVerification<'
     bytes: u64,
     _memory: Option<ExecutionMemoryReservation>,
 }
+mod components;
 impl<'runtime> SourceReadVerification<'runtime> {
     pub(in crate::domain_computation::primary_graph) fn open(
         runtime: &'runtime RelationalRuntime,

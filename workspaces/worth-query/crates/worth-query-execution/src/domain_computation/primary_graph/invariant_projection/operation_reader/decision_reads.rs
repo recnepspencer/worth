@@ -4,6 +4,7 @@
 use std::collections::BTreeSet;
 mod aggregates;
 mod aspect_presence;
+mod components;
 mod computation_inputs;
 mod expected_keys;
 mod source_publications;
@@ -46,12 +47,15 @@ pub(in crate::domain_computation::primary_graph) struct DecisionReads {
     walks: structural_walks::IssuedWalkValues,
     aggregates: aggregates::IssuedAggregateValues,
     failed_walk: bool,
+    components: components::IssuedComponentValues,
+    failed_component: bool,
 }
 
 #[derive(Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
     StructuralWalk,
+    ComponentSelection,
 }
 
 /// A reader either has no producer, owns the handed prior, or has consumed it.
@@ -163,10 +167,15 @@ impl DecisionReads {
             mut walks,
             aggregates,
             failed_walk,
+            components,
+            failed_component,
             ..
         } = self;
         if let Some(failed) = failed {
             return Err(FailedDecisionRead::Key(failed));
+        }
+        if failed_component {
+            return Err(FailedDecisionRead::ComponentSelection);
         }
         if failed_walk {
             return Err(FailedDecisionRead::StructuralWalk);
@@ -181,6 +190,7 @@ impl DecisionReads {
             source_publications,
             walks,
             aggregates,
+            components,
         );
         let result = match runs {
             ComputationRuns::None => (

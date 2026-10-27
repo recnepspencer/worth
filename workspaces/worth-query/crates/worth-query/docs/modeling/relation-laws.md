@@ -259,8 +259,8 @@ no permission. Atomic entity/field/relation reads cannot consume this grant.
 
 The [mutation-scope declaration tests](../../../worth-query-declaration/src/application_operation/binding/tests/component_scope.rs)
 exercise typed authoring and fresh schema admission using a real mutation
-binding. Runtime scoped component selection, tracked decisions and counts remain
-unfinished; this declaration does not expose them yet.
+binding. Admitted readers consume these installed paths through the scoped
+component methods below. A descriptive declaration alone grants no read.
 
 ### Privileged Component Inspection
 
@@ -286,17 +286,41 @@ exercise the actual installed bootstrap and reader. Their independently issued
 same-product snapshot court checks definition-qualified reselection. A real
 World publication retires a coupled member, then checks ordinary coupling
 exclusion, the surviving component and rejection of the old membership. Coupling
-changes that preserve membership still need ordinary decision-footprint evidence.
+changes that preserve membership are covered by the scoped decision court below;
+the full Phase 5 acceptance portfolio remains open.
 
-Ordinary operation/decision readers, declared-query results, disclosure,
-component enumeration/count and CAD shell integration remain unfinished in
+### Scoped Component Decision Reads
+
+An admitted operation projection reader and the ordinary handler `DecisionReader`
+expose `component_of(set_ref, &member)`, `components(set_ref)` and
+`component_count(set_ref)`. The set needs `OperationReads<Operation>` and an actual
+installed component scope for that operation, schema, set and mutation root.
+An operation-typed broad inspection without a real admission cannot use this path.
+
+`component_of` selects Native's whole cohort and proves each member visible by a
+complete reverse path to the exact generation-bearing admitted root. Work grows
+with that cohort and its reverse witnesses. `components` and `component_count`
+evaluate the full forward path union before any window or limit. They refuse an
+encountered cohort if any member lies outside that universe; identity, partial
+membership and counts do not escape. An empty census still checks the selected
+Native definition and retains the path's negative adjacency and guard facts.
+
+The complete result uses the same read-only component value described above.
+Names remain Native identities: changing visibility does not mint a new name.
+The tracked reader retains original issued bodies under the real admission,
+installed contracts and snapshot. A copied selector cannot seal a read. A failed
+selection vetoes sealing even if the handler swallows its refusal. Reuse compares
+actual visibility/coupling revisions and Native aggregate/walk observations through
+the existing selected-snapshot owners. Native aggregate identity keeps its explicit
+full-verification fallback; no record-local invalidation cost is promised.
+
+The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
+use an installed mutation binding, real admission and both projection seals.
+They cover complete/partial/foreign cohorts and negative census evidence across
+ordinary World publications. Declared-query component results, fresh query
+disclosure, the full Phase 5 topology/replay/locality portfolio and CAD shell
+integration remain unfinished in
 [Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
-Those scoped reads require complete visible global cohorts: an encountered
-incomplete cohort refuses without exposing its identity, partial membership,
-count or lineage. Enumeration/count must use the installed root-path owner's
-complete pre-window member selection, including negative evidence for an empty
-selection; previously visited entities and bounded result rows cannot prove that
-universe. Scope changes do not remint Native component identities.
 
 ## How It Executes
 
@@ -508,7 +532,9 @@ The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
 Other native symmetry modes are not exposed by these builders. Ordinary
-component query results, decision reads and enumeration/count remain unfinished.
+component query results and their disclosure remain unfinished. Admitted operation
+decision readers support scoped component selection and complete census/count as
+described above; the full Phase 5 acceptance portfolio remains open.
 Installation-owned projection readers support complete component inspection,
 walks and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair
