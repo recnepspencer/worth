@@ -286,7 +286,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         status: ComplexityStatus::Verified,
         proof_tests: &[
             "authorization::tests::actual_snapshot_observation_mints_exact_neutral_evidence",
-            "authorization::tests::unrelated_graph_scale_does_not_change_observation_work",
+            "authorization::tests::scale::unrelated_graph_scale_does_not_change_observation_work",
             "authorization::tests::revocation_changes_only_new_snapshot_authority",
         ],
     },
