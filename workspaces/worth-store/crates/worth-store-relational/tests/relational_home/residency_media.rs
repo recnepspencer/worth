@@ -9,7 +9,8 @@ use worth_relational::facade::{
     transactions::RecordRef,
 };
 use worth_store::physical_runtime::{
-    AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication, PhysicalMutationDeadline,
+    AnchoredRecordMember, AnchoredRecordName, AnchoredRecordPublication, AnchoredRecordsDenial,
+    PhysicalMutationDeadline,
 };
 use worth_store_relational::RelationalStoreHome;
 
@@ -235,10 +236,18 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
         "{failure:?}"
     );
     let before = home.cold_storage_reads();
-    assert_eq!(read(&home, &fixture.records[0], &execution), Err(first));
+    assert_eq!(
+        read(&home, &fixture.records[0], &execution),
+        Err(first.clone())
+    );
     assert_eq!(home.cold_storage_reads(), before);
-    // Physical damage can make the shared medium unavailable to another
-    // subject. That is retryable unavailability, never sticky damage to it.
+    // Detecting corrupt record bytes locks the whole Store home for inspection
+    // until reopen. Relational damages only partition 1; partition 24 retries
+    // the port but cannot serve while this Store session is locked out.
+    assert!(matches!(
+        home.certification_serving().anchored_records(),
+        Err(AnchoredRecordsDenial::ServingRequiresInspection)
+    ));
     let other = read(&home, &fixture.records[23], &execution).unwrap_err();
     let RelationalTransactionReadDenial::StorageUnavailable(unavailable) = &other else {
         panic!("{other:?}")
@@ -257,6 +266,20 @@ fn a_damaged_member_in_store_files_is_a_sticky_typed_refusal_after_reopen() {
         home.cold_storage_reads().member_reads > retryable.member_reads,
         "another subject must retry the port instead of becoming damaged"
     );
+    home.close();
+    let home = durable_run::open(&location, &execution).unwrap();
+    assert_eq!(home.cold_storage_reads().member_reads, 0);
+    assert!(home.certification_serving().anchored_records().is_ok());
+    assert_eq!(
+        workload::states_of(home.runtime(), &fixture.records[23..24]),
+        workload::states_of(&fixture.reference, &fixture.records[23..24]),
+        "reopen serves partition 24 before the corrupt subject is touched"
+    );
+    assert_eq!(read(&home, &fixture.records[0], &execution), Err(first));
+    assert!(matches!(
+        home.certification_serving().anchored_records(),
+        Err(AnchoredRecordsDenial::ServingRequiresInspection)
+    ));
     home.close();
     let mut damaged = bytes.clone();
     *damaged.last_mut().unwrap() ^= 0x5a;
