@@ -173,6 +173,11 @@ inspection reader additionally requires the relation's `OperationReads`
 contract. The installation-minted projection authority and freshly selected
 snapshot authorize the read; the name is only a selector. This performs a Native
 schema/occupied-slot scan followed by incident-lineage visits along merge hops.
+An admitted handler can use `reader.reader().lineage(..)` through that same
+operation inspection reader; the compiled
+[handler](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs)
+does so alongside its tracked orbit reads. The raw reader marks opaque context
+and therefore cannot qualify the handler for completed decision reuse.
 
 The owned `WorthQueryAggregateLineage` retains that actual Native result.
 `events()` borrows incident split and merge records; `resolution_steps()`

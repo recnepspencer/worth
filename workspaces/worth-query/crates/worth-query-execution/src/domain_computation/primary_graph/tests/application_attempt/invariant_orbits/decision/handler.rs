@@ -21,6 +21,15 @@ impl<S: OrbitModel + Clone> OperationHandler<S, CheckOrbitBinding<S>> for CheckO
                     .map_err(HandlerExecutionDenial::new)?,
                 *orbit.identity()
             );
+            // Privileged inspection is available to a handler, but the raw
+            // reader marks opaque context and grants no decision reuse proof.
+            let history = reader
+                .reader()
+                .lineage(Next::reference(), orbit.identity())
+                .map_err(HandlerExecutionDenial::new)?;
+            assert_eq!(history.identity(), orbit.identity());
+            assert_eq!(history.latest_identity().as_ref(), Some(orbit.identity()));
+            assert_eq!(history.retired_at(), None);
             Ok::<_, HandlerExecutionDenial>(CheckOrbitDecision {
                 root: input.root,
                 count: orbit.len() as u64,

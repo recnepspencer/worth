@@ -554,11 +554,21 @@ let ring = reader.orbit(NextFin::reference(), &fin)?;
 let loop_identity = ring.identity();          // persistent across edits
 for member in ring.members() { /* successor order from the anchor */ }
 
-match request.lineage(&loop_identity)?.latest() {
-    Lineage::Current(identity) => { /* still whole */ }
-    Lineage::SplitInto(parts) | Lineage::MergedInto(parts) => { /* follow */ }
+// In an admitted handler, the operation inspection reader additionally
+// requires NextFin's OperationReads contract. This is privileged inspection:
+// it records no lineage decision dependency or governed history disclosure.
+let history = reader.reader().lineage(NextFin::reference(), loop_identity)?;
+let current = history.latest_identity(); // merge continuation, or None
+for event in history.events() {
+    let _incident = (event.occurrence(), event.kind(), event.from(), event.to());
 }
 ```
+
+The compiled handler and its candidate/currentness proof live in
+[`invariant_orbits/decision/handler.rs`](../../workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/handler.rs).
+`DecisionReader::reader()` marks opaque context, so this inspection cannot
+produce a completed decision reuse proof. Scoped/governed history disclosure
+and tracked lineage decisions remain separate unfinished capabilities.
 
 ---
 
