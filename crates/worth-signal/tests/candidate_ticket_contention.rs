@@ -166,10 +166,10 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     let lease = authority().request_lease(request(2, 2_000_000)).unwrap();
     let calls = AtomicUsize::new(0);
     let blocker = Mutex::<Option<(mpsc::Sender<()>, JoinHandle<()>)>>::new(None);
-    let evaluate = |graph: &mut SignalGraph| {
+    let evaluate = |graph: &mut SignalGraph, mode| {
         graph.evaluate_checked(
             &[producer],
-            RunMode::Default,
+            mode,
             &(),
             &|_| {
                 // Only the first evaluation meets a saturated host.
@@ -186,7 +186,7 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     };
     // Insufficient process room at admission must prevent callback effects.
     let (release, thread) = saturate_host();
-    let refused = evaluate(&mut graph);
+    let refused = evaluate(&mut graph, RunMode::Default);
     release.send(()).unwrap();
     thread.join().unwrap();
     let error = refused.expect_err("D12 admits custody before callback effects");
@@ -220,7 +220,7 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     );
 
     // After admission, a competitor cannot steal the retained result/map tickets.
-    let contended = evaluate(&mut graph);
+    let contended = evaluate(&mut graph, RunMode::Default);
     let (release, thread) = blocker.lock().unwrap().take().expect("callback ran once");
     release.send(()).unwrap();
     thread.join().unwrap();
@@ -229,8 +229,10 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(producer).unwrap().get(VALUE), 7);
 
-    // Releasing the competitor also admits the same evaluation again.
-    let report = evaluate(&mut graph).expect("released host memory admits the epoch");
+    // D12's successful publication is now reusable. Explicitly force the retry
+    // so the original court's second-callback assertion still proves admission.
+    let report = evaluate(&mut graph, RunMode::ForceOnDemand)
+        .expect("released host memory admits the epoch");
     assert_eq!(calls.load(Ordering::SeqCst), 2);
     assert_eq!(report.tasks_executed, 1);
     assert_eq!(graph.node_aspect_version(producer).unwrap().get(VALUE), 7);
