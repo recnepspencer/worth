@@ -248,4 +248,7 @@ pub enum ApplicationSchemaMember {
         effect: String,
         payload_type: WorthQueryPortableTypeIdentity,
     },
+    ProjectedMemberDomain {
+        definition: super::ErasedApplicationProjectedMemberDomainDefinition,
+    },
 }

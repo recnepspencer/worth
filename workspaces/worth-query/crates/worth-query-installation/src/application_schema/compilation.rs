@@ -37,6 +37,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
     DerivedSourceUnavailable(String),
+    ProjectedMemberDomainUnavailable(String),
 }
 
 pub(crate) struct ApplicationSchemaCompilationInput<'a, Schema> {
@@ -76,6 +77,13 @@ where
 {
     validate_installed_contribution_members(input.declaration.erased())
         .map_err(ApplicationSchemaCompilationDenial::Contribution)?;
+    for member in input.declaration.erased().members() {
+        if let worth_query_declaration::facade::application_schema::ApplicationSchemaMember::ProjectedMemberDomain { definition } = member {
+            return Err(ApplicationSchemaCompilationDenial::ProjectedMemberDomainUnavailable(
+                definition.parts().domain.clone(),
+            ));
+        }
+    }
     // Descriptive source syntax is not a Native candidate/source binding.
     // Until that owner exists, installing these laws must refuse rather than
     // bootstrap a schema whose proposed derived obligations would be skipped.

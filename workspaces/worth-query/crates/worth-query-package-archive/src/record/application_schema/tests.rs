@@ -8,6 +8,7 @@ mod history;
 mod invariant;
 mod mutation_description;
 mod operation_body;
+mod projected_member_domain;
 mod query_context;
 mod relation_integrity;
 mod resource_path;

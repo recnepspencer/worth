@@ -21,6 +21,10 @@ pub enum ApplicationSchemaDeclarationDenial {
     UniqueFieldWithoutEqualityIndex,
     InvalidRelationIntegrity,
     InvalidComponentSet,
+    InvalidProjectedMemberDomain {
+        domain: String,
+        cause: super::ApplicationProjectedMemberDomainDefinitionDenial,
+    },
     InvalidOperationComponentRead,
     MissingPrincipalBindingDependency,
     DuplicateApplicationQuery,

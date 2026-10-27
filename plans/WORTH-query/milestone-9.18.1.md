@@ -746,6 +746,14 @@ declaration and Native membership storage accept physical entities; the first
 derived-relation runtime slice also has physical entity endpoints. Those are
 necessary foundations, not sufficient representations of the CAD shell domain.
 
+The finite projected-domain meaning prerequisite provides typed carrier/case
+declaration, canonical portable readmission and Archive tag44/v1 transport.
+Existing entity-domain member bytes and absent-domain schema identities remain
+unchanged; older Frame18 readers reject tag44 as an unsupported variant. Actual
+schema binding still refuses `ProjectedMemberDomainUnavailable` until Native
+can issue these members. See [declaration status and focused courts](../../workspaces/worth-query/crates/worth-query-decl/README.md#projected-member-domain-meaning).
+This prerequisite does not close the runtime or CAD obligations below.
+
 ### Actual Consumer And Decisive Proof
 
 CAD's accepted cell-complex contract derives exactly two face uses per face:

@@ -10,6 +10,7 @@ mod invariant;
 mod mutation_description;
 mod operation;
 mod principal_binding;
+mod projected_member_domain;
 mod relation_aspect;
 mod relation_graph;
 pub(super) use relation_aspect::append_relation_field;
@@ -23,6 +24,9 @@ pub(super) fn append_member(
 ) {
     let prefix = format!("member[{index}]");
     match member {
+        ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+            projected_member_domain::append(basis, &prefix, definition)
+        }
         ApplicationSchemaMember::DerivedRelation { .. }
         | ApplicationSchemaMember::RuleReadableCollection { .. }
         | ApplicationSchemaMember::OperationDerivedRead { .. } => {

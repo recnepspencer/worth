@@ -61,6 +61,12 @@ mod operation_program;
 mod portable_schema;
 mod principal_binding_authoring;
 mod principal_binding_reference;
+mod projected_member_domain;
+pub use projected_member_domain::{
+    ApplicationProjectedMemberCaseRef, ApplicationProjectedMemberDomainDefinition,
+    ApplicationProjectedMemberDomainDefinitionDenial, ApplicationProjectedMemberDomainRef,
+    ErasedApplicationProjectedMemberDomainDefinition, WorthQueryPortableProjectedMemberDomainParts,
+};
 mod query_member_closure;
 mod read_authoring;
 mod references;

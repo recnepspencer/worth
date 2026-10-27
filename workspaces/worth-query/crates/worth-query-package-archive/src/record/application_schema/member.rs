@@ -16,6 +16,7 @@ mod history;
 mod invariant;
 mod mutation_description;
 mod operation;
+mod projected_member_domain;
 mod relation_aspect;
 mod relation_graph;
 mod schema;
@@ -23,6 +24,7 @@ mod source_disclosure;
 mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
+    projected_member_domain::require_shape(member)?;
     derived_relation::require_shape(member)?;
     schema::require_supported_field_codec(member)?;
     if let ApplicationSchemaMember::RelationAspect { definition } = member {
@@ -45,6 +47,7 @@ pub(super) fn require_encoding_contract(
     if matches!(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
+            | ApplicationSchemaMember::ProjectedMemberDomain { .. }
             | ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::ComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
@@ -73,6 +76,9 @@ pub(super) fn write(
     require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+            projected_member_domain::write(output, definition)
+        }
         ApplicationSchemaMember::DerivedRelation { .. }
         | ApplicationSchemaMember::RuleReadableCollection { .. }
         | ApplicationSchemaMember::OperationDerivedRead { .. } => {
@@ -133,6 +139,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        44 => projected_member_domain::decode(input, budget),
         tag @ 41..=43 => derived_relation::decode(tag, input, budget),
         36 => history::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::ApplicationHistoryQuery { definition }),
@@ -161,6 +168,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
         ApplicationSchemaMember::DerivedRelation { .. } => 41,
         ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,

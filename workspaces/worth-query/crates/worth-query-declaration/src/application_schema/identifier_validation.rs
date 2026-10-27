@@ -40,6 +40,9 @@ pub(super) fn validate_member_identifiers(
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
     for member in members {
         match member {
+            ApplicationSchemaMember::ProjectedMemberDomain { definition } => {
+                super::projected_member_domain::validate_member_identifiers(definition)?;
+            }
             ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::RuleReadableCollection { .. }
             | ApplicationSchemaMember::OperationDerivedRead { .. } => {
