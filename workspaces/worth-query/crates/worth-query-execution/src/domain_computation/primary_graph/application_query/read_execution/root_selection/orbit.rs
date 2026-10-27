@@ -49,6 +49,7 @@ pub(super) fn select(
         let aggregate = super::aggregate::read(
             execution, runtime, work,
             AggregateQuery {
+                allocation: None,
                 subject,
                 entity_kind: relation.from,
                 selection: crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(relation.kind),

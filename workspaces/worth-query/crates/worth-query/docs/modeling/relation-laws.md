@@ -194,10 +194,7 @@ These inspection reads grant no governed history disclosure and record no
 publication decision dependencies. A typed name can be retained across edits
 inside its installation; this API does not restore arbitrary portable names
 after a fresh installation. Scoped/governed lineage reads and tracked lineage
-decisions remain separate unavailable capabilities. Proprietary's actual sheet
-boundary-edit, split/merge and stored-face adoption courts qualify Phase 4 against
-current private `main`, preserving its cold-read and retirement contracts. See the
-[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md).
+decisions are unavailable through these inspection APIs.
 Generic Native branch reconciliation has separate existing execution limitations
 and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
@@ -226,11 +223,11 @@ stored relations. The complete [installed program example](../../../worth-query-
 uses this declaration and its ordinary invariant reads through Decl/Host.
 
 These are stored-entity islands. CAD shells require read-only Face×Side members
-with actual region/exterior context, as specified by the
-[CAD shell member-domain contract](../../../../../../plans/WORTH-query/milestone-9.18.1.md#cad-shell-member-domain).
-The [projected-domain declaration prerequisite](../../../worth-query-decl/README.md#projected-member-domain-meaning)
-currently supplies portable meaning; installed projected members remain
-unavailable. A component of stored faces does not supply that shell contract.
+with actual region/exterior context.
+The [projected-domain meaning](../../../worth-query-decl/README.md#projected-member-domain-meaning)
+binds actual Native domain/case handles through the logical-source evaluator.
+The [privileged logical reader](#privileged-logical-component-inspection) reads
+those actual sources. A component of stored faces does not supply the shell contract.
 
 The completed schema validates the actual declared relation endpoints, rejects
 empty or missing sources and duplicate set names, and normalizes source order
@@ -360,11 +357,6 @@ distinct worker threads. Prepared proposed/committed reads must agree with the
 corresponding publication. This proves stable publication under parallel
 invariant execution; it makes no claim that partition maintenance is parallel.
 
-Full Phase 5 remains open for CAD shell adoption through the projected face-use
-domain and its derived shared-vertex/context adjacency, plus the final guide/phase
-acceptance audit. The [required domain contract](../../../../../../plans/WORTH-query/milestone-9.18.1.md#cad-shell-member-domain)
-also governs whole-cohort region transfer and legacy locator readmission.
-
 ### Privileged Component Inspection
 
 The installation-owned `WorthQueryApplicationInvariantProjectionReader` exposes
@@ -389,8 +381,59 @@ exercise the actual installed bootstrap and reader. Their independently issued
 same-product snapshot court checks definition-qualified reselection. A real
 World publication retires a coupled member, then checks ordinary coupling
 exclusion, the surviving component and rejection of the old membership. Coupling
-changes that preserve membership are covered by the scoped decision court below;
-the full Phase 5 acceptance portfolio remains open.
+changes that preserve membership are covered by the scoped decision example below.
+
+### Privileged Logical Component Inspection
+
+The same installation-owned reader exposes `entity_member`,
+`derived_member_relations_from` and `graph_component_of` for finite projected
+domains. A declared carrier lift supplies actual cases of the selected carrier;
+a reverse lift supplies observed physical Entity selectors. Case coordinates
+cannot be used as mutation targets. Each member retains its issuing snapshot,
+projection authority and exact installed domain. A member from another
+projection authority or snapshot refuses before source acquisition.
+
+`graph_component_of(set, relation, member)` requires the set's actual installed
+derived source and member domain. It reads the complete source, including empty
+physical support, before acquiring Native's persistent aggregate identity, then
+checks that both complete cohorts agree. The result retains the original source,
+Native aggregate and material-container grants. Cloning a member preserves its
+original source/name payment after the component drops. No operation decision
+facts or mutation authority are issued by this broad inspection.
+
+`component_lineage(set, identity)` also accepts a logical set. It validates the
+installed member domain and the identity's exact definition/binding, then reads
+Native's actual stored lineage at the selected snapshot. A retired identity
+does not need a currently live member. A stored-entity selector cannot stand in
+for a projected-domain selector with the same text. This historical inspection
+keeps the existing complete lineage traversal cost and supplies no publication
+dependency.
+
+<!-- compiled: logical_relation_projection.rs -->
+```rust
+let root = reader.entity_member(&face).unwrap();
+let cases = reader
+    .derived_member_relations_from(RootUses::reference(), &root)
+    .unwrap();
+let negative = cases
+    .iter()
+    .find(|pair| pair.to().case() == Some("Negative"))
+    .unwrap()
+    .to();
+let component = reader
+    .graph_component_of(
+        UseComponents::reference(),
+        UseSuccessor::reference(),
+        negative,
+    )
+    .unwrap();
+```
+
+The [logical composition court](../../../worth-query-certification/tests/application_graph/relation_laws/logical/committed.rs)
+compares this reader's genuine component with the ordinary tracked decision and
+checks refusal of a foreign projection's member beside a lawful local read.
+This reader observes the selected stored snapshot. A feature-history-prefix
+component view requires its own source selection and is unavailable here.
 
 ### Scoped Component Decision Reads
 
@@ -421,9 +464,7 @@ The [scoped component courts](../../../worth-query-execution/src/domain_computat
 use an installed mutation binding, real admission and both projection seals.
 They cover complete/partial/foreign cohorts and negative census evidence across
 ordinary World publications. Ordinary invariant consumption and the public
-topology, replay and locality courts are described above. CAD shell integration
-and the final acceptance audit remain unfinished in
-[Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
+topology, replay and locality examples are described above.
 
 ### Declared Component-Query Contracts
 
@@ -464,8 +505,7 @@ negative universe. Empty census evidence includes guard failures. Reuse compares
 physical visibility/coupling revisions and the original Native observations,
 including the installed definition on empty results. Query bodies cannot seal as
 issued operation reads. Planning requires Native aggregate support independently
-of any relation-view requirement. The remaining Phase 5 acceptance gates above
-stay open.
+of any relation-view requirement.
 
 The archive extends the existing optional aggregate position with component tag2;
 none0 and orbit1 keep their original bytes. Component disclosure uses selector6.
@@ -717,8 +757,7 @@ Other native symmetry modes are not exposed by these builders. Complete one-shot
 component query results use whole-slot disclosure as described above. Admitted operation
 decision readers support scoped component selection and complete census/count as
 described above. Ordinary installed invariant views expose complete component
-selection, enumeration and count with actual proposed/committed footprints; the
-full Phase 5 acceptance portfolio remains open.
+selection, enumeration and count with actual proposed/committed footprints.
 Installation-owned projection readers support complete component inspection,
 walks and orbit inspections as described above.
 The closing-edge diagnosis is not an enumeration of every cycle or a repair

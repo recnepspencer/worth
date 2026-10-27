@@ -9,7 +9,7 @@ impl ApplicationDerivedRelationExpression {
         if self.nodes.is_empty() {
             return Err(Denial::EmptyExpression);
         }
-        let mut endpoints = Vec::with_capacity(self.nodes.len());
+        let mut endpoints: Vec<(Member<'_>, Member<'_>)> = Vec::with_capacity(self.nodes.len());
         for (index, node) in self.nodes.iter().enumerate() {
             let before = |input: usize| {
                 (input < index)

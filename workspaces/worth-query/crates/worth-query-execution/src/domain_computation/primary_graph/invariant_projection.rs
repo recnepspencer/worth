@@ -7,6 +7,8 @@ mod admission_denial;
 mod aggregate;
 mod aggregate_read;
 mod component;
+mod graph_member;
+mod logical_projection;
 pub use component::WorthQueryInvariantProjectionComponent;
 pub(in crate::domain_computation::primary_graph) mod consumed_output;
 mod entity_resident;

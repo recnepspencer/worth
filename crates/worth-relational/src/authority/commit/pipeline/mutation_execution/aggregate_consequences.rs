@@ -37,6 +37,7 @@ impl MutatedCommitExecution {
             // Consumption is single-use even when no consequence was needed.
             // The report includes the one preparation already shared with rules.
             performance.count_aggregate_maintenance_reads(reads);
+            let mut consequences_applied = false;
             if let Some(prepared) = prepared {
                 let mut prepared = prepared;
                 prepared.materialize(
@@ -70,8 +71,7 @@ impl MutatedCommitExecution {
                     .append_owned(applied.created_relations)?;
                 self.effect.accumulate(applied.effect);
                 self.aggregate_admission = Some(prepared.admission);
-                // Earlier publication evidence described only the business graph.
-                admitted.take_prevalidated_snapshot_publication();
+                consequences_applied = true;
             }
             // Metadata-dependent recipes see actual Native membership/lineage
             // writes. They cannot be checked early against a degree-zero birth,
@@ -86,6 +86,10 @@ impl MutatedCommitExecution {
                 self.version_id,
             )?;
             performance.count_aggregate_maintenance_reads(final_reads);
+            if consequences_applied {
+                // Earlier publication evidence described only the business graph.
+                admitted.take_prevalidated_snapshot_publication();
+            }
         }
         self.record_allocations.finish_mutation().map_err(|denial| {
             TransactionCommitError::conflict(CommitConflict::new(

@@ -1,4 +1,4 @@
-//! Original complete-walk backing for source metadata and its retained handoffs.
+//! Original complete-source backing for walk or material-selection custody.
 use super::super::structural_walk::{memory, StructuralWalkObservation};
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};

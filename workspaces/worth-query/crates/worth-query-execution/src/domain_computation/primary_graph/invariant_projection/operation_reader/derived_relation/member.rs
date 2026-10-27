@@ -5,63 +5,26 @@ use crate::domain_computation::primary_graph::schema_layout::MemberDomainBinding
 pub use component::WorthQueryInvariantGraphComponent;
 use worth_relational::facade::{
     runtime::DerivedRelationReadShape as Shape, schema::NativeMemberKey as Key,
-    snapshots::SnapshotHandle,
 };
 
-/// A local read-only graph member; a projected case cannot become an Entity target.
-pub struct WorthQueryInvariantGraphMember<S, M> {
-    key: Key,
-    domain: Domain,
-    entity: Option<WorthQueryInvariantEntityIdentity<S, M>>,
-    carrier_name: Arc<str>,
-    snapshot: SnapshotHandle,
-    cookie: u64,
-    _source: Option<Arc<PinnedDerivedRelationRead>>,
-}
-impl<S, M> Clone for WorthQueryInvariantGraphMember<S, M> {
-    fn clone(&self) -> Self {
-        Self {
-            key: self.key.clone(),
-            domain: self.domain.clone(),
-            entity: self.entity.as_ref().map(clone_entity),
-            carrier_name: self.carrier_name.clone(),
-            snapshot: self.snapshot.clone(),
-            cookie: self.cookie,
-            _source: self._source.clone(),
-        }
-    }
-}
-impl<S, M> WorthQueryInvariantGraphMember<S, M> {
-    pub fn as_entity(&self) -> Option<&WorthQueryInvariantEntityIdentity<S, M>> {
-        self.entity.as_ref()
-    }
-    pub fn carrier_id(&self) -> worth_relational::facade::identity::EntityId {
-        self.key.carrier()
-    }
-    pub fn case(&self) -> Option<&str> {
-        match &self.key {
-            Key::Entity(_) => None,
-            Key::Projected(member) => Some(&member.case),
-        }
-    }
-}
-fn clone_entity<S, M>(
-    entity: &WorthQueryInvariantEntityIdentity<S, M>,
-) -> WorthQueryInvariantEntityIdentity<S, M> {
-    WorthQueryInvariantEntityIdentity {
-        entity_id: entity.entity_id,
-        kind: entity.kind,
-        entity: entity.entity.clone(),
-        authority_identity: entity.authority_identity,
-        _marker: PhantomData,
-    }
-}
+pub use super::super::super::graph_member::WorthQueryInvariantGraphMember;
+/// Read-only endpoints of one observed derived-relation edge.
 pub struct WorthQueryInvariantDerivedMemberRelation<S, R, F, T> {
     from: WorthQueryInvariantGraphMember<S, F>,
     to: WorthQueryInvariantGraphMember<S, T>,
     marker: PhantomData<fn() -> R>,
 }
 impl<S, R, F, T> WorthQueryInvariantDerivedMemberRelation<S, R, F, T> {
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn new(
+        from: WorthQueryInvariantGraphMember<S, F>,
+        to: WorthQueryInvariantGraphMember<S, T>,
+    ) -> Self {
+        Self {
+            from,
+            to,
+            marker: PhantomData,
+        }
+    }
     pub fn from(&self) -> &WorthQueryInvariantGraphMember<S, F> {
         &self.from
     }
@@ -69,6 +32,7 @@ impl<S, R, F, T> WorthQueryInvariantDerivedMemberRelation<S, R, F, T> {
         &self.to
     }
 }
+/// A read-only member reached by a derived traversal, with its hop distance.
 pub struct WorthQueryInvariantDerivedWalkStep<S, M> {
     member: WorthQueryInvariantGraphMember<S, M>,
     distance: usize,
@@ -81,6 +45,7 @@ impl<S, M> WorthQueryInvariantDerivedWalkStep<S, M> {
         self.distance
     }
 }
+/// Read-only derived traversal steps issued by the selected Native source.
 pub struct WorthQueryInvariantDerivedWalk<S, R, M> {
     steps: Vec<WorthQueryInvariantDerivedWalkStep<S, M>>,
     marker: PhantomData<fn() -> R>,
@@ -121,15 +86,7 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
             {
                 return Err(Denial::new(Kind::ForeignIdentity, entity.entity.as_ref()));
             }
-            Ok(WorthQueryInvariantGraphMember {
-                key: entity.entity_id.into(),
-                domain: Domain::Entity(entity.kind),
-                entity: Some(clone_entity(entity)),
-                carrier_name: entity.entity.clone(),
-                snapshot: self.reader.snapshot.clone(),
-                cookie: self.reader.authority_identity,
-                _source: None,
-            })
+            WorthQueryInvariantGraphMember::from_entity(self.reader, entity)
         })();
         if result.is_err() {
             self.fail_derived(entity, &entity.entity);
@@ -255,54 +212,18 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
         member: &WorthQueryInvariantGraphMember<S, M>,
         domain: &Domain,
     ) -> Result<(), Denial> {
-        if member.cookie != self.reader.authority_identity
-            || &member.snapshot != self.reader.snapshot
-            || &member.domain != domain
-        {
-            return Err(Denial::new(
-                Kind::ForeignIdentity,
-                member.carrier_name.as_ref(),
-            ));
-        }
-        Ok(())
+        member.check(self.reader, domain)
     }
+
     fn issued_derived_member<M>(
-        &self,
+        &mut self,
         key: &Key,
         domain: &Domain,
         source: &Arc<PinnedDerivedRelationRead>,
     ) -> Result<WorthQueryInvariantGraphMember<S, M>, Denial> {
-        let kind = match domain {
-            Domain::Entity(kind) => *kind,
-            Domain::Projected(domain) => domain.parts().carrier,
-        };
-        let name: Arc<str> = Arc::from(
-            self.reader
-                .layout
-                .entity_name(kind)
-                .ok_or_else(|| Denial::new(Kind::EndpointUnavailable, "derived carrier"))?,
-        );
-        let entity = match (key, domain) {
-            (Key::Entity(id), Domain::Entity(kind)) => Some(WorthQueryInvariantEntityIdentity {
-                entity_id: *id,
-                kind: *kind,
-                entity: name.clone(),
-                authority_identity: self.reader.authority_identity,
-                _marker: PhantomData,
-            }),
-            (Key::Projected(_), Domain::Projected(_)) => None,
-            _ => return Err(Denial::new(Kind::ForeignIdentity, name.as_ref())),
-        };
-        Ok(WorthQueryInvariantGraphMember {
-            key: key.clone(),
-            domain: domain.clone(),
-            entity,
-            carrier_name: name,
-            snapshot: self.reader.snapshot.clone(),
-            cookie: self.reader.authority_identity,
-            _source: Some(source.clone()),
-        })
+        WorthQueryInvariantGraphMember::from_source(self.reader, key, domain, source, None)
     }
+
     fn fail_member<M>(&mut self, root: &WorthQueryInvariantGraphMember<S, M>) {
         self.decision_facts.record(
             Fact::Entity {

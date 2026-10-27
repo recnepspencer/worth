@@ -224,7 +224,7 @@ fn seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_l
                     &format!("new-anchor-{side}"),
                     lifecycle::anchor_kind(side, Anchor::Region(1)),
                     EntityReference::Created(created(1, 8)),
-                    lifecycle::anchor_reference(Anchor::Region(1)),
+                    EntityReference::Existing(born.created_entity(&created(7, 1)).unwrap()),
                 ));
             }
             batch

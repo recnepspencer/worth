@@ -7,6 +7,7 @@ use worth_query_declaration::facade::{application_query::*, application_schema::
 pub(in crate::domain_computation::primary_graph) enum Stop {
     Admission(WorthQueryApplicationQueryAdmissionDenial),
     Read(WorthQueryApplicationOneShotDenial),
+    Execution(worth_execution::WorkCeilingDenial),
 }
 pub(in crate::domain_computation::primary_graph) fn execute<Q, Row>(
     world: &World,
@@ -138,7 +139,7 @@ where
                 .application
                 .execute_application_query_one_shot_with_request(execution, plan)
         })
-        .unwrap()
+        .map_err(Stop::Execution)?
         .0
         .map_err(Stop::Read)
 }

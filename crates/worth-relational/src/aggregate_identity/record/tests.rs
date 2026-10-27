@@ -55,10 +55,14 @@ fn lifecycle_wire_fields_and_closed_lineage_tags_refuse_contradictions() {
         active.definition,
         AggregateDefinitionIdentity::from_bytes([2; 32])
     );
-    assert_eq!(active.seed, seed);
+    assert_eq!(active.seed, NativeMemberKey::Entity(seed));
     assert_eq!(
         active.current_anchor,
-        Some(EntityId::new(PartitionId::new(11), 12, 5))
+        Some(NativeMemberKey::Entity(EntityId::new(
+            PartitionId::new(11),
+            12,
+            5
+        )))
     );
     assert_eq!(active.retired, None);
     fields.insert(

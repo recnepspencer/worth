@@ -3,7 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::root_path_selection::{
     RootPathOrientation, RootPathSelection,
 };
-use std::collections::{BTreeMap, BTreeSet};
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use std::collections::BTreeMap;
+use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 mod coupling;
 pub(in crate::domain_computation::primary_graph) use coupling::{
@@ -40,13 +42,29 @@ pub(in crate::domain_computation::primary_graph) struct AcquiredCohort {
 pub(in crate::domain_computation::primary_graph) struct AcquiredComponents {
     pub census: Option<SourceFacts>,
     pub cohorts: Vec<AcquiredCohort>,
+    pub allocation: Arc<SourceFactsAllocation>,
 }
 impl AcquiredComponents {
     /// Operation commitments retain their original acquisition order for facts.
-    pub fn into_operation_parts(self) -> (Vec<Arc<AggregateObservation>>, Vec<SourceFacts>) {
-        let mut aggregates = Vec::new();
-        let mut facts = Vec::new();
+    pub fn into_operation_parts(
+        self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(Vec<Arc<AggregateObservation>>, Vec<SourceFacts>), Cause> {
         let is_census = self.census.is_some();
+        let count = self
+            .cohorts
+            .iter()
+            .try_fold(usize::from(is_census), |count, cohort| {
+                count.checked_add(1)?.checked_add(if is_census {
+                    0
+                } else {
+                    cohort.visibility.len()
+                })
+            })
+            .ok_or(Cause::ChargedBytesOverflow)?;
+        let mut aggregates =
+            super::storage::vector(execution, &self.allocation, self.cohorts.len())?;
+        let mut facts = super::storage::vector(execution, &self.allocation, count)?;
         facts.extend(self.census);
         for cohort in self.cohorts {
             aggregates.push(cohort.aggregate);
@@ -55,12 +73,16 @@ impl AcquiredComponents {
             }
             facts.push(cohort.coupling);
         }
-        aggregates.sort_by_key(|body| body.native().identity());
-        (aggregates, facts)
+        // Native identity is unique; no stable-sort scratch is required.
+        aggregates.sort_unstable_by_key(|body| body.native().identity());
+        Ok((aggregates, facts))
     }
 }
+
 pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisitionReader>(
     reader: &mut R,
+    execution: &ExecutionRequest<'_, '_>,
+    allocation: &Arc<SourceFactsAllocation>,
     root: EntityId,
     member: Option<EntityId>,
     capture: CohortSourceCapture,
@@ -68,33 +90,47 @@ pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisit
 ) -> Result<AcquiredComponents, R::Error> {
     let mut census = None;
     let mut witnesses = BTreeMap::new();
-    let universe = if let Some(member) = member {
-        BTreeSet::from([member])
-    } else {
+    if member.is_none() {
         let selected = reader.paths(root, RootPathOrientation::ForwardCensus, true)?;
-        let universe = selected.roots.keys().copied().collect();
-        if capture == CohortSourceCapture::PerCohort {
-            witnesses = selected.roots;
-        }
+        witnesses = selected.roots;
         census = Some(
             selected
                 .set_source
                 .expect("census captures its full negative universe"),
         );
-        universe
-    };
-    let mut seen = BTreeSet::new();
-    let mut cohorts = Vec::new();
-    for anchor in &universe {
+    }
+    let maximum_cohorts = member.map_or(witnesses.len(), |_| 1);
+    let mut cohorts = super::storage::vector(execution, allocation, maximum_cohorts)
+        .map_err(|cause| reader.native_denial(cause))?;
+    let mut single = member;
+    loop {
+        let (anchor, mut anchor_source) = if let Some(member) = single.take() {
+            (member, None)
+        } else if let Some((anchor, source)) = witnesses.pop_first() {
+            (anchor, Some(source))
+        } else {
+            break;
+        };
         AggregateObservation::checkpoint(context).map_err(|cause| reader.native_denial(cause))?;
-        if seen.contains(anchor) {
-            continue;
+        let aggregate = reader.aggregate(anchor)?;
+        let capacity = if member.is_some() || capture == CohortSourceCapture::PerCohort {
+            aggregate.native().len()
+        } else {
+            0
         }
-        let aggregate = reader.aggregate(*anchor)?;
-        let mut visibility = Vec::new();
+        .checked_add(1)
+        .ok_or_else(|| reader.native_denial(Cause::ChargedBytesOverflow))?;
+        // The final coupling fact will use the already admitted spare slot.
+        let mut visibility = super::storage::vector(execution, allocation, capacity)
+            .map_err(|cause| reader.native_denial(cause))?;
+        let mut previous = None;
         for candidate in aggregate.native().members() {
             AggregateObservation::checkpoint(context)
                 .map_err(|cause| reader.native_denial(cause))?;
+            if previous.is_some_and(|previous| previous >= candidate) {
+                return Err(reader.outside_scope());
+            }
+            previous = Some(candidate);
             let source = if member.is_some() {
                 let mut selected = reader.paths(
                     candidate,
@@ -107,21 +143,19 @@ pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisit
                     .roots
                     .remove(&root)
                     .ok_or_else(|| reader.outside_scope())?
+            } else if candidate == anchor {
+                anchor_source.take().ok_or_else(|| reader.outside_scope())?
             } else {
-                if !universe.contains(&candidate) {
-                    return Err(reader.outside_scope());
-                }
-                if capture == CohortSourceCapture::SelectionOnly {
-                    seen.insert(candidate);
-                    continue;
-                }
                 witnesses
                     .remove(&candidate)
-                    .expect("the complete forward universe retains each actual member witness")
+                    .ok_or_else(|| reader.outside_scope())?
             };
-            // Census row witnesses are retained for Query's independent cohort granule.
-            visibility.push(source);
-            seen.insert(candidate);
+            if member.is_some() || capture == CohortSourceCapture::PerCohort {
+                visibility.push(source);
+            }
+        }
+        if anchor_source.is_some() {
+            return Err(reader.outside_scope());
         }
         let coupling = reader.observe_cohort(&aggregate, context)?;
         cohorts.push(AcquiredCohort {
@@ -130,5 +164,9 @@ pub(in crate::domain_computation::primary_graph) fn acquire<R: ComponentAcquisit
             coupling,
         });
     }
-    Ok(AcquiredComponents { census, cohorts })
+    Ok(AcquiredComponents {
+        census,
+        cohorts,
+        allocation: Arc::clone(allocation),
+    })
 }

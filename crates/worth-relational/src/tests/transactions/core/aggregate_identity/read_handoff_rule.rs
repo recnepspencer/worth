@@ -93,7 +93,8 @@ impl ReaderRule {
         match &self.control.source {
             Some(source) => source
                 .source
-                .relations()
+                .stored_relations()
+                .expect("this reader fixture declares a physical source")
                 .iter()
                 .copied()
                 .collect::<std::collections::BTreeSet<_>>()
@@ -224,7 +225,7 @@ impl CustomInvariantRule for ReaderRule {
         context: &CustomInvariantExecutionContext<'_>,
         scope: &Self::Scope,
     ) -> Result<CustomInvariantVerdict, CustomInvariantExecutionError> {
-        let roots = scope.iter().map(AggregateRead::anchor).collect::<Vec<_>>();
+        let roots = scope.iter().map(|body| body.anchor()).collect::<Vec<_>>();
         self.observe(
             context.relations(),
             context.committed_relations(),

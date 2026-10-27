@@ -9,8 +9,17 @@ pub trait LawPolicy: Clone + std::fmt::Debug + Send + Sync + 'static {
     const DERIVED_RELATIONS: bool = false;
     const LOGICAL_RELATIONS: bool = false;
     const LOGICAL_CENSUS: bool = true;
-    fn logical_read_observer() -> Option<std::sync::Arc<dyn Fn(bool,
-    worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork) + Send + Sync>>{
+    fn logical_read_observer() -> Option<
+        std::sync::Arc<
+            dyn Fn(
+                    bool,
+                    worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork,
+                ) + Send
+                + Sync
+                + std::panic::UnwindSafe
+                + std::panic::RefUnwindSafe,
+        >,
+    >{
         None
     }
     const CUSTOM_DERIVED_OWNER: bool = false;

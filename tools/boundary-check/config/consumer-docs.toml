@@ -157,3 +157,9 @@ name = "logical_relation_rule.rs"
 crate_root = "workspaces/worth-query/crates/worth-query-certification"
 target = "tests/application_graph.rs"
 source = "tests/application_graph/relation_laws/logical/rule.rs"
+
+[[compiled_sources]]
+name = "logical_relation_projection.rs"
+crate_root = "workspaces/worth-query/crates/worth-query-certification"
+target = "tests/application_graph.rs"
+source = "tests/application_graph/relation_laws/logical/committed.rs"

@@ -49,6 +49,8 @@ pub(in crate::domain_computation::primary_graph) struct RootPathSelectionRequest
     pub(in crate::domain_computation::primary_graph) orientation: RootPathOrientation,
     pub(in crate::domain_computation::primary_graph) capture_set: bool,
     pub(in crate::domain_computation::primary_graph) subject: &'a str,
+    pub(in crate::domain_computation::primary_graph) allocation:
+        Option<&'a Arc<SourceFactsAllocation>>,
 }
 pub(in crate::domain_computation::primary_graph) struct RootPathSelection {
     pub(in crate::domain_computation::primary_graph) roots: BTreeMap<EntityId, SourceFacts>,
@@ -101,9 +103,14 @@ pub(in crate::domain_computation::primary_graph) fn select<E>(
     let mut selected = RootPathSelectionBuilder {
         roots: BTreeMap::new(),
         set_source: request.capture_set.then(SourceFactsBuilder::default),
-        allocation: None,
+        allocation: request.allocation.cloned(),
     };
     if let Some(source) = &mut selected.set_source {
+        if let Some(allocation) = &selected.allocation {
+            source
+                .protect(basis.execution, allocation)
+                .map_err(|cause| RootPathReadDenial::source(request.subject, cause))?;
+        }
         source
             .observe_entity(basis.execution, request.start)
             .map_err(|cause| RootPathReadDenial::native(request.subject, cause))?;

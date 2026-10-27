@@ -11,6 +11,7 @@ pub(in crate::domain_computation::primary_graph) mod acquisition;
 mod aggregates;
 mod commitment;
 mod derived;
+pub(in crate::domain_computation::primary_graph) mod storage;
 pub(in crate::domain_computation::primary_graph) use aggregates::ComponentAggregateBodies;
 mod currentness;
 mod key;
@@ -28,6 +29,7 @@ pub(in crate::domain_computation) struct ComponentSelection {
     source: SnapshotHandle,
     aggregates: ComponentAggregateBodies,
     facts: Vec<SourceFacts>,
+    allocation: Arc<super::source_facts::SourceFactsAllocation>,
     commitment: [u8; 32],
 }
 impl ComponentSelection {
@@ -39,6 +41,7 @@ impl ComponentSelection {
         source: SnapshotHandle,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::source_facts::SourceFactsAllocation>,
         poll: impl FnMut() -> Result<
             (),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -54,6 +57,7 @@ impl ComponentSelection {
             source,
             aggregates,
             facts,
+            allocation,
             poll,
         )
     }
@@ -64,6 +68,7 @@ impl ComponentSelection {
         source: SnapshotHandle,
         aggregates: Vec<Arc<AggregateObservation>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::source_facts::SourceFactsAllocation>,
         poll: impl FnMut() -> Result<
             (),
             worth_relational::facade::transactions::RelationalExecutionDenialCause,
@@ -84,6 +89,7 @@ impl ComponentSelection {
             source,
             aggregates: ComponentAggregateBodies::Physical(aggregates),
             facts,
+            allocation,
             commitment,
         }))
     }
@@ -127,6 +133,11 @@ impl ComponentSelection {
     ) -> &[Arc<AggregateObservation>] {
         self.physical_aggregates()
             .expect("physical-only component fixture")
+    }
+    pub(in crate::domain_computation::primary_graph) fn allocation(
+        &self,
+    ) -> &Arc<super::source_facts::SourceFactsAllocation> {
+        &self.allocation
     }
     pub(in crate::domain_computation::primary_graph) fn facts(&self) -> &[SourceFacts] {
         &self.facts

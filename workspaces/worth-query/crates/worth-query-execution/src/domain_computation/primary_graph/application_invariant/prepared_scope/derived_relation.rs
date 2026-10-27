@@ -56,7 +56,7 @@ impl ApplicationInvariantAdmissionAccess {
                 let mut admission = admission
                     .lock()
                     .expect("application invariant admission mutex must not be poisoned");
-                checkpoint_key(bytes, admission.derived.len(), budget)?;
+                checkpoint_key(bytes, admission.derived.len(), &budget)?;
                 if let Some(prepared) = admission.derived.get(&key) {
                     return Ok((prepared.clone(), false));
                 }
@@ -66,12 +66,12 @@ impl ApplicationInvariantAdmissionAccess {
                 budget
                     .claim_retained(super::retention_extent::derived_entry_bytes())
                     .map_err(retention_denial)?;
-                checkpoint_key(bytes, admission.derived.len(), budget)?;
+                checkpoint_key(bytes, admission.derived.len(), &budget)?;
                 admission.derived.insert(key, prepared.clone());
                 Ok((prepared, true))
             }
             Self::Evaluation(admission) => {
-                checkpoint_key(bytes, admission.derived.len(), budget)?;
+                checkpoint_key(bytes, admission.derived.len(), &budget)?;
                 admission
                     .derived
                     .get(&key)
@@ -86,7 +86,7 @@ impl ApplicationInvariantAdmissionAccess {
 fn checkpoint_key(
     bytes: usize,
     entries: usize,
-    budget: CustomInvariantReadBudget<'_>,
+    budget: &CustomInvariantReadBudget<'_>,
 ) -> Result<(), WorthQueryInvariantAccessDenial> {
     // Hashing reads the semantic key once. Even a full-table collision search
     // cannot compare more than every retained key before lookup/insertion.

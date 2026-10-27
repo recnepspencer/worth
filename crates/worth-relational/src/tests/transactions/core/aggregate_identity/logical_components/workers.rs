@@ -220,7 +220,9 @@ fn run(workers: usize) -> Vec<Vec<seeded::Group>> {
                 ExecutionBudget::new(
                     NonZeroUsize::new(workers).unwrap(),
                     Some(128 * 1024 * 1024),
-                    Some(10_000_000),
+                    // This court witnesses workers and canonical identity;
+                    // keep work accounting without an unrelated guessed ceiling.
+                    None,
                 ),
             ),
             deadline: None,
@@ -329,7 +331,7 @@ fn run(workers: usize) -> Vec<Vec<seeded::Group>> {
             &result.snapshot,
             &oracle.groups(),
         ));
-        current = result.snapshot;
+        current = result.snapshot.clone();
     }
     states
 }

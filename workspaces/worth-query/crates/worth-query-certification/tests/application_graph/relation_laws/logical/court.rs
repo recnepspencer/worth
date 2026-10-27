@@ -93,6 +93,7 @@ fn logical_rules_decisions_orbits_and_entity_root_count_share_actual_source_owne
     );
     let first = checked(&world, 501, 0);
     assert_pair(&world, 0, 1, &first);
+    committed::assert_projection(&world, &first);
     outcome::committed(world.replace_edges(502, &[(0, 3), (2, 1)], &[(0, 1), (2, 3)]));
     // The complete physical permutation remains lawful, and count stays two
     // while the exact positive/empty dependency roster changes.

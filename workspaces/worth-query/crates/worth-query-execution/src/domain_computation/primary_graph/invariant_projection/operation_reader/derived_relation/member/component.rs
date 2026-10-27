@@ -14,9 +14,27 @@ use worth_relational::facade::runtime::RelationalAdjacencyDirection;
 pub struct WorthQueryInvariantGraphComponent<S, Set, M> {
     members: Vec<WorthQueryInvariantGraphMember<S, M>>,
     identity: Identity<S, Set>,
-    _aggregate: Arc<AggregateObservation<Key>>,
+    _selection: Option<Arc<ComponentSelection>>,
+    _aggregate: Option<Arc<AggregateObservation<Key>>>,
+    _allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
 }
 impl<S, Set, M> WorthQueryInvariantGraphComponent<S, Set, M> {
+    pub(in crate::domain_computation::primary_graph::invariant_projection) fn from_projection(
+        members: Vec<WorthQueryInvariantGraphMember<S, M>>,
+        aggregate: Arc<AggregateObservation<Key>>,
+        binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+        allocation: Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
+    ) -> Self {
+        Self {
+            identity: Identity::from_component_read(aggregate.native(), binding),
+            members,
+            _selection: None,
+            _aggregate: Some(aggregate),
+            _allocation: allocation,
+        }
+    }
     pub fn members(&self) -> &[WorthQueryInvariantGraphMember<S, M>] {
         &self.members
     }
@@ -85,12 +103,19 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                         if scope.schema() == self.binding_identity
                             && scope.relation() == relation.name() =>
                     {
-                        Some(scope.clone())
+                        Some(scope)
                     }
                     _ => None,
                 })
                 .ok_or_else(denied)?;
             // The complete source proof/facts precede any aggregate acquisition.
+            let allocation = crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::open(self.reader.execution).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+            allocation
+                .claim(
+                    self.reader.execution,
+                    (size_of::<PinnedDerivedRelationRead>() + 2 * size_of::<usize>()) as u64,
+                )
+                .map_err(|cause| self.reader.walk_stop(cause, set.name()))?;
             let native =
                 Arc::new(self.read_derived_key(relation, member.key.clone(), Shape::Component)?);
             let pin=self.reader.runtime.read_truth().pin_read_capability(self.reader.snapshot,&[],self.reader.execution).map_err(|cause|match cause {
@@ -100,7 +125,8 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
             let execution = *self.reader.execution;
             let acquired=execution.run_native_with_checkpoint(|context|{
                 if !layout.matches_native_definition(&pin,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))? {return Err(denied());}
-                let aggregate=self.reader.read_member_aggregate_identity(&pin,layout.member_kind,layout.definition,member.key.clone(),set.name())?;
+                crate::domain_computation::primary_graph::component_selection::storage::aggregate::<Key>(&execution,&allocation,set.name()).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                let aggregate=self.reader.read_member_aggregate_identity(&pin,layout.member_kind,layout.definition,member.key.clone(),set.name(),&allocation)?;
                 if aggregate.native().len()!=native.data().endpoints().len() {return Err(Denial::new(Kind::InvalidComponent,set.name()));}
                 for (actual,expected) in aggregate.native().members().zip(native.data().endpoints()) {
                     let mut poll=||AggregateObservation::checkpoint(context).map_err(|cause|self.reader.walk_stop(cause,set.name()));
@@ -111,6 +137,10 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                 }
                 let projection=pin.project_snapshot(pin.snapshot()).ok_or_else(denied)?;
                 let mut facts=SourceFactsBuilder::default();
+                facts.protect(&execution,&allocation).map_err(|error|match error {
+                    SourceFactReadDenial::Execution(cause)=>self.reader.walk_stop(cause,set.name()),
+                    _=>Denial::new(Kind::EndpointUnavailable,set.name()),
+                })?;
                 for (entity,_) in native.data().entity_dependencies(){
                     AggregateObservation::checkpoint(context).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
                     facts.observe_entity(&execution,*entity).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
@@ -124,27 +154,42 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                     })?;
                 }
                 let facts=facts.finish(&execution).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
-                let selection=Arc::new(ComponentSelection::from_derived(scope,layout.clone(),root,member.key.clone(),self.reader.snapshot.clone(),vec![aggregate.clone()],vec![facts],||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(denied)?);
-                self.decision_facts.record_component(&selection,admission,contracts,self.reader.authority_identity,context).map_err(|error|match error {
+                let mut aggregates=crate::domain_computation::primary_graph::component_selection::storage::vector(&execution,&allocation,1).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                aggregates.push(Arc::clone(&aggregate));
+                let mut source_facts=crate::domain_computation::primary_graph::component_selection::storage::vector(&execution,&allocation,1).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                source_facts.push(facts);
+                allocation.claim(&execution,u64::try_from(scope.relation().len()).map_err(|_|self.reader.walk_stop(Cause::ChargedBytesOverflow,set.name()))?).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                crate::domain_computation::primary_graph::component_selection::storage::body(&execution,&allocation).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+                let selection=Arc::new(ComponentSelection::from_derived(scope.clone(),layout.clone(),root,member.key.clone(),self.reader.snapshot.clone(),aggregates,source_facts,allocation.clone(),||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(denied)?);
+                self.decision_facts.record_component(&selection,admission,Arc::clone(&contracts),self.reader.authority_identity,context).map_err(|error|match error {
                     crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::structural_walks::WalkRecordDenial::Execution(cause)=>self.reader.walk_stop(cause,set.name()),
                     _=>Denial::new(Kind::ForeignIdentity,set.name()),
                 })?;
-                Ok(aggregate)
+                Ok((aggregate,selection,allocation.clone()))
             });
-            let aggregate = match acquired {
+            let (aggregate, selection, allocation) = match acquired {
                 Ok((answer, _)) => answer?,
                 Err(stop) => return Err(self.reader.walk_stop(stop.into(), set.name())),
             };
-            let mut members = Vec::new();
-            members
-                .try_reserve_exact(aggregate.native().len())
-                .map_err(|_| self.reader.walk_stop(Cause::AllocationFailed, set.name()))?;
+            let mut members =
+                crate::domain_computation::primary_graph::component_selection::storage::vector(
+                    self.reader.execution,
+                    &allocation,
+                    aggregate.native().len(),
+                )
+                .map_err(|cause| self.reader.walk_stop(cause, set.name()))?;
             for key in aggregate.native().members() {
                 self.reader
                     .execution
                     .check_live()
                     .map_err(|stop| self.reader.walk_stop(stop.into(), set.name()))?;
-                members.push(self.issued_derived_member(key, &from, &native)?);
+                members.push(WorthQueryInvariantGraphMember::from_source(
+                    self.reader,
+                    key,
+                    &from,
+                    &native,
+                    Some(&allocation),
+                )?);
             }
             self.reader
                 .execution
@@ -156,7 +201,9 @@ impl<S: ApplicationSchema, O: ApplicationOperationMarkerIdentity<S>>
                     self.binding_identity.clone(),
                 ),
                 members,
-                _aggregate: aggregate,
+                _selection: Some(selection),
+                _aggregate: None,
+                _allocation: allocation,
             })
         })();
         if result.is_err() {

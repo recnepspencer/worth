@@ -1,18 +1,18 @@
 use super::*;
-use crate::identity::data::PartitionId;
+use crate::identity::data::{EntityId, PartitionId};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
-fn member(slot: u64) -> EntityId {
-    EntityId::new(PartitionId::new(3), slot, 1)
+fn member(slot: u64) -> Member {
+    Member::Entity(EntityId::new(PartitionId::new(3), slot, 1))
 }
-fn set(slots: &[u64]) -> BTreeSet<EntityId> {
+fn set(slots: &[u64]) -> BTreeSet<Member> {
     slots.iter().copied().map(member).collect()
 }
 fn definition() -> AggregateDefinitionIdentity {
     AggregateDefinitionIdentity::from_bytes([7; 32])
 }
-fn run(prior: &[PriorAggregate], groups: Vec<BTreeSet<EntityId>>, at: u64) -> AggregateTransition {
+fn run(prior: &[PriorAggregate], groups: Vec<BTreeSet<Member>>, at: u64) -> AggregateTransition {
     transition(definition(), CommitId(at), prior, groups, &mut |_| {
         Ok::<_, AggregateTransitionDenial>(())
     })
@@ -127,7 +127,7 @@ fn independent_fragment_model_agrees_under_seeded_permutation_rewires() {
 }
 
 // Independent successor-array cycle decomposition; the production owner uses BFS.
-fn cycles(permutation: &[usize]) -> Vec<BTreeSet<EntityId>> {
+fn cycles(permutation: &[usize]) -> Vec<BTreeSet<Member>> {
     let mut unvisited: BTreeSet<_> = (0..permutation.len()).collect();
     let mut groups = Vec::new();
     while let Some(&first) = unvisited.first() {
@@ -147,16 +147,19 @@ fn cycles(permutation: &[usize]) -> Vec<BTreeSet<EntityId>> {
 }
 
 // Explicit old fragments are labelled per member and mark their unique heir.
-fn model(old: &[PriorAggregate], groups: &[BTreeSet<EntityId>], at: u64) -> AggregateTransition {
+fn model(old: &[PriorAggregate], groups: &[BTreeSet<Member>], at: u64) -> AggregateTransition {
     let mut labelled = BTreeMap::new();
     for group in old {
         let heir = group
             .members
             .iter()
-            .find(|member| groups.iter().any(|group| group.contains(member)))
-            .copied();
-        for &member in &group.members {
-            labelled.insert(member, (group.identity, Some(member) == heir));
+            .find(|member| groups.iter().any(|group| group.contains(*member)))
+            .cloned();
+        for member in &group.members {
+            labelled.insert(
+                member.clone(),
+                (group.identity, Some(member) == heir.as_ref()),
+            );
         }
     }
     let mut result = AggregateTransition {
@@ -167,13 +170,14 @@ fn model(old: &[PriorAggregate], groups: &[BTreeSet<EntityId>], at: u64) -> Aggr
     for group in groups {
         let fragments: Vec<_> = group
             .iter()
-            .filter_map(|member| labelled.get(member).map(|label| (*member, *label)))
+            .filter_map(|member| labelled.get(member).map(|label| (member.clone(), *label)))
             .collect();
         let retained = fragments
             .first()
             .filter(|(_, (_, heir))| *heir)
             .map(|(_, (identity, _))| *identity);
-        let identity = retained.unwrap_or_else(|| name(definition(), at, *group.first().unwrap()));
+        let identity =
+            retained.unwrap_or_else(|| name(definition(), at, group.first().unwrap().clone()));
         let mut contributions: BTreeMap<_, Vec<_>> = BTreeMap::new();
         for (member, (old, heir)) in fragments {
             contributions.entry(old).or_default().push((member, heir));
@@ -196,7 +200,7 @@ fn model(old: &[PriorAggregate], groups: &[BTreeSet<EntityId>], at: u64) -> Aggr
     }
     result
         .assignments
-        .sort_by_key(|group| *group.members.first().unwrap());
+        .sort_by_key(|group| group.members.first().unwrap().clone());
     for group in old {
         if result
             .assignments
@@ -228,7 +232,10 @@ fn model(old: &[PriorAggregate], groups: &[BTreeSet<EntityId>], at: u64) -> Aggr
     result
 }
 
-fn name(definition: AggregateDefinitionIdentity, at: u64, member: EntityId) -> AggregateIdentity {
+fn name(definition: AggregateDefinitionIdentity, at: u64, member: Member) -> AggregateIdentity {
+    let Member::Entity(member) = member else {
+        panic!("this independent legacy mint oracle authors physical members only");
+    };
     let transcript = [
         b"WORTH_GRAPH_AGGREGATE_ID_V1\0".as_slice(),
         definition.bytes(),
@@ -245,15 +252,15 @@ fn name(definition: AggregateDefinitionIdentity, at: u64, member: EntityId) -> A
 fn namespace_occurrence_and_checked_control_are_real_inputs() {
     let seed = member(9);
     assert_ne!(
-        mint(definition(), CommitId(2), seed),
+        mint(definition(), CommitId(2), seed.clone()),
         mint(
             AggregateDefinitionIdentity::from_bytes([8; 32]),
             CommitId(2),
-            seed
+            seed.clone()
         )
     );
     assert_ne!(
-        mint(definition(), CommitId(2), seed),
+        mint(definition(), CommitId(2), seed.clone()),
         mint(definition(), CommitId(3), seed)
     );
     let mut visits = 0;

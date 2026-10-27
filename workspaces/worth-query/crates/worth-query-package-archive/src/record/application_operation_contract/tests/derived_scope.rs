@@ -30,8 +30,7 @@ fn derived_source_scope_is_versioned_and_unique_in_canonical_order() {
     assert_eq!(denial.kind(), Kind::UnsupportedRecordVariant);
     let mut parts = fixture::complete_parts();
     parts.graph_reads.push(scope.clone());
-    let record =
-        WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts.clone());
+    let record = WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
     let bytes = encode_untrusted(&record, WorthQueryPackageArchiveLimits::DEFAULT);
     let mut decoder =
         WorthQueryPackageArchiveRecordDecoder::new(WorthQueryPackageArchiveLimits::DEFAULT);
@@ -39,7 +38,8 @@ fn derived_source_scope_is_versioned_and_unique_in_canonical_order() {
         decoder.decode_frame(&bytes).unwrap().record(),
         &fixture::wrapped(record)
     );
-    parts.graph_reads.push(scope);
+    let mut parts = fixture::complete_parts();
+    parts.graph_reads.extend([scope.clone(), scope]);
     let duplicate =
         WorthQueryPortableApplicationOperationContractRecord::from_untrusted_parts(parts);
     let bytes = encode_untrusted(&duplicate, WorthQueryPackageArchiveLimits::DEFAULT);

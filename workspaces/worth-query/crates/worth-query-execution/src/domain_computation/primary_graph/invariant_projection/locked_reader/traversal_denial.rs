@@ -2,6 +2,8 @@
 /// projection was refused.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInvariantProjectionTraversalDenialKind {
+    /// The actual pinned logical source refused without returning partial data.
+    DerivedSource(worth_relational::facade::runtime::StructuralWalkDenialKind),
     /// The caller's read request stopped.
     ReadExecution(
         Result<

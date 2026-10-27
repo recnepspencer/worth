@@ -39,7 +39,7 @@ pub(super) fn lower(
                 .collect::<Result<Vec<_>, _>>()?;
             target_domains.sort();
             target_domains.dedup();
-            Ok(DerivedRelationMinimumReachability {
+            Ok::<_, Denial>(DerivedRelationMinimumReachability {
                 minimum_reachable_targets: minimum.minimum_reachable_targets,
                 target_domains,
             })

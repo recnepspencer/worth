@@ -142,6 +142,8 @@ pub(in crate::domain_computation::primary_graph) struct ComputationFactAttributi
     range_closed: Option<std::sync::Arc<ranges::NativeCallCarriage>>,
     // Original walk-authoring payment; consumed after all authoring fields.
     walk_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    // Last: normalized keys/read sets release before their original backing.
+    normalization_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl ComputationFactAttribution {
@@ -331,6 +333,7 @@ pub(in crate::domain_computation::primary_graph) struct SealedComputationFacts {
     layout: layout::SealedReadLayout,
 }
 
+mod adjacency;
 mod charged;
 mod layout;
 mod ranges;

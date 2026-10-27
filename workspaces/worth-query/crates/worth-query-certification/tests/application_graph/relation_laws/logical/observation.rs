@@ -6,7 +6,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 use worth_query_host::facade::application_invariants::WorthQueryInvariantProjectionWork as Work;
-pub(super) type Observer = Arc<dyn Fn(bool, Work) + Send + Sync>;
+pub(super) type Observer =
+    Arc<dyn Fn(bool, Work) + Send + Sync + std::panic::UnwindSafe + std::panic::RefUnwindSafe>;
 thread_local! { static PLACEMENT: RefCell<Option<Observer>> = const { RefCell::new(None) }; }
 pub(super) fn current() -> Option<Observer> {
     PLACEMENT.with(|slot| slot.borrow().clone())

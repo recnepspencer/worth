@@ -206,7 +206,9 @@ impl<L: LawPolicy> Rule<L> {
             committed.graph_components(&self.set).map_err(execution)?;
         }
         for root in roots {
-            context.check_live().map_err(execution)?;
+            context
+                .check_live()
+                .map_err(|cause| execution(format!("{cause:?}")))?;
             assert_eq!(
                 self.inspect(&proposed, &root.proposed).map_err(execution)?,
                 root.proposed_answer

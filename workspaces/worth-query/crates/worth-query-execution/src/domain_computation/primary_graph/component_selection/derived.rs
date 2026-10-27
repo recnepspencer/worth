@@ -15,6 +15,7 @@ impl ComponentSelection {
         source: SnapshotHandle,
         aggregates: Vec<Arc<AggregateObservation<Key>>>,
         facts: Vec<SourceFacts>,
+        allocation: Arc<super::super::source_facts::SourceFactsAllocation>,
         mut poll: impl FnMut() -> Result<(), Cause>,
     ) -> Result<Option<Self>, Cause> {
         let Some(handle) = layout.source.as_ref() else {
@@ -45,6 +46,7 @@ impl ComponentSelection {
             source,
             aggregates: ComponentAggregateBodies::Derived(aggregates),
             facts,
+            allocation,
             commitment,
         }))
     }

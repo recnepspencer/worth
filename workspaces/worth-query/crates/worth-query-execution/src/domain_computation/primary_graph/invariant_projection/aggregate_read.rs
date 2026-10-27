@@ -18,6 +18,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         selection: AggregateSelection,
         member: worth_relational::facade::identity::EntityId,
         subject: &str,
+        allocation: Option<
+            &std::sync::Arc<
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+            >,
+        >,
     ) -> Result<std::sync::Arc<AggregateObservation>, Denial> {
         let pin = self
             .runtime
@@ -34,6 +39,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             &pin,
             self.execution,
             AggregateQuery {
+                allocation,
                 subject,
                 entity_kind,
                 selection,
@@ -52,6 +58,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         definition: worth_foundational::facade::AggregateDefinitionIdentity,
         member: worth_relational::facade::schema::NativeMemberKey,
         subject: &str,
+        allocation: &std::sync::Arc<
+            crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
+        >,
     ) -> Result<
         std::sync::Arc<AggregateObservation<worth_relational::facade::schema::NativeMemberKey>>,
         Denial,
@@ -64,6 +73,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             definition,
             member,
             self.work_budget.remaining().map(|n| n as u64),
+            Some(allocation),
         );
         self.finish_aggregate_read(
             result,

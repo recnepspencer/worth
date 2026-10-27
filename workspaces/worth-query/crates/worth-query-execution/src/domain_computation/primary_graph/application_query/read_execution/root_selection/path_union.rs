@@ -99,6 +99,7 @@ pub(super) fn select_root_path_union(
         plan,
         &mut work,
         RootPathSelectionRequest {
+            allocation: None,
             paths,
             start: plan.root,
             orientation: RootPathOrientation::ForwardCensus,

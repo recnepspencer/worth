@@ -11,6 +11,7 @@ impl AggregateObservation<Key> {
         definition: AggregateDefinitionIdentity,
         member: Key,
         maximum_work: Option<u64>,
+        allocation: Option<&Arc<super::super::source_facts::SourceFactsAllocation>>,
     ) -> Result<Arc<Self>, PinnedAggregateReadDenial> {
         let scope = PinnedAggregateReadScope::for_member_definition(definition, member.clone())
             .with_work_limit(maximum_work);
@@ -19,6 +20,7 @@ impl AggregateObservation<Key> {
             key: AggregateKey::for_member(subject, carrier_kind, definition, member),
             native,
             source: pin.snapshot().clone(),
+            _allocation: allocation.cloned(),
         }))
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(

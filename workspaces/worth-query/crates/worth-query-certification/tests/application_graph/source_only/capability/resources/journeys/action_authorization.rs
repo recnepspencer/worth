@@ -15,9 +15,20 @@ pub(super) fn run(
     let request = host.application.runtime().request(actor, scope);
     let resources = request.resources();
     resources.advance(handle).unwrap();
+    let derived_document = super::super::derived_evidence::observed_document(host);
     set_status(host, issuer, scope, false, 0x9181_8012);
+    assert_eq!(
+        super::super::derived_evidence::observed_document(host),
+        derived_document,
+        "unchanged derived incidence remains available while the real action grant is inactive"
+    );
     let contacts = host.contacts.resource.counts();
     let clock = host.contacts.resource_clock.observations();
+    let head = request
+        .retain_current_read()
+        .unwrap()
+        .selected_commit()
+        .clone();
     let denied = resources
         .advance(handle)
         .expect_err("real action grant was revoked");
@@ -29,6 +40,11 @@ pub(super) fn run(
     );
     assert_eq!(host.contacts.resource.counts(), contacts);
     assert_eq!(host.contacts.resource_clock.observations(), clock);
+    assert_eq!(
+        request.retain_current_read().unwrap().selected_commit(),
+        &head,
+        "derived evidence cannot authorize action or publish effects"
+    );
     assert!(
         !resources
             .result_available_governed(
@@ -39,6 +55,10 @@ pub(super) fn run(
         "the separate metadata grant is still live"
     );
     set_status(host, issuer, scope, true, 0x9181_8013);
+    assert_eq!(
+        super::super::derived_evidence::observed_document(host),
+        derived_document
+    );
     resources.advance(handle).unwrap();
     let before = host.contacts.resource.counts();
     host.contacts

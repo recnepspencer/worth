@@ -84,12 +84,14 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         let result=execution.run_native_with_checkpoint(|context| {
             let pin=self.component_pin(set.name())?;
             if !layout.matches_native_definition(&pin,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))? { return Err(Denial::new(Kind::AggregateDefinitionUnavailable,set.name())); }
-            let (aggregates,facts)=self.collect_component_selection::<Entity>(&scope,&layout,root,member.map(|m|m.entity_id),&pin,context,set.name())?;
+            let allocation=crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::open(&execution).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+            let (aggregates,facts)=self.collect_component_selection::<Entity>(&scope,&layout,root,member.map(|m|m.entity_id),&pin,context,set.name(),&allocation)?;
             let mut answer=Vec::new();
             answer.try_reserve_exact(aggregates.len()).map_err(|_|self.reader.walk_stop(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,set.name()))?;
-            for aggregate in &aggregates { answer.push(WorthQueryInvariantProjectionComponent::new(Arc::clone(aggregate),&layout,self.reader.binding_identity.clone(),self.reader.authority_identity)); }
-            let body=ComponentSelection::new(scope,layout,root,member.map_or(ComponentSelectionSubject::Census,|m|ComponentSelectionSubject::Of(m.entity_id)),self.reader.snapshot.clone(),aggregates,facts,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(||Denial::new(Kind::ForeignIdentity,set.name()))?;
-            Ok((answer,Arc::new(body)))
+            crate::domain_computation::primary_graph::component_selection::storage::body(&execution,&allocation).map_err(|cause|self.reader.walk_stop(cause,set.name()))?;
+            let body=Arc::new(ComponentSelection::new(scope,layout.clone(),root,member.map_or(ComponentSelectionSubject::Census,|m|ComponentSelectionSubject::Of(m.entity_id)),self.reader.snapshot.clone(),aggregates,facts,allocation,||AggregateObservation::checkpoint(context)).map_err(|cause|self.reader.walk_stop(cause,set.name()))?.ok_or_else(||Denial::new(Kind::ForeignIdentity,set.name()))?);
+            for aggregate in body.physical_aggregates().expect("physical component selection") { answer.push(WorthQueryInvariantProjectionComponent::new(Arc::clone(aggregate),&layout,self.reader.binding_identity.clone(),self.reader.authority_identity).with_selection(Arc::clone(&body))); }
+            Ok((answer,body))
         });
         match result {
             Ok((answer, _)) => answer,

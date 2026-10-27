@@ -2,7 +2,7 @@
 use super::checkpoint::persisted;
 use super::fixtures::*;
 use crate::durability::data::DurableBranchRootSchemaImage;
-use serde::Serialize;
+use serde::{de::IgnoredAny, Serialize};
 
 /// The original four-field authority shape, without optional extension tails.
 #[derive(Serialize)]
@@ -39,11 +39,19 @@ fn absent_and_domain_only_authorities_keep_exact_old_shapes_and_positional_empty
         let authority = registry.authority_snapshot();
         assert!(authority.derived_relations.is_empty());
         let compact = rmp_serde::to_vec(&authority).unwrap();
-        let fields: Vec<serde_json::Value> = rmp_serde::from_slice(&compact).unwrap();
+        let fields: Vec<IgnoredAny> = rmp_serde::from_slice(&compact).unwrap();
         assert_eq!(fields.len(), if domain_only { 6 } else { 4 });
         if domain_only {
-            assert_eq!(fields[4], serde_json::json!([]));
-            assert_eq!(fields[5].as_array().unwrap().len(), 1);
+            let (_, _, _, _, derived, domains): (
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                Vec<DerivedRelationDefinitionParts>,
+                Vec<ProjectedMemberDomainParts>,
+            ) = rmp_serde::from_slice(&compact).unwrap();
+            assert!(derived.is_empty());
+            assert_eq!(domains, authority.projected_member_domains);
         } else {
             let old = PhysicalAuthority {
                 primary_schema_id: &authority.primary_schema_id,
@@ -87,11 +95,22 @@ fn absent_and_domain_only_authorities_keep_exact_old_shapes_and_positional_empty
             .unwrap();
         let image = &checkpoint.branch_root_schema_images[0];
         let compact = rmp_serde::to_vec(image).unwrap();
-        let fields: Vec<serde_json::Value> = rmp_serde::from_slice(&compact).unwrap();
+        let fields: Vec<IgnoredAny> = rmp_serde::from_slice(&compact).unwrap();
         assert_eq!(fields.len(), if domain_only { 9 } else { 7 });
         if domain_only {
-            assert_eq!(fields[7], serde_json::json!([]));
-            assert_eq!(fields[8].as_array().unwrap().len(), 1);
+            let (_, _, _, _, _, _, _, derived, domains): (
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                IgnoredAny,
+                Vec<DerivedRelationDefinitionParts>,
+                Vec<ProjectedMemberDomainParts>,
+            ) = rmp_serde::from_slice(&compact).unwrap();
+            assert!(derived.is_empty());
+            assert_eq!(domains, authority.projected_member_domains);
         }
         for bytes in [compact, rmp_serde::to_vec_named(image).unwrap()] {
             let decoded: DurableBranchRootSchemaImage = rmp_serde::from_slice(&bytes).unwrap();

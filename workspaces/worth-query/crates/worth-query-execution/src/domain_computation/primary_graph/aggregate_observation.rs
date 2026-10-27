@@ -22,8 +22,10 @@ pub(in crate::domain_computation) struct AggregateObservation<Member = EntityId>
     key: AggregateKey<Member>,
     native: PinnedAggregateRead<Member>,
     source: SnapshotHandle,
+    _allocation: Option<Arc<super::source_facts::SourceFactsAllocation>>,
 }
 pub(in crate::domain_computation::primary_graph) struct AggregateQuery<'a> {
+    pub allocation: Option<&'a Arc<super::source_facts::SourceFactsAllocation>>,
     pub subject: &'a str,
     pub entity_kind: KindId,
     pub selection: AggregateSelection,
@@ -56,6 +58,7 @@ impl AggregateObservation {
             key,
             native,
             source: pin.snapshot().clone(),
+            _allocation: query.allocation.cloned(),
         }))
     }
     pub(in crate::domain_computation::primary_graph) fn same_truth_with_poll<E>(

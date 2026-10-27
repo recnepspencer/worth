@@ -5,6 +5,8 @@ use worth_query_host::facade::{
     declaration::{application_program::*, application_schema::*},
     primary_graph::*,
 };
+#[path = "logical/committed.rs"]
+mod committed;
 #[path = "logical/court.rs"]
 mod court;
 #[path = "logical/handler.rs"]

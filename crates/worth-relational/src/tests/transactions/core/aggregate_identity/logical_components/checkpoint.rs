@@ -160,7 +160,34 @@ fn changed_configured_domain_cannot_replace_the_actual_recovered_root_or_its_han
     let changed = source_registry_with_cases(&["Negative", "Positive", "Third"]);
     let foreign_definition = changed.derived_relation(&identity("Adjacency")).unwrap();
     let foreign_domain = changed.projected_member_domain(&domain()).unwrap();
-    let (_, restored) = recover_with(execution, &runtime, || persisted(changed));
+    let opaque = runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let plan = runtime
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    let mut restored = persisted(changed);
+    let before = restored.history().commit_envelopes_snapshot();
+    let error = restored
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap_err();
+    assert_eq!(
+        expect_durability_failure(error).class,
+        crate::durability::data::RecoveryFailureClass::SchemaMismatch
+    );
+    assert_eq!(restored.history().commit_envelopes_snapshot(), before);
+    // Opaque checkpoint restore uses the receiver's genuine configuration and
+    // separately readmits each actual persisted root's schema carrier.
+    restored
+        .durability_recovery()
+        .restore_native_checkpoint(execution, &opaque)
+        .unwrap();
     let snapshot = snapshot_for_owner_branch(&restored, &BranchId("main".into()));
     let pin = restored
         .read_truth()

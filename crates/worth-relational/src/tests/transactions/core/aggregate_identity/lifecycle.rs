@@ -73,7 +73,10 @@ fn committed_birth_anchor_removal_split_merge_and_fork_keep_one_identity_owner()
         .find(|(_, row)| row.identity == original)
         .unwrap()
         .1;
-    assert_eq!(original_row.seed, members[0]);
+    assert_eq!(
+        original_row.seed,
+        crate::graph_member::NativeMemberKey::Entity(members[0])
+    );
     assert_eq!(original_row.born, born.commit.commit_id);
     let merged = commit(
         execution,

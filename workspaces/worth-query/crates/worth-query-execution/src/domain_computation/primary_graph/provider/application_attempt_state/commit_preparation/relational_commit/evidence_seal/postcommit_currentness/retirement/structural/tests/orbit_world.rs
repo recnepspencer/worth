@@ -54,6 +54,7 @@ pub(super) fn capture(world: &World, key: u64, execution: &ExecutionRequest<'_, 
                 &pin,
                 execution,
                 AggregateQuery {
+                    allocation: None,
                     subject: "Next",
                     entity_kind: kind,
                     selection: crate::domain_computation::primary_graph::aggregate_observation::AggregateSelection::OrbitRelation(relation),
