@@ -484,7 +484,8 @@ links compiled projection, handler, query and privileged lineage examples.
 Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
 records genuine sheet edits, holes, split/merge lineage and current-main
 qualification at `33278669079835d5f0f5c96556697784fa449eb9`, retaining SDK `b9cdf607`.
-Derived orbits remain Phase 6; governed and tracked lineage reads remain separate
+The derived-orbit substrate is qualified under Phase 6; complete Phase 6
+acceptance remains open. Governed and tracked lineage reads remain separate
 unavailable capabilities.
 
 ### Requirements
@@ -519,7 +520,8 @@ unavailable capabilities.
   - the current identity that a retired identity's lineage leads to.
 - **Composing orbits.** An orbit relation may itself be a derived relation (Phase
   6), so a composed permutation becomes an orbit without new platform vocabulary.
-  Until Phase 6 lands, orbits are declared on stored relations.
+  The qualified Phase 6 substrate also binds derived permutation sources;
+  complete Phase 6 acceptance still requires its private consumer gates.
 
 ### Tests That Prove It
 
@@ -696,9 +698,11 @@ adversary. Legacy bytes, durable recovery, independent seeded membership/heir
 oracles, cert-only replay and actual one/two/eight-worker execution are qualified.
 The 10/10,000 courts compare actual maintenance and business-read acquisition
 category totals. Equal totals do not claim fixed work or an acquisition-identity
-roster. Private CAD adoption, the current-generation production-maintenance
-prerequisite and combined Phase 5/6 acceptance remain required; this public
-qualification does not close either phase.
+roster. The public production-maintenance prerequisite is separately qualified
+at `5b01312ed004` by ten Native courts, one Query owner court and a Host example.
+Actual private generation-reuse and CAD adoption receipts, followed by combined
+Phase 5/6 acceptance, remain required; these public qualifications do not close
+either phase.
 
 **Depends on:** Phase 3 (walk reads), and the existing derived-view owner.
 

@@ -87,11 +87,9 @@ edge deletion and physical uniqueness remain with stored relations.
 `rule_readable_collection` records the existing Feature, Collection, Computation,
 output artifact and completeness identities. `operation_read_derived_relation`
 records an operation's declared source read. These associations grant no read,
-publication or capability authority. The qualified first vertical covered
-unbounded endpoint-set laws and same-context (`Forbid`) traversal on every
-physical leaf. The logical-source extension below replaces that availability
-limit with actual Native law enforcement; its runtime qualification is pending.
-The closed managed count still requires a genuine Entity-rooted input.
+publication or capability authority. Installed endpoint-set laws are enforced by
+the actual Native source evaluator, including proposed-state changes to physical
+support. The closed managed count requires a genuine Entity-rooted input.
 
 Ordinary invariant setup resolves a typed derived relation against its actual
 installed physical leaf roster. Preparation admits the complete source under
@@ -121,15 +119,16 @@ The [facade journey](../../../worth-query-certification/tests/application_graph/
 uses an authenticated action, real proposed-state rule, negative-adjacency edit,
 physical rewire and discard/rebuild. The [Native audience court](../../../worth-query-execution/src/domain_computation/primary_graph/application_invariant/typed_view/derived_relation/native_audience.rs)
 checks that a broad proof cannot lend its physical source access to a narrower
-reader on the same observation. The laws, walks, orbits, components and logical
-member extension below remain under qualification. Full Phase6 acceptance also
-requires the actual grant-authority adversary and CAD consumers.
+reader on the same observation. The [logical composition journey](../../../worth-query-certification/tests/application_graph/relation_laws/logical/court.rs)
+uses the same source owners for laws, walks, orbits and components. The
+[grant-revocation journey](../../../worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs)
+keeps a derived value available while actual grant revocation denies the action
+before provider access; a derived value cannot replace that grant.
 
 ### Finite projected sources and composition
 
-The logical-source vertical is undergoing qualification; full Phase 6 remains
-open. `ApplicationProjectedMemberDomainDefinition` declares a real carrier kind
-and finite named cases. `ApplicationDerivedRelation::carrier_case`, reversal,
+`ApplicationProjectedMemberDomainDefinition` declares a real carrier kind and
+finite named cases. `ApplicationDerivedRelation::carrier_case`, reversal,
 composition, union and intersection use the same registered evaluator. Complete
 physical and empty-adjacency support survives endpoint deduplication. A logical
 coordinate includes domain, full carrier generation and case; it grants no access.
@@ -174,6 +173,16 @@ view. `graph_component_of` retains the actual Native identity and complete cohor
 whole-census proof even with no carriers. That explicit enumeration can grow with
 the universe; local rules need not request it. Prepared adjacency, direction,
 reachability, component and census interpretations are distinct.
+
+Keep changing context in the source's actual incidences, outside the carrier/case
+coordinate. A whole-cohort context transfer with the same complete member keys
+retains its Native identity without split or merge events. Actual membership
+changes follow the existing surviving-member heir and lineage rules. The
+[logical lifecycle court](../../../../../../crates/worth-relational/src/tests/transactions/core/aggregate_identity/logical_components/lifecycle.rs)
+exercises these cases. A retired carrier generation cannot select a replacement
+member; retained observations keep their original selected source. See the
+[domain compatibility contract](../../../worth-query-decl/README.md#projected-member-domain-meaning)
+for portable meaning and fresh admission.
 
 Operations declare `operation_read_derived_relation` plus the actual typed
 `OperationReads` marker. Extended recipes and derived component/orbit consumers
