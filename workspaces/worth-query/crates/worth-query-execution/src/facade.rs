@@ -8,6 +8,13 @@ pub use worth_query_declaration::worth_query_application_contribution as __worth
 #[doc(hidden)]
 pub use worth_query_declaration::worth_query_feature_spec;
 
+/// Canonical diagnostic evidence protocol shared by the internal Query engine.
+/// These identities describe evidence; they grant no execution or inspection authority.
+#[doc(hidden)]
+pub mod evidence_identity {
+    pub use crate::domain_computation::evidence_identity::*;
+}
+
 pub mod domain_computation {
     pub use super::primary_graph::*;
     pub use crate::domain_computation::artifact_owner::*;
