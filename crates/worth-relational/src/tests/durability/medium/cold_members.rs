@@ -48,6 +48,8 @@ mod cold_merges;
 mod cold_observation_reads;
 #[path = "cold_pins.rs"]
 mod cold_pins;
+#[path = "cold_projection_scan_door.rs"]
+mod cold_projection_scan_door;
 #[path = "cold_read_door.rs"]
 mod cold_read_door;
 #[path = "cold_read_matrix.rs"]

@@ -13,6 +13,16 @@ use crate::visibility::materialization::read_records::visibility::{
 /// claim. Record bytes use the established owner-accounted payload measure;
 /// that measure does not prove allocator or BTree node structural backing.
 pub(crate) trait ProjectionRecordSource {
+    fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    fn demand_regions_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
     fn is_exact_basis(&self) -> bool;
     fn version_id(&self) -> crate::identity::data::VersionId;
@@ -29,6 +39,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
     ) -> Result<Option<T>, ReadStop<E>> {
+        self.demand_regions_full(execution, [id.partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let bytes = self
             .candidate_entity_heap_for_id(id)
@@ -67,6 +79,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_regions_full(execution, [partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -150,6 +164,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_regions_full(execution, [partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -232,6 +248,7 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -254,6 +271,7 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());

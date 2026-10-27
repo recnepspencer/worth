@@ -27,16 +27,11 @@ impl IndexBuildProjection {
     pub(super) fn demand(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalRuntime,
     ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
         let view = match self {
             Self::Exact(view) | Self::Historical(view) => view,
         };
-        if let Some(root) = view.selected_root() {
-            root.demand_all_full(execution, &runtime.services.symbols)?;
-        }
-        view.refresh_symbol_meanings(&runtime.services.symbols);
-        Ok(())
+        view.demand_all_full(execution)
     }
 
     pub(super) fn source(&self) -> Option<IndexProjectionSource<'_>> {

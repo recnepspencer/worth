@@ -11,7 +11,7 @@ pub struct VisibilityProjectionView {
     pub(super) runtime_identity: u64,
     pub(super) current_version: VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
-    pub(super) symbols: crate::symbols::data::StringInterner,
+    pub(super) symbols: crate::runtime::RuntimeSymbolTable,
     pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
 }

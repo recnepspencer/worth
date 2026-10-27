@@ -83,8 +83,9 @@ impl VisibilityProjectionView {
         let text_work = aspect_text.len().saturating_add(field_text.len());
         admit_work((text_work as u64).saturating_add(2))?;
         let (aspect_symbol, field_symbol) = (
-            self.symbols.symbol(aspect_text),
-            self.symbols.symbol(field_text),
+            self.symbols
+                .with_read(|symbols| symbols.symbol(aspect_text)),
+            self.symbols.with_read(|symbols| symbols.symbol(field_text)),
         );
         let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
             admit_work(super::admitted_entity::btree_navigation_work(

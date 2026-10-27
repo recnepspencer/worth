@@ -3,11 +3,13 @@ use super::{schema_custody::ProjectionSchemaCustody, VisibilityProjectionView};
 use crate::runtime::RelationalPinnedRead;
 impl VisibilityProjectionView {
     pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
+        let symbols = crate::runtime::RuntimeSymbolTable::default();
+        symbols.replace(read.symbols().clone());
         Self {
             runtime_identity: read.runtime_instance_id(),
             current_version: read.pinned_current_version(),
             instrumentation: read.pinned_instrumentation().clone(),
-            symbols: read.symbols().clone(),
+            symbols,
             schema: ProjectionSchemaCustody::Published(
                 read.pinned_basis().root().retained_schema_authority(),
             ),
@@ -38,7 +40,7 @@ impl VisibilityProjectionView {
         (
             self.current_version,
             self.instrumentation.clone(),
-            self.symbols.clone(),
+            self.symbols.interner_snapshot(),
         )
     }
 }

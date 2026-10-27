@@ -4,6 +4,7 @@ use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum ReadDoor {
+    ProjectionScan(super::cold_projection_scan_door::ProjectionScanDoor, bool),
     IndexCommitBuild,
     IndexBasisBuild,
     MemoryCheckpoint,
@@ -43,7 +44,39 @@ pub(super) enum ReadDoor {
 }
 
 impl ReadDoor {
-    pub(super) const ALL: [Self; 36] = [
+    pub(super) const ALL: [Self; 44] = [
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::EntityKind,
+            false,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::RelationKind,
+            false,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::EntityRecords,
+            false,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::RelationRecords,
+            false,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::EntityKind,
+            true,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::RelationKind,
+            true,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::EntityRecords,
+            true,
+        ),
+        Self::ProjectionScan(
+            super::cold_projection_scan_door::ProjectionScanDoor::RelationRecords,
+            true,
+        ),
         Self::IndexCommitBuild,
         Self::IndexBasisBuild,
         Self::MemoryCheckpoint,
@@ -99,6 +132,7 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::ProjectionScan(door, historical) => door.run(historical, execution, runtime),
             Self::IndexCommitBuild | Self::IndexBasisBuild => {
                 let door = if matches!(self, Self::IndexCommitBuild) { super::cold_index_build_door::IndexBuildDoor::Commit } else { super::cold_index_build_door::IndexBuildDoor::Basis };
                 door.read(runtime, execution, runtime.index_access().definitions_snapshot().iter().find(|definition| definition.name == "residency-read-matrix-build").expect("the matrix setup registered its actual definition").index_id)

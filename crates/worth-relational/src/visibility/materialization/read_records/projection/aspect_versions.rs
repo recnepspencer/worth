@@ -23,7 +23,9 @@ impl VisibilityProjectionView {
         {
             return None;
         }
-        let symbol = self.symbols.symbol(aspect.as_str());
+        let symbol = self
+            .symbols
+            .with_read(|symbols| symbols.symbol(aspect.as_str()));
         let versions = partition
             .entity_arena
             .aspect_versions_at(entity.slot_index())?;

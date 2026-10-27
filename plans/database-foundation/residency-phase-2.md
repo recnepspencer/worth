@@ -2513,3 +2513,31 @@ custody court; no producer payload or original assertion was replaced.
 error shadowed the selected member with the iterator binding; it is corrected.
 The preceding checkpoint boundary and composition gates also completed green.
 All final clean-commit lanes remain pending.
+
+
+### Public exact and historical projection scans
+
+`matrix-projection-scans-first.log` exposes a cold public entity-kind projection
+returning WorkerFailed after the resident-only accessor panics. The product was
+wrong: index build admission did not protect a consumer calling the projection
+scan itself. Eight public scan doors now declare their selected Full root before
+paid scans or callbacks. Partition and keyed record orchestrators similarly
+demand their known footprint before a quote or visitor can escape. Streamed
+all-root walks admit the whole declared root before their first callback.
+
+A projection carries its runtime's symbol authority instead of a stale eager
+interner snapshot. Pointwise pure symbol resolution consults admitted canonical
+meanings without I/O. The separate index-build symbol refresh is removed; index
+builds use the same projection demand mechanism. A projection made from a pin
+keeps a frozen dictionary owner from that accepted pin. The other two internal
+projection sources (pinned reads and prepared field lookups) retain their
+already-admitted source and check only request life, without reacquiring cold
+truth. Their existing accepted-custody tests pass unchanged.
+
+`matrix-projection-scans-native.log` passes 1,994 tests with 31 ignored. The
+refusal inventory is 1,410 plus 54 positive unavailable-history cells. Owner
+lib/tests clippy, line caps and agent-context pass. Formatting and composition
+are recorded separately; boundary-check is running. This remains intermediate
+slice evidence, with final clean-commit lanes still pending. The next matrix
+subjects are pure metadata projections and their resident witnesses, historical
+index builds and tail recovery classes. No claim of phase-2 completion is made.

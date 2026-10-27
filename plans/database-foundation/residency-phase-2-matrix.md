@@ -27,9 +27,9 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Historical lineage, selected observations, aspect wrappers, graphs, divergence and exports | operation region guard | operation Full guard | envelope courts | operation symbol guard | node matrix | event matrix, 11 doors | cache subject expansion pending |
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
-Current refusal family sizes: Full reads 648, envelope/export/checkpoint/replay/receipt 156,
+Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
 lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 72, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 1,266 cells. Positive current and
+remote invariant Head 18, aspect history 144, nonhead merge 18: 1,410 cells. Positive current and
 remote-invariant unavailable-history families add 54 cells. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
@@ -54,3 +54,12 @@ The 66-cell event table passed in the complete 1,990-test native run. The outsta
 reserved-ID checkpoint court exposed lost low IDs and now passes with CHK12
 exact page membership. Separate proofs refuse forged interior membership,
 duplicate publication IDs and overflowing high bits without another load.
+
+
+Public projection scan rows now include both exact and historical bases for
+bounded entity/relation kind scans and record projection callbacks. Their first
+cold Head returned WorkerFailed after a resident-only panic. All eight doors
+now pass the same three-subject, six-class table (144 added refusal cells).
+The complete native run passes 1,994 tests with 31 ignored. Pure metadata point
+and adjacency projection surfaces, historical index selection and the tail
+recovery class matrix remain under audit; final lanes remain unrun.

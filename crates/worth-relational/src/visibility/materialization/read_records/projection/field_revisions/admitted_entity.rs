@@ -126,8 +126,9 @@ impl VisibilityProjectionView {
                     break 'read Err(stop);
                 }
                 let (aspect_symbol, field_symbol) = (
-                    self.symbols.symbol(aspect_text),
-                    self.symbols.symbol(field_text),
+                    self.symbols
+                        .with_read(|symbols| symbols.symbol(aspect_text)),
+                    self.symbols.with_read(|symbols| symbols.symbol(field_text)),
                 );
                 let explicit = if let Some(key) = aspect_symbol.zip(field_symbol) {
                     if let Err(stop) = admit_work(btree_navigation_work(revisions.len())) {

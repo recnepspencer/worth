@@ -91,7 +91,7 @@ impl<'runtime> IndexAuthority<'runtime> {
                 }
             };
         if let Some(selected) = &mut selected_projection
-            && let Err(cause) = selected.demand(execution, self.runtime)
+            && let Err(cause) = selected.demand(execution)
         {
             return super::build_residency::refused(&request, cause);
         }
