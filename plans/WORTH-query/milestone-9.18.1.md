@@ -789,7 +789,7 @@ worth-query-execution/src/domain_computation/
   evidence_identity/                                        M shared diagnostic identity protocol
   primary_graph/
     async_resource/                                         M live resource orchestration
-    causal_inspection/                                      M application evidence binding
+    causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
 worth-query-publication/src/application_entry/
   resource/                                                 N governed retained requests
@@ -797,7 +797,7 @@ worth-query-publication/src/application_entry/
   query/                                                    E ordinary history query entry
 worth-query/src/
   runtime/owned_async_{source,lifecycle}.rs                  M displaced orchestration
-  runtime/inspection/causal/                                 M existing inspection owner
+  runtime/inspection/causal/                                 E old-receipt translation and historical certification only
 worth-query-{decl,host}/src/facade.rs                        E audience exports only
 worth-query-certification/tests/application_graph/           E grouped public journeys
 ```
@@ -986,11 +986,18 @@ proof that the new receipt acquisition and authorization path is complete.
 ```rust,ignore
 // Planned syntax; receipt is returned by an actual ordinary application query.
 let explanation = request.inspections()
-    .for_observation(result.receipt())?
+    .for_observation::<InstalledQueryBinding>(result.receipt())?
     .why_changed()
     .reference_only()
     .execute()?;
 ```
+
+The explicit installed binding preserves the original source's query, parameter,
+scope and result interpretation during fresh admission. This remains planned DX
+until the ordinary and governed Host entrances compile. Moving the operational
+core and retaining an opaque native observation in Publication receipts do not
+complete this phase: genuine producer-chain references, fresh disclosure,
+availability, materialization controls and release evidence remain required.
 
 ### How We Know It's Done
 

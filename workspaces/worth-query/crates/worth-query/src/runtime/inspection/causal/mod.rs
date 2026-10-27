@@ -1,23 +1,14 @@
-mod admission;
-mod admission_decision;
-mod admission_trace;
-mod anchor;
-mod builder;
-mod builder_bridge;
-mod builder_support;
+use worth_query_execution::facade::causal_inspection::integration::{
+    admission, admission_decision, admission_trace, anchor, builder, builder_support, inventory,
+    materialization, observation_identity, receipt_types, reference, reference_index,
+    reference_resolution, request,
+};
+// Operational inspection has one owner in the split execution engine.
 mod certification;
 mod domain_evidence_copy;
 mod identity;
-mod inventory;
-mod materialization;
-mod observation_identity;
 mod receipt;
 mod receipt_helpers;
-mod receipt_types;
-mod reference;
-mod reference_index;
-mod reference_resolution;
-mod request;
 
 #[cfg(test)]
 pub(crate) use admission::admit_causal_inspection;
@@ -86,7 +77,7 @@ pub(crate) use observation_identity::{
 };
 pub use receipt_types::{
     CausalInspectionReason, CausalObservationEvidenceIdentity, CausalObservationOutcome,
-    QueryObservationReceipt, QueryObservationReceiptFamily,
+    QueryObservationReceiptFamily,
 };
 pub use reference::{
     CausalEvidenceReference, CausalEvidenceReferenceReceipt, CausalEvidenceReferenceResolution,
@@ -119,3 +110,5 @@ pub(crate) use identity::{
     causal_test_compose_bridge_causal_envelope_receipt_identity_for_reporting,
     causal_test_compose_bridge_causal_explanation_envelope_identity_for_reporting,
 };
+
+pub use receipt::QueryObservationReceipt;

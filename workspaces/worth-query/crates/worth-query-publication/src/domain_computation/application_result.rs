@@ -64,8 +64,11 @@ pub struct WorthQueryPublishedApplicationResult<Query, QueryResult> {
 pub fn publish_application_result<Query, QueryResult>(
     admitted: WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult>,
 ) -> WorthQueryPublishedApplicationResult<Query, QueryResult> {
-    let receipt = WorthQueryApplicationQueryPublicationReceipt::from_terminal(admitted.receipt());
     let source = admitted.into_output_demand_source();
+    let receipt = WorthQueryApplicationQueryPublicationReceipt::from_terminal(
+        source.receipt(),
+        source.retain_inspection_observation(),
+    );
     WorthQueryPublishedApplicationResult { source, receipt }
 }
 
