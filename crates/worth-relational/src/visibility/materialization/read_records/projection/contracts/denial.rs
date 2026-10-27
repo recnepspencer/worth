@@ -16,6 +16,8 @@ pub enum ProjectionContractRefusal {
     MissingCanonicalMaskBasis,
 }
 
+/// The selected record domain, kind and scope requirement that refused projection.
+/// Admission returns this evidence before invoking the caller's projector.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RelationalProjectionContractDenial {
     pub domain: ProjectionRecordDomain,
