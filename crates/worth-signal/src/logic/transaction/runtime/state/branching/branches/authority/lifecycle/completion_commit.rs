@@ -1,5 +1,5 @@
 use super::*;
-use crate::branch::owner_services::conditional_execution::SignalOwnedAsyncCompletionCommit;
+use crate::branch::owner_services::conditional_execution::SignalOwnedAsyncCompletionCommitState;
 use crate::data::resource::AdmittedResourceCompletion;
 
 impl<D, I, T> BranchState<D, I, T>
@@ -12,7 +12,8 @@ where
         &mut self,
         node: ResourceNodeId,
         admitted: AdmittedResourceCompletion,
-    ) -> Result<SignalOwnedAsyncCompletionCommit, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<SignalOwnedAsyncCompletionCommitState, SignalConditionalServiceExecutionDenial>
+    {
         self.require_owned_async_handle(node, admitted.handle())?;
         let actual = self.require_in_flight(admitted.handle())?;
         if admitted.node() != node
@@ -42,7 +43,7 @@ where
                 capture.then_some(&mut self.derived.telemetry.resource),
             )
             .map_err(SignalConditionalServiceExecutionDenial::SlotAdmission)?;
-        let mut committed = SignalOwnedAsyncCompletionCommit {
+        let mut committed = SignalOwnedAsyncCompletionCommitState {
             report,
             handle: admitted.handle(),
             pending_timeout: timeout,
@@ -59,7 +60,7 @@ where
     pub(crate) fn finish_owned_async_completion_timeout_cleanup(
         &mut self,
         node: ResourceNodeId,
-        committed: &mut SignalOwnedAsyncCompletionCommit,
+        committed: &mut SignalOwnedAsyncCompletionCommitState,
     ) -> Result<(), SignalConditionalServiceExecutionDenial> {
         if committed.report.lifecycle().node() != node {
             return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);

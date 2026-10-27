@@ -4,6 +4,9 @@ mod fixture;
 #[path = "owned_async/managed.rs"]
 mod managed;
 
+#[path = "owned_async/service_affinity.rs"]
+mod service_affinity;
+
 use fixture::{completion, source_commit, AsyncSourceCourt};
 use worth_runtime_bridge::facade::TruthCommitIdentity;
 use worth_runtime_world::facade::{

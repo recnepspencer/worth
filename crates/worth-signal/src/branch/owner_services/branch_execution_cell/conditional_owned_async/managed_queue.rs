@@ -1,6 +1,6 @@
 use super::*;
 use crate::branch::owner_services::conditional_execution::{
-    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncQueueDenial,
+    SignalOwnedAsyncManagedAdmissionState, SignalOwnedAsyncQueueDenial,
 };
 use crate::data::resource::{ResourceManagedQueueBinding, ResourceManagedQueueMutationReport};
 impl<D, I, T> SignalBranchExecutionCell<SignalBranchCellState<D, I, T>>
@@ -34,7 +34,8 @@ where
         definition: &SignalInstalledDefinitionBinding,
         node: ResourceNodeId,
         capacity: u64,
-    ) -> Result<SignalOwnedAsyncManagedAdmission, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<SignalOwnedAsyncManagedAdmissionState, SignalConditionalServiceExecutionDenial>
+    {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
             state.admit_managed_owned_async_request(node, capacity)
         })

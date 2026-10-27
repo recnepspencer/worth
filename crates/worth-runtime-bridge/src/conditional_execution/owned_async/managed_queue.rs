@@ -16,7 +16,7 @@ impl BridgeOwnedSignalRuntime {
         let queue = request.queue.as_ref().ok_or(Denial::QueueUnavailable)?;
         request
             .port
-            .observe_owned_async_safe_point(&request.source, queue)
+            .observe_owned_async_safe_point(queue)
             .map_err(Denial::Signal)
     }
 
@@ -64,7 +64,7 @@ impl BridgeOwnedSignalRuntime {
         bound: BridgeBoundOwnedAsyncBasis,
         admitted: worth_signal::facade::AdmittedResourceRequest,
         in_flight: Option<worth_signal::facade::InFlightResourceRequest>,
-        queue: Option<worth_signal::facade::ResourceManagedQueueBinding>,
+        queue: Option<worth_signal::facade::branch::SignalOwnedAsyncManagedQueueBinding>,
         mut refusal: Option<Denial>,
     ) -> Custodian {
         let request = if let Some(in_flight) = in_flight {
@@ -108,7 +108,7 @@ impl BridgeOwnedSignalRuntime {
         let queue = request.queue.as_ref().ok_or(Denial::QueueUnavailable)?;
         request
             .port
-            .enqueue_owned_async_queue(&request.source, queue, width)
+            .enqueue_owned_async_queue(queue, width)
             .map_err(Denial::Signal)
     }
 
@@ -121,7 +121,7 @@ impl BridgeOwnedSignalRuntime {
         let queue = request.queue.as_ref().ok_or(Denial::QueueUnavailable)?;
         request
             .port
-            .dequeue_owned_async_queue(&request.source, queue, width)
+            .dequeue_owned_async_queue(queue, width)
             .map_err(Denial::Signal)
     }
 

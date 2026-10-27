@@ -1,6 +1,6 @@
 use super::*;
 use crate::branch::owner_services::conditional_execution::{
-    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncQueueDenial,
+    SignalOwnedAsyncManagedAdmissionState, SignalOwnedAsyncQueueDenial,
 };
 use crate::data::resource::{ResourceManagedQueueBinding, ResourceManagedQueueMutationReport};
 
@@ -37,7 +37,8 @@ where
         &mut self,
         node: ResourceNodeId,
         capacity: u64,
-    ) -> Result<SignalOwnedAsyncManagedAdmission, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<SignalOwnedAsyncManagedAdmissionState, SignalConditionalServiceExecutionDenial>
+    {
         self.admit_owned_async_source(node)?;
         if capacity == 0
             || self
@@ -61,7 +62,7 @@ where
         ) {
             Ok(queue) => queue,
             Err(cause) => {
-                return Ok(SignalOwnedAsyncManagedAdmission::CleanupRequired {
+                return Ok(SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
                     report,
                     queue: None,
                     cause: SignalOwnedAsyncQueueDenial::Queue(cause),
@@ -69,11 +70,11 @@ where
             }
         };
         match self.require_in_flight(report.admitted_request().handle()) {
-            Ok(in_flight) => Ok(SignalOwnedAsyncManagedAdmission::Ready {
+            Ok(in_flight) => Ok(SignalOwnedAsyncManagedAdmissionState::Ready {
                 request: SignalOwnedAsyncRequestAdmission::new(report, in_flight),
                 queue,
             }),
-            Err(cause) => Ok(SignalOwnedAsyncManagedAdmission::CleanupRequired {
+            Err(cause) => Ok(SignalOwnedAsyncManagedAdmissionState::CleanupRequired {
                 report,
                 queue: Some(queue),
                 cause: SignalOwnedAsyncQueueDenial::Service(cause),

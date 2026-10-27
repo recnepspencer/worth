@@ -904,6 +904,9 @@ admission, exact attempt-owned queue custody and genuine Signal completion commi
 Completion admission remains distinct from commit; cancellation leaves queue drain
 custody with its owner. A committed result retains any refused timeout cleanup.
 These lower-owner operations do not yet provide the Decl/Host resource endpoint.
+Signal completion admission, queue and timeout-cleanup owners retain their actual
+originating service/source binding. Public report DTOs remain diagnostic
+projections and cannot construct admission or lend authority across runtimes.
 Managed declarations refuse legacy admission, retry and revalidation entrances
 before effects. Atomic managed replacement remains required: the native cell must
 validate the old attempt and drained queue, admit its replacement and bind the new
