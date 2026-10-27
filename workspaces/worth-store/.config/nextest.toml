@@ -46,7 +46,8 @@ test(pending_successors_of_a_generation_with_a_resume_frontier_recover_to_a_term
 threads-required = "num-test-threads"
 slow-timeout = { period = "60s", terminate-after = 30 }
 
-# Each home sweep owns eight independent case workers. Reserve the full pool
+# Each home sweep owns 4–32 independent workers, selected from available cores.
+# Reserve the full pool
 # so separate nextest processes cannot multiply their workers. Libtest also
 # serializes these sweeps within its process. All merged lifecycle cases stay.
 [[profile.default.overrides]]

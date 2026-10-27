@@ -25,15 +25,22 @@ use worth_store::physical_runtime::certification::MediaOperationRole;
 use super::durable_run::{apply, served_schema};
 use super::media_case::{run_case, Ended, Target};
 use super::media_faults;
-use super::prepared_home::PreparedHome;
 use super::workload::{self, Script, Step};
+
+#[path = "prepared_sweep_home.rs"]
+pub(super) mod prepared_sweep_home;
+use prepared_sweep_home::PreparedSweepHome;
 
 const SEEDS: [u64; 2] = [0x5eed_0301, 0x5eed_0302];
 const COMMITS: usize = 9;
 const CHECKPOINT_EVERY: usize = 3;
-/// Cases are independent homes in their own directories, so they run on a
-/// few workers; each case's fault schedule belongs to its own Store.
-const WORKERS: usize = 8;
+/// Keep small hosts busy through I/O waits, but cap simultaneous homes at 32
+/// to bound NTFS/endpoint-scanner contention and the fixture memory footprint.
+fn worker_count() -> usize {
+    std::thread::available_parallelism()
+        .map_or(4, std::num::NonZeroUsize::get)
+        .clamp(4, 32)
+}
 /// Libtest runs target sweeps concurrently. Keep that from multiplying the
 /// worker allowance and starving process-kill children of their Store seam.
 static SWEEP_EXECUTION: Mutex<()> = Mutex::new(());
@@ -94,11 +101,24 @@ impl SeedSweep {
         &self.script.steps[self.prefix..self.target.index()]
     }
 
-    /// Every role's operation count while the target runs.
+    /// Compare the original fresh-prefix schedule with the restored prefix's
+    /// complete role/ordinal matrix before scheduling either directive.
     fn measure(&self, execution: &ExecutionRequest<'_, '_>) -> Vec<(MediaOperationRole, u64)> {
-        let prepared = PreparedHome::prepare(self.prefix(), execution);
+        let mut prepared = PreparedSweepHome::prepare(self.prefix(), execution);
+        let before = self.measure_at(prepared.location(), execution);
+        prepared.restore();
+        let after = self.measure_at(prepared.location(), execution);
+        assert_eq!(before, after, "restored prefix changed the media schedule");
+        before
+    }
+
+    fn measure_at(
+        &self,
+        location: &std::path::Path,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Vec<(MediaOperationRole, u64)> {
         let (home, activations) = media_faults::open_with_faults(
-            prepared.location(),
+            location,
             served_schema(self.prefix()),
             &media_faults::counters(),
             execution,
@@ -149,25 +169,30 @@ fn sweep(select: impl Fn(&Script) -> Target) {
         .map(|seed| SeedSweep::new(*seed, &select))
         .collect();
     let mut cases = Vec::new();
+    let mut schedules = Vec::new();
     for (index, sweep) in seeds.iter().enumerate() {
         let counts = sweep.measure(&execution);
         assert!(!counts.is_empty(), "seed {:#x}: no media", sweep.seed);
-        for (role, count) in counts {
+        for &(role, count) in &counts {
             for nth in 1..=count {
                 for directive in media_faults::directives() {
                     cases.push((index, (role, NonZeroU64::new(nth).unwrap(), directive)));
                 }
             }
         }
+        schedules.push(counts);
     }
     let next = AtomicUsize::new(0);
+    let workers = worker_count();
     let failures = Mutex::new(Vec::new());
     let tallies = Mutex::new(seeds.iter().map(|_| Tally::default()).collect::<Vec<_>>());
     std::thread::scope(|scope| {
-        for _ in 0..WORKERS {
+        for _ in 0..workers {
             scope.spawn(|| {
                 let request = workload::serial_request();
                 let execution = ExecutionRequest::serial(&request);
+                let mut prepared: Vec<Option<PreparedSweepHome>> =
+                    seeds.iter().map(|_| None).collect();
                 while let Some((index, fault)) = cases.get(next.fetch_add(1, Ordering::Relaxed)) {
                     let sweep = &seeds[*index];
                     let case = format!(
@@ -181,12 +206,23 @@ fn sweep(select: impl Fn(&Script) -> Target) {
                     // A failing case is recorded and the sweep goes on, so
                     // one run reports every failing case.
                     let ended = panic::catch_unwind(AssertUnwindSafe(|| {
+                        // Keep inapplicable directives in the matrix, without
+                        // preparing a home they would never open (as before).
+                        let Some(media) =
+                            media_faults::FaultedMedia::admit(std::slice::from_ref(fault))
+                        else {
+                            return Ended::Skipped;
+                        };
+                        let prepared = prepared[*index].get_or_insert_with(|| {
+                            PreparedSweepHome::prepare(sweep.prefix(), &execution)
+                        });
+                        prepared.restore();
                         run_case(
                             &sweep.script,
-                            sweep.prefix(),
+                            prepared,
                             sweep.lead(),
                             sweep.target,
-                            fault.clone(),
+                            media,
                             &execution,
                             &case,
                         )
@@ -199,13 +235,20 @@ fn sweep(select: impl Fn(&Script) -> Target) {
             });
         }
     });
-    for (sweep, tally) in seeds.iter().zip(tallies.into_inner().unwrap()) {
+    for (index, (sweep, tally)) in seeds.iter().zip(tallies.into_inner().unwrap()).enumerate() {
         eprintln!(
             "media sweep seed {:#x} step {}: {tally:?}",
             sweep.seed,
             sweep.target.index()
         );
         assert!(tally.cases > 0, "seed {:#x}: no case ran", sweep.seed);
+        let before: u64 = schedules[index].iter().map(|(_, count)| count * 2).sum();
+        let after = tally.cases + tally.skipped;
+        assert_eq!(after as u64, before, "seed {:#x}: lost cases", sweep.seed);
+        eprintln!(
+            "media schedule seed {:#x}: before {before}, after {after}",
+            sweep.seed
+        );
     }
     let failures = failures.into_inner().unwrap();
     assert!(
@@ -216,7 +259,7 @@ fn sweep(select: impl Fn(&Script) -> Target) {
         failures.join("\n")
     );
     eprintln!(
-        "media sweep: {} scheduled cases, {WORKERS} workers, elapsed {:?}",
+        "media sweep: {} scheduled cases, {workers} workers, elapsed {:?}",
         cases.len(),
         started.elapsed()
     );
