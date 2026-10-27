@@ -191,9 +191,13 @@ and cannot rebind the retained body. See the compiled [lineage inspection court]
 These inspection reads grant no governed history disclosure and record no
 publication decision dependencies. A typed name can be retained across edits
 inside its installation; this API does not restore arbitrary portable names
-after a fresh installation. Scoped/governed lineage reads, tracked lineage
-decisions and Proprietary adoption remain unfinished in Phase 4. Generic Native branch reconciliation has
-separate existing execution limitations and retains its typed refusal.
+after a fresh installation. Scoped/governed lineage reads and tracked lineage
+decisions remain separate unavailable capabilities. Proprietary's actual sheet
+boundary-edit and split/merge courts qualify its CAD adoption slice; qualification
+against current private `main` and the final Phase 4 audit remain open. See the
+[CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md).
+Generic Native branch reconciliation has separate existing execution limitations
+and retains its typed refusal.
 The [installed orbit court](../../../worth-query-certification/tests/application_graph/relation_laws/orbit.rs)
 exercises native refusals and atomic lawful mutations through the ordinary
 authenticated program.
