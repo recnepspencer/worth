@@ -16,6 +16,10 @@ mod cold_envelopes;
 mod cold_index_build_door;
 #[path = "cold_index_checkpoint_door.rs"]
 mod cold_index_checkpoint_door;
+#[path = "cold_index_custody.rs"]
+mod cold_index_custody;
+#[path = "cold_index_fixture.rs"]
+mod cold_index_fixture;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
 #[path = "cold_invariants.rs"]

@@ -162,7 +162,7 @@ pub(super) fn restore(
     runtime.lineage.install_cold_pages(&directory)?;
     runtime
         .indexes
-        .install_cold_checkpoint(directory.clone(), &runtime.history);
+        .install_cold_checkpoint(directory.clone(), &runtime.history)?;
     runtime.durability.checkpoint_selection().restore(directory);
     Ok(())
 }

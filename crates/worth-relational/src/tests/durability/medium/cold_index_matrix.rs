@@ -3,7 +3,7 @@ use super::cold_read_matrix::FAILURES;
 use super::cold_source::ColdRead;
 use super::*;
 use crate::execution::RelationalExecutionDenialCause as Execution;
-use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
+use crate::indexes::data::DerivedIndexId;
 use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailable};
 
 #[derive(Debug, Clone, Copy)]
@@ -167,86 +167,13 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for door in IndexDoor::ALL {
         for (cause, sticky) in FAILURES {
-            let producer = durable_runtime_with_declared_aspect_schema(
-                CascadeDeletePolicy::CascadeDeleteRelations,
-            );
-            let index = producer
-                .index_authority()
-                .register(DerivedIndexDefinition {
-                    index_id: DerivedIndexId(0),
-                    name: "matrix-name".into(),
-                    branch_scoped: true,
-                    kind: DerivedIndexKind::EntityField {
-                        field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-                    },
-                })
-                .index_id;
-            let entity = create_entity(execution, &producer, "matrix-index-value");
-            let branch = crate::history::data::BranchId("main".into());
-            let head = producer.history().branch_head(&branch).unwrap();
-            let built = producer.index_authority().build_for_commit(
-                execution,
-                crate::indexes::data::DerivedIndexBuildRequest {
-                    source_commit_id: head.commit_id,
-                    branch_id: branch.clone(),
-                    index_ids: vec![index],
-                },
-            );
-            assert!(
-                built.failed_indexes.is_empty(),
-                "the actual producer must build this index"
-            );
-            let generation = producer
-                .index_access()
-                .latest_generation(index, &branch)
-                .unwrap();
-            assert_eq!(generation.source_commit_id, head.commit_id);
-            let (recovery, source, entity) = checkpoint_fixture(execution, producer, entity, false);
-            source.damaged.store(false, Ordering::Relaxed);
-            #[derive(serde::Deserialize)]
-            struct Input {
-                manifest: crate::durability::data::RelationalCheckpointManifest,
-            }
-            let manifest = rmp_serde::from_slice::<Input>(
-                recovery
-                    .checkpoint()
-                    .unwrap()
-                    .checkpoint()
-                    .bytes()
-                    .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
-                    .unwrap(),
-            )
-            .unwrap()
-            .manifest;
-            assert!(manifest
-                .index_definitions
-                .iter()
-                .any(|definition| definition.index_id == index));
-            let attachment = TestDurableMedium::new().attachment();
-            for bytes in source.commits.values() {
-                let artifact = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
-                assert!(matches!(
-                    attachment.publish(&artifact),
-                    crate::durability::medium::RelationalDurablePublication::Committed
-                ));
-            }
-            let mut runtime = durable_runtime_with_declared_aspect_schema(
-                CascadeDeletePolicy::CascadeDeleteRelations,
-            );
-            bind_durable_medium(&mut runtime, attachment);
-            let plan = runtime
-                .durability()
-                .recovery_plan_from_source(
-                    execution,
-                    recovery,
-                    RecoveryVerificationMode::NormalRecoveryVerification,
-                )
-                .unwrap();
-            runtime
-                .durability_recovery()
-                .recover(execution, plan)
-                .unwrap();
-            assert_eq!(source.reads.load(Ordering::Relaxed), 0);
+            let fixture = super::cold_index_fixture::reopened(execution);
+            let runtime = fixture.runtime;
+            let source = fixture.source;
+            let entity = fixture.entity;
+            let index = fixture.index;
+            let generation = fixture.generation;
+            let member = fixture.member;
             assert!(runtime
                 .read_truth()
                 .visible_entity_at_version(execution, entity, runtime.current_version_id())
@@ -258,7 +185,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
                 .failures
                 .lock()
                 .unwrap()
-                .insert(ColdRead::Member(manifest.derived_indexes), cause);
+                .insert(ColdRead::Member(member), cause);
             let expected = Execution::StorageUnavailable(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Index(index),
                 cause,
@@ -278,7 +205,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
                     .lock()
                     .unwrap()
                     .iter()
-                    .filter(|member| **member == manifest.derived_indexes)
+                    .filter(|read| **read == member)
                     .count()
             };
             let failed_before = failed_reads();

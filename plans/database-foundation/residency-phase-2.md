@@ -2495,3 +2495,21 @@ passes unchanged in the complete native rerun. Owner lib/tests clippy, line
 caps and agent-context pass. Boundary and composition gates are being recorded.
 Final clean-commit lanes, historical index selection, cold index placement
 custody and the public projection read inventory remain to be closed.
+
+
+### Cold index placement custody
+
+The independent `matrix-index-custody-red.log` court exposes an older directory
+losing its genuine producer index frame after modeled home replacement. A real
+public view pin returns Index(1)/MissingMember. A directory Arc retained no
+placement handle, so the product was wrong. Deferred index installation now
+acquires that exact member's custody without payload I/O and can return its
+typed storage failure during recovery. The image owns the handle while cold,
+including capture and export references, and releases it with the last owner.
+The producer/reopen fixture has one named file shared by the index table and
+custody court; no producer payload or original assertion was replaced.
+`matrix-index-custody-fixed.log` passes all three selected tests, including the
+60-cell index table and actual placement release. One fixture-extraction compile
+error shadowed the selected member with the iterator binding; it is corrected.
+The preceding checkpoint boundary and composition gates also completed green.
+All final clean-commit lanes remain pending.

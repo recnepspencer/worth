@@ -15,6 +15,7 @@ use std::sync::{Arc, Mutex};
 #[derive(Debug)]
 pub(super) struct DeferredIndexImage {
     directory: Arc<RelationalCheckpointDirectory>,
+    _placement: crate::durability::medium::RelationalDurableMemberCustody,
     history: HistorySubsystem,
     admitted: Mutex<Option<Result<Arc<IndexingState>, RelationalStorageUnavailable>>>,
 }
@@ -95,17 +96,34 @@ impl IndexingSubsystem {
         &self,
         directory: Arc<RelationalCheckpointDirectory>,
         history: &HistorySubsystem,
-    ) {
+    ) -> Result<(), RelationalStorageUnavailable> {
+        let placement = directory
+            .source
+            .retain_members(&[directory.manifest.derived_indexes])
+            .map_err(|cause| RelationalStorageUnavailable {
+                subject: RelationalStorageSubject::Index(
+                    directory
+                        .manifest
+                        .index_definitions
+                        .first()
+                        .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
+                            definition.index_id
+                        }),
+                ),
+                cause,
+            })?;
         let mut state = IndexingState::default();
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
+            _placement: placement,
             directory,
             history: history.detached_owner_snapshot(),
             admitted: Mutex::new(None),
         }));
         self.install(state);
+        Ok(())
     }
     pub(crate) fn carried_checkpoint_image(
         &self,
