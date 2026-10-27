@@ -40,14 +40,11 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     };
     let before = decode(&before);
     let after = decode(&after);
-    let before = &before.directory.as_ref().unwrap().manifest;
-    let after = &after.directory.as_ref().unwrap().manifest;
-    // D7 retains abandoned identity frontiers. Only identity metadata changes;
-    // neither dictionary index may acquire an unpublished meaning.
+    // D7 retains abandoned identity frontiers. Decoding authenticates both
+    // dictionary indices; their expanded meaning and commits stay unchanged.
     assert!(after.symbol_identity_frontier > before.symbol_identity_frontier);
-    assert_eq!(before.symbols, after.symbols);
-    assert_eq!(before.symbol_buckets, after.symbol_buckets);
-    assert_eq!(before.commits, after.commits);
+    assert_eq!(before.symbol_table, after.symbol_table);
+    assert_eq!(before.envelopes, after.envelopes);
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");
     let published = capture();
