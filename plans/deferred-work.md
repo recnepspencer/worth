@@ -129,11 +129,13 @@ needs an accelerator.
 Spec: [milestone-9.17.6.3.md](WORTH-query/milestone-9.17.6.3.md), Slice 6.8
 and the isolation-and-reuse requirements.
 
-The Components partitioner, which groups items into islands named by their
-least member, keeps island identity stable under merges, splits and
-least-member removal, and that claim is proven in worth-execution. Query
-plans route items by key only, so no Query declaration reaches islands, and
-Query makes no island claim. Deferred:
+`worth-execution`'s `ComponentPartitioner` groups items into islands routed by
+their least current member. Removing that member changes the routing key;
+this key is not a persistent aggregate identity. Its incremental membership
+and checked runtime maintenance are proven there. Query plans route items by
+key only, so no Query declaration reaches islands, and Query makes no island
+claim. Milestone 9.18.1 Phase 5 must combine that maintenance with Phase 4's
+committed aggregate identity and lineage owner. Deferred:
 
 - a Components plan shape in Query, with its incremental maintenance;
 - the topology entry's differential extended with island merges and splits.
