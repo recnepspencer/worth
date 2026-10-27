@@ -6,6 +6,7 @@ use super::RuntimeWorldOwnerRoot;
 pub enum RuntimeWorldOwnedAsyncRequestAdmissionDenial {
     ForeignOwner,
     RelationalSourceMismatch,
+    NoCommittedSource,
     Bridge(worth_runtime_bridge::facade::BridgeAsyncRequestIdentityRejection),
 }
 
@@ -13,6 +14,7 @@ pub enum RuntimeWorldOwnedAsyncRequestAdmissionDenial {
 pub enum RuntimeWorldOwnedAsyncRevalidationDenial {
     ForeignOwner,
     RelationalSourceMismatch,
+    NoCommittedSource,
     Bridge(worth_runtime_bridge::facade::BridgeAsyncCompletionRejection),
 }
 
@@ -20,6 +22,7 @@ pub enum RuntimeWorldOwnedAsyncRevalidationDenial {
 enum RuntimeWorldOwnedAsyncProductValidationDenial {
     ForeignOwner,
     RelationalSourceMismatch,
+    NoCommittedSource,
 }
 
 impl<D, I, E, Ctx, T> RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -48,6 +51,9 @@ where
                 }
                 RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
                     RuntimeWorldOwnedAsyncRequestAdmissionDenial::RelationalSourceMismatch
+                }
+                RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
+                    RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource
                 }
             })?;
         bridge
@@ -78,6 +84,9 @@ where
                 RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch => {
                     RuntimeWorldOwnedAsyncRevalidationDenial::RelationalSourceMismatch
                 }
+                RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource => {
+                    RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource
+                }
             })?;
         bridge
             .revalidate_owned_async_request(
@@ -102,14 +111,17 @@ where
         if !relational_source.admits_basis(observation.basis().relational_basis()) {
             return Err(RuntimeWorldOwnedAsyncProductValidationDenial::RelationalSourceMismatch);
         }
-        let relational = observation.basis().relational_basis().descriptor();
+        let relational = observation.basis().relational_basis().observation();
+        let commit = relational
+            .commit_id()
+            .ok_or(RuntimeWorldOwnedAsyncProductValidationDenial::NoCommittedSource)?;
         Ok(
             worth_runtime_bridge::facade::BridgeAsyncRequestTruthViewBasis::authoritative(
                 worth_runtime_bridge::facade::TruthBranchIdentity::from_relational_branch_id(
-                    relational.branch_id().0.clone(),
+                    relational.identity().branch_id().0.clone(),
                 ),
                 worth_runtime_bridge::facade::TruthCommitIdentity::from_relational_commit_id(
-                    relational.truth_version().as_u64(),
+                    commit.0,
                 ),
                 relational_source.snapshot_identity().clone(),
             ),

@@ -544,6 +544,17 @@ families that own that projection directly. Supply an effect-free synchronous
 predicate over the declared field dependencies.
 
 
+### Managed asynchronous resources
+
+For asynchronous resources, the lower World/Bridge owner binds each admitted
+request to the exact committed Relational target, including populated forks
+whose branch version is zero. Empty targets return typed `NoCommittedSource`
+before Signal admission. This native repair does not yet provide a managed
+resource entry through Decl/Host; that application integration is required by
+[milestone 9.18.1 Phase 8](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+See [native async source custody](../crates/worth-runtime-world/README.md#owned-async-source-binding)
+and the [internal engine guide](../workspaces/worth-query/crates/worth-query/docs/capabilities/async-resources-and-result-state.md).
+
 ### Graph-read admission in the default Query workspace
 
 `worth-query-admission::integration::review_graph_read_access(requirements, inventory)`

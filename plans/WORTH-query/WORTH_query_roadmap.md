@@ -5751,14 +5751,16 @@ milestone, as defined by the governing 9.18 specification.
 
 **Progress, 2026-10-26:** Phases 1–3 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
-query closure steps and qualified Proprietary history-reader adoption. The
-[Phase 3 closeout](milestone-9.18.1-implementation.md#phase-3-closeout) records
-owner-specific evidence, merged consumer qualification and integration status.
+query closure steps and qualified Proprietary history-reader adoption.
 Phases 4–6 remain unfinished; orbit relations and persistent aggregate identity
 are next. The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
-These additions are not accepted yet and do not reopen the original phases.
+Phase 7 is accepted: the existing World/Bridge request route binds the actual
+native source commit, refuses empty sources before Signal admission and preserves
+request custody through completion and revalidation. Phases 8–11 remain unfinished;
+the application resource endpoint is Phase 8. These additions do not reopen the
+original phases.
 
 ### Goal
 

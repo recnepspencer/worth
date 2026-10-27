@@ -61,6 +61,9 @@ impl WorthQueryRuntime {
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::Bridge(
                     denial,
                 ) => WorthQueryOwnedAsyncRuntimeDenial::Completion(denial),
+                worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource => {
+                    WorthQueryOwnedAsyncRuntimeDenial::NoCommittedSource
+                }
             })
     }
 

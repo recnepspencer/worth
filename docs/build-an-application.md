@@ -1848,6 +1848,14 @@ on it. Its own methods:
 Features, connections, and rules come from `installed_program()`, not from
 discovery.
 
+Managed asynchronous resource requests are still a required
+[9.18.1 Phase 8 integration](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host)
+through Decl/Host. The existing lower World/Bridge path already preserves the
+exact committed source through request admission and revalidation; an empty
+source returns `NoCommittedSource` before creating a Signal request. This source
+binding does not supply an application provider or authorize external completion.
+See [native source and cleanup custody](../crates/worth-runtime-world/README.md#owned-async-source-binding).
+
 ---
 
 ### 4.4 Checkpoint program transitions

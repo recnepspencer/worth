@@ -30,6 +30,18 @@ Async meaning is carried through existing Query surfaces.
 
 ## Stable Entry Points
 
+For the installed owned-request engine path,
+`admit_owned_bridge_async_request` and `revalidate_owned_bridge_async_request`
+delegate source qualification to Runtime World. Its immutable admitted
+Relational reference supplies the exact source commit, even on a populated
+fork whose branch truth version is zero. Empty targets return
+`WorthQueryOwnedAsyncRuntimeDenial::NoCommittedSource` before Signal admission;
+refused revalidation preserves the original request's cleanup custody.
+See the [native source contract](../../../../../../crates/worth-runtime-world/README.md#owned-async-source-binding)
+and [compiled lifecycle courts](../../tests/installed_operating_world/product_owned_async.rs).
+The managed Decl/Host resource endpoint remains the separate Phase 8 requirement
+in [milestone 9.18.1](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
+
 Declaration-side authoring:
 
 - `WorthQueryAsyncDeclarationClause::resource_request(...)`

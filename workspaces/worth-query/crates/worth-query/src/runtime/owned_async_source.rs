@@ -91,6 +91,7 @@ pub enum WorthQueryOwnedAsyncRuntimeDenial {
     ForeignRuntime,
     SuccessorRuntime,
     ProductSelectionMismatch,
+    NoCommittedSource,
     Request(BridgeAsyncRequestIdentityRejection),
     Completion(BridgeAsyncCompletionRejection),
 }
@@ -183,6 +184,9 @@ impl WorthQueryRuntime {
                 worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::Bridge(
                     denial,
                 ) => WorthQueryOwnedAsyncRuntimeDenial::Request(denial),
+                worth_query_execution::facade::integration::RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource => {
+                    WorthQueryOwnedAsyncRuntimeDenial::NoCommittedSource
+                }
             })
     }
 

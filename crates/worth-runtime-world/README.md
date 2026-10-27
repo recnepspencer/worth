@@ -57,6 +57,25 @@ World close does not close component owners.
 See [history](COMPOSITE_HISTORY.md), [publication](COORDINATED_PUBLICATION.md),
 and [retention/recovery](RETENTION_AND_RECOVERY.md) for exact contracts.
 
+## Owned async source binding
+
+`RuntimeWorldOwner::admit_owned_async_request` first checks the World owner and
+the exact retained Bridge source observation. It derives the source commit from
+that admitted Relational observation's immutable reference target. A populated
+fork may have branch truth version zero while still selecting a committed source;
+branch versions and global issuance counters never substitute for that commit.
+Sibling publication and discarded prepared occurrences do not move this binding.
+
+An empty target returns `RuntimeWorldOwnedAsyncRequestAdmissionDenial::NoCommittedSource`
+before Signal request admission. Revalidation has the corresponding
+`RuntimeWorldOwnedAsyncRevalidationDenial::NoCommittedSource`; refusal keeps the
+original request available for completion or retirement. Bridge and Signal own
+the remaining lifecycle, including exact-request completion, timeout/retry and
+cleanup. The grouped
+[owned async court](tests/runtime_world_certification/owned_async.rs) exercises
+the native reference equality, empty/committed twins and active-request release.
+The application resource entry is a separate Query integration contract.
+
 This crate has no Query, Store, persistence, replay, codec or physical-runtime
 dependency. It does not provide durable restart, multi-parent history, rollback,
 or Query public completion. Query already consumes this crate through
