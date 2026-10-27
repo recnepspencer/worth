@@ -27,7 +27,7 @@ fn checkpoint_rejects_later_shared_root_cell_with_relabeled_schema_root() {
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,
-        "durable branch-root image does not match target",
+        "durable branch-root directory does not match target",
     );
 }
 
@@ -52,7 +52,7 @@ fn checkpoint_rejects_later_shared_root_cell_with_relabeled_truth_root() {
     assert_corrupt_recovery_leaves_no_recovered_state(
         execution,
         plan,
-        "durable branch-root image does not match target",
+        "durable branch-root directory does not match target",
     );
 }
 
