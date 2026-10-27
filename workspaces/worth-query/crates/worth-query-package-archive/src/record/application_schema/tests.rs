@@ -5,6 +5,7 @@ mod correction_binding;
 mod derived_relation;
 mod fixture;
 mod history;
+mod inspection;
 mod invariant;
 mod mutation_description;
 mod operation_body;

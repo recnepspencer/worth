@@ -152,6 +152,9 @@ pub enum ApplicationSchemaMember {
     ApplicationHistoryQuery {
         definition: ErasedApplicationHistoryQueryDefinition,
     },
+    ApplicationQueryInspection {
+        definition: crate::application_query::ErasedApplicationQueryInspectionDefinition,
+    },
     ApplicationCapability {
         contract: ErasedApplicationCapabilityContract,
     },

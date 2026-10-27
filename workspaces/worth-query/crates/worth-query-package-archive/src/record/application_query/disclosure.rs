@@ -84,11 +84,17 @@ fn decode_rule(
     ))
 }
 
+mod inspection;
+
 fn write_selector(
     output: &mut dyn BinaryEncodingSink,
     selector: &ApplicationQueryDisclosureSelector,
 ) -> Result<(), Denial> {
     match selector {
+        ApplicationQueryDisclosureSelector::InspectionMetadata(metadata) => {
+            output.u16(8)?;
+            inspection::write(output, metadata)
+        }
         ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
             output.u16(5)?;
             write_type_identity(output, &metadata.history_identity())?;
@@ -174,6 +180,7 @@ fn decode_selector(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
+        8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
         5 => {
             use worth_query_declaration::facade::application_query::{
                 ApplicationHistoryMetadataFacet as Facet, ApplicationHistoryMetadataMeaning,

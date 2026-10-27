@@ -48,11 +48,15 @@ pub enum ApplicationQueryDisclosureSelector {
         cardinality: ApplicationQueryCardinality,
         output_name: String,
     },
+    InspectionMetadata(super::super::ApplicationQueryInspectionMetadataMeaning),
 }
 
 impl ApplicationQueryDisclosureSelector {
     pub(crate) fn portable_identities_are_valid(&self) -> bool {
         match self {
+            Self::InspectionMetadata(metadata) => {
+                super::super::inspection::validation::binding_is_valid(metadata.binding())
+            }
             Self::HistoryMetadata(metadata) => metadata.history_identity().is_valid(),
             Self::InternalField { .. } => true,
             Self::Components(selection) => {
@@ -89,6 +93,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub fn result_slot_key(&self) -> Option<ApplicationQueryResultSlotKey> {
         match self {
+            Self::InspectionMetadata(metadata) => Some(metadata.slot_key()),
             Self::HistoryMetadata(metadata) => Some(metadata.slot_key()),
             Self::Orbit(orbit) => Some(orbit.slot_key()),
             Self::Components(selection) => Some(selection.slot_key()),
@@ -147,6 +152,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub const fn slot_type(&self) -> &str {
         match self {
+            Self::InspectionMetadata(metadata) => metadata.slot_type(),
             Self::HistoryMetadata(metadata) => metadata.slot_type(),
             Self::Orbit(orbit) => orbit.slot_type(),
             Self::Components(selection) => selection.slot_type(),
@@ -157,6 +163,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub const fn query_type(&self) -> &str {
         match self {
+            Self::InspectionMetadata(metadata) => metadata.query_type(),
             Self::HistoryMetadata(metadata) => metadata.history_type(),
             Self::Orbit(orbit) => orbit.query_type(),
             Self::Components(selection) => selection.query_type(),
@@ -169,6 +176,7 @@ impl ApplicationQueryDisclosureSelector {
 
     pub fn output_name(&self) -> &str {
         match self {
+            Self::InspectionMetadata(metadata) => metadata.facet().name(),
             Self::HistoryMetadata(metadata) => metadata.facet().name(),
             Self::Orbit(orbit) => orbit.output_name(),
             Self::Components(selection) => selection.output_name(),
@@ -194,6 +202,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Relation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
+            | Self::InspectionMetadata(_)
             | Self::Components(_) => None,
         }
     }
@@ -220,6 +229,7 @@ impl ApplicationQueryDisclosureSelector {
             | Self::InternalField { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
+            | Self::InspectionMetadata(_)
             | Self::Components(_) => None,
         }
     }
@@ -235,6 +245,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Relation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
+            | Self::InspectionMetadata(_)
             | Self::Components(_) => None,
         }
     }
@@ -250,6 +261,7 @@ impl ApplicationQueryDisclosureSelector {
             Self::Relation { .. }
             | Self::Orbit(_)
             | Self::HistoryMetadata(_)
+            | Self::InspectionMetadata(_)
             | Self::Components(_) => None,
         }
     }

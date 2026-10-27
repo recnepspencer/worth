@@ -12,6 +12,7 @@ use crate::application_schema::{
 };
 
 mod history;
+mod inspection;
 
 mod components;
 mod influence;

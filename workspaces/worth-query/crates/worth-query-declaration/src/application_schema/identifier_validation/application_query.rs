@@ -147,3 +147,19 @@ fn validate_identifiers<'a>(
     }
     Ok(())
 }
+
+// These metadata definitions validate their own closed portable grammar.
+pub(super) fn validate_metadata(
+    member: &crate::application_schema::ApplicationSchemaMember,
+) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    use crate::application_schema::ApplicationSchemaMember as Member;
+    match member {
+        Member::ApplicationQueryInspection { definition } => definition
+            .validate()
+            .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationQueryInspection),
+        Member::ApplicationHistoryQuery { definition } => definition
+            .validate()
+            .map_err(|_| ApplicationSchemaDeclarationDenial::InvalidApplicationHistoryQuery),
+        _ => unreachable!("metadata identifier routing selects only metadata definitions"),
+    }
+}

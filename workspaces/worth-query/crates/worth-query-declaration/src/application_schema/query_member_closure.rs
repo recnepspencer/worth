@@ -10,6 +10,7 @@ use super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
 mod components;
 mod disclosure;
 mod history;
+mod inspection;
 
 use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
 
@@ -23,7 +24,8 @@ pub(super) fn validate_application_query_members(
         }
         validate_query(definition, members)?;
     }
-    history::validate(members)
+    history::validate(members)?;
+    inspection::validate(members)
 }
 
 fn query_definition(member: &ApplicationSchemaMember) -> Option<&ErasedApplicationQueryDefinition> {

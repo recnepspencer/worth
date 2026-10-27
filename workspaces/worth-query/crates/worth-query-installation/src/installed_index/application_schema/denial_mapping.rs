@@ -75,6 +75,9 @@ pub(super) fn map_compilation_denial(
         ),
         ApplicationSchemaCompilationDenial::Query(denial) => {
             let kind = match denial.kind() {
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InvalidInspectionDefinition => WorthQueryInstalledApplicationSchemaDenialKind::InvalidInspectionDefinition,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InspectionBindingMeaningChanged => WorthQueryInstalledApplicationSchemaDenialKind::InspectionBindingMeaningChanged,
+                crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::InspectionUnavailable => WorthQueryInstalledApplicationSchemaDenialKind::InspectionUnavailable,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEntryBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEntryBudgetExceeded,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalEncodedByteBudgetExceeded => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalEncodedByteBudgetExceeded,
                 crate::application_query::WorthQueryApplicationQueryInstallationDenialKind::CanonicalDigestSlotRejected => WorthQueryInstalledApplicationSchemaDenialKind::CanonicalDigestSlotRejected,

@@ -46,6 +46,10 @@ enum ApplicationQueryResultSlotContract {
         output_name: String,
         cardinality: ApplicationQueryCardinality,
     },
+    InspectionMetadata {
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
+    },
 }
 
 pub(super) struct ApplicationQueryResultFieldSlotContract<'contract> {
@@ -68,6 +72,16 @@ pub(super) struct ApplicationQueryResultRelationSlotContract<'contract> {
 }
 
 impl ApplicationQueryResultSlotKey {
+    pub(super) fn inspection_metadata(
+        binding: super::ApplicationQueryBindingReference,
+        facet: super::ApplicationQueryInspectionMetadataFacet,
+    ) -> Self {
+        Self {
+            query: binding.parts().query.clone(),
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::InspectionMetadata { binding, facet },
+        }
+    }
     pub(super) fn history_metadata(
         history: WorthQueryPortableTypeIdentity,
         facet: super::ApplicationHistoryMetadataFacet,

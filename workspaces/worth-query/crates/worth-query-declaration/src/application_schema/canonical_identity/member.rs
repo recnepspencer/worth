@@ -51,6 +51,7 @@ pub(super) fn append_member(
         }
         ApplicationSchemaMember::ApplicationQuery { .. }
         | ApplicationSchemaMember::ApplicationHistoryQuery { .. }
+        | ApplicationSchemaMember::ApplicationQueryInspection { .. }
         | ApplicationSchemaMember::ApplicationCapability { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContext { .. }
         | ApplicationSchemaMember::ApplicationCapabilityContextEntitySlot { .. }

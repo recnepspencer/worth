@@ -1010,9 +1010,16 @@ crates/worth-runtime-bridge/src/
 worth-query-declaration/src/application_query/
   async_resource/                                           M typed resource meaning
   history/                                                  N target/aspect selection
+  inspection/{definition,metadata,validation}.rs             N exact-binding inspection metadata meaning
+  canonical_basis/inspection.rs                             N portable metadata identity
+  disclosure_contract/inspection.rs                         N typed metadata rules
 worth-query-installation/src/application_query/
   async_resource/                                           M installed declarations
   history/                                                  N schema/disclosure binding
+  inspection.rs                                             N validate exact compiled binding before issuer admission
+worth-query-package-archive/src/record/
+  application_schema/member/inspection.rs                   N additive member45/v1
+  application_query/disclosure/inspection.rs                N additive selector8/v1
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
 worth-query-execution/src/domain_computation/
@@ -1181,6 +1188,31 @@ it does not retain a snapshot reader or operational reentry core. See
 [Native custody](../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody).
 Fresh Host admission, connected producer-chain references and the application
 inspection journey remain required below; this prerequisite does not close Phase 9.
+
+Optional inspection meaning belongs to the existing ordinary query binding:
+`ApplicationQueryInspectionDefinition<Schema, Binding>` takes an explicit metadata
+disclosure contract, and `application_query_inspection` registers that binding's
+actual descriptor. There is no separate inspection marker or string-only binding
+registry. Both the definition and every metadata selector retain the complete
+fourteen-field `ApplicationQueryBindingReference`, including input, result, scope
+and principal meaning. The six closed facets are observation identity, evidence
+links, evidence counts, evidence availability, explanation and diagnostic fields.
+Governed contracts cover every facet exactly once: evidence counts require `Count`
+influence; the other five require `Explanation`. Mixed, duplicate, partial and
+foreign-binding selectors refuse. Public metadata requires an explicit public
+contract without rules; an installed-policy placeholder is insufficient.
+
+Metadata admission is independent of the original payload contract and never
+grants diagnostic field values. The eventual fresh Host issuer must separately
+check the current subject's `DiagnosticMask` before reading those fields, and
+must admit requested metadata before looking up family availability, links or
+counts. Installation validates every definition against the actual compiled
+query-binding catalog, after ordinary query/result, scope, principal and limits
+checks. Until the fresh issuer exists, valid inspection meaning returns typed
+`InspectionUnavailable`; malformed or foreign definitions refuse with their own
+cause before that unavailability outcome. Portable member45/v1 and selector8/v1
+are additive subgrammars and preserve unextended v18 schema identity and bytes;
+unknown versions refuse before payload fields or allocations.
 
 ### Requirements
 

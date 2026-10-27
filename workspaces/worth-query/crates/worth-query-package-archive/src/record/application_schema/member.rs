@@ -13,6 +13,7 @@ mod capability;
 mod component_set;
 mod derived_relation;
 mod history;
+mod inspection;
 mod invariant;
 mod mutation_description;
 mod operation;
@@ -25,6 +26,7 @@ mod vocabulary;
 
 fn require_supported_field_codec(member: &ApplicationSchemaMember) -> Result<(), Denial> {
     projected_member_domain::require_shape(member)?;
+    inspection::require_shape(member)?;
     derived_relation::require_shape(member)?;
     schema::require_supported_field_codec(member)?;
     if let ApplicationSchemaMember::RelationAspect { definition } = member {
@@ -48,6 +50,7 @@ pub(super) fn require_encoding_contract(
         member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ProjectedMemberDomain { .. }
+            | ApplicationSchemaMember::ApplicationQueryInspection { .. }
             | ApplicationSchemaMember::DerivedRelation { .. }
             | ApplicationSchemaMember::ComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
@@ -96,6 +99,9 @@ pub(super) fn write(
         ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
             history::write(output, definition)
         }
+        ApplicationSchemaMember::ApplicationQueryInspection { definition } => {
+            inspection::write(output, definition)
+        }
         ApplicationSchemaMember::RelationAspect { definition } => {
             relation_aspect::write(output, definition)
         }
@@ -139,6 +145,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        45 => inspection::decode(input, budget),
         44 => projected_member_domain::decode(input, budget),
         tag @ 41..=43 => derived_relation::decode(tag, input, budget),
         36 => history::decode(input, budget)
@@ -169,6 +176,7 @@ pub(super) fn decode(
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
+        ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,
         ApplicationSchemaMember::DerivedRelation { .. } => 41,
         ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,

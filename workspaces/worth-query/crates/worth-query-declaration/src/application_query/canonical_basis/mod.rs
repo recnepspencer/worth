@@ -2,6 +2,7 @@ mod definition;
 mod disclosure;
 mod entry;
 mod history;
+mod inspection;
 mod result_shape;
 
 use std::cmp::Ordering;
@@ -14,6 +15,7 @@ use worth_foundational::facade::{
 
 pub(in crate::application_query) use definition::prepare_definition_basis;
 pub(in crate::application_query) use history::prepare_history_basis;
+pub(in crate::application_query) use inspection::prepare_inspection_basis;
 
 pub const APPLICATION_QUERY_DOMAIN: &str = "worth-query.application-query";
 const APPLICATION_QUERY_RULE: &str = "worth-query-application-query-v4";

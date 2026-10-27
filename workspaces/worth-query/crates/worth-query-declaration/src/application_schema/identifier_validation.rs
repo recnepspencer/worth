@@ -182,10 +182,9 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::ApplicationQuery { definition } => {
                 application_query::validate(definition)?;
             }
-            ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
-                definition.validate().map_err(|_| {
-                    ApplicationSchemaDeclarationDenial::InvalidApplicationHistoryQuery
-                })?;
+            ApplicationSchemaMember::ApplicationQueryInspection { .. }
+            | ApplicationSchemaMember::ApplicationHistoryQuery { .. } => {
+                application_query::validate_metadata(member)?;
             }
             ApplicationSchemaMember::RelationAspect { definition } => {
                 definition.validate().map_err(|_| {

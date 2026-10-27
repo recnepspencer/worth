@@ -10,6 +10,7 @@ pub(crate) mod history;
 pub use history::{
     WorthQueryApplicationHistoryInstallationDenial, WorthQueryInstalledApplicationHistoryQuery,
 };
+mod inspection;
 mod installed_binding;
 mod installed_contract;
 mod live_contract;

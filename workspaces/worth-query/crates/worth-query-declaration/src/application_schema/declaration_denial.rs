@@ -33,6 +33,9 @@ pub enum ApplicationSchemaDeclarationDenial {
     InvalidApplicationHistoryQuery,
     MissingApplicationHistoryDependency,
     DuplicateApplicationHistoryQuery,
+    InvalidApplicationQueryInspection,
+    MissingApplicationQueryInspectionDependency,
+    DuplicateApplicationQueryInspection,
     InvalidApplicationRelationAspect,
     InvalidApplicationDerivedRelation {
         relation: String,

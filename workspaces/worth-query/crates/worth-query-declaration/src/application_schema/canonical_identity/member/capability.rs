@@ -10,6 +10,14 @@ pub(super) fn append_capability_member(
     member: &ApplicationSchemaMember,
 ) {
     match member {
+        ApplicationSchemaMember::ApplicationQueryInspection { definition } => {
+            basis.text(format!("{prefix}.kind"), "application-query-inspection");
+            basis.extend_embedded(
+                definition.canonical_basis().basis(),
+                &format!("{prefix}.inspection-meaning"),
+                CanonicalBasisEntryKind::Identity,
+            );
+        }
         ApplicationSchemaMember::ApplicationHistoryQuery { definition } => {
             basis.text(format!("{prefix}.kind"), "application-history-query");
             basis.extend_embedded(

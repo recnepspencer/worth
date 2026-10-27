@@ -15,6 +15,7 @@ mod disclosure_contract;
 mod erased_definition;
 mod expression_snapshot;
 mod history;
+mod inspection;
 mod lane_eligibility;
 mod live_cause;
 mod marker_identity;
@@ -74,6 +75,12 @@ pub use history::{
     ApplicationHistoryQueryDefinitionBuilder, ApplicationHistoryQueryDefinitionDenial,
     ApplicationHistoryTarget, ErasedApplicationHistoryQueryDefinition,
     WorthQueryPortableApplicationHistoryQueryParts,
+};
+pub use inspection::{
+    ApplicationQueryInspectionDefinition, ApplicationQueryInspectionDefinitionDenial,
+    ApplicationQueryInspectionMetadataFacet, ApplicationQueryInspectionMetadataMeaning,
+    ApplicationQueryInspectionMetadataRef, ErasedApplicationQueryInspectionDefinition,
+    WorthQueryPortableApplicationQueryInspectionParts,
 };
 pub use lane_eligibility::ApplicationQueryLaneEligibility;
 pub use live_cause::{

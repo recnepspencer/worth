@@ -37,7 +37,7 @@ impl ApplicationQueryBindingReference {
     pub fn from_untrusted_parts(parts: ApplicationQueryBindingReferenceParts) -> Self {
         Self { parts }
     }
-    pub fn parts(&self) -> &ApplicationQueryBindingReferenceParts {
+    pub const fn parts(&self) -> &ApplicationQueryBindingReferenceParts {
         &self.parts
     }
 
