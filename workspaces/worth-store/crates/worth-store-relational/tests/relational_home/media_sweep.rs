@@ -117,8 +117,7 @@ impl SeedSweep {
                     .expect("the measured commit");
             }
             Target::Checkpoint(_) => {
-                home.checkpoint(&execution)
-                    .expect("the measured checkpoint");
+                home.checkpoint(execution).expect("the measured checkpoint");
             }
             Target::BranchTransition(index) => {
                 self.script.steps[index]

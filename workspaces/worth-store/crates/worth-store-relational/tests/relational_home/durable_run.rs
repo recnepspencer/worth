@@ -92,7 +92,7 @@ pub(crate) fn apply(
                 acknowledged += 1;
             }
             Step::Checkpoint => {
-                home.checkpoint(&execution).expect("home checkpoint");
+                home.checkpoint(execution).expect("home checkpoint");
             }
             _ => step
                 .lifecycle(home.runtime(), execution)

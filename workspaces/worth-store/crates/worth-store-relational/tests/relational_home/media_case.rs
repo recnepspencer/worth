@@ -90,7 +90,7 @@ pub(crate) fn run_case(
             (ended, acknowledged, in_flight, vec![checkpoint_before])
         }
         Target::Checkpoint(_) => {
-            let outcome = home.checkpoint(&execution);
+            let outcome = home.checkpoint(execution);
             assert!(
                 activations[0].is_consumed(),
                 "{case}: the fault did not fire"
