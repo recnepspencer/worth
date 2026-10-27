@@ -12,6 +12,12 @@ use worth_store::physical_runtime::{
 
 #[test]
 fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
+    let request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&request);
     let directory = tempfile::tempdir().unwrap();
     let serving = Arc::new(
         crate::physical_store::initialize(
