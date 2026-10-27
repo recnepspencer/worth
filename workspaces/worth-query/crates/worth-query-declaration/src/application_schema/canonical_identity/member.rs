@@ -41,6 +41,7 @@ pub(super) fn append_member(
             capability::append_capability_member(basis, &prefix, member)
         }
         ApplicationSchemaMember::Operation { .. }
+        | ApplicationSchemaMember::OperationComponentRead { .. }
         | ApplicationSchemaMember::OperationProgram { .. }
         | ApplicationSchemaMember::OperationDecisionRead { .. }
         | ApplicationSchemaMember::OperationMutationPrecondition { .. }

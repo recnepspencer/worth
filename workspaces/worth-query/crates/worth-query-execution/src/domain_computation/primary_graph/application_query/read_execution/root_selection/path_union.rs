@@ -43,7 +43,7 @@ pub(super) fn select_root_path_union(
     let mut roots = BTreeMap::new();
     let mut set_source = capture_result_set.then(RootPathSourceBuilder::default);
     if let Some(source) = &mut set_source {
-        source.observe_entity(execution, plan.root)?;
+        source.observe_entity(plan.root);
     }
     for (path_index, path) in paths.iter().enumerate() {
         let terminal = traverse_path(
@@ -58,36 +58,26 @@ pub(super) fn select_root_path_union(
             &mut set_source,
         )?;
         for (root, source) in terminal {
-            if !roots.contains_key(&root) {
-                work.admit_root_entry::<RootPathSourceBuilder>(execution, roots.len())?;
-            }
             roots.entry(root).or_insert(source);
         }
     }
     if let Some(set_source) = &mut set_source {
         for source in roots.values() {
             for entity in source.entities() {
-                if set_source.observe_entity(execution, entity)? {
+                if set_source.observe_entity(entity) {
                     work.charge_source_copy(1, plan.name)?;
                 }
             }
         }
     }
-    work.admit_candidates(execution, roots.len())?;
     let candidates = roots.keys().copied().collect();
-    let result_set_source = set_source
-        .map(|source| source.finish(execution))
-        .transpose()?;
+    let result_set_source = set_source.map(|source| source.finish()).transpose()?;
     let root_path_source = if roots.is_empty() {
         None
     } else {
         let mut sources = BTreeMap::new();
-        for (root, mut source) in roots {
-            if let Some(allocation) = &work.source_allocation {
-                source.protect(execution, allocation)?;
-            }
-            work.admit_root_entry::<std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::WorthQueryObservedRootSelection>>(execution, sources.len())?;
-            sources.insert(root, source.finish(execution)?);
+        for (root, source) in roots {
+            sources.insert(root, source.finish()?);
         }
         Some(sources)
     };
@@ -102,7 +92,6 @@ pub(super) fn select_root_path_union(
         predicate_index_generation: None,
         reads: work.reads,
         root_path_steps: work.take_steps(),
-        _source_allocation: work.source_allocation.clone(),
     })
 }
 
@@ -118,12 +107,8 @@ fn traverse_path(
     set_source: &mut Option<RootPathSourceBuilder>,
 ) -> Result<BTreeMap<EntityId, RootPathSourceBuilder>, WorthQueryApplicationReadExecutionDenial> {
     let mut seed = RootPathSourceBuilder::default();
-    if let Some(allocation) = &work.source_allocation {
-        seed.protect(execution, allocation)?;
-    }
-    seed.observe_entity(execution, plan.root)?;
+    seed.observe_entity(plan.root);
     let mut frontier = BTreeMap::new();
-    work.admit_root_entry::<RootPathSourceBuilder>(execution, 0)?;
     frontier.insert(plan.root, seed);
     apply_guards(
         execution,
@@ -183,7 +168,7 @@ fn traverse_path(
                     work,
                 )?;
                 if let Some(set_source) = set_source
-                    && set_source.record_adjacency(execution, observed)?
+                    && set_source.record_adjacency(observed)
                 {
                     work.charge_source_copy(1, step.relation())?;
                 }
@@ -238,10 +223,8 @@ fn traverse_path(
                     .get(&anchor)
                     .ok_or_else(|| traversal_denial(step.relation()))?;
                 work.charge_source_copy(predecessor.copy_cost(), step.relation())?;
-                work.admit_root_entry::<RootPathSourceBuilder>(execution, next.len())?;
-                let mut source =
-                    predecessor.copy_for_step(execution, work.source_allocation.as_ref())?;
-                source.observe_entity(execution, endpoint)?;
+                let mut source = predecessor.clone();
+                source.observe_entity(endpoint);
                 next.insert(endpoint, source);
             }
             next

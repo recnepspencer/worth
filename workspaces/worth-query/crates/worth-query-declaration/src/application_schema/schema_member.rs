@@ -108,6 +108,9 @@ pub enum ApplicationSchemaMember {
     ComponentSet {
         definition: super::ApplicationComponentSetMeaning,
     },
+    OperationComponentRead {
+        definition: super::ApplicationOperationComponentReadMeaning,
+    },
     PrincipalBinding {
         binding: String,
         mapping_entity: String,

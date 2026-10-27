@@ -17,11 +17,14 @@ pub(super) fn validate_member_identity_uniqueness(
     let mut provenance_types = BTreeSet::<&WorthQueryPortableTypeIdentity>::new();
     let mut invariants = BTreeSet::new();
     let mut component_sets = BTreeSet::new();
+    let mut component_reads = BTreeSet::new();
     for member in members {
         let duplicate = match member {
             ApplicationSchemaMember::ComponentSet { definition } => {
                 !component_sets.insert(definition.name())
             }
+            ApplicationSchemaMember::OperationComponentRead { definition } => !component_reads
+                .insert((definition.operation(), definition.set(), definition.root())),
             ApplicationSchemaMember::ApplicationMutation { description } => {
                 !mutations.insert(description.binding_identity())
             }

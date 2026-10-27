@@ -1,3 +1,4 @@
+mod component_scope;
 mod fixture;
 mod operation_body;
 

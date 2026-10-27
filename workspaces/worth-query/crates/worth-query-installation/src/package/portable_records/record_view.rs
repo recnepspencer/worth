@@ -46,6 +46,9 @@ impl WorthQueryPortableApplicationOperationContractRecord {
         let mut targets = Vec::new();
         for read in self.graph_reads() {
             match read {
+                // Component scope has its own installed grant and original
+                // selection evidence. It is never an atomic relation target.
+                WorthQueryPortableOperationGraphReadScope::Components { .. } => {}
                 WorthQueryPortableOperationGraphReadScope::Entity { entity, .. } => {
                     targets.push(ApplicationOperationDecisionReadTarget::Entity {
                         entity: entity.clone(),

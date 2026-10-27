@@ -115,10 +115,6 @@ pub(super) fn advance(
             step_reads,
             step.relation(),
         )?;
-        let allocation = work.activate_source_allocation(execution)?;
-        if let Some(source) = &mut *set_source {
-            source.protect(execution, &allocation)?;
-        }
         let prior = frontier
             .first_key_value()
             .and_then(|(_, source)| source.walks());
@@ -152,10 +148,8 @@ pub(super) fn advance(
                 return Err(traversal_denial(step.relation()));
             }
             work.charge_source_copy(predecessor.copy_cost() + 1, step.relation())?;
-            work.admit_root_entry::<RootPathSourceBuilder>(execution, next.len())?;
-            let mut source =
-                predecessor.copy_for_step(execution, work.source_allocation.as_ref())?;
-            source.observe_entity(execution, visit.entity.entity_id)?;
+            let mut source = predecessor.clone();
+            source.observe_entity(visit.entity.entity_id);
             source.set_walks(Arc::clone(&dependencies));
             next.insert(visit.entity.entity_id, source);
         }

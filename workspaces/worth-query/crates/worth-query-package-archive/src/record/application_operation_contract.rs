@@ -38,6 +38,11 @@ pub(super) fn payload_encoding_work(
     limits: WorthQueryPackageArchiveLimits,
 ) -> Result<RecordPayloadEncodingWork, Denial> {
     let limits = limits.narrowed();
+    if record.graph_reads().iter().any(|scope| matches!(scope,
+        worth_query_installation::facade::WorthQueryPortableOperationGraphReadScope::Components { .. }))
+    {
+        super::operation_component_read::require_nesting_depth(limits.maximum_nesting_depth())?;
+    }
     if let Some(body) = record.body() {
         super::operation_body::require_nesting_depth(body, limits.maximum_nesting_depth())?;
     }

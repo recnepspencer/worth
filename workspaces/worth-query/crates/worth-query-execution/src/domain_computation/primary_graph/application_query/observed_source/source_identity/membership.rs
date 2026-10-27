@@ -232,11 +232,12 @@ mod tests {
             entities: vec![entity(1)],
             aspects: Vec::new(),
             root_selection: Some(Arc::new(WorthQueryObservedRootSelection::new(
-                vec![entity(1)],
-                Vec::new(),
-                vec![adjacency.clone()],
-                None,
-                None,
+                crate::domain_computation::primary_graph::source_facts::SourceFacts {
+                    entities: vec![entity(1)],
+                    aspects: Vec::new(),
+                    adjacencies: vec![adjacency.clone()],
+                    walks: None,
+                },
                 None,
             ))),
             adjacencies: vec![adjacency],

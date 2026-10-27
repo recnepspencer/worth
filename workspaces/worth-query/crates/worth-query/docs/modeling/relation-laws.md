@@ -164,7 +164,7 @@ and order together; member fields keep their own disclosure rules. An omitted
 orbit slot refuses before group selection. Filtering, root-path unions,
 explicit ordering, continuation and live lanes cannot turn a complete orbit
 into a partial answer. Row and result-set sources retain the original Native
-aggregate and complete walk; portable record grammar 17 preserves this meaning
+aggregate and complete walk; portable record grammar 18 preserves this meaning
 and refuses older record grammars.
 
 Privileged snapshot projections can inspect a retained name with
@@ -239,6 +239,28 @@ meaning; changing the source roster selects a different definition.
 
 The compiled [installation courts](../../../worth-query-execution/src/domain_computation/primary_graph/schema_layout/aggregate_identity/tests/components.rs)
 exercise this typed builder and the shared Native storage boundary.
+
+### Operation Component Scope Declarations
+
+`schema.operation_component_read(ApplicationOperationComponentReadDefinition::new(
+operation_ref, set_ref, path))` declares a complete union of typed paths from an
+operation's mutation scope to component members. Add paths with `.also_path(path)`.
+The set marker must implement `OperationReads<Operation>`. Authoring sorts and
+deduplicates the union; fresh portable admission refuses a raw duplicate or
+unordered union, missing operation/set, wrong mutation root, inconsistent path
+endpoints or a guard outside the actual field/type inventory. A zero-step path
+selects the admitted root itself when root and member kinds agree.
+
+This is installed descriptive scope meaning, separate from Native component
+identity. It changes canonical schema/operation meaning and uses record grammar
+18 member tag 40 and operation graph scope tag 4. Restoring a contract recomputes
+the actual schema's expected operation closure; a portable scope alone grants
+no permission. Atomic entity/field/relation reads cannot consume this grant.
+
+The [mutation-scope declaration tests](../../../worth-query-declaration/src/application_operation/binding/tests/component_scope.rs)
+exercise typed authoring and fresh schema admission using a real mutation
+binding. Runtime scoped component selection, tracked decisions and counts remain
+unfinished; this declaration does not expose them yet.
 
 ### Privileged Component Inspection
 

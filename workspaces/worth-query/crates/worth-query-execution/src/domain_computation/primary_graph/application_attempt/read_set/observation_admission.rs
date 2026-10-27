@@ -152,6 +152,7 @@ pub(super) fn graph_reads_exactly_cover_fact_keys<'key>(
     let mut expected = 0usize;
     for scope in contract.roles().iter().flat_map(|role| role.read_scopes()) {
         let atomic_count = match scope {
+            WorthQueryOperationGraphReadScope::Components(_) => return false,
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => 1,
             WorthQueryOperationGraphReadScope::NativeProjection(scope) => {

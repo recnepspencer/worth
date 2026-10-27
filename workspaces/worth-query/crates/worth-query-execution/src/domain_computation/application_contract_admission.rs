@@ -84,6 +84,7 @@ fn installed_atomic_read_count(contract: &WorthQueryOperationGraphReadContract) 
         .iter()
         .flat_map(|role| role.read_scopes())
         .try_fold(0usize, |count, scope| match scope {
+            WorthQueryOperationGraphReadScope::Components(_) => None,
             WorthQueryOperationGraphReadScope::Entity(_)
             | WorthQueryOperationGraphReadScope::Relation(_) => count.checked_add(1),
             WorthQueryOperationGraphReadScope::NativeProjection(scope) => {

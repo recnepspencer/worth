@@ -133,20 +133,9 @@ fn validate_result_and_root_selection(
     }
     if definition.root_paths().iter().any(|path| {
         path.steps().is_empty()
-            || path.steps().iter().any(|step| {
-                step.traversal() == super::ApplicationQueryRootPathTraversal::Closure
-                    && step.from() != step.to()
-            })
+            || !path.is_well_formed()
             || path.start_entity() != definition.scope_entity()
             || path.terminal_entity() != definition.root_entity()
-            || path
-                .steps()
-                .windows(2)
-                .any(|pair| pair[0].child_entity() != pair[1].parent_entity())
-            || path.guards().iter().any(|guard| {
-                guard.after_step() > path.steps().len()
-                    || root_path_entity_after_step(path, guard.after_step()) != Some(guard.entity())
-            })
     }) {
         return Err(ApplicationQueryDefinitionDenial::InvalidRootPath);
     }
@@ -230,19 +219,6 @@ fn validate_ordering(
         }
     }
     Ok(())
-}
-
-fn root_path_entity_after_step(
-    path: &super::ApplicationQueryRootPathMeaning,
-    after_step: usize,
-) -> Option<&str> {
-    if after_step == 0 {
-        Some(path.start_entity())
-    } else {
-        path.steps()
-            .get(after_step - 1)
-            .map(super::ApplicationQueryRootPathStep::child_entity)
-    }
 }
 
 fn validate_live_cause(

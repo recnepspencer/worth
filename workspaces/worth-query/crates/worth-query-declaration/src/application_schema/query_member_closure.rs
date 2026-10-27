@@ -1,7 +1,5 @@
 use std::collections::BTreeSet;
 
-use worth_foundational::facade::ScalarAspectType;
-
 use crate::application_query::{
     ApplicationQueryAuthorizationRequirement, ApplicationQueryResultShape,
     ApplicationQueryResultTraversalDirection, ErasedApplicationQueryDefinition,
@@ -10,6 +8,7 @@ use crate::application_query::{
 use super::{ApplicationSchemaDeclarationDenial, ApplicationSchemaMember};
 
 mod disclosure;
+use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
 
 pub(super) fn validate_application_query_members(
     members: &[ApplicationSchemaMember],
@@ -77,21 +76,7 @@ fn validate_root_selection(
         path.start_entity() != definition.scope_entity()
             || path.terminal_entity() != definition.root_entity()
             || path.steps().is_empty()
-            || path
-                .steps()
-                .iter()
-                .any(|step| !relation_exists(members, step.relation(), step.from(), step.to()))
-            || path.guards().iter().any(|guard| {
-                !field_matches(
-                    members,
-                    guard.entity(),
-                    guard.aspect(),
-                    guard.field(),
-                    guard.scalar_family(),
-                    Some(guard.value_type()),
-                    true,
-                )
-            })
+            || !super::root_path_closure::is_closed(path, members)
     }) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidApplicationQuery);
     }
@@ -268,60 +253,6 @@ fn relation_shape_endpoints_match(
             relation.to() == parent.root_entity() && relation.from() == child.root_entity()
         }
     }
-}
-
-fn entity_exists(members: &[ApplicationSchemaMember], expected: &str) -> bool {
-    members.iter().any(
-        |member| matches!(member, ApplicationSchemaMember::Entity { entity } if entity == expected),
-    )
-}
-
-#[allow(clippy::too_many_arguments)]
-fn field_matches(
-    members: &[ApplicationSchemaMember],
-    expected_entity: &str,
-    expected_aspect: &str,
-    expected_field: &str,
-    expected_scalar: ScalarAspectType,
-    expected_value_type: Option<&str>,
-    equality_required: bool,
-) -> bool {
-    members.iter().any(|member| {
-        matches!(
-            member,
-            ApplicationSchemaMember::Field {
-                entity,
-                aspect,
-                field,
-                scalar_family,
-                value_type,
-                equality_queryable,
-                ..
-            } if entity == expected_entity
-                && aspect == expected_aspect
-                && field == expected_field
-                && *scalar_family == expected_scalar
-                && expected_value_type.is_none_or(|expected| value_type == expected)
-                && (!equality_required || *equality_queryable)
-        )
-    })
-}
-
-fn relation_exists(
-    members: &[ApplicationSchemaMember],
-    expected_relation: &str,
-    expected_from: &str,
-    expected_to: &str,
-) -> bool {
-    members.iter().any(|member| {
-        matches!(
-            member,
-            ApplicationSchemaMember::Relation { relation, from, to, .. }
-                if relation == expected_relation
-                    && from == expected_from
-                    && to == expected_to
-        )
-    })
 }
 
 #[cfg(test)]

@@ -1,5 +1,7 @@
+mod canonical_record;
 mod guard;
 mod path;
+mod path_validation;
 
 pub use guard::{
     ApplicationQueryRootPathGuard, WorthQueryPortableApplicationQueryRootPathGuardParts,

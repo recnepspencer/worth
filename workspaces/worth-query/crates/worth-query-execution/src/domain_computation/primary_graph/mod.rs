@@ -49,6 +49,7 @@ mod live_delivery;
 mod managed_bridge;
 mod merge_unique_values;
 mod read_observation;
+mod source_facts;
 mod source_read_equivalence;
 mod source_read_verification;
 mod structural_walk;

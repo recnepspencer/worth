@@ -25,6 +25,12 @@ pub(super) fn require_encoding_contract(
     schema::require_supported_field_codec(member)?;
     if matches!(
         member,
+        ApplicationSchemaMember::OperationComponentRead { .. }
+    ) {
+        super::super::operation_component_read::require_nesting_depth(maximum_depth)?;
+    }
+    if matches!(
+        member,
         ApplicationSchemaMember::ApplicationInvariant { .. }
             | ApplicationSchemaMember::ComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
@@ -53,6 +59,9 @@ pub(super) fn write(
     schema::require_supported_field_codec(member)?;
     output.u16(member_tag(member))?;
     match member {
+        ApplicationSchemaMember::OperationComponentRead { definition } => {
+            super::super::operation_component_read::write(output, definition)
+        }
         ApplicationSchemaMember::ComponentSet { definition } => {
             component_set::write(output, definition)
         }
@@ -99,6 +108,9 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        40 => Ok(ApplicationSchemaMember::OperationComponentRead {
+            definition: super::super::operation_component_read::decode(input, budget)?,
+        }),
         38 => component_set::decode(input, budget),
         tag @ 1..=5 | tag @ 25..=26 => schema::decode(tag, input, budget),
         tag @ 6..=10 | tag @ 33 => capability::decode(tag, input, budget),
@@ -119,6 +131,7 @@ pub(super) fn decode(
 
 pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
     match member {
+        ApplicationSchemaMember::OperationComponentRead { .. } => 40,
         ApplicationSchemaMember::ComponentSet { .. } => 38,
         ApplicationSchemaMember::ApplicationMutation { .. } => 31,
         ApplicationSchemaMember::ApplicationInvariant { maximum_work_units: None, .. } => 34,

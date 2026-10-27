@@ -1,4 +1,6 @@
+mod component_scope;
 mod contract;
+pub use component_scope::WorthQueryOperationComponentReadScope;
 mod native_projection;
 mod role;
 mod scope;

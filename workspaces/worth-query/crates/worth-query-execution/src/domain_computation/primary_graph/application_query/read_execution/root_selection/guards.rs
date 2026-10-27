@@ -60,7 +60,7 @@ pub(super) fn apply_guards(
                 work,
             )?;
             if let Some(set_source) = &mut *set_source
-                && set_source.record_field(execution, observed)?
+                && set_source.record_field(observed)
             {
                 work.charge_source_copy(1, guard.field().as_str())?;
             }

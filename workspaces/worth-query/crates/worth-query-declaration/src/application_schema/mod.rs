@@ -42,6 +42,7 @@ mod mutation_description_validation;
 mod mutation_intent_traits;
 mod mutation_precondition;
 mod mutation_precondition_authoring;
+mod operation_component_read;
 mod operation_contract_cardinality;
 mod operation_definition;
 mod operation_marker_identity;
@@ -55,9 +56,11 @@ mod query_member_closure;
 mod read_authoring;
 mod references;
 mod relation_integrity;
+mod root_path_closure;
 pub(crate) use relation_integrity::ApplicationRelationLawMeaning;
 mod schema_identity;
 mod schema_member;
+mod schema_read_closure;
 mod shape;
 mod signing_provenance;
 mod signing_supersession;
@@ -178,6 +181,10 @@ pub use mutation_authoring::{
 pub use mutation_precondition::{
     ApplicationMutationPreconditionFamily, ApplicationMutationPreconditionTarget,
     TypedMutationPrecondition, TypedMutationPreconditions,
+};
+pub use operation_component_read::{
+    ApplicationOperationComponentReadDefinition, ApplicationOperationComponentReadMeaning,
+    WorthQueryPortableOperationComponentReadParts,
 };
 pub use operation_definition::{
     ApplicationOperationBody, ApplicationOperationBodyAuthoringDenial,

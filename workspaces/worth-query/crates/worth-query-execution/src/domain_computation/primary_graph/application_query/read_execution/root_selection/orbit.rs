@@ -123,7 +123,7 @@ pub(super) fn select(
             return Err(traversal_denial(subject));
         }
         let mut source = RootPathSourceBuilder::default();
-        source.observe_entity(execution, plan.root)?;
+        source.observe_entity(plan.root);
         source.set_walks(
             StructuralWalkDependencies::append(None, &walk, execution, context)
                 .map_err(|cause| super::super::denial::relational_read_denial(cause, subject))?,
@@ -133,7 +133,7 @@ pub(super) fn select(
             aggregate: Arc::clone(&aggregate),
             binding: plan.binding.clone(),
         });
-        let source = source.finish(execution)?;
+        let source = source.finish()?;
         let count = walk.native().visits().len();
         let mut candidates = Vec::new();
         candidates.try_reserve_exact(count).map_err(|_| {
@@ -163,7 +163,6 @@ pub(super) fn select(
             predicate_index_generation: None,
             reads: work.reads,
             root_path_steps: None,
-            _source_allocation: None,
         })
     });
     // The outer execution handoff can itself refuse a nested callback stop.
