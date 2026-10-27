@@ -11,6 +11,8 @@ pub(super) struct IndexFixture {
     pub(super) index: DerivedIndexId,
     pub(super) generation: Arc<DerivedIndexGeneration>,
     pub(super) member: RelationalDurableMemberLocator,
+    pub(super) manifest: crate::durability::data::RelationalCheckpointManifest,
+    pub(super) history_symbol: Option<crate::symbols::data::Symbol>,
 }
 pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) -> IndexFixture {
     reopened_with_source(execution, |source| source)
@@ -18,6 +20,18 @@ pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) ->
 pub(super) fn reopened_with_source(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     wrap: impl FnOnce(Arc<MemberSource>) -> Arc<dyn RelationalDurableColdSource>,
+) -> IndexFixture {
+    reopened_shape(execution, wrap, false)
+}
+pub(super) fn reopened_historical(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> IndexFixture {
+    reopened_shape(execution, |source| source, true)
+}
+fn reopened_shape(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    wrap: impl FnOnce(Arc<MemberSource>) -> Arc<dyn RelationalDurableColdSource>,
+    historical: bool,
 ) -> IndexFixture {
     let producer =
         durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
@@ -32,7 +46,35 @@ pub(super) fn reopened_with_source(
             },
         })
         .index_id;
-    let entity = create_entity(execution, &producer, "matrix-index-value");
+    let (entity, history_symbol, _retained_history) = if historical {
+        use super::cold_symbols::view_levels::{admit_population, publish_text, TextMutation};
+        admit_population(execution, &producer);
+        let (entity, before) = publish_text(
+            execution,
+            &producer,
+            TextMutation::Create,
+            "paged-view-value-0300",
+        );
+        let (_, source) = publish_text(
+            execution,
+            &producer,
+            TextMutation::Update(entity),
+            "paged-view-value-0600",
+        );
+        let symbol = producer
+            .services
+            .symbols
+            .interner_snapshot()
+            .symbol("paged-view-value-0300")
+            .unwrap();
+        (entity, Some(symbol), Some((before, source)))
+    } else {
+        (
+            create_entity(execution, &producer, "matrix-index-value"),
+            None,
+            None,
+        )
+    };
     let branch = crate::history::data::BranchId("main".into());
     let head = producer.history().branch_head(&branch).unwrap();
     let built = producer.index_authority().build_for_commit(
@@ -53,6 +95,9 @@ pub(super) fn reopened_with_source(
         .unwrap()
         .unwrap();
     assert_eq!(generation.source_commit_id, head.commit_id);
+    if historical {
+        update_entity_and_release_snapshot(execution, &producer, entity, "matrix-index-after");
+    }
     let (recovery, source, entity) = checkpoint_fixture(execution, producer, entity, false);
     source.damaged.store(false, Ordering::Relaxed);
     #[derive(serde::Deserialize)]
@@ -111,5 +156,7 @@ pub(super) fn reopened_with_source(
         index,
         generation,
         member: manifest.derived_indexes,
+        manifest,
+        history_symbol,
     }
 }

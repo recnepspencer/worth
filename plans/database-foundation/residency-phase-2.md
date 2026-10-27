@@ -2915,3 +2915,44 @@ scan errors; the moved seed court retains its single causal scenario. Focused
 Query currency execution passes five tests (1,939 filtered), and boundary-check
 passes. An extraction-script assertion initially had a Python variable typo and
 made no source edits; it was corrected before the named module cutover.
+
+### Next matrix slice: historical index reconstruction
+
+Boundary review verified IndexBuildProjection::select: old versions use
+HistoricalVisibilityBasis. That basis first selects an exact retained root and
+may instead select a later root that covers the retained MVCC interval. Both
+are valid; the index must filter at the requested version and demand Full.
+Source commit identity/branch comes from the commit index, so the envelope body
+is not required merely to select the build. This is different from requiring
+all builds to load a journal body.
+
+Plan: extend the actual index producer fixture with an older generation, later
+current value and real history-only/current symbolic values on distinct pages.
+Reuse the existing admitted-text fixture publisher, not a forged symbol table.
+Locate the actual selected root's member placements from metadata, then inject
+Head, history, history-only symbols, derived image and unused source envelope
+classes. Compare rebuilt entries with the memory producer's generation made
+before the later write, so ignoring version filtering fails. First prove the
+positive fixture and cold historical symbol/envelope preconditions, then run
+six-class cells with journal/offers/reservations, per-subject stickiness and
+retry checks. Envelope faults are an untouched-subject positive when metadata
+suffices. Do not assume that a historical basis always owns an older root.
+
+Historical index reconstruction verification passes: both focused courts,
+including all 30 cells (24 refusals plus six unused-envelope positives), and the
+full native library (2,008 passed, 31 ignored). The earlier generation's entries
+survive a later current write and Full demand admits the genuine history-only
+text page. Source metadata selection performs zero member I/O. The old envelope
+body remains cold with every failure class armed, because commit-index metadata
+is sufficient. Refusals preserve journal frontier, offers and position
+reservations; per-subject sticky/retry behavior is checked without poisoning
+another subject.
+
+The only lane failure was an unused trait import in the new metadata selector;
+the selected-root accessor is inherent. Removing that import restored clippy.
+Formatting, scoped caps, context and boundary-check pass. Composition scans four
+Rust files with seven advisories and zero errors: each test target selector names
+one failure subject, and the fixture remains one actual producer/capture/reopen
+construction. This slice needed no production change. The matrix inventory is
+2,040 refusal cells and 414 untouched-subject positives; independent-merge and
+tail-recovery expansion and all final clean-tree lanes remain outstanding.

@@ -141,17 +141,7 @@ pub(in super::super) fn reopened(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> ViewFixture {
     let producer = durable_runtime_with_test_schema();
-    let (_, basis) = producer
-        .observe_branch(&producer.main_branch_identity())
-        .unwrap();
-    for index in 0..=600 {
-        let text = format!("paged-view-value-{index:04}");
-        let input = ExecutionImmutableBytes::from_external_bytes(Arc::new(text.as_bytes().into()));
-        producer
-            .admit_field_text(execution, &basis, &input)
-            .unwrap();
-    }
-    drop(basis);
+    admit_population(execution, &producer);
     let (entity, _retained_before_update) = publish_text(
         execution,
         &producer,
@@ -253,12 +243,29 @@ pub(in super::super) fn reopened(
     }
 }
 
-enum TextMutation {
+pub(in super::super) fn admit_population(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    producer: &crate::runtime::RelationalRuntime,
+) {
+    let (_, basis) = producer
+        .observe_branch(&producer.main_branch_identity())
+        .unwrap();
+    for index in 0..=600 {
+        let text = format!("paged-view-value-{index:04}");
+        let input = ExecutionImmutableBytes::from_external_bytes(Arc::new(text.as_bytes().into()));
+        producer
+            .admit_field_text(execution, &basis, &input)
+            .unwrap();
+    }
+    drop(basis);
+}
+
+pub(in super::super) enum TextMutation {
     Create,
     Update(crate::identity::data::EntityId),
 }
 
-fn publish_text(
+pub(in super::super) fn publish_text(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     mutation: TextMutation,

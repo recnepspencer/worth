@@ -23,14 +23,14 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Transaction merge-parent validation | current preparation matrix | must stay untouched | nonhead merge matrix | current preparation matrix | shared bucket matrix | audit pending | audit pending | shared index matrix |
 | Node point/history/aspect/graph/divergence doors | operation Full matrix | operation Full matrix | selected history matrix | operation Full matrix | no interning | lineage matrix | event matrix | no lookup |
 | Cached derived-index use, pin and candidate preparation | operation Full matrix | operation Full matrix | audit pending | operation Full matrix | no interning | no lookup | no lookup | index matrix |
-| Derived-index build/reconstruction | Full read matrix | Full read matrix | metadata receipt only; historical court pending | Full read matrix | no interning | no lookup | no lookup | index matrix |
+| Derived-index build/reconstruction | Full read matrix | Full read matrix | historical Full/source table; envelope metadata suffices | Full read matrix | no interning | no lookup | no lookup | index matrix |
 | Replay envelope access, execution and ancestor receipts | historical snapshot Full guard | historical snapshot Full guard | envelope matrix in checkpoint and tail shapes | guarded snapshot admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 | Historical lineage, selected observations, aspect wrappers, graphs, divergence and exports | operation region guard | operation Full guard | envelope courts | operation symbol guard | node matrix | event matrix, 11 doors | cache subject expansion pending |
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
 lineage node 54, lineage events 66, index cache/build/export/inspection 84, current Head/ID symbol 264, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390: 2,016 refusal cells. Positive current and
+remote invariant Head 18, aspect history 144, nonhead merge 18, projection adjacency 390, historical index 24: 2,040 refusal cells. Positive current and
 remote-invariant unavailable-history families add 150 cells; adjacency adds another 258 untouched-subject positives. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
@@ -39,7 +39,7 @@ reservation tests, the Head type-level historical-access fence, selective
 journal envelope readmission, dictionary directory placement custody, paired
 memory/durable envelope lifetime, complete live index capture/reopen, and the
 two priority regression tests. Recovered tail lifetime is covered in both real journal shapes. Still required:
-index-build/checkpoint cells and the final complete home-oracle lane. The
+independent-merge and tail-recovery class expansion and the final complete home-oracle lane. The
 new real Store-home agreement court passes cold/warm/fully-warmed reads and
 observations retained across commits and checkpoints. The
 final lane inventory and logs will be recorded after these gaps close.
@@ -96,8 +96,8 @@ post-publication optional witness sealing consumes this no-load capability.
 Projection adjacency now has nine explicit doors and both exact/historical
 selection, against anchor and remote Head/history/ID-symbol pages in all six
 failure classes. The 648-cell table contributes 390 typed refusals and 258
-untouched-subject positives. Total refusal inventory is 2,016; positive table
-inventory is 408. Failed admitted reads expose no callbacks, and failed reads
+untouched-subject positives. Total refusal inventory is 2,040; positive table
+inventory is 414. Failed admitted reads expose no callbacks, and failed reads
 advance no journal position or offered artifact count. Sticky page assertions
 measure the failed page itself, preserving region/page damage isolation.
 
@@ -131,3 +131,14 @@ definition with zero further reads. Query's existing certification observer uses
 that explicit cache status, preserving its no-warming claim. Fresh Query currency,
 bootstrap and principal reads propagate typed image failures; a native refresh
 execution failure is no longer flattened into generic index absence.
+
+Historical index reconstruction adds 30 cells: 24 refusals across selected Head,
+history, history-only ID symbols and the index image, plus six unused-envelope
+positives. Actual before/after symbolic values occupy different pages; the
+history-only value and nonhead body are cold at reopen. The build uses an older
+source commit after a later write and must match the memory producer's earlier
+generation entries. Its selected source may be exact or cover the MVCC interval;
+metadata selection itself performs zero member reads. Metadata-only source
+identity leaves the unused old envelope body cold even with every fault class
+armed. Frontier, offers and position reservations remain unchanged. Overall
+inventory is 2,040 refusal cells and 414 untouched-subject positives.
