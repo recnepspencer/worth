@@ -89,7 +89,9 @@ impl crate::storage::overlay::CurrentPartitionAccess for RelationalBranchRoot {
         &self,
         id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.admitted_head_region(id)
+        // Fresh admission belongs to probe_head_partition; a paid read consumes
+        // the immutable counted custody already retained by this root.
+        self.accepted_head_region_view(id)
     }
     fn probe_head_partition(
         &self,

@@ -27,6 +27,33 @@ impl VisibilityProjectionView {
         Ok(())
     }
 
+    pub(super) fn demand_selected_scan(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalExecutionDenialCause> {
+        if self.is_exact_basis() {
+            if let Some(root) = self.selected_root() {
+                self.demand_regions_head(execution, root.partition_ids_iter())?;
+            } else {
+                crate::execution::check_request(execution)?;
+            }
+            Ok(())
+        } else {
+            self.demand_all_full(execution)
+        }
+    }
+    pub(super) fn demand_selected_regions(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<(), RelationalExecutionDenialCause> {
+        if self.is_exact_basis() {
+            self.demand_regions_head(execution, partitions)
+        } else {
+            self.demand_regions_full(execution, partitions)
+        }
+    }
+
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

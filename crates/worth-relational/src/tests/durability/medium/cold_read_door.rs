@@ -115,6 +115,9 @@ impl ReadDoor {
         Self::Version,
     ];
 
+    pub(super) fn is_current_projection_scan(self) -> bool {
+        matches!(self, Self::ProjectionScan(_, false))
+    }
     pub(super) fn is_checkpoint(self) -> bool {
         matches!(self, Self::MemoryCheckpoint | Self::EmbeddedCheckpoint)
     }

@@ -11,7 +11,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -43,7 +43,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
     ) -> Result<Option<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_regions_full(execution, [entity_id.partition_id])?;
+        self.demand_selected_regions(execution, [entity_id.partition_id])?;
         crate::visibility::materialization::read_records::read_work::point_with_quote(
             execution,
             || super::ProjectionRecordSource::candidate_entity_heap_for_id(self, entity_id),
@@ -63,11 +63,12 @@ impl VisibilityProjectionView {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn all_authoritative_entity_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         super::super::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -94,7 +95,7 @@ impl VisibilityProjectionView {
         partition_id: PartitionId,
         kind_id: KindId,
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_regions_full(execution, [partition_id])?;
+        self.demand_selected_regions(execution, [partition_id])?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -128,7 +129,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         kind_id: KindId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -160,7 +161,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
     ) -> Result<Option<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_regions_full(execution, [relation_id.partition_id])?;
+        self.demand_selected_regions(execution, [relation_id.partition_id])?;
         super::super::read_work::point_with_quote(
             execution,
             || super::ProjectionRecordSource::candidate_relation_heap_for_id(self, relation_id),
@@ -173,11 +174,12 @@ impl VisibilityProjectionView {
         )
     }
 
+    #[cfg(test)]
     pub(crate) fn all_authoritative_relation_records(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         super::super::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -204,7 +206,7 @@ impl VisibilityProjectionView {
         partition_id: PartitionId,
         kind_id: KindId,
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
-        self.demand_regions_full(execution, [partition_id])?;
+        self.demand_selected_regions(execution, [partition_id])?;
         crate::visibility::materialization::read_records::read_work::metered_with_memory(
             execution,
             |context, memory| match &self.basis {

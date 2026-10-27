@@ -28,6 +28,7 @@ impl<'view> ExactProjectionReader<'view> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_entity_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_entity_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
@@ -85,12 +86,8 @@ impl<'view> ExactProjectionReader<'view> {
     }
     pub(super) fn entity_record(&self, entity_id: EntityId) -> Option<EntityReadRecord> {
         self.view
-            .reader()
-            .authoritative_entity_record_for_id_from_exact_state(
-                self.root.as_ref(),
-                self.root.schema_authority().registry(),
-                entity_id,
-            )
+            .admitted_head_region(entity_id.partition_id)?
+            .entity_record(self.root.schema_authority().registry(), entity_id)
     }
 
     pub(super) fn relation_records(
@@ -101,6 +98,7 @@ impl<'view> ExactProjectionReader<'view> {
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_relation_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_relation_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,

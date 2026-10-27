@@ -13,6 +13,7 @@ mod diagnostics;
 mod frontier_admission;
 mod kind_scan_visibility;
 mod native_output_probe;
+mod paid_current_record_walk;
 mod paid_record_walk;
 mod pinned_read;
 mod positioned_snapshot;
@@ -68,8 +69,7 @@ use super::materialization::{
 };
 use super::visibility::{
     entity_slot_matches_kind_at_version, relation_slot_matches_kind_at_version,
-    slot_kind_matches_current, visible_relation_slots_in_partition_from_state,
-    visible_slots_in_partition_from_state,
+    visible_relation_slots_in_partition_from_state, visible_slots_in_partition_from_state,
 };
 use super::ProjectionAspectFilter;
 

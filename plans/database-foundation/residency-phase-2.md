@@ -2956,3 +2956,149 @@ one failure subject, and the fixture remains one actual producer/capture/reopen
 construction. This slice needed no production change. The matrix inventory is
 2,040 refusal cells and 414 untouched-subject positives; independent-merge and
 tail-recovery expansion and all final clean-tree lanes remain outstanding.
+
+### Next matrix slice: independent merge members
+
+Boundary review verified independent drafts run through Head discovery and hand
+accepted scope to publication. Source-only adoption of a newly created record
+requires current branch records, not earlier record versions. Lineage
+finalization constructs immutable two-field nodes and append events from staged
+Head lineage/entity IDs; it has no node/event read port. Nonhead envelope
+consumption already has its separate 18-cell merge-history table. Index-image
+admission currently occurs in transaction region demand, builds, pins and
+exports; an independent merge's derived/unique-index need must be checked from
+its actual semantic input, not assumed from another entry point.
+
+Plan: extend the real merge fixture with manifest placements, expected union of
+its two disjoint branches, and a paged current text held by an unchanged common
+ancestor (outside both later head envelopes). Add six-class Head/history/symbol/
+node/event cells. Head and genuine cold current text refuse; history and lineage
+payloads stay untouched in this source-only merge. Check no journal/offers/position
+reservation before acceptance. An accepted candidate must publish without any
+further source reads, then match the independent disjoint-branch record union.
+Keep the old damage and successful merge courts. A later unique/cache court and
+current exact-scan Head calibration remain explicit matrix audit items; the
+existing Full table is not its own specification of residency level.
+
+### Lineage matrix acceptance audit
+
+The nine existing node doors share node-page admission, but their adapters
+discarded successful values. Preserve every refusal cell and strengthen each
+payload-bearing success: exact point node, resolved lineage membership,
+nonempty aspect entries, graph node, divergence membership, and observed entity.
+Keep these assertions in the owning test adapter; no production authority changes.
+
+### Exact scan Head calibration
+
+D9's explicit current-state Head rule supersedes the earlier table's inferred
+Full requirement for exact projection scans. Current kind scans and paid record
+walks currently borrow PartitionState even for Live. Route Live through counted
+Head views and current clone quotes; retain existing historical algorithms and
+work/result admission. Exact orchestrators demand every selected Head, while
+historical selections retain Full demand. The table keeps every historical
+refusal and replaces the erroneous exact historical-member refusal claims with
+stronger fault-armed successes asserting the member was never opened. Current
+owned relation points use the same level selection. No Head-to-Full cast or
+compatibility read is introduced.
+
+### Tail recovery matrix
+
+A checkpoint plus actual canonical tail readmits in an isolated staging runtime.
+Exercise six named subjects against all six source failure classes before
+readmission. Current tail edits require old Head and its current symbol page;
+prior history, node pages and rebuildable cache bytes are not authoritative
+inputs for an ordinary update. Canonical tail envelopes are supplied as framed
+artifacts, so journal-body readmission must remain unnecessary. Assert actual
+source-member targets, exact ColdStorageUnavailable payloads where consumed,
+no receiving branch/frontier/offers/reservations on refusal, and successful
+recovery after transport repair. A failed staging cell is discarded: sticky
+damage is not claimed to poison a new recovery plan's new cells.
+
+### Strict clippy cutover cleanup
+
+The strict CI owner lane exposes obsolete surfaces left by phase-2 cutovers:
+unused mutation dictionary input, commit-body wrapper and slot/candidate Vec
+wrappers. Remove them. Keep genuinely owner-unit-only enumeration and cold-pin
+refusal adapters under cfg(test). Retire the infallible historical projection
+wrapper, moving its tests to the existing fallible API without deleting claims.
+This preserves one production authority path and does not suppress dead code.
+
+### Symbol identity consumers
+
+Uniqueness evaluates authoritative selected-state fields using native canonical
+comparison keys; derived-index equality maintenance/build and native field
+comparisons use the same key vocabulary. Symbol payloads encode their stable ID,
+so bucket deduplication and per-runtime admission must preserve that ID across
+reopen and forks. Add a real uniqueness court for cold, Head-warm and Full-warm
+runtimes: re-admit an existing paged text through the public field-text door,
+prove the original Symbol is returned, then attempt the duplicate field through
+ordinary transaction commit and require the typed uniqueness conflict without
+frontier/offers/reservations advancing. Historical unrelated meanings stay cold
+in the current paths. The uniqueness evaluator explicitly scans selected current
+state and never consumes a derived-index generation, node or event lookup.
+
+Matrix calibration findings: independent `prepare_merge_execution` is a
+historical planning artifact, not an accepted native publication candidate.
+`merge/identity.rs`, `conflicts/mod.rs` and policy resolution explicitly read
+versioned source/target/ancestor state. Its History cells therefore require the
+Full typed refusal. Actual applied merge drafts still use the shared Head probe
+pipeline. Tail replay also consumes the image while preparing derived-index
+maintenance; Index cells require ColdStorageUnavailable, not untouched success.
+The shared-Full symbol fixture deliberately warmed a separate fork before the
+operation: locality checks must compare the failed page's read count against
+that baseline while asserting the receiving dictionary still lacks historical
+meanings. Accepted-pin Head scans require retained getters; fresh probes retain
+their damage and per-runtime-symbol checks.
+
+The tail matrix also reached checkpoint-head envelope admission: its body is
+not a supplied tail artifact and is needed from the journal. Envelope cells
+therefore target the actual covered checkpoint position and require the exact
+ColdStorageUnavailable envelope subject. Separate supplied-tail envelope cells
+retain faults against actual tail positions and prove no journal reread.
+
+### Independent merge derived-index preparation boundary
+
+`execute_prepared_merge` enters `execute_authoritative_commit` directly, so
+transaction-only index image admission is insufficient. Add a genuine producer
+generation to the cold merge fixture and inject every image failure after
+historical planning. Require native CommitPreparationReason::StorageUnavailable
+inside MergeExecutionError::Commit, before frontier/offers/position reservation.
+Retry proves same-cell sticky classification and actual generation contents
+agree with the memory-only merge. Planning leaves this image cold; executing
+the plan includes preparation and may admit it. The earlier no-load assertion
+on that combined orchestrator is retired as a false phase claim; retain the
+stronger no-load claim for every region/envelope, while allowing only the
+explicit preparatory image load. Actual candidate publication remains governed
+by its existing carried mirror and accepted probe witnesses. If the matrix is
+red, use the existing IndexDefinitionReadBinding at merge-draft preparation;
+no new guard or publication-time load is permitted.
+
+The merge-index reproducer failed by returning a successful committed merge
+with MissingMember armed against its actual generation image. This was a
+product omission, not an unused subject. Merge draft preparation now demands
+`runtime.index_definitions` through its existing checkpoint-image binding
+before mutation input demand and proposal identity issuance. Refusal preserves
+the native CommitPreparationReason payload through MergeExecutionError::Commit.
+
+Correction after maintenance contract review: the derived generation cache is
+explicitly rebuilt, not automatically maintained by native merge commits.
+`merge/identity_target_index` constructs its own selected-state matching index;
+commit finalization refreshes the separate uniqueness authority, not the derived
+generation catalog. The new guard and initial cache-currentness assertion were
+therefore wrong and are retired before commit. The six cells now prove both
+planning and execution leave the faulty unused cache cold; explicit rebuild
+then admits it and matches independently rebuilt memory-reference keys and
+all actual merged entity identities. No new production guard remains. This
+corrects the immediately preceding provisional product-omission finding.
+
+Matrix closeout verification: `matrix-tail-recovery-verified.log` passes its
+54-cell court (1 test); `matrix-merge-inventory-verified.log` passes all 4 merge
+courts, including 30 member cases and 6 cache-unused cases with explicit
+post-merge rebuild. The preceding complete cold-member rerun passed 78 tests
+and failed only the then-miscalibrated checkpoint-head envelope cell; its
+corrected family now passes. That rerun includes the accepted-pin regression,
+exact Head/history-only no-load recalibration, stronger lineage answers and
+cold/Head-warm/Full-warm duplicate symbol rejection. Full native, contracts
+and all other final lanes remain to run on a clean committed tree. Dirty caps
+and agent-context pass; strict lower clippy is being repeated for the final
+source. No merge index guard remains: generation refresh is explicit.

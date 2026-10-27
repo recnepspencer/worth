@@ -121,6 +121,31 @@ pub(crate) fn relation_head(
     )
 }
 
+pub(crate) fn entity_head(
+    registry: &RelationalSchemaRegistry,
+    head: crate::storage::residency::RelationalRegionHeadView<'_>,
+    slot: usize,
+) -> Result<u64, Cause> {
+    let Some(record) = head.entity_arena().get_slot(slot) else {
+        return Ok(0);
+    };
+    let Some(kind) = record.kind_id() else {
+        return Ok(0);
+    };
+    let Ok(registration) = registry.entity_registration(kind) else {
+        return Ok(0);
+    };
+    clone_bytes(
+        registration.kind_name.len(),
+        registration.schema_id.0.len(),
+        record
+            .extra()
+            .authoritative_aspect_state
+            .as_ref()
+            .map_or(0, |state| state.owned_allocation_capacity_bytes()),
+    )
+}
+
 fn clone_bytes(kind: usize, schema: usize, state_payload_bytes: usize) -> Result<u64, Cause> {
     kind.checked_add(schema)
         .and_then(|bytes| bytes.checked_add(state_payload_bytes))

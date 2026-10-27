@@ -18,6 +18,42 @@ fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage()
             let fixture = reopened(execution);
             door.prepare(&fixture.runtime);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
+            let history_reads_before = fixture
+                .source
+                .member_reads
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|member| **member == fixture.historical_page)
+                .count();
+            if door.is_current_projection_scan() {
+                *fixture.source.failed_member.lock().unwrap() = Some(fixture.historical_page);
+                door.run(execution, &fixture.runtime, fixture.entity)
+                    .unwrap();
+                assert_eq!(
+                    fixture
+                        .source
+                        .member_reads
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .filter(|member| **member == fixture.historical_page)
+                        .count(),
+                    history_reads_before
+                );
+                assert!(fixture
+                    .runtime
+                    .services
+                    .symbols
+                    .interner_snapshot()
+                    .resolve(fixture.historical)
+                    .is_none());
+                assert_eq!(
+                    fixture.runtime.history().latest_patch_stream_position(),
+                    frontier
+                );
+                continue;
+            }
             if damage {
                 *fixture.source.failed_member.lock().unwrap() = Some(fixture.historical_page);
                 let failure = door

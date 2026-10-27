@@ -23,7 +23,7 @@ impl VisibilityProjectionView {
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| match &self.basis {
@@ -69,7 +69,7 @@ impl VisibilityProjectionView {
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
         crate::execution::RelationalExecutionDenialCause,
     > {
-        self.demand_all_full(execution)?;
+        self.demand_selected_scan(execution)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| match &self.basis {
