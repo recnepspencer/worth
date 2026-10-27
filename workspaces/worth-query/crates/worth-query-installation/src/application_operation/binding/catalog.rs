@@ -100,11 +100,16 @@ where
                 &descriptors,
                 schema.member_provenance.query_bindings(),
             )?;
+            let inspection = crate::application_operation::source_disclosure::resolve(
+                descriptor,
+                schema.member_provenance.query_bindings(),
+            )?;
             Ok((
                 identity.clone(),
                 Arc::new(WorthQueryCompiledApplicationMutationBinding::new(
                     (*descriptor).clone(),
                     inverse,
+                    inspection,
                 )),
             ))
         })

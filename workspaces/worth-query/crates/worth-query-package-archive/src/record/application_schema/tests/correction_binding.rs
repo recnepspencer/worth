@@ -106,6 +106,7 @@ fn correction_archive_retains_both_bindings_handlers_queries_and_codecs() {
 
 fn description(binding: &str, operation: &str, input: &str) -> ApplicationMutationDescription {
     ApplicationMutationDescription::from_untrusted_parts(ApplicationMutationDescriptionParts {
+        inspection_disclosure: None,
         binding_identity: identity(binding),
         operation: operation.to_owned(),
         input_identity: identity(input),

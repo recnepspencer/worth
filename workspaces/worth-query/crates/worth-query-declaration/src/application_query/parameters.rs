@@ -133,6 +133,16 @@ impl<Query> ApplicationQueryParameterSet<Query> {
     pub fn bindings(&self) -> &[(&'static str, AspectValue)] {
         &self.bindings
     }
+
+    /// Actual owned backing, for an owner admitting an opaque parameter producer.
+    pub fn owned_allocation_capacity_bytes(&self) -> Option<usize> {
+        self.bindings.iter().try_fold(
+            self.bindings
+                .capacity()
+                .checked_mul(std::mem::size_of::<(&'static str, AspectValue)>())?,
+            |bytes, (_, value)| bytes.checked_add(value.owned_allocation_capacity_bytes()),
+        )
+    }
 }
 
 impl<Query> Default for ApplicationQueryParameterSet<Query> {

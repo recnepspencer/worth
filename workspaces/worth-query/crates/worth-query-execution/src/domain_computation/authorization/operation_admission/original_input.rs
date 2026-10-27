@@ -4,22 +4,41 @@ use worth_query_declaration::facade::application_operation::{
 };
 
 use super::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::authorization::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
 
 pub(in crate::domain_computation::authorization) fn retain_original_scope<Schema, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     scope: &crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
         Schema,
         Scope,
     >,
     contracts: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
-) -> Option<std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>>
-{
-    contracts
+) -> Result<
+    Option<
+        std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
+    >,
+    WorthQueryOperationAuthorizationDenial,
+> {
+    if !contracts.source_inspection_disclosures().is_empty() {
+        return scope
+            .retain_scope_selector_funded(execution)
+            .map(Some)
+            .map_err(|stop| {
+                WorthQueryOperationAuthorizationDenial::new(
+                    WorthQueryOperationAuthorizationDenialKind::Stopped(stop),
+                    "original source scope retention",
+                )
+            });
+    }
+    Ok(contracts
         .aftermath()
         .is_some_and(|contract| {
             contract.authority()
                 != worth_query_installation::facade::InstalledCorrectionAuthority::NotCorrectable
         })
-        .then(|| scope.retain_scope_selector())
+        .then(|| scope.retain_scope_selector()))
 }
 
 pub(super) struct OriginalOperationInput<Input> {
@@ -77,7 +96,27 @@ impl<Schema, Operation, Input, Scope>
     pub(in crate::domain_computation) fn original_mutation_binding(
         &self,
     ) -> Option<std::any::TypeId> {
-        self.original_input.as_ref().map(|input| input.binding_type)
+        self.original_input
+            .as_ref()
+            .map(|input| input.binding_type)
+            .or_else(|| {
+                self.original_inspection_disclosure
+                    .as_ref()
+                    .map(|captured| captured.association().source_type())
+            })
+    }
+
+    pub(in crate::domain_computation) fn retain_original_inspection_disclosure(
+        &mut self,
+        disclosure: Option<std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
+    ) {
+        self.original_inspection_disclosure = disclosure;
+    }
+
+    pub(in crate::domain_computation) fn original_inspection_disclosure(
+        &self,
+    ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>{
+        self.original_inspection_disclosure.as_ref()
     }
 
     pub(in crate::domain_computation) fn original_encoded_input(

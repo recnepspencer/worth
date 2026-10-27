@@ -51,6 +51,7 @@ pub(in crate::domain_computation) enum SelectedConventionalAdmissionStop {
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::domain_computation) fn authorize_public_mutation_on_selected<Schema, Binding, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &SharedSelectedProductOperation<'_, Schema>,
     current: &WorthQueryCurrentRetainedMutationBinding<'_, Schema, Binding>,
@@ -190,7 +191,12 @@ where
             principal.principal().principal_entity_id(),
             scope.scope().entity_id(),
         ),
-        original_scope: super::original_input::retain_original_scope(scope.scope(), &contracts),
+        original_scope: super::original_input::retain_original_scope(
+            execution,
+            scope.scope(),
+            &contracts,
+        )
+        .map_err(Stop::Authorization)?,
         canonical_work,
         scope_entity_id: scope.scope().entity_id(),
         scope_entity_kind: scope.scope().entity_kind(),
@@ -202,6 +208,7 @@ where
         authorization: Some(authorization),
         governed_input_identity: None,
         original_input: None,
+        original_inspection_disclosure: None,
         authorization_basis: WorthQueryOperationAuthorizationBasis::Conventional,
         graph_work,
         source_partition_identity: None,

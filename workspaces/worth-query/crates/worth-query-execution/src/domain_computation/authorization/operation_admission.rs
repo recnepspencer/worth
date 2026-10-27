@@ -140,6 +140,7 @@ pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scop
     original_input: Option<original_input::OriginalOperationInput<Input>>,
     original_scope:
         Option<Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>>,
+    original_inspection_disclosure: Option<Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
     authorization_basis: WorthQueryOperationAuthorizationBasis<Input>,
     graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
     source_partition_identity: Option<[u8; 32]>,

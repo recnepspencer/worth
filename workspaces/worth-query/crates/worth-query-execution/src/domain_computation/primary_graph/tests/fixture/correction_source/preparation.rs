@@ -67,6 +67,7 @@ pub(super) fn candidate(
     program
         .retain_original_mutation_input::<LabelBinding>(
             &crate::publication_boundary::program_publication_access(),
+            phase,
             &world.application,
             input.clone(),
         )
