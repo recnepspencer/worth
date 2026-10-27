@@ -388,6 +388,12 @@ unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
 - pinning requires a resident witness, so pinning a cold partition is
   unrepresentable.
 
+Detected member corruption puts the whole Store home into
+`ServingRequiresInspection` until reopen. Relational still records sticky
+damage only for the failed subject; other subjects receive source-unavailable
+refusals while Store requires inspection. Finer-grained Store isolation is out
+of scope for M2.
+
 **History on demand.**
 
 - The commit catalog keeps index entries only.

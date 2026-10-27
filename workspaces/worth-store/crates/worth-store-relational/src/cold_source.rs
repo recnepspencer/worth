@@ -39,6 +39,9 @@ pub(crate) struct StoreColdSource {
     custody: member_custody::MemberCustodyRegistry,
     member_reads: AtomicU64,
     commit_reads: AtomicU64,
+    #[cfg(feature = "certification-test-authority")]
+    commit_read_observer:
+        Option<Box<dyn Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync>>,
 }
 
 impl std::fmt::Debug for StoreColdSource {
@@ -55,6 +58,8 @@ impl StoreColdSource {
             custody: Default::default(),
             member_reads: AtomicU64::new(0),
             commit_reads: AtomicU64::new(0),
+            #[cfg(feature = "certification-test-authority")]
+            commit_read_observer: None,
         }
     }
     /// A verified selected membership supplied by open or completed publication.
@@ -84,6 +89,13 @@ impl StoreColdSource {
             member_reads: self.member_reads.load(Ordering::Relaxed),
             commit_reads: self.commit_reads.load(Ordering::Relaxed),
         }
+    }
+    #[cfg(feature = "certification-test-authority")]
+    pub(crate) fn observe_commit_reads(
+        &mut self,
+        observer: impl Fn(PatchStreamPosition, RelationalStoreColdReadCounters) + Send + Sync + 'static,
+    ) {
+        self.commit_read_observer = Some(Box::new(observer));
     }
     pub(crate) fn protect_member_selection(&self) -> RetainedMemberPublication<'_> {
         self.custody.protect_selection()
@@ -164,7 +176,8 @@ impl RelationalDurableColdSource for StoreColdSource {
 
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, Cause> {
         self.commit_reads.fetch_add(1, Ordering::Relaxed);
-        self.serving
+        let bytes = self
+            .serving
             .canonical_commits()
             .map_err(|_| Cause::SourceUnavailable)?
             .read(position.0, limit)
@@ -180,7 +193,12 @@ impl RelationalDurableColdSource for StoreColdSource {
                     }
                 }
                 _ => Cause::SourceUnavailable,
-            })
+            })?;
+        #[cfg(feature = "certification-test-authority")]
+        if let Some(observer) = &self.commit_read_observer {
+            observer(position, self.counters());
+        }
+        Ok(bytes)
     }
 }
 

@@ -9,7 +9,8 @@
 //! the commit is not there (durable before live, D2).
 
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::num::NonZeroU64;
+use std::path::PathBuf;
 use std::time::Instant;
 
 use worth_execution::ExecutionRequest;
@@ -19,6 +20,8 @@ use super::durable_run::{apply, open, steps_before};
 use super::killed_child::{self, ChildEnd};
 use super::workload::{self, Script, Step};
 
+#[path = "process_kill/child.rs"]
+mod child;
 #[path = "process_kill/recovery_court.rs"]
 mod recovery_court;
 use recovery_court::assert_killed_home_recovers;
@@ -29,7 +32,8 @@ const CHECKPOINT_EVERY: usize = 3;
 const ROLE_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_ROLE";
 const LOCATION_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_LOCATION";
 const MARKERS_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_MARKERS";
-const CHILD_TEST: &str = "process_kill::relational_home_child";
+const CHILD_TEST: &str = "process_kill::child::relational_home_child";
+pub(crate) const WAL_SEGMENT_BYTES_ENV: &str = "WORTH_RELATIONAL_HOME_WAL_SEGMENT_BYTES";
 
 pub(crate) fn script() -> Script {
     Script::generate(SEED, COMMITS, CHECKPOINT_EVERY)
@@ -52,9 +56,15 @@ pub(crate) enum Stop {
     Checkpoint(Seam),
     /// An unanchored member batch, before the manifest selection.
     CheckpointMembers(Seam),
+    /// Repeat a completed capture: all members are Carried.
+    CheckpointCarried(Seam),
+    /// Publication has acknowledged its locators before physical checkpointing.
+    CheckpointAcknowledged(worth_store::physical_runtime::production::PhysicalCheckpointStep),
+    /// Idle after the acknowledged checkpoint returns.
+    CheckpointReturned,
 }
 
-const SEAMS: [Seam; 5] = [
+pub(super) const SEAMS: [Seam; 5] = [
     Seam::BeforeWalAppend,
     Seam::AfterWalDurability,
     Seam::AfterDataSettlement,
@@ -77,6 +87,9 @@ impl Stop {
             .chain(SEAMS.into_iter().map(Self::Delete))
             .chain(SEAMS.into_iter().map(Self::Checkpoint))
             .chain(SEAMS.into_iter().map(Self::CheckpointMembers))
+            .chain(SEAMS.into_iter().map(Self::CheckpointCarried))
+            .chain(PHYSICAL_STEPS.into_iter().map(Self::CheckpointAcknowledged))
+            .chain([Self::CheckpointReturned])
     }
 
     /// The script steps the child completes before it parks, and the step it
@@ -99,7 +112,11 @@ impl Stop {
                 let target = position(|step| matches!(step, Step::Transition { .. }), 0);
                 (target, Some(target))
             }
-            Self::Checkpoint(_) | Self::CheckpointMembers(_) => {
+            Self::Checkpoint(_)
+            | Self::CheckpointMembers(_)
+            | Self::CheckpointCarried(_)
+            | Self::CheckpointAcknowledged(_)
+            | Self::CheckpointReturned => {
                 let target = position(|step| matches!(step, Step::Checkpoint), 1);
                 (target, Some(target))
             }
@@ -134,22 +151,34 @@ pub(crate) struct Killed {
 
 /// Run a child to `stop` and kill it there.
 pub(crate) fn launch(stop: Stop) -> Killed {
+    launch_with_wal_segment_bytes(stop, None)
+}
+
+pub(crate) fn child_wal_profile(
+) -> Option<worth_store_relational::RelationalStoreCertificationProfile> {
+    let bytes = std::env::var_os(WAL_SEGMENT_BYTES_ENV)?;
+    let bytes = bytes.to_str().unwrap().parse::<NonZeroU64>().unwrap();
+    Some(worth_store_relational::RelationalStoreCertificationProfile::with_wal_segment_bytes(bytes))
+}
+
+pub(crate) fn launch_with_wal_segment_bytes(stop: Stop, bytes: Option<NonZeroU64>) -> Killed {
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let markers = directory.path().join("markers");
     fs::create_dir_all(&markers).unwrap();
     let role = PathBuf::from(stop.label());
     let ready = markers.join("ready");
-    let end = killed_child::run_and_kill(
-        CHILD_TEST,
-        &[
-            (ROLE_ENV, &role),
-            (LOCATION_ENV, &location),
-            (MARKERS_ENV, &markers),
-        ],
-        &ready,
-        &markers.join("finished"),
-    );
+    let bytes = bytes.map(|bytes| PathBuf::from(bytes.get().to_string()));
+    let mut environment: Vec<(&str, &std::path::Path)> = vec![
+        (ROLE_ENV, &role),
+        (LOCATION_ENV, &location),
+        (MARKERS_ENV, &markers),
+    ];
+    if let Some(bytes) = &bytes {
+        environment.push((WAL_SEGMENT_BYTES_ENV, bytes));
+    }
+    let end =
+        killed_child::run_and_kill(CHILD_TEST, &environment, &ready, &markers.join("finished"));
     assert_eq!(end, ChildEnd::KilledAtPark, "{stop:?}");
     let live = fs::read_to_string(&ready).unwrap().parse().unwrap();
     let acknowledged = decode(&fs::read(markers.join("acknowledged")).unwrap());
@@ -203,7 +232,7 @@ fn a_branch_transition_killed_at_each_mutation_seam_recovers() {
     }
 }
 
-fn encode(artifacts: &[Vec<u8>]) -> Vec<u8> {
+pub(super) fn encode(artifacts: &[Vec<u8>]) -> Vec<u8> {
     let mut bytes = Vec::new();
     for artifact in artifacts {
         bytes.extend_from_slice(&(artifact.len() as u64).to_le_bytes());
@@ -225,7 +254,7 @@ fn decode(mut bytes: &[u8]) -> Vec<Vec<u8>> {
 /// A Store gate's five-second wait is one poll, not the process's deadline.
 /// Completion without arrival still fails; a running operation keeps its gate
 /// armed within the original, finite crash-driver budget.
-fn await_mutation_seam(
+pub(super) fn await_mutation_seam(
     gate: &worth_store::physical_runtime::certification::CertificationPhysicalMutationPauseGate,
     worker: &std::thread::ScopedJoinHandle<'_, Result<(), String>>,
     deadline: Instant,
@@ -275,115 +304,31 @@ fn a_late_mutation_seam_is_not_mistaken_for_a_finished_child() {
     });
 }
 
-/// The child: run the plan for its stop, park, announce, and wait to die.
-fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
-    let deadline = Instant::now() + killed_child::PARK_DEADLINE;
-    let script = script();
-    let request = workload::serial_request();
-    let execution = ExecutionRequest::serial(&request);
-    let home = open(location, &execution).expect("the child's home opens");
-    let (completed, parked) = stop.plan(&script);
-    apply(&home, &execution, &script.steps[..completed]);
-    let acknowledged = workload::artifacts_of(home.runtime());
-    killed_child::announce(&markers.join("acknowledged"), &encode(&acknowledged));
-    let transitions = super::branch_lifecycle::artifacts_of_home(&home);
-    killed_child::announce(&markers.join("transitions"), &encode(&transitions));
-    let seam = match stop {
-        Stop::Commit(seam)
-        | Stop::BranchTransition(seam)
-        | Stop::Archive(seam)
-        | Stop::RequestDeletion(seam)
-        | Stop::Delete(seam)
-        | Stop::Checkpoint(seam)
-        | Stop::CheckpointMembers(seam) => seam,
-        Stop::BeforeFirstCheckpoint | Stop::AboveCheckpoint => {
-            let live = acknowledged.len().to_string();
-            killed_child::announce(
-                &markers.join("transition-live"),
-                transitions.len().to_string().as_bytes(),
-            );
-            killed_child::announce(&markers.join("ready"), live.as_bytes());
-            killed_child::park();
-        }
-    };
-    let target = &script.steps[parked.expect("a parked step")];
-    std::thread::scope(|scope| {
-        let mut gate = home
-            .certification_serving()
-            .certification_pause_physical_mutation_at(seam);
-        let worker = scope.spawn(|| {
-            let request = workload::serial_request();
-            let execution = ExecutionRequest::serial(&request);
-            match target {
-                Step::Checkpoint => home
-                    .checkpoint(&execution)
-                    .map(|_| ())
-                    .map_err(|stop| format!("{stop:?}")),
-                step if step.is_lifecycle() => step
-                    .lifecycle(home.runtime(), &execution)
-                    .map_err(|stop| format!("{stop:?}")),
-                _ => target
-                    .commit(home.runtime(), &execution)
-                    .map(|_| ())
-                    .map_err(|stop| format!("{stop:?}")),
-            }
-        });
-        if !await_mutation_seam(&gate, &worker, deadline) {
-            // A late arrival must not deadlock scope teardown after a failed
-            // assertion. Preserve the actual attempt's result in the failure.
-            gate.release();
-            panic!("{stop:?}: target did not park: {:?}", worker.join());
-        }
-        if matches!(stop, Stop::Checkpoint(_)) {
-            // This small fixture's new members form one batch. Its durable
-            // root does not select the checkpoint; the following anchored
-            // append is the decision the existing checkpoint court judges.
-            // The paused worker owns a clone of the arrived gate. Replacing
-            // the registry entry arms its next visit; releasing the old gate
-            // cannot release this new one (neither gate unregisters on Drop).
-            let anchor = home
-                .certification_serving()
-                .certification_pause_physical_mutation_at(seam);
-            gate.release();
-            gate = anchor;
-            if !await_mutation_seam(&gate, &worker, deadline) {
-                gate.release();
-                panic!("{stop:?}: anchor did not park: {:?}", worker.join());
-            }
-        }
-        if let Step::Fork { target } = target {
-            assert!(
-                home.runtime().branch_identity(target).is_err(),
-                "{stop:?}: fork installed before durable publication returned"
-            );
-        }
-        // The Store seam may hold its publication locks. Inspect the live
-        // catalog here; exporting old artifacts can perform cold Store reads.
-        let live = home
-            .runtime()
-            .history()
-            .immutable_commit_count()
-            .to_string();
-        killed_child::announce(
-            &markers.join("transition-live"),
-            super::branch_lifecycle::live_count(home.runtime())
-                .to_string()
-                .as_bytes(),
-        );
-        killed_child::announce(&markers.join("ready"), live.as_bytes());
-        killed_child::park();
-    })
+use worth_store::physical_runtime::production::PhysicalCheckpointStep;
+// Home publications settle their data before this fuzzy capture, so no dirty
+// frame is appended. Tier certificates belong to Store's certified-tier route,
+// which the home does not use. These are its seven reachable checkpoint cuts.
+const PHYSICAL_STEPS: [PhysicalCheckpointStep; 7] = [
+    PhysicalCheckpointStep::CandidateCreation,
+    PhysicalCheckpointStep::CandidateBindingCompactionHeader,
+    PhysicalCheckpointStep::CandidateBindingRecord,
+    PhysicalCheckpointStep::CandidateFooter,
+    PhysicalCheckpointStep::CandidateSynchronization,
+    PhysicalCheckpointStep::CandidatePublication,
+    PhysicalCheckpointStep::NamespaceSynchronization,
+];
+
+#[test]
+fn carried_members_survive_a_kill_at_each_manifest_mutation_seam() {
+    for seam in SEAMS {
+        assert_killed_home_recovers(Stop::CheckpointCarried(seam));
+    }
 }
 
 #[test]
-fn relational_home_child() {
-    let Some(role) = std::env::var_os(ROLE_ENV) else {
-        return;
-    };
-    let stop = Stop::all()
-        .find(|stop| Some(stop.label().as_str()) == role.to_str())
-        .expect("a known child role");
-    let location = PathBuf::from(std::env::var_os(LOCATION_ENV).expect("child location"));
-    let markers = PathBuf::from(std::env::var_os(MARKERS_ENV).expect("child markers"));
-    child(stop, &location, &markers);
+fn acknowledged_locators_survive_each_physical_checkpoint_seam_and_return() {
+    for step in PHYSICAL_STEPS {
+        assert_killed_home_recovers(Stop::CheckpointAcknowledged(step));
+    }
+    assert_killed_home_recovers(Stop::CheckpointReturned);
 }

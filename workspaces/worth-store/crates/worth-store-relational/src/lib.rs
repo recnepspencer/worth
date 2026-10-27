@@ -26,6 +26,8 @@ pub use home::{
     RelationalStoreHomeRequest, RelationalStoreTransitionFate,
 };
 pub use home_descriptor::RelationalStoreHomeDescriptorRefusal;
+#[cfg(feature = "certification-test-authority")]
+pub use physical_store::RelationalStoreCertificationProfile;
 pub use physical_store::{RelationalStorePhysicalRefusal, RelationalStorePhysicalStage};
 pub use recovered_history::RelationalStoreJournalRefusal;
 pub use recovered_transitions::RelationalStoreTransitionJournalRefusal;

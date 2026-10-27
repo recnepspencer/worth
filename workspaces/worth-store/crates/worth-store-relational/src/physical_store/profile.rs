@@ -17,6 +17,11 @@ use worth_store_recovery_runtime::{
     PhysicalRecoveryLimitDeclaration, PhysicalRecoveryStaticConfiguration,
 };
 
+#[cfg(feature = "certification-test-authority")]
+mod certification;
+#[cfg(feature = "certification-test-authority")]
+pub use certification::RelationalStoreCertificationProfile;
+
 /// Bytes one WAL segment may hold before the WAL rolls to the next.
 const WAL_SEGMENT_BYTES: u64 = 64 << 20;
 /// Bytes recovery may admit along each byte-bounded dimension.
@@ -50,7 +55,12 @@ pub(crate) fn durability() -> ConfiguredPhysicalDurabilityDeclaration {
             GroupCommitDelay::new(NonZeroU64::new(1).expect("nonzero")),
         )
         .wal(PhysicalWalPolicy::segmented(
-            WalSegmentByteLimit::new(NonZeroU64::new(WAL_SEGMENT_BYTES).expect("nonzero")),
+            WalSegmentByteLimit::new({
+                let bytes = NonZeroU64::new(WAL_SEGMENT_BYTES).expect("nonzero");
+                #[cfg(feature = "certification-test-authority")]
+                let bytes = certification::wal_segment_bytes().unwrap_or(bytes);
+                bytes
+            }),
             WalSegmentInventoryLimit::new(NonZeroU32::new(1024).expect("nonzero")),
         ))
         .idempotency(PhysicalIdempotencyPolicy::new(
