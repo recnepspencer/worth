@@ -1,10 +1,6 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
-use crate::durability::data::RelationalCheckpointInspection;
-use crate::history::data::RecordAllocationClass as Class;
-use crate::transactions::data::RecordRef;
-#[path = "../../../../../tests/support/checkpoint_atomicity.rs"]
-mod atomicity;
+use crate::durability::data::{CheckpointAllocatorInspection, CheckpointRecordIdentity};
 #[path = "retirement/ordinary.rs"]
 mod ordinary;
 
@@ -277,11 +273,22 @@ fn cold_replacement(
         2,
         "the rejected Birth reserved two entities"
     );
-    atomicity::assert_model_unchanged(
-        before.inspect(execution).unwrap(),
-        after.inspect(execution).unwrap(),
-        report.records(),
-    );
+    let before = before.inspect(execution).unwrap();
+    let after = after.inspect(execution).unwrap();
+    assert_eq!(before.model, after.model);
+    assert_eq!(before.live_records, after.live_records);
+    CheckpointAllocatorInspection {
+        frontiers: &before.frontiers,
+        generations: &before.generations,
+    }
+    .verify_reported_advance(
+        &CheckpointAllocatorInspection {
+            frontiers: &after.frontiers,
+            generations: &after.generations,
+        },
+        report.records().map(CheckpointRecordIdentity::from),
+    )
+    .unwrap();
     let roles = replacement_ids
         .into_iter()
         .enumerate()

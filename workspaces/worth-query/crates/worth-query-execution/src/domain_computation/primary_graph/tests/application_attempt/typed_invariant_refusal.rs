@@ -1,6 +1,4 @@
 //! Domain evidence reaches the caller that attempted the installed commit.
-#[path = "../../../../../../../../../crates/worth-relational/tests/support/checkpoint_atomicity.rs"]
-mod checkpoint_atomicity;
 mod ledger_rule;
 mod producer_requirement;
 mod program;
@@ -15,11 +13,9 @@ use std::sync::{Arc, Mutex};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
-use worth_relational::facade::{
-    durability::{RelationalCheckpointInspection, RelationalNativeCheckpoint},
-    transactions::RecordRef,
+use worth_relational::facade::durability::{
+    CheckpointAllocatorInspection, CheckpointRecordIdentity, RelationalNativeCheckpoint,
 };
-use WorthQueryCheckpointRecordClass as Class;
 
 struct Case {
     denial: WorthQueryApplicationCommitDenial,
@@ -38,11 +34,24 @@ impl Case {
             self.reservations.records().len() > 0,
             "this refused commit really reserved ids"
         );
-        checkpoint_atomicity::assert_model_unchanged(
-            RelationalNativeCheckpoint::inspect_bytes(&execution, &self.before).unwrap(),
-            RelationalNativeCheckpoint::inspect_bytes(&execution, &self.after).unwrap(),
-            self.reservations.records(),
-        );
+        let before = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.before).unwrap();
+        let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &self.after).unwrap();
+        assert_eq!(before.model, after.model);
+        assert_eq!(before.live_records, after.live_records);
+        CheckpointAllocatorInspection {
+            frontiers: &before.frontiers,
+            generations: &before.generations,
+        }
+        .verify_reported_advance(
+            &CheckpointAllocatorInspection {
+                frontiers: &after.frontiers,
+                generations: &after.generations,
+            },
+            self.reservations
+                .records()
+                .map(CheckpointRecordIdentity::from),
+        )
+        .unwrap();
     }
 }
 

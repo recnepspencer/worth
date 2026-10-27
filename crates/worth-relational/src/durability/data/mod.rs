@@ -47,7 +47,11 @@ pub use store_layout::{
     DurableStoreLayout,
 };
 
+mod checkpoint_allocation;
 mod checkpoint_inspection;
+pub use checkpoint_allocation::{
+    CheckpointAllocatorInspection, CheckpointReservationAdvanceDenial,
+};
 pub use checkpoint_inspection::{
     CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
     RelationalCheckpointInspection,

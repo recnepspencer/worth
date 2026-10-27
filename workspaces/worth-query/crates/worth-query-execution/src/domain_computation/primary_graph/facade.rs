@@ -383,7 +383,8 @@ pub use super::provider::{
 };
 
 pub use super::application_checkpoint::{
-    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };

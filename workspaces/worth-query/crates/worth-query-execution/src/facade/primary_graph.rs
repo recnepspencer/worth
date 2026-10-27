@@ -381,7 +381,8 @@ pub use crate::domain_computation::primary_graph::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };

@@ -2,8 +2,8 @@
 use super::*;
 pub use worth_relational::facade::durability::RecordAllocationClass as WorthQueryCheckpointRecordClass;
 pub use worth_relational::facade::durability::{
-    CheckpointRecordFrontier, CheckpointRecordIdentity, NativeCheckpointModelBytes,
-    RelationalCheckpointInspection,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, NativeCheckpointModelBytes, RelationalCheckpointInspection,
 };
 #[derive(Debug, PartialEq, Eq)]
 /// Exact original model value bytes, including Query output metadata.

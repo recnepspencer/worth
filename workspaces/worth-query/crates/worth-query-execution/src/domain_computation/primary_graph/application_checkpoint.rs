@@ -1,6 +1,7 @@
 mod inspection;
 pub use inspection::{
-    CheckpointRecordFrontier, CheckpointRecordIdentity, WorthQueryApplicationCheckpointInspection,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
     WorthQueryCheckpointRecordClass,
 };

@@ -601,3 +601,13 @@ Observer recording costs O(active observers) per reservation; starting reserves
 O(maximum records), and sealing a report copies O(observed records). The observer
 never changes allocation or publication semantics. Scope it around the proposal
 being diagnosed; concurrent proposals on other threads are independent.
+
+`CheckpointAllocatorInspection::verify_reported_advance(after, reservations)`
+owns the allocator comparison for both Native and Query consumers. Pass the
+before/after decoded frontier and generation slices and the complete observer
+report, converting records with `CheckpointRecordIdentity::from`. It accepts
+only contiguous appends and one generation step per reservation; duplicate,
+missing, backward or unreported coordinates return a typed
+`CheckpointReservationAdvanceDenial`. It is reconstructive diagnostic work,
+O((A+R) log(A+R)) time and O(A+R) scratch. Applications separately compare their
+model bytes; they must not reimplement allocator arithmetic.
