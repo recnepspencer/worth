@@ -15,37 +15,6 @@ pub(super) struct BridgeBoundOwnedAsyncBasis {
 }
 
 impl BridgeOwnedSignalRuntime {
-    pub fn admit_owned_async_request_identity(
-        &self,
-        lowered: &LoweredBridgeAsyncSourceDeclaration,
-        signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
-        truth_basis: BridgeAsyncRequestTruthViewBasis,
-    ) -> Result<super::super::BridgeOwnedAsyncRequestAdmission, BridgeAsyncRequestIdentityRejection>
-    {
-        if self.owned_async_queue_capacity(lowered).is_some() {
-            return Err(request_denial(
-                "managed declaration requires managed queue admission",
-            ));
-        }
-        let bound = self.bind_owned_async_basis(lowered, signal_basis, truth_basis)?;
-        let admitted = bound
-            .port
-            .admit_owned_async_request(&bound.source)
-            .map_err(|denial| request_denial(format!("Signal request denied: {denial:?}")))?;
-        let request = crate::source::admit_from_owned_signal_request(
-            self.bridge.signal_runtime_key,
-            bound.request,
-            admitted.report().admitted_request(),
-            admitted.in_flight().clone(),
-        )?;
-        Ok(super::super::BridgeOwnedAsyncRequestAdmission::new(
-            &self.async_observation_authority,
-            request,
-            bound.port,
-            bound.source,
-        ))
-    }
-
     pub(super) fn bind_owned_async_basis(
         &self,
         lowered: &LoweredBridgeAsyncSourceDeclaration,

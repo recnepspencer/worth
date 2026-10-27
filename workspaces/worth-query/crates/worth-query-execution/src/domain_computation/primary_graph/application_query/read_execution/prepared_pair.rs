@@ -242,6 +242,7 @@ impl PreparedRead<'_> {
                 | WorthQueryManagedGraphReadDenial::ForeignBasis
                 | WorthQueryManagedGraphReadDenial::ForeignGraph
                 | WorthQueryManagedGraphReadDenial::ForeignReadProof
+                | WorthQueryManagedGraphReadDenial::ForeignReadIntent
                 | WorthQueryManagedGraphReadDenial::TerminalReleaseMismatch),
             ) => {
                 let read =

@@ -71,6 +71,7 @@ where
     handlers: PendingMutationHandlerRegistry<Schema>,
     producers: super::producer::PendingProducerRegistry<Schema>,
     conditionals: PendingConditionalRegistry<Schema>,
+    resources: super::super::application_resource::installation::PendingResourceRegistry<Schema>,
 }
 
 impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
@@ -101,6 +102,7 @@ where
             PendingMutationHandlerRegistry<Schema>,
             super::producer::PendingProducerRegistry<Schema>,
             PendingConditionalRegistry<Schema>,
+            super::super::application_resource::installation::PendingResourceRegistry<Schema>,
         ),
         WorthQueryPrimaryGraphInstallationDenial,
     > {
@@ -109,6 +111,7 @@ where
             self.handlers,
             self.producers,
             self.conditionals,
+            self.resources,
         ))
     }
 }
@@ -157,6 +160,7 @@ macro_rules! contribution_tuple {
                     handlers: PendingMutationHandlerRegistry::default(),
                     producers,
                     conditionals,
+                    resources: Default::default(),
                 };
                 let ($($configuration,)+) = configuration;
                 $(
@@ -166,12 +170,14 @@ macro_rules! contribution_tuple {
                         installed_schema, contribution, &mut configured.handlers, &mut configured.factories,
                         &mut configured.producers,
                         &mut configured.conditionals,
+                        &mut configured.resources,
                     );
                     $Contribution::configure($configuration, &mut setup)?;
                 )+
                 configured.handlers.seal(installed_schema, &installed_schema.binding_identity())?;
                 configured.producers.validate_complete()?;
                 configured.conditionals.validate_complete()?;
+                configured.resources.validate_complete(installed_schema)?;
                 Ok(configured)
             }
 

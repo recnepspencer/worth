@@ -558,8 +558,9 @@ codecs, provider role, finite capacities, retry/timeout profile, four independen
 action requirements and explicit disclosure slots. `schema.installed_resource`
 resolves this meaning against actual typed recipes and the installed principal
 and scope binding. A transported codec description grants no provider, action or
-completion authority. These contracts are a Phase 8 prerequisite; the ordinary
-Host resource lifecycle remains unfinished.
+completion authority. The Host endpoint and its public provider/cleanup journeys
+are implemented and runtime-qualified on the Phase 8 work branch, pending phase
+integration; see [application resources](../workspaces/worth-query/crates/worth-query/docs/capabilities/application-resources.md).
 
 Installed resource access purposes carry only their actual action and requested
 disclosure facets. Close has no Inspect or result obligation; detailed close adds
@@ -571,13 +572,15 @@ refusals return any admitted custodian in `WorthQueryOwnedAsyncRuntimeStop`;
 timeout/retry/revalidation borrow that same owner mutably. Immutable retained
 witnesses select their original occurrence and do not become successor custody.
 The UI opening adapter preserves and cleans up the actual refused-entry owner.
-This internal integration does not supply the unfinished Host resource endpoint.
+This internal integration remains separate from the application's installed
+provider and fresh action/disclosure path.
 
 The lower Bridge resource declaration can explicitly opt a queued producer into
 process-local retention. Its move-owned release consumes only that producer's
 genuine terminal/queue/completion custody, preserving both owners on refusal and
 returning distinct released evidence on success. This is a lower-owner Phase 8
-prerequisite; installed Host provider/row retention and fresh access remain open.
+prerequisite. Host uses it to release actual row custody before returning its
+Native slot; the complete endpoint still requires its phase evidence gate.
 
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
@@ -585,8 +588,8 @@ whose branch version is zero. Empty targets return typed `NoCommittedSource`
 on that committed-source entrance before Signal admission. The explicit internal
 `admit_owned_bridge_async_request_at_branch_head` route instead retains a genuine
 observed head snapshot without a commit or fresh-currentness claim; the read-only
-UI presentation backend uses that posture. This native repair does not yet provide a managed
-resource entry through Decl/Host; that application integration is required by
+UI presentation backend uses that posture. The separate managed resource
+entry through Decl/Host is governed by
 [milestone 9.18.1 Phase 8](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 See [native async source custody](../crates/worth-runtime-world/README.md#owned-async-source-binding)
 and the [internal engine guide](../workspaces/worth-query/crates/worth-query/docs/capabilities/async-resources-and-result-state.md).

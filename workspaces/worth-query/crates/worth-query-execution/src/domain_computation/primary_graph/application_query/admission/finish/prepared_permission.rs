@@ -6,7 +6,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_query::admission::permission::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance;
 
-use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Consume exactly the same fresh principal, scope, selected Product and
@@ -180,7 +180,7 @@ fn start_prepared_query_session<
     Scope,
 >(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    reserved: WorthQueryPreparedQuerySessionIdentity,
+    reserved: WorthQueryPreparedProductReadSessionIdentity,
     plan: WorthQueryAdmittedGraphWorkPlan,
     obligation: &WorthQueryInstalledGraphObligationSetIdentity,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
@@ -211,7 +211,7 @@ where
         basis.retained_product(),
         security_product,
         application.graph_work_provider_identity(),
-        graph.query_session_port(),
+        graph.product_read_session_port(),
     )
     .map_err(|cause| graph_work_denial(format!("{}: {cause:?}", query.name())))
 }

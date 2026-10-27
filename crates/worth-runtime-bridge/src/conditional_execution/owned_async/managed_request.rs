@@ -31,6 +31,10 @@ pub struct BridgeOwnedAsyncManagedRequestAdmission {
 }
 
 impl BridgeOwnedAsyncManagedRequestAdmission {
+    /// Used by the installed controller to select the genuine abort door.
+    pub fn has_pending_retry(&self) -> bool {
+        self.native.pending_retry().is_some()
+    }
     pub fn request(&self) -> Option<&BridgeOwnedAsyncRequestAdmission> {
         self.request.as_deref()
     }

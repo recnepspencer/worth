@@ -6,6 +6,17 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryCorrectionLineageBinding,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
+pub use crate::domain_computation::primary_graph::application_resource::{
+    WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
+    WorthQueryApplicationResourceReceipt, WorthQueryApplicationResourcesRequest,
+    WorthQueryClosedResource, WorthQueryResourceActionDenial, WorthQueryResourceCleanupDetail,
+    WorthQueryResourceCleanupPosture, WorthQueryResourceEffectRefusal, WorthQueryResourceFrameKind,
+    WorthQueryResourceIngressDenial, WorthQueryResourceIngressWriter,
+    WorthQueryResourceOwnedEffectStartStop, WorthQueryResourceProviderAttempt,
+    WorthQueryResourceProviderFailure, WorthQueryResourceRecoveryCloseStop,
+    WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
+    WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
+};
 pub use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;

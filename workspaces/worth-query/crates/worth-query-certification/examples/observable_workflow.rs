@@ -24,6 +24,8 @@ mod journey;
 mod operations;
 #[path = "observable_workflow/program.rs"]
 mod program;
+#[path = "observable_workflow/resource_monitor.rs"]
+mod resource_monitor;
 #[path = "observable_workflow/restoration.rs"]
 mod restoration;
 
@@ -33,7 +35,10 @@ fn main() {
         Ok(false) => std::thread::Builder::new()
             .name("observable-workflow".to_owned())
             .stack_size(8 * 1024 * 1024)
-            .spawn(journey::run)
+            .spawn(|| {
+                journey::run();
+                resource_monitor::run();
+            })
             .expect("the bounded example thread must start")
             .join()
             .expect("the observable workflow must not unwind"),

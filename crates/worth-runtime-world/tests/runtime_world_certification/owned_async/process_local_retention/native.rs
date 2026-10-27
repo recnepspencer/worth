@@ -1,12 +1,8 @@
 use super::super::native_service::NativeServiceCourt;
 use worth_signal::facade::branch::{
-    SignalConditionalServiceExecutionDenial::DefinitionMismatch, SignalOwnedAsyncManagedAdmission,
     SignalOwnedAsyncManagedProgress as Progress, SignalOwnedAsyncQueueDenial as Denial,
-    SignalOwnedAsyncRetrySchedule,
 };
-use worth_signal::facade::{
-    ResourceInFlightStatus, ResourceLifecycleClass, ResourceRevalidationIntent,
-};
+use worth_signal::facade::ResourceLifecycleClass;
 
 #[test]
 fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_producer() {
@@ -17,46 +13,6 @@ fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_p
             .owned_async_retention_storage_for_test(&court.source)
             .unwrap()
     };
-    let refuse_raw_progression =
-        |owner: &SignalOwnedAsyncManagedAdmission,
-         schedule: Option<&SignalOwnedAsyncRetrySchedule>| {
-            let before = observe();
-            let handle = owner.admitted_request().handle();
-            assert!(matches!(
-                court
-                    .port
-                    .advance_owned_async_request_to_timeout(&court.source, handle, 64),
-                Err(DefinitionMismatch)
-            ));
-            assert!(matches!(
-                court.port.schedule_owned_async_retry(&court.source, handle),
-                Err(DefinitionMismatch)
-            ));
-            let current = ResourceRevalidationIntent::with_expected_active(court.node, handle);
-            let active = (owner.in_flight().unwrap().status() == ResourceInFlightStatus::Active)
-                .then(|| ResourceRevalidationIntent::new(court.node));
-            for intent in std::iter::once(current).chain(active) {
-                assert!(matches!(
-                    court
-                        .port
-                        .revalidate_owned_async_request(&court.source, intent),
-                    Err(DefinitionMismatch)
-                ));
-            }
-            if let Some(schedule) = schedule {
-                assert!(matches!(
-                    court
-                        .port
-                        .advance_owned_async_retry(&court.source, handle, schedule, 64),
-                    Err(DefinitionMismatch)
-                ));
-            }
-            assert_eq!(
-                observe(),
-                before,
-                "raw entry cannot progress the actual managed occurrence or its clock/wake storage"
-            );
-        };
     let other_source = court
         .port
         .bind_owned_async_source(court.port.issuance_basis(), other_node)
@@ -169,7 +125,6 @@ fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_p
     // A real newer occurrence denies the old acquired backoff. Cleanup refusal
     // must return the old custodian, then clear only that exact old retry/wake.
     let mut old = live.take().unwrap();
-    refuse_raw_progression(&old, None);
     let first = old.admitted_request().handle();
     court
         .port
@@ -179,7 +134,6 @@ fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_p
         .port
         .schedule_managed_owned_async_retry(&mut old)
         .unwrap();
-    refuse_raw_progression(&old, Some(&first_schedule));
     assert_eq!(
         court
             .port
@@ -192,7 +146,6 @@ fn exact_process_local_release_bounds_repeated_storage_without_expiring_a_rich_p
         old.admitted_request().handle().generation(),
         first.generation()
     );
-    refuse_raw_progression(&old, None);
     court
         .port
         .advance_managed_owned_async_request_to_timeout(&mut old, 12)

@@ -54,7 +54,7 @@ where
     Schema: ApplicationSchema,
 {
     let ApplicationRuntimePublication {
-        bootstrap,
+        mut bootstrap,
         runtime,
         authority,
         installed_schema,
@@ -63,12 +63,14 @@ where
         conditional_evaluation_budget,
     } = input;
     validate_application_schema(&runtime, &installed_schema)?;
+    bootstrap.resources.validate_complete(&installed_schema)?;
+    let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
     let mutation_handlers = bootstrap
         .mutation_handlers
         .seal(&installed_schema, bootstrap.graph.binding_identity())?;
     let authorization = compile_authorization(&bootstrap, &installed_schema)?;
-    let graph = publish_application_graph(
+    let mut graph = publish_application_graph(
         phase,
         bootstrap,
         runtime,
@@ -77,8 +79,13 @@ where
         fault_port,
         conditional_evaluation_budget,
     )?;
+    let resources = resources.install(
+        &phase.execution_request(),
+        graph.bridge.conditional_builder(),
+        graph.primary_provider.application_resource_support_ref(),
+    )?;
     let graph = seal_application_graph(graph)?;
-    assemble_application_runtime(
+    let mut application = assemble_application_runtime(
         phase,
         graph,
         installed_schema,
@@ -89,7 +96,9 @@ where
         mutation_projection,
         Default::default(),
         Default::default(),
-    )
+    )?;
+    application.installed_resources = resources;
+    Ok(application)
 }
 pub(in crate::domain_computation::primary_graph) fn publish_application_runtime_with_conditionals<
     Schema,
@@ -112,7 +121,7 @@ where
     Schema: ApplicationSchema + 'static,
 {
     let ApplicationRuntimePublication {
-        bootstrap,
+        mut bootstrap,
         runtime,
         authority,
         installed_schema,
@@ -122,6 +131,11 @@ where
     } = input;
     validate_application_schema(&runtime, &installed_schema)
         .map_err(super::super::conditional_operation::publication_denial)?;
+    bootstrap
+        .resources
+        .validate_complete(&installed_schema)
+        .map_err(super::super::conditional_operation::publication_denial)?;
+    let resources = std::mem::take(&mut bootstrap.resources);
     let mutation_projection = bootstrap.retain_invariant_projection_authority();
     let mutation_handlers = bootstrap
         .mutation_handlers
@@ -182,6 +196,13 @@ where
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         lineage.install_output_families(producers.output_family_bindings());
     }
+    let resources = resources
+        .install(
+            &phase.execution_request(),
+            graph.bridge.conditional_builder(),
+            graph.primary_provider.application_resource_support_ref(),
+        )
+        .map_err(super::super::conditional_operation::publication_denial)?;
     let graph = seal_application_graph(graph)
         .map_err(super::super::conditional_operation::publication_denial)?;
     let mut application = assemble_application_runtime(
@@ -197,6 +218,7 @@ where
         output_readiness_routes,
     )
     .map_err(super::super::conditional_operation::publication_denial)?;
+    application.installed_resources = resources;
     conditional_operations.reconstruct_all(&application)?;
     conditional_operations.reconcile_all(&mut application.bridge.conditional_lifecycle())?;
     *application

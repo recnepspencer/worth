@@ -20,7 +20,7 @@ use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
 use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
-use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 mod current_ready;
 mod fresh;
@@ -52,7 +52,7 @@ pub(in crate::domain_computation::primary_graph) struct PreparedApplicationQuery
     pub(super) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
     pub(super) basis: WorthQueryApplicationQueryBasisCustody,
     pub(super) security_product: crate::basis::WorthQueryProductObservationLease,
-    pub(super) session: WorthQueryPreparedQuerySessionIdentity,
+    pub(super) session: WorthQueryPreparedProductReadSessionIdentity,
     pub(super) disclosure: WorthQueryAdmittedApplicationDisclosureContract,
     pub(super) authorization: WorthQueryRetainedAuthorizationDecisionFacts,
     pub(super) authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,

@@ -1,4 +1,7 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
+# Closed Resource source comparison; actual Host actions retain ordinary admission.
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs
 # Exact native resource-cell wake observations; no application control audience.
 crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/native.rs
 crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs

@@ -126,6 +126,22 @@ impl WorthQueryAdmittedGraphWorkPlan {
         }
     }
 
+    /// Consumes only the genuine ResourceRead reservation at its session terminal.
+    #[doc(hidden)]
+    pub fn complete_application_resource(
+        self,
+    ) -> Option<(
+        WorthQueryGraphWorkPlanIdentity,
+        WorthQueryExecutionCapacityReleaseReceipt,
+    )> {
+        match self.mechanics {
+            WorthQueryGraphWorkAdmissionMechanics::ResourceRead { capacity } => {
+                Some((self.identity, capacity.release()))
+            }
+            _ => None,
+        }
+    }
+
     pub fn reservation_count(&self) -> usize {
         match &self.mechanics {
             WorthQueryGraphWorkAdmissionMechanics::ApplicationQuery { .. } => 1,

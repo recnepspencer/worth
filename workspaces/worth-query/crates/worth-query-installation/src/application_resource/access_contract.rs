@@ -11,6 +11,8 @@ pub struct WorthQueryInstalledResourceAccessContract {
     pub(super) purpose: WorthQueryResourceAccessPurpose,
     pub(super) obligations: Arc<WorthQueryInstalledGraphObligationSet>,
     pub(super) rules: Vec<ApplicationQueryDisclosureRule>,
+    pub(super) slots:
+        Vec<worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey>,
 }
 
 impl WorthQueryInstalledResourceAccessContract {
@@ -22,6 +24,11 @@ impl WorthQueryInstalledResourceAccessContract {
     }
     pub fn disclosure_rules(&self) -> &[ApplicationQueryDisclosureRule] {
         &self.rules
+    }
+    pub fn disclosure_slots(
+        &self,
+    ) -> &[worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey] {
+        &self.slots
     }
     /// Integration custody of the actual compiled set; no reconstruction.
     #[doc(hidden)]

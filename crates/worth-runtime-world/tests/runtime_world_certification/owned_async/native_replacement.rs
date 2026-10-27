@@ -240,7 +240,7 @@ fn foreign_schedule_cannot_advance_clock_and_refused_ready_retry_cleans_only_its
 }
 
 #[test]
-fn same_port_other_resource_cannot_schedule_or_advance_the_original_retry() {
+fn same_port_other_resource_cannot_advance_the_custodied_retry() {
     let (mut court, other_node) = NativeServiceCourt::two_nodes();
     let other = court
         .port
@@ -251,10 +251,6 @@ fn same_port_other_resource_cannot_schedule_or_advance_the_original_retry() {
         .advance_managed_owned_async_request_to_timeout(&mut court.owner, 5)
         .unwrap();
     let original = court.owner.admitted_request().handle();
-    assert!(matches!(
-        court.port.schedule_owned_async_retry(&other, original),
-        Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch)
-    ));
     assert_eq!(
         court.port.active_owned_async_request_count(&other).unwrap(),
         0
@@ -266,8 +262,12 @@ fn same_port_other_resource_cannot_schedule_or_advance_the_original_retry() {
     assert!(matches!(
         court
             .port
-            .advance_owned_async_retry(&other, original, &schedule, 7),
-        Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch)
+            .advance_managed_owned_async_retry(&other, &mut court.owner, &schedule, 7),
+        Err(
+            worth_signal::facade::branch::SignalOwnedAsyncQueueDenial::Service(
+                SignalConditionalServiceExecutionDenial::DefinitionMismatch
+            )
+        )
     ));
     assert_eq!(court.owner.admitted_request().handle(), original);
     assert_eq!(

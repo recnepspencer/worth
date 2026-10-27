@@ -1,3 +1,4 @@
+mod clock;
 mod completion_commit;
 mod initial_request;
 mod managed_queue;
@@ -9,8 +10,7 @@ use std::sync::atomic::Ordering;
 
 use crate::branch::owner_services::conditional_execution::{
     SignalConditionalServiceExecutionDenial, SignalInstalledDefinitionBinding,
-    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
-    SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncTimeoutAdmission,
+    SignalOwnedAsyncRetrySchedule,
 };
 use crate::branch::owner_services::{SignalBranchCellState, SignalOwnerOperationAdmission};
 use crate::branch::AdmittedSignalBranchBasis;
@@ -41,18 +41,6 @@ where
         })
     }
 
-    pub(in crate::branch::owner_services) fn admit_conditional_owned_async_request(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        basis: &AdmittedSignalBranchBasis,
-        definition: &SignalInstalledDefinitionBinding,
-        node: ResourceNodeId,
-    ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
-        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            state.admit_owned_async_request(node)
-        })
-    }
-
     pub(in crate::branch::owner_services) fn admit_conditional_owned_async_completion(
         &self,
         admission: &SignalOwnerOperationAdmission<'_>,
@@ -63,68 +51,6 @@ where
     ) -> Result<ResourceCompletionAdmissionReport, SignalConditionalServiceExecutionDenial> {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
             state.admit_owned_async_completion(node, raw)
-        })
-    }
-
-    pub(in crate::branch::owner_services) fn revalidate_conditional_owned_async_request(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        basis: &AdmittedSignalBranchBasis,
-        definition: &SignalInstalledDefinitionBinding,
-        node: ResourceNodeId,
-        intent: ResourceRevalidationIntent,
-    ) -> Result<
-        crate::branch::owner_services::conditional_execution::SignalOwnedAsyncRevalidationAdmission,
-        SignalConditionalServiceExecutionDenial,
-    > {
-        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            state.revalidate_owned_async_request(node, intent)
-        })
-    }
-
-    pub(in crate::branch::owner_services) fn advance_conditional_owned_async_request_to_timeout(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        basis: &AdmittedSignalBranchBasis,
-        definition: &SignalInstalledDefinitionBinding,
-        node: ResourceNodeId,
-        handle: ResourceRequestHandle,
-        coordinate: u64,
-    ) -> Result<SignalOwnedAsyncTimeoutAdmission, SignalConditionalServiceExecutionDenial> {
-        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            state.advance_owned_async_request_to_timeout(node, handle, coordinate)
-        })
-    }
-
-    pub(in crate::branch::owner_services) fn schedule_conditional_owned_async_retry(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        basis: &AdmittedSignalBranchBasis,
-        definition: &SignalInstalledDefinitionBinding,
-        node: ResourceNodeId,
-        handle: ResourceRequestHandle,
-    ) -> Result<
-        crate::data::resource::ResourceRetryScheduleReport,
-        SignalConditionalServiceExecutionDenial,
-    > {
-        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            state.schedule_owned_async_retry(node, handle)
-        })
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub(in crate::branch::owner_services) fn advance_conditional_owned_async_retry(
-        &self,
-        admission: &SignalOwnerOperationAdmission<'_>,
-        basis: &AdmittedSignalBranchBasis,
-        definition: &SignalInstalledDefinitionBinding,
-        node: ResourceNodeId,
-        handle: ResourceRequestHandle,
-        schedule: &SignalOwnedAsyncRetrySchedule,
-        coordinate: u64,
-    ) -> Result<SignalOwnedAsyncRetryAdmission, SignalConditionalServiceExecutionDenial> {
-        self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            state.advance_owned_async_retry(node, handle, schedule, coordinate)
         })
     }
 

@@ -175,8 +175,8 @@ fn foreign_bridge_cannot_continue_any_owned_request_stage() {
         ))
         .unwrap();
     let origin = origin.seal().unwrap();
-    let request = origin
-        .admit_owned_async_request_identity(
+    let mut owner = origin
+        .admit_unqueued_owned_async_request_identity(
             &declaration,
             origin.admitted_signal_basis(),
             BridgeAsyncRequestTruthViewBasis::authoritative(
@@ -186,6 +186,7 @@ fn foreign_bridge_cannot_continue_any_owned_request_stage() {
             ),
         )
         .unwrap();
+    let request = owner.retained_request().unwrap();
 
     let identical = match origin.admit_owned_async_supersession(&request, &request) {
         Err(denial) => denial,
@@ -204,15 +205,14 @@ fn foreign_bridge_cannot_continue_any_owned_request_stage() {
         BridgeAsyncCompletionRejectionKind::ForeignOwnerObservationAuthority
     );
 
-    let timeout_denial = match foreign.advance_owned_async_request_to_timeout(&request, 5) {
-        Err(denial) => denial,
-        Ok(_) => panic!("foreign runtime advanced the origin timeout"),
-    };
+    assert!(matches!(
+        foreign.advance_managed_owned_async_request_to_timeout(&mut owner, 5),
+        Err(crate::facade::BridgeOwnedAsyncManagedDenial::ForeignOwner)
+    ));
     for denial in [
         foreign
             .owned_async_active_request_count(&request)
             .unwrap_err(),
-        timeout_denial,
         foreign.retire_owned_async_request(&request).unwrap_err(),
         foreign
             .validate_owned_async_completion_envelope(
@@ -296,8 +296,8 @@ fn effects_indeterminate_observation_cannot_cross_owned_runtimes() {
         .expect("owned async source installs");
     let source = source.seal().expect("source runtime seals");
     let foreign = foreign.seal().expect("foreign runtime seals");
-    let admission = source
-        .admit_owned_async_request_identity(
+    let owner = source
+        .admit_unqueued_owned_async_request_identity(
             &lowered,
             source.admitted_signal_basis(),
             BridgeAsyncRequestTruthViewBasis::authoritative(
@@ -307,6 +307,7 @@ fn effects_indeterminate_observation_cannot_cross_owned_runtimes() {
             ),
         )
         .expect("source owner admits request");
+    let admission = owner.request().unwrap();
     let issuer = admission.effects_indeterminate_issuer();
 
     let denial = foreign

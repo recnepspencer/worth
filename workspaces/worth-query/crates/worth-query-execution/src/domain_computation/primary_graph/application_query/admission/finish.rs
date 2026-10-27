@@ -309,7 +309,7 @@ where
             basis.retained_product(),
             security_product,
             self.graph_work_provider_identity(),
-            graph.query_session_port(),
+            graph.product_read_session_port(),
         )
         .map_err(|denial| graph_work_denial(format!("{}: {denial:?}", query.name())))
     }

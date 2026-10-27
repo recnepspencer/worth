@@ -1,9 +1,7 @@
-use crate::branch::owner_services::conditional_execution::{
-    SignalConditionalServiceExecutionDenial, SignalOwnedAsyncRequestAdmission,
-};
+use crate::branch::owner_services::conditional_execution::SignalConditionalServiceExecutionDenial;
 use crate::data::resource::{
     RawCompletionEnvelope, ResourceCancellationReason, ResourceCancellationReport,
-    ResourceCompletionAdmissionReport, ResourceNodeId, ResourceRevalidationIntent,
+    ResourceCompletionAdmissionReport, ResourceNodeId,
 };
 
 use super::BranchState;
@@ -28,30 +26,12 @@ where
         Ok(())
     }
 
-    pub(crate) fn admit_owned_async_request(
-        &mut self,
-        node: ResourceNodeId,
-    ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
-        self.admit_owned_async_request_with_lifecycle(node)
-    }
-
     pub(crate) fn admit_owned_async_completion(
         &mut self,
         node: ResourceNodeId,
         raw: RawCompletionEnvelope,
     ) -> Result<ResourceCompletionAdmissionReport, SignalConditionalServiceExecutionDenial> {
         self.admit_owned_async_completion_with_lifecycle(node, raw)
-    }
-
-    pub(crate) fn revalidate_owned_async_request(
-        &mut self,
-        node: ResourceNodeId,
-        intent: ResourceRevalidationIntent,
-    ) -> Result<
-        crate::branch::owner_services::conditional_execution::SignalOwnedAsyncRevalidationAdmission,
-        SignalConditionalServiceExecutionDenial,
-    > {
-        self.revalidate_owned_async_request_with_lifecycle(node, intent)
     }
 
     pub(crate) fn cancel_owned_async_request(

@@ -174,6 +174,8 @@ pub struct WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) signing_owners: std::sync::Mutex<std::collections::BTreeMap<worth_query_declaration::facade::application_program::ApplicationProgramRevision, worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>>>,
     pub(super) installed_conditionals:
         super::application_contribution::WorthQueryInstalledApplicationConditionalRegistry<Schema>,
+    pub(super) installed_resources:
+        super::application_resource::installation::InstalledResourceRegistry<Schema>,
     pub(in crate::domain_computation::primary_graph) workflow_coverage:
         super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
 }
@@ -236,7 +238,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
 }
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn authentication_is_expired(
+    pub(in crate::domain_computation) fn authentication_is_expired(
         &self,
         valid_until: std::time::Instant,
     ) -> bool {

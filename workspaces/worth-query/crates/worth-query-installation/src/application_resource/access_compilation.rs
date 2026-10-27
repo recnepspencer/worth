@@ -63,6 +63,9 @@ pub(super) fn compile_access_contracts<Schema: ApplicationSchema>(
                 purpose,
                 obligations: Arc::new(obligations),
                 rules,
+                slots: purpose.facets().iter().map(|facet| {
+                    worth_query_declaration::facade::application_resource::ApplicationResourceDisclosureMeaning::from_untrusted_fields(parts.resource_type.clone(), *facet).slot_key()
+                }).collect(),
             }),
         );
     }

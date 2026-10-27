@@ -20,5 +20,7 @@ mod recovery;
 #[path = "capability/schema.rs"]
 mod schema;
 
+#[path = "capability/resources.rs"]
+mod resources;
 #[path = "capability/workflow.rs"]
 mod workflow;
