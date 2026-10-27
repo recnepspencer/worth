@@ -279,7 +279,7 @@ fn repeated_component_1000_nodes_publishes_and_starts() {
     let (large_nodes, large_bytes) = qualify(111, 918_510);
     assert!(large_bytes > small_bytes);
     assert!(
-        large_bytes * u64::from(small_nodes) <= small_bytes * u64::from(large_nodes) * 2,
+        large_bytes * small_nodes <= small_bytes * large_nodes * 2,
         "publication bytes must grow linearly with expanded nodes: {small_nodes}/{small_bytes} -> {large_nodes}/{large_bytes}"
     );
 }

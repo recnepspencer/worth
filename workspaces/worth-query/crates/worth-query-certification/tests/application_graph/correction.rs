@@ -1,9 +1,9 @@
 //! Exact performed selection uses real public installation, publication and disclosure.
 // The example owns this model and lints all of it; this court uses a part.
-#[allow(dead_code, unused_imports)]
 #[path = "../../examples/application_correction_support/mod.rs"]
 #[allow(
     dead_code,
+    unused_imports,
     reason = "The shared correction example also executes its independent portfolio courts"
 )]
 mod model;
