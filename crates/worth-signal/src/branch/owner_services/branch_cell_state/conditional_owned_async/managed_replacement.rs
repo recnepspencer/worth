@@ -46,9 +46,15 @@ where
         handle: ResourceRequestHandle,
         queue: Option<&ResourceManagedQueueBinding>,
         intent: ResourceRevalidationIntent,
+        process_local: bool,
     ) -> Result<SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncQueueDenial> {
-        self.state
-            .revalidate_managed_owned_async_request(node, handle, queue, intent)
+        self.state.revalidate_managed_owned_async_request(
+            node,
+            handle,
+            queue,
+            intent,
+            process_local,
+        )
     }
 
     pub(in crate::branch::owner_services) fn finish_managed_owned_async_wake_cleanup(

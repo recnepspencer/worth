@@ -65,12 +65,19 @@ where
         handle: ResourceRequestHandle,
         queue: Option<&ResourceManagedQueueBinding>,
         intent: ResourceRevalidationIntent,
+        process_local: bool,
     ) -> Result<
         Result<SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncQueueDenial>,
         SignalConditionalServiceExecutionDenial,
     > {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            Ok(state.revalidate_managed_owned_async_request(node, handle, queue, intent))
+            Ok(state.revalidate_managed_owned_async_request(
+                node,
+                handle,
+                queue,
+                intent,
+                process_local,
+            ))
         })
     }
 

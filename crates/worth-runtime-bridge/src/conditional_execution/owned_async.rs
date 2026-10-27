@@ -9,6 +9,7 @@ mod managed_queue;
 mod managed_request;
 mod managed_retry;
 mod managed_revalidation;
+mod process_local_release;
 mod retirement;
 mod retry_revalidation;
 mod supersession;
@@ -19,6 +20,9 @@ pub use declaration::BridgeOwnedAsyncRequestResponseDeclaration;
 pub(super) use installation::BridgeInstalledOwnedAsyncDeclaration;
 pub use managed_request::{BridgeOwnedAsyncManagedDenial, BridgeOwnedAsyncManagedRequestAdmission};
 pub use managed_revalidation::BridgeOwnedAsyncManagedRevalidation;
+pub use process_local_release::{
+    BridgeOwnedAsyncReleasedResource, BridgeOwnedAsyncResourceReleaseRefusal,
+};
 
 fn foreign_continuation_denial() -> crate::facade::BridgeAsyncCompletionRejection {
     crate::facade::BridgeAsyncCompletionRejection::new(

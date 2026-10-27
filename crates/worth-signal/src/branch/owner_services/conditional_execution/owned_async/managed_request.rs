@@ -35,6 +35,11 @@ pub struct SignalOwnedAsyncManagedAdmission {
     pub(super) in_flight: Option<InFlightResourceRequest>,
     pub(super) queue: Option<SignalOwnedAsyncManagedQueueBinding>,
     pub(super) requires_queue: bool,
+    pub(super) process_local: bool,
+    pub(super) retention: Option<SignalOwnedAsyncRetentionObligation>,
+    pub(super) released_predecessor: Option<InFlightResourceRequest>,
+    pub(super) pending_retry: Option<crate::data::resource::ScheduledResourceRetry>,
+    pub(super) released_retry: Option<super::process_local_retry::SignalOwnedAsyncReleasedRetry>,
     pub(super) admitted_current_occurrence: bool,
     pub(super) report: SignalOwnedAsyncManagedReport,
     pub(super) cleanup: Option<SignalOwnedAsyncManagedWakeCleanup>,
@@ -77,6 +82,7 @@ pub(crate) struct SignalOwnedAsyncManagedHandoff {
     pub(crate) queue: SignalOwnedAsyncManagedQueueHandoff,
     pub(crate) cleanup: Option<SignalOwnedAsyncManagedWakeCleanup>,
     pub(crate) refusal: Option<SignalOwnedAsyncQueueDenial>,
+    pub(crate) retention: Option<SignalOwnedAsyncRetentionObligation>,
 }
 
 impl SignalOwnedAsyncManagedAdmission {
@@ -106,6 +112,11 @@ impl SignalOwnedAsyncManagedAdmission {
                 binding,
             }),
             requires_queue,
+            process_local: false,
+            retention: None,
+            released_predecessor: None,
+            pending_retry: None,
+            released_retry: None,
             origin,
             report: SignalOwnedAsyncManagedReport::Admission(report),
             cleanup,
@@ -131,6 +142,12 @@ impl SignalOwnedAsyncManagedAdmission {
 
     pub fn report(&self) -> &SignalOwnedAsyncManagedReport {
         &self.report
+    }
+
+    pub fn released_retry(
+        &self,
+    ) -> Option<&super::process_local_retry::SignalOwnedAsyncReleasedRetry> {
+        self.released_retry.as_ref()
     }
 
     pub fn refusal(&self) -> Option<&SignalOwnedAsyncQueueDenial> {
@@ -180,7 +197,23 @@ impl SignalOwnedAsyncManagedAdmission {
                 });
             }
         }
+        if self.process_local {
+            match &handoff.report {
+                SignalOwnedAsyncManagedReport::RetrySchedule(report) => {
+                    if let Some(scheduled) = report.scheduled_retry() {
+                        self.pending_retry = Some(scheduled.clone());
+                    }
+                }
+                SignalOwnedAsyncManagedReport::Retry(report)
+                    if report.admitted_retry().is_some() =>
+                {
+                    self.pending_retry = None;
+                }
+                _ => {}
+            }
+        }
         self.report = handoff.report;
+        self.retention = handoff.retention;
         self.cleanup = handoff.cleanup;
         self.refusal = handoff.refusal;
         handoff.progress

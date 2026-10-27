@@ -951,6 +951,26 @@ new Query/UI consumers do not use that stripping adapter. The real application
 control handoff, provider verification, fresh authorization/disclosure and this
 remaining compatibility boundary still require qualification before phase closure.
 
+The lower-owner retention prerequisite is being qualified separately from Host
+integration. An explicitly installed queued process-local posture uses exact
+owner-selected terminal, denial, retry-lineage and retired-wake release. It
+retains one fixed predecessor obligation before the next report can overwrite
+its genuine selection; existing omission summaries absorb expired diagnostics.
+The genuine pending retry schedule survives deferred report changes; an explicit
+process-local abort retires only that exact backoff without advancing time and
+retains its actual released schedule/retirement evidence.
+Stored ProcessLocal occurrences reject raw Native timeout/retry/revalidation
+before effects; those entrances cannot bypass the managed cleanup custodian.
+Exact predecessor release carries the genuine current occurrence, preserving
+its generation charge independently of newer same-node index entries.
+Refusal preserves the real custodian and any completion owner. Success consumes
+them into released evidence without live progression capability. Fulfilled
+process-local requests require their actual completion cleanup owner before
+release and fresh Start; they cannot revalidate around that handoff. Legacy
+retention remains unchanged. Query must still install released row state before
+its original-request terminal handoff, and qualify the finite provider/row path;
+Native release alone does not bound or certify the unfinished Host lifecycle.
+
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
 resource machinery into the current application SDK; it does not reopen 9.4's

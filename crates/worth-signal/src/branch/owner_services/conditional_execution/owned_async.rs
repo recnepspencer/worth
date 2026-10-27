@@ -24,6 +24,13 @@ mod initial_request;
 mod managed_queue;
 mod managed_replacement;
 mod managed_request;
+mod process_local_release;
+mod process_local_retry;
+pub use process_local_retry::SignalOwnedAsyncReleasedRetry;
+mod retention_obligation;
+mod retention_storage_for_test;
+pub(crate) use retention_obligation::SignalOwnedAsyncRetentionObligation;
+pub use retention_storage_for_test::SignalOwnedAsyncRetentionStorageForTest;
 mod wake_observation_for_test;
 pub use completion_admission::SignalOwnedAsyncCompletionAdmission;
 pub use completion_commit::SignalOwnedAsyncCompletionCommit;
@@ -37,6 +44,9 @@ pub use managed_request::{
 pub(crate) use managed_request::{
     SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
     SignalOwnedAsyncManagedWakeCleanup,
+};
+pub use process_local_release::{
+    SignalOwnedAsyncReleasedResource, SignalOwnedAsyncResourceReleaseRefusal,
 };
 
 /// Opaque proof that one presealed resource definition belongs to this exact

@@ -64,6 +64,12 @@ impl BridgeOwnedAsyncManagedRequestAdmission {
         self.native.report()
     }
 
+    pub fn released_retry(
+        &self,
+    ) -> Option<&worth_signal::facade::branch::SignalOwnedAsyncReleasedRetry> {
+        self.native.released_retry()
+    }
+
     pub fn wake_cleanup_pending(&self) -> bool {
         self.native.wake_cleanup_pending()
     }

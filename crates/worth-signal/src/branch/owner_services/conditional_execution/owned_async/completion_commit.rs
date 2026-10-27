@@ -4,8 +4,8 @@ use crate::data::temporal::TemporalWakeId;
 
 /// A native commit remains observable even if its timeout cleanup later refuses.
 pub struct SignalOwnedAsyncCompletionCommit {
-    origin: SignalOwnedAsyncSourceBinding,
-    state: SignalOwnedAsyncCompletionCommitState,
+    pub(super) origin: SignalOwnedAsyncSourceBinding,
+    pub(super) state: SignalOwnedAsyncCompletionCommitState,
 }
 
 pub(crate) struct SignalOwnedAsyncCompletionCommitState {

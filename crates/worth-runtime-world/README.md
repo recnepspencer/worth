@@ -114,6 +114,25 @@ claim of fresh currentness. The UI presentation backend uses this posture becaus
 it owns no product writes. It cannot substitute for an authoritative committed
 source; the committed entrance still refuses an empty target.
 
+Queued Bridge declarations may opt into `with_process_local_retention` before
+installation. The genuine installed Signal descriptor selects this posture;
+legacy producers retain their existing policy. Exact release requires a terminal
+occurrence, an empty queue, no pending retry/wake cleanup, and the genuine commit
+owner for fulfillment. A refusal returns both custodians; success returns released
+evidence without a live request capability. Exact predecessor, retry, denial and
+retired-wake disposal uses the existing retention owners and omission summaries,
+leaving other producers untouched. Fulfilled process-local requests release their
+completion first and enter again through fresh Start rather than revalidation.
+A pending retry can be explicitly aborted before due through its genuine
+custodian, retiring that exact backoff without advancing the clock; its actual
+schedule and retirement evidence remain in a fixed released slot.
+The stored occurrence enforces this custody protocol: raw Native timeout, retry
+and revalidation entrances refuse ProcessLocal occurrences before effects.
+Legacy queued occurrences keep their original behavior. Releasing a predecessor
+preserves the generation charge selected by its genuine current custodian,
+including pending retries hidden by a newer same-node index entry.
+These operations do not supply Query provider storage, authorization or restart.
+
 This crate has no Query, Store, persistence, replay, codec or physical-runtime
 dependency. It does not provide durable restart, multi-parent history, rollback,
 or Query public completion. Query already consumes this crate through

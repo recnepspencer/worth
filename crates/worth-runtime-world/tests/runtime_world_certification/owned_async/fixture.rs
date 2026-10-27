@@ -37,14 +37,18 @@ impl RuntimeWorldClockSource for Clock {
 
 impl AsyncSourceCourt {
     pub fn new() -> Self {
-        Self::with_queue_capacity(None)
+        Self::with_queue_capacity(None, false)
     }
 
     pub fn managed(capacity: std::num::NonZeroU64) -> Self {
-        Self::with_queue_capacity(Some(capacity))
+        Self::with_queue_capacity(Some(capacity), false)
     }
 
-    fn with_queue_capacity(capacity: Option<std::num::NonZeroU64>) -> Self {
+    pub fn process_local(capacity: std::num::NonZeroU64) -> Self {
+        Self::with_queue_capacity(Some(capacity), true)
+    }
+
+    fn with_queue_capacity(capacity: Option<std::num::NonZeroU64>, process_local: bool) -> Self {
         let relational = Arc::new(RelationalRuntimeApi::builder().build());
         let source = RuntimeBridgeRelationalSource::for_graph_role(
             Arc::clone(&relational),
@@ -79,6 +83,11 @@ impl AsyncSourceCourt {
             BridgeOwnedAsyncRequestResponseDeclaration::new("exact-source", 919, 512, 2, 2, 5);
         let declaration = if let Some(capacity) = capacity {
             declaration.with_managed_queue_capacity(capacity)
+        } else {
+            declaration
+        };
+        let declaration = if process_local {
+            declaration.with_process_local_retention()
         } else {
             declaration
         };

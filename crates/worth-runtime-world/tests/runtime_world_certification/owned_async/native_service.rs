@@ -14,27 +14,36 @@ pub(super) struct NativeServiceCourt {
     pub(super) source: SignalOwnedAsyncSourceBinding,
     pub(super) owner: SignalOwnedAsyncManagedAdmission,
     pub(super) node: ResourceNodeId,
-    payload: ResourcePayloadContractDigest,
+    pub(super) payload: ResourcePayloadContractDigest,
 }
 
 impl NativeServiceCourt {
     pub(super) fn new() -> Self {
-        Self::build(false, false).0
+        Self::build(false, false, false).0
     }
 
     pub(super) fn coalescing() -> Self {
-        Self::build(false, true).0
+        Self::build(false, true, false).0
     }
 
     pub(super) fn two_nodes() -> (Self, ResourceNodeId) {
-        let (court, additional) = Self::build(true, false);
+        let (court, additional) = Self::build(true, false, false);
         (
             court,
             additional.expect("the requested second real node was declared"),
         )
     }
 
-    fn build(with_second_node: bool, coalescing: bool) -> (Self, Option<ResourceNodeId>) {
+    pub(super) fn process_local_two_nodes() -> (Self, ResourceNodeId) {
+        let (court, additional) = Self::build(true, false, true);
+        (court, additional.unwrap())
+    }
+
+    fn build(
+        with_second_node: bool,
+        coalescing: bool,
+        process_local: bool,
+    ) -> (Self, Option<ResourceNodeId>) {
         let claimant = SignalAspectLoweringOwner::fresh();
         let mut graph = SignalGraph::new();
         graph.claim_aspect_lowering_owner(&claimant).unwrap();
@@ -42,9 +51,7 @@ impl NativeServiceCourt {
         let additional = with_second_node.then(|| ResourceNodeId::from_node(graph.node().build()));
         let mut runtime = SignalRuntime::build_for::<()>(graph);
         for declared in std::iter::once(node).chain(additional) {
-            runtime
-                .declare_resource_node(
-                    ResourceNodeDeclaration::new(
+            let mut declaration = ResourceNodeDeclaration::new(
                         declared,
                         ResourcePayloadContract::new(ResourcePayloadContractId::new(919))
                             .with_max_payload_bytes(64),
@@ -64,9 +71,21 @@ impl NativeServiceCourt {
                         ResourceTimeoutPolicyDeclaration::PerAttemptTimeout {
                             timeout: TemporalDuration::temporal_duration(5).unwrap(),
                         },
-                    ),
-                )
-                .unwrap();
+                    );
+            if process_local {
+                if declared == node {
+                    declaration = declaration.with_retry_max_attempts(3).with_retry_budget(
+                        worth_signal::facade::ResourceRetryBudgetScope::Request,
+                        2,
+                    );
+                }
+                declaration = declaration.with_retention_policy(if declared == node {
+                    worth_signal::facade::ResourceRetentionPolicyDeclaration::TerminalSummariesOnly
+                } else {
+                    worth_signal::facade::ResourceRetentionPolicyDeclaration::RetainAllTransitions
+                });
+            }
+            runtime.declare_resource_node(declaration).unwrap();
         }
         let payload = runtime
             .resource_descriptor_for_node(node)
@@ -82,7 +101,10 @@ impl NativeServiceCourt {
             .issue_conditional_execution_service(&basis, &claimant, &authority)
             .unwrap();
         let source = port.bind_owned_async_source(&basis, node).unwrap();
-        let owner = if coalescing {
+        let owner = if process_local {
+            port.admit_process_local_managed_owned_async_request(&source, 1)
+                .unwrap()
+        } else if coalescing {
             port.admit_unqueued_owned_async_request(&source).unwrap()
         } else {
             port.admit_managed_owned_async_request(&source, 1).unwrap()
@@ -109,14 +131,22 @@ impl NativeServiceCourt {
     }
 
     pub(super) fn envelope(&self, byte_len: u64) -> RawCompletionEnvelope {
-        let admitted = self.owner.admitted_request();
+        Self::envelope_for(&self.owner, &self.payload, byte_len)
+    }
+
+    pub(super) fn envelope_for(
+        owner: &SignalOwnedAsyncManagedAdmission,
+        payload: &ResourcePayloadContractDigest,
+        byte_len: u64,
+    ) -> RawCompletionEnvelope {
+        let admitted = owner.admitted_request();
         let handle = admitted.handle();
         RawCompletionEnvelope::new(
             handle.request_id(),
             handle.generation(),
             handle.branch_epoch(),
             admitted.attempt(),
-            self.payload.clone(),
+            payload.clone(),
             byte_len,
         )
     }

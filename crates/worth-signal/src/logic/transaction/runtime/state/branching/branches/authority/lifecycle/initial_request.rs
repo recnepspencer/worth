@@ -15,6 +15,7 @@ where
         &mut self,
         node: ResourceNodeId,
         allow_coalescing: bool,
+        process_local: bool,
     ) -> Result<SignalOwnedAsyncManagedAdmissionState, SignalConditionalServiceExecutionDenial>
     {
         self.admit_owned_async_source(node)?;
@@ -46,6 +47,11 @@ where
                 timeout_admission,
                 capture.then_some(&mut self.derived.telemetry.resource),
             );
+        if process_local {
+            self.derived
+                .resource
+                .mark_process_local_request(report.admitted_request().handle());
+        }
         let (wake, reason) = if report.intent_equivalence_coalescing().is_some() {
             (new_timeout, TemporalWakeRetirementReason::Disposed)
         } else if report.superseded_request().is_some() {

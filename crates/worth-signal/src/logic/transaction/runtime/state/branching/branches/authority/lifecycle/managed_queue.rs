@@ -37,9 +37,13 @@ where
         &mut self,
         node: ResourceNodeId,
         capacity: u64,
+        process_local: bool,
     ) -> Result<SignalOwnedAsyncManagedAdmissionState, SignalConditionalServiceExecutionDenial>
     {
         self.admit_owned_async_source(node)?;
+        if process_local {
+            self.require_process_local_owned_async(node)?;
+        }
         if capacity == 0
             || self
                 .derived
@@ -53,7 +57,7 @@ where
                 ),
             ));
         }
-        let state = self.admit_owned_async_request_handoff(node, false)?;
+        let state = self.admit_owned_async_request_handoff(node, false, process_local)?;
         let capture = self.captures_telemetry();
         let queue = self.derived.resource.bind_managed_queue(
             state.admitted_request(),

@@ -12,6 +12,7 @@ where
         node: ResourceNodeId,
     ) -> Result<SignalOwnedAsyncManagedAdmissionState, SignalConditionalServiceExecutionDenial>
     {
-        self.state.admit_owned_async_request_handoff(node, true)
+        self.state
+            .admit_owned_async_request_handoff(node, true, false)
     }
 }

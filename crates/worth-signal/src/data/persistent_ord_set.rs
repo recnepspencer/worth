@@ -22,7 +22,6 @@ impl<T: Clone + Ord> PersistentOrdSet<T> {
         }
     }
 
-    #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.values.len()
     }

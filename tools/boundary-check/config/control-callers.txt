@@ -1,5 +1,8 @@
 # Law 1, reach: exact test targets, test-only mounted sources, fixtures and certification sources.
 # Exact native resource-cell wake observations; no application control audience.
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/native.rs
+crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
+crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/process_local_retention/bridge.rs
 crates/worth-signal/ crates/worth-runtime-bridge/src/conditional_execution/owned_async/wake_observation_for_test.rs
 crates/worth-signal/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
 crates/worth-runtime-bridge/ crates/worth-runtime-world/tests/runtime_world_certification/owned_async/initial_custody.rs
