@@ -2,6 +2,7 @@
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
 use std::collections::BTreeSet;
 use worth_relational::facade::identity::EntityId;
+pub(super) mod structural;
 
 /// The entity this commit retired that `fact` was read at; `None` for every
 /// other fact. It reads nothing.

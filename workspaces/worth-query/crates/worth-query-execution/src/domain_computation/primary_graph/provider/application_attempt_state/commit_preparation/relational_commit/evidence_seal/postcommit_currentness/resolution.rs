@@ -66,6 +66,11 @@ impl PreparedFactRebase {
         >,
     ) -> Result<Result<Self, RebaseVerificationReason>, CompanionPreflightStop> {
         let unavailable = RebaseVerificationReason::NativeRevisionUnavailable;
+        if let Some(retirement) =
+            retirement::structural::prepare(runtime, execution, snapshot, fact, retired)?
+        {
+            return Ok(Ok(Self::Replace(retirement)));
+        }
         if let Some(entity_id) = retirement::retired_anchor(fact, retired) {
             // No other fact may stand in for a retirement the snapshot lacks.
             return Ok(
