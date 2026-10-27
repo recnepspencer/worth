@@ -124,7 +124,9 @@ and physical successor edge through the ordinary prepared scope. A name's bytes
 grant no read or write access.
 
 The compiled [topology invariant](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_invariant/preparation.rs)
-uses ordered orbit windows and processes each affected orbit once. Its former
+selects each affected `PlanarIslands` component once, then uses ordered orbit
+windows once per ring. `PlanarSuccessor` supplies order; authored `PlanarCoupling`
+joins otherwise separate rings without changing their successor law. Its former
 successor lookup is deleted. Application read observations describe business
 walk/field acquisitions; private Native identity preparation is outside them.
 Ordinary projection readers also expose `reader.orbit(Next::reference(), &member)`
@@ -297,8 +299,44 @@ genuine count-based commit refusal and prepared-scope widening. The
 [empty-set CRUD court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/component_invariants/lifecycle.rs)
 creates and deletes a real member through an ordinary admitted operation.
 
-The full Phase 5 seeded union-find, topology-entry, 10/10,000 locality,
-replay/parallel and CAD shell adoption gates remain open.
+### Public Topology Island Consumer
+
+The [public topology declaration](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/planar_islands.rs)
+defines `PlanarIslands` over both `PlanarSuccessor` and the authored physical
+`PlanarCoupling` relation. Component coupling is undirected; this does not declare
+stored symmetry or change successor order. The ordinary `PlanarIslandCoupling`
+mutation uses the existing principal, program admission, whole-adjacency decision
+facts and candidate writer to link or unlink one actual pair. Coupling deletion
+cascades when its endpoint is retired.
+
+The planar invariant resolves the installed set in its factory and declares both
+physical sources in read closure and applicability. Preparation selects complete
+affected components, then obtains genuine Native orbits for geometric windows.
+Only triples touching edited vertices reach the unchanged determinant rule.
+`CompleteComponent` and `CompleteOrbit` observer events retain fixed identity,
+cardinality and common business-read counts; diagnostics add no graph reads.
+
+The [seeded public differential](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/differential.rs)
+submits real installed-program coupling edits and least-member replacement. Its
+independent union-find consumes client-authored live edges, including retirement's
+cascade. The model predicts retained heirs and split/merge causes before querying
+component identities. New opaque names bind once after historical freshness and
+live uniqueness checks. Fresh privileged SDK projections check actual generation
+membership, counts, incident lineage and merge resolution; they grant no ordinary
+publication authority.
+
+The [locality court](../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/component_islands/locality.rs)
+performs the same coupling-only split beside 10 and 10,000 real unrelated rings.
+It compares the original ordinary invariant's preparation/evaluation business
+reads; privileged oracle acquisition occurs afterwards. Native private metadata
+preparation and bootstrap work are outside that measurement.
+The fixture funds both populations with the same original accounted request
+policy so real bulk construction can finish; that ceiling is not a locality claim.
+The existing compiled
+`invariant_reads` example still exercises the real geometry and access refusals.
+
+Full Phase 5 remains open for cert-only replay, actual differing worker execution
+with exact identity/lineage agreement, and CAD shell adoption through face adjacency.
 
 ### Privileged Component Inspection
 

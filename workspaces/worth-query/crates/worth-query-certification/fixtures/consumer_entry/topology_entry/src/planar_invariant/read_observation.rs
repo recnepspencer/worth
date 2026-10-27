@@ -17,6 +17,14 @@ pub enum PlanarInvariantReadEvent {
     Touched {
         entity: EntityId,
     },
+    /// One actual complete island. No copied membership or additional reads.
+    /// Private Native identity preparation is outside these business counts.
+    CompleteComponent {
+        before: WorthQueryInvariantProjectionWork,
+        after: WorthQueryInvariantProjectionWork,
+        visited: usize,
+        identity: [u8; 32],
+    },
     /// One complete orbit. Counts describe its business walk; private Native
     /// identity metadata preparation is outside these application observations.
     CompleteOrbit {

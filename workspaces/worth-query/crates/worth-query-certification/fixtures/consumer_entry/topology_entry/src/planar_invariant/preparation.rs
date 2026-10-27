@@ -1,4 +1,4 @@
-//! Prepare geometry windows from complete Native orbits, once per affected orbit.
+//! Select affected Native islands, then use Native successor orbits for geometry.
 use super::*;
 use std::collections::BTreeSet;
 
@@ -59,53 +59,87 @@ impl<Schema: TopologyModelBinding> PositiveTurnRule<Schema> {
         if touched.is_empty() {
             return Ok(Vec::new());
         }
-        let touched_ids = touched
-            .iter()
-            .map(|entity| entity.entity_id())
-            .collect::<BTreeSet<_>>();
+        let mut windows = PreparedTriangles {
+            touched: touched.iter().map(|entity| entity.entity_id()).collect(),
+            ordered: BTreeSet::new(),
+            triples: Vec::new(),
+        };
         let mut covered = BTreeSet::new();
-        let mut triples = Vec::new();
         for member in &touched {
             preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
             if covered.contains(&member.entity_id()) {
                 continue;
             }
             let before = planner.reads();
-            let orbit = view
-                .orbit(&self.successor, member)
+            let component = view
+                .component_of(&self.islands, member)
                 .map_err(preparation_error)?;
-            self.observe(PlanarInvariantReadEvent::CompleteOrbit {
+            self.observe(PlanarInvariantReadEvent::CompleteComponent {
                 before,
                 after: planner.reads(),
-                visited: orbit.len(),
-                physical_relations: orbit.relations().len(),
-                identity: *orbit.identity().bytes(),
+                visited: component.len(),
+                identity: *component.identity().bytes(),
             });
-            for (index, root) in orbit.members().enumerate() {
+            for root in component.members() {
                 preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
                 covered.insert(root.entity_id());
-                let middle = orbit
-                    .member((index + 1) % orbit.len())
-                    .expect("complete orbit");
-                let next = orbit
-                    .member((index + 2) % orbit.len())
-                    .expect("complete orbit");
-                // A geometric triple changes iff one of its vertices changed.
-                if [&root, &middle, &next]
-                    .iter()
-                    .any(|entity| touched_ids.contains(&entity.entity_id()))
-                {
-                    triples.try_reserve(1).map_err(|_| {
-                        WorthQueryApplicationInvariantPreparationError::new(
-                            "planar triangle allocation refused",
-                        )
-                    })?;
-                    triples.push([root, middle, next]);
+                if windows.ordered.contains(&root.entity_id()) {
+                    continue;
                 }
+                let before = planner.reads();
+                let orbit = view
+                    .orbit(&self.successor, &root)
+                    .map_err(preparation_error)?;
+                self.observe(PlanarInvariantReadEvent::CompleteOrbit {
+                    before,
+                    after: planner.reads(),
+                    visited: orbit.len(),
+                    physical_relations: orbit.relations().len(),
+                    identity: *orbit.identity().bytes(),
+                });
+                windows.include(&orbit, budget)?;
             }
         }
         preparation_checkpoint(budget, 0)?;
-        Ok(triples)
+        Ok(windows.triples)
+    }
+}
+
+/// Transient deduplication and geometry windows; Native retains topology truth.
+struct PreparedTriangles<S> {
+    touched: BTreeSet<EntityId>,
+    ordered: BTreeSet<EntityId>,
+    triples: Vec<[WorthQueryApplicationInvariantEntity<S, Body>; 3]>,
+}
+impl<S> PreparedTriangles<S> {
+    fn include(
+        &mut self,
+        orbit: &WorthQueryApplicationInvariantOrbit<S, PlanarSuccessor, Body>,
+        budget: Option<&dyn CustomInvariantLeaseBudget>,
+    ) -> Result<(), WorthQueryApplicationInvariantPreparationError> {
+        for (index, root) in orbit.members().enumerate() {
+            preparation_checkpoint(budget, PLANAR_CANDIDATE_WORK)?;
+            self.ordered.insert(root.entity_id());
+            let middle = orbit
+                .member((index + 1) % orbit.len())
+                .expect("complete orbit");
+            let next = orbit
+                .member((index + 2) % orbit.len())
+                .expect("complete orbit");
+            // A geometric triple changes iff one of its vertices changed.
+            if [&root, &middle, &next]
+                .iter()
+                .any(|entity| self.touched.contains(&entity.entity_id()))
+            {
+                self.triples.try_reserve(1).map_err(|_| {
+                    WorthQueryApplicationInvariantPreparationError::new(
+                        "planar triangle allocation refused",
+                    )
+                })?;
+                self.triples.push([root, middle, next]);
+            }
+        }
+        Ok(())
     }
 }
 

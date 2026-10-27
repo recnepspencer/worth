@@ -143,8 +143,13 @@ where
             [
                 ApplicationInvariantScopeTarget::Entity("Body".to_owned()),
                 ApplicationInvariantScopeTarget::Relation("PlanarSuccessor".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarCoupling".to_owned()),
             ],
-            [ApplicationInvariantScopeTarget::Entity("Body".to_owned())],
+            [
+                ApplicationInvariantScopeTarget::Entity("Body".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarSuccessor".to_owned()),
+                ApplicationInvariantScopeTarget::Relation("PlanarCoupling".to_owned()),
+            ],
             "primary-relational-provider",
             ApplicationInvariantCostPosture::Touched,
         ),

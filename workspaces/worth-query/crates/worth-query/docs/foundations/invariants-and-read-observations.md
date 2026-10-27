@@ -198,20 +198,17 @@ fn compare_complete_reads(
     let complete: Vec<_> = events
         .iter()
         .filter_map(|event| match event {
-            PlanarInvariantReadEvent::CompleteWalk {
+            PlanarInvariantReadEvent::CompleteOrbit {
                 before,
                 after,
                 visited,
                 physical_relations,
+                ..
             } => Some((*before, *after, *visited, *physical_relations)),
             _ => None,
         })
         .collect();
-    assert_eq!(
-        complete.len(),
-        1,
-        "one Native closure, not one traversal per triple"
-    );
+    assert_eq!(complete.len(), 1, "one Native orbit read per affected ring");
     let (before, after, visited, physical_relations) = complete[0];
     assert_eq!(
         (visited, physical_relations),
@@ -220,19 +217,14 @@ fn compare_complete_reads(
     );
     let complete_adjacencies = after.adjacency_lists_read() - before.adjacency_lists_read();
     let complete_edges = after.adjacency_edges_inspected() - before.adjacency_edges_inspected();
-    assert_eq!(complete_adjacencies, visited);
+    assert!(complete_adjacencies >= visited);
     assert!(
         complete_edges >= physical_relations,
         "actual acquisitions include every physical successor"
     );
-    assert_eq!(
-        query.adjacency_lists_read(),
-        2,
-        "the query keeps its fixed projection"
-    );
     assert!(
-        complete_adjacencies > query.adjacency_lists_read(),
-        "the complete read is distinct from two projected hops"
+        query.adjacency_lists_read() > 0,
+        "the actual query acquires its relation projection"
     );
     let prepared: Vec<_> = events
         .iter()
@@ -341,7 +333,10 @@ selection/enumeration/count and complete one-shot Query results. See
 for factory read/applicability coverage, complete census cost and physical footprints,
 and [declared query component reads](../modeling/relation-laws.md#declared-component-query-contracts)
 for whole-slot disclosure and source currentness.
-The full Phase 5 topology, replay/locality and CAD acceptance remain open. Proposed-state derived-relation
+The [public topology island consumer](../modeling/relation-laws.md#public-topology-island-consumer)
+uses these reads with actual coupling edits, independent seeded union-find
+identity/lineage comparison and 10/10,000 unrelated-ring business-read locality.
+Full Phase 5 replay/worker and CAD acceptance remain open. Proposed-state derived-relation
 reads remain unfinished in Phase 6.
 These counts describe Query boundary operations, not storage-engine I/O,
 allocation, elapsed time or unique entities.

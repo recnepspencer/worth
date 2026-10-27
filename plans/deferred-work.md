@@ -139,9 +139,10 @@ complete one-shot Of/Census Query results are implemented. The
 explains visibility, disclosure and retained source evidence.
 
 [Milestone 9.18.1 Phase 5](WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity)
-remains open for the seeded union-find and topology
-entry merge/split/anchor-removal courts, locality at 10 and 10,000 components,
-replay/parallel identity and lineage evidence, and Proprietary CAD shell adoption.
+now includes the public topology island consumer, independent seeded union-find
+merge/split/anchor-removal courts and actual split business-read locality beside
+10 and 10,000 unrelated rings. It remains open for cert-only replay, actual worker
+execution with identical identities/lineage, and Proprietary CAD shell adoption.
 Keep this entry until those complete-phase gates pass; remove it when Phase 5
 ships rather than describing implemented Query declarations as unavailable.
 

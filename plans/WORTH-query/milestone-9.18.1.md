@@ -631,6 +631,14 @@ and tracked lineage decisions remain separate unfinished capabilities.
   shell identity.
 - The feature guide documents component sets with compiled examples.
 
+The public [topology island consumer](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md#public-topology-island-consumer)
+now uses complete component reads plus genuine ordered orbits. Its existing
+grouped topology target includes independent seeded union-find comparison across
+ordinary coupling edits and least-member replacement, and original business-read
+locality beside 10 and 10,000 unrelated rings. This is partial Phase 5 evidence;
+cert-only replay, actual worker-count identity/lineage equality and private CAD
+shell integration still prevent phase acceptance.
+
 ### Gaps To Watch
 
 - **The partitioner's name leaking.** Least-member names may serve internally as

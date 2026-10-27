@@ -140,6 +140,10 @@ pub(super) fn feature_specs_with_final_output(
             .provides::<PlanarBodyOutput>()
             .native_action::<PlanarEditBinding<CheckpointSchema>>()
             .finish_action()
+            .native_action::<PlanarIslandCouplingBinding<CheckpointSchema>>()
+            .finish_action()
+            .native_action::<VertexReplacementBinding<CheckpointSchema>>()
+            .finish_action()
             .finish(),
         output,
         final_output,

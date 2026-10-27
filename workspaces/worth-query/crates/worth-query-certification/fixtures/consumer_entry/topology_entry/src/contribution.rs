@@ -152,6 +152,9 @@ impl TopologyContribution {
         setup.handler::<super::PlanarInitialAdjustmentBinding<Schema>, _>(
             super::PlanarInitialAdjustmentHandler,
         )?;
+        setup.handler::<super::PlanarIslandCouplingBinding<Schema>, _>(
+            super::island_coupling::PlanarIslandCouplingHandler,
+        )?;
         let final_feature = configuration.final_feature;
         #[cfg(test)]
         let final_feature = {
