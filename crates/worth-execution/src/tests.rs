@@ -309,10 +309,10 @@ fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
     let parent = authority()
         .request_lease(LeaseRequest {
             cancellation: token.token(),
-            ..request(2, 1_000, 10)
+            ..accounted_request(2, 10)
         })
         .unwrap();
-    let child = parent.child(request(1, 500, 10)).unwrap();
+    let child = parent.child(accounted_request(1, 10)).unwrap();
     token.cancel();
     let admitted = batch(&[1], 1);
     let kernel = |_: &u64, context: &mut crate::backend::KernelContext<'_, '_>| {
@@ -331,7 +331,7 @@ fn cancellation_and_deadline_stop_at_kernel_checkpoint() {
     let expired = authority()
         .request_lease(LeaseRequest {
             deadline: Some(Instant::now() - Duration::from_secs(1)),
-            ..request(1, 1_000, 10)
+            ..accounted_request(1, 10)
         })
         .unwrap();
     let timed_out = run_checked_batch(Some(&expired), &admitted, BackendKind::Native, &kernel);
