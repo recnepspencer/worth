@@ -25,9 +25,11 @@ impl OriginalSourceInspectionDisclosure {
     pub(in crate::domain_computation) fn association(&self) -> &InstalledSourceDisclosureBinding {
         &self.association
     }
+    #[cfg(test)]
     pub(in crate::domain_computation) fn scope(&self) -> &WorthQueryObservedScopeSelector {
         &self.scope
     }
+    #[cfg(test)]
     pub(in crate::domain_computation) fn disclosure(&self) -> &OriginalSourceDisclosure {
         &self.disclosure
     }

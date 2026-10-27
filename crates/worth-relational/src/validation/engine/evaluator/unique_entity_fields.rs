@@ -47,10 +47,17 @@ pub(super) fn evaluate_unique_entity_aspect_field(
                     .with_field(field.clone()),
             ));
         }
-        let Some(slot_count) = state_view.entity_slot_scan_count(partition_id) else {
-            continue;
+        let slots = state_view.try_entity_slots(partition_id, |work, bytes| {
+            if context.checkpoint(work) && context.claim_scratch(bytes) {
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+        let Ok(slots) = slots else {
+            return None;
         };
-        for slot in 0..slot_count {
+        for slot in slots {
             if !context.checkpoint(1) {
                 return None;
             }

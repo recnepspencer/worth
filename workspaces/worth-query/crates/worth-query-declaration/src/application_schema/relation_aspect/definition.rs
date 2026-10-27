@@ -89,6 +89,10 @@ impl<Schema, Relation, From, To, Aspect>
 where
     Aspect: ApplicationAspectMarkerIdentity<Schema, Relation>,
 {
+    #[expect(
+        clippy::new_ret_no_self,
+        reason = "Construction returns a builder; only finish validates and creates the definition."
+    )]
     pub fn new(
         relation: ApplicationRelationRef<Schema, Relation, From, To>,
         aspect: ApplicationAspectRef<Schema, Relation, Aspect>,

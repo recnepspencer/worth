@@ -28,10 +28,7 @@ pub(super) struct WorldTransition {
     newly_owned_bytes: usize,
 }
 
-pub(super) fn prepare_world<
-    Schema: ApplicationSchema,
-    History: ApplicationHistoryQueryBinding<Schema>,
->(
+pub(super) fn prepare_world<Schema: ApplicationSchema>(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     original: &RetainedWorldCursor,

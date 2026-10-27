@@ -5,7 +5,7 @@ mod publication;
 mod reclamation;
 mod retention;
 
-pub(crate) use catalog::HistoryTraversalControl;
+pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
     RetainedCompositeAncestor, RuntimeWorldPerformedPublicationProtection,

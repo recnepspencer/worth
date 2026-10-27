@@ -619,8 +619,15 @@ drop. It retains the canonical envelope without copying
 its patches. This native cursor does not establish World product ancestry or
 application disclosure. World's `open_exact_product_history` and staged one-parent
 pages supply genuine retained product ancestry, fork inheritance and exact
-component evidence, with typed refusal at retired gaps. They retain the pinned
-source instead of reading a newer live head; see
+component evidence, with typed refusal at retired gaps. The existing
+`select_product_branch_ancestor` also requires an unbroken raw-parent path.
+For endpoint ancestry without missing intermediate contents, use World's explicit
+`select_retained_product_branch_ancestor`: the same owner follows only its recorded
+retirement splices, retains the actual source, rejects siblings/foreign owners and
+honors the original request and finite selection bound. Query's recorded-source
+correction uses this endpoint proof alongside independent Native evidence and
+disclosure checks. Exact selectors and pages keep refusing retired gaps.
+They retain the pinned source instead of reading a newer live head; see
 [exact product history](../crates/worth-runtime-world/README.md#exact-retained-product-history).
 The installed Decl/Host route declares an
 `ApplicationHistoryQueryDefinition` over a real `SubjectRead`, captures only its
@@ -640,3 +647,54 @@ typed async, persistent-index, capability-registration or unsupported refusals.
 The execution receipt retains the admitted plan and executor observations.
 Use inline execution for supported synchronous reads; an asynchronous requirement
 returns its typed refusal when native asynchronous support is unavailable.
+
+### Retain privileged read authority when restoring a program
+
+The composition root calls `application_installation::in_memory_program_from_checkpoint_with_projection`
+on `worth-query-host` to receive the restored runtime and its
+`WorthQueryApplicationInvariantProjectionAuthority`. This is the same read-only
+capability retained during bootstrap; it grants no initial-state authoring on
+restore. Ordinary runtime holders cannot mint it. Restoration and admission use
+the existing checkpoint owner and resource limits.
+
+### Inspect checkpoints and rejected-proposal reservations
+
+`WorthQueryPrimaryGraphApplicationRuntime::inspect_application_checkpoint`
+accepts an advancement phase and checkpoint bytes. It returns a typed
+`WorthQueryApplicationCheckpointInspection`: exact non-allocator model value
+bytes, typed allocator frontiers/high-waters and the live entity/relation census.
+Query framing and native fields/arenas have their single codec owners. This is
+reconstructive diagnostic inspection, not recovery admission or mutation
+permission. Unknown fields fail closed; codec projections exhaustively classify
+their actual decoded types. Ordinary reads should use query/projection APIs.
+
+`observe_record_reservations` on that runtime starts an owned, bounded observer
+for actual Native reservations in this runtime on the current thread. Drop ends
+it, including on unwind. Its explicit diagnostic allocation policy funds fixed
+backing; `report(policy)` seals a funded immutable prefix. Reports retain entity
+and relation coordinates even when the proposal refuses. Capacity, request and
+physical allocation failures return typed incomplete-evidence failures; no
+partial report is certified as complete. Other runtimes/threads are excluded.
+Observer recording costs O(active observers) per reservation; starting reserves
+O(maximum records), and sealing a report copies O(observed records). The observer
+never changes allocation or publication semantics. Scope it around the proposal
+being diagnosed; concurrent proposals on other threads are independent.
+
+`CheckpointAllocatorInspection::verify_reported_advance(after, reservations)`
+owns the allocator comparison for both Native and Query consumers. Pass the
+before/after decoded frontier and generation slices and the complete observer
+report, converting records with `CheckpointRecordIdentity::from`. It accepts
+only contiguous appends and one generation step per reservation; duplicate,
+missing, backward or unreported coordinates return a typed
+`CheckpointReservationAdvanceDenial`. It is reconstructive diagnostic work,
+O((A+R) log(A+R)) time and O(A+R) scratch. Applications separately compare their
+model bytes; they must not reimplement allocator arithmetic.
+
+Checkpoint restore deliberately refuses unknown fields in the Native checkpoint,
+allocator, partition, arena, frontier and generation rows as `CorruptCheckpoint`
+before publishing any state. Inspection uses that same closed grammar. Current
+and supported legacy writers emit only their declared fields, so their bytes
+remain accepted; no checkpoint version was reinterpreted or migrated. A payload
+with extra fields that an older reader happened to ignore is outside this
+compatibility window and now refuses. Future field additions require an explicit
+protocol/version admission decision rather than silent forward compatibility.

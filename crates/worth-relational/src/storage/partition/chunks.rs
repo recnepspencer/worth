@@ -232,9 +232,6 @@ impl ChunkAccumulator {
 }
 
 fn slot_chunk_index(slot: usize, chunk_size: usize) -> usize {
-    if chunk_size == 0 {
-        0
-    } else {
-        slot / chunk_size
-    }
+    // A zero-sized diagnostic chunk places every slot in bucket zero.
+    slot.checked_div(chunk_size).unwrap_or(0)
 }

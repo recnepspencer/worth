@@ -4,6 +4,7 @@ use crate::storage::substrate::HistoricalMetadata;
 use std::sync::Arc;
 
 mod aspect_state;
+mod logical_slots;
 pub(crate) mod slot_resolution;
 mod structural_adjacency;
 
@@ -165,27 +166,6 @@ impl<'state> InvariantStateView<'state> {
         self.entity_metadata_at(&partition.entity_arena, entity_id.partition_id, slot)
     }
 
-    pub(crate) fn entity_visible_at_version(&self, arena: &EntityArena, slot: usize) -> bool {
-        arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_entity_metadata(history))
-            .is_some()
-    }
-
-    pub(crate) fn entity_slot_scan_count(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Option<usize> {
-        let visible_partition = self.state.get_partition(partition_id)?;
-        let staged_slots = visible_partition.entity_arena.slot_count();
-        let base_slots = self
-            .state
-            .base_partition(partition_id)
-            .map(|partition| partition.entity_arena.slot_count())
-            .unwrap_or(0);
-        Some(staged_slots.max(base_slots))
-    }
-
     pub(crate) fn entity_metadata_at(
         &self,
         arena: &'state EntityArena,
@@ -262,20 +242,6 @@ impl<'state> InvariantStateView<'state> {
             source: metadata.endpoints.source,
             target: metadata.endpoints.target,
         })
-    }
-
-    pub(crate) fn relation_slot_scan_count(
-        &self,
-        partition_id: crate::identity::data::PartitionId,
-    ) -> Option<usize> {
-        let visible_partition = self.state.get_partition(partition_id)?;
-        let staged_slots = visible_partition.relation_arena.slot_count();
-        let base_slots = self
-            .state
-            .base_partition(partition_id)
-            .map(|partition| partition.relation_arena.slot_count())
-            .unwrap_or(0);
-        Some(staged_slots.max(base_slots))
     }
 
     pub(crate) fn relation_metadata_for_slot(

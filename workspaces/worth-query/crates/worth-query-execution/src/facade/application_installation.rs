@@ -1,6 +1,7 @@
 //! In-memory application construction from declared contributions.
 pub use crate::domain_computation::primary_graph::application_installation::{
     in_memory, in_memory_program, in_memory_program_from_checkpoint,
+    in_memory_program_from_checkpoint_with_projection,
     in_memory_program_with_authorization_time_source, in_memory_rostered_program,
     in_memory_rostered_program_from_checkpoint,
     in_memory_rostered_program_from_checkpoint_with_transition,

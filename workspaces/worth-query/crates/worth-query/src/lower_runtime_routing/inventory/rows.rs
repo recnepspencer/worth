@@ -45,7 +45,7 @@ const DIRECT_IMPORT_AUDIT_ROWS: &[WorthQueryLowerRuntimeDirectImportAuditRow] = 
     ),
     WorthQueryLowerRuntimeDirectImportAuditRow::new(
         WorthQueryLowerRuntimeSeamKey::CausalBuilderBridgeModule,
-        "crates/worth-query/src/runtime/inspection/causal/builder_bridge.rs",
+        "crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/builder_bridge.rs",
         WorthQueryLowerRuntimeDirectImportPosture::AllowedAdapter,
         "causal bridge materialization remains an allowed Query boundary adapter",
     ),

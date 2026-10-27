@@ -35,6 +35,13 @@ pub(super) enum InstalledProgramTarget {
         aspect: String,
         path: worth_foundational::facade::CanonicalFieldPath,
     },
+    InitializeRelationField {
+        relation: String,
+        from: String,
+        to: String,
+        aspect: String,
+        path: worth_foundational::facade::CanonicalFieldPath,
+    },
     Link {
         relation: String,
         from: String,
@@ -117,6 +124,15 @@ pub(super) fn installed_program_targets(
                 from: scope.from().to_owned(),
                 to: scope.to().to_owned(),
             },
+            WorthQueryOperationTouchScope::InitializeRelationField(scope) => {
+                InstalledProgramTarget::InitializeRelationField {
+                    relation: scope.relation().relation().to_owned(),
+                    from: scope.relation().from().to_owned(),
+                    to: scope.relation().to().to_owned(),
+                    aspect: scope.contract().key().as_str().to_owned(),
+                    path: scope.field_path().clone(),
+                }
+            }
             WorthQueryOperationTouchScope::UnlinkRelation(scope) => {
                 InstalledProgramTarget::Unlink {
                     relation: scope.relation().to_owned(),

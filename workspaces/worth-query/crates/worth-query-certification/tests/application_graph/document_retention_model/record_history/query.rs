@@ -114,8 +114,14 @@ pub(super) fn parameter(
     ApplicationQueryParameterRef::from_query_identifier("identity")
 }
 pub(super) fn parameters(identity: &str) -> ApplicationQueryParameterSet<Query> {
+    let input = Input {
+        identity: identity.to_owned(),
+    };
+    let parameters = Parameters {
+        identity: input.identity,
+    };
     ApplicationQueryParameterSet::new()
-        .bind(parameter(), identity.to_owned())
+        .bind(parameter(), parameters.identity)
         .unwrap()
 }
 pub(super) fn definition(

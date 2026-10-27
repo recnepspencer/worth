@@ -3,13 +3,14 @@
 use worth_query_host::facade::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use worth_query_host::facade::runtime::ExecutionAllocationDenial;
+use worth_query_host::facade::runtime::{ExecutionAllocationDenial, WorkCeilingDenial};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BankApplicationAttemptDenialKind {
     ValueDecode(worth_query_host::facade::primary_graph::WorthQueryValueDecodeDenial),
     ForeignPhase,
     ExecutionRequest(worth_query_host::facade::primary_graph::WorthQueryProviderSessionDenialKind),
+    EffectExecution(WorkCeilingDenial),
     Cancelled,
     DeadlineExceeded,
     ForeignApplication,
@@ -26,6 +27,7 @@ pub enum BankApplicationAttemptDenialKind {
     AllocationDenied,
     RetainedSourceStorageDenied,
     CorrectionCaptureDenied,
+    SourceDisclosureCaptureDenied,
     MutationPreconditionMismatch,
     SourceRetired,
     SourceChanged,
@@ -145,6 +147,7 @@ const fn application_attempt_kind(
         Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
         Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
         Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
+        Query::EffectExecution(cause) => BankApplicationAttemptDenialKind::EffectExecution(cause),
         Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,
         Query::DeadlineExceeded => BankApplicationAttemptDenialKind::DeadlineExceeded,
         Query::ForeignApplication => BankApplicationAttemptDenialKind::ForeignApplication,
@@ -153,6 +156,9 @@ const fn application_attempt_kind(
         }
         Query::CurrentAuthorityDenied => BankApplicationAttemptDenialKind::CurrentAuthorityDenied,
         Query::CorrectionCaptureDenied => BankApplicationAttemptDenialKind::CorrectionCaptureDenied,
+        Query::SourceDisclosureCaptureDenied => {
+            BankApplicationAttemptDenialKind::SourceDisclosureCaptureDenied
+        }
         Query::OutsideRealizedReadScope => {
             BankApplicationAttemptDenialKind::OutsideRealizedReadScope
         }

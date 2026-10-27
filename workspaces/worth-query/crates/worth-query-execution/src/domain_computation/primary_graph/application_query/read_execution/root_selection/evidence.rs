@@ -175,7 +175,7 @@ impl RootPathSourceBuilder {
                 .and_then(|n| {
                     n.checked_add(
                         (size_of::<worth_foundational::facade::AspectFieldLocator>()
-                            + 8 * size_of::<usize>()) as u64,
+                            + usize::BITS as usize) as u64,
                     )
                 })
                 .ok_or_else(|| source_denial(entity_name))?;

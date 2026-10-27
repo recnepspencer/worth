@@ -115,7 +115,7 @@ where
         )
     })?;
     let admitted = approved.admits_active_use(
-        WorthQueryRuntimeAuthorityIdentity::clone(&prepared.runtime().runtime.authority_identity()),
+        prepared.runtime().runtime.authority_identity(),
         prepared.graph_work().branch().relational(),
         *prepared.capability().identity().bytes(),
         prepared.installed().capability_authority_identity(),

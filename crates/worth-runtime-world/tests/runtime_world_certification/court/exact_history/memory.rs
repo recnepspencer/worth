@@ -102,7 +102,7 @@ fn assert_cancelled_successor(
     let cancellation = CancellationSource::new();
     let host = SerialRequest::from_memory(budget.clone(), cancellation.token(), None);
     let prepared = port
-        .prepare_exact_product_history_page(ExecutionRequest::serial(&host), &cursor)
+        .prepare_exact_product_history_page(ExecutionRequest::serial(&host), cursor)
         .unwrap();
     assert!(
         !prepared.is_complete(),

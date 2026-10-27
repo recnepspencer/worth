@@ -53,6 +53,10 @@ fn every_consuming_partition_survives_in_the_facts_reverse_index() {
 /// Seals the facts over the keys `1..=count`, each observed as an entity of
 /// its own kind, and returns what each computation fact kept: its readers, in
 /// key order, after checking it kept the content seal observed.
+#[expect(
+    clippy::mutable_key_type,
+    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+)]
 fn readers(
     attribution: ComputationFactAttribution,
     count: u32,
@@ -170,6 +174,10 @@ fn a_key_read_in_several_classes_belongs_to_every_one_of_them() {
 }
 
 #[test]
+#[expect(
+    clippy::mutable_key_type,
+    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+)]
 fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
     let observed = (1..=5)
         .map(|slot| {
@@ -208,6 +216,10 @@ fn ordinal_alignment_includes_handler_gaps_and_retains_shared_call_keys() {
 }
 
 #[test]
+#[expect(
+    clippy::mutable_key_type,
+    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+)]
 fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
     use crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl;
     use crate::domain_computation::primary_graph::application_checkpoint::facts::{
@@ -275,6 +287,10 @@ fn completion_metadata_retains_the_exact_original_pre_effect_payload() {
 }
 
 #[test]
+#[expect(
+    clippy::mutable_key_type,
+    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
+)]
 fn native_fact_index_preserves_ordinals_and_readers_without_an_observation_bill() {
     use worth_execution::{CancellationToken, ExecutionRequest, SerialRequest};
     use worth_foundational::{DeterminismContract, ExecutionPosture, ExecutionRequestPolicy};

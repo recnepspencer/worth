@@ -99,6 +99,11 @@ fn cancellation_inside_preparation_drops_prefix_and_original_memory_ticket() {
     let execution = ExecutionRequest::serial(&host);
     let result = run(&execution, None, |work| {
         work.retain(64)?;
+        // Keep a real owned heap prefix alive across cancellation.
+        #[expect(
+            clippy::useless_vec,
+            reason = "an array would remove the heap allocation this unwind court exercises"
+        )]
         let _prefix = vec![0u8; 64];
         cancellation.cancel();
         work.checkpoint(1)?;

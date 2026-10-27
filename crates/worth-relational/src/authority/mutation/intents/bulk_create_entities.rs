@@ -56,8 +56,8 @@ pub(super) fn apply(
         .client_keys
         .iter()
         .cloned()
-        .zip(staged_rows.into_iter())
-        .zip(entity_aspect_plans.into_iter())
+        .zip(staged_rows)
+        .zip(entity_aspect_plans)
     {
         let entity_id = workspace.with_context(|context| {
             let entity_id = allocate_entity_with_extra(

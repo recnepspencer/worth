@@ -136,7 +136,7 @@ fn retain_event(
         .runtime
         .retain_record_history_selection(
             execution,
-            &[subject.clone()],
+            std::slice::from_ref(&subject),
             &[court.contracts[0].key().clone()],
             RelationalRecordHistorySelectionLimits {
                 maximum_subjects: NonZeroUsize::MIN,
