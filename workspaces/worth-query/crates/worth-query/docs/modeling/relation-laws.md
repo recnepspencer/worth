@@ -193,8 +193,8 @@ publication decision dependencies. A typed name can be retained across edits
 inside its installation; this API does not restore arbitrary portable names
 after a fresh installation. Scoped/governed lineage reads and tracked lineage
 decisions remain separate unavailable capabilities. Proprietary's actual sheet
-boundary-edit and split/merge courts qualify its CAD adoption slice; qualification
-against current private `main` and the final Phase 4 audit remain open. See the
+boundary-edit, split/merge and stored-face adoption courts qualify Phase 4 against
+current private `main`, preserving its cold-read and retirement contracts. See the
 [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md).
 Generic Native branch reconciliation has separate existing execution limitations
 and retains its typed refusal.

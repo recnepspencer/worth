@@ -1,6 +1,6 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-> **Status:** Phases 1–3 accepted on 2026-10-26; Phases 4–6 remain unfinished.
+> **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
 > Phases 7 and 11 accepted on 2026-10-26. Phases 8–10 remain unfinished.
 > Written on 2026-10-24 against master `b56db81af6`.
 > **Dependencies:** 9.17.6.3 (partitioners and exact invalidation) is complete.
@@ -462,6 +462,19 @@ let ancestry = ApplicationQueryRootPath::from(Feature::reference())
 **Depends on:**
 - Phase 2, because the orbit law lowers through the same seam;
 - Phase 3, because orbit reads use the same traversal.
+
+**Accepted, 2026-10-26.** Stored orbits expose complete ordered reads, tracked
+decisions and declared queries through one Native aggregate identity/lineage
+owner. The independent permutation, anchor-removal, split/merge, replay/fork,
+write-guard and currentness courts qualify that owner. `topology_entry` consumes
+orbit windows instead of its former hand ring walk. The
+[feature guide](../../workspaces/worth-query/crates/worth-query/docs/modeling/relation-laws.md)
+links compiled projection, handler, query and privileged lineage examples.
+Proprietary's [CAD adoption contract](https://github.com/recnepspencer/worth-proprietary/blob/main/cad/docs/plans/query-9.18.1-adoption.md)
+records genuine sheet edits, holes, split/merge lineage and current-main
+qualification at `33278669079835d5f0f5c96556697784fa449eb9`, retaining SDK `b9cdf607`.
+Derived orbits remain Phase 6; governed and tracked lineage reads remain separate
+unavailable capabilities.
 
 ### Requirements
 

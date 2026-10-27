@@ -5749,11 +5749,12 @@ milestone, as defined by the governing 9.18 specification.
 
 ## Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
-**Progress, 2026-10-26:** Phases 1–3 are accepted: actual-read observations,
+**Progress, 2026-10-26:** Phases 1–4 are accepted: actual-read observations,
 declared relation laws, complete Native walks/reachability/closure, declared
-query closure steps and qualified Proprietary history-reader adoption.
-Phases 4–6 remain unfinished; orbit relations and persistent aggregate identity
-are next. The 2026-10-26 runtime audit adds required Phases 7–11: exact async
+query closure steps, stored orbits, persistent aggregate identity/lineage and
+qualified Proprietary history-reader and boundary-edit adoption. Phases 5–6
+remain unfinished; components and rule-readable derived relations are next.
+The 2026-10-26 runtime audit adds required Phases 7–11: exact async
 source commit identity, application managed async resources, receipt-rooted causal
 inspection, bounded record/aspect history, and one batch for both cleanup findings.
 Phase 7 is accepted: the existing World/Bridge request route binds the actual
