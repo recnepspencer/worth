@@ -6,6 +6,8 @@ pub use worth_relational::facade::durability::{
     RelationalCheckpointInspection,
 };
 #[derive(Debug, PartialEq, Eq)]
+/// Exact original model value bytes, including Query output metadata.
+/// Native allocator frontiers and high-waters remain separate typed data.
 pub struct WorthQueryCheckpointModelBytes<'a> {
     pub native: NativeCheckpointModelBytes<'a>,
     query_header: &'a [u8],
@@ -13,6 +15,8 @@ pub struct WorthQueryCheckpointModelBytes<'a> {
     query_outputs: &'a [u8],
 }
 #[derive(Debug)]
+/// Complete diagnostic projection through the current Query/native codecs.
+/// These values grant no recovery, publication or mutation authority.
 pub struct WorthQueryApplicationCheckpointInspection<'a> {
     pub model: WorthQueryCheckpointModelBytes<'a>,
     pub frontiers: Vec<CheckpointRecordFrontier>,
@@ -20,6 +24,7 @@ pub struct WorthQueryApplicationCheckpointInspection<'a> {
     pub live_records: std::collections::BTreeSet<CheckpointRecordIdentity>,
 }
 #[derive(Debug)]
+/// The original phase, Query-frame or native-codec refusal of inspection.
 pub enum WorthQueryCheckpointInspectionDenial {
     ForeignPhase(super::super::WorthQueryForeignAdvancementPhase),
     Query(super::super::WorthQueryPrimaryGraphInstallationDenial),

@@ -3,6 +3,8 @@ use crate::history::data::RecordAllocationClass;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+/// Physical record coordinates decoded by the native checkpoint owner.
+/// Inspection data confers no allocation or mutation authority.
 pub struct CheckpointRecordIdentity {
     pub class: RecordAllocationClass,
     pub partition_id: u32,
@@ -10,6 +12,8 @@ pub struct CheckpointRecordIdentity {
     pub generation: u32,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// Exclusive append frontier for one physical partition and record class.
+/// This diagnostic value grants no reservation authority.
 pub struct CheckpointRecordFrontier {
     pub class: RecordAllocationClass,
     pub partition_id: u32,
@@ -26,6 +30,7 @@ pub struct NativeCheckpointModelBytes<'a> {
     pub(crate) allocator: BTreeMap<String, &'a [u8]>,
 }
 #[derive(Debug)]
+/// Reconstructive native model-byte view, allocator coordinates and live census.
 pub struct RelationalCheckpointInspection<'a> {
     pub model: NativeCheckpointModelBytes<'a>,
     pub frontiers: Vec<CheckpointRecordFrontier>,
@@ -35,8 +40,9 @@ pub struct RelationalCheckpointInspection<'a> {
 
 impl super::RelationalNativeCheckpoint {
     /// Decode the current checkpoint grammar for diagnostics and atomicity
-    /// comparisons. This is reconstructive O(checkpoint bytes + arena rows)
-    /// work, not an ordinary read. It cannot restore or mutate a runtime.
+    /// comparisons. This reconstructs O(B log B) work and O(B) metadata in B
+    /// frame bytes, including all encoded retained branch roots. It cannot
+    /// restore or mutate a runtime; ordinary reads use branch observations.
     pub fn inspect(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

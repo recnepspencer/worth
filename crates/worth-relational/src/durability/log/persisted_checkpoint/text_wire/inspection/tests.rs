@@ -4,15 +4,30 @@ use crate::durability::log::native_file_codec::CHECKPOINT_MAGIC;
 use crate::tests::support::*;
 fn original(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> (RelationalNativeCheckpoint, crate::identity::data::EntityId) {
+) -> (RelationalNativeCheckpoint, [CheckpointRecordIdentity; 2]) {
     let runtime = persisted_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "inspected-record");
+    let target = create_entity(execution, &runtime, "inspected-target");
+    let relation = create_relation(execution, &runtime, entity, target, "inspected-link");
     (
         runtime
             .durability_authority()
             .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
             .unwrap(),
-        entity,
+        [
+            CheckpointRecordIdentity {
+                class: RecordAllocationClass::Entity,
+                partition_id: entity.partition_value(),
+                slot: entity.local_slot_value(),
+                generation: entity.generation_value(),
+            },
+            CheckpointRecordIdentity {
+                class: RecordAllocationClass::Relation,
+                partition_id: relation.partition_value(),
+                slot: relation.local_slot_value(),
+                generation: relation.generation_value(),
+            },
+        ],
     )
 }
 fn map_bytes(fields: BTreeMap<String, Vec<u8>>) -> Vec<u8> {
@@ -96,17 +111,14 @@ fn wider(old: &[u8]) -> Option<Vec<u8>> {
 fn inspection_compares_every_native_model_value_as_original_bytes() {
     let host = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
-    let (before, entity) = original(&execution);
+    let (before, identities) = original(&execution);
     let decoded = before.inspect(&execution).unwrap();
-    assert!(
-        decoded.live_records.contains(&CheckpointRecordIdentity {
-            class: RecordAllocationClass::Entity,
-            partition_id: entity.partition_value(),
-            slot: entity.local_slot_value(),
-            generation: entity.generation_value(),
-        }),
-        "the census uses the actual committed identity"
-    );
+    for identity in identities {
+        assert!(
+            decoded.live_records.contains(&identity),
+            "the census uses the actual committed identity: {identity:?}"
+        );
+    }
     let envelope = fields(&before.bytes()[CHECKPOINT_MAGIC.len()..]).unwrap();
     for (key, old) in fields(envelope["checkpoint"]).unwrap() {
         if key == "record_identity" {
@@ -126,6 +138,22 @@ fn inspection_compares_every_native_model_value_as_original_bytes() {
                 "equivalent {key} encoding refused: {error:?}"
             ),
         }
+    }
+    let checkpoint = fields(envelope["checkpoint"]).unwrap();
+    for (key, old) in fields(checkpoint["record_identity"]).unwrap() {
+        if matches!(key.as_str(), "append_frontiers" | "generation_high_water") {
+            continue;
+        }
+        let equivalent =
+            wider(old).expect("allocator model fields have an equivalent wider encoding");
+        let after = rewritten(before.bytes(), true, |fields| {
+            fields.insert(key.clone(), equivalent);
+        });
+        let after = RelationalNativeCheckpoint::inspect_bytes(&execution, &after).unwrap();
+        assert_ne!(
+            decoded.model, after.model,
+            "ignored allocator model field {key}"
+        );
     }
 }
 #[test]
@@ -149,6 +177,36 @@ fn inspection_refuses_unknown_root_allocator_and_row_fields() {
         assert!(
             RelationalNativeCheckpoint::inspect_bytes(&execution, &after).is_err(),
             "unknown field in {key} row"
+        );
+    }
+}
+
+#[test]
+fn the_live_census_includes_divergent_retained_branch_roots() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let runtime = persisted_runtime_with_test_schema();
+    let mut expected = vec![create_entity(&execution, &runtime, "shared-root")];
+    for branch in ["left-inspection", "right-inspection"] {
+        let branch_id = create_branch_from_main(&runtime, branch);
+        let commit = create_entity_outcome_on_branch(&execution, &runtime, branch, branch_id);
+        expected.extend(changed_entities(&commit));
+        release_test_commit_snapshot(&runtime, &commit);
+    }
+    let checkpoint = runtime
+        .durability_authority()
+        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let inspected = checkpoint.inspect(&execution).unwrap();
+    for entity in expected {
+        assert!(
+            inspected.live_records.contains(&CheckpointRecordIdentity {
+                class: RecordAllocationClass::Entity,
+                partition_id: entity.partition_value(),
+                slot: entity.local_slot_value(),
+                generation: entity.generation_value(),
+            }),
+            "missing live entity from a retained branch: {entity:?}"
         );
     }
 }

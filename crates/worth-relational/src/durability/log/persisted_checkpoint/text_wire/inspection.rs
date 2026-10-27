@@ -27,7 +27,7 @@ pub(crate) fn inspect<'a>(
         partition_images,
         coverage: _,
         branch_cells: _,
-        branch_roots: _,
+        branch_roots,
         branch_root_schema_images: _,
         record_generation_high_water: _,
         reusable_record_slots: _,
@@ -87,19 +87,27 @@ pub(crate) fn inspect<'a>(
         })
         .collect();
     let mut live_records = BTreeSet::new();
-    for partition in partition_images {
-        census(
-            RecordAllocationClass::Entity,
-            partition.partition_id.0,
-            partition.entity_arena,
-            &mut live_records,
-        )?;
-        census(
-            RecordAllocationClass::Relation,
-            partition.partition_id.0,
-            partition.relation_arena,
-            &mut live_records,
-        )?;
+    // Alias targets are encoded in the mirror or another root. Union all
+    // present arena images; a shared identity may be live in several roots.
+    for partitions in std::iter::once(partition_images)
+        .chain(branch_roots.into_iter().map(|root| root.partition_images))
+    {
+        let mut root_live = BTreeSet::new();
+        for partition in partitions {
+            census(
+                RecordAllocationClass::Entity,
+                partition.partition_id.0,
+                partition.entity_arena,
+                &mut root_live,
+            )?;
+            census(
+                RecordAllocationClass::Relation,
+                partition.partition_id.0,
+                partition.relation_arena,
+                &mut root_live,
+            )?;
+        }
+        live_records.extend(root_live);
     }
     let mut envelope = fields(payload)?;
     let mut fields = fields(take(&mut envelope, "checkpoint")?)?;
