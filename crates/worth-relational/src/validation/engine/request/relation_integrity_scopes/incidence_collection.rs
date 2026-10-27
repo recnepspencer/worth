@@ -125,11 +125,7 @@ impl RelationIntegrityScopeAccumulator<'_, '_, '_, '_> {
             return Ok(());
         }
         for partition_id in self.state_view.state().partition_ids() {
-            let slot_count = self
-                .state_view
-                .relation_slot_scan_count(partition_id)
-                .unwrap_or_default();
-            for slot in 0..slot_count {
+            for slot in self.state_view.relation_slots(partition_id) {
                 self.check_live()?;
                 let Some(metadata) = self
                     .state_view
