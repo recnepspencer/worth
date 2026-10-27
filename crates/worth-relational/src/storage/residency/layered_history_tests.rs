@@ -7,6 +7,8 @@ use std::collections::BTreeSet;
 
 #[test]
 fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loading() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let mut cold = fixture.cold.clone();
     let mut source = fixture.source.clone();
@@ -23,6 +25,7 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         let before = source.reads.load(Ordering::SeqCst);
         let captured = cell
             .capture_checkpoint(
+                execution,
                 &cold.schema,
                 cold.schema_carrier_digest,
                 &cold.symbols.interner_snapshot(),
@@ -37,6 +40,7 @@ fn head_capture_acknowledges_and_carries_the_entire_layer_closure_without_loadin
         let current = members.keys().copied().collect::<BTreeSet<_>>();
         let repeated = cell
             .capture_checkpoint(
+                execution,
                 &cold.schema,
                 cold.schema_carrier_digest,
                 &cold.symbols.interner_snapshot(),
@@ -206,7 +210,7 @@ pub(super) fn encode_layer(
     )
 }
 
-fn place(
+pub(super) fn place(
     members: &[RelationalCheckpointMember],
     prior: &BTreeMap<RelationalDurableMemberLocator, Vec<u8>>,
 ) -> BTreeMap<RelationalDurableMemberLocator, Vec<u8>> {

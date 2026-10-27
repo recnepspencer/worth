@@ -213,6 +213,7 @@ fn native_capture_from_a_fork_uses_shared_resident_event_pages_without_losing_ro
     let native = fork
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[directory.manifest.derived_indexes],

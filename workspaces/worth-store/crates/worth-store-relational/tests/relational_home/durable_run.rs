@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_store_relational::{
     RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStoreHomeRequest,
 };
@@ -92,8 +92,7 @@ pub(crate) fn apply(
                 acknowledged += 1;
             }
             Step::Checkpoint => {
-                home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-                    .expect("home checkpoint");
+                home.checkpoint(&execution).expect("home checkpoint");
             }
             _ => step
                 .lifecycle(home.runtime(), execution)

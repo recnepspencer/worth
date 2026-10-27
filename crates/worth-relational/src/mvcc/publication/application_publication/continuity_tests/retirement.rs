@@ -194,7 +194,7 @@ fn cold_replacement(
 ) {
     let checkpoint = original
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -230,7 +230,7 @@ fn cold_replacement(
     let before = checkpoint_manifest(
         &runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap(),
     );
     // Existing spellings still request fresh native allocations. Equal keys
@@ -263,7 +263,7 @@ fn cold_replacement(
     let mut after = checkpoint_manifest(
         &runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap(),
     );
     // Phase-2 D7 records spent draft identities even when publication refuses.

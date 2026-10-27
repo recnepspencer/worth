@@ -1,6 +1,8 @@
 use super::{ComplexityContract, ComplexityStatus};
 
 #[cfg(test)]
+mod history_capture;
+#[cfg(test)]
 mod index_access;
 
 #[cfg(test)]
@@ -156,6 +158,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
             "tests::complexity::contracts::visibility_budgets::query_packetization::complexity_budget_query_packetization_reports_narrow_shape_with_a_lease",
         ],
     },
+    history_capture::BOUNDED_FOLD,
     index_access::ENTITY_FIELD,
     index_access::RELATION_FIELD,
     index_access::GENERATION_SELECTION,
@@ -219,7 +222,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.retention.pass",
         function_path: "visibility/retention/retention_authority.rs::VisibilityRetentionAuthority::run_pass",
-        declared_time_complexity: "O(whole_mirror_Full_admission + occupied_slots * log(occupied_slots) + live_history_entries + retained_chunk_slots + reclaim_batch_size + observed_persistent_copy_paths)",
+        declared_time_complexity: "O(mirror_regions + cold_member_bytes + expanded_history_bytes + symbol_page_admission + occupied_slots * log(occupied_slots) + live_history_entries + retained_chunk_slots + reclaim_batch_size + observed_persistent_copy_paths)",
         budget_summary: "An explicit maintenance pass demands Full on every mirror region. Live trimming visits all occupied slots and up to two passes over each live history; reclaim scans remain chunk-filtered. Cold fold, symbol admission and persistent copy costs are additional, never charged to ordinary publication.",
         status: ComplexityStatus::Verified,
         proof_tests: &["tests::complexity::contracts::visibility_budgets::retention_and_adjacency::live_history_trimming_runs_only_in_the_declared_full_retention_pass"],

@@ -1,5 +1,5 @@
 //! Physical membership, rather than encoded-byte estimates, proves reuse.
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::BranchId,
     identity::PartitionId,
@@ -41,8 +41,7 @@ fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothi
         workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
     }
     let reads = home.cold_storage_reads();
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     assert_eq!(
         home.cold_storage_reads(),
         reads,
@@ -55,8 +54,7 @@ fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothi
     );
     workload::commit(home.runtime(), &execution, &branch, batches::create(1000)).unwrap();
     let reads = home.cold_storage_reads();
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     assert_eq!(home.cold_storage_reads(), reads);
     let second = members(&home);
     let added = second
@@ -75,8 +73,7 @@ fn a_one_partition_commit_publishes_constant_new_members_and_capture_reads_nothi
         carried > 48,
         "unchanged cells must carry their physical locators"
     );
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     assert_eq!(
         members(&home),
         second,

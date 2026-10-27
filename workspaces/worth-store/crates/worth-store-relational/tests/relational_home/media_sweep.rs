@@ -19,7 +19,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::certification::MediaOperationRole;
 
 use super::durable_run::{apply, served_schema};
@@ -117,7 +117,7 @@ impl SeedSweep {
                     .expect("the measured commit");
             }
             Target::Checkpoint(_) => {
-                home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
+                home.checkpoint(&execution)
                     .expect("the measured checkpoint");
             }
             Target::BranchTransition(index) => {

@@ -131,7 +131,7 @@ fn a_checkpoint_filed_under_the_wrong_position_refuses_as_corrupt() {
     let runtime = runtime_with_commits(execution, &["a", "b"]);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     assert_eq!(native.covered_position(), Some(PatchStreamPosition(2)));
 

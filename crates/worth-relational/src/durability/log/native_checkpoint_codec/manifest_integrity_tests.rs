@@ -22,7 +22,7 @@ fn shared_members_with_inconsistent_leaf_facts_refuse_the_manifest() {
     );
     let native = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(&execution, execution.allocation_policy())
         .unwrap();
     #[derive(serde::Deserialize)]
     struct Input {

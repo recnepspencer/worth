@@ -2,7 +2,7 @@
 //! fault, the target run under it, the home abandoned, recovered through the
 //! production `open` and held to the crash oracle.
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::RelationalPublicationDenial;
 use worth_relational::facade::transactions::{CommitResult, TransactionCommitError};
@@ -90,7 +90,7 @@ pub(crate) fn run_case(
             (ended, acknowledged, in_flight, vec![checkpoint_before])
         }
         Target::Checkpoint(_) => {
-            let outcome = home.checkpoint(ExecutionAllocationPolicy::SystemAllocation);
+            let outcome = home.checkpoint(&execution);
             assert!(
                 activations[0].is_consumed(),
                 "{case}: the fault did not fire"

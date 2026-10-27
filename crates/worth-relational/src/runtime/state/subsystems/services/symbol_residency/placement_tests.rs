@@ -86,7 +86,7 @@ fn detached_dictionary_keeps_replaced_id_and_bucket_pages_until_its_last_owner_d
     let execution = worth_execution::ExecutionRequest::serial(&backing);
     let runtime = runtime_with_test_schema();
     create_entity(&execution, &runtime, "dictionary-custody-seed");
-    let (_, mut directory, initial, all) = checkpoint_dictionary(&runtime);
+    let (_, mut directory, initial, all) = checkpoint_dictionary(&execution, &runtime);
     let (symbol, text) = all.entries.iter().max_by_key(|(id, _)| *id).unwrap();
     let bucket = Sha256::digest(text.as_str().as_bytes())[0];
     let old_id_page = directory.manifest.symbols.last().unwrap().member;
@@ -121,7 +121,7 @@ fn detached_dictionary_keeps_replaced_id_and_bucket_pages_until_its_last_owner_d
     runtime
         .admit_field_text(&execution, &transaction.basis, &input)
         .unwrap();
-    let (_, replacement, next, _) = checkpoint_dictionary(&runtime);
+    let (_, replacement, next, _) = checkpoint_dictionary(&execution, &runtime);
     let selected = replacement
         .manifest
         .symbols

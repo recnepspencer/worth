@@ -133,7 +133,10 @@ impl PartitionEdition {
         id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         if let Some(region) = self.partitions.get(&id) {
-            region.demand_full(execution, 1 << 30)?;
+            region.demand_full(
+                execution,
+                crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+            )?;
         }
         Ok(())
     }
@@ -150,7 +153,12 @@ impl PartitionEdition {
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         self.partitions
             .get(&id)
-            .map(|region| region.demand_head(execution, 1 << 30))
+            .map(|region| {
+                region.demand_head(
+                    execution,
+                    crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                )
+            })
             .transpose()
     }
 
@@ -164,7 +172,10 @@ impl PartitionEdition {
         crate::execution::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for region in self.partitions.values() {
-            region.demand_full(execution, 1 << 30)?;
+            region.demand_full(
+                execution,
+                crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+            )?;
             region.lease().admit_symbols(execution, symbols)?;
         }
         Ok(ResidentPartitionEdition::new(self.clone()))
@@ -262,7 +273,10 @@ impl crate::storage::overlay::CurrentPartitionAccess for PartitionEdition {
         crate::execution::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         if let Some(region) = self.partitions.get(&id) {
-            region.demand_head_cached(execution, 1 << 30)?;
+            region.demand_head_cached(
+                execution,
+                crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+            )?;
         }
         Ok(())
     }

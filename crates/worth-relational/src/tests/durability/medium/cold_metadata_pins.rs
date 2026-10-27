@@ -188,7 +188,7 @@ fn an_admitted_head_read_never_becomes_absence_after_transport_damage() {
                 let failed = fixture
                     .runtime
                     .durability_authority()
-                    .native_checkpoint(execution.allocation_policy())
+                    .native_checkpoint(execution, execution.allocation_policy())
                     .unwrap_err();
                 let crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(
                     error,

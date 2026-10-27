@@ -29,7 +29,7 @@ fn transitioned(
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .expect("the source checkpoint restores for transition");
     let (owner, installed) = target

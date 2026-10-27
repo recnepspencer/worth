@@ -60,7 +60,10 @@ fn native_checkpoint_round_trip_restores_a_live_editable_world() {
     let committed = create_entity_outcome(execution, &runtime, "native-checkpoint");
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the canonical committed world encodes as one opaque checkpoint");
 
     let mut recovered = durable_runtime_with_test_schema();
@@ -97,7 +100,10 @@ fn recovery_authority_only_admits_a_basis_from_the_recovered_image() {
     create_entity_outcome(execution, &source, "recovered-authority-source");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     let mut exact_recovery = durable_runtime_with_test_schema();
@@ -178,7 +184,10 @@ fn native_checkpoint_round_trip_restores_current_relation_adjacency() {
     let relation = changed_relations(&created)[0];
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
 
     let mut recovered = durable_runtime_with_test_schema();
@@ -233,13 +242,19 @@ fn repeated_native_captures_do_not_retain_checkpoint_images() {
     for label in ["second", "third", "fourth"] {
         runtime
             .durability_authority()
-            .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .native_checkpoint(
+                execution,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .expect("each settled world encodes without retaining an internal checkpoint");
         create_entity_outcome(execution, &runtime, label);
     }
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .expect("the latest settled world encodes");
 
     assert_eq!(runtime.durability.checkpoints().len(), retained_before);
@@ -282,7 +297,10 @@ fn native_checkpoint_rejects_a_foreign_runtime_name_without_publishing_state() {
     create_entity_outcome(execution, &runtime, "native-checkpoint-runtime-name");
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut recovered = RelationalRuntimeApi::builder()
         .schema_registry(test_schema_registry())
@@ -308,7 +326,10 @@ fn native_checkpoint_preserves_unsealed_builder_invariant_authority() {
     create_entity_outcome(execution, &source, "native-checkpoint-builder-invariant");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut recovered = durable_runtime_with_builder_invariant();
     bind_durable_medium(&mut recovered, attached_test_medium(&source).attachment());

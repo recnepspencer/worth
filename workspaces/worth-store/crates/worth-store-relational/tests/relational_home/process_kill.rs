@@ -12,7 +12,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::certification::CertificationPhysicalMutationCheckpoint as Seam;
 
 use super::durable_run::{apply, open, steps_before};
@@ -316,7 +316,7 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
             let execution = ExecutionRequest::serial(&request);
             match target {
                 Step::Checkpoint => home
-                    .checkpoint(ExecutionAllocationPolicy::SystemAllocation)
+                    .checkpoint(&execution)
                     .map(|_| ())
                     .map_err(|stop| format!("{stop:?}")),
                 step if step.is_lifecycle() => step

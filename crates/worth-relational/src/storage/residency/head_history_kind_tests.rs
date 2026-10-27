@@ -44,10 +44,10 @@ fn a_cached_head_guard_refuses_after_full_demand_proves_region_damage() {
         retained.admitted_head_view().is_none(),
         "a probe must miss rather than accept a new damaged view"
     );
-    assert!(matches!(retained.cell().capture_checkpoint(
+    assert!(matches!(retained.cell().capture_checkpoint(execution,
         &fixture.cold.schema, fixture.cold.schema_carrier_digest,
         &fixture.cold.symbols.interner_snapshot(), None,
-    ), Err(retry) if retry == failure));
+    ), Err(super::super::RelationalResidencyDemandFailure::StorageUnavailable(retry)) if retry == failure));
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
 }
 

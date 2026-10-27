@@ -25,6 +25,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],

@@ -1,4 +1,4 @@
-//! Native capture selects cells and leaf facts, never reconstructive images.
+//! Native capture selects cells, consolidating history only at its declared bound.
 use std::collections::BTreeMap;
 
 use super::checkpoint_capture::CapturedCheckpointBasis;
@@ -8,6 +8,7 @@ use crate::durability::log::native_checkpoint_codec::CapturedManifest;
 impl CapturedCheckpointBasis {
     pub(super) fn build_native_capture(
         mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         source: Option<std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
         placement: &RelationalCheckpointArtifactPolicy<'_>,
@@ -108,10 +109,13 @@ impl CapturedCheckpointBasis {
             schemas.entry(schema_digest).or_insert(image);
             let mut leaves = Vec::new();
             for region in root.regions() {
-                let capture = region
-                    .cell
-                    .capture_checkpoint(schema, schema_digest, &symbols, current_members.as_ref())
-                    .map_err(storage_failure)?;
+                let capture = region.cell.capture_checkpoint(
+                    execution,
+                    schema,
+                    schema_digest,
+                    &symbols,
+                    current_members.as_ref(),
+                )?;
                 if capture.leaf.partition_id != region.partition_id
                     || capture.leaf.content_digest != region.content_digest
                     || capture.leaf.entity_slots != region.entity_slots
@@ -154,10 +158,13 @@ impl CapturedCheckpointBasis {
             schemas.entry(digest).or_insert(image);
             for (_, region) in mirror.cells() {
                 policy.check_live()?;
-                let capture = region
-                    .cell()
-                    .capture_checkpoint(&schema, digest, &symbols, current_members.as_ref())
-                    .map_err(storage_failure)?;
+                let capture = region.cell().capture_checkpoint(
+                    execution,
+                    &schema,
+                    digest,
+                    &symbols,
+                    current_members.as_ref(),
+                )?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,

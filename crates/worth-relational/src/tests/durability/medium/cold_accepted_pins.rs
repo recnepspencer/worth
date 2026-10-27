@@ -45,7 +45,7 @@ fn accepted_pin_projections_survive_later_proven_member_damage() {
         let refusal = fixture
             .runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap_err();
         let crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) =
             refusal
