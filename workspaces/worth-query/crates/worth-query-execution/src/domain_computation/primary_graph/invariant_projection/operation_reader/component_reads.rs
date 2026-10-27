@@ -8,7 +8,7 @@ use crate::domain_computation::primary_graph::{
     aggregate_observation::{AggregateObservation, AggregateSelection},
     component_selection::{ComponentSelection, ComponentSelectionSubject},
     schema_layout::ComponentSetLayout,
-    source_facts::{SourceFacts, SourceFactsBuilder},
+    source_facts::SourceFacts,
 };
 use std::collections::BTreeSet;
 use worth_query_declaration::facade::application_schema::{

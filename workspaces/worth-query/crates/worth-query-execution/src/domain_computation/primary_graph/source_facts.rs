@@ -15,7 +15,7 @@ pub(in crate::domain_computation) use revisions::{
     WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
 };
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub(in crate::domain_computation::primary_graph) struct SourceFacts {
     pub(in crate::domain_computation::primary_graph) entities: Vec<EntityId>,
     pub(in crate::domain_computation::primary_graph) aspects: Vec<WorthQueryObservedFieldRevision>,

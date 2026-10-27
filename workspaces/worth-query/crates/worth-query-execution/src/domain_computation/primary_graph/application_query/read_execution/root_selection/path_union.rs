@@ -9,7 +9,8 @@ use crate::domain_computation::primary_graph::{
         },
     },
     root_path_selection::{
-        self, RootPathOrientation, RootPathReadBasis, RootPathReadPorts, RootPathSelectionRequest,
+        self, RootPathOrientation, RootPathReadBasis, RootPathReadPorts, RootPathSelection,
+        RootPathSelectionRequest,
     },
     source_facts::SourceFactsBuilder,
 };
@@ -20,7 +21,59 @@ use std::{
 use worth_query_installation::facade::WorthQueryInstalledRootPath;
 use worth_relational::facade::identity::EntityId;
 mod adapter;
-
+pub(super) fn prepare_steps(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    paths: &[WorthQueryInstalledRootPath],
+    work: &mut RootSelectionWork<'_>,
+    subject: &str,
+) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    let mut count = 0usize;
+    for path in paths {
+        work.checkpoint(subject)?;
+        count = count
+            .checked_add(path.steps().len())
+            .ok_or_else(|| traversal_denial(subject))?;
+    }
+    work.reserve_steps(execution, count, subject)
+}
+pub(super) fn select_paths(
+    basis: &RootPathReadBasis<'_, '_, '_>,
+    plan: &ReadPlan<'_>,
+    work: &mut RootSelectionWork<'_>,
+    request: RootPathSelectionRequest<'_>,
+) -> Result<RootPathSelection, WorthQueryApplicationReadExecutionDenial> {
+    let interruption = work.interruption;
+    let mut observe = |event: root_path_selection::RootPathReadObservation<'_>| {
+        adapter::observe(work, basis.execution, event)
+    };
+    let checkpoint = |subject: &str| interruption.checkpoint(subject);
+    let mut guard = |guard: &worth_query_installation::facade::WorthQueryInstalledRootPathGuard,
+                     candidates: &BTreeSet<EntityId>,
+                     prepare: &mut dyn FnMut() -> Result<
+        (),
+        root_path_selection::RootPathReadDenial<WorthQueryApplicationReadExecutionDenial>,
+    >| {
+        adapter::read_guard(
+            basis.execution,
+            basis.runtime,
+            basis.graph,
+            plan,
+            guard,
+            candidates,
+            prepare,
+        )
+    };
+    root_path_selection::select(
+        basis,
+        request,
+        &mut RootPathReadPorts {
+            checkpoint: &checkpoint,
+            read_guard_with_sources: &mut guard,
+            observation: &mut observe,
+        },
+    )
+    .map_err(adapter::denial)
+}
 pub(super) fn select_root_path_union(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
@@ -35,33 +88,16 @@ pub(super) fn select_root_path_union(
         .project_snapshot(plan.snapshot)
         .ok_or_else(|| traversal_denial(plan.name))?;
     let mut work = RootSelectionWork::new(interruption, spent);
-    let mut count = 0usize;
-    for path in paths {
-        work.checkpoint(plan.name)?;
-        count = count
-            .checked_add(path.steps().len())
-            .ok_or_else(|| traversal_denial(plan.name))?;
-    }
-    work.reserve_steps(execution, count, plan.name)?;
-    let mut observe = |event: root_path_selection::RootPathReadObservation<'_>| {
-        adapter::observe(&mut work, execution, event)
-    };
-    let checkpoint = |subject: &str| interruption.checkpoint(subject);
-    let mut guard = |guard: &worth_query_installation::facade::WorthQueryInstalledRootPathGuard,
-                     candidates: &BTreeSet<EntityId>,
-                     prepare: &mut dyn FnMut() -> Result<
-        (),
-        root_path_selection::RootPathReadDenial<WorthQueryApplicationReadExecutionDenial>,
-    >| {
-        adapter::read_guard(execution, runtime, graph, plan, guard, candidates, prepare)
-    };
-    let result = root_path_selection::select(
+    prepare_steps(execution, paths, &mut work, plan.name)?;
+    let result = select_paths(
         &RootPathReadBasis {
             execution,
             runtime,
             graph,
             projection,
         },
+        plan,
+        &mut work,
         RootPathSelectionRequest {
             paths,
             start: plan.root,
@@ -69,13 +105,7 @@ pub(super) fn select_root_path_union(
             capture_set: capture_result_set,
             subject: plan.name,
         },
-        &mut RootPathReadPorts {
-            checkpoint: &checkpoint,
-            read_guard_with_sources: &mut guard,
-            observation: &mut observe,
-        },
-    )
-    .map_err(adapter::denial)?;
+    )?;
     let candidates = collect_candidates(result.roots.keys().copied())?;
     let result_set_source = result.set_source.map(finish_source).transpose()?;
     let root_path_source = if result.roots.is_empty() {

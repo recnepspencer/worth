@@ -43,6 +43,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     let graph = world.application.runtime.primary_graph().unwrap();
 
     let supported = primary_graph_support_inventory(
+        query.read_graph(),
         &graph.layout,
         query.continuation(),
         Some(live),
@@ -67,11 +68,18 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     );
 
     assert_live_support_absent(
-        primary_graph_support_inventory(&graph.layout, query.continuation(), None, &requirements)
-            .expect("the fixture compiled support contract is valid"),
+        primary_graph_support_inventory(
+            query.read_graph(),
+            &graph.layout,
+            query.continuation(),
+            None,
+            &requirements,
+        )
+        .expect("the fixture compiled support contract is valid"),
     );
     assert_live_support_absent(
         primary_graph_support_inventory(
+            query.read_graph(),
             &lower_layout(missing_scope_index::MissingScopeIndexSchema::declaration().unwrap()),
             query.continuation(),
             Some(live),
@@ -81,6 +89,7 @@ fn live_support_requires_the_exact_contract_and_both_equality_indexes() {
     );
     assert_live_support_absent(
         primary_graph_support_inventory(
+            query.read_graph(),
             &lower_layout(missing_target_index::MissingTargetIndexSchema::declaration().unwrap()),
             query.continuation(),
             Some(live),
@@ -122,6 +131,7 @@ fn provider_mechanism_deletion_mints_no_support_row() {
         let isolated = isolated_requirement(&requirements, kind.clone());
         assert_support_present(
             primary_graph_support_inventory(
+                query.read_graph(),
                 &graph.layout,
                 query.continuation(),
                 query.live(),
@@ -131,6 +141,7 @@ fn provider_mechanism_deletion_mints_no_support_row() {
         );
         assert_support_absent(
             primary_graph_support_inventory(
+                query.read_graph(),
                 &hostile,
                 query.continuation(),
                 query.live(),
@@ -163,6 +174,7 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
 
     assert_support_present(
         primary_graph_support_inventory(
+            query.read_graph(),
             &graph.layout,
             query.continuation(),
             query.live(),
@@ -171,8 +183,14 @@ fn continuation_ordering_requires_the_installed_seek_mechanism() {
         .expect("the fixture compiled support contract is valid"),
     );
     assert_support_absent(
-        primary_graph_support_inventory(&graph.layout, None, query.live(), &ordering)
-            .expect("the fixture compiled support contract is valid"),
+        primary_graph_support_inventory(
+            query.read_graph(),
+            &graph.layout,
+            None,
+            query.live(),
+            &ordering,
+        )
+        .expect("the fixture compiled support contract is valid"),
     );
 }
 
@@ -204,6 +222,7 @@ fn query_runtime_mechanism_deletion_denies_plan_review() {
     ] {
         let isolated = isolated_requirement(&requirements, kind.clone());
         let inventory = primary_graph_support_inventory(
+            query.read_graph(),
             &graph.layout,
             query.continuation(),
             query.live(),

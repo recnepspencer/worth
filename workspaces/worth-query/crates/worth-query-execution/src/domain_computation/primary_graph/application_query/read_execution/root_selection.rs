@@ -9,6 +9,8 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
 
+mod aggregate;
+mod components;
 mod evidence;
 mod orbit;
 mod path_union;
@@ -53,6 +55,10 @@ pub(super) fn select_bounded_roots(
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
     let contract = plan.contract;
+    if contract.component_selection().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return components::select(execution, runtime, graph, plan, &mut work);
+    }
     if contract.orbit().is_some() {
         let mut work = RootSelectionWork::new(interruption, spent);
         return orbit::select(execution, runtime, graph, plan, &mut work);

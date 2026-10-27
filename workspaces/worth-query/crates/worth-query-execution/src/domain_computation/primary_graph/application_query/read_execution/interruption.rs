@@ -7,6 +7,9 @@ use super::{
     WorthQueryApplicationReadExecutionDenialKind,
 };
 
+mod native;
+pub(super) use native::NativeReadInterruption;
+
 #[cfg(test)]
 mod tests;
 

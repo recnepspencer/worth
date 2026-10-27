@@ -25,10 +25,9 @@ impl<Query> WorthQueryObservedSource<Query> {
         // Selective membership cutoff has no qualified complete-walk rule yet.
         // Retained full source currentness still consumes the original bodies.
         (footprint.complete
-            && footprint
-                .root_selection
-                .as_ref()
-                .is_some_and(|selection| selection.walks.is_none()))
+            && footprint.root_selection.as_ref().is_some_and(|selection| {
+                selection.walks.is_none() && selection.components.is_none()
+            }))
         .then(|| WorthQueryObservedSourceSelection {
             runtime_authority: self.runtime_authority,
             schema_binding: self.schema_binding.clone(),
@@ -118,7 +117,11 @@ fn same_root_selection(
     left: &WorthQueryObservedRootSelection,
     right: &WorthQueryObservedRootSelection,
 ) -> bool {
-    if left.walks.is_some() || right.walks.is_some() {
+    if left.walks.is_some()
+        || right.walks.is_some()
+        || left.components.is_some()
+        || right.components.is_some()
+    {
         return false;
     }
     same_entities(&left.entities, &right.entities)

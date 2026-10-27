@@ -7,6 +7,7 @@ pub(in crate::domain_computation::primary_graph) enum ComponentSelectionSubject 
 }
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub(in crate::domain_computation::primary_graph) struct ComponentSelectionKey {
+    query: bool,
     scope: [u8; 32],
     definition: AggregateDefinitionIdentity,
     root: EntityId,
@@ -20,7 +21,27 @@ impl ComponentSelectionKey {
         subject: ComponentSelectionSubject,
     ) -> Self {
         Self {
+            query: false,
             scope,
+            definition,
+            root,
+            subject,
+        }
+    }
+    pub(super) fn for_query(
+        graph: &worth_query_installation::facade::WorthQueryInstalledGraphReadContract,
+        definition: AggregateDefinitionIdentity,
+        root: EntityId,
+        subject: ComponentSelectionSubject,
+    ) -> Self {
+        use sha2::{Digest, Sha256};
+        let mut digest = Sha256::new();
+        digest.update(b"worth-query:component-query-scope:v1");
+        digest.update(graph.schema_basis_digest().bytes());
+        digest.update(graph.digest().bytes());
+        Self {
+            query: true,
+            scope: digest.finalize().into(),
             definition,
             root,
             subject,
@@ -38,13 +59,21 @@ impl ComponentSelectionKey {
         &self,
         scope: &WorthQueryOperationComponentReadScope,
     ) -> bool {
-        self.scope == scope.meaning_identity()
+        !self.query && self.scope == scope.meaning_identity()
     }
     pub(in crate::domain_computation::primary_graph) fn write_locator(
         &self,
         output: &mut dyn std::fmt::Write,
     ) -> std::fmt::Result {
-        write!(output, "component-selection:v1:")?;
+        write!(
+            output,
+            "{}",
+            if self.query {
+                "component-query-selection:v1:"
+            } else {
+                "component-selection:v1:"
+            }
+        )?;
         for byte in self.scope.iter().chain(self.definition.bytes()) {
             write!(output, "{byte:02x}")?;
         }

@@ -37,8 +37,9 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
             lease.snapshot(),
         )
         .ok_or_else(mismatch)?;
+    let operation_scope = body.operation_scope().ok_or_else(mismatch)?;
     if key.root() != admission.scope_entity_id()
-        || body.scope().schema() != admission.binding_identity()
+        || operation_scope.schema() != admission.binding_identity()
     {
         return Err(mismatch());
     }
@@ -65,7 +66,7 @@ pub(super) fn observe<Schema, Operation, Input, Scope>(
                 })
         })
         .ok_or_else(mismatch)?;
-    if !position.resolve(admission.allowed_graph_contract()).is_some_and(|installed|matches!(installed,worth_query_installation::facade::WorthQueryOperationGraphReadScope::Components(installed) if installed==body.scope())) {return Err(mismatch());}
+    if !position.resolve(admission.allowed_graph_contract()).is_some_and(|installed|matches!(installed,worth_query_installation::facade::WorthQueryOperationGraphReadScope::Components(installed) if installed==operation_scope)) {return Err(mismatch());}
     if !scope.admits(key.root())
         || matches!(key.subject(),ComponentSelectionSubject::Of(member) if !scope.admits(member))
     {

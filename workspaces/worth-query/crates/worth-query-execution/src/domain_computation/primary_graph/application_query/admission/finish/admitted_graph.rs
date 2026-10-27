@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             )
         })?;
-        let inventory = primary_graph_support_inventory(&graph.layout, query.continuation(), query.live(), &requirements)
+        let inventory = primary_graph_support_inventory(query.read_graph(), &graph.layout, query.continuation(), query.live(), &requirements)
             .map_err(|_| denial(WorthQueryApplicationQueryAdmissionDenialKind::ReadmissionPreparationMemoryExhausted, query.name()))?;
         let obligations = query.retain_graph_obligations_for_admission();
         let obligation_identity = obligations.identity().clone();

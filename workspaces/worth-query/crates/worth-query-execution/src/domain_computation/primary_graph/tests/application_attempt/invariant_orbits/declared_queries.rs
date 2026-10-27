@@ -1,6 +1,6 @@
 //! Installed complete orbit answers, with the existing bootstrap and admission path.
 pub(super) mod capability;
-mod components;
+pub(in crate::domain_computation::primary_graph) mod components;
 mod currentness;
 pub(in crate::domain_computation::primary_graph) mod declarations;
 mod disclosure;

@@ -2,7 +2,9 @@ use super::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision
 use crate::domain_computation::primary_graph::source_facts::SourceFacts;
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;
+mod components;
 mod orbit;
+pub(in crate::domain_computation::primary_graph::application_query) use components::DeclaredComponentSelection;
 mod walks;
 pub(in crate::domain_computation::primary_graph::application_query) use orbit::DeclaredOrbitSelection;
 
@@ -12,6 +14,8 @@ pub(in crate::domain_computation::primary_graph) struct WorthQueryObservedRootSe
     facts: SourceFacts,
     pub(in crate::domain_computation::primary_graph::application_query) orbit:
         Option<DeclaredOrbitSelection>,
+    pub(in crate::domain_computation::primary_graph::application_query) components:
+        Option<DeclaredComponentSelection>,
     identity: [u8; 32],
 }
 impl WorthQueryObservedRootSelection {
@@ -19,15 +23,32 @@ impl WorthQueryObservedRootSelection {
         facts: SourceFacts,
         orbit: Option<DeclaredOrbitSelection>,
     ) -> Self {
+        Self::from_parts(facts, orbit, None)
+    }
+    pub(in crate::domain_computation::primary_graph::application_query) fn with_components(
+        facts: SourceFacts,
+        components: DeclaredComponentSelection,
+    ) -> Self {
+        Self::from_parts(facts, None, Some(components))
+    }
+    fn from_parts(
+        facts: SourceFacts,
+        orbit: Option<DeclaredOrbitSelection>,
+        components: Option<DeclaredComponentSelection>,
+    ) -> Self {
         let mut digest = Sha256::new();
         digest.update(b"worth-query:root-selection-source:v2");
         facts.append_descriptor(&mut digest);
         if let Some(orbit) = &orbit {
             orbit.append_descriptor(&mut digest);
         }
+        if let Some(components) = &components {
+            components.append_descriptor(&mut digest);
+        }
         Self {
             facts,
             orbit,
+            components,
             identity: digest.finalize().into(),
         }
     }
@@ -73,7 +94,10 @@ impl std::ops::Deref for WorthQueryObservedRootSelection {
 }
 impl PartialEq for WorthQueryObservedRootSelection {
     fn eq(&self, other: &Self) -> bool {
-        self.identity == other.identity && self.facts == other.facts && self.orbit == other.orbit
+        self.identity == other.identity
+            && self.facts == other.facts
+            && self.orbit == other.orbit
+            && self.components == other.components
     }
 }
 impl Eq for WorthQueryObservedRootSelection {}

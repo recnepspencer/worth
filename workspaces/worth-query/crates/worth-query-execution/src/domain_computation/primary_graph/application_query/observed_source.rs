@@ -77,8 +77,10 @@ impl WorthQueryBoundSourceExpectation {
 pub(in crate::domain_computation::primary_graph) mod source_identity;
 pub(in crate::domain_computation::primary_graph) use super::super::entity_resolution::WorthQueryObservedScopeSelector;
 pub(in crate::domain_computation::primary_graph::application_query) use retained_parameters::WorthQueryRetainedObservedParameters;
-pub(in crate::domain_computation::primary_graph::application_query) use root_selection::DeclaredOrbitSelection;
 pub(in crate::domain_computation::primary_graph) use root_selection::WorthQueryObservedRootSelection;
+pub(in crate::domain_computation::primary_graph::application_query) use root_selection::{
+    DeclaredComponentSelection, DeclaredOrbitSelection,
+};
 pub(in crate::domain_computation::primary_graph) use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
     WorthQueryObservedSourceSelection, WorthQueryRuntimeSourceIdentity,

@@ -290,9 +290,11 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
     rules: &BTreeMap<ApplicationQueryResultSlotKey, AdmittedDisclosureRule>,
 ) -> Result<(), WorthQueryApplicationDisclosureContractDenial> {
     let orbit = query.read_graph().orbit();
+    let components = query.read_graph().component_selection();
     let expected = query.read_graph().projections().len()
         + query.read_graph().relations().len()
-        + usize::from(orbit.is_some());
+        + usize::from(orbit.is_some())
+        + usize::from(components.is_some());
     let exact = query
         .read_graph()
         .projections()
@@ -307,7 +309,8 @@ fn require_complete_result_shape<Schema, Query, Parameters, QueryResult, Scope>(
         )
         .all(|slot| rules.contains_key(slot.as_ref()));
     let orbit_exact = orbit.is_none_or(|orbit| rules.contains_key(&orbit.slot_key()));
-    (expected == rules.len() && exact && orbit_exact)
+    let components_exact = components.is_none_or(|meaning| rules.contains_key(&meaning.slot_key()));
+    (expected == rules.len() && exact && orbit_exact && components_exact)
         .then_some(())
         .ok_or_else(|| denial(query.name()))
 }

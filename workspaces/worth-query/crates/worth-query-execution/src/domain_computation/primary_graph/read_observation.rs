@@ -93,6 +93,40 @@ impl WorthQueryInvariantProjectionWork {
             .saturating_add(self.output_lineage_role_lookups)
     }
 
+    pub(super) fn checked_combined(self, other: Self) -> Option<Self> {
+        Some(Self {
+            equality_lookups: self.equality_lookups.checked_add(other.equality_lookups)?,
+            index_candidates_examined: self
+                .index_candidates_examined
+                .checked_add(other.index_candidates_examined)?,
+            adjacency_lists_read: self
+                .adjacency_lists_read
+                .checked_add(other.adjacency_lists_read)?,
+            adjacency_edges_inspected: self
+                .adjacency_edges_inspected
+                .checked_add(other.adjacency_edges_inspected)?,
+            endpoint_records_read: self
+                .endpoint_records_read
+                .checked_add(other.endpoint_records_read)?,
+            field_reads: self.field_reads.checked_add(other.field_reads)?,
+            aggregate_lookups: self
+                .aggregate_lookups
+                .checked_add(other.aggregate_lookups)?,
+            aggregate_cache_hits: self
+                .aggregate_cache_hits
+                .checked_add(other.aggregate_cache_hits)?,
+            aggregate_rebuild_input_rows: self
+                .aggregate_rebuild_input_rows
+                .checked_add(other.aggregate_rebuild_input_rows)?,
+            output_lineage_source_selections: self
+                .output_lineage_source_selections
+                .checked_add(other.output_lineage_source_selections)?,
+            output_lineage_role_lookups: self
+                .output_lineage_role_lookups
+                .checked_add(other.output_lineage_role_lookups)?,
+        })
+    }
+
     /// Combine independent read stages, without changing their resource policy.
     pub(super) fn combined(self, other: Self) -> Self {
         Self {

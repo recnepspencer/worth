@@ -7,17 +7,20 @@ use std::sync::Arc;
 use worth_foundational::facade::AggregateDefinitionIdentity;
 use worth_query_installation::facade::WorthQueryOperationComponentReadScope;
 use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
+pub(in crate::domain_computation::primary_graph) mod acquisition;
 mod commitment;
 mod currentness;
 mod key;
+mod origin;
 pub(in crate::domain_computation::primary_graph) use key::{
     ComponentSelectionKey, ComponentSelectionSubject,
 };
+use origin::ComponentSelectionOrigin;
 
 #[derive(Debug)]
 pub(in crate::domain_computation) struct ComponentSelection {
     key: ComponentSelectionKey,
-    scope: WorthQueryOperationComponentReadScope,
+    origin: ComponentSelectionOrigin,
     layout: ComponentSetLayout,
     source: SnapshotHandle,
     aggregates: Vec<Arc<AggregateObservation>>,
@@ -39,18 +42,41 @@ impl ComponentSelection {
         >,
     ) -> Result<Option<Self>, worth_relational::facade::transactions::RelationalExecutionDenialCause>
     {
+        let key =
+            ComponentSelectionKey::new(scope.meaning_identity(), layout.definition, root, subject);
+        Self::from_parts(
+            ComponentSelectionOrigin::Operation(scope),
+            key,
+            layout,
+            source,
+            aggregates,
+            facts,
+            poll,
+        )
+    }
+    fn from_parts(
+        origin: ComponentSelectionOrigin,
+        key: ComponentSelectionKey,
+        layout: ComponentSetLayout,
+        source: SnapshotHandle,
+        aggregates: Vec<Arc<AggregateObservation>>,
+        facts: Vec<SourceFacts>,
+        poll: impl FnMut() -> Result<
+            (),
+            worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<Option<Self>, worth_relational::facade::transactions::RelationalExecutionDenialCause>
+    {
         if aggregates
             .iter()
             .any(|body| body.source() != &source || body.native().definition() != layout.definition)
         {
             return Ok(None);
         }
-        let key =
-            ComponentSelectionKey::new(scope.meaning_identity(), layout.definition, root, subject);
         let commitment = commitment::derive(&key, &aggregates, &facts, poll)?;
         Ok(Some(Self {
             key,
-            scope,
+            origin,
             layout,
             source,
             aggregates,
@@ -67,10 +93,13 @@ impl ComponentSelection {
     pub(in crate::domain_computation::primary_graph) fn source(&self) -> &SnapshotHandle {
         &self.source
     }
-    pub(in crate::domain_computation::primary_graph) fn scope(
+    pub(in crate::domain_computation::primary_graph) fn operation_scope(
         &self,
-    ) -> &WorthQueryOperationComponentReadScope {
-        &self.scope
+    ) -> Option<&WorthQueryOperationComponentReadScope> {
+        match &self.origin {
+            ComponentSelectionOrigin::Operation(scope) => Some(scope),
+            ComponentSelectionOrigin::Query { .. } => None,
+        }
     }
     pub(in crate::domain_computation::primary_graph) fn layout(&self) -> &ComponentSetLayout {
         &self.layout
@@ -90,7 +119,7 @@ impl ComponentSelection {
     ) -> Result<bool, E> {
         poll()?;
         if self.key != other.key
-            || self.scope != other.scope
+            || self.origin != other.origin
             || self.aggregates.len() != other.aggregates.len()
             || self.facts.len() != other.facts.len()
         {

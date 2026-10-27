@@ -317,8 +317,8 @@ full-verification fallback; no record-local invalidation cost is promised.
 The [scoped component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/decision/components.rs)
 use an installed mutation binding, real admission and both projection seals.
 They cover complete/partial/foreign cohorts and negative census evidence across
-ordinary World publications. Declared-query runtime component results and disclosure,
-ordinary invariant consumption, the full Phase 5 topology/replay/locality portfolio
+ordinary World publications. Ordinary invariant consumption,
+the full Phase 5 topology/replay/locality portfolio
 and CAD shell integration remain unfinished in
 [Phase 5](../../../../../../plans/WORTH-query/milestone-9.18.1.md#phase-5-components-with-persistent-identity).
 
@@ -340,13 +340,29 @@ with this shape. Complete-schema validation checks the actual set/member and
 all declared path and guard dependencies. Of and census have distinct canonical
 meaning and disclosure keys.
 
-This is a portable declaration and installation contract. Runtime Query admission
-currently refuses it with `ExecutionShapeUnsupported`; it cannot execute as
-ordinary raw member rows. The operation and decision reads above remain available.
-The [installed refusal court](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components.rs)
-uses the real schema, planning contract and ordinary query admission, alongside a
-working orbit query. Runtime acquisition, result grouping and governed disclosure
-remain part of the open Phase 5 implementation.
+One-shot Query execution acquires the installed Native component definition at
+its admitted snapshot. Of proves each Native member visible by reverse witnesses
+to the exact scope root. Census exhausts the forward path union and refuses any
+partially visible cohort. Neither mode silently truncates to the result limit.
+A closed whole slot refuses before Native acquisition; path guards require their
+own admitted projection before reading field revisions.
+
+`result.components(reference)` returns the complete slot with `len()`,
+`is_empty()` and `iter()`. Each component exposes `identity()`, `members()` and
+`len()`. Groups follow Native identity order and each group's Native member
+order; flattened rows preserve those boundaries. The same inspection is available
+on the admitted disclosed result and its output-demand source. Inspection reads
+already disclosed rows and grants no graph authority.
+
+The [installed component courts](../../../worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/invariant_orbits/declared_queries/components.rs)
+use real schemas, ordinary query admission and independent Native inspection.
+Rows share their original cohort body; a Census result also retains the full
+negative universe. Empty census evidence includes guard failures. Reuse compares
+physical visibility/coupling revisions and the original Native observations,
+including the installed definition on empty results. Query bodies cannot seal as
+issued operation reads. Planning requires Native aggregate support independently
+of any relation-view requirement. The remaining Phase 5 acceptance gates above
+stay open.
 
 The archive extends the existing optional aggregate position with component tag2;
 none0 and orbit1 keep their original bytes. Component disclosure uses selector6.
@@ -562,8 +578,8 @@ identities or assume a particular edge wins when several close cycles.
 The ordinary application builders expose source-to-target acyclicity with no
 allowed cycle class, same-relation paired symmetry, and directed or normalized
 edge uniqueness, same-partition endpoints and distinct reachable-target minima.
-Other native symmetry modes are not exposed by these builders. Ordinary
-component query results and their disclosure remain unfinished. Admitted operation
+Other native symmetry modes are not exposed by these builders. Complete one-shot
+component query results use whole-slot disclosure as described above. Admitted operation
 decision readers support scoped component selection and complete census/count as
 described above; the full Phase 5 acceptance portfolio remains open.
 Installation-owned projection readers support complete component inspection,

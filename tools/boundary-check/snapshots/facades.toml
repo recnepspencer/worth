@@ -621,6 +621,8 @@ exports = [
     "WorthQueryApplicationQueryBatchAdmission",
     "WorthQueryApplicationQueryBatchReadPlan",
     "WorthQueryApplicationQueryBatchResourceDenial",
+    "WorthQueryApplicationQueryComponent",
+    "WorthQueryApplicationQueryComponents",
     "WorthQueryApplicationQueryConsistency",
     "WorthQueryApplicationQueryContinuation",
     "WorthQueryApplicationQueryFreshness",

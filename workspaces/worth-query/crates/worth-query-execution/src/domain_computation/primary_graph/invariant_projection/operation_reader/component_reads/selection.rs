@@ -1,12 +1,14 @@
-//! Whole-cohort visibility precedes all typed membership and identity output.
+//! Actual operation admission around the shared physical whole-cohort collector.
 use super::*;
-use crate::domain_computation::primary_graph::root_path_selection::RootPathOrientation;
-use worth_relational::facade::runtime::RelationalAdjacencyDirection;
+use crate::domain_computation::primary_graph::{
+    component_selection::acquisition::{
+        self, CohortSourceCapture, ComponentAcquisitionReader, CouplingObservationDenial,
+    },
+    root_path_selection::{RootPathOrientation, RootPathSelection},
+};
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    /// Of visits only the selected cohort and reverse witnesses. Census visits
-    /// the complete forward union, including negative and empty-set evidence.
     pub(super) fn collect_component_selection<Entity>(
         &mut self,
         scope: &WorthQueryOperationComponentReadScope,
@@ -17,113 +19,100 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         context: &mut worth_execution::MapKernelContext<'_, '_>,
         subject: &str,
     ) -> Result<(Vec<Arc<AggregateObservation>>, Vec<SourceFacts>), Denial> {
-        let mut facts = Vec::new();
-        let universe = if let Some(member) = member {
-            BTreeSet::from([member])
-        } else {
-            let selected = self.select_component_paths(
-                scope,
-                root,
-                RootPathOrientation::ForwardCensus,
-                true,
-                pin,
-                subject,
-            )?;
-            let universe = selected.roots.into_keys().collect();
-            facts.push(
-                selected
-                    .set_source
-                    .expect("census captures the complete union")
-                    .finish()
-                    .map_err(|cause| self.reader.walk_stop(cause, subject))?,
-            );
-            universe
+        let mut reader = OperationComponentAcquisition::<Schema, Operation, Entity> {
+            reader: self,
+            scope,
+            layout,
+            pin,
+            subject,
+            _entity: std::marker::PhantomData,
         };
-        let mut seen = BTreeSet::new();
-        let mut aggregates = Vec::new();
-        for anchor in &universe {
-            AggregateObservation::checkpoint(context)
-                .map_err(|cause| self.reader.walk_stop(cause, subject))?;
-            if seen.contains(anchor) {
-                continue;
-            }
-            let aggregate = self.reader.read_aggregate_identity(
-                layout.member_kind,
-                AggregateSelection::ComponentDefinition(layout.definition),
-                *anchor,
-                subject,
-            )?;
-            for candidate in aggregate.native().members() {
-                AggregateObservation::checkpoint(context)
-                    .map_err(|cause| self.reader.walk_stop(cause, subject))?;
-                if member.is_some() {
-                    let mut selected = self.select_component_paths(
-                        scope,
-                        candidate,
-                        RootPathOrientation::ReverseWitness {
-                            required_root: root,
-                        },
-                        false,
-                        pin,
-                        subject,
-                    )?;
-                    let witness = selected
-                        .roots
-                        .remove(&root)
-                        .ok_or_else(|| Denial::new(Kind::ComponentOutsideScope, subject))?;
-                    facts.push(
-                        witness
-                            .finish()
-                            .map_err(|cause| self.reader.walk_stop(cause, subject))?,
-                    );
-                } else if !universe.contains(&candidate) {
-                    return Err(Denial::new(Kind::ComponentOutsideScope, subject));
-                }
-                seen.insert(candidate);
-            }
-            self.reader
-                .admit_component_members::<Entity>(layout, &aggregate, context, subject)?;
-            facts.push(self.component_coupling_facts(layout, &aggregate, pin, context, subject)?);
-            aggregates.push(aggregate);
-        }
-        aggregates.sort_by_key(|body| body.native().identity());
-        Ok((aggregates, facts))
+        acquisition::acquire(
+            &mut reader,
+            root,
+            member,
+            CohortSourceCapture::SelectionOnly,
+            context,
+        )
+        .map(|answer| answer.into_operation_parts())
     }
-    fn component_coupling_facts(
+}
+struct OperationComponentAcquisition<'frame, 'reader, 'runtime, Schema, Operation, Entity> {
+    reader: &'frame mut WorthQueryApplicationOperationInvariantProjectionReader<
+        'reader,
+        'runtime,
+        Schema,
+        Operation,
+    >,
+    scope: &'frame WorthQueryOperationComponentReadScope,
+    layout: &'frame ComponentSetLayout,
+    pin: &'frame RelationalPinnedRead,
+    subject: &'frame str,
+    _entity: std::marker::PhantomData<Entity>,
+}
+impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>, Entity>
+    ComponentAcquisitionReader
+    for OperationComponentAcquisition<'_, '_, '_, Schema, Operation, Entity>
+{
+    type Error = Denial;
+    fn paths(
         &mut self,
-        layout: &ComponentSetLayout,
-        aggregate: &AggregateObservation,
-        pin: &RelationalPinnedRead,
+        start: EntityId,
+        orientation: RootPathOrientation,
+        capture: bool,
+    ) -> Result<RootPathSelection, Denial> {
+        self.reader.select_component_paths(
+            self.scope,
+            start,
+            orientation,
+            capture,
+            self.pin,
+            self.subject,
+        )
+    }
+    fn aggregate(&mut self, member: EntityId) -> Result<Arc<AggregateObservation>, Denial> {
+        self.reader.reader.read_aggregate_identity(
+            self.layout.member_kind,
+            AggregateSelection::ComponentDefinition(self.layout.definition),
+            member,
+            self.subject,
+        )
+    }
+    fn observe_cohort(
+        &mut self,
+        body: &AggregateObservation,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-        subject: &str,
     ) -> Result<SourceFacts, Denial> {
-        let projection = pin
-            .project_snapshot(self.reader.snapshot)
-            .ok_or_else(|| Denial::new(Kind::EndpointUnavailable, subject))?;
-        let mut facts = SourceFactsBuilder::default();
-        for member in aggregate.native().members() {
-            AggregateObservation::checkpoint(context)
-                .map_err(|cause| self.reader.walk_stop(cause, subject))?;
-            facts.observe_entity(member);
-            for (_, kind) in layout.sources.iter() {
-                for direction in [
-                    RelationalAdjacencyDirection::Outgoing,
-                    RelationalAdjacencyDirection::Incoming,
-                ] {
-                    facts
-                        .observe_adjacency(
-                            self.reader.execution,
-                            &projection,
-                            member,
-                            *kind,
-                            direction,
-                        )
-                        .map_err(|cause| self.component_source_denial(cause, subject))?;
-                }
+        self.reader.reader.admit_component_members::<Entity>(
+            self.layout,
+            body,
+            context,
+            self.subject,
+        )?;
+        acquisition::observe_coupling(
+            self.reader.reader.execution,
+            self.pin,
+            self.layout,
+            body,
+            context,
+        )
+        .map_err(|stop| match stop {
+            CouplingObservationDenial::Unavailable => {
+                Denial::new(Kind::EndpointUnavailable, self.subject)
             }
-        }
-        facts
-            .finish()
-            .map_err(|cause| self.reader.walk_stop(cause, subject))
+            CouplingObservationDenial::Execution(cause) => self.native_denial(cause),
+            CouplingObservationDenial::Source(cause) => {
+                self.reader.component_source_denial(cause, self.subject)
+            }
+        })
+    }
+    fn native_denial(
+        &mut self,
+        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    ) -> Denial {
+        self.reader.reader.walk_stop(cause, self.subject)
+    }
+    fn outside_scope(&self) -> Denial {
+        Denial::new(Kind::ComponentOutsideScope, self.subject)
     }
 }

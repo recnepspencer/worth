@@ -32,6 +32,20 @@ pub(super) fn install_with_probe(graph: Graph, observer: probe::Probe<false>) ->
     install(graph, observer)
 }
 fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
+    install_with_visibility(graph, observer, Vec::new())
+}
+pub(super) fn install_orbit_with_component_visibility(
+    graph: Graph,
+    observer: probe::Probe,
+    extra_visibility: Vec<(u64, u64)>,
+) -> World {
+    install_with_visibility(graph, observer, extra_visibility)
+}
+fn install_with_visibility<const O: bool>(
+    graph: Graph,
+    observer: probe::Probe<O>,
+    extra_visibility: Vec<(u64, u64)>,
+) -> World<O> {
     let observation = probe::Observation::default();
     with_test_advancement(|phase| {
         let declaration = OrbitSchema::<O>::declaration().unwrap();
@@ -124,6 +138,16 @@ fn install<const O: bool>(graph: Graph, observer: probe::Probe<O>) -> World<O> {
                 .bind_relation(WorthQueryApplicationRelationSeed::new(
                     Next::reference(),
                     format!("next-{index}"),
+                    node_key::<O>(from),
+                    node_key::<O>(to),
+                ))
+                .unwrap();
+        }
+        for (index, (from, to)) in extra_visibility.into_iter().enumerate() {
+            bootstrap
+                .bind_relation(WorthQueryApplicationRelationSeed::new(
+                    super::decision::components::binding::Visible::reference(),
+                    format!("extra-visible-{index}"),
                     node_key::<O>(from),
                     node_key::<O>(to),
                 ))

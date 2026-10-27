@@ -240,7 +240,7 @@ where
                 query.name(),
             )
         })?;
-        let inventory = primary_graph_support_inventory(
+        let inventory = primary_graph_support_inventory(query.read_graph(),
             &graph.layout,
             query.continuation(),
             query.live(),

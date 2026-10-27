@@ -140,6 +140,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
     WorthQueryApplicationQueryBasisPosture, WorthQueryApplicationQueryBatchAdmission,
     WorthQueryApplicationQueryBatchReadPlan, WorthQueryApplicationQueryBatchResourceDenial,
+    WorthQueryApplicationQueryComponent, WorthQueryApplicationQueryComponents,
     WorthQueryApplicationQueryConsistency, WorthQueryApplicationQueryContinuation,
     WorthQueryApplicationQueryFreshness, WorthQueryApplicationQueryOmissionPosture,
     WorthQueryApplicationQueryOrbit, WorthQueryApplicationQueryResumeControls,

@@ -20,6 +20,21 @@ where
     Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
     Row: WorthQueryApplicationProjection<OrbitSchema<true>, Q>,
 {
+    execute_with_limit(world, execution, request, query, root, 2000)
+}
+pub(super) fn execute_with_limit<Q, Row>(
+    world: &World,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    request: &WorthQueryRequestScope,
+    query: ApplicationQueryReference<OrbitSchema<true>, Q, Parameters, Row, Node>,
+    root: u64,
+    maximum_result_count: usize,
+) -> Result<WorthQueryApplicationOneShotResult<Q, Row>, Stop>
+where
+    Q: ApplicationQueryMarkerIdentity<OrbitSchema<true>> + 'static,
+    Q::ResultBinding: ApplicationStructuredValueBinding<Value = Row>,
+    Row: WorthQueryApplicationProjection<OrbitSchema<true>, Q>,
+{
     let (actor, subject, installed) = world
         .application
         .with_host_advancement(|phase| {
@@ -78,7 +93,7 @@ where
                 )
                 .unwrap();
             let controls = WorthQueryProductQueryControls::new(
-                std::num::NonZeroUsize::new(2000).unwrap(),
+                std::num::NonZeroUsize::new(maximum_result_count).unwrap(),
                 request,
             );
             if installed.disclosure().posture() == ApplicationQueryDisclosurePosture::Governed {
