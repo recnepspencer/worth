@@ -9,6 +9,7 @@
 //! the commit is not there (durable before live, D2).
 
 use std::fs;
+use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -32,6 +33,7 @@ const ROLE_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_ROLE";
 const LOCATION_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_LOCATION";
 const MARKERS_ENV: &str = "WORTH_RELATIONAL_HOME_CHILD_MARKERS";
 const CHILD_TEST: &str = "process_kill::child::relational_home_child";
+pub(crate) const WAL_SEGMENT_BYTES_ENV: &str = "WORTH_RELATIONAL_HOME_WAL_SEGMENT_BYTES";
 
 pub(crate) fn script() -> Script {
     Script::generate(SEED, COMMITS, CHECKPOINT_EVERY)
@@ -149,22 +151,34 @@ pub(crate) struct Killed {
 
 /// Run a child to `stop` and kill it there.
 pub(crate) fn launch(stop: Stop) -> Killed {
+    launch_with_wal_segment_bytes(stop, None)
+}
+
+pub(crate) fn child_wal_profile(
+) -> Option<worth_store_relational::RelationalStoreCertificationProfile> {
+    let bytes = std::env::var_os(WAL_SEGMENT_BYTES_ENV)?;
+    let bytes = bytes.to_str().unwrap().parse::<NonZeroU64>().unwrap();
+    Some(worth_store_relational::RelationalStoreCertificationProfile::with_wal_segment_bytes(bytes))
+}
+
+pub(crate) fn launch_with_wal_segment_bytes(stop: Stop, bytes: Option<NonZeroU64>) -> Killed {
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let markers = directory.path().join("markers");
     fs::create_dir_all(&markers).unwrap();
     let role = PathBuf::from(stop.label());
     let ready = markers.join("ready");
-    let end = killed_child::run_and_kill(
-        CHILD_TEST,
-        &[
-            (ROLE_ENV, &role),
-            (LOCATION_ENV, &location),
-            (MARKERS_ENV, &markers),
-        ],
-        &ready,
-        &markers.join("finished"),
-    );
+    let bytes = bytes.map(|bytes| PathBuf::from(bytes.get().to_string()));
+    let mut environment = vec![
+        (ROLE_ENV, &role),
+        (LOCATION_ENV, &location),
+        (MARKERS_ENV, &markers),
+    ];
+    if let Some(bytes) = &bytes {
+        environment.push((WAL_SEGMENT_BYTES_ENV, bytes));
+    }
+    let end =
+        killed_child::run_and_kill(CHILD_TEST, &environment, &ready, &markers.join("finished"));
     assert_eq!(end, ChildEnd::KilledAtPark, "{stop:?}");
     let live = fs::read_to_string(&ready).unwrap().parse().unwrap();
     let acknowledged = decode(&fs::read(markers.join("acknowledged")).unwrap());

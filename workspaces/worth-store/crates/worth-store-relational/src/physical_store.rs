@@ -5,6 +5,8 @@
 mod profile;
 
 pub(crate) use profile::placement;
+#[cfg(feature = "certification-test-authority")]
+pub use profile::RelationalStoreCertificationProfile;
 
 use std::path::Path;
 

@@ -3,6 +3,9 @@ use super::*;
 use std::path::Path;
 use worth_execution::ExecutionAllocationPolicy;
 
+#[path = "child/cleanup_wal.rs"]
+mod cleanup_wal;
+
 /// The child: run the plan for its stop, park, announce, and wait to die.
 fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     let deadline = Instant::now() + killed_child::PARK_DEADLINE;
@@ -12,6 +15,9 @@ fn child(stop: Stop, location: &Path, markers: &Path) -> ! {
     let home = open(location, &execution).expect("the child's home opens");
     let (completed, parked) = stop.plan(&script);
     apply(&home, &execution, &script.steps[..completed]);
+    if let (Stop::CheckpointAcknowledged(_), Some(profile)) = (stop, child_wal_profile()) {
+        cleanup_wal::cover_segments_at_next_checkpoint(&home, profile.wal_segment_bytes());
+    }
     if matches!(stop, Stop::CheckpointCarried(_) | Stop::CheckpointReturned) {
         home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap();
@@ -119,7 +125,11 @@ fn relational_home_child() {
         .expect("a known child role");
     let location = PathBuf::from(std::env::var_os(LOCATION_ENV).expect("child location"));
     let markers = PathBuf::from(std::env::var_os(MARKERS_ENV).expect("child markers"));
-    child(stop, &location, &markers);
+    let run = || child(stop, &location, &markers);
+    match child_wal_profile() {
+        Some(profile) => profile.run(run),
+        None => run(),
+    }
 }
 
 /// These Store gates run only after the home has selected the new directory
