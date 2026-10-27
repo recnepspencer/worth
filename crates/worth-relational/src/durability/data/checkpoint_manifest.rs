@@ -30,6 +30,7 @@ pub(crate) struct RelationalCheckpointManifest {
     pub(crate) symbol_identity_frontier: u32,
     pub(crate) symbol_buckets: Vec<RelationalCheckpointSymbolBucket>,
     pub(crate) lineage: Vec<RelationalCheckpointPage>,
+    pub(crate) lineage_events: Vec<RelationalCheckpointLineageEventPage>,
     pub(crate) lineage_basis: crate::lineage::data::LineageCheckpointDigestBasis,
     pub(crate) derived_indexes: RelationalDurableMemberLocator,
 }

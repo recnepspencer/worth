@@ -30,14 +30,17 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     }
 
     runtime.performance_access().reset_counters();
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_historical_resolution_requests, 1);

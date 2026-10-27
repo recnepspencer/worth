@@ -24,6 +24,13 @@ pub(crate) struct CapturedManifest {
     pub(crate) carried_envelopes: Vec<crate::history::RelationalCommitIndexEntry>,
     pub(crate) publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
     pub(crate) cold_source: Option<Arc<dyn crate::durability::medium::RelationalDurableColdSource>>,
+    pub(crate) guarded_members: BTreeMap<
+        RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    >,
     pub(crate) history_members: Arc<RelationalHistoryMemberDirectory>,
 }
 
@@ -201,6 +208,7 @@ impl CapturedManifest {
                 symbol_identity_frontier: checkpoint.symbol_identity_frontier,
                 symbol_buckets,
                 lineage: lineage_pages,
+                lineage_events: Vec::new(),
                 lineage_basis: checkpoint.lineage.digest_basis().clone(),
                 derived_indexes,
             },
@@ -208,6 +216,7 @@ impl CapturedManifest {
             envelopes,
             publications: Vec::new(),
             cold_source: None,
+            guarded_members: BTreeMap::new(),
             history_members: Arc::default(),
         })
     }
@@ -223,6 +232,20 @@ impl CapturedManifest {
             &RelationalCheckpointArtifactPolicy::Embedded,
             Vec::new(),
         )?;
+        let rows = checkpoint
+            .envelopes
+            .iter()
+            .flat_map(|commit| {
+                commit
+                    .lineage_events()
+                    .iter()
+                    .map(|event| RelationalCheckpointLineageEventRow {
+                        event: Arc::new(event.clone()),
+                        publication_commit_id: commit.commit.commit_id,
+                    })
+            })
+            .collect();
+        captured.append_lineage_events(rows, policy)?;
         let mut members = std::mem::take(&mut captured.members);
         let mut symbols = crate::symbols::data::StringInterner::default();
         symbols.restore_snapshot(checkpoint.symbol_table.clone());

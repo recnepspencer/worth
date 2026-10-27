@@ -29,9 +29,9 @@ impl RelationalRuntime {
             .selected_root()
             .demand_regions_full(execution, &self.services.symbols, [entity_id.partition_id])
             .map_err(|failure| RelationalObservationReadDenial::Execution(failure.into()))?;
-        Ok(self
-            .lineage_access()
-            .resolve_record_history_for_observation(entity_id, observation))
+        self.lineage_access()
+            .resolve_record_history_for_observation(execution, entity_id, observation)
+            .map_err(RelationalObservationReadDenial::Execution)
     }
 
     /// The entities `observation`'s retained root holds for `lineage_ids`.

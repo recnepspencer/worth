@@ -106,6 +106,7 @@ pub(super) fn validate(
         ));
     }
     validate_pages(&manifest.lineage)?;
+    super::lineage_event_directory::validate(manifest)?;
     let history_members = manifest
         .readmit_history_members()
         .map_err(|cause| corrupt(format!("history member dependencies: {cause:?}")))?;

@@ -34,10 +34,11 @@ pub(crate) use subsystems::{
     RecordIdentitySubsystem, RelationalCanonicalPublicationRoutes,
     RelationalCheckpointManifestPublication, RelationalDiagnosticArtifactStore,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
-    ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
-    SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
+    ResidentLineageEventPage, ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition,
+    ResidentPartitionEntry, RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices,
+    RuntimeSubsystem, RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding,
+    StorageSubsystem, SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency,
+    VisibilitySubsystem,
 };
 pub use subsystems::{
     RelationalBranchSharingCostCounters, RelationalCanonicalPositionAdmissionDenial,

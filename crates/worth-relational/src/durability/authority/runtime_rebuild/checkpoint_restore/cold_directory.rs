@@ -159,7 +159,7 @@ pub(super) fn restore(
     runtime.record_identity = record_identity;
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
-    runtime.lineage.install_cold_node_pages(&directory);
+    runtime.lineage.install_cold_pages(&directory)?;
     runtime
         .indexes
         .install_cold_checkpoint(directory.clone(), &runtime.history);

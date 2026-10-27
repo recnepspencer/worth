@@ -38,6 +38,19 @@ impl CapturedCheckpointBasis {
                     .demand_node(execution, crate::identity::data::LineageId(page.first))?;
             }
         }
+        self.lineage_event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
+        self.lineage_events = runtime
+            .lineage
+            .published_rows()
+            .into_iter()
+            .map(|(event, publication_commit_id)| {
+                crate::durability::data::RelationalCheckpointLineageEventRow {
+                    event,
+                    publication_commit_id,
+                }
+            })
+            .collect();
+        self.lineage_event_pages_resident = true;
         self.symbol_table = runtime.services.symbols.snapshot();
         self.lineage_nodes = runtime.lineage_access().resident_nodes_snapshot();
         Ok(self)

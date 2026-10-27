@@ -2312,3 +2312,87 @@ Dirty line caps, composition scan (zero scan errors), boundary-check and
 agent-context check passed. All are slice evidence; final clean-commit lanes,
 lineage event paging, index-build/checkpoint cells and the real home agreement
 court remain to be completed. No final phase-2 completion is claimed.
+
+
+Lineage event matrix first red: `matrix-lineage-events-first.log` runs actual
+producer publications (601 creates, then two replacements), captures external
+members and reopens through the public recovery source. Reopen read zero
+members and admitted zero nodes/events as required. Historical resolution then
+returned lineage 601 instead of the producer's lineage 603. The product is
+wrong: the cold directory contains no event authority and traversal accepted
+its empty resident event index. The test has not been weakened.
+
+Refinement before production editing: store each bounded event payload page
+once, with directory routing by the distinct fixed node ranges participating
+in its events. A wide split/merge must not duplicate its entire body for every
+range. One cell per member is shared by all its range routes. Readmission
+recomputes the complete route set from the admitted rows and checks it against
+the member's directory declaration, so negative route lookup is justified by
+the selected directory. A point query can overread at most one bounded payload
+page per consulted route entry. New capture appends only newly published event
+rows and carries prior pages; placement checks remain destination-scoped.
+The native format will advance cleanly when the event directory is introduced.
+
+
+The older-directory custody court is independently red:
+`matrix-lineage-custody-first.log` loses the authentic node member for range
+513..603 after a modeled home checkpoint replacement. Its cold source retains
+only members named by actual live custody handles; a bare directory/source Arc
+confers none. Node residency had none, so the point demand returned its typed
+MissingMember error. This is a product placement-lifetime failure, the same
+category as the dictionary audit fixed earlier. The fix makes node-directory
+installation fallible, acquires the exact node-member custody without reading
+payloads, and carries that handle in the shared node-residency owner. Forks share
+it; the last owner drops it. Recovery preserves a typed cold-storage refusal if
+placement cannot be acquired. Event residency must obey the same contract.
+
+
+### Paged lineage events and their complete capture
+
+CHK11 adds bounded event payload members (MBR1 kind 3), each stored once, with
+node-range/branch routes and exact event-id membership in the directory. Capture
+appends new publication rows, carries verified prior pages and writes O(1) new
+members for a small change. The directory validates coverage against the whole
+published lineage basis without reading bodies. A demand authenticates the
+member, recomputes all routing/id facts, checks event structure and exact indexed
+commit receipts, then admits immutable rows into that runtime's resolution
+index. Duplicate admission is allowed only for the exact same row and publication;
+ordinary recovered-batch duplicate rejection is unchanged. Admission membership
+and the copied index are sampled together for a runtime fork.
+
+Historical lineage and selected-root traversal explicitly discover and demand
+the event closure before accepting results. Selected observations load a cold
+retired-record seed rather than accepting an empty node index as absence. Graph
+and divergence declare their branch's event pages. Memory image export demands
+all selected event pages. Native embedded export uses the same event cells for
+raw member export, sharing typed failure and sticky damage. Native capture never
+loads cold event payloads. Its existing checkpoint gate still refuses unsettled
+performed publications; no phase-1 settlement protocol was replaced.
+
+The table exposed an observation history returning None, and embedded export
+wrapping a storage error as generic corruption. Both were product errors; their
+guards and exact error propagation are fixed. A range-locality court exposed
+zero-based bucket arithmetic for one-based node ids (node 512 shared node 601's
+route). Correct range arithmetic fixes the locality; the headroom assertion
+was retained. A separate byte-changing source proves actual member integrity
+checking and damage isolation, independently of the six injected error classes.
+
+A native foreign-destination capture from a fork exposed another product error:
+all shared page cells were resident, but the fork's query index was empty, so
+capture emitted no event pages. Capture now acquires only already resident page
+witnesses, merges their immutable rows with live publication rows and holds the
+leases through encoding. It does not mutate the fork's query index. Final native
+event-directory validation refuses any incomplete producer output. Event export
+providers advertise only the members they actually own; resident live suffix
+rows can materialize exact inline bytes after the member digest matches, so an
+older directory is never asked to serve a newly published member.
+
+Validation so far: native `matrix-lineage-native-snapshot.log` 1,990 passed,
+31 ignored; contracts `matrix-lineage-contracts.log` 203 passed, 3 ignored;
+owner Relational/Bridge lib+tests clippy passed, as did format, line caps,
+composition scan (zero scan errors), boundary-check and agent-context.
+These are dirty-tree slice logs at 41b5748788, not final phase-2 lane evidence.
+The event table contributes 66 refusal cells (11 doors times six independent
+classes), bringing the refusal inventory to 1,158 plus 54 positive unavailable-
+history cells. Real home agreement, index-build/checkpoint subject expansion,
+outstanding reservation/checkpoint crossing and the final complete lanes remain.

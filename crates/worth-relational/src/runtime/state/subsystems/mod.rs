@@ -40,7 +40,8 @@ pub(crate) use indexing::{
     IndexDefinitionReadBinding, IndexingState, IndexingSubsystem, PreparedGenerationBatch,
 };
 pub(crate) use lineage::{
-    LineageState, LineageSubsystem, ResidentLineageNode, ValidatedLineageEventBatch,
+    LineageState, LineageSubsystem, ResidentLineageEventPage, ResidentLineageNode,
+    ValidatedLineageEventBatch,
 };
 pub(crate) use lineage_identity::LineageIdentityAllocator;
 pub(crate) use owned_state::RuntimeOwnedState;

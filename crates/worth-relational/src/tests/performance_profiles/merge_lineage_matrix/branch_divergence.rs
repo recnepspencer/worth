@@ -35,15 +35,18 @@ pub(super) fn certify_lineage_branch_divergence_breadth(
                     },
                 )
                 .unwrap();
-            let resolution =
-                runtime
-                    .lineage_access()
-                    .resolve_historical_lineage(HistoricalResolutionRequest {
+            let resolution = runtime
+                .lineage_access()
+                .resolve_historical_lineage(
+                    execution,
+                    HistoricalResolutionRequest {
                         branch_id: BranchId("main".to_string()),
                         lineage_id: start_lineage,
                         boundedness_basis:
                             HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-                    });
+                    },
+                )
+                .unwrap();
             let elapsed_micros = started_at.elapsed().as_micros();
             let counters = runtime.performance_access().counters();
 

@@ -32,7 +32,7 @@ pub(super) struct SelectedRootReachableCommitScope {
 }
 
 impl SelectedRootReachableCommitScope {
-    fn ancestry<'runtime>(
+    pub(super) fn ancestry<'runtime>(
         &mut self,
         access: &LineageAccess<'runtime>,
     ) -> &crate::history::CommitAncestryInspection {
@@ -103,12 +103,16 @@ impl BranchScopedHistoricalResolutionRequest {
 impl<'runtime> LineageAccess<'runtime> {
     pub fn resolve_historical_lineage(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: HistoricalResolutionRequest,
-    ) -> HistoricalLineageResolution {
-        self.resolve_historical_lineage_in_scope(
+    ) -> Result<HistoricalLineageResolution, crate::execution::RelationalExecutionDenialCause> {
+        let branches = BTreeSet::from([request.branch_id.clone()]);
+        let _events =
+            self.demand_historical_events(execution, request.lineage_id, &branches, None)?;
+        Ok(self.resolve_historical_lineage_in_scope(
             BranchScopedHistoricalResolutionRequest::from_request(request),
             HistoricalTraversalScope::AuthoringBranch,
-        )
+        ))
     }
 
     pub(super) fn resolve_historical_lineage_in_scope(
@@ -242,12 +246,13 @@ impl<'runtime> LineageAccess<'runtime> {
             return Ok(None);
         };
         Ok(Some(self.resolve_historical_lineage(
+            execution,
             HistoricalResolutionRequest {
                 branch_id: request.branch_id,
                 lineage_id: lineage.lineage_id,
                 boundedness_basis: request.boundedness_basis,
             },
-        )))
+        )?))
     }
 
     fn event_positions_for_sources(

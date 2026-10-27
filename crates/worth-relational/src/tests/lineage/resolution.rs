@@ -50,14 +50,17 @@ fn historical_lineage_resolution_follows_replace_events() {
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(resolution.start, start_lineage);
     assert_eq!(
@@ -168,14 +171,17 @@ fn refused_durable_publication_leaves_no_replacement_lineage_behind() {
         runtime.history().branch_head(&BranchId("main".to_owned())),
         head_before
     );
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_owned()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     assert_eq!(resolution.resolved, vec![start_lineage]);
     assert!(resolution.traversed_event_ids.is_empty());
 }
@@ -235,14 +241,17 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
         .metrics
         .event_count;
 
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(resolution.metrics.traversed_event_count, 1);
     assert_eq!(resolution.metrics.event_visit_count, 1);

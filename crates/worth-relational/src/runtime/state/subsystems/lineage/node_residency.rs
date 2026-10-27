@@ -31,11 +31,42 @@ struct NodePageCell {
 pub(super) struct RuntimeLineageNodeResidency {
     source: Arc<dyn RelationalDurableColdSource>,
     pages: Vec<Arc<NodePageCell>>,
+    _placement: crate::durability::medium::RelationalDurableMemberCustody,
 }
 
 impl RuntimeLineageNodeResidency {
-    pub(super) fn new(directory: &RelationalCheckpointDirectory) -> Self {
-        Self {
+    pub(super) fn new(
+        directory: &RelationalCheckpointDirectory,
+    ) -> Result<Self, RelationalStorageUnavailable> {
+        let members = directory
+            .manifest
+            .lineage
+            .iter()
+            .map(|page| page.member)
+            .collect::<Vec<_>>();
+        let placement = directory.source.retain_members(&members).map_err(|cause| {
+            RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Lineage {
+                    first: LineageId(
+                        directory
+                            .manifest
+                            .lineage
+                            .first()
+                            .map_or(0, |page| page.first),
+                    ),
+                    last: LineageId(
+                        directory
+                            .manifest
+                            .lineage
+                            .last()
+                            .map_or(0, |page| page.last),
+                    ),
+                },
+                cause,
+            }
+        })?;
+        Ok(Self {
+            _placement: placement,
             source: directory.source.clone(),
             pages: directory
                 .manifest
@@ -49,7 +80,7 @@ impl RuntimeLineageNodeResidency {
                     })
                 })
                 .collect(),
-        }
+        })
     }
 
     pub(super) fn covers(&self, id: LineageId) -> bool {

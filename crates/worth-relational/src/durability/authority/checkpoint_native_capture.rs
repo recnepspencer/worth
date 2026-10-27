@@ -46,6 +46,26 @@ impl CapturedCheckpointBasis {
                     .retain(|node| node.lineage_id.0 > lineage_frontier);
             }
         }
+        let resident_event_rows = if placement.is_embedded() {
+            self.lineage_events
+                .iter()
+                .map(|row| (row.event.event_id(), row.clone()))
+                .collect()
+        } else {
+            BTreeMap::new()
+        };
+        let mut event_rows = std::mem::take(&mut self.lineage_events);
+        if carry_metadata && let Some(prior) = &prior {
+            let covered = prior
+                .manifest
+                .commits
+                .iter()
+                .map(|entry| entry.commit.commit_id)
+                .collect::<std::collections::BTreeSet<_>>();
+            event_rows.retain(|row| !covered.contains(&row.publication_commit_id));
+        }
+        let lineage_event_sources = std::mem::take(&mut self.lineage_event_sources);
+        let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
         let mirror = std::mem::take(&mut self.partitions);
@@ -62,6 +82,7 @@ impl CapturedCheckpointBasis {
             placement,
             journal_index,
         )?;
+        captured.append_lineage_events(event_rows, policy)?;
         captured.envelope_cells = envelope_cells
             .into_iter()
             .filter_map(|cell| {
@@ -192,6 +213,17 @@ impl CapturedCheckpointBasis {
                     );
                 }
             }
+            let mut event_pages = prior.manifest.lineage_events.clone();
+            event_pages.append(&mut captured.manifest.lineage_events);
+            captured.manifest.lineage_events = event_pages;
+            for page in &prior.manifest.lineage_events {
+                insert_member(
+                    &mut captured,
+                    RelationalCheckpointMember::Carried {
+                        locator: page.member,
+                    },
+                );
+            }
             let mut lineage = prior.manifest.lineage.clone();
             lineage.append(&mut captured.manifest.lineage);
             captured.manifest.lineage = lineage;
@@ -212,6 +244,10 @@ impl CapturedCheckpointBasis {
                 );
             }
         }
+        captured.guarded_members.extend(lineage_event_sources);
+        if placement.is_embedded() {
+            captured.materialize_resident_event_members(&resident_event_rows, policy)?;
+        }
         captured.manifest.coverage.up_to_commit = captured
             .manifest
             .commits
@@ -231,6 +267,7 @@ impl CapturedCheckpointBasis {
             .manifest
             .readmit_history_members()
             .map_err(|cause| corrupt(format!("captured history dependencies: {cause:?}")))?;
+        captured.validate_lineage_events()?;
         Ok(captured)
     }
 }

@@ -63,3 +63,14 @@ impl
         }
     }
 }
+
+impl From<crate::storage::data::RelationalStorageUnavailable>
+    for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(failure: crate::storage::data::RelationalStorageUnavailable) -> Self {
+        let super::RelationalRecoveryStop::Durability(error) = failure.into() else {
+            unreachable!()
+        };
+        Self::Durability(error)
+    }
+}

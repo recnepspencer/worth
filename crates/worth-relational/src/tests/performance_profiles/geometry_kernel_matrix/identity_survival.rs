@@ -33,15 +33,18 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
 
             runtime.performance_access().reset_counters();
             let resolution_started_at = Instant::now();
-            let resolution =
-                runtime
-                    .lineage_access()
-                    .resolve_historical_lineage(HistoricalResolutionRequest {
+            let resolution = runtime
+                .lineage_access()
+                .resolve_historical_lineage(
+                    execution,
+                    HistoricalResolutionRequest {
                         branch_id: BranchId("main".to_string()),
                         lineage_id: start_lineage,
                         boundedness_basis:
                             HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-                    });
+                    },
+                )
+                .unwrap();
             let lineage_resolution_micros = resolution_started_at.elapsed().as_micros();
             let resolution_counters = runtime.performance_access().counters();
 
@@ -67,14 +70,18 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
 
             recovered.performance_access().reset_counters();
             let recovered_resolution_started_at = Instant::now();
-            let recovered_resolution = recovered.lineage_access().resolve_historical_lineage(
-                HistoricalResolutionRequest {
-                    branch_id: BranchId("main".to_string()),
-                    lineage_id: start_lineage,
-                    boundedness_basis:
-                        HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-                },
-            );
+            let recovered_resolution = recovered
+                .lineage_access()
+                .resolve_historical_lineage(
+                    execution,
+                    HistoricalResolutionRequest {
+                        branch_id: BranchId("main".to_string()),
+                        lineage_id: start_lineage,
+                        boundedness_basis:
+                            HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
+                    },
+                )
+                .unwrap();
             let recovered_lineage_resolution_micros =
                 recovered_resolution_started_at.elapsed().as_micros();
             let recovered_counters = recovered.performance_access().counters();

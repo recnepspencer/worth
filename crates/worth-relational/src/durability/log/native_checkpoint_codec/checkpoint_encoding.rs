@@ -82,16 +82,32 @@ pub(crate) fn encode_captured(
             );
         }
         for member in captured.members.values_mut() {
+            policy.check_live()?;
             if let RelationalCheckpointMember::Carried { locator } = member {
                 let locator = *locator;
-                let source = captured.cold_source.as_ref().ok_or_else(|| {
-                    super::manifest_capture::corrupt(
-                        "inline capture lacks its carried member source",
-                    )
-                })?;
-                let bytes = source.read_member(locator, 1 << 30).map_err(|cause| {
-                    super::manifest_capture::corrupt(format!("carried inline member: {cause:?}"))
-                })?;
+                let bytes = if let Some((subject, source)) = captured.guarded_members.get(&locator)
+                {
+                    source.read_member(locator, 1 << 30).map_err(|cause| {
+                        RelationalNativeCheckpointCaptureDenial::from(
+                            crate::storage::data::RelationalStorageUnavailable {
+                                subject: *subject,
+                                cause,
+                            },
+                        )
+                    })?
+                } else {
+                    let source = captured.cold_source.as_ref().ok_or_else(|| {
+                        super::manifest_capture::corrupt(
+                            "inline capture lacks its carried member source",
+                        )
+                    })?;
+                    source.read_member(locator, 1 << 30).map_err(|cause| {
+                        super::manifest_capture::corrupt(format!(
+                            "carried inline member: {cause:?}"
+                        ))
+                    })?
+                };
+                policy.check_live()?;
                 if super::member_frame::locator(&bytes) != locator {
                     return Err(super::manifest_capture::corrupt(
                         "carried inline member integrity mismatch",

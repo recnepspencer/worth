@@ -16,6 +16,16 @@ mod cold_envelopes;
 mod cold_index_matrix;
 #[path = "cold_invariants.rs"]
 mod cold_invariants;
+#[path = "cold_lineage_custody.rs"]
+mod cold_lineage_custody;
+#[path = "cold_lineage_event_fixture.rs"]
+mod cold_lineage_event_fixture;
+#[path = "cold_lineage_event_integrity.rs"]
+mod cold_lineage_event_integrity;
+#[path = "cold_lineage_event_matrix.rs"]
+mod cold_lineage_event_matrix;
+#[path = "cold_lineage_events.rs"]
+mod cold_lineage_events;
 #[path = "cold_lineage_fixture.rs"]
 mod cold_lineage_fixture;
 #[path = "cold_lineage_matrix.rs"]

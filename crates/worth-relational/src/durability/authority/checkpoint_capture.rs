@@ -31,6 +31,16 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
+    pub(super) lineage_events: Vec<crate::durability::data::RelationalCheckpointLineageEventRow>,
+    pub(super) lineage_event_pages_resident: bool,
+    pub(super) lineage_event_leases: Vec<crate::runtime::ResidentLineageEventPage>,
+    pub(super) lineage_event_sources: std::collections::BTreeMap<
+        crate::durability::medium::RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    >,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(super) carried_index_image:
         Option<crate::durability::medium::RelationalDurableMemberLocator>,
@@ -152,6 +162,36 @@ impl CapturedCheckpointBasis {
                 _ => None,
             })
             .map(|root| root.schema_authority().clone());
+        let (lineage_event_leases, lineage_event_pages_resident) = runtime
+            .lineage
+            .capture_resident_event_pages()
+            .map_err(lineage_capture_failure)?;
+        let mut lineage_events = runtime
+            .lineage
+            .published_rows()
+            .into_iter()
+            .map(|(event, publication_commit_id)| {
+                (
+                    event.event_id(),
+                    crate::durability::data::RelationalCheckpointLineageEventRow {
+                        event,
+                        publication_commit_id,
+                    },
+                )
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+        for page in &lineage_event_leases {
+            for row in page.rows() {
+                if let Some(existing) = lineage_events.get(&row.event.event_id())
+                    && existing != row
+                {
+                    return Err(lineage_capture_failure(page.binding_failure()));
+                }
+                lineage_events
+                    .entry(row.event.event_id())
+                    .or_insert_with(|| row.clone());
+            }
+        }
         let captured = Self {
             envelope_cells: artifacts
                 .iter()
@@ -192,6 +232,10 @@ impl CapturedCheckpointBasis {
                 .aspect_contract_plans
                 .clone(),
             lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
+            lineage_event_pages_resident,
+            lineage_event_leases,
+            lineage_event_sources: runtime.lineage.event_member_sources(),
+            lineage_events: lineage_events.into_values().collect(),
             index_definitions: runtime.index_access().definitions_snapshot(),
             carried_index_image: runtime.indexes.carried_checkpoint_image(),
             derived_index_checkpoint:
@@ -211,4 +255,13 @@ impl CapturedCheckpointBasis {
             .map_err(super::checkpointing::checkpoint_admission_error)?;
         Ok(captured)
     }
+}
+
+fn lineage_capture_failure(
+    failure: crate::storage::data::RelationalStorageUnavailable,
+) -> DurabilityError {
+    let crate::durability::data::RelationalRecoveryStop::Durability(error) = failure.into() else {
+        unreachable!()
+    };
+    error
 }

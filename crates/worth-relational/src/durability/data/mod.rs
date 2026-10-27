@@ -8,9 +8,11 @@ mod checkpoint_manifest;
 mod checkpoint_member;
 mod checkpoint_restore_work;
 mod history_member_directory;
+mod lineage_event_pages;
 pub(crate) use history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };
+pub(crate) use lineage_event_pages::*;
 mod native_checkpoint;
 mod native_checkpoint_capture_denial;
 mod recovery_branch_transitions;

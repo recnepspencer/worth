@@ -29,14 +29,17 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
         .unwrap()
         .unwrap()
         .lineage_id;
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         resolution.digest_basis().digest_mode(),
@@ -74,14 +77,17 @@ fn topology_identity_survival_preserves_reidentification_truth_across_recovery()
         .recover(execution, plan)
         .unwrap();
 
-    let recovered_resolution =
-        recovered
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let recovered_resolution = recovered
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     assert_eq!(
         recovered_resolution.digest_basis(),
         resolution.digest_basis()
