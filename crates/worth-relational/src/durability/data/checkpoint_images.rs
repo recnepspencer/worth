@@ -67,6 +67,7 @@ impl RecordArenaCheckpointKind for RelationCheckpointImageKind {
     serialize = "K::MetaImage: Serialize, K::ExtraImage: Serialize",
     deserialize = "K::MetaImage: Deserialize<'de>, K::ExtraImage: Deserialize<'de>"
 ))]
+#[serde(deny_unknown_fields)]
 pub struct RecordArenaCheckpointImage<K: RecordArenaCheckpointKind> {
     #[serde(default)]
     pub slots: Vec<u64>,
@@ -118,6 +119,7 @@ pub type EntityArenaCheckpointImage = RecordArenaCheckpointImage<EntityCheckpoin
 pub type RelationArenaCheckpointImage = RecordArenaCheckpointImage<RelationCheckpointImageKind>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PartitionCheckpointImage {
     pub partition_id: PartitionId,
     pub entity_arena: EntityArenaCheckpointImage,
@@ -167,6 +169,7 @@ pub(crate) enum DurableRecordGenerationClass {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct DurableRecordGenerationHighWater {
     pub(crate) class: DurableRecordGenerationClass,
     pub(crate) partition_id: PartitionId,
@@ -182,6 +185,7 @@ pub(crate) struct DurableReusableRecordSlot {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct DurableRecordSlotFrontier {
     pub(crate) class: DurableRecordGenerationClass,
     pub(crate) partition_id: PartitionId,
@@ -204,6 +208,7 @@ pub(crate) struct DurablePendingRecordReservation {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub(crate) struct DurableRecordIdentityState {
     pub(crate) schema_version: u16,
     #[serde(default)]

@@ -166,7 +166,18 @@ pub(super) fn restore<
 >(
     checkpoint: WorthQueryApplicationCheckpoint,
 ) -> Application<Schema> {
-    crate::facade::application_installation::in_memory_program_from_checkpoint(
+    restore_with_projection::<Schema>(checkpoint).0
+}
+
+pub(super) fn restore_with_projection<
+    Schema: BirthSchema + ApplicationSchemaComposition<Contributions = (Members,)>,
+>(
+    checkpoint: WorthQueryApplicationCheckpoint,
+) -> (
+    Application<Schema>,
+    WorthQueryApplicationInvariantProjectionAuthority<Schema>,
+) {
+    crate::facade::application_installation::in_memory_program_from_checkpoint_with_projection(
         ApplicationProgramAuthoring::<Schema, Program<Schema>>::begin()
             .with_schema(&Schema::declaration().unwrap())
             .validated_program()

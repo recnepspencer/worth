@@ -19,6 +19,7 @@ use crate::record::decode_budget::RecordDecodeAttempt;
 use crate::record::foundational_aspect;
 use crate::record::foundational_value;
 use crate::record::sequence::{decode_sequence, require_canonical_sequence, write_sequence};
+mod resource;
 
 pub(in crate::record) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -94,6 +95,10 @@ fn write_selector(
         ApplicationQueryDisclosureSelector::InspectionMetadata(metadata) => {
             output.u16(8)?;
             inspection::write(output, metadata)
+        }
+        ApplicationQueryDisclosureSelector::Resource(meaning) => {
+            output.u16(7)?;
+            resource::write(output, meaning)
         }
         ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
             output.u16(5)?;
@@ -181,6 +186,7 @@ fn decode_selector(
 ) -> Result<ApplicationQueryDisclosureSelector, Denial> {
     Ok(match input.u16()? {
         8 => ApplicationQueryDisclosureSelector::InspectionMetadata(inspection::decode(input)?),
+        7 => ApplicationQueryDisclosureSelector::Resource(resource::decode(input)?),
         5 => {
             use worth_query_declaration::facade::application_query::{
                 ApplicationHistoryMetadataFacet as Facet, ApplicationHistoryMetadataMeaning,

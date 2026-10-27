@@ -105,7 +105,7 @@ pub struct RevokeInput {
 worth_query_structured_value_binding!(pub RevokeInputBinding for RevokeInput { identity:"capability-retention.revoke-input.v1" });
 worth_query_operation!(pub RevokeGrant for CapabilitySchema, input RevokeInputBinding);
 worth_query_operation_reads!(RevokeGrant => [DocumentIdentityField, GrantIdentity, GrantStatus, GrantResource]);
-fn projection(
+pub(super) fn projection(
     action: u64,
     identity: &str,
 ) -> ApplicationCapabilityRequestProjection<CapabilitySchema, Document, GrantContext> {
@@ -274,6 +274,29 @@ where
     Operation: ApplicationOperationMarkerIdentity<CapabilitySchema>,
     Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
 {
+    grant_contract_for_field(
+        capability,
+        operation,
+        action,
+        purpose,
+        recorded_actor,
+        ApplicationCapabilityFieldDimension::not_applicable(),
+        ApplicationCapabilityDisclosureRule::not_applicable(),
+    )
+}
+pub(super) fn grant_contract_for_field<Capability, Operation, Input>(
+    capability: ApplicationCapabilityRef<CapabilitySchema, Capability>,
+    operation: ApplicationOperationRef<CapabilitySchema, Operation, Input>,
+    action: u64,
+    purpose: u64,
+    recorded_actor: ApplicationCapabilityRecordedActorRule,
+    field: ApplicationCapabilityFieldDimension,
+    disclosure: ApplicationCapabilityDisclosureRule,
+) -> ApplicationCapabilityContract<CapabilitySchema, Capability, Operation, Input>
+where
+    Operation: ApplicationOperationMarkerIdentity<CapabilitySchema>,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+{
     let encoded = |value| {
         ApplicationEncodedScalarValue::<U64ApplicationValueBinding>::try_new(value).unwrap()
     };
@@ -288,7 +311,7 @@ where
             ApplicationCapabilityValueBinding::new(GrantAction::reference(), encoded(action)),
             ApplicationCapabilityRelationBinding::from_reference(GrantResource::reference()),
             ApplicationCapabilityRelationDimension::not_applicable(),
-            ApplicationCapabilityFieldDimension::not_applicable(),
+            field,
             ApplicationCapabilityValueBinding::new(GrantPurpose::reference(), encoded(purpose)),
         ))
         .constraints(ApplicationCapabilityConstraintDefinition::new(
@@ -339,7 +362,7 @@ where
             ),
             ApplicationCapabilityPropagationComposition::new(
                 ApplicationCapabilityDelegationRule::forbidden(),
-                ApplicationCapabilityDisclosureRule::not_applicable(),
+                disclosure,
             ),
         ))
         .elevation(ApplicationCapabilityElevationRule::not_applicable())

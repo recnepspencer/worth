@@ -15,10 +15,11 @@ fn refused_live_opening_retires_the_admitted_request() {
         ..
     } = &mut installed.owner;
     // This request gives custody for inspecting all requests on the binding,
-    // including its replacement that the failed admission cannot return.
+    // including its replacement retained by the failed opening cleanup.
     let probe = workspace
-        .admit_owned_bridge_async_request(owned_async_source, product)
+        .admit_owned_bridge_async_request_at_branch_head(owned_async_source, product)
         .unwrap();
+    let probe = probe.retained_witness().unwrap();
     assert_eq!(
         workspace
             .owned_bridge_async_active_request_count(&probe)

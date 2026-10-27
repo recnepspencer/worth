@@ -388,3 +388,6 @@ pub use super::provider::{
     WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
     WorthQueryRecoveredProgramSourceDeliveryForTest,
 };
+
+mod checkpoint_inspection;
+pub use checkpoint_inspection::*;

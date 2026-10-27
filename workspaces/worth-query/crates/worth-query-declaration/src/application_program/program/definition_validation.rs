@@ -62,7 +62,7 @@ fn validate_required_roles(
 ) -> Result<(), ApplicationProgramValidationDenial> {
     use crate::application_program::ApplicationRequiredFeatureRoleKind as Kind;
     let mut identities = BTreeSet::new();
-    for pair in feature.required_roles().chunks_exact(2) {
+    for pair in feature.required_roles().as_chunks::<2>().0 {
         if pair[0].kind() != Kind::Initial || pair[1].kind() != Kind::Preserve {
             return Err(denial(
                 ApplicationProgramValidationDenialKind::InvalidRequiredFeatureRole,

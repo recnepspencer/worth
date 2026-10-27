@@ -33,10 +33,15 @@ fn complete_declared_path_retains_original_memory_until_last_source() {
         payer.charged_memory_bytes() > 0,
         "one real source still retains the funded Native body"
     );
+    let with_source_metadata = payer.charged_memory_bytes();
     drop(retained);
     assert!(
         payer.charged_memory_bytes() > 0,
         "the separately retained real Native body remains funded"
+    );
+    assert!(
+        payer.charged_memory_bytes() < with_source_metadata,
+        "dropping the last source returns its own metadata backing while the Native body remains"
     );
     drop(body);
     assert_eq!(

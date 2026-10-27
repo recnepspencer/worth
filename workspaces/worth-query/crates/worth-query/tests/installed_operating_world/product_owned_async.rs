@@ -82,9 +82,10 @@ fn selected_product_drives_owned_async_completion_and_definition_reuse() {
     let topology = workspace.owned_async_runtime_topology().unwrap();
     assert_eq!(topology.installed_async_declarations(), 1);
 
-    let first = workspace
+    let first_custody = workspace
         .admit_owned_bridge_async_request(&declaration, selected)
         .expect("the selected product must admit the owned request");
+    let first = first_custody.retained_witness().unwrap();
     let request = first.request();
     let raw = completion_envelope(request);
     let completion = workspace
@@ -99,9 +100,10 @@ fn selected_product_drives_owned_async_completion_and_definition_reuse() {
         .retire_owned_bridge_async_request(&first)
         .expect("cleanup after completion must be accepted");
 
-    let second = workspace
+    let second_custody = workspace
         .admit_owned_bridge_async_request(&declaration, selected)
         .expect("retirement must leave the pre-sealed definition reusable");
+    let second = second_custody.retained_witness().unwrap();
     assert_ne!(
         first.request().request_handle(),
         second.request().request_handle()
@@ -127,31 +129,38 @@ fn configured_timeout_retry_completes_and_releases_the_exact_request() {
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
-    let initial = workspace
+    let mut initial = workspace
         .admit_owned_bridge_async_request(&declaration, selected)
         .unwrap();
 
+    let prior = initial.retained_witness().unwrap();
+    let prior_attempt = prior.request().attempt();
     let timeout = workspace
-        .advance_owned_bridge_async_request_to_timeout(&initial, 5)
+        .advance_owned_bridge_async_request_to_timeout(&mut initial, 5)
         .unwrap();
     assert!(timeout.report().timed_out_request().is_some());
     let schedule = workspace
-        .schedule_owned_bridge_async_retry(&initial, &timeout)
+        .schedule_owned_bridge_async_retry(&mut initial, &timeout)
         .unwrap();
     assert!(schedule.report().scheduled_retry().is_some());
     let retried = workspace
-        .advance_owned_bridge_async_retry(&initial, &schedule, 7)
+        .advance_owned_bridge_async_retry(&mut initial, &schedule, 7)
         .unwrap();
     assert_eq!(
-        retried.lineage().class(),
+        retried.class(),
         worth_runtime_bridge::facade::BridgeAsyncForwardCausalityClass::RetryAfterTimeout
     );
     assert_eq!(
-        retried.request().request().attempt().get(),
-        initial.request().attempt().get() + 1
+        initial.witness().unwrap().request().attempt().get(),
+        prior.request().attempt().get() + 1
     );
 
-    let retried = retried.into_request();
+    let retried = initial.retained_witness().unwrap();
+    assert_eq!(
+        prior.request().attempt(),
+        prior_attempt,
+        "the prior receipt stays immutable"
+    );
     let completion = workspace
         .admit_owned_bridge_async_completion(&retried, completion_envelope(retried.request()))
         .unwrap();
@@ -192,29 +201,35 @@ fn sibling_product_revalidation_carries_truth_drift_and_releases_the_replacement
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
-    let initial = workspace
+    let mut initial = workspace
         .admit_owned_bridge_async_request(&declaration, source)
         .unwrap();
 
+    let prior = initial.retained_witness().unwrap();
     let revalidated = workspace
-        .revalidate_owned_bridge_async_request(&initial, sibling)
+        .revalidate_owned_bridge_async_request(&mut initial, sibling)
         .unwrap();
+    let worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation::Replaced(lineage) =
+        revalidated
+    else {
+        panic!("truth drift must replace the occurrence")
+    };
+    let replacement = initial.retained_witness().unwrap();
     assert_eq!(
-        revalidated.lineage().class(),
+        lineage.class(),
         worth_runtime_bridge::facade::BridgeAsyncForwardCausalityClass::RevalidationAfterTruthBasisDrift
     );
     assert_ne!(
-        revalidated.request().request().request_handle(),
-        initial.request().request_handle()
+        replacement.request().request_handle(),
+        prior.request().request_handle()
     );
     assert_eq!(
         workspace
-            .owned_bridge_async_active_request_count(revalidated.request())
+            .owned_bridge_async_active_request_count(&replacement)
             .unwrap(),
         1
     );
 
-    let replacement = revalidated.into_request();
     workspace
         .retire_owned_bridge_async_request(&replacement)
         .unwrap();
@@ -245,9 +260,16 @@ fn foreign_world_product_cannot_enter_the_owned_async_owner() {
         Err(denial) => denial,
         Ok(_) => panic!("a foreign World product entered the origin async owner"),
     };
+    let (cause, custody) = denial.into_parts();
+    assert!(
+        custody.is_none(),
+        "foreign selection refuses before native admission"
+    );
     assert!(matches!(
-        denial,
-        runtime::WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch
+        cause,
+        runtime::WorthQueryOwnedAsyncRuntimeCause::Admission(
+            runtime::WorthQueryOwnedAsyncRuntimeDenial::ProductSelectionMismatch
+        )
     ));
 }
 
@@ -276,12 +298,14 @@ fn assert_terminal_retry_is_occurrence_bound(
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
-    let bound = workspace
+    let bound_custody = workspace
         .admit_owned_bridge_async_request(&declaration, &selected)
         .unwrap();
-    let other = workspace
+    let bound = bound_custody.retained_witness().unwrap();
+    let other_custody = workspace
         .admit_owned_bridge_async_request(&declaration, &selected)
         .unwrap();
+    let other = other_custody.retained_witness().unwrap();
     let (request, schema) = owned_async_live_request_and_schema();
     let view: runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(

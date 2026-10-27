@@ -17,6 +17,14 @@ pub(in crate::application_query) use definition::prepare_definition_basis;
 pub(in crate::application_query) use history::prepare_history_basis;
 pub(in crate::application_query) use inspection::prepare_inspection_basis;
 
+pub(crate) fn prepare_disclosure_basis(
+    contract: &super::ApplicationQueryDisclosureContract,
+) -> ApplicationQueryCanonicalArtifact {
+    let mut entries = Vec::new();
+    disclosure::append_disclosure(&mut entries, contract);
+    prepare_artifact(entries)
+}
+
 pub const APPLICATION_QUERY_DOMAIN: &str = "worth-query.application-query";
 const APPLICATION_QUERY_RULE: &str = "worth-query-application-query-v4";
 

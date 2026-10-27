@@ -163,6 +163,12 @@ where
         WorthQueryConditionalRuntimeInspection,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
+        if self.installed_resources.cleanup_retained() {
+            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
+                super::WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
+                "installed resources still own process-local cleanup or recovery custody",
+            ));
+        }
         let pending = self
             .conditional_operations
             .get_mut()

@@ -1,4 +1,5 @@
 use super::*;
+mod resource_access;
 use crate::facade::{
     WorthQueryInstallationAdmissionProfile, WorthQueryInstallationGeneration,
     WorthQueryInstallationRuntimeIdentity, WorthQueryInstalledPackageIndex,
@@ -262,6 +263,9 @@ impl ApplicationSchema for Schema {
                 ApplicationCapabilityProvenanceRef::<Schema, Provenance>::from_declaration(),
             )
             .capability(typed_contract())
+            .application_query(resource_access::query())
+            .application_query_binding::<resource_access::Access>()
+            .application_resource(resource_access::definition())
             .build()
     }
 }

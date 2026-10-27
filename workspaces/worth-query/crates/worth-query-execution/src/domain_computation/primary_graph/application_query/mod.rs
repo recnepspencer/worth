@@ -1,6 +1,8 @@
 mod access_context;
 mod access_receipt;
 mod admission;
+pub(in crate::domain_computation::primary_graph) use admission::capture_parameters;
+pub(in crate::domain_computation) use admission::CapturedApplicationQueryParameters;
 pub(in crate::domain_computation::primary_graph) use admission::{
     FreshQueryPermissionStop, PreparedApplicationQueryPermission,
 };

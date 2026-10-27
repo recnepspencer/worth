@@ -5,14 +5,8 @@ mod application_correction_support;
 // loads them at the same paths; the court owns and lints them, and the
 // example uses a part.
 #[allow(dead_code, unused_imports)]
-mod document_retention_model {
-    #[path = "../../tests/application_graph/document_retention_model/operator_identity.rs"]
-    pub mod operator_identity;
-    pub mod host {
-        #[path = "../../../tests/application_graph/document_retention_model/host/world_resources.rs"]
-        pub(crate) mod world_resources;
-    }
-}
+mod document_retention_model;
+
 #[allow(dead_code)]
 #[path = "../tests/support/execution_policy.rs"]
 mod test_request_policy;

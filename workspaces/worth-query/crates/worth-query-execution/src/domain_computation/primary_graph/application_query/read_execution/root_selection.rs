@@ -83,8 +83,8 @@ pub(super) fn select_bounded_roots(
             }
             let result_set_source = if capture_result_set {
                 let mut source = RootPathSourceBuilder::default();
-                source.observe_entity(plan.root);
-                Some(source.finish()?)
+                source.observe_entity(execution, plan.root)?;
+                Some(source.finish(execution)?)
             } else {
                 None
             };
@@ -179,7 +179,7 @@ fn select_scoped_root(
     // Observe both matching and filtered subjects: a later guard change can
     // change row presence even when the current result is empty.
     let observed = {
-        set_source.observe_entity(plan.root);
+        set_source.observe_entity(execution, plan.root)?;
         set_source.observe_guard_field(
             execution,
             &projection,
@@ -213,7 +213,7 @@ fn select_scoped_root(
     let scoped = lookup.into_matching_entity_ids().into_iter().next();
     let selected_predicate_source = scoped.map(|_| observed);
     let result_set_source = capture_result_set
-        .then(|| set_source.finish())
+        .then(|| set_source.finish(execution))
         .transpose()?;
     Ok(BoundedRootSelection {
         candidates: scoped.into_iter().collect(),

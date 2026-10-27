@@ -95,7 +95,8 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
     let preconditions = include_str!(
         "../../../../worth-query-execution/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
     );
-    let evidence_slot = include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
+    let evidence_slot =
+        include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
     let capability = concat!(
         include_str!(
             "../../../../worth-query/src/domain_capabilities/payloads/invariant_capability/mod.rs"
@@ -208,8 +209,9 @@ fn phase_six_warm_consumers_cannot_hide_hashing_behind_a_helper() {
 }
 
 fn assert_warm_path_has_no_hashing(path: &Path) {
-    let is_source_meaning_owner =
-        path.ends_with("application_query/observed_source/source_identity.rs");
+    let is_source_meaning_owner = path
+        .ends_with("application_query/observed_source/source_identity.rs")
+        || path.ends_with("application_query/observed_source/source_identity/interning.rs");
     if path.is_dir() {
         for entry in std::fs::read_dir(path)
             .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()))
@@ -233,11 +235,11 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
     let source = std::fs::read_to_string(path)
         .unwrap_or_else(|error| panic!("failed to read {}: {error}", path.display()));
     // Dynamic row and result-set witnesses require runtime evidence digests;
-    // the named source-identity owner and its two commitment files must not
+    // the named cold interning owner and its two commitment files must not
     // become a semantic contract hash seam. Each keeps its exact domain.
     for (owner, domain) in [
         (
-            "application_query/observed_source/source_identity.rs",
+            "application_query/observed_source/source_identity/interning.rs",
             "worth-query:observed-result-set:v1",
         ),
         (
@@ -267,6 +269,27 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         assert!(!source.contains("prepare_canonical_basis_sequence"));
         return;
     }
+    if path.ends_with(Path::new(
+        "application_query/observed_source/root_selection/orbit.rs",
+    )) {
+        // This child only appends the whole-orbit observation descriptor to the
+        // parent's runtime witness. It may not derive another digest or an
+        // installed semantic identity of its own.
+        assert!(source.contains("declared-whole-orbit:v1"));
+        assert!(source.contains("fn append_descriptor(&self, digest: &mut Sha256)"));
+        for forbidden in [
+            "Sha256::new",
+            ".finalize(",
+            "prepare_canonical_basis_sequence",
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "{} derived an identity instead of appending observation evidence: {forbidden}",
+                path.display()
+            );
+        }
+        return;
+    }
     for forbidden in [
         "hash_parts",
         "digest_hash_parts",
@@ -283,8 +306,8 @@ fn assert_warm_path_has_no_hashing(path: &Path) {
         ".render_hex()",
     ] {
         if is_source_meaning_owner && forbidden == "checkpoint_source_identity" {
-            // The intern miss path is the named cold derivation boundary. The
-            // rest of this file remains subject to every inline hashing rule.
+            // Intern misses own cold derivation; the parent retains only its
+            // cfg(test) epoch constructor call. Neither may hide other hashing.
             continue;
         }
         assert!(

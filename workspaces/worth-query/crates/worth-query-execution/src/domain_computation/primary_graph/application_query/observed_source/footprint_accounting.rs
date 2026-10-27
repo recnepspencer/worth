@@ -4,39 +4,6 @@ use super::{
     WorthQueryObservedSourceFootprint,
 };
 use worth_relational::facade::identity::EntityId;
-impl WorthQueryObservedFieldRevision {
-    pub(in crate::domain_computation::primary_graph::application_query) fn owned_capacity_bytes(
-        &self,
-    ) -> usize {
-        let Self {
-            entity: _entity,
-            entity_name,
-            aspect,
-            field,
-            contract_revision: _contract_revision,
-            native_revision: _native_revision,
-        } = self;
-        entity_name
-            .capacity()
-            .saturating_add(aspect.owned_allocation_capacity_bytes())
-            .saturating_add(field.owned_allocation_capacity_bytes())
-    }
-}
-impl WorthQueryObservedAdjacencyRevision {
-    pub(super) fn owned_capacity_bytes(&self) -> usize {
-        let Self {
-            anchor: _anchor,
-            relation_kind: _relation_kind,
-            direction: _direction,
-            native_revision: _native_revision,
-            comparison_work_limit: _comparison_work_limit,
-            endpoints,
-        } = self;
-        endpoints
-            .capacity()
-            .saturating_mul(std::mem::size_of::<EntityId>())
-    }
-}
 impl WorthQueryObservedSourceFootprint {
     pub(in crate::domain_computation::primary_graph) fn retained_bytes(&self) -> usize {
         // root_selection is separately shared/charged by the containing result.

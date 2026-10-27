@@ -105,6 +105,11 @@ impl BridgeConditionalRuntimeBuilder {
         self.runtime.baseline_semantic_dependency_count()
     }
 
+    /// Installation compatibility inspection; this grants no clock authority.
+    pub fn owned_async_declaration_count(&self) -> usize {
+        self.runtime.owned_async_declaration_count()
+    }
+
     pub fn active_semantic_dependency_count(&self) -> usize {
         self.runtime.active_semantic_dependency_count()
     }

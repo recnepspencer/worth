@@ -15,15 +15,18 @@ fn stale_prior_occurrence_cannot_supersede_a_view_bound_to_its_same_source_succe
     let declaration = workspace
         .installed_owned_bridge_async_declaration(&async_identity())
         .unwrap();
-    let stale = workspace
+    let stale_custody = workspace
         .admit_owned_bridge_async_request(&declaration, &selected)
         .unwrap();
-    let bound = workspace
+    let stale = stale_custody.retained_witness().unwrap();
+    let bound_custody = workspace
         .admit_owned_bridge_async_request(&declaration, &selected)
         .unwrap();
-    let displacing = workspace
+    let bound = bound_custody.retained_witness().unwrap();
+    let displacing_custody = workspace
         .admit_owned_bridge_async_request(&declaration, &selected)
         .unwrap();
+    let displacing = displacing_custody.retained_witness().unwrap();
     let (request, schema) = owned_async_live_request_and_schema();
     let view: runtime::WorthQueryLiveView<runtime::WorthQueryUnrefinedLiveShape> = workspace
         .declare_bridge_async_live_view(

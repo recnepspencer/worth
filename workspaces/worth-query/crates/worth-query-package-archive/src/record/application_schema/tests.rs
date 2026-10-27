@@ -12,6 +12,7 @@ mod operation_body;
 mod projected_member_domain;
 mod query_context;
 mod relation_integrity;
+mod resource;
 mod resource_path;
 mod retired_fact_budget;
 

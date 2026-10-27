@@ -3,6 +3,8 @@ mod inspection;
 #[path = "application_principal_binding_tests/schema_members.rs"]
 mod schema_members;
 use worth_foundational::facade::AspectValue;
+#[path = "application_principal_binding_tests/resource.rs"]
+mod resource;
 #[path = "application_principal_binding_tests/result_only.rs"]
 mod result_only;
 #[path = "application_principal_binding_tests/retained_validation.rs"]

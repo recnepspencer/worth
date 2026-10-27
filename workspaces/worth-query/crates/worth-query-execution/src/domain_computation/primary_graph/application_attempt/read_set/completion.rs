@@ -101,8 +101,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                         observation,
                     },
                 ) = (fact_key, fact)
-                {
-                    if !self
+                    && !self
                         .expected_facts
                         .as_ref()
                         .and_then(|expected| {
@@ -114,9 +113,8 @@ impl<Schema, Operation, Input, Scope, Phase>
                             )
                         })
                         .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
-                    {
-                        return false;
-                    }
+                {
+                    return false;
                 }
                 if let (
                     super::super::fact::WorthQueryApplicationFactKey::StructuralWalk(key),
@@ -124,8 +122,7 @@ impl<Schema, Operation, Input, Scope, Phase>
                         observation,
                     },
                 ) = (fact_key, fact)
-                {
-                    if !self
+                    && !self
                         .expected_facts
                         .as_ref()
                         .and_then(|expected| {
@@ -137,9 +134,8 @@ impl<Schema, Operation, Input, Scope, Phase>
                             )
                         })
                         .is_some_and(|issued| std::sync::Arc::ptr_eq(issued, observation))
-                    {
-                        return false;
-                    }
+                {
+                    return false;
                 }
                 if let (
                     super::InstalledScopePosition::SourceQuery,

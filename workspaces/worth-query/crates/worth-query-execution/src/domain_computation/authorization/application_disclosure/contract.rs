@@ -13,7 +13,9 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout;
 
 use super::influence_validation::{validate_influence, GovernedInternalFieldRules};
 mod history;
+mod resource;
 pub(in crate::domain_computation) use history::compile_history_disclosure_contract;
+pub(in crate::domain_computation) use resource::compile_resource_disclosure_contract;
 
 #[derive(Clone, Debug)]
 pub(super) struct WorthQueryAdmittedApplicationDisclosureField {
@@ -166,6 +168,9 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         ApplicationQueryDisclosureSelector::InspectionMetadata(metadata) => {
             return Err(denial(metadata.slot_type()))
         }
+        ApplicationQueryDisclosureSelector::Resource(meaning) => {
+            return Err(denial(meaning.slot_type()))
+        }
         ApplicationQueryDisclosureSelector::HistoryMetadata(metadata) => {
             return Err(denial(metadata.slot_type()))
         }
@@ -202,10 +207,10 @@ fn admit_rule<Schema, Query, Parameters, QueryResult, Scope>(
         }
         ApplicationQueryDisclosureSelector::Orbit(orbit) => {
             let slot = orbit.slot_key();
-            if !query
+            if query
                 .read_graph()
                 .orbit()
-                .is_some_and(|expected| expected.slot_key() == slot)
+                .is_none_or(|expected| expected.slot_key() != slot)
                 || result_rules.insert(slot, installed).is_some()
             {
                 return Err(denial(orbit.slot_type()));

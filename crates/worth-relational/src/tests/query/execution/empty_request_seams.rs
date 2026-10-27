@@ -121,6 +121,7 @@ fn empty_index_request_keeps_its_cause_and_publishes_no_generation() {
 fn empty_commit_request_refuses_before_publication() {
     let (runtime, _) = fixture();
     let before = runtime.history().latest_commit().unwrap().commit_id;
+    let count_before = runtime.history().immutable_commit_count();
     let transaction = || {
         let mut transaction = test_owner_begin_transaction_for_main(&runtime);
         transaction
@@ -143,6 +144,7 @@ fn empty_commit_request_refuses_before_publication() {
         assert_empty_cause(memory, cause);
         let after = runtime.history().latest_commit().unwrap().commit_id;
         assert_eq!(after.0 - before.0, 0, "a refused commit publishes no head");
+        assert_eq!(runtime.history().immutable_commit_count(), count_before);
     }
     let admitted = lease(MEMORY, u64::MAX);
     let committed = runtime
@@ -150,10 +152,12 @@ fn empty_commit_request_refuses_before_publication() {
         .unwrap();
     let after = runtime.history().latest_commit().unwrap().commit_id;
     assert_eq!(after, committed.commit.commit_id);
+    assert!(after.0 > before.0);
+    assert_eq!(committed.commit.parents, [before]);
     assert_eq!(
-        after.0 - before.0,
+        runtime.history().immutable_commit_count() - count_before,
         1,
-        "the same admitted door publishes one head"
+        "the same admitted door publishes one head; reserved commit ids can be holes"
     );
 }
 

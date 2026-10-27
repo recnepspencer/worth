@@ -197,6 +197,11 @@ fn validate_portable_application_queries(
                 .validate()
                 .map_err(|_| Denial::InvalidApplicationQueryInspection);
         }
+        if let ApplicationSchemaMember::ApplicationResource { definition } = member {
+            return definition
+                .validate()
+                .map_err(|_| Denial::InvalidApplicationResource);
+        }
         if let ApplicationSchemaMember::ApplicationHistoryQuery { definition } = member {
             return definition
                 .validate()

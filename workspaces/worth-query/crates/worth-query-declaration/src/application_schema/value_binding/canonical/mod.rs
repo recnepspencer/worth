@@ -1,6 +1,8 @@
 //! Entry binding metadata for the Query-free canonical value contract.
 mod document;
+mod reference;
 pub use document::{decode_application_document, encode_application_document};
+pub use reference::{ApplicationCanonicalValueReference, ApplicationCanonicalValueReferenceParts};
 pub use worth_foundational::facade::{
     decode_canonical_value, decode_canonical_value_with_admission,
     decode_delegated_canonical_value, decode_delegated_canonical_value_with_admission,

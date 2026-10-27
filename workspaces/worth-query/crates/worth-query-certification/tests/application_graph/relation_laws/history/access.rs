@@ -38,6 +38,7 @@ pub(super) fn capture<History>(
 where
     History: ApplicationHistoryQueryBinding<Schema, SubjectRead = Binding>,
 {
+    let input = ReadInput { key };
     let runtime = world.application.runtime();
     let request = request_scope();
     let external = authenticate_operator(runtime.installed_schema(), &request);
@@ -64,7 +65,7 @@ where
                 .resolve_entity(
                     &phase,
                     NodeKey::reference(),
-                    key,
+                    input.key,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )

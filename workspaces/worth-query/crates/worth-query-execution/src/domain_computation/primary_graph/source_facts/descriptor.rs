@@ -20,6 +20,7 @@ impl SourceFacts {
             aspects,
             adjacencies,
             walks,
+            allocation: _,
         } = self;
         digest.update((entities.len() as u64).to_be_bytes());
         for entity in entities {

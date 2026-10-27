@@ -1,3 +1,4 @@
+mod clock;
 use std::sync::Arc;
 
 use crate::branch::owner_services::basis_port::denial_mapping::map_observation_admission_denial;
@@ -16,6 +17,37 @@ use super::issuance::SignalConditionalServiceAuthority;
 use super::{
     SignalConditionalExecutionPort, SignalConditionalServiceExecutionDenial,
     SignalInstalledDefinitionBinding,
+};
+
+mod completion_admission;
+mod completion_commit;
+mod initial_request;
+mod managed_queue;
+mod managed_replacement;
+mod managed_request;
+mod process_local_release;
+mod process_local_retry;
+pub use process_local_retry::SignalOwnedAsyncReleasedRetry;
+mod retention_obligation;
+mod retention_storage_for_test;
+pub(crate) use retention_obligation::SignalOwnedAsyncRetentionObligation;
+pub use retention_storage_for_test::SignalOwnedAsyncRetentionStorageForTest;
+mod wake_observation_for_test;
+pub use completion_admission::SignalOwnedAsyncCompletionAdmission;
+pub use completion_commit::SignalOwnedAsyncCompletionCommit;
+pub(crate) use completion_commit::SignalOwnedAsyncCompletionCommitState;
+pub(crate) use initial_request::SignalOwnedAsyncManagedAdmissionState;
+pub use managed_queue::{SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncQueueDenial};
+pub use managed_request::{
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,
+    SignalOwnedAsyncManagedReport,
+};
+pub(crate) use managed_request::{
+    SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
+    SignalOwnedAsyncManagedWakeCleanup,
+};
+pub use process_local_release::{
+    SignalOwnedAsyncReleasedResource, SignalOwnedAsyncResourceReleaseRefusal,
 };
 
 /// Opaque proof that one presealed resource definition belongs to this exact
@@ -45,6 +77,7 @@ pub struct SignalOwnedAsyncTimeoutAdmission {
 }
 
 pub struct SignalOwnedAsyncRetrySchedule {
+    origin: SignalOwnedAsyncSourceBinding,
     report: ResourceRetryScheduleReport,
 }
 
@@ -98,8 +131,8 @@ impl SignalOwnedAsyncTimeoutAdmission {
 }
 
 impl SignalOwnedAsyncRetrySchedule {
-    pub(crate) fn new(report: ResourceRetryScheduleReport) -> Self {
-        Self { report }
+    fn new(origin: SignalOwnedAsyncSourceBinding, report: ResourceRetryScheduleReport) -> Self {
+        Self { origin, report }
     }
 
     pub fn report(&self) -> &ResourceRetryScheduleReport {
@@ -147,28 +180,13 @@ where
         })
     }
 
-    pub fn admit_owned_async_request(
-        &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-    ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
-        self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
-            cell.admit_conditional_owned_async_request(
-                admission,
-                &binding.basis,
-                &self.definition,
-                binding.node,
-            )
-        })
-    }
-
     pub fn admit_owned_async_completion(
         &self,
         binding: &SignalOwnedAsyncSourceBinding,
         raw: RawCompletionEnvelope,
-    ) -> Result<ResourceCompletionAdmissionReport, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<SignalOwnedAsyncCompletionAdmission, SignalConditionalServiceExecutionDenial> {
         self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
+        let report = self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.admit_conditional_owned_async_completion(
                 admission,
                 &binding.basis,
@@ -176,82 +194,11 @@ where
                 binding.node,
                 raw,
             )
-        })
-    }
-
-    pub fn revalidate_owned_async_request(
-        &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-        intent: ResourceRevalidationIntent,
-    ) -> Result<SignalOwnedAsyncRevalidationAdmission, SignalConditionalServiceExecutionDenial>
-    {
-        self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
-            cell.revalidate_conditional_owned_async_request(
-                admission,
-                &binding.basis,
-                &self.definition,
-                binding.node,
-                intent,
-            )
-        })
-    }
-
-    pub fn advance_owned_async_request_to_timeout(
-        &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-        handle: ResourceRequestHandle,
-        coordinate: u64,
-    ) -> Result<SignalOwnedAsyncTimeoutAdmission, SignalConditionalServiceExecutionDenial> {
-        self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
-            cell.advance_conditional_owned_async_request_to_timeout(
-                admission,
-                &binding.basis,
-                &self.definition,
-                binding.node,
-                handle,
-                coordinate,
-            )
-        })
-    }
-
-    pub fn schedule_owned_async_retry(
-        &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-        handle: ResourceRequestHandle,
-    ) -> Result<SignalOwnedAsyncRetrySchedule, SignalConditionalServiceExecutionDenial> {
-        self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
-            cell.schedule_conditional_owned_async_retry(
-                admission,
-                &binding.basis,
-                &self.definition,
-                binding.node,
-                handle,
-            )
-        })
-    }
-
-    pub fn advance_owned_async_retry(
-        &self,
-        binding: &SignalOwnedAsyncSourceBinding,
-        handle: ResourceRequestHandle,
-        schedule: &SignalOwnedAsyncRetrySchedule,
-        coordinate: u64,
-    ) -> Result<SignalOwnedAsyncRetryAdmission, SignalConditionalServiceExecutionDenial> {
-        self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
-            cell.advance_conditional_owned_async_retry(
-                admission,
-                &binding.basis,
-                &self.definition,
-                binding.node,
-                handle,
-                schedule,
-                coordinate,
-            )
-        })
+        })?;
+        Ok(SignalOwnedAsyncCompletionAdmission::new(
+            binding.clone(),
+            report,
+        ))
     }
 
     pub fn active_owned_async_request_count(

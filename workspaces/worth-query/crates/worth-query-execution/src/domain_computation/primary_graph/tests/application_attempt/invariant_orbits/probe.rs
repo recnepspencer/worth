@@ -281,29 +281,25 @@ impl<const O: bool> WorthQueryApplicationInvariantRule<OrbitSchema<O>> for Rule<
                 }));
             }
         }
-        if O {
-            if let Some((_, root)) = scope.proposed.iter().find(|(key, _)| *key == 0) {
-                let view = context.proposed();
-                let orbit = view.orbit(&self.next, root).map_err(|e| {
-                    WorthQueryApplicationInvariantExecutionError::new(e.to_string())
-                })?;
-                if orbit.len() > 3 {
-                    self.observation.0[2].fetch_add(1, Ordering::SeqCst);
-                }
-                for (ordinal, entity) in orbit.members().enumerate() {
-                    let key = view
-                        .field(&self.key, &entity)
-                        .map_err(|e| {
-                            WorthQueryApplicationInvariantExecutionError::new(e.to_string())
-                        })?
-                        .unwrap();
-                    if self.blocked.contains(&key) {
-                        return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
-                            root: 0,
-                            blocked: key,
-                            ordinal: ordinal as u64,
-                        }));
-                    }
+        if O && let Some((_, root)) = scope.proposed.iter().find(|(key, _)| *key == 0) {
+            let view = context.proposed();
+            let orbit = view
+                .orbit(&self.next, root)
+                .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?;
+            if orbit.len() > 3 {
+                self.observation.0[2].fetch_add(1, Ordering::SeqCst);
+            }
+            for (ordinal, entity) in orbit.members().enumerate() {
+                let key = view
+                    .field(&self.key, &entity)
+                    .map_err(|e| WorthQueryApplicationInvariantExecutionError::new(e.to_string()))?
+                    .unwrap();
+                if self.blocked.contains(&key) {
+                    return Ok(WorthQueryApplicationInvariantVerdict::Violation(Refusal {
+                        root: 0,
+                        blocked: key,
+                        ordinal: ordinal as u64,
+                    }));
                 }
             }
         }

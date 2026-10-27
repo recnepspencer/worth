@@ -42,3 +42,5 @@ pub mod actor_generation;
 
 #[path = "document_retention_model/record_history.rs"]
 pub mod record_history;
+
+pub(crate) use record_history::reaffirm::Binding as ReaffirmRetentionBinding;

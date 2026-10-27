@@ -13,6 +13,9 @@ pub struct ApplicationQueryResultSlotKey {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum ApplicationQueryResultSlotContract {
+    Resource {
+        facet: crate::application_resource::ApplicationResourceDisclosureFacet,
+    },
     HistoryMetadata {
         facet: super::ApplicationHistoryMetadataFacet,
     },
@@ -80,6 +83,16 @@ impl ApplicationQueryResultSlotKey {
             query: binding.parts().query.clone(),
             slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
             contract: ApplicationQueryResultSlotContract::InspectionMetadata { binding, facet },
+        }
+    }
+    pub(crate) fn resource(
+        resource: WorthQueryPortableTypeIdentity,
+        facet: crate::application_resource::ApplicationResourceDisclosureFacet,
+    ) -> Self {
+        Self {
+            query: resource,
+            slot: WorthQueryPortableTypeIdentity::declared(facet.name()),
+            contract: ApplicationQueryResultSlotContract::Resource { facet },
         }
     }
     pub(super) fn history_metadata(

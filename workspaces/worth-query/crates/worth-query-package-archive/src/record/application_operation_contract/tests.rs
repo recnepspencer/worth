@@ -212,8 +212,14 @@ fn duplicate_operation_contract_loci_fail_without_normalization() {
 
 #[test]
 fn unknown_scope_tags_and_invalid_external_protocols_fail_closed() {
-    assert_scope_tag_denied(true, 4);
-    assert_scope_tag_denied(false, 6);
+    for graph_read in [true, false] {
+        for tag in [0, u16::MAX] {
+            assert_scope_tag_denied(graph_read, tag, Kind::UnsupportedRecordVariant);
+        }
+    }
+    // Tag 6 now denotes relation-field initialization; its absent payload is
+    // truncated, while an unrecognized tag is still a distinct refusal.
+    assert_scope_tag_denied(false, 6, Kind::Truncated);
 
     let invalid_identity = effect_bytes("Invalid.protocol", 1);
     assert_eq!(
@@ -304,7 +310,7 @@ fn assert_untrusted_parts_decode_kind(
     assert_decode_kind(&bytes, expected);
 }
 
-fn assert_scope_tag_denied(graph_read: bool, tag: u16) {
+fn assert_scope_tag_denied(graph_read: bool, tag: u16, expected: Kind) {
     let bytes = tag.to_be_bytes();
     let mut input = BinaryInput::new(&bytes);
     let mut attempt = RecordDecodeAttempt::begin(
@@ -318,7 +324,7 @@ fn assert_scope_tag_denied(graph_read: bool, tag: u16) {
     } else {
         super::touch::decode(&mut input, &mut attempt).unwrap_err()
     };
-    assert_eq!(denial.kind(), Kind::UnsupportedRecordVariant);
+    assert_eq!(denial.kind(), expected);
 }
 
 fn effect_bytes(protocol_identity: &str, protocol_version: u32) -> Vec<u8> {

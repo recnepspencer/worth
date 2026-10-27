@@ -29,14 +29,7 @@ pub(crate) fn ordinary_plan(
         .filter_map(|kind| kind.relation_integrity.aggregate_identity.as_ref())
     {
         work.checkpoint(1)?;
-        let private = |kind: KindId| {
-            [
-                contract.storage.aggregate_kind,
-                contract.storage.lineage_kind,
-                contract.membership_kind,
-            ]
-            .contains(&kind)
-        };
+        let private = |kind: KindId| contract.metadata_kinds().contains(&kind);
         for intent in intents {
             work.checkpoint(1)?;
             let (declared, record) = match intent {

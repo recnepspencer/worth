@@ -56,11 +56,20 @@ impl WorthQueryObservedRootSelection {
         self.identity
     }
     pub(in crate::domain_computation::primary_graph) fn retained_bytes(&self) -> usize {
+        if self
+            .facts
+            .allocation
+            .as_ref()
+            .is_some_and(|allocation| allocation.has_payment())
+        {
+            return 0;
+        }
         let SourceFacts {
             entities,
             aspects,
             adjacencies,
             walks: _walks,
+            allocation: _,
         } = &self.facts;
         let base = std::mem::size_of::<Self>().saturating_add(2 * std::mem::size_of::<usize>());
         let entities = entities

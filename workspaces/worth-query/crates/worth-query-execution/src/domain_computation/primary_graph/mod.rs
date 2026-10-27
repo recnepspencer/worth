@@ -20,6 +20,7 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputD
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
 mod application_program;
 pub(crate) mod application_query;
+pub(crate) mod application_resource;
 mod application_runtime;
 pub(crate) mod authenticated_principal;
 mod authentication_clock;
@@ -190,4 +191,6 @@ pub use observations::principal_target_reads_on_this_thread_for_test;
 pub use application_runtime::WorthQueryOperationInputCaptureDenial;
 pub(in crate::domain_computation) mod selected_read_indexes;
 
+mod admitted_capture;
 pub(crate) mod causal_inspection;
+mod record_reservations;

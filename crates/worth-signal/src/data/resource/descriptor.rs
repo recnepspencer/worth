@@ -275,6 +275,10 @@ impl LoweredResourceDescriptor {
         &self.retention_decision_plan
     }
 
+    pub(crate) fn retention_policy(&self) -> &ResourceRetentionPolicyDeclaration {
+        &self.retention_policy
+    }
+
     pub fn diagnostics_decision_plan(&self) -> &ResourceDiagnosticsDecisionPlan {
         &self.diagnostics_decision_plan
     }

@@ -6,6 +6,17 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryCorrectionLineageBinding,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
+pub use crate::domain_computation::primary_graph::application_resource::{
+    WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
+    WorthQueryApplicationResourceReceipt, WorthQueryApplicationResourcesRequest,
+    WorthQueryClosedResource, WorthQueryResourceActionDenial, WorthQueryResourceCleanupDetail,
+    WorthQueryResourceCleanupPosture, WorthQueryResourceEffectRefusal, WorthQueryResourceFrameKind,
+    WorthQueryResourceIngressDenial, WorthQueryResourceIngressWriter,
+    WorthQueryResourceOwnedEffectStartStop, WorthQueryResourceProviderAttempt,
+    WorthQueryResourceProviderFailure, WorthQueryResourceRecoveryCloseStop,
+    WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
+    WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
+};
 pub use crate::domain_computation::primary_graph::WorthQueryAftermathCausalityReadDenial;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
@@ -25,35 +36,38 @@ pub use crate::domain_computation::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    bound_advancement_requests_on_this_thread_for_test, fact_verification_on_this_thread_for_test,
+    bound_advancement_requests_on_this_thread_for_test, conditional_intent_read_is_active_for_test,
+    fact_verification_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     inexact_native_deliveries_on_this_thread_for_test, native_marking_on_this_thread_for_test,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     place_managed_computations_on_this_thread_for_test,
+    principal_target_reads_on_this_thread_for_test,
     query_read_kernel_entries_by_root_on_this_thread_for_test,
-    query_read_kernel_entries_on_this_thread_for_test, test_execution_workers_for_test,
-    WorthQueryExecutionPlacementForTest, WorthQueryFactVerificationForTest,
-    WorthQueryInputCutoffCandidateForTest, WorthQueryInputCutoffForTest,
-    WorthQueryInputCutoffGateForTest, WorthQueryInputCutoffNativeBasisForTest,
-    WorthQueryInputCutoffNoRowReasonForTest, WorthQueryInputCutoffOutcomeForTest,
-    WorthQueryInputCutoffSettlementForTest, WorthQueryInputCutoffSettlementPostureForTest,
-    WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,
-    WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
-    WorthQueryRegistryCustodyForTest, WorthQueryRegistryCustodyTransitionForTest,
+    query_read_kernel_entries_on_this_thread_for_test, query_test_execution_authority_for_test,
+    test_execution_workers_for_test, WorthQueryDiscoveredRetentionControlDenial,
+    WorthQueryDiscoveredRetentionReservationForTest, WorthQueryExecutionPlacementForTest,
+    WorthQueryFactVerificationForTest, WorthQueryInputCutoffCandidateForTest,
+    WorthQueryInputCutoffForTest, WorthQueryInputCutoffGateForTest,
+    WorthQueryInputCutoffNativeBasisForTest, WorthQueryInputCutoffNoRowReasonForTest,
+    WorthQueryInputCutoffOutcomeForTest, WorthQueryInputCutoffSettlementForTest,
+    WorthQueryInputCutoffSettlementPostureForTest, WorthQueryMarkedOutputForTest,
+    WorthQueryNativeMarkingForTest, WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
+    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
+    WorthQueryRecoveredProgramSourceDeliveryForTest, WorthQueryRegistryCustodyForTest,
+    WorthQueryRegistryCustodyTransitionForTest,
 };
 
-pub use crate::domain_computation::primary_graph::query_test_execution_authority_for_test;
-
-pub use worth_relational::facade::indexes::{
-    DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest,
+pub use worth_relational::facade::{
+    indexes::{DerivedIndexDiscardDenial, DerivedIndexDiscardOutcome, DerivedIndexDiscardRequest},
+    lineage::{LineageEventKind, LineageEventRecord},
+    mvcc::{
+        CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
+    },
+    publication::RecordStructuralChange,
+    transactions::RelationalExecutionDenialCause,
 };
-pub use worth_relational::facade::lineage::{LineageEventKind, LineageEventRecord};
-pub use worth_relational::facade::mvcc::{
-    CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
-};
-pub use worth_relational::facade::publication::RecordStructuralChange;
-pub use worth_relational::facade::transactions::RelationalExecutionDenialCause;
 
 pub use crate::domain_computation::application_aftermath::{
     compensate_recovery_handle, dispose_recovery_handle, expire_recovery_handle,
@@ -347,44 +361,35 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryDependentPairReadContext, WorthQueryDerivedPairReadPlans,
 };
 
-/// Owns this thread's Signal checkpoint observation; grants no request authority.
-pub use worth_signal::facade::SignalRequestWorkObservation;
-
-/// Owns this thread's actual World read observation; grants no publication authority.
-pub use worth_runtime_world::facade::RuntimeWorldReadObservation;
+/// Passive execution, World and Signal observations grant no request or publication authority.
+pub use {
+    crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
+    worth_runtime_world::facade::RuntimeWorldReadObservation,
+    worth_signal::facade::SignalRequestWorkObservation,
+};
 
 pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
 
-/// Owns passive execution observation without granting request authority.
-pub use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
 /// Native delivery causes carried by the Query host audience.
 pub use worth_runtime_bridge::facade::BridgeConditionalDenialKind;
 pub use worth_runtime_bridge::facade::BridgeCorrespondenceDeliveryStop;
 
-pub use crate::domain_computation::primary_graph::principal_target_reads_on_this_thread_for_test;
-
-pub use crate::domain_computation::primary_graph::conditional_intent_read_is_active_for_test;
-
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryRecoveredProgramSourceDeliveryDenialForTest,
-    WorthQueryRecoveredProgramSourceDeliveryForTest,
-};
-
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
-};
 pub use crate::domain_computation::{
-    WorthQueryMutationCleanupFailure, WorthQueryMutationCleanupFailureKind,
+    primary_graph::{
+        WorthQueryApplicationCleanupRequired, WorthQueryApplicationManagedCleanup,
+        WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
+    },
+    WorthQueryManagedRunCleanupFailureKind, WorthQueryMutationCleanupFailure,
+    WorthQueryMutationCleanupFailureKind,
 };
-
-pub use crate::domain_computation::primary_graph::{
-    WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
-};
-
-pub use crate::domain_computation::WorthQueryManagedRunCleanupFailureKind;
 
 pub use worth_runtime_bridge::facade::BridgeExecutionBasisFinalizationFailureKind;
 
 pub use crate::domain_computation::primary_graph::{
-    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+    CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
+    CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
+    WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
+    WorthQueryCheckpointRecordClass, WorthQueryRecordReservationObservation,
+    WorthQueryRecordReservationObservationDenial, WorthQueryRecordReservationObservationFailure,
+    WorthQueryRecordReservationReport, WorthQueryReservedRecord,
 };

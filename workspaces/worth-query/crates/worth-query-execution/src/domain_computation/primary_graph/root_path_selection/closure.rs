@@ -13,14 +13,17 @@ pub(super) fn advance<E>(
     basis: &RootPathReadBasis<'_, '_, '_>,
     layout: &WorthQueryPrimaryRelationLayout,
     located: PathStep<'_>,
-    frontier: &Frontier,
+    frontier: &mut Frontier,
     ports: &mut RootPathReadPorts<'_, E>,
-    set_source: &mut Option<SourceFactsBuilder>,
+    selected: &mut RootPathSelectionBuilder,
 ) -> Result<Frontier, RootPathReadDenial<E>> {
     let subject = located.step.relation();
     if layout.from != layout.to {
         return Err(RootPathReadDenial::traversal(subject));
     }
+    selected
+        .activate_source_allocation(basis.execution, frontier)
+        .map_err(|cause| RootPathReadDenial::source(subject, cause))?;
     let checkpoint = ports.checkpoint;
     let original_stop = RefCell::new(None);
     let control = || match checkpoint(subject) {
@@ -94,7 +97,7 @@ pub(super) fn advance<E>(
         let dependencies =
             StructuralWalkDependencies::append(prior, &body, basis.execution, context)
                 .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
-        if let Some(source) = set_source {
+        if let Some(source) = &mut selected.set_source {
             source
                 .record_walk(&body, basis.execution, context)
                 .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
@@ -120,8 +123,15 @@ pub(super) fn advance<E>(
                 units: predecessor.source_count() + 1,
                 subject,
             })?;
-            let mut source = predecessor.clone();
-            source.observe_entity(visit.entity.entity_id);
+            selected
+                .admit_frontier_entry(basis.execution, next.len())
+                .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
+            let mut source = predecessor
+                .copy_for_step(basis.execution)
+                .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
+            source
+                .observe_entity(basis.execution, visit.entity.entity_id)
+                .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
             source.set_walks(Arc::clone(&dependencies));
             next.insert(visit.entity.entity_id, source);
         }

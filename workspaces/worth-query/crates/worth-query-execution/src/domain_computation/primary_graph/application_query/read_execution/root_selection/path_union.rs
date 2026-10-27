@@ -12,7 +12,7 @@ use crate::domain_computation::primary_graph::{
         self, RootPathOrientation, RootPathReadBasis, RootPathReadPorts, RootPathSelection,
         RootPathSelectionRequest,
     },
-    source_facts::SourceFactsBuilder,
+    source_facts::{SourceFacts, SourceFactsAllocation},
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -106,14 +106,31 @@ pub(super) fn select_root_path_union(
             subject: plan.name,
         },
     )?;
-    let candidates = collect_candidates(result.roots.keys().copied())?;
-    let result_set_source = result.set_source.map(finish_source).transpose()?;
+    let candidates = collect_candidates(
+        execution,
+        result.allocation.as_deref(),
+        result.roots.keys().copied(),
+    )?;
+    let result_set_source = result
+        .set_source
+        .map(|source| finish_source(execution, source))
+        .transpose()?;
     let root_path_source = if result.roots.is_empty() {
         None
     } else {
+        if let Some(allocation) = &result.allocation {
+            allocation
+                .claim_tree_copy::<(EntityId, Arc<WorthQueryObservedRootSelection>)>(
+                    execution,
+                    result.roots.len(),
+                )
+                .map_err(|cause| {
+                    super::super::denial::relational_read_denial(cause, "source witness map")
+                })?;
+        }
         let mut sources = BTreeMap::new();
         for (root, source) in result.roots {
-            sources.insert(root, finish_source(source)?);
+            sources.insert(root, finish_source(execution, source)?);
         }
         Some(sources)
     };
@@ -131,19 +148,31 @@ pub(super) fn select_root_path_union(
     })
 }
 fn collect_candidates(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    allocation: Option<&SourceFactsAllocation>,
     values: impl ExactSizeIterator<Item = EntityId>,
 ) -> Result<Vec<EntityId>, WorthQueryApplicationReadExecutionDenial> {
+    if let Some(allocation) = allocation {
+        allocation
+            .claim_slice::<EntityId>(execution, values.len())
+            .map_err(|cause| {
+                super::super::denial::relational_read_denial(cause, "path candidates")
+            })?;
+    }
     let mut result = Vec::new();
     result.try_reserve_exact(values.len()).map_err(|_| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed, "path candidates"))?;
     result.extend(values);
     Ok(result)
 }
 fn finish_source(
-    source: SourceFactsBuilder,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    facts: SourceFacts,
 ) -> Result<Arc<WorthQueryObservedRootSelection>, WorthQueryApplicationReadExecutionDenial> {
-    let facts = source.finish().map_err(|cause| {
-        super::super::denial::relational_read_denial(cause, "source witness allocation")
-    })?;
+    facts
+        .admit_container::<WorthQueryObservedRootSelection>(execution)
+        .map_err(|cause| {
+            super::super::denial::relational_read_denial(cause, "source witness allocation")
+        })?;
     Ok(Arc::new(WorthQueryObservedRootSelection::new(facts, None)))
 }
 

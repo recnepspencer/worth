@@ -20,6 +20,7 @@ use super::{
 pub enum WorthQueryInstalledGraphObligationSubjectKind {
     ApplicationQuery,
     ApplicationOperation,
+    ApplicationResource,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -32,6 +33,10 @@ enum WorthQueryInstalledGraphObligationSubject {
         name: String,
         input_type: String,
     },
+    ApplicationResource {
+        name: String,
+        purpose: String,
+    },
 }
 
 impl WorthQueryInstalledGraphObligationSubject {
@@ -40,6 +45,9 @@ impl WorthQueryInstalledGraphObligationSubject {
             Self::ApplicationQuery { name, .. } => ("application-query", name, None),
             Self::ApplicationOperation { name, input_type } => {
                 ("application-operation", name, Some(input_type))
+            }
+            Self::ApplicationResource { name, purpose } => {
+                ("application-resource", name, Some(purpose))
             }
         }
     }
@@ -178,6 +186,21 @@ impl WorthQueryInstalledGraphObligationSet {
         )
     }
 
+    pub(super) fn for_resource(
+        binding_identity: &ApplicationSchemaBindingIdentity,
+        name: String,
+        purpose: String,
+        contracts: Vec<WorthQueryInstalledGraphObligationContract>,
+        resources: WorthQueryInstalledGraphObligationResourcePosture,
+    ) -> Result<Self, CanonicalDigestDerivationDenial> {
+        Self::build(
+            binding_identity,
+            WorthQueryInstalledGraphObligationSubject::ApplicationResource { name, purpose },
+            contracts,
+            resources,
+        )
+    }
+
     fn build(
         binding_identity: &ApplicationSchemaBindingIdentity,
         subject: WorthQueryInstalledGraphObligationSubject,
@@ -227,13 +250,17 @@ impl WorthQueryInstalledGraphObligationSet {
             WorthQueryInstalledGraphObligationSubject::ApplicationOperation { .. } => {
                 WorthQueryInstalledGraphObligationSubjectKind::ApplicationOperation
             }
+            WorthQueryInstalledGraphObligationSubject::ApplicationResource { .. } => {
+                WorthQueryInstalledGraphObligationSubjectKind::ApplicationResource
+            }
         }
     }
 
     pub fn subject_name(&self) -> &str {
         match &self.subject {
             WorthQueryInstalledGraphObligationSubject::ApplicationQuery { name, .. }
-            | WorthQueryInstalledGraphObligationSubject::ApplicationOperation { name, .. } => name,
+            | WorthQueryInstalledGraphObligationSubject::ApplicationOperation { name, .. }
+            | WorthQueryInstalledGraphObligationSubject::ApplicationResource { name, .. } => name,
         }
     }
 
@@ -269,7 +296,17 @@ impl WorthQueryInstalledGraphObligationSet {
             WorthQueryInstalledGraphObligationSubject::ApplicationQuery { identity, .. } => {
                 Some(identity)
             }
-            WorthQueryInstalledGraphObligationSubject::ApplicationOperation { .. } => None,
+            WorthQueryInstalledGraphObligationSubject::ApplicationOperation { .. }
+            | WorthQueryInstalledGraphObligationSubject::ApplicationResource { .. } => None,
+        }
+    }
+
+    pub fn resource_purpose(&self) -> Option<&str> {
+        match &self.subject {
+            WorthQueryInstalledGraphObligationSubject::ApplicationResource { purpose, .. } => {
+                Some(purpose)
+            }
+            _ => None,
         }
     }
 }

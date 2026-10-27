@@ -92,6 +92,15 @@ pub struct AggregateIdentityContractDeclaration {
 }
 
 impl AggregateIdentityContractDeclaration {
+    /// These kinds remain Native custody across authored payload suspension.
+    pub(crate) fn metadata_kinds(&self) -> [KindId; 3] {
+        [
+            self.storage.aggregate_kind,
+            self.storage.lineage_kind,
+            self.membership_kind,
+        ]
+    }
+
     pub(crate) fn canonical_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::with_capacity(68);
         bytes.extend_from_slice(self.definition.bytes());

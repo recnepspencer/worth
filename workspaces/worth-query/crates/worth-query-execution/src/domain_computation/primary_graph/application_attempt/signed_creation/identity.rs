@@ -218,7 +218,7 @@ pub(super) fn candidate(
                         super::sealing::WorthQuerySignedCreationPreparationDenial::Canonicalization
                     })?;
                 if !fields.is_empty() {
-                    entries.fields(&format!("{prefix}.initial"), &fields, context)?;
+                    entries.fields(&format!("{prefix}.initial"), fields, context)?;
                 }
                 entries
                     .reference(&format!("{prefix}.to"), to)

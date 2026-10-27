@@ -44,7 +44,8 @@ pub(super) struct HistorySubjectSource<
     History: ApplicationHistoryQueryBinding<Schema>,
 > {
     pub(super) observed: WorthQueryObservedResultSet<SubjectQuery<Schema, History>>,
-    pub(super) product: crate::basis::WorthQueryProductObservationLease,
+    // The captured subject set keeps its original Product root pinned until drop.
+    _product: crate::basis::WorthQueryProductObservationLease,
     pub(super) native: Option<RelationalRecordHistorySelection>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
@@ -88,7 +89,7 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
             .run_native(|_| WorthQueryCapturedApplicationHistorySubjects {
                 owner: Arc::new(HistorySubjectSource {
                     observed: observed.clone(),
-                    product: self.product,
+                    _product: self.product,
                     native: self.native,
                     _memory: self.memory,
                 }),

@@ -11,9 +11,12 @@ pub(super) fn advance<E>(
     located: PathStep<'_>,
     frontier: &mut Frontier,
     ports: &mut RootPathReadPorts<'_, E>,
-    set_source: &mut Option<SourceFactsBuilder>,
+    selected: &mut RootPathSelectionBuilder,
 ) -> Result<Frontier, RootPathReadDenial<E>> {
     let subject = located.step.relation();
+    selected
+        .admit_frontier_keys(basis.execution, frontier.len())
+        .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
     let anchors = frontier.keys().copied().collect::<BTreeSet<_>>();
     let direction = match located.direction {
         RelationDirection::Forward => RelationalAdjacencyDirection::Outgoing,
@@ -32,8 +35,10 @@ pub(super) fn advance<E>(
                 direction,
             )
             .map_err(|cause| RootPathReadDenial::source(subject, cause))?;
-        if let Some(set_source) = &mut *set_source
-            && set_source.record_adjacency(observed)
+        if let Some(set_source) = &mut selected.set_source
+            && set_source
+                .record_adjacency(basis.execution, observed)
+                .map_err(|cause| RootPathReadDenial::native(subject, cause))?
         {
             ports.notify(RootPathReadObservation::SourceCopy { units: 1, subject })?;
         }
@@ -83,8 +88,15 @@ pub(super) fn advance<E>(
             units: predecessor.source_count(),
             subject,
         })?;
-        let mut source = predecessor.clone();
-        source.observe_entity(endpoint);
+        selected
+            .admit_frontier_entry(basis.execution, next.len())
+            .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
+        let mut source = predecessor
+            .copy_for_step(basis.execution)
+            .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
+        source
+            .observe_entity(basis.execution, endpoint)
+            .map_err(|cause| RootPathReadDenial::native(subject, cause))?;
         next.insert(endpoint, source);
     }
     Ok(next)

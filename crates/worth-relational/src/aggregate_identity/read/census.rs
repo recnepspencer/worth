@@ -132,12 +132,7 @@ fn visible_members(
         let mut members = Vec::new();
         for &partition in partitions {
             work.checkpoint(1)?;
-            let slots = state.entity_slot_scan_count(partition).ok_or(
-                worth_execution::MapKernelFailure::Domain(
-                    funding::PlanDenial::DefinitionUnavailable,
-                ),
-            )?;
-            for slot in 0..slots {
+            work.visit_entity_slots(state, partition, |slot, work| {
                 work.checkpoint(1)?;
                 if let Some(metadata) = state.entity_metadata_for_slot(partition, slot) {
                     if metadata.kind_id == kind {
@@ -151,7 +146,8 @@ fn visible_members(
                         members.push(metadata.entity_id);
                     }
                 }
-            }
+                Ok(())
+            })?;
         }
         // Selected partition IDs and slots are canonical; generation is supplied
         // by that exact view's existing lifecycle/base/staged visibility owner.

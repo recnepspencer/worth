@@ -15,11 +15,16 @@ use worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema;
 use worth_query_host::facade::{declaration, primary_graph};
 
 pub fn publish() -> crate::document_retention_model::MixedApplication {
+    publish_monitor(crate::resource_monitor::Configuration::default())
+}
+pub fn publish_monitor(
+    configuration: crate::resource_monitor::Configuration,
+) -> crate::document_retention_model::MixedApplication {
     let application = in_memory_rostered_program(
         crate::program::validated_program(),
         roster(),
         DocumentRetentionSchema::declaration().expect("the neutral schema validates"),
-        ((), ()),
+        ((), (), configuration),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
             .expect("embedded application build identity"),
         host_limits(),
@@ -37,7 +42,7 @@ pub fn restore(
         crate::program::validated_program(),
         roster(),
         DocumentRetentionSchema::declaration().expect("the same neutral schema validates"),
-        ((), ()),
+        ((), (), crate::resource_monitor::Configuration::default()),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
             .expect("embedded application build identity"),
         host_limits(),
@@ -52,6 +57,7 @@ fn roster() -> WorthQueryApplicationProgramRoster<'static, DocumentRetentionSche
     // be rostered exactly as in the document model's normal host.
     WorthQueryApplicationProgramRoster::new()
         .support(validated_second_program())
+        .support(crate::program::validated_second_program())
         .support(crate::document_retention_model::actor_generation::validated_actor_program())
 }
 

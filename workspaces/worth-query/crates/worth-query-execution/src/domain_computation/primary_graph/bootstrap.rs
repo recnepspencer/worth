@@ -87,6 +87,7 @@ pub struct WorthQueryPrimaryGraphBootstrap<Schema> {
     recovered_checkpoint_restore_work:
         Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     pub(super) mutation_handlers: super::handler::PendingMutationHandlerRegistry<Schema>,
+    pub(super) resources: super::application_resource::installation::PendingResourceRegistry<Schema>,
     /// The initial program this installation activates, seeded before any
     /// ordinary bootstrap row so those rows are validated under its rules.
     pub(super) program_activation_seed: Option<WorthQueryProgramActivationSeed>,

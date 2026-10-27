@@ -328,7 +328,7 @@ fn history_subjects_keep_exact_generation_tombstones_and_native_owner_custody() 
     let mut relation_history = court.cursor(
         execution,
         &deleted,
-        &[relation.clone()],
+        std::slice::from_ref(&relation),
         &[court.contracts[0].key().clone()],
     );
     let unrelated = relation_history

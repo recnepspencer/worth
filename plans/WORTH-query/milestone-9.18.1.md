@@ -1,8 +1,8 @@
 # Milestone 9.18.1: Structural Graphs And Application Runtime Integration
 
 > **Status:** Phases 1–4 accepted on 2026-10-26; Phases 5–6 remain unfinished.
-> Phases 7 and 11 accepted on 2026-10-26; Phase 10 accepted on 2026-10-27.
-> Phases 8–9 remain unfinished.
+> Phases 7 and 11 accepted on 2026-10-26; Phases 8 and 10 accepted on 2026-10-27.
+> Phase 9 remains unfinished.
 > The 2026-10-27 Proprietary findings add required, unfinished Phases 12–18,
 > including mandatory Rust 1.99.x qualification.
 > Written on 2026-10-24 against master `b56db81af6`.
@@ -68,7 +68,7 @@ batch in Phase 11; this does not authorize a general legacy-code purge.
 | Finding | Existing boundary | Required destination |
 | --- | --- | --- |
 | Exact async source binding | World derives `TruthCommitIdentity` from the admitted immutable native reference; populated forks preserve their actual commit despite a reset branch version. Empty targets refuse before Signal admission | Phase 7 courts cover native equality, sibling publication, reserved occurrence gaps and cleanup; the Decl/Host resource endpoint remains Phase 8 |
-| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; older `worth-query/src/runtime/owned_async_{source,lifecycle}.rs` orchestrate it | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
+| Managed asynchronous resources stop short of the application SDK | Signal/Bridge own the lifecycle; Execution owns the legacy occurrence-custody integration, with directional older engine/UI adapters | Phase 8 supplies one declared, installed, governed lifecycle through Decl/Host |
 | Causal inspection stops short of ordinary application receipts | Older `worth-query/src/runtime/inspection/causal/` already anchors observations, admits inspection and consumes Bridge evidence | Phase 9 connects actual application receipts and fresh disclosure to that machinery |
 | Bounded record/aspect history reaches the application SDK | Relational retains finite canonical pages; World follows exact raw product ancestry and component evidence | Phase 10 captures disclosed exact generations through installed History meaning and continues at pinned truth with fresh SubjectRead and independent metadata decisions |
 | Relational identity planning inventories retired | The three string-only Phase 1 catalogs and their module/export declarations have been removed | Phase 11 preserves actual identity authority, selection/receipt issuance and real compile-boundary tests |
@@ -1024,17 +1024,20 @@ crates/worth-runtime-bridge/src/
   conditional_execution/owned_async/                         E lifecycle authority
   diagnostics/causal_envelope/                               E evidence assembly
   facade.rs                                                 E remove alias modules
-worth-query-declaration/src/application_query/
-  async_resource/                                           M typed resource meaning
-  history/                                                  N target/aspect selection
-  inspection/{definition,metadata,validation}.rs             N exact-binding inspection metadata meaning
-  canonical_basis/inspection.rs                             N portable metadata identity
-  disclosure_contract/inspection.rs                         N typed metadata rules
-worth-query-installation/src/application_query/
-  async_resource/                                           M installed declarations
-  history/                                                  N schema/disclosure binding
-  inspection.rs                                             N validate exact compiled binding before issuer admission
-  binding/observation.rs                                    N opaque original compiled-binding custody
+worth-query-declaration/src/
+  application_resource/                                     N typed resource meaning, action/disclosure profiles
+  application_schema/value_binding/canonical/               E complete descriptive codec reference
+  application_query/
+    history/                                                N target/aspect selection
+    inspection/{definition,metadata,validation}.rs           N exact-binding inspection metadata meaning
+    canonical_basis/inspection.rs                           N portable metadata identity
+    disclosure_contract/inspection.rs                       N typed metadata rules
+worth-query-installation/src/
+  application_resource/                                     N actual typed resource/provider correspondence
+  application_query/
+    history/                                                N schema/disclosure binding
+    inspection.rs                                           N validate exact compiled binding before issuer admission
+    binding/observation.rs                                  N opaque original compiled-binding custody
 worth-query-package-archive/src/record/
   application_schema/member/inspection.rs                   N additive member45/v1
   application_query/disclosure/inspection.rs                N additive selector8/v1
@@ -1043,7 +1046,7 @@ worth-query-admission/src/domain_computation/
 worth-query-execution/src/domain_computation/
   evidence_identity/                                        M shared diagnostic identity protocol
   primary_graph/
-    async_resource/                                         M live resource orchestration
+    application_resource/                                   M live resource orchestration
     causal_inspection/                                      M operational inspection and application evidence binding
     application_query/history/                              N native page adapter
     application_query/observed_source/retained_parameters.rs M original binding, parameters and exact row-meaning roster shared once
@@ -1131,10 +1134,127 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
+**Accepted, 2026-10-27.** Typed resource declarations and installed-profile lookup preserve
+the complete input/result/failure codec description, exact Access recipe,
+provider role, finite capacities and independent Start/Inspect/Advance/Close
+requirements. Member 39 and disclosure selector 7 extend the current protocol 18.
+Portable value-shape text is descriptive; only actual typed inventory can resolve
+its decoder. Boolean availability and lifecycle state do not authorize counts;
+cleanup detail requires both Count and Explanation influence. The Host provider
+and progression surface is implemented with its actual provider and cleanup journeys.
+
+Qualification uses the actual World/Bridge custody courts, one closed compile-fail
+case, five [Resource journeys](../../workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys.rs),
+the existing ordinary-query revocation control and the
+[combined workflow](../../workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow.rs).
+The integrated tree repeats those six selected application cases and the combined
+example; its populated fork, genuine prepare/drop, sibling publication and owned
+recovery remain in that one real journey. The shared example declares the same
+history meaning required by its actual handlers and program feature. These are
+17 distinct focused qualifications, not a rerun of the lower async portfolio.
+
+The installed-access prerequisite compiles explicit Resource/action/facet
+obligations rather than reusing the Access query's payload plan or permission.
+Close and detailed Close retain their own action; only the latter selects cleanup
+disclosure. ResourceRead admission checks exact installed purpose/subject and
+actual provider-support affinity before reserving capacity. The reservation
+remains with its admitted plan until terminal/drop. The endpoint uses a distinct
+Resource ProductRead intent, actual installed contract leaf, original basis and
+independent current authorization Product, with its own proof/terminal. Query
+completion remains Query-only; compiled contracts grant no permission.
+
+The native prerequisite adds World-qualified managed request
+admission, exact attempt-owned queue custody and genuine Signal completion commit.
+Completion admission remains distinct from commit; cancellation leaves queue drain
+custody with its owner. A committed result retains any refused timeout cleanup.
+The Decl/Host endpoint carries these lower-owner operations through its runtime row.
+Signal completion admission, queue and timeout-cleanup owners retain their actual
+originating service/source binding. Public report DTOs remain diagnostic
+projections and cannot construct admission or lend authority across runtimes.
+Managed declarations refuse legacy admission, retry and revalidation entrances
+before effects. Managed retry and revalidation retain one native custodian. One
+cell lock validates the exact prior occurrence, installed definition and drained
+queue, performs the native transition, and binds only a genuinely new occurrence.
+Coalescing preserves the winner's queue and original business-source claim while
+the custodian moves to the current service origin. Retry schedules retain their
+issuer; foreign schedules cannot advance another runtime's clock. Actual partial
+clock progress and acquired or retired wakes remain in a bounded cleanup handoff,
+which blocks overlapping progression and cannot clear a successor's pending retry.
+Timeout admission precedes fallible wake retirement, so cleanup cannot discard a
+timeout transition. Bridge installs the matching port and invalidates its stale
+receipt before fallible descriptive assembly. The internal Query/UI route now
+retains the actual unqueued custodian through entry, progression and refused
+opening cleanup. Its immutable witnesses preserve their original occurrences.
+The read-only UI explicitly selects the genuine observed `BranchHead` snapshot,
+without a committed-source or fresh-currentness claim. The separate authoritative
+source entrance still refuses an empty target before native admission.
+Initial default supersession retires the prior timeout; the separate Native
+coalescing policy retires only its new unused timeout. The application cutover
+removes public report-stripping initial, timeout, schedule, retry and revalidation
+Native service/Bridge/World alternatives and migrates actual callers to genuine custody. Lower Native kernels remain their
+single owners. Focused World, Bridge, compile-fail and public application journeys
+qualify the application control handoff, provider verification, fresh
+authorization/disclosure and compatibility cutover.
+
+The qualified lower-owner retention prerequisite remains separate from Host
+integration. An explicitly installed queued process-local posture uses exact
+owner-selected terminal, denial, retry-lineage and retired-wake release. It
+retains one fixed predecessor obligation before the next report can overwrite
+its genuine selection; existing omission summaries absorb expired diagnostics.
+The genuine pending retry schedule survives deferred report changes; an explicit
+process-local abort retires only that exact backoff without advancing time and
+retains its actual released schedule/retirement evidence.
+Stored ProcessLocal occurrences reject raw Native timeout/retry/revalidation
+before effects; those entrances cannot bypass the managed cleanup custodian.
+Exact predecessor release carries the genuine current occurrence, preserving
+its generation charge independently of newer same-node index entries.
+Refusal preserves the real custodian and any completion owner. Success consumes
+them into released evidence without live progression capability. Fulfilled
+process-local requests require their actual completion cleanup owner before
+release and fresh Start; they cannot revalidate around that handoff. Legacy
+retention remains unchanged. Query installs released row state before its
+original-request terminal handoff. The public journeys also qualify the finite
+provider/row path; Native release alone is not the Host lifecycle proof.
+
+The Host endpoint admits finite Native slots, allocated rows, retained result
+slots and fixed ingress before effects. A genuine issued attempt/verifier binds
+the producer projection, original-request scratch and actual installed decoder
+before Native completion stage/commit. Verified candidates survive result-slot
+refusal without a second provider call. Accepted clock-only progress is an honest
+owned Reserved outcome. Provider/Native/recovery custody lives in the runtime row;
+move-only handles and weak exact receipts cannot reconstruct it. Fresh exact
+receipt reclaim requires Close plus Availability; there is no browse/index or
+implicit abandoned-row recovery. Existing explicit runtime close refuses any
+allocated row and successful close clears its Resource registry. Rust Drop and
+process expiry make no Native/provider cleanup claim.
+
+The populated-fork/sibling source comparison uses a closed receiver-owned
+certification probe after ordinary State admission. It compares the actual
+retained Bridge source with an independently reissued Native read, without
+adding consumer metadata meaning or deriving authority from transport correlation.
+The combined example drops a genuine prepared program adoption before its
+sibling publication, proving the source remains distinct from a burned Native
+reservation as well as a branch version. All lifecycle actions use the ordinary
+Decl/Host API.
+
+The separate public recoverable-effect journey derives a move-only handle
+from an actual committed outbox/aftermath operation and admits genuine inspection.
+The current terminal/outcome owner precedes the historical outbox provenance read
+and is rechecked after arbitrary verification. Authenticated indeterminate
+admission cannot be ordinary result commit or automatic redispatch. Refused
+cleanup retains the exact row/handle; successful authorized resource cleanup
+returns the original recovery handle. Declared preimage grammar admits recovery
+ownership/inspection here; it is not evidence of an executable corrector.
+
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
 resource machinery into the current application SDK; it does not reopen 9.4's
 entire lower-runtime portfolio.
+
+Native cancellation and the immutable-witness retirement adapter remain Native-only
+actions: they create no successor or new wake custody, and do not attest to
+provider, queue or full Resource cleanup. The genuine custodian retains those
+existing obligations.
 
 ### Requirements
 
@@ -1172,14 +1292,15 @@ twins must reach the disputed admission and refuse before result publication.
 
 ### Target DX
 
+<!-- illustrative -->
 ```rust,ignore
-// Planned syntax; the retained owner delegates the existing native lifecycle.
-let mut resource = request.resources()
-    .start(Assessment::reference(), input)?;
-let state = resource.inspect(&fresh_request)?;
-let progress = resource.advance(&fresh_request)?;
-// A close refusal keeps resource custody available for a later funded retry.
-let closed = resource.close(&fresh_request)?;
+// Illustrative: not compiled.
+let resources = request.resources();
+let mut resource = resources.start::<Assessment>(input)?;
+let original = resource.receipt();
+resources.advance(&mut resource)?;
+let result = resources.with_result_governed(&original, fresh_metadata, |value| inspect(value))?;
+let closed = resources.close(&mut resource)?;
 ```
 
 ### How We Know It's Done

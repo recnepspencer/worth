@@ -247,6 +247,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
         self.retained_governed_input.as_ref()
     }
 
+    #[cfg(test)]
     pub(in crate::domain_computation::primary_graph) fn original_inspection_disclosure(
         &self,
     ) -> Option<&super::super::source_disclosure::OriginalSourceInspectionDisclosure> {

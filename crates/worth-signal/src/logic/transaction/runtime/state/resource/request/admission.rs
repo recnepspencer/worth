@@ -93,7 +93,7 @@ impl ResourceRuntimeState {
         ))
     }
 
-    pub(in crate::logic::transaction::runtime::state::resource) fn admit_resource_request_with_descriptor(
+    pub(in crate::logic::transaction::runtime::state) fn admit_resource_request_with_descriptor(
         &mut self,
         intent: ResourceRequestIntent,
         descriptor_id: ResourceDescriptorId,

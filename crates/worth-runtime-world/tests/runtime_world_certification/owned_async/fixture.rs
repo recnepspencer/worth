@@ -37,6 +37,18 @@ impl RuntimeWorldClockSource for Clock {
 
 impl AsyncSourceCourt {
     pub fn new() -> Self {
+        Self::with_queue_capacity(None, false)
+    }
+
+    pub fn managed(capacity: std::num::NonZeroU64) -> Self {
+        Self::with_queue_capacity(Some(capacity), false)
+    }
+
+    pub fn process_local(capacity: std::num::NonZeroU64) -> Self {
+        Self::with_queue_capacity(Some(capacity), true)
+    }
+
+    fn with_queue_capacity(capacity: Option<std::num::NonZeroU64>, process_local: bool) -> Self {
         let relational = Arc::new(RelationalRuntimeApi::builder().build());
         let source = RuntimeBridgeRelationalSource::for_graph_role(
             Arc::clone(&relational),
@@ -67,15 +79,20 @@ impl AsyncSourceCourt {
             worth_signal::facade::runtime::SignalConditionalEvaluationBudget::development(),
         )
         .unwrap();
+        let declaration =
+            BridgeOwnedAsyncRequestResponseDeclaration::new("exact-source", 919, 512, 2, 2, 5);
+        let declaration = if let Some(capacity) = capacity {
+            declaration.with_managed_queue_capacity(capacity)
+        } else {
+            declaration
+        };
+        let declaration = if process_local {
+            declaration.with_process_local_retention()
+        } else {
+            declaration
+        };
         let declaration = builder
-            .install_owned_async_request_response(BridgeOwnedAsyncRequestResponseDeclaration::new(
-                "exact-source",
-                919,
-                512,
-                2,
-                2,
-                5,
-            ))
+            .install_owned_async_request_response(declaration)
             .unwrap();
         let mut bridge = builder.seal().unwrap();
         let relational_basis = relational
@@ -237,4 +254,45 @@ pub fn completion(
             .clone(),
         64,
     )
+}
+
+pub(super) fn selected_fork(court: &AsyncSourceCourt) -> ProductBranchObservation {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let committed = court.publish(execution, &court.empty);
+    let fork = court.fork(&committed, "managed-async-fork");
+    drop(court.prepare(&execution, &committed));
+    let sibling = court.publish(execution, &committed);
+    assert!(
+        sibling
+            .basis()
+            .relational_basis()
+            .observation()
+            .commit_id()
+            .unwrap()
+            .0
+            > fork
+                .basis()
+                .relational_basis()
+                .observation()
+                .commit_id()
+                .unwrap()
+                .0
+                + 1
+    );
+    fork
+}
+
+pub(super) fn admit_managed(
+    court: &AsyncSourceCourt,
+    selected: &ProductBranchObservation,
+) -> BridgeOwnedAsyncManagedRequestAdmission {
+    let lease = court.lease(selected);
+    let owner = court
+        .world
+        .admit_managed_owned_async_request(&court.bridge, &court.declaration, selected, &lease)
+        .expect("actual selected source admits a managed native request");
+    assert!(!owner.cleanup_required());
+    assert!(owner.request().is_some());
+    owner
 }

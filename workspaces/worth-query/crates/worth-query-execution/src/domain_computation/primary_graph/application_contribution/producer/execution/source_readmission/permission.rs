@@ -5,7 +5,7 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthori
 
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
-use crate::domain_computation::provider_session::WorthQueryPreparedQuerySessionIdentity;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
 
 mod principal_dependency;
 
@@ -14,7 +14,7 @@ mod principal_dependency;
 /// graph-read session and does not itself authorize source disclosure.
 pub(super) struct PreparedRetainedQueryPermission<'a, Schema> {
     source: crate::domain_computation::primary_graph::application_query::PreparedApplicationQuerySourceReadmission<'a, Schema>,
-    session: WorthQueryPreparedQuerySessionIdentity,
+    session: WorthQueryPreparedProductReadSessionIdentity,
     authorization: WorthQueryRetainedAuthorizationDecisionFacts,
 }
 
@@ -23,7 +23,7 @@ impl<'a, Schema> PreparedRetainedQueryPermission<'a, Schema> {
         self,
     ) -> (
         crate::domain_computation::primary_graph::application_query::PreparedApplicationQuerySourceReadmission<'a, Schema>,
-        WorthQueryPreparedQuerySessionIdentity,
+        WorthQueryPreparedProductReadSessionIdentity,
         WorthQueryRetainedAuthorizationDecisionFacts,
     ){
         (self.source, self.session, self.authorization)
@@ -153,7 +153,7 @@ where
         }
     }
 
-    let session = WorthQueryPreparedQuerySessionIdentity::reserve()
+    let session = WorthQueryPreparedProductReadSessionIdentity::reserve()
         .map_err(|error| failed(Binding::IDENTITY, error))?;
     let principal_currentness =
         principal_dependency::capture::<Schema, Binding>(runtime, principal, session.identity())?;

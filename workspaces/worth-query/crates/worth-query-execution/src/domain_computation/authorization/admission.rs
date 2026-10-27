@@ -9,6 +9,7 @@ use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 
 mod operation_observation;
 mod requirement_observation;
+mod resource_observation;
 mod validation;
 
 pub(super) use validation::admit_request;
