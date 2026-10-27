@@ -98,8 +98,8 @@ pub(super) fn validate(
     if manifest.symbol_identity_frontier == 0
         || manifest
             .symbols
-            .last()
-            .is_some_and(|page| page.last >= u64::from(manifest.symbol_identity_frontier))
+            .iter()
+            .any(|page| page.last >= u64::from(manifest.symbol_identity_frontier))
     {
         return Err(corrupt(
             "checkpoint symbol identity frontier does not cover its pages",
@@ -160,15 +160,34 @@ fn validate_leaves(
     Ok(())
 }
 
-fn validate_pages(
+pub(super) fn validate_pages(
     pages: &[crate::durability::data::RelationalCheckpointPage],
 ) -> Result<(), DurabilityError> {
     let mut previous = None;
+    let mut range = None;
+    let mut occupied = [0_u64; 4];
+    let mut members = BTreeSet::new();
     for page in pages {
-        if page.first > page.last || previous.is_some_and(|last| page.first <= last) {
-            return Err(corrupt("checkpoint pages overlap or are unordered"));
+        let key = (page.range(), page.first);
+        if !page.valid()
+            || previous.is_some_and(|prior| key <= prior)
+            || !members.insert(page.member)
+        {
+            return Err(corrupt(
+                "checkpoint page membership is invalid or unordered",
+            ));
         }
-        previous = Some(page.last);
+        if range != Some(page.range()) {
+            occupied = [0; 4];
+            range = Some(page.range());
+        }
+        for (prior, incoming) in occupied.iter_mut().zip(page.membership) {
+            if *prior & incoming != 0 {
+                return Err(corrupt("checkpoint pages duplicate a published identity"));
+            }
+            *prior |= incoming;
+        }
+        previous = Some(key);
     }
     Ok(())
 }

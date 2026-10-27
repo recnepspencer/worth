@@ -154,12 +154,8 @@ impl RuntimeSymbolResidency {
             if owner.with_read(|symbols| symbols.retained_text(id).is_some()) {
                 continue;
             }
-            let position = self.by_id.partition_point(|page| page.last < id.0 as u64);
-            let page = self
-                .by_id
-                .get(position)
-                .filter(|page| page.first <= id.0 as u64)
-                .ok_or_else(|| {
+            let page =
+                RelationalCheckpointPage::find(&self.by_id, u64::from(id.0)).ok_or_else(|| {
                     unavailable(
                         RelationalStorageSubject::Symbols {
                             first: id,
@@ -175,6 +171,11 @@ impl RuntimeSymbolResidency {
                 SymbolPageSelection::IdRange {
                     first: Symbol(page.first as u32),
                     last: Symbol(page.last as u32),
+                    id_digest: SymbolPageShape::digest_ids(
+                        (0..256)
+                            .map(|offset| page.range() * 256 + offset + 1)
+                            .filter(|id| page.contains(*id)),
+                    ),
                 },
             )?;
             if owner.with_read(|symbols| symbols.retained_text(id).is_none()) {

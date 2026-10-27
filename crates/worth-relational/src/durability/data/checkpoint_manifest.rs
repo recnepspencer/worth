@@ -75,14 +75,6 @@ pub(crate) struct RelationalCheckpointRegion {
     pub(crate) history: RelationalDurableMemberLocator,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct RelationalCheckpointPage {
-    pub(crate) first: u64,
-    pub(crate) last: u64,
-    pub(crate) member: RelationalDurableMemberLocator,
-}
-
 /// Value lookup has its own directory so interning a new value need not load
 /// the id-ordered dictionary. Successive publications append immutable pages.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

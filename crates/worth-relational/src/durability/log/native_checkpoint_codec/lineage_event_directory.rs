@@ -51,6 +51,8 @@ pub(super) fn validate(manifest: &RelationalCheckpointManifest) -> Result<(), Du
 
 impl super::CapturedManifest {
     pub(crate) fn validate_lineage_events(&self) -> Result<(), DurabilityError> {
+        super::manifest_validation::validate_pages(&self.manifest.symbols)?;
+        super::manifest_validation::validate_pages(&self.manifest.lineage)?;
         validate(&self.manifest)
     }
 }

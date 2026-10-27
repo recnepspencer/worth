@@ -65,12 +65,11 @@ pub(super) fn reopened(execution: &worth_execution::ExecutionRequest<'_, '_>) ->
         manifest.lineage.len() > 2,
         "the node population spans multiple real pages"
     );
-    let page = manifest
+    let page = *manifest
         .lineage
         .iter()
         .find(|page| page.first <= expected.lineage_id().0 && expected.lineage_id().0 <= page.last)
-        .unwrap()
-        .clone();
+        .unwrap();
     let region_history = manifest
         .mirror
         .iter()

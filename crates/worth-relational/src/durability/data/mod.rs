@@ -6,6 +6,8 @@ pub(crate) use checkpoint_directory::RelationalCheckpointDirectory;
 mod checkpoint_images;
 mod checkpoint_manifest;
 mod checkpoint_member;
+mod checkpoint_page;
+pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
 mod history_member_directory;
 mod lineage_event_pages;

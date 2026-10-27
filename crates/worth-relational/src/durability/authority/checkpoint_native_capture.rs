@@ -21,30 +21,14 @@ impl CapturedCheckpointBasis {
             prior.as_ref().map(|prior| &prior.manifest),
             current_members.as_ref(),
         )?;
-        if let Some(prior) = &prior {
-            let symbol_frontier = prior
-                .manifest
-                .symbols
-                .iter()
-                .map(|page| page.last)
-                .max()
-                .unwrap_or(0);
-            if carry_metadata {
-                self.symbol_table
-                    .entries
-                    .retain(|(symbol, _)| symbol.0 as u64 > symbol_frontier);
-            }
-            let lineage_frontier = prior
-                .manifest
-                .lineage
-                .iter()
-                .map(|page| page.last)
-                .max()
-                .unwrap_or(0);
-            if carry_metadata {
-                self.lineage_nodes
-                    .retain(|node| node.lineage_id.0 > lineage_frontier);
-            }
+        if carry_metadata && let Some(prior) = &prior {
+            self.symbol_table.entries.retain(|(symbol, _)| {
+                RelationalCheckpointPage::find(&prior.manifest.symbols, u64::from(symbol.0))
+                    .is_none()
+            });
+            self.lineage_nodes.retain(|node| {
+                RelationalCheckpointPage::find(&prior.manifest.lineage, node.lineage_id.0).is_none()
+            });
         }
         let resident_event_rows = if placement.is_embedded() {
             self.lineage_events
@@ -188,6 +172,7 @@ impl CapturedCheckpointBasis {
         {
             let mut symbols = prior.manifest.symbols.clone();
             symbols.append(&mut captured.manifest.symbols);
+            symbols.sort_by_key(|page| (page.range(), page.first));
             captured.manifest.symbols = symbols;
             let mut buckets = prior
                 .manifest
@@ -226,6 +211,7 @@ impl CapturedCheckpointBasis {
             }
             let mut lineage = prior.manifest.lineage.clone();
             lineage.append(&mut captured.manifest.lineage);
+            lineage.sort_by_key(|page| (page.range(), page.first));
             captured.manifest.lineage = lineage;
             for page in prior.manifest.symbols.iter().chain(&prior.manifest.lineage) {
                 insert_member(

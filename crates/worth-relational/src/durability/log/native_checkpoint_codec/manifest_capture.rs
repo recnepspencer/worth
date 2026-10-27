@@ -7,7 +7,6 @@ use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtif
 use crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog;
 #[cfg(test)]
 use crate::durability::checkpoints::images::partition_from_image;
-use crate::durability::checkpoints::symbol_pages::SYMBOL_PAGE_CAPACITY;
 use crate::durability::data::*;
 use crate::durability::medium::RelationalDurableMemberLocator;
 #[cfg(test)]
@@ -112,63 +111,27 @@ impl CapturedManifest {
         } else {
             Vec::new()
         };
-        let mut entries = checkpoint.symbol_table.entries.clone();
-        entries.sort_by_key(|(symbol, _)| *symbol);
-        let mut symbol_pages = Vec::new();
-        for page in entries.chunks(SYMBOL_PAGE_CAPACITY) {
-            policy.check_live()?;
-            let value = crate::symbols::data::SymbolTableSnapshot {
-                entries: page.to_vec(),
-            };
-            let member = add(
-                &mut members,
-                member_frame::encode(MemberKind::Symbols, &value)
-                    .map_err(|cause| corrupt(format!("symbol member: {cause:?}")))?,
-            );
-            symbol_pages.push(RelationalCheckpointPage {
-                first: page[0].0 .0 as u64,
-                last: page.last().unwrap().0 .0 as u64,
-                member,
-            });
-        }
-        let mut buckets = BTreeMap::<u8, Vec<_>>::new();
-        for (symbol, text) in &checkpoint.symbol_table.entries {
-            use sha2::{Digest, Sha256};
-            let bucket = Sha256::digest(text.as_str().as_bytes())[0];
-            buckets
-                .entry(bucket)
-                .or_default()
-                .push((*symbol, text.clone()));
-        }
-        let mut symbol_buckets = Vec::new();
-        for (bucket, mut entries) in buckets {
-            entries.sort_by_key(|(symbol, _)| *symbol);
-            let mut pages = Vec::new();
-            for entries in entries.chunks(SYMBOL_PAGE_CAPACITY) {
-                policy.check_live()?;
-                let page = crate::symbols::data::SymbolTableSnapshot {
-                    entries: entries.to_vec(),
-                };
-                pages.push(add(
-                    &mut members,
-                    member_frame::encode(MemberKind::Symbols, &page)
-                        .map_err(|cause| corrupt(format!("symbol bucket member: {cause:?}")))?,
-                ));
-            }
-            symbol_buckets.push(RelationalCheckpointSymbolBucket { bucket, pages });
-        }
+        let dictionary =
+            super::dictionary_capture::capture(&checkpoint.symbol_table, policy, &mut members)?;
+        let symbol_pages = dictionary.by_id;
+        let symbol_buckets = dictionary.by_text;
         let mut lineage_pages = Vec::new();
-        for page in checkpoint.lineage.nodes().chunks(256) {
+        for page in checkpoint.lineage.nodes().chunk_by(|a, b| {
+            RelationalCheckpointPage::range_of(a.lineage_id.0)
+                == RelationalCheckpointPage::range_of(b.lineage_id.0)
+        }) {
             let member = add(
                 &mut members,
                 member_frame::encode(MemberKind::Lineage, &page)
                     .map_err(|cause| corrupt(format!("lineage member: {cause:?}")))?,
             );
-            lineage_pages.push(RelationalCheckpointPage {
-                first: page[0].lineage_id.0,
-                last: page.last().unwrap().lineage_id.0,
-                member,
-            });
+            lineage_pages.push(
+                RelationalCheckpointPage::from_ids(
+                    page.iter().map(|node| node.lineage_id.0),
+                    member,
+                )
+                .ok_or_else(|| corrupt("invalid captured lineage page membership"))?,
+            );
         }
         let derived_indexes = add(
             &mut members,
@@ -376,7 +339,7 @@ fn capture_partitions(
         .collect()
 }
 
-fn add(
+pub(super) fn add(
     members: &mut BTreeMap<RelationalDurableMemberLocator, RelationalCheckpointMember>,
     (locator, bytes): (RelationalDurableMemberLocator, Vec<u8>),
 ) -> RelationalDurableMemberLocator {

@@ -2396,3 +2396,46 @@ The event table contributes 66 refusal cells (11 doors times six independent
 classes), bringing the refusal inventory to 1,158 plus 54 positive unavailable-
 history cells. Real home agreement, index-build/checkpoint subject expansion,
 outstanding reservation/checkpoint crossing and the final complete lanes remain.
+
+
+### Out-of-order reserved identities across checkpoint publication
+
+The public prepared-candidate court first failed in
+`matrix-reserved-checkpoint-red.log`: main reserved lineage node 2, another
+branch published node 3 and checkpointed, then main published its still-valid
+candidate. Reopen retained the record but refused its required node as Damaged.
+The product had incorrectly filtered newly published symbols and nodes by the
+prior directory's maximum identity. Allocator frontiers are not publication sets.
+
+CHK12 replaces that inference with exact 256-bit membership per fixed 256-ID
+range. New disjoint publication pages may fill old holes; metadata validates
+ordering, endpoints, bit coverage, unique members and no duplicate identity.
+Point routing searches its range and exact bit. Capture excludes actual prior
+members only, and preserves destination-scoped custody. Readmission checks the
+complete membership against actual authenticated payload IDs. Symbol shape
+caching now retains an ID digest as well as endpoints and bucket shape, so
+cached admission cannot conceal changed interior membership. Embedded expansion
+orders the merged semantic rows before restoration. Dictionary member encoding
+has its own named file after the first line-cap run found 404 lines in capture.
+No compatibility reader or new Cargo feature was added.
+
+The full native run `matrix-reserved-membership-native.log` passed 1,991 tests
+with 31 ignored, including the actual reserved-candidate court and both priority
+regressions. The two additional adversarial membership proofs pass in the seven-test
+`matrix-membership-proof.log` focused run.
+The first owner clippy attempts found redundant clones introduced by the new
+Copy descriptor; those call sites are corrected and `matrix-membership-clippy-final.log` passes.
+Line caps and agent-context pass. These remain intermediate
+slice logs and do not replace final clean-commit evidence.
+
+### Real Store-home warmth and retained-observation agreement
+
+`matrix-home-agreement.log` passes the new independent memory-reference court.
+It publishes 24 partitions through the production Store home, checkpoints and
+reopens with zero payload-member reads, then checks a bounded historical patch
+query loads only its needed envelope without dictionary or lineage reads.
+Cold points, warm points without additional I/O, and fully Full-admitted reads
+agree with the memory-only runtime. An observation retained across three new
+commits and home checkpoints keeps its earlier meaning while current reads and
+canonical artifacts agree with the reference. A final reopen agrees again.
+The complete home oracle and all final lanes are still unrun for this slice.

@@ -48,3 +48,6 @@ mod residency_capture;
 
 #[path = "relational_home/residency_reopen.rs"]
 mod residency_reopen;
+
+#[path = "relational_home/residency_agreement.rs"]
+mod residency_agreement;

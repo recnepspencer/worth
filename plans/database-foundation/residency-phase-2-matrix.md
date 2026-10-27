@@ -38,8 +38,9 @@ reservation tests, the Head type-level historical-access fence, selective
 journal envelope readmission, dictionary directory placement custody, paired
 memory/durable envelope lifetime, complete live index capture/reopen, and the
 two priority regression tests. Recovered tail lifetime is covered in both real journal shapes. Still required:
-index-build cells, and real
-home oracle cold/warm/fully-warmed agreement with retained observations. The
+index-build/checkpoint cells and the final complete home-oracle lane. The
+new real Store-home agreement court passes cold/warm/fully-warmed reads and
+observations retained across commits and checkpoints. The
 final lane inventory and logs will be recorded after these gaps close.
 
 
@@ -49,7 +50,7 @@ actual byte corruption in both body-first and export-first orders, older-page
 placement custody, and native capture from a fork whose shared pages are
 resident but query index is empty. The latter first emitted an empty event
 member directory; capture now reads counted resident page witnesses directly.
-The 66-cell event table passed in the complete 1,990-test native run. Remaining
-identity/checkpoint matrix work includes publication of an outstanding reserved
-ID after another branch advances and checkpoints; the directory must not infer
-publication membership from an allocator high-water mark.
+The 66-cell event table passed in the complete 1,990-test native run. The outstanding
+reserved-ID checkpoint court exposed lost low IDs and now passes with CHK12
+exact page membership. Separate proofs refuse forged interior membership,
+duplicate publication IDs and overflowing high bits without another load.

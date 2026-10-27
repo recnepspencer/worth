@@ -44,6 +44,8 @@ mod cold_pins;
 mod cold_read_door;
 #[path = "cold_read_matrix.rs"]
 mod cold_read_matrix;
+#[path = "cold_reserved_checkpoint.rs"]
+mod cold_reserved_checkpoint;
 #[path = "cold_symbols.rs"]
 mod cold_symbols;
 #[path = "cold_visibility.rs"]

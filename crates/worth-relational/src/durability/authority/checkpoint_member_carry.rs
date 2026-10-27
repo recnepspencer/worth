@@ -58,7 +58,7 @@ pub(super) fn may_carry_metadata(
         let nodes = basis
             .lineage_nodes
             .iter()
-            .filter(|node| (page.first..=page.last).contains(&node.lineage_id.0))
+            .filter(|node| page.contains(node.lineage_id.0))
             .collect::<Vec<_>>();
         let encoded = member_frame::encode(MemberKind::Lineage, &nodes).map_err(|_| {
             unavailable(crate::storage::data::RelationalStorageSubject::Lineage {

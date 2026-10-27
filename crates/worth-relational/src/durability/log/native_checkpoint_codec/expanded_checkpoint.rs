@@ -76,9 +76,20 @@ pub(super) fn expand(
         )?;
         let payload = member_frame::decode(&bytes, page.member, MemberKind::Symbols)
             .map_err(|cause| corrupt(format!("symbol member frame: {cause:?}")))?;
-        let page = crate::symbols::data::SymbolTableSnapshot::readmit_current(execution, payload)?;
-        symbol_table.entries.extend(page.entries);
+        let snapshot =
+            crate::symbols::data::SymbolTableSnapshot::readmit_current(execution, payload)?;
+        if RelationalCheckpointPage::from_ids(
+            snapshot.entries.iter().map(|(id, _)| u64::from(id.0)),
+            page.member,
+        )
+        .as_ref()
+            != Some(page)
+        {
+            return Err(corrupt("symbol page membership mismatch").into());
+        }
+        symbol_table.entries.extend(snapshot.entries);
     }
+    symbol_table.entries.sort_by_key(|(id, _)| *id);
     let mut symbols = crate::symbols::data::StringInterner::default();
     symbols.restore_snapshot(symbol_table.clone());
     let admitted_symbols = crate::runtime::RuntimeSymbolTable::default();
@@ -157,10 +168,20 @@ pub(super) fn expand(
         )?;
         let payload = member_frame::decode(&bytes, page.member, MemberKind::Lineage)
             .map_err(|cause| corrupt(format!("lineage member frame: {cause:?}")))?;
-        let page: Vec<crate::lineage::data::LineageNode> =
+        let nodes: Vec<crate::lineage::data::LineageNode> =
             rmp_serde::from_slice(payload).map_err(|error| corrupt(error.to_string()))?;
-        lineage_nodes.extend(page);
+        if RelationalCheckpointPage::from_ids(
+            nodes.iter().map(|node| node.lineage_id().0),
+            page.member,
+        )
+        .as_ref()
+            != Some(page)
+        {
+            return Err(corrupt("lineage page membership mismatch").into());
+        }
+        lineage_nodes.extend(nodes);
     }
+    lineage_nodes.sort_by_key(|node| node.lineage_id());
     let bytes = read(
         &*source,
         manifest.derived_indexes,

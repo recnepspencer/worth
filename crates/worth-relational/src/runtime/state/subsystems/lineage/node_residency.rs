@@ -74,7 +74,7 @@ impl RuntimeLineageNodeResidency {
                 .iter()
                 .map(|descriptor| {
                     Arc::new(NodePageCell {
-                        descriptor: descriptor.clone(),
+                        descriptor: *descriptor,
                         state: Mutex::new(NodePageState::Cold),
                         leases: AtomicUsize::new(0),
                     })
@@ -88,12 +88,14 @@ impl RuntimeLineageNodeResidency {
     }
 
     fn page(&self, id: LineageId) -> Option<&Arc<NodePageCell>> {
+        let range = RelationalCheckpointPage::range_of(id.0);
         let index = self
             .pages
-            .partition_point(|page| page.descriptor.last < id.0);
-        self.pages
-            .get(index)
-            .filter(|page| page.descriptor.first <= id.0)
+            .partition_point(|page| page.descriptor.range() < range);
+        self.pages[index..]
+            .iter()
+            .take_while(|page| page.descriptor.range() == range)
+            .find(|page| page.descriptor.contains(id.0))
     }
 
     pub(super) fn demand(

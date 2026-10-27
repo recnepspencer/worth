@@ -171,6 +171,7 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
     let selection = SymbolPageSelection::IdRange {
         first: page.entries.first().unwrap().0,
         last: page.entries.last().unwrap().0,
+        id_digest: SymbolPageShape::digest_ids(page.entries.iter().map(|(id, _)| u64::from(id.0))),
     };
     cold.demand_page(&table, &execution, locator, selection)
         .unwrap();
@@ -199,13 +200,8 @@ fn cached_page_shape_is_rechecked_for_each_directory_selection() {
 fn an_id_admitted_page_cannot_authorize_a_misrouted_negative_intern_probe() {
     use super::super::super::symbol_table::SymbolReservationDenial;
     let (_, mut directory, source, _) = collision_dictionary();
-    let locator = directory
-        .manifest
-        .symbol_buckets
-        .iter()
-        .find(|entry| entry.bucket == 0)
-        .unwrap()
-        .pages[0];
+    let descriptor = directory.manifest.symbols[0];
+    let locator = descriptor.member;
     let backing = crate::test_execution_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&backing);
     let page = crate::durability::checkpoints::symbol_pages::readmit(
@@ -216,13 +212,10 @@ fn an_id_admitted_page_cannot_authorize_a_misrouted_negative_intern_probe() {
     )
     .unwrap();
     let first = page.entries.first().unwrap().0;
-    directory.manifest.symbols = vec![RelationalCheckpointPage {
-        first: first.0 as u64,
-        last: page.entries.last().unwrap().0 .0 as u64,
-        member: locator,
-    }];
+    directory.manifest.symbols = vec![descriptor];
     // Keep the producer's authentic bytes and deliberately misroute their
-    // bucket descriptor. Range admission alone must prove no negative lookup.
+    // bucket descriptor. The real id page is heterogeneous; range admission
+    // alone must prove no negative lookup.
     directory.manifest.symbol_buckets = vec![RelationalCheckpointSymbolBucket {
         bucket: 1,
         pages: vec![locator],
@@ -262,4 +255,57 @@ fn an_id_admitted_page_cannot_authorize_a_misrouted_negative_intern_probe() {
     );
     assert_eq!(table.interner_snapshot(), before);
     assert_eq!(source.reads.load(Ordering::SeqCst), reads);
+}
+
+#[test]
+fn cached_symbol_page_rejects_changed_interior_membership_without_another_load() {
+    let (table, directory, source, _) = dictionary();
+    let descriptor = directory.manifest.symbols[0];
+    let backing = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&backing);
+    let page = crate::durability::checkpoints::symbol_pages::readmit(
+        &execution,
+        &source.members[&descriptor.member],
+        descriptor.member,
+        RelationalStorageSubject::Symbols {
+            first: Symbol(descriptor.first as u32),
+            last: Symbol(descriptor.last as u32),
+        },
+    )
+    .unwrap();
+    assert!(page.entries.len() > 2);
+    let cold = RuntimeSymbolResidency::new(
+        directory.manifest.symbols.clone(),
+        directory.manifest.symbol_buckets.clone(),
+        source.clone(),
+    )
+    .unwrap();
+    let selection = SymbolPageSelection::IdRange {
+        first: page.entries.first().unwrap().0,
+        last: page.entries.last().unwrap().0,
+        id_digest: SymbolPageShape::digest_ids(page.entries.iter().map(|(id, _)| u64::from(id.0))),
+    };
+    cold.demand_page(&table, &execution, descriptor.member, selection)
+        .unwrap();
+    let reads = source.reads.load(Ordering::SeqCst);
+    let forged = SymbolPageSelection::IdRange {
+        first: page.entries.first().unwrap().0,
+        last: page.entries.last().unwrap().0,
+        id_digest: SymbolPageShape::digest_ids(
+            page.entries
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != 1)
+                .map(|(_, (id, _))| u64::from(id.0)),
+        ),
+    };
+    let failure = cold
+        .demand_page(&table, &execution, descriptor.member, forged)
+        .unwrap_err();
+    assert!(matches!(failure, Failure::StorageUnavailable(error) if error.cause == Cause::Damaged));
+    assert_eq!(source.reads.load(Ordering::SeqCst), reads);
+    assert_eq!(
+        cold.demand_page(&table, &execution, descriptor.member, selection),
+        Err(failure)
+    );
 }

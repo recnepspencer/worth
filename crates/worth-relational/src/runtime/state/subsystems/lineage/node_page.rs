@@ -53,6 +53,15 @@ pub(super) fn readmit(
     {
         return Err(unavailable(Cause::Damaged));
     }
+    if RelationalCheckpointPage::from_ids(
+        page.nodes.iter().map(|node| node.lineage_id().0),
+        descriptor.member,
+    )
+    .as_ref()
+        != Some(descriptor)
+    {
+        return Err(unavailable(Cause::Damaged));
+    }
     let mut entities = [None; 256];
     for (slot, node) in page.nodes.iter().enumerate() {
         entities[slot] = Some(node.entity_id());
