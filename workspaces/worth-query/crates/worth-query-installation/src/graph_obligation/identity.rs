@@ -61,7 +61,14 @@ pub(super) fn derive_set_identity(
     basis.text("subject-kind", subject_kind)?;
     basis.text("subject-name", subject_name)?;
     if let Some(input_type) = input_type {
-        basis.text("input-type", input_type)?;
+        basis.text(
+            if subject_kind == "application-resource" {
+                "resource-purpose"
+            } else {
+                "input-type"
+            },
+            input_type,
+        )?;
     }
     basis.unsigned_usize("obligation-count", contracts.len())?;
     for (index, contract) in contracts.iter().enumerate() {

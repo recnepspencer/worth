@@ -149,6 +149,15 @@ pub(super) fn encode_resources(
                 *maximum_authorization_facts,
             )?;
         }
+        WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource {
+            maximum_authorization_facts,
+        } => {
+            basis.text("resources.kind", "application-resource")?;
+            basis.unsigned_usize(
+                "resources.maximum-authorization-facts",
+                *maximum_authorization_facts,
+            )?;
+        }
         WorthQueryInstalledGraphObligationResourcePosture::ApplicationOperation(contract) => {
             basis.text("resources.kind", "application-operation")?;
             basis.text("resources.contract", contract.canonical_identity())?;

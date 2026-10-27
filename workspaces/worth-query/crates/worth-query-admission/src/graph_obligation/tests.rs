@@ -4,6 +4,8 @@ use worth_query_installation::facade::{
 };
 
 use super::support_admission::owner_requirement_is_exact;
+mod resource_access;
+mod resource_fixture;
 
 #[test]
 fn admission_accepts_only_real_phase_one_semantic_owners() {

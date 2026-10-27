@@ -1,4 +1,6 @@
 //! The real installed principal/query fixture supplies resource recipe authority.
+#[path = "resource/access.rs"]
+mod access;
 use super::*;
 use crate::facade::{
     WorthQueryApplicationResourceInstallationDenialKind as Kind,

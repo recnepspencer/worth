@@ -84,7 +84,8 @@ pub mod facade {
     pub use crate::application_resource::{
         WorthQueryApplicationResourceInstallationDenial,
         WorthQueryApplicationResourceInstallationDenialKind,
-        WorthQueryInstalledApplicationResource,
+        WorthQueryInstalledApplicationResource, WorthQueryInstalledResourceAccessContract,
+        WorthQueryResourceAccessPurpose,
     };
     pub use worth_foundational::facade::{
         AbsenceLaw, AspectBinding, AspectContract, AspectContractRevision, AspectEvolutionPolicy,
