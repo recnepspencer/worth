@@ -38,7 +38,7 @@ impl RelationalCanonicalCommitArtifact {
         if !is_canonical_payload(&canonical, payload) {
             return Err(Refusal::NonCanonicalPayload);
         }
-        Ok(readmitted)
+        Ok(readmitted.with_verified_journal_payload(*header.digest.as_bytes()))
     }
 }
 

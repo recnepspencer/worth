@@ -37,7 +37,9 @@ fn durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commit
     assert_eq!(
         recovered
             .replay()
-            .canonical_commit_envelope(main.commit.commit_id)
+            .canonical_commit_envelope(execution, main.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .commit_id,

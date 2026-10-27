@@ -1,4 +1,3 @@
-use crate::capabilities::CommitEnvelopeSource;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::CommitId;
 use crate::replay::data::RelationalReplayOutcome;
@@ -15,16 +14,15 @@ impl<'runtime> ReplayAccess<'runtime> {
 
     pub fn canonical_commit_envelope(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         commit_id: CommitId,
-    ) -> Option<CanonicalCommitEnvelope> {
-        self.runtime.canonical_envelope_owned(commit_id)
-    }
-
-    pub fn canonical_commit_envelope_owned(
-        &self,
-        commit_id: CommitId,
-    ) -> Option<CanonicalCommitEnvelope> {
-        self.runtime.canonical_envelope_owned(commit_id)
+    ) -> Result<
+        Option<std::sync::Arc<CanonicalCommitEnvelope>>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
+        self.runtime
+            .history()
+            .demand_commit_envelope(execution, commit_id)
     }
 
     pub fn compare_outcome(&self, outcome: &RelationalReplayOutcome) -> bool {

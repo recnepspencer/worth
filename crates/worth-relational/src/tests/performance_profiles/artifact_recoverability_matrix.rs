@@ -88,7 +88,9 @@ fn perf_artifact_recoverability_matrix() {
             let replay_commit_micros = replay_started_at.elapsed().as_micros();
             let recovered_envelope = recovered
                 .replay()
-                .canonical_commit_envelope(hot_commit.commit.commit_id)
+                .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
+                .unwrap()
+                .map(|envelope| envelope.as_ref().clone())
                 .expect("recovered canonical geometry envelope");
 
             PerfMeasurement {

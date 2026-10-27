@@ -32,6 +32,7 @@ struct EnvelopeState {
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,
     payload_digest: Option<[u8; 32]>,
+    canonical_payload: Option<Arc<[u8]>>,
     lineage: Option<crate::lineage::data::LineageCheckpointDigestBasis>,
 }
 impl EnvelopeState {
@@ -53,8 +54,10 @@ impl EnvelopeState {
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(
         envelope: Arc<CanonicalCommitEnvelope>,
-        payload_digest: [u8; 32],
+        canonical_payload: Arc<[u8]>,
     ) -> Self {
+        use sha2::{Digest, Sha256};
+        let payload_digest = Sha256::digest(canonical_payload.as_ref()).into();
         Self {
             state: Mutex::new(EnvelopeState {
                 lineage: Some(lineage_delta(&envelope)),
@@ -62,6 +65,7 @@ impl RelationalCommitEnvelopeResidency {
                 position: None,
                 damage: None,
                 payload_digest: Some(payload_digest),
+                canonical_payload: Some(canonical_payload),
             }),
         }
     }
@@ -86,8 +90,16 @@ impl RelationalCommitEnvelopeResidency {
                     .map(|commit| lineage_delta(commit.envelope())),
                 damage: None,
                 payload_digest,
+                canonical_payload: None,
             }),
         }
+    }
+    pub(crate) fn resident_payload(&self) -> Option<Arc<[u8]>> {
+        self.state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .canonical_payload
+            .clone()
     }
     pub(crate) fn payload_digest(&self) -> Option<[u8; 32]> {
         self.state
@@ -124,13 +136,21 @@ impl RelationalCommitEnvelopeResidency {
         Some((position, state.lineage.clone()?))
     }
     pub(crate) fn journal_index(&self) -> Option<Arc<RelationalCommitIndexEntry>> {
+        self.journal_placement().map(|(entry, _)| entry)
+    }
+    pub(crate) fn journal_placement(
+        &self,
+    ) -> Option<(
+        Arc<RelationalCommitIndexEntry>,
+        Arc<dyn RelationalDurableColdSource>,
+    )> {
         match &self
             .state
             .lock()
             .unwrap_or_else(|error| error.into_inner())
             .backing
         {
-            EnvelopeBacking::Journal { entry, .. } => Some(entry.clone()),
+            EnvelopeBacking::Journal { entry, source, .. } => Some((entry.clone(), source.clone())),
             EnvelopeBacking::Memory(_) => None,
         }
     }
@@ -147,6 +167,7 @@ impl RelationalCommitEnvelopeResidency {
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         state.position = Some(RetainedCanonicalPosition::from_positioned(positioned));
         if let Some((entry, source)) = journal {
+            state.canonical_payload = None;
             state.backing = EnvelopeBacking::Journal {
                 entry: Arc::new(entry),
                 source,

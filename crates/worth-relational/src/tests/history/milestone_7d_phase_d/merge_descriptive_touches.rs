@@ -73,7 +73,9 @@ fn native_merge_touches_only_changed_revision_and_both_index_membership_keys() {
         .expect("native merge commit");
     let envelope = runtime
         .replay()
-        .canonical_commit_envelope(merged.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merged.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("sealed canonical merge envelope");
     let touches = envelope
         .descriptive_touches()

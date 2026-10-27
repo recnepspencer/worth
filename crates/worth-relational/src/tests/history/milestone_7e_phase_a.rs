@@ -150,7 +150,9 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         .expect("executed merge");
     let live_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
     let live_authority = live_envelope
         .merge_execution_authority
@@ -161,7 +163,9 @@ fn merge_branch_basis_survives_published_merge_outcome_and_durability_recovery()
         checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
     let recovered_authority = recovered_envelope
         .merge_execution_authority
@@ -277,13 +281,13 @@ fn graft_disconnected_branch_head(
             commit: orphan_head,
         },
     );
-    let digest = envelope.authoritative_payload_digest().unwrap();
+    let payload = Arc::from(envelope.encode_authoritative_payload().unwrap());
     runtime.history.with_ledger_mut(|ledger| {
         ledger.commit_envelopes.insert(
             envelope.commit.commit_id,
             Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
                 Arc::new(envelope),
-                digest,
+                payload,
             )),
         )
     });

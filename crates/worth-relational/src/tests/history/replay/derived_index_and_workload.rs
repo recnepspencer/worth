@@ -277,7 +277,9 @@ fn hostile_commit_replay_equivalence_test() {
     );
     let original_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let replay = runtime
         .replay_authority()
@@ -337,7 +339,9 @@ fn hostile_commit_replay_equivalence_test() {
     );
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(merge.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let recovered_replay = recovered
         .replay_authority()

@@ -1,8 +1,8 @@
 use worth_relational::facade::history::CommitId;
 use worth_relational::facade::runtime::RelationalRuntime;
 
-fn mint(runtime: &RelationalRuntime) {
-    let _ = runtime.mint_change_receipt(CommitId(1), None);
+fn mint(execution: &worth_execution::ExecutionRequest<'_, '_>, runtime: &RelationalRuntime) {
+    let _ = runtime.mint_change_receipt(execution, CommitId(1), None);
 }
 
 fn main() {

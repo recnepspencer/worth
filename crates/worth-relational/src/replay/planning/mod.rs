@@ -1,4 +1,6 @@
 mod commit_closure;
+mod envelope_demand;
+pub(super) use envelope_demand::demand_replay_envelopes;
 mod recovery_plan;
 mod surface_authority;
 

@@ -21,6 +21,15 @@ pub enum RelationalRecoveryStop {
     Durability(DurabilityError),
 }
 
+impl From<RelationalExecutionDenialCause> for RelationalRecoveryStop {
+    fn from(cause: RelationalExecutionDenialCause) -> Self {
+        match cause {
+            RelationalExecutionDenialCause::StorageUnavailable(failure) => failure.into(),
+            cause => Self::Request(cause),
+        }
+    }
+}
+
 impl From<DurabilityError> for RelationalRecoveryStop {
     fn from(error: DurabilityError) -> Self {
         Self::Durability(error)

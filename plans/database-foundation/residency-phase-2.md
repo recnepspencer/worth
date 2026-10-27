@@ -2156,3 +2156,159 @@ weakened; the original conflict diagnostics and missing-parent semantics remain.
 The matrix ledger now inventories 996 refusal cells plus 54 explicit
 unavailable-history success cells. Boundary-check will run again as part of the
 remaining milestone gates; no new public type or alternative route was added.
+
+
+## Next matrix slice: recovered tail envelope custody
+
+Boundary review: native indexed restore creates journal-backed cells, but tail
+replay builds ordinary memory artifacts. Its final inventory synchronization
+therefore has no fact saying which verified journal payload backs each body.
+ReadmittedCanonicalCommit currently discards the verified artifact digest; the
+recovery plan has a source, but using that global source or an unverified new
+body digest as journal placement would counterfeit custody. Retained recovery
+also must preserve per-cell sources when an older directory and a newer live
+journal coexist. Memory/current readmission without a durable source must keep
+its only copy.
+
+Plan: add a real no-checkpoint tail lifetime reproducer first. Preserve the
+verified canonical frame digest through readmission, attach the actual recovery
+source only at the source-owning recovery-plan boundary, and carry that small
+placement fact through replay. After canonical inventory/root reconciliation,
+bind matching cells to their indexed journal copy and settle them without an
+extra read. A rewritten body cannot borrow an unrelated source digest. Keep
+memory-only inputs resident. Extend the envelope refusal matrix to the tail
+recovery shape so every existing history/export door must return its typed
+cold failure after replay. Use the existing cell and position custody rather
+than a second history cache. Verify selective reads, complete capture, tail and
+codec recovery courts, owner lib/clippy, fmt/caps/context, then continue the
+remaining lineage/index/oracle cells.
+
+
+Tail reproducer failed for its intended reason: a recovered nonhead body stayed
+alive after all real readers and retired roots were released. The correction
+preserves the verified frame digest as private readmission state, binds the
+actual source at the source-owning recovery boundary, and preserves per-cell
+placement in retained recovery plans. Final replay inventory binds journal
+cells only after checking the recovered positioned payload against that exact
+digest. No extra journal read is needed. The encoded payload cache moved from
+immutable catalog shells into the shared cell so the same journal transition
+releases it for every observer. Memory cells retain their sole copy. Existing
+preencoded-sharing assertions now observe the same cache allocation through the
+cell, preserving their original claim. The focused lifetime reproducer passed;
+the envelope matrix now runs both checkpoint and no-checkpoint tail shapes.
+
+
+The full tail-custody run exposed eight failures: four cert replay paths reached
+an unguarded body accessor; derived-index preparation and two head/lifetime
+courts exposed position custody pointing at an equal, unowned replay allocation;
+the tail export matrix also refused a capture through that cold head. Recovery
+must retain the root-owned allocation after authenticating exact positioned
+canonical payload equality, excluding only the diagnostics/cache lanes that
+the journal grammar already excludes. The position seal now validates that
+same payload before admitting an equivalent resident allocation; arbitrary
+body/position rebinding remains refused.
+
+This revises the slice boundary: replay's public envelope read is a history
+surface too and must take execution, return a typed refusal, and replace its
+duplicate owned alias. Replay orchestration must declare its metadata-selected
+ancestor envelope demands and hold their cells through planning/reconstruction.
+The internal pure capability names resident observation explicitly and performs
+no I/O. Update cert/test callers without discarding their claims and propagate
+the Query bootstrap consumer's exact read refusal. Add direct replay-envelope
+and replay-execution doors to the envelope matrix. These are exposed product
+gaps, not test relaxations or an additional history authority.
+
+
+### Tail readmission and replay boundary correction (in progress)
+
+The 13-door envelope matrix is now exercised in both checkpoint-backed and
+journal-tail recovery shapes. The tail producer exposed a real lifetime gap:
+replay rebuilt memory-owned envelopes and never transferred them to their
+verified journal placement. Readmission now carries its exact frame digest and
+actual cold-source port into recovery; memory-only recovery keeps its sole copy.
+The canonical payload cache lives in the shared residency cell, so transferring
+custody releases encoded duplicates for all catalog observers together.
+
+Recovery must bind a position seal to the allocation actually owned by its
+branch head. Equivalent allocation admission compares the canonical journal
+payload at the original position; it cannot seal changed canonical facts.
+Source envelopes replace reconstructed diagnostic captures when source authority
+is restored. Their visibility axis is readmitted from admitted source facts only
+after schema and current storage binding checks. Branch replacement uses the
+existing retirement reservation, head transfer and retirement operation once per
+branch. An initial direct cell replacement was wrong: it bypassed the live-head
+obligation and failed 84 native courts. That implementation was removed.
+The corrected native run passed 1,981 tests with one matrix failure remaining.
+
+That remaining replay failure exposed an authority mismatch: RCCA explicitly
+omits diagnostic entries, while replay always promised to compare a capture.
+Journal-backed replay compares the diagnostic scope, kind and determinism
+that RCCA authenticates, without claiming its omitted capture entries. Memory-
+owned replay still compares the full retained diagnostic capture, including an
+empty capture. A first surface-removal approach failed three existing live/
+recovery equivalence courts and was replaced with this projection comparison.
+The existing diagnostic-tampering court remains unchanged and must pass. This
+is an authority/lifecycle correction, not permission to suppress canonical drift.
+
+The matrix also exposed unguarded historical snapshot projection, public replay
+envelope access, and ancestor receipt minting. These doors now take the request,
+demand the actual selected bodies/Full view, hold their witnesses, and preserve
+typed storage failure. Exact-observation receipt minting uses its already carried
+head body. Bridge and Query callers follow the same fallible owner door.
+
+
+### Next matrix slice: lineage event pages (boundary review and plan)
+
+Authority review: LineageSubsystem owns publication event rows and per-runtime
+resolution indexes. Its node residency owns page cells, but currently lacks the
+placement custody already required by dictionary residency. The checkpoint
+manifest carries only node-page locators. Cold restore installs no event rows;
+request-free historical traversal then accepts a resident-only empty index.
+This is a missing subject/path family, not a reason to warm every envelope.
+
+First add a producer-written Replace chain across an external checkpoint and
+compare genuine before/after lineage resolution, graphs and selected-root
+history. Preserve independent unrelated lineages so page locality is visible.
+Add a pruning cold source court for an older node/event directory surviving
+checkpoint replacement. These tests must fail before changing the owner.
+
+Implement immutable event members routed by fixed node ranges. A member holds
+bounded ordered event rows with their publication commit identity. An event
+participating in several ranges may appear in several members; readmission
+accepts an already admitted row only after exact event and publication equality.
+It never relaxes ordinary recovered-batch duplicate rejection. New events append
+members rather than rewriting old range payloads. The directory carries prior
+placement without loading old events. Node and event residency own the exact
+member custody they need, independently of selection-directory lifetime.
+
+Historical orchestration demands the selected node range and discovers target
+ranges before accepting traversal. Full graph/inspection/export doors declare
+all relevant pages. All these operations take the request and return the same
+typed storage refusal; pure index accessors never initiate loads. Readmission
+checks the selected manifest/member digest, kind, routing, ordered unique IDs,
+publication/index binding and byte/request limits before any row admission.
+Capture encodes only newly published rows and carries the prior member closure.
+Reopen loads neither nodes nor events, and unrelated ranges stay cold.
+
+Expand the table for six independent failure classes across every event consumer,
+then exercise cold/warm memory-reference agreement and retain observations through
+subsequent publication and capture. Update the coverage ledger only from passing
+executed tables. The selected-manifest checksum/member SHA verification anchor
+remains the specification's anchor; it is not a second canonical-journal root.
+
+
+Tail slice validation (intermediate dirty-tree evidence at d38dfc2b88):
+`matrix-tail-native-projection.log`: 1,982 passed, 31 ignored; no failures.
+`matrix-tail-contracts-green.log`: 203 passed, 3 ignored; no failures.
+The normal contracts rerun follows tool-regenerated goldens; only the two caret
+locations shifted, and the original authority-type errors remain. The first
+contracts run had 202 passing tests and that one stale-golden court failed.
+The envelope table now executes 156 refusal cells (13 doors, six classes, two
+recovery shapes), bringing the refusal inventory to 1,092 cells plus 54 positive
+unavailable-history cells. Both priority regression tests pass in the native run.
+Owner Relational/Bridge lib+tests clippy passed with the CI dead-code allowance;
+Query execution lib check and both affected workspace formatting checks passed.
+Dirty line caps, composition scan (zero scan errors), boundary-check and
+agent-context check passed. All are slice evidence; final clean-commit lanes,
+lineage event paging, index-build/checkpoint cells and the real home agreement
+court remain to be completed. No final phase-2 completion is claimed.

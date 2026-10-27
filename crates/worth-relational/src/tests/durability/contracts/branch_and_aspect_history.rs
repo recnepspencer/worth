@@ -55,7 +55,9 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         .aspect_history_digest();
     let expected_envelope = runtime
         .replay()
-        .canonical_commit_envelope(updated.commit.commit_id)
+        .canonical_commit_envelope(execution, updated.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let (outcome, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         durable_runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations)
@@ -72,7 +74,9 @@ fn durability_contract_recovery_preserves_aspect_bearing_patch_truth_and_history
         .aspect_history_digest();
     let recovered_replay = recovered.replay();
     let recovered_envelope = recovered_replay
-        .canonical_commit_envelope(updated.commit.commit_id)
+        .canonical_commit_envelope(execution, updated.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert_eq!(outcome.latest_commit, Some(updated.commit.clone()));

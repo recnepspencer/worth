@@ -122,18 +122,31 @@ impl RelationalCanonicalPublicationRoutes {
     }
 
     pub(crate) fn stream_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
-        let route = self
-            .by_commit
+        if let Some(route) = self.by_commit.get(&commit_id)
+            && route.is_visible()
+        {
+            return route.position();
+        }
+        self.checkpoint_catalog
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
             .get(&commit_id)
-            .map(|entry| Arc::clone(entry.value()))?;
-        route.is_visible().then(|| route.position()).flatten()
+            .and_then(|artifact| artifact.envelope_residency().journal_index())
+            .map(|entry| entry.position)
     }
 
     pub(crate) fn positioned_commit(
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<PositionedCanonicalCommit>> {
-        self.performed_stream.positioned(commit_id)
+        self.performed_stream.positioned(commit_id).or_else(|| {
+            self.checkpoint_catalog
+                .read()
+                .unwrap_or_else(|error| error.into_inner())
+                .get(&commit_id)
+                .and_then(|artifact| artifact.envelope_residency().positioned_if_resident())
+                .map(Arc::new)
+        })
     }
 
     pub(crate) fn requires_settlement(&self, commit_id: CommitId) -> bool {

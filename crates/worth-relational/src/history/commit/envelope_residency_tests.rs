@@ -165,8 +165,8 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         let position = performed.position();
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
-        let digest = body.authoritative_payload_digest().unwrap();
-        let cell = RelationalCommitEnvelopeResidency::resident(body, digest);
+        let payload = Arc::from(body.encode_authoritative_payload().unwrap());
+        let cell = RelationalCommitEnvelopeResidency::resident(body, payload);
         let reads = source.reads.load(Ordering::Relaxed);
         cell.bind_performed(
             &performed,

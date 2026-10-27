@@ -126,6 +126,12 @@ impl RelationalCanonicalPublicationRoutes {
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         roots: crate::branch::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
+        let canonical = envelope
+            .get()
+            .ok_or("recovered route has no admitted resident body")?;
+        let positioned = Arc::new(PositionedCanonicalCommit::admit(
+            position_admission::CanonicalPositionAdmission::equivalent(&positioned, canonical)?,
+        ));
         let installs_version_route = positioned.envelope().authority_kind()
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
         envelope.bind_performed(&positioned, None);

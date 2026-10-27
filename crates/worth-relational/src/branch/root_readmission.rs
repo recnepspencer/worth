@@ -187,6 +187,37 @@ impl RelationalBranchRoot {
         Ok(self.with_committed(committed))
     }
 
+    /// Recovery binds admitted source authority after replay reconstructs storage.
+    /// Its visibility axis includes retained strategy facts absent from execution.
+    pub(crate) fn readmit_canonical_envelope(
+        &self,
+        source: &crate::history::data::PositionedCanonicalCommit,
+        symbols: &crate::symbols::data::StringInterner,
+    ) -> Result<Arc<Self>, RelationalBranchRootCaptureDenial> {
+        let mut committed = self
+            .committed
+            .clone()
+            .ok_or(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch)?;
+        if committed.canonical_envelope.commit != source.commit {
+            return Err(RelationalBranchRootCaptureDenial::CanonicalEnvelopeMismatch);
+        }
+        validate_schema_root(source.envelope(), &committed.descriptor)?;
+        require_schema_authority(
+            &self.schema_authority,
+            source.envelope(),
+            &committed.descriptor,
+        )?;
+        self.require_current_content_binding(&committed, symbols)?;
+        committed.axes.visibility = RelationalBranchVisibilityCommitment::for_root(
+            source.envelope(),
+            committed.axes.storage_root,
+            committed.axes.schema_root,
+            committed.axes.correctness_index,
+        );
+        committed.canonical_envelope = source.canonical_arc().clone();
+        Ok(self.with_committed(committed))
+    }
+
     /// Readmit the durable descriptor learned from the next exact branch-cell
     /// checkpoint without rebuilding the reconstructed storage regions.
     pub(crate) fn readmit_descriptor(

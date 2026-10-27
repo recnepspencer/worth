@@ -23,11 +23,12 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Node point/history/aspect/graph/divergence doors | operation Full matrix | operation Full matrix | selected history matrix | operation Full matrix | no interning | lineage matrix | replacement/split matrix pending | no lookup |
 | Cached derived-index use, pin and candidate preparation | operation Full matrix | operation Full matrix | audit pending | operation Full matrix | no interning | no lookup | no lookup | index matrix |
 | Derived-index build/reconstruction | expansion pending | expansion pending | expansion pending | expansion pending | no interning | audit pending | audit pending | expansion pending |
+| Replay envelope access, execution and ancestor receipts | historical snapshot Full guard | historical snapshot Full guard | envelope matrix in checkpoint and tail shapes | guarded snapshot admission | shared bucket admission | identity frontier courts | pending paged format | replay cache reconstruction |
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | pending paged format | replay cache reconstruction |
 
-Current refusal family sizes: Full reads 576, envelope/export/checkpoint 60,
+Current refusal family sizes: Full reads 576, envelope/export/checkpoint/replay/receipt 156,
 lineage node 42, cached index 36, current Head/ID symbol 72, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 996 cells. Positive current and
+remote invariant Head 18, aspect history 144, nonhead merge 18: 1,092 cells. Positive current and
 remote-invariant unavailable-history families add 54 cells. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
@@ -35,7 +36,7 @@ Additional acceptance courts already present include probe miss/identity
 reservation tests, the Head type-level historical-access fence, selective
 journal envelope readmission, dictionary directory placement custody, paired
 memory/durable envelope lifetime, complete live index capture/reopen, and the
-two priority regression tests. Still required: recovered tail lifetime,
+two priority regression tests. Recovered tail lifetime is covered in both real journal shapes. Still required:
 lineage event paging, index-build cells, and real
 home oracle cold/warm/fully-warmed agreement with retained observations. The
 final lane inventory and logs will be recorded after these gaps close.

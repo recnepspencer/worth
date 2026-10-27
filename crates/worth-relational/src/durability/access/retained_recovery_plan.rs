@@ -73,10 +73,20 @@ fn tail_log_after_in_memory_checkpoint(
             .map(crate::history::data::PositionedCanonicalCommit::position)
             .max()
     });
-    Ok(runtime
+    runtime
         .durability
-        .demand_log_after(execution, after)?
+        .log_residencies_after(after)
         .into_iter()
-        .map(crate::durability::migration::ReadmittedCanonicalCommit::exact)
-        .collect())
+        .map(|cell| {
+            let positioned = cell.demand_positioned(execution, 1 << 30)?;
+            let mut readmitted =
+                crate::durability::migration::ReadmittedCanonicalCommit::exact(positioned);
+            if let Some((entry, source)) = cell.journal_placement() {
+                readmitted = readmitted
+                    .with_verified_journal_payload(entry.payload_digest)
+                    .bind_journal_source(source)?;
+            }
+            Ok(readmitted)
+        })
+        .collect()
 }

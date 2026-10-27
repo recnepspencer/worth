@@ -29,7 +29,7 @@ fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_re
     let live = snapshot_from_summary(&runtime, &outcome.execution_summary);
     let published = snapshot_from_authority(
         &runtime,
-        published_merge_authority(&runtime, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id),
     );
     let (_recovery, recovered) = checkpoint_and_recover_with(
         execution,
@@ -38,7 +38,7 @@ fn merge_collaboration_truth_replay_equivalence_survives_live_publication_and_re
     );
     let recovered_snapshot = snapshot_from_authority(
         &recovered,
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id),
     );
 
     assert_eq!(
@@ -102,7 +102,7 @@ fn merge_collaboration_support_surface_reflects_correspondence_posture_over_real
     let outcome = execute_feature_merge(execution, &runtime);
     let snapshot = snapshot_from_authority(
         &runtime,
-        published_merge_authority(&runtime, outcome.commit.commit.commit_id),
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id),
     );
     let witness = &snapshot.authority.execution_summary.correspondence_witness;
     let row = snapshot
@@ -164,7 +164,7 @@ fn merge_collaboration_truth_localizes_single_family_drift() {
 
     let runtime = runtime_with_collaboration_merge_history();
     let outcome = execute_feature_merge(execution, &runtime);
-    let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let baseline = published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
 
     assert_eq!(
         collaboration_family_drift(
@@ -198,7 +198,7 @@ fn merge_collaboration_truth_denies_cross_family_witness_mismatch() {
 
     let runtime = runtime_with_collaboration_merge_history();
     let outcome = execute_feature_merge(execution, &runtime);
-    let baseline = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let baseline = published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
 
     for drifted in [
         correspondence_drifted_authority(&baseline),

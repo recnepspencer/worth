@@ -11,7 +11,6 @@ use super::receipt_witness::{
     admit_consistent_change, begin_change_receipt, resolve_change_receipt, ChangeReceiptBasis,
     ChangeReceiptRequest,
 };
-use crate::capabilities::CommitEnvelopeSource;
 use crate::identity::data::PartitionId;
 use crate::identity_authority::relational_source_truth_authority;
 use crate::publication::patch::data::PublishedAuthoritativePatchEnvelope;
@@ -23,8 +22,9 @@ impl RelationalRuntime {
     ///
     /// The receipt holds the commit's canonical patch, and minting it runs
     /// the consistency checks, so a receipt is proof they passed. The cost is
-    /// one retained-envelope lookup plus a pass over the commit's record
-    /// patches.
+    /// a carried resident root for an exact selection, or one fallible indexed
+    /// envelope demand for an ancestor, followed by a pass over its patches.
+    /// Storage and request refusals retain their typed execution cause.
     ///
     /// # Outcomes
     ///
@@ -35,19 +35,45 @@ impl RelationalRuntime {
     /// - `Denied` when the change is not self-consistent.
     pub fn mint_change_receipt(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         selected: RelationalSelectedCommit,
         partition_id: Option<PartitionId>,
-    ) -> RelationalChangeReceiptOutcome {
+    ) -> Result<RelationalChangeReceiptOutcome, crate::execution::RelationalExecutionDenialCause>
+    {
+        crate::execution::check_request(execution)?;
         if selected.runtime_instance_id() != self.runtime_instance_id() {
-            return TransitionOutcome::Stale(RelationalChangeReceiptStale::RuntimeAuthority);
+            return Ok(TransitionOutcome::Stale(
+                RelationalChangeReceiptStale::RuntimeAuthority,
+            ));
         }
+        let exact = selected
+            .observation()
+            .selected_root()
+            .canonical_envelope()
+            .filter(|envelope| envelope.commit.commit_id == selected.commit_id())
+            .cloned();
+        let envelope = match exact {
+            Some(envelope) => Some(envelope),
+            None => self
+                .history()
+                .demand_commit_envelope(execution, selected.commit_id())?,
+        };
+        Ok(self.mint_resident_change_receipt(selected, partition_id, envelope))
+    }
+
+    fn mint_resident_change_receipt(
+        &self,
+        selected: RelationalSelectedCommit,
+        partition_id: Option<PartitionId>,
+        envelope: Option<std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>>,
+    ) -> RelationalChangeReceiptOutcome {
         let commit_id = selected.commit_id();
         let unresolved = begin_change_receipt(ChangeReceiptRequest {
             runtime_instance_id: self.runtime_instance_id(),
             commit_id,
             partition_id,
         });
-        let Some(envelope) = self.commit_envelope(commit_id) else {
+        let Some(envelope) = envelope else {
             return if commit_id >= self.history().next_commit_id() {
                 TransitionOutcome::Deferred(
                     RelationalChangeReceiptDeferred::CommitVisibilityPending,

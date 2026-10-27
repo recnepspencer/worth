@@ -55,9 +55,12 @@ pub(super) fn apply_authoritative_commit_artifacts(
         .unwrap_or_else(|| Arc::clone(positioned.canonical_arc()));
     let resident = Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
         canonical.clone(),
-        canonical.authoritative_payload_digest().map_err(|error| {
-            DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
-        })?,
+        canonical
+            .encode_authoritative_payload()
+            .map(Arc::from)
+            .map_err(|error| {
+                DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string())
+            })?,
     ));
     resident.bind_performed(positioned, None);
     runtime.history.with_ledger_mut(|ledger| {
@@ -106,9 +109,9 @@ pub(super) fn validate_recovered_history_parity(
     runtime: &mut RelationalRuntime,
     durable_envelope: &CanonicalCommitEnvelope,
 ) -> Result<(), DurabilityError> {
-    let replay_access = runtime.replay();
-    let Some(recovered_envelope) =
-        replay_access.canonical_commit_envelope(durable_envelope.commit.commit_id)
+    let Some(recovered_envelope) = runtime
+        .history
+        .canonical_envelope(durable_envelope.commit.commit_id)
     else {
         return Err(DurabilityError::new(
             RecoveryFailureClass::ReplayFailure,

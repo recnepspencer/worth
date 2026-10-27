@@ -111,7 +111,9 @@ fn checkpoint_restore_protects_published_lineage_identities_in_each_lane() {
         let created = create_entity_outcome(execution, &receiver, "after-lineage-reopen");
         let envelope = receiver
             .replay()
-            .canonical_commit_envelope(created.commit.commit_id)
+            .canonical_commit_envelope(execution, created.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap();
         assert!(!envelope.lineage_events().is_empty());
         for event in envelope.lineage_events() {
@@ -169,7 +171,9 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
     release_test_commit_snapshot(&producer, &committed);
     let envelope = producer
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     let node_floor = envelope
         .lineage_events()
@@ -210,7 +214,9 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
     let created = create_entity_outcome(execution, &receiver, "lineage-after-inflight-replay");
     let envelope = receiver
         .replay()
-        .canonical_commit_envelope(created.commit.commit_id)
+        .canonical_commit_envelope(execution, created.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
     assert!(envelope
         .lineage_events()

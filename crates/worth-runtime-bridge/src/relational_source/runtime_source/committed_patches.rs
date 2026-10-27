@@ -106,9 +106,15 @@ impl RuntimeBridgeRelationalSource {
             selected,
             snapshot_identity,
         } = selected_commit;
-        let receipt = self
-            .runtime
-            .with_runtime(|runtime| runtime.mint_change_receipt(selected, relational_partition));
+        let receipt = self.runtime.with_runtime(|runtime| {
+            runtime.mint_change_receipt(&execution, selected, relational_partition)
+        });
+        let receipt = receipt.map_err(|cause| RelationalBridgeSourceError::new(
+            crate::adapter::RelationalBridgeSourceErrorTag::ObservationRead(
+                worth_relational::facade::change_source::RelationalObservationReadDenial::Execution(cause),
+            ),
+            format!("selected change receipt read refused: {cause:?}"),
+        ))?;
         lower_change_receipt_outcome(receipt, snapshot_identity, context, execution)
     }
 

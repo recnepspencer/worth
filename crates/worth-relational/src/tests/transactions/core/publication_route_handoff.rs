@@ -173,7 +173,11 @@ fn observe_canonical_consumers(
         Some(envelope.commit.clone())
     );
     assert_eq!(
-        runtime.replay().canonical_commit_envelope(commit_id),
+        runtime
+            .replay()
+            .canonical_commit_envelope(execution, commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone()),
         Some(envelope.clone())
     );
     let stream = runtime

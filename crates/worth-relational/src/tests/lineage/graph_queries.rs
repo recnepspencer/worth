@@ -221,7 +221,9 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
     let outcome = txn.commit(execution, &runtime).unwrap();
     let replay = runtime.replay();
     let envelope = replay
-        .canonical_commit_envelope(outcome.commit.commit_id)
+        .canonical_commit_envelope(execution, outcome.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert!(envelope

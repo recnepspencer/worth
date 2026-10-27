@@ -13,6 +13,13 @@ impl RelationalCanonicalCommitArtifact {
     pub(crate) fn positioned_payload_digest(
         commit: &PositionedCanonicalCommit,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {
+        Self::envelope_payload_digest(commit.position(), commit.envelope())
+    }
+
+    fn envelope_payload_digest(
+        position: crate::publication::patch::data::PatchStreamPosition,
+        envelope: &crate::history::data::CanonicalCommitEnvelope,
+    ) -> Result<[u8; 32], rmp_serde::encode::Error> {
         use sha2::{Digest, Sha256};
         struct HashWriter(Sha256);
         impl std::io::Write for HashWriter {
@@ -25,11 +32,19 @@ impl RelationalCanonicalCommitArtifact {
             }
         }
         let mut writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(
-            &mut writer,
-            &ArtifactPayloadRef::new(commit.position(), commit.envelope()),
-        )?;
+        rmp_serde::encode::write_named(&mut writer, &ArtifactPayloadRef::new(position, envelope))?;
         Ok(writer.0.finalize().into())
+    }
+
+    pub(crate) fn matches_positioned_payload(
+        original: &PositionedCanonicalCommit,
+        candidate: &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
+    ) -> Result<bool, rmp_serde::encode::Error> {
+        if std::sync::Arc::ptr_eq(original.canonical_arc(), candidate) {
+            return Ok(true);
+        }
+        Ok(Self::positioned_payload_digest(original)?
+            == Self::envelope_payload_digest(original.position(), candidate)?)
     }
 
     /// Frame one admitted positioned commit. Only Relational holds a

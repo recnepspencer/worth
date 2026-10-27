@@ -134,7 +134,10 @@ fn update_entity_fields_applies_struct_contract_field_patch() {
         .select_exact_commit(&basis.observation(), outcome.commit.commit_id)
         .into_outcome()
         .unwrap();
-    let TransitionOutcome::Success(receipt) = runtime.mint_change_receipt(selected, None) else {
+    let TransitionOutcome::Success(receipt) = runtime
+        .mint_change_receipt(execution, selected, None)
+        .unwrap()
+    else {
         panic!("a real field patch mints a change receipt");
     };
     assert_eq!(

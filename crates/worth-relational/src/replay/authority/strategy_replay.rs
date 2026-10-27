@@ -285,9 +285,9 @@ fn ensure_strategy_replay_basis_branch(
         .validated_against_commit_id()
         .and_then(|commit_id| {
             basis_runtime
-                .replay()
-                .canonical_commit_envelope(commit_id)
-                .map(|basis| basis.branch_context.clone())
+                .history()
+                .immutable_commit_receipt(commit_id)
+                .map(|basis| basis.branch_id.clone())
         })
         .unwrap_or_else(|| BranchId("main".to_string()));
 

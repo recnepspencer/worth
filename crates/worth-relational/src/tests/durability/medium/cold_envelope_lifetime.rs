@@ -262,3 +262,77 @@ fn released_live_history_remains_in_external_capture_and_retained_recovery() {
         "head admission and one selected read per commit have bounded headroom"
     );
 }
+
+#[test]
+fn recovered_nonhead_tail_envelopes_release_their_actual_journal_backed_bodies() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (_, source, _) = fixture_with_history(execution, false, 8);
+    source.damaged.store(false, Ordering::Relaxed);
+    let tail = source.commits.values().map(|bytes| {
+        crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap()
+    }).collect();
+    let recovery = RelationalDurableRecoverySource::new(None, tail, Vec::new(), source.clone());
+    let position = *source.commits.keys().nth(2).unwrap();
+    let mut runtime = durable_runtime_with_test_schema();
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    runtime
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    runtime.history.reclaim_retired_branch_roots(1024);
+    assert_eq!(
+        source.commit_reads.lock().unwrap().len(),
+        0,
+        "tail replay already owns its readmitted frames"
+    );
+    let head = runtime
+        .history()
+        .branch_head(&BranchId("main".into()))
+        .unwrap();
+    assert!(runtime
+        .history
+        .commit_artifact(head.commit_id)
+        .unwrap()
+        .resident_envelope()
+        .is_some());
+    assert!(
+        runtime
+            .history
+            .commit_artifacts()
+            .iter()
+            .all(|artifact| artifact.envelope_residency().resident_payload().is_none()),
+        "journal placement releases encoded duplicate buffers too"
+    );
+    let receipt = runtime
+        .history()
+        .immutable_commit_receipt_at_patch_stream_position(position)
+        .unwrap();
+    let body = runtime
+        .history()
+        .demand_commit_envelope(execution, receipt.commit_id)
+        .unwrap()
+        .unwrap();
+    let weak = Arc::downgrade(&body);
+    drop(body);
+    assert!(
+        weak.upgrade().is_none(),
+        "replay must not turn a nonhead journal body into permanent memory truth"
+    );
+    assert_eq!(
+        runtime
+            .history()
+            .demand_commit_envelope(execution, receipt.commit_id)
+            .unwrap()
+            .unwrap()
+            .commit,
+        receipt
+    );
+}

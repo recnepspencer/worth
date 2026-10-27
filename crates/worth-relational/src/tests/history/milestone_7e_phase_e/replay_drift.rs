@@ -9,7 +9,9 @@ fn replay_rebuild_denies_summary_and_packet_drift() {
     let outcome = execute_merge(execution, &runtime);
     let mut envelope = runtime
         .replay()
-        .canonical_commit_envelope(outcome.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, outcome.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("canonical envelope");
     envelope
         .merge_execution_authority

@@ -21,7 +21,9 @@ fn committed_root_and_envelope(
         .expect("performed commit installs one complete branch root");
     let envelope = runtime
         .replay()
-        .canonical_commit_envelope(performed.commit.commit_id)
+        .canonical_commit_envelope(execution, performed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("performed commit owns one canonical envelope")
         .clone();
     (runtime, root, envelope)

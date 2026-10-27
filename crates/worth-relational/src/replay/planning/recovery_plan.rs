@@ -139,7 +139,7 @@ fn authoritative_replay_envelopes(
             chain
                 .iter()
                 .copied()
-                .filter_map(|commit_id| source.canonical_envelope_owned(commit_id))
+                .filter_map(|commit_id| source.resident_commit_envelope(commit_id))
                 .filter(|envelope| envelope.strategy_artifacts.is_some())
                 .map(|envelope| envelope.commit.commit_id),
         )
@@ -154,7 +154,7 @@ fn target_descriptor_semantics_version(
 ) -> DescriptorSemanticsVersion {
     chain
         .last()
-        .and_then(|commit_id| source.canonical_envelope_owned(*commit_id))
+        .and_then(|commit_id| source.resident_commit_envelope(*commit_id))
         .map(|envelope| envelope.descriptor_semantics_version)
         .unwrap_or_default()
 }

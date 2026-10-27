@@ -4,6 +4,7 @@ mod checkpoint_restore;
 mod envelope_replay;
 pub(crate) use envelope_replay::replay_commit_stop;
 mod history_parity;
+mod journal_residency;
 mod merge_plan;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
@@ -175,9 +176,10 @@ pub(super) fn rebuild_runtime_from_plan(
         };
         recovered_canonical_commits.push(selected);
     }
+    let recovered_symbols = restored.services.symbols.interner_snapshot();
     unshared_state(&mut restored)?
         .history
-        .install_recovered_canonical_inventory(recovered_canonical_commits)
+        .install_recovered_canonical_inventory(recovered_canonical_commits, &recovered_symbols)
         .map_err(|detail| {
             DurabilityError::new(
                 crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
@@ -205,6 +207,7 @@ pub(super) fn rebuild_runtime_from_plan(
     restored.durability.set_log(log);
 
     finalize_restored_runtime(execution, &mut restored)?;
+    journal_residency::install(execution, &restored, &plan)?;
     recovered_roots.finish();
     Ok((restored, plan, checkpoint_work))
 }

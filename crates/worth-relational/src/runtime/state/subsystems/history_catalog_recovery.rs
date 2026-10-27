@@ -12,6 +12,7 @@ impl HistorySubsystem {
     pub(crate) fn install_recovered_canonical_inventory(
         &mut self,
         commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
+        symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         self.with_ledger_mut(|ledger| {
             ledger.patch_stream_index.extend(
@@ -22,7 +23,7 @@ impl HistorySubsystem {
             for commit in &commits {
                 ledger
                     .commit_catalog
-                    .synchronize_recovered_envelope(Arc::clone(commit.canonical_arc()))
+                    .synchronize_recovered_envelope(commit)
                     .map_err(|denial| {
                         format!("recovered canonical catalog synchronization denied: {denial:?}")
                     })?;
@@ -39,6 +40,16 @@ impl HistorySubsystem {
                 .collect::<Result<_, String>>()?;
             Ok::<_, String>(())
         })?;
+        let admitted = commits
+            .iter()
+            .map(|commit| (commit.commit.commit_id, Arc::clone(commit)))
+            .collect();
+        self.rebuild_catalog_with_live_roots_and_descriptors(
+            &std::collections::BTreeMap::new(),
+            &std::collections::BTreeMap::new(),
+            &admitted,
+            symbols,
+        )?;
         self.rebuild_recovered_canonical_routes(commits)
             .map_err(str::to_owned)
     }
@@ -48,6 +59,7 @@ impl HistorySubsystem {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         self.rebuild_catalog_with_live_roots_and_descriptors(
+            &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             symbols,
@@ -63,6 +75,10 @@ impl HistorySubsystem {
         additional_roots: &std::collections::BTreeMap<
             crate::history::data::CommitId,
             Arc<crate::branch::RelationalBranchRoot>,
+        >,
+        admitted: &std::collections::BTreeMap<
+            crate::history::data::CommitId,
+            Arc<crate::history::data::PositionedCanonicalCommit>,
         >,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
@@ -93,6 +109,11 @@ impl HistorySubsystem {
                     Arc::clone(existing)
                 } else if root.links_envelope(&canonical) {
                     Arc::clone(&root)
+                } else if let Some(source) = admitted.get(&commit_id) {
+                    root.readmit_canonical_envelope(source, symbols)
+                        .map_err(|denial| {
+                            format!("recovery source root readmission denied: {denial:?}")
+                        })?
                 } else {
                     root.relink_canonical_envelope(canonical, symbols)
                         .map_err(|denial| {
@@ -252,6 +273,7 @@ impl HistorySubsystem {
         self.rebuild_catalog_with_live_roots_and_descriptors(
             &descriptors,
             &recovered_roots,
+            &std::collections::BTreeMap::new(),
             symbols,
         )?;
         Ok(canonical_root)

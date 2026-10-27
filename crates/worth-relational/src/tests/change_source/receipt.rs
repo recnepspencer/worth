@@ -12,6 +12,7 @@ use crate::tests::support::{
 use super::observe;
 
 fn mint_at_head(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &str,
     commit_id: CommitId,
@@ -22,7 +23,10 @@ fn mint_at_head(
         .select_reachable_commit(&observation, commit_id)
         .into_outcome()
         .expect("commit is reachable from the branch head");
-    match runtime.mint_change_receipt(selected, partition_id) {
+    match runtime
+        .mint_change_receipt(execution, selected, partition_id)
+        .unwrap()
+    {
         TransitionOutcome::Success(receipt) => receipt,
         other => panic!("a committed, retained change mints a receipt: {other:?}"),
     }
@@ -37,7 +41,7 @@ fn receipt_carries_the_canonical_patch_and_the_checks_it_passed() {
     let outcome = create_entity_outcome(execution, &runtime, "receipt");
     let commit = &outcome.commit;
 
-    let receipt = mint_at_head(&runtime, "main", commit.commit_id, None);
+    let receipt = mint_at_head(execution, &runtime, "main", commit.commit_id, None);
 
     assert_eq!(receipt.runtime_instance_id(), runtime.runtime_instance_id());
     assert_eq!(receipt.commit_id(), commit.commit_id);
@@ -74,9 +78,15 @@ fn receipt_narrows_to_one_partition_and_counts_what_it_filtered() {
         .map(CommitId)
         .expect("one commit");
 
-    let everything = mint_at_head(&runtime, "main", commit_id, None);
-    let inside = mint_at_head(&runtime, "main", commit_id, Some(PartitionId(7)));
-    let outside = mint_at_head(&runtime, "main", commit_id, Some(PartitionId(11)));
+    let everything = mint_at_head(execution, &runtime, "main", commit_id, None);
+    let inside = mint_at_head(execution, &runtime, "main", commit_id, Some(PartitionId(7)));
+    let outside = mint_at_head(
+        execution,
+        &runtime,
+        "main",
+        commit_id,
+        Some(PartitionId(11)),
+    );
 
     let total = everything.records_examined();
     assert_eq!(inside.partition_id(), Some(PartitionId(7)));
@@ -103,7 +113,7 @@ fn a_fork_receipt_names_the_selected_and_the_authoring_branch() {
         .unwrap();
     create_entity_outcome_on_branch(execution, &runtime, "feature-head", feature.clone());
 
-    let receipt = mint_at_head(&runtime, "feature", inherited, None);
+    let receipt = mint_at_head(execution, &runtime, "feature", inherited, None);
 
     assert_eq!(receipt.selected_branch_id(), &feature);
     assert_eq!(receipt.authoring_branch_id(), &BranchId("main".to_owned()));
@@ -126,7 +136,9 @@ fn another_runtime_cannot_mint_a_receipt_for_a_selection() {
         .into_outcome()
         .unwrap();
 
-    let outcome = other.mint_change_receipt(selected, None);
+    let outcome = other
+        .mint_change_receipt(execution, selected, None)
+        .unwrap();
 
     assert!(matches!(
         outcome,

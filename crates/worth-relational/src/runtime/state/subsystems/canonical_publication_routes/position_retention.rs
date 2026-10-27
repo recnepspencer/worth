@@ -62,4 +62,26 @@ mod tests {
         );
         assert_eq!(retained.position(), position);
     }
+    #[test]
+    fn equivalent_position_seals_require_the_same_canonical_payload() {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host);
+        let sealed = {
+            let runtime = runtime_with_test_schema();
+            create_entity(execution, &runtime, "equivalent-position");
+            runtime
+                .history
+                .positioned_canonical_commits_snapshot()
+                .pop()
+                .unwrap()
+        };
+        let copy = Arc::new(sealed.envelope().clone());
+        let admitted = CanonicalPositionAdmission::equivalent(&sealed, copy.clone()).unwrap();
+        let rebound = PositionedCanonicalCommit::admit(admitted);
+        assert_eq!(rebound.position(), sealed.position());
+        assert!(Arc::ptr_eq(rebound.canonical_arc(), &copy));
+        let mut different = copy.as_ref().clone();
+        different.commit.commit_id.0 += 1;
+        assert!(CanonicalPositionAdmission::equivalent(&sealed, Arc::new(different)).is_err());
+    }
 }

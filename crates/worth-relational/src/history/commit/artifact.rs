@@ -21,7 +21,6 @@ pub(crate) struct RelationalCommitArtifact {
     roots: RelationalCommitRootDescriptor,
     schema_version: crate::schema::data::SchemaVersionId,
     envelope: Arc<super::RelationalCommitEnvelopeResidency>,
-    canonical_payload: Option<Arc<[u8]>>,
 }
 
 // The Phase-4 fork path may share an immutable catalog handle, but it may
@@ -79,7 +78,6 @@ impl RelationalCommitArtifact {
         envelope: Arc<CanonicalCommitEnvelope>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         let canonical_payload = encode_canonical_payload(&envelope)?;
-        let payload_digest = payload_digest(&canonical_payload);
         let identity = RelationalCommitIdentity::new(
             envelope.commit.commit_id,
             envelope.commit.version_id,
@@ -100,9 +98,8 @@ impl RelationalCommitArtifact {
             schema_version: envelope.schema_version,
             envelope: Arc::new(super::RelationalCommitEnvelopeResidency::resident(
                 envelope,
-                payload_digest,
+                canonical_payload,
             )),
-            canonical_payload: Some(canonical_payload),
         })
     }
 
@@ -173,7 +170,6 @@ impl RelationalCommitArtifact {
             roots,
             schema_version: self.schema_version,
             envelope: Arc::clone(&self.envelope),
-            canonical_payload: self.canonical_payload.clone(),
         })
     }
 
@@ -205,7 +201,6 @@ impl RelationalCommitArtifact {
                     .as_ref()
                     .map(|bytes| payload_digest(bytes)),
             )),
-            canonical_payload: None,
         })
     }
 
@@ -260,7 +255,8 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn canonical_payload_bytes(&self) -> u64 {
-        self.canonical_payload
+        self.envelope
+            .resident_payload()
             .as_ref()
             .map_or(0, |payload| payload.len() as u64)
     }
@@ -269,13 +265,6 @@ impl RelationalCommitArtifact {
         self.envelope
             .payload_digest()
             .expect("payload digest requires an admitted envelope")
-    }
-
-    pub(crate) fn release_journal_payload(mut self) -> Self {
-        if self.envelope.journal_index().is_some() {
-            self.canonical_payload = None;
-        }
-        self
     }
 
     pub(crate) fn authoritative_allocation_observations(

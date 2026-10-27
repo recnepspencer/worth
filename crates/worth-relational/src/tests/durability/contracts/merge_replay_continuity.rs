@@ -41,7 +41,9 @@ fn durability_contract_recovery_preserves_merge_parent_order() {
         .unwrap();
     let replay = recovered.replay();
     let recovered_merge = replay
-        .canonical_commit_envelope(merge.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .unwrap();
 
     assert_eq!(
@@ -188,7 +190,9 @@ fn durability_contract_replays_merge_from_typed_authority_when_diagnostics_are_a
         .unwrap();
     let replay = recovered.replay();
     let recovered_merge = replay
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
 
     assert!(recovered_merge.diagnostics_summary.entries.is_empty());

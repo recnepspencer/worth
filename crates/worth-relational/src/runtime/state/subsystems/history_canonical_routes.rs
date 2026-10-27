@@ -43,6 +43,10 @@ impl HistorySubsystem {
     ) -> Option<Arc<crate::history::data::PositionedCanonicalCommit>> {
         self.canonical_publication_routes
             .positioned_by_patch(position)
+            .or_else(|| {
+                self.recorded_commit_at_patch_position(position)
+                    .and_then(|id| self.positioned_canonical_commit(id))
+            })
     }
 
     /// Performed route inventory for cold history and inspection consumers.

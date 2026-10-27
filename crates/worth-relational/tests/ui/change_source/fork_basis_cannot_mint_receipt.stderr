@@ -1,8 +1,8 @@
 error[E0308]: mismatched types
- --> tests/ui/change_source/fork_basis_cannot_mint_receipt.rs:5:41
+ --> tests/ui/change_source/fork_basis_cannot_mint_receipt.rs:5:52
   |
-5 |     let _ = runtime.mint_change_receipt(basis, None);
-  |                     ------------------- ^^^^^ expected `RelationalSelectedCommit`, found `AdmittedRelationalForkSourceBasis`
+5 |     let _ = runtime.mint_change_receipt(execution, basis, None);
+  |                     -------------------            ^^^^^ expected `RelationalSelectedCommit`, found `AdmittedRelationalForkSourceBasis`
   |                     |
   |                     arguments to this method are incorrect
   |

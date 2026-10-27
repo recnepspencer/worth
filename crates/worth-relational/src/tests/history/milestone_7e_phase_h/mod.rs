@@ -166,12 +166,13 @@ fn retained_schema_reconciliation_witness_preserves_runtime_additive_truth_acros
     let outcome = runtime
         .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
-    let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let live_authority =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id);
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id);
 
     assert_eq!(
         additive_row.policy(),

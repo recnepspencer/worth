@@ -1,6 +1,7 @@
 use crate::durability::data::RelationalRecoveryStop;
 use std::ops::ControlFlow;
 mod comparison;
+mod diagnostic_comparison;
 mod envelope_self_audit;
 mod surface_audit;
 
@@ -14,8 +15,8 @@ use crate::runtime::RelationalRuntime;
 
 use super::super::diagnostics::record_replay_diagnostic;
 use super::super::planning::{
-    load_replay_envelope, promised_replay_surfaces, replay_commit_closure_by_commit_id_order,
-    replay_recovery_plan_for_chain,
+    demand_replay_envelopes, load_replay_envelope, promised_replay_surfaces,
+    replay_commit_closure_by_commit_id_order, replay_recovery_plan_for_chain,
 };
 use super::continuity::validated_replay_continuity_envelope;
 use super::strategy_replay::verify_strategy_reexecution_surface;
@@ -33,7 +34,7 @@ struct ReplayAdmission {
 
 struct ReplayReconstruction {
     runtime: RelationalRuntime,
-    envelope: CanonicalCommitEnvelope,
+    envelope: std::sync::Arc<CanonicalCommitEnvelope>,
 }
 
 impl<'runtime> ReplayAuthority<'runtime> {
@@ -60,6 +61,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let _source_envelopes =
+            demand_replay_envelopes(self.runtime, execution, request.commit_id)?;
         let admission = match self.admit_replay_target(&request) {
             Ok(admission) => admission,
             Err(outcome) => return Ok(outcome),
@@ -190,7 +193,7 @@ impl<'runtime> ReplayAuthority<'runtime> {
         };
         let Some(envelope) = runtime
             .replay()
-            .canonical_commit_envelope(request.commit_id)
+            .canonical_commit_envelope(execution, request.commit_id)?
         else {
             return Ok(ControlFlow::Break(self.fail_and_record(
                 request.clone(),
@@ -234,6 +237,8 @@ impl<'runtime> ReplayAuthority<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalReplayOutcome, RelationalRecoveryStop> {
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
+        let _reconstructed_envelopes =
+            demand_replay_envelopes(&reconstruction.runtime, execution, request.commit_id)?;
         let compared_surfaces = promised_replay_surfaces(
             self.runtime,
             &admission.envelope,

@@ -131,11 +131,13 @@ fn foundational_current_basis_lowering_rejects_published_historical_basis_in_liv
     let merge = runtime
         .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
-    let live_authority = published_merge_authority(&runtime, merge.commit.commit.commit_id);
+    let live_authority =
+        published_merge_authority(execution, &runtime, merge.commit.commit.commit_id);
 
     let (_recovery, recovered) =
         checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
-    let recovered_authority = published_merge_authority(&recovered, merge.commit.commit.commit_id);
+    let recovered_authority =
+        published_merge_authority(execution, &recovered, merge.commit.commit.commit_id);
 
     assert_historical_summary_basis_denies_as_current(&runtime, &live_authority);
     assert_historical_summary_basis_denies_as_current(&recovered, &recovered_authority);
@@ -259,12 +261,15 @@ fn assert_historical_summary_basis_denies_as_current(
 }
 
 fn published_merge_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::history::data::CommitId,
 ) -> PublishedMergeExecutionAuthority {
     runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

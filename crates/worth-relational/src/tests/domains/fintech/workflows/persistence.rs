@@ -115,7 +115,9 @@ fn fintech_branch_divergence_merge_and_savepoint_verbs_stay_case_local() {
     let (merge_parent_branches, merge_base_count, parent_count) = {
         let replay = world.runtime.replay();
         let envelope = replay
-            .canonical_commit_envelope(merged.commit.commit_id)
+            .canonical_commit_envelope(execution, merged.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .expect("merged commit should have canonical envelope");
         (
             envelope.merge_parent_branches.clone(),

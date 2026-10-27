@@ -133,7 +133,9 @@ fn replay_contract_success_preserves_merge_parent_order() {
     assert_eq!(
         runtime
             .replay()
-            .canonical_commit_envelope(merge.commit.commit_id)
+            .canonical_commit_envelope(execution, merge.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .commit
             .parents,
@@ -142,7 +144,9 @@ fn replay_contract_success_preserves_merge_parent_order() {
     assert_eq!(
         runtime
             .replay()
-            .canonical_commit_envelope(merge.commit.commit_id)
+            .canonical_commit_envelope(execution, merge.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .unwrap()
             .merge_base_commits,
         vec![main.commit.commit_id]

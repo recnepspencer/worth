@@ -42,6 +42,9 @@ impl CommitAncestryClassification {
 }
 
 impl CommitAncestryInspection {
+    pub(crate) fn commit_ids(&self) -> &BTreeSet<CommitId> {
+        &self.reachable_commits
+    }
     pub(crate) fn authoring_branches(&self) -> &BTreeSet<crate::history::data::BranchId> {
         &self.authoring_branches
     }

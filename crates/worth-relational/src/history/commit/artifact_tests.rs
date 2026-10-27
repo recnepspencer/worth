@@ -32,7 +32,9 @@ fn fresh_scalar_commit_seals_exact_native_lifecycle_and_field_touches() {
         };
         let envelope = runtime
             .replay()
-            .canonical_commit_envelope(committed.commit.commit_id)
+            .canonical_commit_envelope(execution, committed.commit.commit_id)
+            .unwrap()
+            .map(|envelope| envelope.as_ref().clone())
             .expect("performed commit has sealed envelope");
         let touches = envelope
             .descriptive_touches()
@@ -79,7 +81,9 @@ fn installed_field_index_commit_touch_carries_native_old_and_new_keys() {
     let committed = create_entity_outcome(execution, &runtime, "indexed-value");
     let envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("performed indexed commit has envelope");
     let touches = envelope
         .descriptive_touches()
@@ -123,8 +127,8 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .relink_preencoded_recovery(&envelope, Some(&root), None)
         .unwrap();
     assert!(Arc::ptr_eq(
-        preencoded.canonical_payload.as_ref().unwrap(),
-        relinked.canonical_payload.as_ref().unwrap()
+        &preencoded.envelope_residency().resident_payload().unwrap(),
+        &relinked.envelope_residency().resident_payload().unwrap()
     ));
     assert_eq!(relinked.identity(), legacy.identity());
     assert_eq!(relinked.parentage(), legacy.parentage());
@@ -158,7 +162,9 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
     let committed = create_entity_outcome(execution, &runtime, "artifact-allocation-basis");
     let mut envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
         .clone();
     let baseline_artifact = RelationalCommitArtifact::from_envelope(Arc::new(envelope.clone()))
@@ -254,7 +260,9 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
     let committed = create_entity_outcome(execution, &runtime, "derived-index-allocation-basis");
     let mut envelope = runtime
         .replay()
-        .canonical_commit_envelope(committed.commit.commit_id)
+        .canonical_commit_envelope(execution, committed.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("the performed commit owns one canonical envelope")
         .clone();
     envelope.derived_index_artifacts = DerivedIndexArtifacts::default();

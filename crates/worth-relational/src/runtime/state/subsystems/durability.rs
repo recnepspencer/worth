@@ -136,26 +136,16 @@ impl DurabilitySubsystem {
             .collect()
     }
 
-    pub(crate) fn demand_log_after(
+    pub(crate) fn log_residencies_after(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         after: Option<crate::publication::patch::data::PatchStreamPosition>,
-    ) -> Result<Vec<PositionedCanonicalCommit>, crate::durability::data::RelationalRecoveryStop>
-    {
-        let selected = self
-            .state
+    ) -> Vec<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.state
             .read()
             .log
             .iter()
             .filter(|entry| after.is_none_or(|position| entry.1 > position))
             .map(|entry| entry.2.clone())
-            .collect::<Vec<_>>();
-        selected
-            .into_iter()
-            .map(|cell| {
-                cell.demand_positioned(execution, 1 << 30)
-                    .map_err(Into::into)
-            })
             .collect()
     }
 

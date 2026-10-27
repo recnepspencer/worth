@@ -69,8 +69,7 @@ impl RelationalCommitCatalog {
             "prepared catalog artifact was validated as unique"
         );
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries
-            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
+        self.entries.insert(commit_id, Arc::new(artifact));
     }
 
     pub(crate) fn install_prepared_recovery(&mut self, artifact: RelationalCommitArtifact) {
@@ -79,14 +78,14 @@ impl RelationalCommitCatalog {
             .resident_envelope()
             .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope))));
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries
-            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
+        self.entries.insert(commit_id, Arc::new(artifact));
     }
 
     pub(crate) fn synchronize_recovered_envelope(
         &mut self,
-        envelope: Arc<crate::history::data::CanonicalCommitEnvelope>,
+        positioned: &crate::history::data::PositionedCanonicalCommit,
     ) -> Result<(), RelationalCommitArtifactDenial> {
+        let envelope = positioned.canonical_arc().clone();
         let commit_id = envelope.commit.commit_id;
         if self
             .entries
@@ -103,8 +102,7 @@ impl RelationalCommitCatalog {
             None => RelationalCommitArtifact::from_envelope(envelope)?,
         };
         self.materializations.fetch_add(1, Ordering::Relaxed);
-        self.entries
-            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
+        self.entries.insert(commit_id, Arc::new(artifact));
         Ok(())
     }
 
@@ -117,8 +115,7 @@ impl RelationalCommitCatalog {
             return Err(RelationalCommitCatalogAppendDenial::DuplicateCommit);
         }
         let identity = artifact.identity().clone();
-        self.entries
-            .insert(commit_id, Arc::new(artifact.release_journal_payload()));
+        self.entries.insert(commit_id, Arc::new(artifact));
         Ok(RelationalCommitCatalogEntry { identity })
     }
 

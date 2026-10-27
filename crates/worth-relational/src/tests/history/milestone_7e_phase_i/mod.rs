@@ -225,12 +225,13 @@ fn retained_merge_strategy_witness_survives_prepared_execution_publication_and_r
     let outcome = runtime
         .execute_prepared_merge(execution, prepared)
         .expect("executed merge");
-    let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let live_authority =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         durable_runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher)
     });
     let recovered_authority =
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id);
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id);
 
     assert_eq!(live_witness, outcome.execution_summary.strategy_witness);
     assert_eq!(

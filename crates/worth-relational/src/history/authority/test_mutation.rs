@@ -65,13 +65,13 @@ impl<'runtime> HistoryAuthority<'runtime> {
         };
         let mut replacement = envelope.as_ref().clone();
         mutate(&mut replacement.patch);
-        let digest = replacement.authoritative_payload_digest().unwrap();
+        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
                     std::sync::Arc::new(replacement),
-                    digest,
+                    payload,
                 )),
             )
         });
@@ -100,13 +100,13 @@ impl<'runtime> HistoryAuthority<'runtime> {
                 crate::indexes::data::DerivedIndexArtifacts::new(generations);
         }
         mutate(&mut replacement);
-        let digest = replacement.authoritative_payload_digest().unwrap();
+        let payload = std::sync::Arc::from(replacement.encode_authoritative_payload().unwrap());
         self.runtime.history.with_ledger_mut(|ledger| {
             ledger.commit_envelopes.insert(
                 commit_id,
                 std::sync::Arc::new(crate::history::RelationalCommitEnvelopeResidency::resident(
                     std::sync::Arc::new(replacement),
-                    digest,
+                    payload,
                 )),
             )
         });

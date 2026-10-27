@@ -4,6 +4,7 @@ use worth_relational::facade::mvcc::RelationalBranchObservation;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 fn mint(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     observation: &RelationalBranchObservation,
     commit_id: CommitId,
@@ -12,7 +13,7 @@ fn mint(
         .select_reachable_commit(observation, commit_id)
         .into_outcome()
         .ok()?;
-    Some(runtime.mint_change_receipt(selected, None))
+    Some(runtime.mint_change_receipt(execution, selected, None).ok()?)
 }
 
 fn main() {
