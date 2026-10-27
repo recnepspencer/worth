@@ -40,6 +40,9 @@ pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) execution_posture: WorthQueryInstalledApplicationOperationExecutionPosture,
     pub(super) external_effect: InstalledExternalEffectContract,
     pub(super) aftermath: Option<WorthQueryInstalledAftermathContract>,
+    pub(super) source_inspection_disclosures: Vec<
+        worth_query_declaration::facade::application_operation::DeclaredApplicationSourceDisclosure,
+    >,
     pub(super) overlap_index: WorthQueryOperationReadTouchOverlapIndex,
 }
 
@@ -70,6 +73,12 @@ impl WorthQueryCompiledApplicationOperationContracts {
 
     pub const fn aftermath(&self) -> Option<&WorthQueryInstalledAftermathContract> {
         self.aftermath.as_ref()
+    }
+
+    /// Explicit source associations whose original scope must survive admission.
+    /// These descriptions grant no inspection or disclosure permission.
+    pub fn source_inspection_disclosures(&self) -> &[worth_query_declaration::facade::application_operation::DeclaredApplicationSourceDisclosure]{
+        &self.source_inspection_disclosures
     }
 
     pub const fn authorization(&self) -> WorthQueryInstalledApplicationOperationAuthorization {

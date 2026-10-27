@@ -22,6 +22,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::InstalledCorrectionBinding;
 
 pub(super) fn capture<Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     original: &Binding::Input,
 ) -> Result<Option<Arc<OriginalCorrectionDisclosure>>, Denial>
@@ -44,6 +45,7 @@ where
     Schema::visit_correction(
         TypeId::of::<Binding>(),
         Capture {
+            execution,
             runtime,
             original,
             association,
@@ -52,12 +54,15 @@ where
     .map(|captured| Some(Arc::new(captured)))
 }
 
-struct Capture<'a, Schema> {
+struct Capture<'a, 'execution, 'authority, Schema> {
+    execution: &'a worth_execution::ExecutionRequest<'execution, 'authority>,
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     original: &'a dyn Any,
     association: Arc<InstalledCorrectionBinding>,
 }
-impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema> for Capture<'_, Schema> {
+impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema>
+    for Capture<'_, '_, '_, Schema>
+{
     type Output = Result<OriginalCorrectionDisclosure, Denial>;
     fn unavailable(self) -> Self::Output {
         Err(denied("declared correction dispatch is unavailable"))
@@ -81,25 +86,23 @@ impl<Schema: ApplicationSchema> ApplicationCorrectionVisitor<Schema> for Capture
             .original
             .downcast_ref::<<Correction::Source as ApplicationMutationBinding<Schema>>::Input>()
             .ok_or_else(|| denied("original correction input type differs"))?;
-        let binding = self
-            .runtime
-            .installed_schema()
-            .installed_query_binding::<Correction::Disclosure>()
-            .map_err(|_| denied("declared disclosure query is unavailable"))?;
-        let parameters = Correction::disclosure_parameters(original)
-            .map_err(|_| denied("original disclosure parameter projection was refused"))?;
-        let parameters =
-            worth_query_admission::facade::application_query::admit_application_query_parameters(
-                binding.query(),
-                parameters,
-            )
-            .map_err(|_| {
-                denied("original disclosure parameters do not match the installed query")
-            })?;
+        let disclosure =
+            crate::domain_computation::primary_graph::source_disclosure::capture_parameters::<
+                Schema,
+                Correction::Disclosure,
+            >(
+                self.execution,
+                self.runtime,
+                std::mem::size_of::<OriginalCorrectionDisclosure>()
+                    + 2 * std::mem::size_of::<usize>(),
+                || {
+                    Correction::disclosure_parameters(original)
+                        .map_err(|_| denied("original disclosure parameter projection was refused"))
+                },
+            )?;
         Ok(OriginalCorrectionDisclosure::from_original(
             self.association,
-            binding.query().identity().clone(),
-            parameters,
+            disclosure,
         ))
     }
 }

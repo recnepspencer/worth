@@ -77,7 +77,7 @@ fn package_root_frames_are_deterministic_and_reenter_fresh_validation() {
 }
 
 #[test]
-fn version_seventeen_package_root_frames_match_and_decode_the_frozen_vectors() {
+fn version_eighteen_package_root_frames_match_and_decode_the_frozen_vectors() {
     for (version, originals) in [
         (9_u16, VERSION_NINE_PACKAGE_ROOT_FRAMES_HEX),
         (6_u16, VERSION_SIX_PACKAGE_ROOT_FRAMES_HEX),
@@ -85,6 +85,7 @@ fn version_seventeen_package_root_frames_match_and_decode_the_frozen_vectors() {
         (13_u16, VERSION_THIRTEEN_PACKAGE_ROOT_FRAMES_HEX),
         (14_u16, VERSION_FOURTEEN_PACKAGE_ROOT_FRAMES_HEX),
         (16_u16, VERSION_SIXTEEN_PACKAGE_ROOT_FRAMES_HEX),
+        (17_u16, VERSION_SEVENTEEN_PACKAGE_ROOT_FRAMES_HEX),
     ] {
         for original in originals.split('|') {
             let bytes = decode_hex(original);
@@ -110,9 +111,9 @@ fn version_seventeen_package_root_frames_match_and_decode_the_frozen_vectors() {
         })
         .collect::<Vec<_>>()
         .join("|");
-    assert_eq!(encoded, VERSION_SEVENTEEN_PACKAGE_ROOT_FRAMES_HEX);
+    assert_eq!(encoded, VERSION_EIGHTEEN_PACKAGE_ROOT_FRAMES_HEX);
 
-    let independent_frames = VERSION_SEVENTEEN_PACKAGE_ROOT_FRAMES_HEX
+    let independent_frames = VERSION_EIGHTEEN_PACKAGE_ROOT_FRAMES_HEX
         .split('|')
         .map(decode_hex)
         .collect::<Vec<_>>();
