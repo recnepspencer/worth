@@ -162,7 +162,7 @@ mod tests {
             let performed = PerformedDenial::from(refusal);
             assert!(!performed.execution_stop(), "{performed:?}");
         }
-        assert!(!PerformedDenial::MissingConnection.execution_stop());
+        assert!(!PerformedDenial::UndeclaredOutputRoot.execution_stop());
         assert!(!PerformedDenial::ForeignProgram.execution_stop());
     }
 }

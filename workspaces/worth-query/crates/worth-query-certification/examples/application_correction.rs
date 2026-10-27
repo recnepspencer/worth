@@ -34,9 +34,6 @@ mod document_retention_model {
         pub(crate) mod world_resources;
     }
 }
-#[allow(dead_code)]
-#[path = "../tests/support/execution_policy.rs"]
-mod test_request_policy;
 use application_correction_support::publication_courts::*;
 use application_correction_support::{authentication::*, edit::Value, host, query::Row};
 use std::num::NonZeroUsize;

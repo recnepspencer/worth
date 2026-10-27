@@ -2,6 +2,7 @@
 use super::super::fixture::installed_authorization_world;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::WorthQueryApplicationBasisReleaseOutcome;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[test]
 fn shared_basis_keeps_one_exact_native_owner_until_last_explicit_release() {

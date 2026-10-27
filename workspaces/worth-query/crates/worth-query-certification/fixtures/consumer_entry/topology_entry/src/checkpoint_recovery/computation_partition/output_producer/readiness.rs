@@ -21,7 +21,7 @@ pub(super) struct RegionOutputReadiness<Schema, const REUSE: bool = false, const
     PhantomData<fn() -> Schema>,
 );
 
-impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+impl<Schema: TopologyModelBinding, const REUSE: bool, const MODE: u8>
     RegionOutputReadiness<Schema, REUSE, MODE>
 {
     fn conditional_binding() -> domain::WorthQueryApplicationConditionalOperationBinding<
@@ -39,7 +39,7 @@ impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
     }
 }
 
-impl<Schema: TopologySchemaBinding, const REUSE: bool, const MODE: u8>
+impl<Schema: TopologyModelBinding, const REUSE: bool, const MODE: u8>
     application_contribution::WorthQueryApplicationConditionalBinding<Schema>
     for RegionOutputReadiness<Schema, REUSE, MODE>
 {

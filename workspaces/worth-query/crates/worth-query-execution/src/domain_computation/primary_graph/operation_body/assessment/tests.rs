@@ -9,7 +9,6 @@ use crate::domain_computation::primary_graph::{
     tests::fixture::installed_authorization_world,
     WorthQueryExecutionPlacementForTest as Placement,
 };
-use std::num::NonZeroUsize;
 use worth_foundational::ExecutionBudget;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 

@@ -6,7 +6,6 @@ use super::{
     host,
 };
 use worth_query_host::facade::{
-    application_entry::*,
     primary_graph::*,
     product::{
         WorthQueryApplicationProductBranchCleanupDenial, WorthQueryProductBranchOwnerCleanupDenial,

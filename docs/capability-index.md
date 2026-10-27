@@ -477,8 +477,11 @@ For installation and checkpoint-transition work inside an already admitted origi
 execution request, use `host::application_contribution::with_bootstrap_advancement_from_request`.
 Its bootstrap phase borrows the same cancellation/deadline and cumulative native work.
 Call `host::application_installation::in_memory_rostered_program_from_checkpoint_with_transition_in_advancement`
-with that phase; capture funding derives from its request. Transition resources
-can narrow capture alone with `WorthQueryCheckpointTransitionResources::with_capture_memory_limit(bytes)`;
+with that phase and an explicit capture policy from
+`phase.execution_request().allocation_policy()` or a descendant of that funding lease.
+An unrelated lease refuses before effects with
+`ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. Transition resources
+can further narrow capture alone with `WorthQueryCheckpointTransitionResources::with_capture_memory_limit(bytes)`;
 the runtime derives a descendant lease, preserving original controls and preparation funding.
 The capture-bearing path
 requires leased backing and refuses unsupported serial backing with the existing

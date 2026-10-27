@@ -162,7 +162,7 @@ fn unrelated_partition_selection(population: u64) {
         generation: revised_generation,
     };
 
-    let (prior, _work) = lineage
+    let (prior, work) = lineage
         .matching_output_in_partition_budgeted(
             &source,
             revised_coordinate,

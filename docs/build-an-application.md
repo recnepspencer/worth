@@ -1871,11 +1871,11 @@ do not renew its allowance. Capture is capped by the caller-named policy, which 
 be `Execution(&lease)` for the funding lease itself or a lease descending from it,
 for example a child with its own smaller memory limit; there is no default and no
 silent inheritance. Entry checks that descent before any work or charge: a sibling,
-a parent, another lineage's lease or `SystemAllocation` refuses with
+a parent or another lineage's lease refuses with
 `ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
 out after the native ACK returns the acknowledged capsule with the child's own
 refusal (`Policy { ancestor: 0 }`) for repair.
-A bare serial backing has no admitted capture allocation policy and refuses before
+`SystemAllocation` and bare serial backing have no admitted capture allocation policy and refuse before
 effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
 to SystemAllocation. The ordinary convenience constructor retains its explicit
 owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
@@ -1900,7 +1900,7 @@ caller lease that funds the call or one of its ancestors, and any other lease
 refuses `UnrelatedNestedLease`. The runnable
 [original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
-[deferred repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+[capture repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
 retains the native capsule across stopped attempts.
 
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
@@ -1943,9 +1943,9 @@ subsequently overwritten payload, affected custom invariants, changed ordering
 keys, join consequences and multiple current branch heads remain refused.
 Codec cutover cannot append authored rows. Unaffected surviving relations are
 rejudged by the target program's actual installed rules before publication.
-Normal transition capture and the existing deferred/acknowledged recovery capsule
+Transition capture and the acknowledged recovery capsule
 retain the same funded historical output roster. Capture refusal returns that
-same unpublished capsule for funded repair; repair does not reauthor or copy
+same acknowledged capsule for funded repair; repair does not reauthor or copy
 predecessor currentness.
 
 Historical roots and the original checkpoint keep their old meaning. Demand

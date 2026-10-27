@@ -30,6 +30,7 @@ fn companion_post_ack_capture_refusal_repairs_same_capsule_with_historical_roste
             installation::WorthQueryCheckpointTransitionResources::bounded(65_536, 32, 65_536)
                 .unwrap()
                 .with_capture_memory_limit(0),
+            phase.execution_request().allocation_policy(),
             |_, _| {
                 callbacks += 1;
                 Ok(())
