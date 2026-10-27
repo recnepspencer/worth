@@ -13,9 +13,9 @@ use worth_store_relational::{
 
 use super::batches;
 use super::crash_oracle::{assert_continues, assert_recovered, InFlight};
-use super::durable_run::{apply, open, served_schema};
-use super::media_faults::{self, Fault};
-use super::prepared_home::PreparedHome;
+use super::durable_run::{apply, open};
+use super::media_faults::{self, FaultedMedia};
+use super::media_sweep::prepared_sweep_home::PreparedSweepHome;
 use super::selected_checkpoint;
 use super::workload::{self, Script, Step};
 
@@ -54,22 +54,18 @@ pub(crate) enum Ended {
     },
 }
 
-/// Run `target` once on a home holding `prefix`, with `lead` replayed after
-/// the faulted open and `fault` armed just before the target.
+/// Run `target` once on a restored prefix, with `lead` replayed after
+/// the faulted open and the admitted schedule armed just before the target.
 pub(crate) fn run_case(
     script: &Script,
-    prefix: &[Step],
+    prepared: &PreparedSweepHome,
     lead: &[Step],
     target: Target,
-    fault: Fault,
+    media: FaultedMedia,
     execution: &ExecutionRequest<'_, '_>,
     case: &str,
 ) -> Ended {
-    let Some(media) = media_faults::FaultedMedia::admit(&[fault]) else {
-        return Ended::Skipped;
-    };
-    let prepared = PreparedHome::prepare(prefix, execution);
-    let (home, activations) = media.open(prepared.location(), served_schema(prefix), execution);
+    let (home, activations) = media.open(prepared.location(), prepared.schema(), execution);
     apply(&home, execution, lead);
     let before = workload::artifacts_of(home.runtime());
     let mut acknowledged_transitions = super::branch_lifecycle::artifacts_of_home(&home);
