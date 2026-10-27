@@ -190,11 +190,11 @@ fn check(case: usize) {
                     panic!("native snapshot loss must reach reconstruction: {actual:?}");
                 };
                 assert_eq!(refused, root.entity_id());
-                // A one-predicate read selects its root without an index, so
-                // the lost snapshot is the query's projection, not a predicate.
+                // Snapshot admission belongs to the predicate even when its
+                // scoped root needs no equality index.
                 assert_eq!(
                     denial.kind(),
-                    WorthQueryApplicationOneShotDenialKind::ProjectionUnavailable
+                    WorthQueryApplicationOneShotDenialKind::PredicateIndexUnavailable
                 );
                 assert_eq!(denial.subject(), second_query.name());
             }

@@ -3,28 +3,6 @@ use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-/// Opens an exact snapshot of `basis` under the runtime's own custody, reads
-/// through the production publication read, and releases the snapshot.
-fn read_at_basis(
-    provider: &WorthQueryPrimaryGraphProvider,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    pending: &WorthQueryPendingAftermathCausality,
-) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial> {
-    provider.graph.with_runtime_mut(execution, |runtime| {
-        let snapshot =
-            crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
-                runtime, basis,
-            )
-            .expect("the published basis admits an exact snapshot");
-        let resolution = provider.resolve_aftermath_causality_in_snapshot(
-            execution, runtime, basis, &snapshot, pending, None,
-        );
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        resolution
-    })
-}
-
 #[test]
 fn aftermath_resolution_preserves_stops_at_every_consult() {
     let world = correction_source::install();

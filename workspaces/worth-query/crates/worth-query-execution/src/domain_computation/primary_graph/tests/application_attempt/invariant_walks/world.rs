@@ -143,12 +143,15 @@ pub(super) fn node_key(key: u64) -> WorthQueryApplicationEntityKey<WalkSchema, N
 }
 
 impl World {
-    pub(super) fn checkpoint(&self) -> Vec<u8> {
-        self.application.with_host_advancement(|phase| {
-            self.application.capture_application_checkpoint(&phase,
-                crate::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-            ).unwrap()
-        }).unwrap().decode().unwrap().native.bytes().to_vec()
+    pub(super) fn checkpoint(&self) -> crate::published_checkpoint::PublishedCheckpoint {
+        self.application
+            .with_host_advancement(|phase| {
+                self.application.primary_provider.graph.with_runtime(
+                    &phase.borrowed_request_for_test(),
+                    crate::published_checkpoint::capture,
+                )
+            })
+            .unwrap()
     }
 
     pub(super) fn edges(&self) -> Vec<(u64, u64)> {

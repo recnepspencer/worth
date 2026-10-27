@@ -16,8 +16,8 @@ use worth_query_admission::facade::authenticated_principal::{
 
 struct Case {
     denial: WorthQueryApplicationCommitDenial,
-    before: Vec<u8>,
-    after: Vec<u8>,
+    before: crate::published_checkpoint::PublishedCheckpoint,
+    after: crate::published_checkpoint::PublishedCheckpoint,
     visits: Vec<u64>,
     reads: Vec<rule::ReadSample>,
 }
@@ -29,12 +29,16 @@ impl Drop for RestorePlacement {
     }
 }
 
-fn checkpoint(world: &world::World) -> Vec<u8> {
-    world.application.with_host_advancement(|phase| {
-        world.application.capture_application_checkpoint(
-            &phase, crate::facade::application_installation::WorthQueryCheckpointCapturePolicy::SystemAllocation,
-        ).unwrap()
-    }).unwrap().decode().unwrap().native.bytes().to_vec()
+fn checkpoint(world: &world::World) -> crate::published_checkpoint::PublishedCheckpoint {
+    world
+        .application
+        .with_host_advancement(|phase| {
+            world.application.primary_provider.graph.with_runtime(
+                &phase.borrowed_request_for_test(),
+                crate::published_checkpoint::capture,
+            )
+        })
+        .unwrap()
 }
 
 fn run(status: String, cancel: bool) -> Case {
@@ -115,7 +119,7 @@ fn typed_refusal_round_trips_to_the_original_publication_caller() {
 }
 
 #[test]
-fn refused_candidate_keeps_native_checkpoint_bytes_equal() {
+fn refused_candidate_preserves_native_published_members_and_root() {
     let case = run("closed".into(), false);
     assert_eq!(case.before, case.after);
 }

@@ -73,9 +73,20 @@ fn unrelated_lease_through_public_commit() {
                 *captured.lock().unwrap() = Some(denial);
                 Ok::<_, MapKernelFailure<()>>(((), ()))
             });
-            // The kernel observes and handles the refusal as data; it does not
-            // propagate a stop into the surrounding scan.
-            assert!(matches!(outcome, ScanOutcome::Complete { .. }));
+            // A typed inner refusal cannot acknowledge the original request's
+            // stop at handoff. Preserve both the outer stop and inner cause.
+            assert!(matches!(
+                outcome,
+                ScanOutcome::Stopped {
+                    reason: worth_execution::MapStop::Failure {
+                        cause: MapKernelFailure::Stop(
+                            worth_execution::MapKernelStop::NestedStopped
+                        ),
+                        ..
+                    },
+                    ..
+                }
+            ));
             let denial = captured
                 .into_inner()
                 .unwrap()

@@ -35,3 +35,7 @@ mod process_deadline;
 
 #[cfg(test)]
 mod test_read_stops;
+
+#[cfg(test)]
+#[path = "test_support/published_checkpoint.rs"]
+mod published_checkpoint;
