@@ -247,6 +247,25 @@ pub(super) fn limits_with_room(
     )
 }
 
+/// Explicit history byte room for a bounded large-world courtroom. Ordinary
+/// small fixtures retain their existing fixed metadata ceiling.
+pub(super) fn limits_with_history_room(
+    retained_composite_commits: u64,
+    active_observations: u64,
+    unique_exact_component_pins: u64,
+    invalidation: worth_query_host::facade::runtime::WorthQueryInvalidationResources,
+    history_metadata_bytes: u64,
+) -> WorthQueryInMemoryApplicationLimits {
+    limits_with_history_and_policy(
+        retained_composite_commits,
+        active_observations,
+        unique_exact_component_pins,
+        invalidation,
+        history_metadata_bytes,
+        execution_policy::CHECKPOINT_EXECUTION_POLICY,
+    )
+}
+
 pub(super) fn limits_with_policy(
     retained_composite_commits: u64,
     active_observations: u64,
