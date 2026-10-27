@@ -46,11 +46,6 @@ impl DemandRecords {
         self.4.get()
     }
 
-    #[cfg(test)]
-    pub(super) fn note_cleanup_entry(&self) {
-        self.5.set(self.5.get() + 1);
-    }
-
     pub(super) fn retain(
         &mut self,
         mut predicate: impl FnMut(&WorthQueryOutputDemandKey, &mut DemandRecord) -> bool,

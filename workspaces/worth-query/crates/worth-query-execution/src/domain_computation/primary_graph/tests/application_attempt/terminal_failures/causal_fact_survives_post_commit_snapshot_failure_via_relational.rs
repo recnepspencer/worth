@@ -28,8 +28,6 @@ fn causal_fact_survives_post_commit_snapshot_failure_via_relational_owner_read()
     let reread = world
         .application
         .with_host_advancement(|phase| {
-            let execution = phase.borrowed_request_for_test();
-            let provider = &world.application.primary_provider;
             let selected = world.selected_product(&phase.test_host_request());
             let provider = &world.application.primary_provider;
             let request = phase.borrowed_request_for_test();
