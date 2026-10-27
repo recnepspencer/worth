@@ -808,10 +808,12 @@ worth-query-installation/src/application_query/
   history/                                                  N schema/disclosure binding
 worth-query-admission/src/domain_computation/
   basis_lifecycle/                                          E original scoped inspection
-worth-query-execution/src/domain_computation/primary_graph/
-  async_resource/                                           M live resource orchestration
-  causal_inspection/                                        M application evidence binding
-  application_query/history/                                N native page adapter
+worth-query-execution/src/domain_computation/
+  evidence_identity/                                        M shared diagnostic identity protocol
+  primary_graph/
+    async_resource/                                         M live resource orchestration
+    causal_inspection/                                      M application evidence binding
+    application_query/history/                              N native page adapter
 worth-query-publication/src/application_entry/
   resource/                                                 N governed retained requests
   inspection/                                               N receipt-rooted inspection
@@ -838,6 +840,9 @@ and orchestration down to the owners above; update existing internal callers and
 remove the displaced implementation in the same phase. Keep a facade-only export
 only where the existing supported audience requires the same contract. Do not
 duplicate the implementation or introduce a reverse dependency to avoid this move.
+The shared Query diagnostic identity protocol is a peer of the execution owners;
+its scopes span workflows, mutations, inspection and consumer evidence. Diagnostic
+encoding preserves scope and scheme but grants no inspection or execution authority.
 Runtime observation/cursor/resource families enter as children of their named
 owner; no flat integration bag or shared cross-runtime state machine is allowed.
 

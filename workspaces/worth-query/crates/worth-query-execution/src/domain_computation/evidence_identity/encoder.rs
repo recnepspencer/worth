@@ -10,7 +10,7 @@ use worth_foundational::facade::{
 };
 use worth_runtime_bridge::facade::{BridgeIdentityEvidence, BridgeTruthBoundaryBridgedIdentity};
 
-pub(crate) fn worth_query_evidence_identity(
+pub fn worth_query_evidence_identity(
     scope: WorthQueryEvidenceScope,
 ) -> WorthQueryEvidenceIdentityEncoder {
     WorthQueryEvidenceIdentityEncoder::new(scope, WorthQueryEvidenceIdentityScheme::V1)
@@ -24,7 +24,7 @@ pub(crate) fn worth_query_evidence_identity_with_scheme(
     WorthQueryEvidenceIdentityEncoder::new(scope, scheme)
 }
 
-pub(crate) struct WorthQueryEvidenceIdentityEncoder {
+pub struct WorthQueryEvidenceIdentityEncoder {
     scope: WorthQueryEvidenceScope,
     scheme: WorthQueryEvidenceIdentityScheme,
     entries: Vec<CanonicalBasisEntry>,
@@ -54,16 +54,12 @@ impl WorthQueryEvidenceIdentityEncoder {
         }
     }
 
-    pub(crate) fn field_shape(
-        mut self,
-        tag: WorthQueryEvidenceTag,
-        value: impl AsRef<str>,
-    ) -> Self {
+    pub fn field_shape(mut self, tag: WorthQueryEvidenceTag, value: impl AsRef<str>) -> Self {
         self.push_text(CanonicalBasisEntryKind::Shape, tag, value);
         self
     }
 
-    pub(crate) fn field_evidence_identity(
+    pub fn field_evidence_identity(
         mut self,
         tag: WorthQueryEvidenceTag,
         value: &WorthQueryEvidenceIdentity,
@@ -72,11 +68,7 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_digest(
-        mut self,
-        tag: WorthQueryEvidenceTag,
-        value: &CanonicalDigestId,
-    ) -> Self {
+    pub fn field_digest(mut self, tag: WorthQueryEvidenceTag, value: &CanonicalDigestId) -> Self {
         self.entries.push(digest_entry(
             field_locus(tag),
             CanonicalBasisEntryKind::Identity,
@@ -85,7 +77,7 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_bridge_authority_identity<Kind>(
+    pub fn field_bridge_authority_identity<Kind>(
         mut self,
         tag: WorthQueryEvidenceTag,
         value: &BridgeTruthBoundaryBridgedIdentity<Arc<str>, Kind>,
@@ -101,7 +93,7 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_bridge_retained_evidence_identity(
+    pub fn field_bridge_retained_evidence_identity(
         mut self,
         tag: WorthQueryEvidenceTag,
         value: &BridgeIdentityEvidence,
@@ -114,16 +106,12 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_value(
-        mut self,
-        tag: WorthQueryEvidenceTag,
-        value: impl AsRef<str>,
-    ) -> Self {
+    pub fn field_value(mut self, tag: WorthQueryEvidenceTag, value: impl AsRef<str>) -> Self {
         self.push_text(CanonicalBasisEntryKind::Value, tag, value);
         self
     }
 
-    pub(crate) fn field_bool(mut self, tag: WorthQueryEvidenceTag, value: bool) -> Self {
+    pub fn field_bool(mut self, tag: WorthQueryEvidenceTag, value: bool) -> Self {
         self.push_text(
             CanonicalBasisEntryKind::Value,
             tag,
@@ -132,12 +120,12 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_usize(mut self, tag: WorthQueryEvidenceTag, value: usize) -> Self {
+    pub fn field_usize(mut self, tag: WorthQueryEvidenceTag, value: usize) -> Self {
         self.push_text(CanonicalBasisEntryKind::Value, tag, value.to_string());
         self
     }
 
-    pub(crate) fn field_evidence_identity_sequence<'a, I>(
+    pub fn field_evidence_identity_sequence<'a, I>(
         mut self,
         tag: WorthQueryEvidenceTag,
         values: I,
@@ -158,11 +146,7 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn field_value_sequence<I, S>(
-        mut self,
-        tag: WorthQueryEvidenceTag,
-        values: I,
-    ) -> Self
+    pub fn field_value_sequence<I, S>(mut self, tag: WorthQueryEvidenceTag, values: I) -> Self
     where
         I: IntoIterator<Item = S>,
         S: AsRef<str>,
@@ -180,13 +164,13 @@ impl WorthQueryEvidenceIdentityEncoder {
         self
     }
 
-    pub(crate) fn optional_shape(self, tag: WorthQueryEvidenceTag, value: Option<&str>) -> Self {
+    pub fn optional_shape(self, tag: WorthQueryEvidenceTag, value: Option<&str>) -> Self {
         match value {
             Some(value) => self.field_shape(tag, value),
             None => self,
         }
     }
-    pub(crate) fn optional_evidence_identity(
+    pub fn optional_evidence_identity(
         self,
         tag: WorthQueryEvidenceTag,
         value: Option<&WorthQueryEvidenceIdentity>,
@@ -197,7 +181,7 @@ impl WorthQueryEvidenceIdentityEncoder {
         }
     }
 
-    pub(crate) fn optional_identity(
+    pub fn optional_identity(
         self,
         tag: WorthQueryEvidenceTag,
         value: Option<impl AsRef<str>>,
@@ -208,14 +192,14 @@ impl WorthQueryEvidenceIdentityEncoder {
         }
     }
 
-    pub(crate) fn optional_value(self, tag: WorthQueryEvidenceTag, value: Option<&str>) -> Self {
+    pub fn optional_value(self, tag: WorthQueryEvidenceTag, value: Option<&str>) -> Self {
         match value {
             Some(value) => self.field_value(tag, value),
             None => self,
         }
     }
 
-    pub(crate) fn seal(self) -> WorthQueryEvidenceIdentity {
+    pub fn seal(self) -> WorthQueryEvidenceIdentity {
         WorthQueryEvidenceIdentity::new(derive_evidence_identity(
             self.scope,
             self.scheme,
