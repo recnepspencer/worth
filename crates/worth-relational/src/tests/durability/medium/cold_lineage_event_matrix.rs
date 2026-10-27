@@ -85,7 +85,7 @@ impl EventDoor {
                     RelationalRecoveryStop::Durability(error) => Execution::StorageUnavailable(error.storage_unavailable.expect("typed lineage export refusal")),
                     other => panic!("funded live capture request: {other:?}"),
                 }),
-            Self::EmbeddedCheckpoint => runtime.durability_authority().native_checkpoint(execution.allocation_policy())
+            Self::EmbeddedCheckpoint => runtime.durability_authority().native_checkpoint(execution, execution.allocation_policy())
                 .map(|checkpoint| checkpoint.bytes().len())
                 .map_err(|denial| match denial {
                     crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) =>

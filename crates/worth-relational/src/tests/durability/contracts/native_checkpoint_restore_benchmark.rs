@@ -72,7 +72,10 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
 
     let native = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut recovered = durable_runtime_with_test_schema();
     let restore_started = Instant::now();

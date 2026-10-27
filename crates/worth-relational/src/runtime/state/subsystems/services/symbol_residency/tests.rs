@@ -113,10 +113,11 @@ fn dictionary() -> (
         .unwrap();
     let outcome = transaction.commit(&execution, &runtime).unwrap();
     release_test_commit_snapshot(&runtime, &outcome);
-    checkpoint_dictionary(&runtime)
+    checkpoint_dictionary(&execution, &runtime)
 }
 
 fn checkpoint_dictionary(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
 ) -> (
     RuntimeSymbolTable,
@@ -126,7 +127,10 @@ fn checkpoint_dictionary(
 ) {
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     #[derive(serde::Deserialize)]
     struct DirectoryInput {

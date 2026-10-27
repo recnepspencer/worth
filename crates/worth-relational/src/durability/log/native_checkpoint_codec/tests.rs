@@ -46,7 +46,10 @@ fn member_directory_preserves_divergent_sibling_roots_and_pinned_reader() {
     assert_eq!(checkpoint.branch_roots.len(), 2);
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let wire: super::checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
@@ -149,7 +152,10 @@ fn current_manifest_deduplicates_equal_region_members_and_round_trips() {
     create_entity(execution, &runtime, "manifest-roundtrip");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
@@ -189,7 +195,10 @@ fn current_directory_rejects_damaged_duplicate_and_missing_members() {
     create_entity(execution, &runtime, "manifest-damage");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     for alteration in 0..4 {
         let mut wire: checkpoint_wire::CheckpointWire<'_> =
@@ -224,7 +233,10 @@ fn native_capture_sections_count_current_directory_values() {
     create_entity(execution, &runtime, "manifest-sections");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let wire: checkpoint_wire::CheckpointWire<'_> =
         rmp_serde::from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap()).unwrap();
@@ -267,7 +279,10 @@ fn native_capture_sections_count_current_directory_values() {
     );
     let repeated = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert_eq!(native, repeated);
     assert_eq!(native.clone().captured_sections(), Some(sections));
@@ -286,7 +301,10 @@ fn chk6_and_retired_inner_partition_grammars_are_refused() {
     create_entity(execution, &runtime, "retired-checkpoint");
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut old = b"WORTH-REL-CHK6\n".to_vec();
     old.extend_from_slice(native.bytes().strip_prefix(CHECKPOINT_MAGIC).unwrap());

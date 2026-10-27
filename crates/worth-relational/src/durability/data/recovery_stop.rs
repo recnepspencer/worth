@@ -57,6 +57,7 @@ impl std::error::Error for RelationalRecoveryStop {}
 impl From<super::RelationalNativeCheckpointCaptureDenial> for RelationalRecoveryStop {
     fn from(denial: super::RelationalNativeCheckpointCaptureDenial) -> Self {
         match denial {
+            super::RelationalNativeCheckpointCaptureDenial::Request(cause) => Self::Request(cause),
             super::RelationalNativeCheckpointCaptureDenial::Durability(error) => error.into(),
             super::RelationalNativeCheckpointCaptureDenial::Allocation(error) => {
                 crate::symbols::data::field_text_recovery_stop(

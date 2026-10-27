@@ -64,7 +64,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         release_test_commit_snapshot(&runtime, &committed);
         let saved = runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap();
         let mut cold = runtime_with_test_schema();
         let receipt = cold
@@ -81,7 +81,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         let (_, installed) = receipt.issue_application_publication_owner();
         let before = cold
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap();
         let basis = test_owner_main_basis(&cold).unwrap();
         let absence = cold
@@ -98,7 +98,7 @@ fn ordinary_deletion_and_producer_retire_never_reopen_a_birth_route_after_restor
         );
         assert_eq!(
             cold.durability_authority()
-                .native_checkpoint(execution.allocation_policy())
+                .native_checkpoint(execution, execution.allocation_policy())
                 .unwrap(),
             before
         );

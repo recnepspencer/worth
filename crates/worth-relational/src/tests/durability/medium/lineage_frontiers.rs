@@ -80,7 +80,7 @@ fn checkpoint_restore_protects_published_lineage_identities_in_each_lane() {
             };
             let native = producer
                 .durability_authority()
-                .native_checkpoint_with_policy(execution.allocation_policy(), placement)
+                .native_checkpoint_with_policy(execution, execution.allocation_policy(), placement)
                 .unwrap();
             attached_test_medium(&producer).file_checkpoint(native);
             medium_recovery_plan(
@@ -153,6 +153,7 @@ fn inflight_tail_replay_resumes_after_the_largest_durable_lineage_values() {
     let native = producer
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],

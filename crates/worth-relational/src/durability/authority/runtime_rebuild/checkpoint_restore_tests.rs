@@ -40,12 +40,18 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     let entity = create_entity(execution, &source, "work-seed");
     let small = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     create_entity_in_partition(execution, &source, "work-secondary", PartitionId(41));
     let grown = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(
         grown.captured_sections().unwrap().partition_mirror
@@ -59,7 +65,10 @@ fn native_restore_work_counts_revised_history_sibling_roots_and_partition_images
     release_test_commit_snapshot(&source, &sibling_commit);
     let native = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     assert!(
         native.captured_sections().unwrap().envelopes

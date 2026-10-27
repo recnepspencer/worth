@@ -25,6 +25,7 @@ fn forged_cross_region_kind_commitment_is_refused_before_member_reads() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],

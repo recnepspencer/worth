@@ -9,12 +9,14 @@ use crate::durability::data::{DurabilityError, DurableCheckpoint};
 impl<'runtime> DurabilityAuthority<'runtime> {
     pub fn native_checkpoint(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::durability::data::RelationalNativeCheckpoint,
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
         self.native_checkpoint_with_policy(
+            execution,
             policy,
             crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
         )
@@ -22,6 +24,7 @@ impl<'runtime> DurabilityAuthority<'runtime> {
 
     pub fn native_checkpoint_with_policy(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
         artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
     ) -> Result<
@@ -29,7 +32,10 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
         policy.check_live()?;
+        crate::execution::check_request(execution)
+            .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
         let captured = self.capture_checkpoint_basis()?.build_native_capture(
+            execution,
             policy,
             self.runtime.durability.cold_source(),
             &artifact_policy,

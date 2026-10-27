@@ -89,6 +89,15 @@ impl RelationalStoreHome {
     ) -> Result<Self, Refusal> {
         let serving = Arc::new(serving);
         let cold_source = Arc::new(crate::cold_source::StoreColdSource::new(serving.clone()));
+        Self::admit_with_source(serving, cold_source, builder, execution)
+    }
+
+    fn admit_with_source(
+        serving: Arc<ServingPhysicalRuntime>,
+        cold_source: Arc<crate::cold_source::StoreColdSource>,
+        builder: worth_relational::facade::runtime::RelationalRuntimeBuilder,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, Refusal> {
         let medium = StoreJournalMedium::new(
             Arc::clone(&serving),
             physical_store::placement(),

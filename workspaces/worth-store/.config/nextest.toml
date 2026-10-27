@@ -66,6 +66,33 @@ slow-timeout = { period = "60s", terminate-after = 17 }
 filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_checkpoint_replacement_recovers)'
 slow-timeout = { period = "60s", terminate-after = 34 }
 
+# The first checkpoint adds 472 admitted cuts (236 per seed; 576 scheduled,
+# 104 directives inapplicable to their media role). Preserve the reference
+# 176-cut matrix's 300 s/default and 600 s/CI allowance: 472/176 * 300 =
+# 804.55 s and 472/176 * 600 = 1,609.09 s, rounded up to 14 / 27 minutes.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+slow-timeout = { period = "60s", terminate-after = 14 }
+
+[[profile.ci.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_the_first_checkpoint_recovers)'
+slow-timeout = { period = "60s", terminate-after = 27 }
+
+# Cold-region setup and recovery dominate its 12 admitted cuts (24 scheduled).
+# Nextest qualification: 71.072 s = 5.923 s/cut; the slower libtest diagnostic
+# was 248.755 s = 20.730 s/cut. Preserve the observed upper setup cost rather
+# than scale from the commit matrix: 12 * max(5.923, 20.730) * 2.5 = 621.9 s,
+# rounded up to 11 minutes/default and doubled to 22 minutes/CI. This leaves
+# 89.2% / 94.6% unused at the nextest timing, and 62.3% / 81.2% at the slower
+# diagnostic. No cut or per-operation deadline is removed or relaxed.
+[[profile.default.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
+slow-timeout = { period = "60s", terminate-after = 11 }
+
+[[profile.ci.overrides]]
+filter = 'binary_id(=worth-store-relational::relational_home) & test(=media_sweep::every_media_operation_of_a_cold_region_load_recovers)'
+slow-timeout = { period = "60s", terminate-after = 22 }
+
 # This test runs archive, deletion-request and delete matrices under one timer:
 # 3 * 176 = 528 admitted cuts. Preserve the same allowance per cut, rather
 # than giving their combined work one ordinary case's guard. The loaded

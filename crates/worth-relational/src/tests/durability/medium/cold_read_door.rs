@@ -146,7 +146,7 @@ impl ReadDoor {
                     RelationalRecoveryStop::Durability(error) => RelationalExecutionDenialCause::StorageUnavailable(error.storage_unavailable.expect("cold memory-image refusal remains typed")),
                     other => panic!("funded whole-image operation: {other:?}"),
                 }),
-            Self::EmbeddedCheckpoint => runtime.durability_authority().native_checkpoint(execution.allocation_policy())
+            Self::EmbeddedCheckpoint => runtime.durability_authority().native_checkpoint(execution, execution.allocation_policy())
                 .map(|image| { assert!(!image.bytes().is_empty()); })
                 .map_err(|stop| match stop {
                     crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) => RelationalExecutionDenialCause::StorageUnavailable(error.storage_unavailable.expect("cold embedded-image refusal remains typed")),

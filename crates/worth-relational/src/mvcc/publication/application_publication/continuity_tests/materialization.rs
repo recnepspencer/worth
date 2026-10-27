@@ -204,7 +204,7 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     }
     let saved = runtime
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     drop((services, birth, owner, installed));
     drop(runtime);

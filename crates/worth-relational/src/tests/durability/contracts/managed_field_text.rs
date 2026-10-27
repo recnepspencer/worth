@@ -155,7 +155,7 @@ fn native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_i
     release_test_commit_snapshot(&source, &committed);
     let native = source
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let before = native.bytes().to_vec(); // independent test observation of external evidence
     let mut target = runtime_with_test_schema();
@@ -237,7 +237,7 @@ fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
     release_test_commit_snapshot(&source, &committed);
     let native = source
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let unframed = native
         .bytes()

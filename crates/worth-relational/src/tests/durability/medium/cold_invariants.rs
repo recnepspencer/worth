@@ -164,6 +164,7 @@ fn the_invariant_orchestrator_uses_head_while_full_history_failure_stays_typed()
     let checkpoint = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &current_members,

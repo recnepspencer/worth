@@ -273,7 +273,7 @@ pub(super) fn recover(
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
     (target, recovered, receipt)

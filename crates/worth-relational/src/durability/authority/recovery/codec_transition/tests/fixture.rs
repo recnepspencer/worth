@@ -113,10 +113,16 @@ pub(super) fn basis(runtime: &RelationalRuntime) -> AdmittedRelationalBranchBasi
         .1
 }
 
-pub(super) fn capture(runtime: &RelationalRuntime) -> RelationalNativeCheckpoint {
+pub(super) fn capture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> RelationalNativeCheckpoint {
     runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap()
 }
 

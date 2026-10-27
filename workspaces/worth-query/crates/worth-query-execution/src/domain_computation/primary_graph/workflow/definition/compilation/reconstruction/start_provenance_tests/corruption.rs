@@ -133,7 +133,7 @@ fn started_revision_missing_current_field_is_rejected_by_native_restore_before_p
             runtime.config(),
             runtime
                 .durability_authority()
-                .native_checkpoint(execution.allocation_policy())
+                .native_checkpoint(&execution, execution.allocation_policy())
                 .unwrap(),
             runtime
                 .durability()

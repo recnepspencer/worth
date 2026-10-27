@@ -45,17 +45,18 @@ pub(crate) struct RelationalCapturedRegionCheckpoint {
 }
 
 impl RelationalRegionResidency {
-    /// Capture admits no cold demand. Unchanged cells contribute only their
-    /// directory leaves; changed cells must already be resident from the write.
+    /// Ordinary capture is load-free. A threshold crossing explicitly demands
+    /// Full before writing a consolidated image, bounding restart-induced folds.
     pub(crate) fn capture_checkpoint(
         self: &Arc<Self>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         schema: &RelationalBranchRootSchemaAuthority,
         schema_digest: [u8; 32],
         symbols: &StringInterner,
         current_members: Option<
             &std::collections::BTreeSet<crate::durability::medium::RelationalDurableMemberLocator>,
         >,
-    ) -> Result<RelationalCapturedRegionCheckpoint, RelationalStorageUnavailable> {
+    ) -> Result<RelationalCapturedRegionCheckpoint, super::RelationalResidencyDemandFailure> {
         self.check_damage()?;
         let binding = self
             .checkpoint_bindings
@@ -73,6 +74,22 @@ impl RelationalRegionResidency {
                 })
             })
             .cloned();
+        let mut full = None;
+        let binding = if binding.as_ref().is_some_and(|recorded| {
+            super::history_capture_bound::needs_consolidation(
+                &recorded.history_members,
+                recorded.leaf.history,
+            )
+        }) {
+            full = Some(self.demand_full(
+                execution,
+                super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                None,
+            )?);
+            None
+        } else {
+            binding
+        };
         let (recorded, members) = if let Some(recorded) = binding {
             let mut required = recorded.history_members.members(recorded.leaf.history);
             required.insert(recorded.leaf.head);
@@ -82,28 +99,51 @@ impl RelationalRegionResidency {
                 .collect();
             (recorded, members)
         } else {
-            let lease = self
-                .lease_checkpoint_contents()?
-                .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
+            let (lease, commitment, captured) = loop {
+                let lease = self
+                    .lease_checkpoint_contents()?
+                    .ok_or_else(|| self.capture_failure(Cause::SourceUnavailable))?;
+                let partition = lease.checkpoint_contents();
+                let content_symbols = if full.is_some() {
+                    self.content_symbols(symbols)
+                } else {
+                    symbols.clone()
+                };
+                let (commitment, _) =
+                    PartitionContentCommitment::capture_layered(partition, &content_symbols)
+                        .map_err(|error| match error {
+                            PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
+                                RelationalStorageUnavailable {
+                                    subject: RelationalStorageSubject::Symbols {
+                                        first: symbol,
+                                        last: symbol,
+                                    },
+                                    cause: Cause::SourceUnavailable,
+                                }
+                            }
+                            PartitionContentDigestError::InvalidHistoryCoverage => {
+                                self.capture_failure(Cause::IntegrityMismatch)
+                            }
+                        })?;
+                let captured =
+                    super::capture_region_members(partition, &commitment, schema, schema_digest)
+                        .map_err(|cause| self.capture_failure(cause))?;
+                if full.is_none()
+                    && super::history_capture_bound::needs_consolidation(
+                        &captured.history_members,
+                        captured.history.0,
+                    )
+                {
+                    full = Some(self.demand_full(
+                        execution,
+                        super::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                        None,
+                    )?);
+                    continue;
+                }
+                break (lease, commitment, captured);
+            };
             let partition = lease.checkpoint_contents();
-            let (commitment, _) = PartitionContentCommitment::capture_layered(partition, symbols)
-                .map_err(|error| match error {
-                PartitionContentDigestError::UnresolvedContentSymbol(symbol) => {
-                    RelationalStorageUnavailable {
-                        subject: RelationalStorageSubject::Symbols {
-                            first: symbol,
-                            last: symbol,
-                        },
-                        cause: Cause::SourceUnavailable,
-                    }
-                }
-                PartitionContentDigestError::InvalidHistoryCoverage => {
-                    self.capture_failure(Cause::IntegrityMismatch)
-                }
-            })?;
-            let captured =
-                super::capture_region_members(partition, &commitment, schema, schema_digest)
-                    .map_err(|cause| self.capture_failure(cause))?;
             let leaf = RelationalCheckpointRegion {
                 kind_authority: captured.kind_authority,
                 partition_id: partition.partition_id,
@@ -122,7 +162,7 @@ impl RelationalRegionResidency {
                 .filter(|locator| *locator != captured.history.0)
             {
                 if current_members.is_some_and(|members| !members.contains(&locator)) {
-                    return Err(self.capture_failure(Cause::SourceUnavailable));
+                    return Err(self.capture_failure(Cause::SourceUnavailable).into());
                 }
                 members.push(RelationalCheckpointMember::Carried { locator });
             }

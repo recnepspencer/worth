@@ -33,7 +33,7 @@ fn checkpoint_size_tracks_branch_state_not_covered_transitions() {
         assert_eq!(artifacts(&runtime).len(), count);
         let checkpoint = runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .unwrap();
         assert_eq!(
             checkpoint.covered_branch_transitions(),

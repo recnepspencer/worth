@@ -1,4 +1,6 @@
 //! Faults cross the production manifest recovery and transaction read doors.
+#[path = "checkpoint_restart_bound.rs"]
+mod checkpoint_restart_bound;
 #[path = "cold_source.rs"]
 mod cold_source;
 use cold_source::MemberSource;
@@ -219,6 +221,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
@@ -285,6 +288,7 @@ fn a_cold_point_read_keeps_cross_partition_kind_authority_after_an_unrelated_wri
     receiving
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &current_members,

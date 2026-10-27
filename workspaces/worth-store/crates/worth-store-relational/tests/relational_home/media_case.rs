@@ -2,7 +2,7 @@
 //! fault, the target run under it, the home abandoned, recovered through the
 //! production `open` and held to the crash oracle.
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_relational::facade::history::BranchId;
 use worth_relational::facade::mvcc::RelationalPublicationDenial;
 use worth_relational::facade::transactions::{CommitResult, TransactionCommitError};
@@ -28,12 +28,16 @@ pub(crate) enum Target {
     Commit(usize),
     BranchTransition(usize),
     Checkpoint(usize),
+    RegionLoad(usize),
 }
 
 impl Target {
     pub(crate) fn index(self) -> usize {
         match self {
-            Self::Commit(index) | Self::BranchTransition(index) | Self::Checkpoint(index) => index,
+            Self::Commit(index)
+            | Self::BranchTransition(index)
+            | Self::Checkpoint(index)
+            | Self::RegionLoad(index) => index,
         }
     }
 }
@@ -73,6 +77,9 @@ pub(crate) fn run_case(
     let checkpoint_before = selected_checkpoint::generation(&home);
     let transition_state_before = matches!(target, Target::BranchTransition(_))
         .then(|| super::branch_lifecycle::state_of(home.runtime(), &script.records));
+    if matches!(target, Target::RegionLoad(_)) {
+        super::residency_media::prepare_cold_media_read(&home);
+    }
     media_faults::arm(&activations);
     let (ended, acknowledged, in_flight, checkpoints) = match target {
         Target::Commit(index) => {
@@ -86,13 +93,40 @@ pub(crate) fn run_case(
             (ended, acknowledged, in_flight, vec![checkpoint_before])
         }
         Target::Checkpoint(_) => {
-            let outcome = home.checkpoint(ExecutionAllocationPolicy::SystemAllocation);
+            let outcome = home.checkpoint(execution);
             assert!(
                 activations[0].is_consumed(),
                 "{case}: the fault did not fire"
             );
             let (ended, checkpoints) = checkpoint_outcome(outcome, checkpoint_before, case);
             (ended, before, InFlight::Nothing, checkpoints)
+        }
+        Target::RegionLoad(_) => {
+            let outcome = super::residency_media::read_first(&home, script, execution);
+            assert!(
+                activations[0].is_consumed(),
+                "{case}: region fault did not fire"
+            );
+            let ended = match outcome {
+                Ok(rendered) => {
+                    assert_eq!(rendered, super::residency_media::expected_first(script, before.len()), "{case}: faulted read differs from memory");
+                    Ended::Acknowledged
+                },
+                Err(worth_relational::facade::mvcc::RelationalTransactionReadDenial::StorageUnavailable(failure)) => {
+                    assert!(matches!(failure.subject, worth_relational::facade::storage::RelationalStorageSubject::Region(_)
+                        | worth_relational::facade::storage::RelationalStorageSubject::Symbols { .. }), "{case}: {failure:?}");
+                    Ended::Refused
+                }
+                Err(other) => panic!("{case}: region read returned {other:?}"),
+            };
+            // One-shot media faults prove no damage to content. A retry must
+            // reach the reference, including if another subject failed first.
+            let expected = &script.states[before.len()];
+            assert_eq!(
+                &workload::states_of(home.runtime(), &script.records),
+                expected
+            );
+            (ended, before, InFlight::Nothing, vec![checkpoint_before])
         }
         Target::BranchTransition(index) => {
             let outcome = script.steps[index].lifecycle(home.runtime(), execution);
@@ -141,8 +175,17 @@ pub(crate) fn run_case(
     let landed = match target {
         Target::Commit(_) => commits > acknowledged.len(),
         Target::Checkpoint(_) => selected > checkpoint_before,
+        Target::RegionLoad(_) => false,
         Target::BranchTransition(_) => transition_landed,
     };
+    if matches!(target, Target::RegionLoad(_)) {
+        recovered
+            .runtime()
+            .durability_authority()
+            .checkpoint(execution)
+            .unwrap();
+        super::durable_run::assert_lifecycle_prefix(&recovered, script, commits, case);
+    }
     assert_continues(
         prepared.location(),
         recovered,

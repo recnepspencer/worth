@@ -17,6 +17,7 @@ mod head_adjacency;
 mod head_arena;
 pub(crate) use head_adjacency::{RelationalHeadAdjacencySet, RelationalHeadAdjacencyTable};
 mod history_capture;
+pub(crate) mod history_capture_bound;
 mod history_fold;
 mod history_kind_cache;
 mod region_capture;

@@ -243,7 +243,7 @@ fn started_revision_current_capture_restore_retains_exact_data_after_original_pa
     let checkpoint = handle.with_runtime(&execution, |runtime| {
         runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(&execution, execution.allocation_policy())
             .unwrap()
     });
     let bytes = checkpoint.bytes().to_vec();

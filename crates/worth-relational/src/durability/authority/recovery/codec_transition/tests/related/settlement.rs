@@ -13,7 +13,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
     let world = world(execution);
     let (mut target, mut recovered, _) = recover(execution, &world);
     let selected = basis(&target);
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let (owner, installed) = target
         .durability_recovery()
         .issue_recovered_codec_source_publication_owner(execution, &recovered)
@@ -49,7 +49,7 @@ fn closed_relation_insufficient_funding_preserves_source_for_fresh_funded_retry(
         "actual native admission must refuse funding: {denied:?}"
     );
     assert!(selected.is_current());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     let candidate = candidate(
         execution,
         &mut target,
@@ -80,7 +80,7 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles(
     let world = world(execution);
     let (mut target, mut recovered, receipt) = recover(execution, &world);
     let selected = basis(&target);
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let cancellation = crate::runtime::RelationalCancellationSource::new();
     let candidate = candidate(
         execution,
@@ -101,7 +101,7 @@ fn closed_relation_cancellation_refuses_before_effects_then_exact_retry_settles(
     };
     let mut recovered = refused.into_authority();
     assert!(selected.is_current());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     assert_order(&target, &world.outputs, &world.relations);
     let candidate = super::fixture::candidate(
         execution,

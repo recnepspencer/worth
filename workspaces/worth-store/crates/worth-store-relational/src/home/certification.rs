@@ -13,6 +13,31 @@ use super::{RelationalStoreHome, RelationalStoreHomeOpenRefusal, RelationalStore
 use crate::physical_store::PhysicalOpening;
 
 impl RelationalStoreHome {
+    /// Observe completed cold-port journal reads during production readmission.
+    /// The observer receives only the requested position and existing counters;
+    /// it cannot supply bytes or change admission. Its owner may park a child
+    /// before the payload returns to Relational's selected-head readmission.
+    #[doc(hidden)]
+    pub fn certification_open_with_readmission_observer(
+        request: RelationalStoreHomeRequest,
+        observer: impl Fn(
+                worth_relational::facade::publication::PatchStreamPosition,
+                crate::RelationalStoreColdReadCounters,
+            ) + Send
+            + Sync
+            + 'static,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, RelationalStoreHomeOpenRefusal> {
+        let (location, builder) = request.into_parts();
+        let serving = std::sync::Arc::new(super::open_physical_store(
+            &location,
+            PhysicalOpening::production(),
+        )?);
+        let mut source = crate::cold_source::StoreColdSource::new(serving.clone());
+        source.observe_commit_reads(observer);
+        Self::admit_with_source(serving, std::sync::Arc::new(source), builder, execution)
+    }
+
     /// Admit the home on `serving` exactly as `open` would after its own
     /// physical open. The request's location is ignored.
     #[doc(hidden)]

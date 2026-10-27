@@ -23,10 +23,10 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let selected = basis(&target);
     let denied = candidate(
         execution,
@@ -44,7 +44,7 @@ fn relation_only_custom_invariant_refuses_closed_retirement_before_effects() {
     assert!(denied.detail().contains("custom invariant"));
     assert!(selected.is_current());
     assert!(recovered.codec_transition_pending());
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
     assert_order(&target, &world.outputs, &world.relations);
 }
 

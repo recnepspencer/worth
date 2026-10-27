@@ -120,7 +120,7 @@ pub(super) fn refuse_late_claim() {
         .release_snapshot(&committed.snapshot)
         .unwrap();
     admit(execution, &runtime, &installed, outputs, true).unwrap();
-    let saved = capture(&runtime);
+    let saved = capture(execution, &runtime);
     let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
         execution,
         saved.bytes(),
@@ -199,7 +199,7 @@ pub(super) fn refuse_late_claim() {
             .unwrap();
         let (cold, installed) = restore(execution, &untrusted);
         let selected = basis(&cold);
-        let before = capture(&cold);
+        let before = capture(execution, &cold);
         let denied = admit(execution, &cold, &installed, outputs, true).unwrap_err();
         assert!(
             format!("{denied:?}").contains(if forged_birth_endpoint {
@@ -210,7 +210,7 @@ pub(super) fn refuse_late_claim() {
             "{denied:?}"
         );
         assert!(selected.is_current());
-        assert_eq!(capture(&cold), before);
+        assert_eq!(capture(execution, &cold), before);
         assert_eq!(
             relation_payload(&cold, edge),
             relation_payload(&runtime, edge)

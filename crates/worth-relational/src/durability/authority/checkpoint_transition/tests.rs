@@ -15,7 +15,10 @@ fn recovered_world(
     create_entity(execution, &source, "checkpoint-predecessor");
     let checkpoint = source
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     // The restored runtime continues the source's medium, which already holds
     // the history its checkpoint covers.
@@ -91,7 +94,10 @@ fn acknowledged_transition_admits_only_its_exact_successor_and_releases_snapshot
         );
         runtime
             .durability_authority()
-            .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .native_checkpoint(
+                execution,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap();
         if admit_successor {
             assert!(successor_authority

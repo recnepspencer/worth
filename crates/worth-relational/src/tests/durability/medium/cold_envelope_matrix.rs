@@ -63,7 +63,7 @@ impl EnvelopeDoor {
                     other => panic!("funded real artifact: {other:?}"),
                 }),
             Self::EmbeddedCheckpoint => runtime.durability_authority()
-                .native_checkpoint(execution.allocation_policy())
+                .native_checkpoint(execution, execution.allocation_policy())
                 .map(|checkpoint| checkpoint.bytes().len())
                 .map_err(|denial| match denial {
                     crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) =>

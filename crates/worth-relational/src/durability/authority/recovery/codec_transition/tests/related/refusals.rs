@@ -69,7 +69,7 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
             .snapshots()
             .release_snapshot(&committed.snapshot)
             .unwrap();
-        let source_before = capture(&world.runtime);
+        let source_before = capture(execution, &world.runtime);
         let source_basis = basis(&world.runtime);
         let denied = complete_association(execution, &world).unwrap_err();
         assert!(
@@ -77,9 +77,9 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
             "{denied:?}"
         );
         assert!(source_basis.is_current());
-        assert_eq!(capture(&world.runtime), source_before);
+        assert_eq!(capture(execution, &world.runtime), source_before);
         let (mut target, mut recovered, _) = recover(execution, &world);
-        let before = capture(&target);
+        let before = capture(execution, &target);
         let selected = basis(&target);
         let source = protected_payload(&target, world.authored);
         let denied = candidate(
@@ -98,7 +98,7 @@ fn unowned_internal_and_rewritten_owned_relations_refuse_without_any_retirement(
         assert!(denied.detail().contains("incident relation"), "{denied:?}");
         assert!(selected.is_current());
         assert!(recovered.codec_transition_pending());
-        assert_eq!(capture(&target), before);
+        assert_eq!(capture(execution, &target), before);
         assert_eq!(protected_payload(&target, world.authored), source);
         // The rewire has already lawfully changed ordinary ordering. Refusal must
         // preserve that exact committed graph (including its index), not undo it.
@@ -159,13 +159,13 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         })
         .expect("index fixture has identity capacity");
     let (mut target, _) = installed(2);
-    let before = capture(&target);
+    let before = capture(execution, &target);
     let owner = target.runtime_instance_id();
     let denial = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap_err();
     assert!(
@@ -173,7 +173,7 @@ fn changed_ordering_key_meaning_refuses_before_destination_restore() {
         if error.class == crate::durability::data::RecoveryFailureClass::SchemaMismatch && error.detail.contains("ordering"))
     );
     assert_eq!(target.runtime_instance_id(), owner);
-    assert_eq!(capture(&target), before);
+    assert_eq!(capture(execution, &target), before);
 }
 
 #[test]
@@ -218,7 +218,7 @@ fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
             .release_snapshot(&written.snapshot)
             .unwrap();
         let selected = basis(&world.runtime);
-        let before = capture(&world.runtime);
+        let before = capture(execution, &world.runtime);
         let payload = relation_payload(&world.runtime, edge);
         let denied = complete_association(execution, &world).unwrap_err();
         assert!(
@@ -273,7 +273,7 @@ fn owned_boundary_equal_write_and_rewire_refuse_warm_and_cold_before_effects() {
             "{denied:?}"
         );
         assert!(selected.is_current());
-        assert_eq!(capture(&world.runtime), before);
+        assert_eq!(capture(execution, &world.runtime), before);
         assert_eq!(relation_payload(&world.runtime, edge), payload);
     }
 }

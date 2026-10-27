@@ -34,6 +34,8 @@ mod projection_corruption;
 #[path = "symbol_admission_tests.rs"]
 mod symbol_admission_tests;
 
+#[path = "history_consolidation_tests.rs"]
+mod history_consolidation_tests;
 #[path = "region_fixture.rs"]
 mod region_fixture;
 #[path = "resident_history_tests.rs"]
@@ -205,10 +207,13 @@ mod root_view_tests;
 
 #[test]
 fn capture_of_a_cold_region_carries_members_without_loading_or_leasing() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
     let fixture = region_with_history();
     let captured = fixture
         .cell
         .capture_checkpoint(
+            execution,
             &fixture.cold.schema,
             fixture.cold.schema_carrier_digest,
             &fixture.cold.symbols.interner_snapshot(),

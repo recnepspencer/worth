@@ -19,7 +19,7 @@ use std::panic::{self, AssertUnwindSafe};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::certification::MediaOperationRole;
 
 use super::durable_run::{apply, served_schema};
@@ -109,6 +109,9 @@ impl SeedSweep {
             let _ = super::branch_lifecycle::state_of(home.runtime(), &self.script.records);
         }
         let _ = super::branch_lifecycle::artifacts_of_home(&home);
+        if matches!(self.target, Target::RegionLoad(_)) {
+            super::residency_media::prepare_cold_media_read(&home);
+        }
         media_faults::arm(&activations);
         match self.target {
             Target::Commit(index) => {
@@ -117,8 +120,10 @@ impl SeedSweep {
                     .expect("the measured commit");
             }
             Target::Checkpoint(_) => {
-                home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-                    .expect("the measured checkpoint");
+                home.checkpoint(execution).expect("the measured checkpoint");
+            }
+            Target::RegionLoad(_) => {
+                super::residency_media::read_first(&home, &self.script, execution).unwrap();
             }
             Target::BranchTransition(index) => {
                 self.script.steps[index]
@@ -295,4 +300,31 @@ fn every_media_operation_of_archive_and_delete_transitions_recovers() {
     ] {
         sweep(|script| Target::BranchTransition(script.steps.iter().position(select).unwrap()));
     }
+}
+
+#[test]
+fn every_media_operation_of_the_first_checkpoint_recovers() {
+    sweep(|script| {
+        Target::Checkpoint(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::Checkpoint))
+                .unwrap(),
+        )
+    });
+}
+
+#[test]
+fn every_media_operation_of_a_cold_region_load_recovers() {
+    sweep(|script| {
+        Target::RegionLoad(
+            script
+                .steps
+                .iter()
+                .position(|step| matches!(step, Step::Checkpoint))
+                .unwrap()
+                + 1,
+        )
+    });
 }

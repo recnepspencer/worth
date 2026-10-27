@@ -55,6 +55,7 @@ fn rehashed_cross_region_kind_forgery_is_refused_by_the_canonical_root() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
