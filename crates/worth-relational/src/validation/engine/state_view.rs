@@ -166,13 +166,6 @@ impl<'state> InvariantStateView<'state> {
         self.entity_metadata_at(&partition.entity_arena, entity_id.partition_id, slot)
     }
 
-    pub(crate) fn entity_visible_at_version(&self, arena: &EntityArena, slot: usize) -> bool {
-        arena
-            .metadata_history_at(slot)
-            .and_then(|history| self.visible_entity_metadata(history))
-            .is_some()
-    }
-
     pub(crate) fn entity_metadata_at(
         &self,
         arena: &'state EntityArena,
