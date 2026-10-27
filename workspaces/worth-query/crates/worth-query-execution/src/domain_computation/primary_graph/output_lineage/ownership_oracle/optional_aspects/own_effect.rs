@@ -146,7 +146,7 @@ fn ordinary_handler_clear_of_absent_field_retains_aspect_absence() {
             clearing.primary_provider.graph.with_runtime(&execution, |native| {
                 let view = native.read_truth()
                     .project_snapshot(selected.application_basis().snapshot_handle()).unwrap();
-                assert_eq!(view.entity_aspect_version(entity, aspect), Some(revision),
+                assert_eq!(view.read_entity_aspect_version(&execution, entity, aspect).unwrap(), Some(revision),
                     "exact native after-image revision");
                 let absent = view.entity_record_with_projection_scope(
                     &execution, entity,

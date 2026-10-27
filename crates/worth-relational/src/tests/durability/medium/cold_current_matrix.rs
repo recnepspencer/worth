@@ -12,6 +12,8 @@ mod current_door;
 mod current_fixture;
 #[path = "cold_current_failure_matrix.rs"]
 mod failure_matrix;
+#[path = "cold_metadata_matrix.rs"]
+mod metadata_matrix;
 #[path = "cold_projection_point_door.rs"]
 mod projection_point_door;
 use current_door::CurrentDoor;

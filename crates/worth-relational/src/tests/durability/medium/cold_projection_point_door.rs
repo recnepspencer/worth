@@ -13,6 +13,12 @@ pub(super) enum ProjectionPointDoor {
     EntityRevisionAdmitted,
     RelationRevision,
     AdjacencyIds,
+    EntityState,
+    RelationMetadata,
+    AspectVersion,
+    StructuralRevision,
+    StructuralRevisionAdmitted,
+    BoundedStructuralRevision,
 }
 impl ProjectionPointDoor {
     pub(super) fn run(
@@ -35,7 +41,45 @@ impl ProjectionPointDoor {
             Ok::<_, std::convert::Infallible>(())
         };
         let locator = revision_locator("name", "name");
+        let direction = RelationalAdjacencyDirection::Outgoing;
         let answer = match self {
+            Self::EntityState => view
+                .read_exact_entity_state(execution, entity, |metadata, _| {
+                    callbacks.set(callbacks.get() + 1);
+                    metadata.entity_id
+                })
+                .map_err(borrowed_denial)
+                .map(|answer| assert_eq!(answer, Some(entity))),
+            Self::RelationMetadata => view
+                .read_exact_relation_metadata(execution, relation)
+                .map_err(borrowed_denial)
+                .map(|answer| assert_eq!(answer.unwrap().relation_id, relation)),
+            Self::AspectVersion => view
+                .read_entity_aspect_version(execution, entity, &aspect_key("name"))
+                .map_err(borrowed_denial)
+                .map(|answer| assert!(answer.unwrap().is_some())),
+            Self::StructuralRevision => view
+                .read_exact_adjacency_structural_revision(execution, entity, KindId(2), direction)
+                .map_err(borrowed_denial)
+                .map(|answer| assert!(answer.is_some())),
+            Self::StructuralRevisionAdmitted => view
+                .read_exact_adjacency_structural_revision_admitted(
+                    execution,
+                    entity,
+                    KindId(2),
+                    direction,
+                    admit,
+                )
+                .unwrap()
+                .map_err(borrowed_denial)
+                .map(|answer| assert!(answer.is_some())),
+            Self::BoundedStructuralRevision => view
+                .bounded_adjacency_structural_revision(execution, entity, KindId(2), direction, 1)
+                .map_err(|denial| match denial {
+                    crate::runtime::AdjacencyStructuralRevisionDenial::Execution(cause) => cause,
+                    other => panic!("real adjacency must be available: {other:?}"),
+                })
+                .map(|answer| assert!(answer.revision().is_some())),
             Self::EntityRecord => view
                 .entity_record_with_projection_scope(
                     execution,
@@ -116,4 +160,13 @@ fn revision_locator(aspect: &str, field: &str) -> worth_foundational::facade::As
         aspect_key(aspect),
         worth_foundational::facade::CanonicalFieldPath::single(field_key(field)),
     )
+}
+
+fn borrowed_denial(
+    denial: crate::runtime::RelationalBorrowedRecordReadDenial,
+) -> RelationalExecutionDenialCause {
+    match denial {
+        crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => cause,
+        other => panic!("the producer supplies an exact basis: {other:?}"),
+    }
 }

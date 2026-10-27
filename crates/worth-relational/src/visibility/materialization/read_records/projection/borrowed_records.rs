@@ -1,13 +1,13 @@
 use super::VisibilityProjectionView;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::data::RecordLifecycleState;
-use crate::storage::overlay::PartitionAccess;
 use crate::visibility::snapshot_states::SnapshotStateBasis;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalBorrowedRecordReadDenial {
     ExactBasisRequired,
+    Execution(crate::execution::RelationalExecutionDenialCause),
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -79,19 +79,22 @@ impl VisibilityProjectionView {
 
     /// Borrow the exact selected root's state without resolving owned kind names
     /// or materializing a read record. A pinned old exact root remains eligible.
-    pub fn with_exact_entity_state<T>(
+    pub fn read_exact_entity_state<T>(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
         project: impl FnOnce(RelationalEntityMetadata, Option<&AuthoritativeRecordAspectState>) -> T,
     ) -> Result<Option<T>, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
         };
+        self.demand_regions_head(execution, [entity.partition_id])
+            .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
-        let Some(partition) = root.get_partition(entity.partition_id) else {
+        let Some(partition) = root.admitted_head_region(entity.partition_id) else {
             return Ok(None);
         };
-        let Some(slot) = partition.entity_arena.get_slot(entity.slot_index()) else {
+        let Some(slot) = partition.entity_arena().get_slot(entity.slot_index()) else {
             return Ok(None);
         };
         if !slot.is_live()
@@ -126,18 +129,21 @@ impl VisibilityProjectionView {
     }
 
     /// Exact metadata only; names and aspect values stay in the pinned root.
-    pub fn exact_relation_metadata(
+    pub fn read_exact_relation_metadata(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation: RelationId,
     ) -> Result<Option<RelationalRelationMetadata>, RelationalBorrowedRecordReadDenial> {
         let SnapshotStateBasis::Exact(basis) = &self.basis else {
             return Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired);
         };
+        self.demand_regions_head(execution, [relation.partition_id])
+            .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
-        let Some(partition) = root.get_partition(relation.partition_id) else {
+        let Some(partition) = root.admitted_head_region(relation.partition_id) else {
             return Ok(None);
         };
-        let Some(slot) = partition.relation_arena.get_slot(relation.slot_index()) else {
+        let Some(slot) = partition.relation_arena().get_slot(relation.slot_index()) else {
             return Ok(None);
         };
         if !slot.is_live()

@@ -143,7 +143,11 @@ impl PreparedFactRebase {
                 let Some(view) = runtime.read_truth().project_snapshot(snapshot) else {
                     return Err(unavailable);
                 };
-                view.entity_aspect_version(*entity_id, locator.aspect().aspect_key())
+                view.read_entity_aspect_version(execution, *entity_id, locator.aspect().aspect_key())
+                    .map_err(|denial| match denial {
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
+                    })?
                     .map(Self::Aspect)
                     .ok_or(unavailable)
             }
@@ -189,11 +193,13 @@ impl PreparedFactRebase {
             Fact::SourceAspectRevision {
                 entity_id, aspect, ..
             } => {
-                match runtime
-                    .read_truth()
-                    .project_snapshot(snapshot)
-                    .and_then(|view| view.entity_aspect_version(*entity_id, aspect))
-                {
+                let revision = runtime.read_truth().project_snapshot(snapshot)
+                    .map(|view| view.read_entity_aspect_version(execution, *entity_id, aspect))
+                    .transpose().map_err(|denial| match denial {
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => unavailable.clone(),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => RebaseVerificationReason::Execution(cause),
+                    })?.flatten();
+                match revision {
                     Some(revision) => Ok(Self::Aspect(revision)),
                     None if producer_output => Err(unavailable),
                     None => Ok(Self::Keep),

@@ -19,14 +19,26 @@ pub(super) fn borrowed_matches(
 ) -> Result<Option<(EntityId, KindId, bool)>, Denial> {
     crate::execution::check_request(execution)
         .map_err(|cause| Denial::new(Kind::Execution(cause), index))?;
-    view.with_exact_entity_state(entity, |metadata, state| {
+    view.read_exact_entity_state(execution, entity, |metadata, state| {
         (
             metadata.entity_id,
             metadata.kind_id,
             state_matches(state, locator, expected),
         )
     })
-    .map_err(|_| Denial::new(Kind::SnapshotUnavailable, index))
+    .map_err(|denial| {
+        Denial::new(
+            match denial {
+                crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                    Kind::SnapshotUnavailable
+                }
+                crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                    Kind::Execution(cause)
+                }
+            },
+            index,
+        )
+    })
 }
 fn state_matches(
     state: Option<&AuthoritativeRecordAspectState>,

@@ -233,7 +233,7 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
         .try_project_historical_version(snapshot.version_id)
         .unwrap();
     let mut called = false;
-    let result = reconstructed.with_exact_entity_state(fixture.principal, |_, _| {
+    let result = reconstructed.read_exact_entity_state(execution, fixture.principal, |_, _| {
         called = true;
     });
     assert_eq!(
@@ -242,7 +242,7 @@ fn reconstructed_projection_refuses_exact_borrow_without_policy_denial() {
     );
     assert!(!called);
     assert_eq!(
-        reconstructed.exact_relation_metadata(fixture.role_scope_relation),
+        reconstructed.read_exact_relation_metadata(execution, fixture.role_scope_relation),
         Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired)
     );
 }

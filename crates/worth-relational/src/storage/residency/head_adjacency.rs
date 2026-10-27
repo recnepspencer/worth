@@ -23,6 +23,15 @@ impl<'lease> RelationalHeadAdjacencySet<'lease> {
         self.0
             .selected_kind_navigation_work_bound(AdjacencyKindBasis::Current)
     }
+    pub(crate) fn structural_revision_navigation_work_bound(self) -> usize {
+        self.0.structural_revision_navigation_work_bound()
+    }
+    pub(crate) fn structural_revision(
+        self,
+        kind: KindId,
+    ) -> Option<crate::identity::data::VersionId> {
+        self.0.structural_revision(kind)
+    }
     pub(crate) fn kind_ids(self, kind: KindId) -> AdjacencyIds<'lease> {
         self.0.kind_ids(AdjacencyKindBasis::Current, kind)
     }

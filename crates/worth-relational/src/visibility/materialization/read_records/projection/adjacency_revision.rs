@@ -74,10 +74,15 @@ impl VisibilityProjectionView {
         let Some(root) = self.basis.root() else {
             return Err(AdjacencyStructuralRevisionDenial::BasisUnavailable);
         };
-        let revision = root
-            .get_partition(anchor.partition_id)
-            .and_then(|partition| direction.table(partition).get(anchor.slot_index()))
-            .and_then(|adjacency| adjacency.structural_revision(relation_kind));
+        let revision = if self.is_exact_basis() {
+            root.admitted_head_region(anchor.partition_id)
+                .and_then(|partition| partition.adjacency(direction).get(anchor.slot_index()))
+                .and_then(|adjacency| adjacency.structural_revision(relation_kind))
+        } else {
+            root.get_partition(anchor.partition_id)
+                .and_then(|partition| direction.table(partition).get(anchor.slot_index()))
+                .and_then(|adjacency| adjacency.structural_revision(relation_kind))
+        };
         Ok(AdjacencyStructuralRevision {
             revision,
             work_units: 1,
@@ -123,7 +128,8 @@ mod tests {
                 .expect("the selected-basis revision is one owner-index lookup")
                 .revision();
             assert_eq!(
-                view.exact_adjacency_structural_revision(
+                view.read_exact_adjacency_structural_revision(
+                    execution,
                     source,
                     KindId(2),
                     RelationalAdjacencyDirection::Outgoing,

@@ -37,6 +37,15 @@ fn stale() -> AdmittedPrincipalObservationStop {
     ))
 }
 
+fn borrowed_denial(
+    denial: worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial,
+) -> AdmittedPrincipalObservationStop {
+    match denial {
+        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => stale(),
+        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => AdmittedPrincipalObservationStop::Semantic(
+            super::super::resolution_denial::relational_read_denial(cause, "principal metadata").kind()),
+    }
+}
 fn authoritative_locator(planned: &AspectFieldLocator) -> ObservationResult<AspectFieldLocator> {
     Ok(AspectFieldLocator::new(
         LocatorAuthority::Authoritative,
@@ -83,7 +92,7 @@ fn selected_value(
         )
     })?;
     let result = view
-        .with_exact_entity_state(entity, |metadata, authoritative| {
+        .read_exact_entity_state(execution, entity, |metadata, authoritative| {
             if metadata.kind_id != expected_kind {
                 return Err(AdmittedPrincipalObservationStop::Semantic(wrong_kind));
             }
@@ -95,7 +104,7 @@ fn selected_value(
             };
             Ok(selected_field_value(authoritative, locator)?.map(|value| (metadata, value)))
         })
-        .map_err(|_| stale())?;
+        .map_err(borrowed_denial)?;
     result.unwrap_or(Ok(None))?.ok_or_else(stale)
 }
 
@@ -177,7 +186,9 @@ pub(super) fn observe_target(
                 RelationalAdjacencyVisit::Prepare { .. } => {}
                 RelationalAdjacencyVisit::List => {}
                 RelationalAdjacencyVisit::Relation(id) => {
-                    let Some(relation) = view.exact_relation_metadata(id).map_err(|_| stale())?
+                    let Some(relation) = view
+                        .read_exact_relation_metadata(execution, id)
+                        .map_err(borrowed_denial)?
                     else {
                         return Ok(());
                     };
@@ -223,12 +234,13 @@ pub(super) fn observe_target(
         &layout.principal_identity_locator,
     )?;
     let adjacency_revision = view
-        .exact_adjacency_structural_revision(
+        .read_exact_adjacency_structural_revision(
+            execution,
             mapping,
             layout.relation_kind,
             RelationalAdjacencyDirection::Outgoing,
         )
-        .map_err(|_| stale())?;
+        .map_err(borrowed_denial)?;
     Ok(WorthQueryPrincipalTargetObservation {
         relation_id: relation.relation_id,
         relation_kind: relation.kind_id,

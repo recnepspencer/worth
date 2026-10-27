@@ -2594,3 +2594,34 @@ tables with actual entity/relation metadata, aspect version and structural
 revision doors, and add accepted-pin/fresh-guard damage isolation courts.
 Verify native tests/contracts and affected World/Query boundaries before
 closing the slice. Final lane evidence is still outstanding.
+
+
+### Explicit metadata reads at the Head boundary
+
+The actual recovered Head-only court failed in `matrix-metadata-head-red.log`
+through the Full retention accessor: the product was wrong. Request-free
+metadata methods are replaced, without forwarding shims, by `read_*` operations
+that accept ExecutionRequest and preserve a distinct execution denial. They
+borrow typed Head arenas/adjacency only. Schema work bounds remain pure. Aspect
+revision now explicitly requires the exact immutable basis, matching the other
+metadata probes; a historical projection cannot misreport its root's current
+revision as its selected historical revision. Authorization, native output
+correspondence, index comparisons/maintenance and Query principal/currentness
+consumers propagate storage failures through their existing typed execution
+channels. The bounded structural revision keeps historical Full selection and
+uses Head for an exact basis.
+
+Six more current doors extend the same actual producer table to 216 Head/ID
+symbol refusal cells and 108 unavailable-history positive cells; remote invariant
+positives add 18. No project/admission callback escapes a refused native demand.
+The focused current courts pass five tests. All-target checking exposed the
+history/replay example still using the old fallible-envelope signature; the
+example now handles request failure and genuine envelope absence separately,
+and the owner all-target check passes. Initial mechanical compilation errors
+(wrong prefix-denial variant and missing Result unwraps in tests) were corrected
+without changing assertions. The native lane passes 1,995 tests with 31 ignored, Query execution
+all-target checking and owner clippy pass. The latter first rejected a needless
+Ok/question-mark wrapper; it was removed without a behavior change. Line caps,
+composition (23 files, 22 advisories, zero scan errors), boundary-check and
+agent-context pass. Contracts pass 203 tests with 3 ignored. Resident pin proof is the next step of the recorded boundary
+plan, with no phase-completion claim.

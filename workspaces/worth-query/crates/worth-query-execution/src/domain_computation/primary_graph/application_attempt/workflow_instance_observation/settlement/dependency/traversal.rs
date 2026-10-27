@@ -41,8 +41,11 @@ pub(super) fn observe(
                     .checked_add(1)
                     .ok_or_else(|| StoreDenial::Representability.into_attempt_denial(subject))?;
                 let Some(relation) = view
-                    .exact_relation_metadata(id)
-                    .map_err(|_| super::denial(subject))?
+                    .read_exact_relation_metadata(execution, id)
+                    .map_err(|denial| match denial {
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => super::denial(subject),
+                        worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => WorthQueryApplicationAttemptDenial::relational_read_stopped(cause, subject),
+                    })?
                 else {
                     return Ok(());
                 };

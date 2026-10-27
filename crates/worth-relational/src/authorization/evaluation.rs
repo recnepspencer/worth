@@ -69,10 +69,10 @@ impl RelationalRuntime {
             ))?;
         admission::prepare(admission, 1, 0)?;
         let principal = view
-            .with_exact_entity_state(plan.principal(), |metadata, _| {
+            .read_exact_entity_state(execution, plan.principal(), |metadata, _| {
                 metadata.kind_id == plan.principal_kind()
             })
-            .map_err(|_| Stop::ExactBasisRequired)?
+            .map_err(admission::borrowed_denial)?
             .unwrap_or(false);
         if !principal {
             return Err(Stop::Native(
@@ -86,10 +86,10 @@ impl RelationalRuntime {
         if plan.scope() != plan.principal() {
             admission::prepare(admission, 1, 0)?;
             let scope = view
-                .with_exact_entity_state(plan.scope(), |metadata, _| {
+                .read_exact_entity_state(execution, plan.scope(), |metadata, _| {
                     metadata.kind_id == plan.scope_kind()
                 })
-                .map_err(|_| Stop::ExactBasisRequired)?
+                .map_err(admission::borrowed_denial)?
                 .unwrap_or(false);
             counters.entity_records_inspected += 1;
             if !scope {

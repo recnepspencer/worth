@@ -61,7 +61,7 @@ pub(crate) fn validate_codec_output_correspondence(
                         let selected = super::membership::latest(runtime, basis, id, context, lease)?;
                         super::membership::validate_member(runtime, basis, &selected, id, None, context, lease)?
                     } else { branch
-                        .with_exact_entity_state(id, |metadata, payload| {
+                        .read_exact_entity_state(execution, id, |metadata, payload| {
                             // The native probe permits wildcard lookup; historical roles do not.
                             if metadata.entity_id != id || metadata.kind_id != kind {
                                 return Err(Stop::from(
@@ -76,7 +76,10 @@ pub(crate) fn validate_codec_output_correspondence(
                             let selected = super::membership::latest(runtime, basis, id, context, lease)?;
                             super::membership::validate_member(runtime, basis, &selected, id, payload, context, lease)
                         })
-                        .map_err(|_| Stop::from("output correspondence native probe refused"))?
+                        .map_err(|denial| match denial {
+                            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Stop::Request(cause),
+                            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Stop::from("output correspondence native probe requires an exact basis"),
+                        })?
                         .ok_or("output correspondence native identity is absent or retired")?? };
                     charge(
                         context,

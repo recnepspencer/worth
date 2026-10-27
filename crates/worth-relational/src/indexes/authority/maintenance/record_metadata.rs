@@ -25,9 +25,16 @@ pub(super) fn entity_kind(
     }
     work.read()?;
     work.prepare(view.exact_entity_state_read_work_bound().unwrap(), 0)?;
-    Ok(view
-        .with_exact_entity_state(id, |metadata, _| metadata.kind_id)
-        .expect("exact basis checked"))
+    view
+        .read_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
+        .map_err(|denial| match denial {
+            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+                Denial::SnapshotUnavailable
+            }
+            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+                Denial::Execution(cause)
+            }
+        })
 }
 
 pub(super) fn relation(
@@ -49,11 +56,13 @@ pub(super) fn relation(
     }
     work.read()?;
     work.prepare(view.exact_relation_metadata_read_work_bound().unwrap(), 0)?;
+    view.demand_regions_head(execution, [id.partition_id])
+        .map_err(Denial::Execution)?;
     let root = view.selected_root().expect("exact basis checked");
-    let Some(partition) = root.partition_state(id.partition_id) else {
+    let Some(partition) = root.admitted_head_region(id.partition_id) else {
         return Ok(None);
     };
-    let Some(slot) = partition.relation_arena.get_slot(id.slot_index()) else {
+    let Some(slot) = partition.relation_arena().get_slot(id.slot_index()) else {
         return Ok(None);
     };
     // Unlike the public live-only metadata probe, maintenance also observes

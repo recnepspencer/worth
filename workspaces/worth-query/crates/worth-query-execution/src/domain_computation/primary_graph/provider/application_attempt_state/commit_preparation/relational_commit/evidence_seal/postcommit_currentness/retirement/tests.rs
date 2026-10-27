@@ -136,7 +136,8 @@ fn reads(
                 .project_snapshot(selected.application_basis().snapshot_handle())
                 .unwrap();
             (
-                view.entity_aspect_version(entity, locator.aspect().aspect_key()),
+                view.read_entity_aspect_version(execution, entity, locator.aspect().aspect_key())
+                    .unwrap(),
                 view.entity_field_revision(execution, entity, &locator)
                     .expect("fixture read request remains live"),
                 view.bounded_adjacency_structural_revision(

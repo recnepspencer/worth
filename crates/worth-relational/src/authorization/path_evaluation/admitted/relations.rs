@@ -64,9 +64,10 @@ pub(super) fn collect<A: RelationalAuthorizationObservationAdmission>(
                     .exact_relation_metadata_read_work_bound()
                     .ok_or(RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?;
                 admission::prepare(state.admission, read_work, 0)?;
-                let record = context.view.exact_relation_metadata(id).map_err(|_| {
-                    RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired
-                })?;
+                let record = context
+                    .view
+                    .read_exact_relation_metadata(execution, id)
+                    .map_err(admission::borrowed_denial)?;
                 let descriptor = record.and_then(|record| {
                     if record.lifecycle != RecordLifecycleState::Live
                         || record.kind_id != traversal.relation_kind()
@@ -140,8 +141,8 @@ pub(super) fn traverse<A: RelationalAuthorizationObservationAdmission>(
     admission::prepare(state.admission, read_work, 0)?;
     let record = context
         .view
-        .exact_relation_metadata(id)
-        .map_err(|_| RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired)?;
+        .read_exact_relation_metadata(execution, id)
+        .map_err(admission::borrowed_denial)?;
     if let Some(record) = record {
         let candidate = if record.lifecycle != RecordLifecycleState::Live
             || record.kind_id != traversal.relation_kind()

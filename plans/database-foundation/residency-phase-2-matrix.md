@@ -28,9 +28,9 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
-lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 144, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 1,482 cells. Positive current and
-remote-invariant unavailable-history families add 90 cells. These totals are an
+lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 216, intern bucket 30,
+remote invariant Head 18, aspect history 144, nonhead merge 18: 1,554 cells. Positive current and
+remote-invariant unavailable-history families add 126 cells. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
 Additional acceptance courts already present include probe miss/identity

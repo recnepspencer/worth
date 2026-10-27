@@ -128,3 +128,17 @@ impl RelationalAuthorizationObservationAdmission for RequestObservation<'_, '_, 
         self.0.consult().map_err(Into::into)
     }
 }
+
+/// Preserve native execution stops while rejecting a reconstructed basis separately.
+pub(super) fn borrowed_denial<S>(
+    denial: crate::runtime::RelationalBorrowedRecordReadDenial,
+) -> RelationalAuthorizationBudgetedObservationStop<S> {
+    match denial {
+        crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+            RelationalAuthorizationBudgetedObservationStop::ExactBasisRequired
+        }
+        crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+            RelationalAuthorizationBudgetedObservationStop::Execution(cause)
+        }
+    }
+}

@@ -17,13 +17,23 @@ pub(super) enum CurrentDoor {
     DeleteRelation,
 }
 impl CurrentDoor {
-    pub(super) const ALL: [Self; 12] = [
+    pub(super) const ALL: [Self; 18] = [
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecord),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecordAdmitted),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRevision),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRevisionAdmitted),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::RelationRevision),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::AdjacencyIds),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityState),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::RelationMetadata),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::AspectVersion),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::StructuralRevision),
+        Self::Projection(
+            super::projection_point_door::ProjectionPointDoor::StructuralRevisionAdmitted,
+        ),
+        Self::Projection(
+            super::projection_point_door::ProjectionPointDoor::BoundedStructuralRevision,
+        ),
         Self::Entity,
         Self::Relation,
         Self::Validation,
