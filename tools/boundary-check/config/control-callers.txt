@@ -2,6 +2,11 @@
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/derived/court.rs
 # Logical source court observes only real closed-count retention lifecycle.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/relation_laws/logical/court.rs
+# Deliberate sort qualification refusal; actual compiler identity cannot be replaced or qualified.
+crates/worth-foundational/ crates/worth-foundational/src/canonicalization/basis/construction/sort_qualification/tests.rs
+crates/worth-foundational/ workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/parameter_canonical_basis.rs
+crates/worth-foundational/ workspaces/worth-query/crates/worth-query-admission/src/application_query/tests/admitted_requirements.rs
+crates/worth-foundational/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/tests/application_attempt/optional_output_role/source_disclosure/compiler_qualification.rs
 # Closed Resource source comparison; actual Host actions retain ordinary admission.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/source_only/capability/resources/journeys/source_binding.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/observable_workflow/resource_monitor/source_binding.rs

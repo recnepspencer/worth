@@ -12,6 +12,43 @@ use crate::application_query::{
 };
 
 #[test]
+fn admitted_parameter_qualification_refusal_preserves_compiler_context_and_parameters_stage() {
+    use crate::application_query::{
+        admit_application_query_parameters_admitted, WorthQueryApplicationQueryParameterDenialKind,
+        WorthQueryParameterPreparationStop,
+    };
+    use worth_foundational::facade::with_refused_canonical_sort_qualification_for_test;
+    let query = installed_query();
+    let parameters = || {
+        ApplicationQueryParameterSet::new()
+            .bind(account_parameter(), 7_u64)
+            .unwrap()
+    };
+    let stopped = with_refused_canonical_sort_qualification_for_test(|| {
+        admit_application_query_parameters_admitted(&query, parameters(), |_, _| Ok::<_, ()>(()))
+    });
+    let Err(WorthQueryParameterPreparationStop::Parameters(denial)) = stopped else {
+        panic!("qualification must remain a typed parameter refusal")
+    };
+    let WorthQueryApplicationQueryParameterDenialKind::UnsupportedSortImplementation(cause) =
+        denial.kind()
+    else {
+        panic!("compiler qualification is not byte overflow")
+    };
+    assert!(!cause.compiler_release().is_empty());
+    assert_eq!(cause.compiler_commit().len(), 40);
+    assert_eq!(cause.target_pointer_width(), usize::BITS);
+    assert_eq!(denial.parameter(), query.name());
+    let ordinary = admit_application_query_parameters(&query, parameters()).unwrap();
+    let qualified =
+        admit_application_query_parameters_admitted(&query, parameters(), |_, _| Ok::<_, ()>(()))
+            .unwrap();
+    assert!(ordinary
+        .canonical_basis()
+        .is_equivalent_to(qualified.canonical_basis()));
+}
+
+#[test]
 fn parameter_bindings_converge_and_diverge_through_foundational_comparison() {
     let query = installed_query();
     let left = admitted(&query, 7);

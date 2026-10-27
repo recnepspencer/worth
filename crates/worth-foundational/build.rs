@@ -13,6 +13,20 @@ fn main() {
         "configured Rust compiler version failed"
     );
     let version = String::from_utf8(version.stdout).expect("Rust version is UTF-8");
+    let compiler_field = |name: &str| {
+        version
+            .lines()
+            .find_map(|line| line.strip_prefix(name))
+            .expect("configured Rust compiler supplies verbose identity")
+    };
+    println!(
+        "cargo:rustc-env=WORTH_CANONICAL_SORT_COMPILER_RELEASE={}",
+        compiler_field("release: ")
+    );
+    println!(
+        "cargo:rustc-env=WORTH_CANONICAL_SORT_COMPILER_COMMIT={}",
+        compiler_field("commit-hash: ")
+    );
     // Admission's sort bound is tied to the reviewed standard-library
     // implementations. Qualification never changes ordinary canonical ordering
     // or its comparison count, which participates in existing digest material.
