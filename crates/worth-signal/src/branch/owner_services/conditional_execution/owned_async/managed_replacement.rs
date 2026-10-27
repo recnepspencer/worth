@@ -63,10 +63,7 @@ where
         self.require_managed_replacement(target, owner)?;
         self.require_compatible_owned_async_source(target, &schedule.origin)
             .map_err(SignalOwnedAsyncQueueDenial::Service)?;
-        let queue = owner
-            .queue
-            .as_ref()
-            .ok_or(SignalOwnedAsyncQueueDenial::QueueUnavailable)?;
+        let queue = self.custodied_queue(owner)?;
         let handoff = self
             .with_owned_async_cell(&target.basis, |cell, admission| {
                 cell.advance_conditional_managed_owned_async_retry(
@@ -74,7 +71,8 @@ where
                     &target.basis,
                     &self.definition,
                     target.node,
-                    &queue.binding,
+                    owner.admitted.handle(),
+                    queue,
                     schedule,
                     coordinate,
                 )
@@ -91,10 +89,7 @@ where
         intent: ResourceRevalidationIntent,
     ) -> Result<SignalOwnedAsyncManagedProgress, SignalOwnedAsyncQueueDenial> {
         self.require_managed_replacement(target, owner)?;
-        let queue = owner
-            .queue
-            .as_ref()
-            .ok_or(SignalOwnedAsyncQueueDenial::QueueUnavailable)?;
+        let queue = self.custodied_queue(owner)?;
         let handoff = self
             .with_owned_async_cell(&target.basis, |cell, admission| {
                 cell.revalidate_conditional_managed_owned_async_request(
@@ -102,7 +97,8 @@ where
                     &target.basis,
                     &self.definition,
                     target.node,
-                    &queue.binding,
+                    owner.admitted.handle(),
+                    queue,
                     intent,
                 )
             })
@@ -142,10 +138,26 @@ where
             .map_err(SignalOwnedAsyncQueueDenial::Service)?;
         self.require_compatible_owned_async_source(target, &owner.origin)
             .map_err(SignalOwnedAsyncQueueDenial::Service)?;
+        if owner.requires_queue && owner.queue.is_none() {
+            return Err(SignalOwnedAsyncQueueDenial::QueueUnavailable);
+        }
         if owner.cleanup.is_some() {
             return Err(SignalOwnedAsyncQueueDenial::CleanupPending);
         }
         Ok(())
+    }
+
+    fn custodied_queue<'owner>(
+        &self,
+        owner: &'owner SignalOwnedAsyncManagedAdmission,
+    ) -> Result<
+        Option<&'owner crate::data::resource::ResourceManagedQueueBinding>,
+        SignalOwnedAsyncQueueDenial,
+    > {
+        if owner.requires_queue && owner.queue.is_none() {
+            return Err(SignalOwnedAsyncQueueDenial::QueueUnavailable);
+        }
+        Ok(owner.queue.as_ref().map(|queue| &queue.binding))
     }
 
     fn require_compatible_owned_async_source(

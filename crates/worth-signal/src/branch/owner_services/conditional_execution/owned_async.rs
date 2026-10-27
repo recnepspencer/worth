@@ -20,13 +20,15 @@ use super::{
 
 mod completion_admission;
 mod completion_commit;
+mod initial_request;
 mod managed_queue;
 mod managed_replacement;
 mod managed_request;
+mod wake_observation_for_test;
 pub use completion_admission::SignalOwnedAsyncCompletionAdmission;
 pub use completion_commit::SignalOwnedAsyncCompletionCommit;
 pub(crate) use completion_commit::SignalOwnedAsyncCompletionCommitState;
-pub(crate) use managed_queue::SignalOwnedAsyncManagedAdmissionState;
+pub(crate) use initial_request::SignalOwnedAsyncManagedAdmissionState;
 pub use managed_queue::{SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncQueueDenial};
 pub use managed_request::{
     SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,

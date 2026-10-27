@@ -15,6 +15,7 @@ use crate::data::temporal::{
 use super::BranchState;
 
 mod completion_commit;
+mod initial_request;
 mod managed_queue;
 mod managed_replacement;
 mod replacement_handoff;
@@ -25,6 +26,7 @@ mod revalidation;
 mod temporal_progress;
 mod timeout;
 mod wake_cleanup;
+mod wake_observation_for_test;
 
 impl<D, I, T> BranchState<D, I, T>
 where
@@ -36,47 +38,17 @@ where
         &mut self,
         node: ResourceNodeId,
     ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
-        let report = self.admit_owned_async_request_report(node, true)?;
-        let in_flight = self.require_in_flight(report.admitted_request().handle())?;
-        Ok(SignalOwnedAsyncRequestAdmission::new(report, in_flight))
-    }
-
-    fn admit_owned_async_request_report(
-        &mut self,
-        node: ResourceNodeId,
-        allow_coalescing: bool,
-    ) -> Result<
-        crate::data::resource::ResourceRequestAdmissionReport,
-        SignalConditionalServiceExecutionDenial,
-    > {
-        self.admit_owned_async_source(node)?;
-        let tick = self.derived.temporal.clock_basis().current_tick();
-        let timeout = self.schedule_owned_async_timeout(node, tick)?;
-        let timeout_wake = timeout.as_ref().map(|(wake, _)| wake.id());
-        let timeout_admission = timeout.map(|(_, admission)| admission);
-        let capture = self.captures_telemetry();
-        let report = self
-            .derived
-            .resource
-            .admit_resource_request(
-                ResourceRequestIntent::new(node),
-                self.branch_id(),
-                tick,
-                allow_coalescing,
-                timeout_admission,
-                capture.then_some(&mut self.derived.telemetry.resource),
-            )
-            .map_err(|error| {
-                if let Some(wake) = timeout_wake {
-                    let _ = self.derived.temporal.retire_wake(
-                        wake,
-                        TemporalWakeRetirementReason::Disposed,
-                        capture.then_some(&mut self.derived.telemetry.temporal),
-                    );
-                }
-                SignalConditionalServiceExecutionDenial::SlotAdmission(error)
-            })?;
-        Ok(report)
+        use crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedAdmissionState;
+        match self.admit_owned_async_request_handoff(node, true)? {
+            SignalOwnedAsyncManagedAdmissionState::Ready { request, .. } => Ok(request),
+            SignalOwnedAsyncManagedAdmissionState::CleanupRequired { cause, .. } => {
+                // The legacy Native host signature has no caller-owned cleanup
+                // result. Application orchestration uses the complete custody
+                // entrance; the Native runtime still owns its bounded state.
+                replacement_handoff::legacy_replacement_refusal(Some(cause))?;
+                unreachable!("a cleanup refusal carries a Native service cause")
+            }
+        }
     }
 
     pub(super) fn admit_owned_async_completion_with_lifecycle(

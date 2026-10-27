@@ -20,6 +20,7 @@ pub(in crate::domain_computation) use application_output_demand::RequiredOutputD
 pub(in crate::domain_computation) use application_output_demand::RequiredOutputExecution;
 mod application_program;
 pub(crate) mod application_query;
+pub(crate) mod application_resource;
 mod application_runtime;
 pub(crate) mod authenticated_principal;
 mod authentication_clock;

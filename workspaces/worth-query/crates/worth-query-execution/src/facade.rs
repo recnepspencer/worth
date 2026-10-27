@@ -21,6 +21,17 @@ pub mod causal_inspection {
     pub use crate::domain_computation::primary_graph::causal_inspection::*;
 }
 
+/// Directional integration for retained legacy request occurrences.
+#[doc(hidden)]
+pub mod resource_custody {
+    pub use crate::domain_computation::primary_graph::application_resource::legacy_bridge::{
+        WorthQueryInstalledOwnedAsyncSource, WorthQueryOwnedAsyncRequestCustody,
+        WorthQueryOwnedAsyncRuntimeCause, WorthQueryOwnedAsyncRuntimeDenial,
+        WorthQueryOwnedAsyncRuntimeServices, WorthQueryOwnedAsyncRuntimeStop,
+        WorthQueryOwnedAsyncRuntimeTopology,
+    };
+}
+
 pub mod domain_computation {
     pub use super::primary_graph::*;
     pub use crate::domain_computation::artifact_owner::*;

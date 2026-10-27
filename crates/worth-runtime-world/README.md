@@ -100,6 +100,20 @@ cleanup. The grouped
 the native reference equality, empty/committed twins and active-request release.
 The application resource entry is a separate Query integration contract.
 
+`admit_unqueued_owned_async_request` is the custody-preserving internal engine
+route. It applies the same exact World source validation and returns the genuine
+Bridge custodian even when its later descriptive handoff refuses. Queue mode
+comes from the installed declaration; queued declarations cannot enter this door.
+Initial supersession retains and retires the displaced timeout, while the created
+request keeps its own timeout. This lower route grants no application permission.
+
+For a read-only source, `admit_unqueued_owned_async_request_at_branch_head`
+selects the genuine observed head snapshot through the same World/Relational
+affinity checks. Its retained `BranchHead` basis carries no commit identity or
+claim of fresh currentness. The UI presentation backend uses this posture because
+it owns no product writes. It cannot substitute for an authoritative committed
+source; the committed entrance still refuses an empty target.
+
 This crate has no Query, Store, persistence, replay, codec or physical-runtime
 dependency. It does not provide durable restart, multi-parent history, rollback,
 or Query public completion. Query already consumes this crate through

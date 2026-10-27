@@ -10,6 +10,7 @@ pub enum BridgeOwnedAsyncManagedDenial {
     ForeignOwner,
     QueueUnavailable,
     RequestUnavailable,
+    ProvenanceUnavailable,
     ProgressDenied,
     Request(crate::facade::BridgeAsyncRequestIdentityRejection),
     Completion(crate::facade::BridgeAsyncCompletionRejection),
@@ -24,14 +25,19 @@ pub struct BridgeOwnedAsyncManagedRequestAdmission {
     pub(super) authority: Arc<()>,
     pub(super) port: BridgeConditionalSignalPort,
     pub(super) native: SignalOwnedAsyncManagedAdmission,
-    pub(super) business: crate::facade::BridgeAsyncRequestAdmissionRequest,
-    pub(super) request: Option<BridgeOwnedAsyncRequestAdmission>,
+    pub(super) business: Option<crate::facade::BridgeAsyncRequestAdmissionRequest>,
+    pub(super) request: Option<Arc<BridgeOwnedAsyncRequestAdmission>>,
     pub(super) refusal: Option<BridgeOwnedAsyncManagedDenial>,
 }
 
 impl BridgeOwnedAsyncManagedRequestAdmission {
     pub fn request(&self) -> Option<&BridgeOwnedAsyncRequestAdmission> {
-        self.request.as_ref()
+        self.request.as_deref()
+    }
+
+    /// Retains this exact immutable witness across later custodian progression.
+    pub fn retained_request(&self) -> Option<Arc<BridgeOwnedAsyncRequestAdmission>> {
+        self.request.clone()
     }
 
     /// A retained refusal or wake cleanup still needs attention. Active requests
@@ -60,6 +66,12 @@ impl BridgeOwnedAsyncManagedRequestAdmission {
 
     pub fn wake_cleanup_pending(&self) -> bool {
         self.native.wake_cleanup_pending()
+    }
+
+    /// This entry created the occurrence; coalesced entries do not acquire
+    /// exclusive ownership of their shared winner.
+    pub fn admitted_current_occurrence(&self) -> bool {
+        self.native.admitted_current_occurrence()
     }
 
     pub(super) fn require_owner(

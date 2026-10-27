@@ -566,10 +566,20 @@ disclosure facets. Close has no Inspect or result obligation; detailed close add
 only cleanup detail. ResourceRead admission binds that exact installed contract
 to genuine provider capacity, without borrowing the Access query's payload plan.
 
+The internal engine's owned async entry returns a move-owned custodian. Entry
+refusals return any admitted custodian in `WorthQueryOwnedAsyncRuntimeStop`;
+timeout/retry/revalidation borrow that same owner mutably. Immutable retained
+witnesses select their original occurrence and do not become successor custody.
+The UI opening adapter preserves and cleans up the actual refused-entry owner.
+This internal integration does not supply the unfinished Host resource endpoint.
+
 For asynchronous resources, the lower World/Bridge owner binds each admitted
 request to the exact committed Relational target, including populated forks
 whose branch version is zero. Empty targets return typed `NoCommittedSource`
-before Signal admission. This native repair does not yet provide a managed
+on that committed-source entrance before Signal admission. The explicit internal
+`admit_owned_bridge_async_request_at_branch_head` route instead retains a genuine
+observed head snapshot without a commit or fresh-currentness claim; the read-only
+UI presentation backend uses that posture. This native repair does not yet provide a managed
 resource entry through Decl/Host; that application integration is required by
 [milestone 9.18.1 Phase 8](../plans/WORTH-query/milestone-9.18.1.md#phase-8-managed-async-resources-through-decl-and-host).
 See [native async source custody](../crates/worth-runtime-world/README.md#owned-async-source-binding)

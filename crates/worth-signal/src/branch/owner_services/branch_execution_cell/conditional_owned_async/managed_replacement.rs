@@ -43,7 +43,8 @@ where
         basis: &AdmittedSignalBranchBasis,
         definition: &SignalInstalledDefinitionBinding,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         schedule: &SignalOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<
@@ -51,7 +52,7 @@ where
         SignalConditionalServiceExecutionDenial,
     > {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            Ok(state.advance_managed_owned_async_retry(node, queue, schedule, coordinate))
+            Ok(state.advance_managed_owned_async_retry(node, handle, queue, schedule, coordinate))
         })
     }
 
@@ -61,14 +62,15 @@ where
         basis: &AdmittedSignalBranchBasis,
         definition: &SignalInstalledDefinitionBinding,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         intent: ResourceRevalidationIntent,
     ) -> Result<
         Result<SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncQueueDenial>,
         SignalConditionalServiceExecutionDenial,
     > {
         self.with_conditional_owned_async_state(admission, basis, definition, |state| {
-            Ok(state.revalidate_managed_owned_async_request(node, queue, intent))
+            Ok(state.revalidate_managed_owned_async_request(node, handle, queue, intent))
         })
     }
 

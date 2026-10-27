@@ -31,22 +31,24 @@ where
     pub(in crate::branch::owner_services) fn advance_managed_owned_async_retry(
         &mut self,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         schedule: &SignalOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncQueueDenial> {
         self.state
-            .advance_managed_owned_async_retry(node, queue, schedule, coordinate)
+            .advance_managed_owned_async_retry(node, handle, queue, schedule, coordinate)
     }
 
     pub(in crate::branch::owner_services) fn revalidate_managed_owned_async_request(
         &mut self,
         node: ResourceNodeId,
-        queue: &ResourceManagedQueueBinding,
+        handle: ResourceRequestHandle,
+        queue: Option<&ResourceManagedQueueBinding>,
         intent: ResourceRevalidationIntent,
     ) -> Result<SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncQueueDenial> {
         self.state
-            .revalidate_managed_owned_async_request(node, queue, intent)
+            .revalidate_managed_owned_async_request(node, handle, queue, intent)
     }
 
     pub(in crate::branch::owner_services) fn finish_managed_owned_async_wake_cleanup(

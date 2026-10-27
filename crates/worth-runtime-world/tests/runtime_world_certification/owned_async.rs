@@ -16,6 +16,12 @@ mod managed;
 #[path = "owned_async/service_affinity.rs"]
 mod service_affinity;
 
+#[path = "owned_async/initial_custody.rs"]
+mod initial_custody;
+
+#[path = "owned_async/branch_head.rs"]
+mod branch_head;
+
 use fixture::{completion, source_commit, AsyncSourceCourt};
 use worth_runtime_bridge::facade::TruthCommitIdentity;
 use worth_runtime_world::facade::{
