@@ -79,7 +79,6 @@ impl WorthQueryProductActivationRegistry {
         &self,
         program: Option<&ApplicationProgramRevision>,
     ) -> Result<WorthQueryProductActivationReservation<'_>, WorthQueryProductActivationDenial> {
-        let capacity = self.capacity.reserve()?;
         let mut state = self
             .state
             .lock()
@@ -90,6 +89,7 @@ impl WorthQueryProductActivationRegistry {
         if program.is_some_and(|revision| state.unavailable_programs.contains(revision)) {
             return Err(WorthQueryProductActivationDenial::ProgramSupportUnavailable);
         }
+        let capacity = self.capacity.reserve()?;
         let next_active = program
             .map(|revision| {
                 state
@@ -98,7 +98,7 @@ impl WorthQueryProductActivationRegistry {
                     .copied()
                     .unwrap_or(0)
                     .checked_add(1)
-                    .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)
+                    .ok_or(WorthQueryProductActivationDenial::OccupancyOverflow)
             })
             .transpose()?;
         reserve_gate(&mut state)?;
@@ -308,7 +308,7 @@ fn reserve_gate(
     let reserved = state
         .reserved_gates
         .checked_add(1)
-        .ok_or(WorthQueryProductActivationDenial::CapacityExhausted)?;
+        .ok_or(WorthQueryProductActivationDenial::OccupancyOverflow)?;
     state
         .gates
         .try_reserve(reserved)
@@ -342,3 +342,6 @@ impl Drop for WorthQueryProgramRetirementBarrier {
             .remove(&self.revision);
     }
 }
+
+#[cfg(test)]
+mod defensive_tests;

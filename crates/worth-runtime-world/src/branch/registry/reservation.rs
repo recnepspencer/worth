@@ -306,25 +306,32 @@ pub(super) fn reserve_slot(
         .entries
         .len()
         .checked_add(state.reserved_branches)
-        .ok_or(ProductBranchRegistryDenial::CapacityExhausted)?;
-    if state
+        .ok_or(ProductBranchRegistryDenial::OccupancyOverflow)?;
+    if let Some(limit) = state
         .maximum_branches
-        .is_some_and(|maximum| occupied >= maximum)
+        .filter(|maximum| occupied >= *maximum)
     {
-        return Err(ProductBranchRegistryDenial::CapacityExhausted);
+        debug_assert_eq!(
+            occupied, limit,
+            "branch capacity occupancy exceeds its installed limit"
+        );
+        return Err(ProductBranchRegistryDenial::CapacityExhausted {
+            limit,
+            occupancy: occupied,
+        });
     }
     let reserved = state
         .reserved_branches
         .checked_add(1)
-        .ok_or(ProductBranchRegistryDenial::CapacityExhausted)?;
+        .ok_or(ProductBranchRegistryDenial::OccupancyOverflow)?;
     state
         .entries
         .try_reserve(reserved)
-        .map_err(|_| ProductBranchRegistryDenial::CapacityExhausted)?;
+        .map_err(|_| ProductBranchRegistryDenial::AllocationRejected)?;
     state
         .lifecycles
         .try_reserve(reserved)
-        .map_err(|_| ProductBranchRegistryDenial::CapacityExhausted)?;
+        .map_err(|_| ProductBranchRegistryDenial::AllocationRejected)?;
     state.reserved_branches = reserved;
     Ok(())
 }

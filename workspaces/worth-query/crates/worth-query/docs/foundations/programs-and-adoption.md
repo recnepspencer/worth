@@ -697,7 +697,8 @@ While a retirement runs, adoption to that revision is refused with
 | Transaction and publication | `TransactionAdmission(..)`, `TransactionStaging(..)`, `TargetRuleRejected { .. }`, `RelationalPreparation(..)`, `WorldPreparation(..)`, `ProductActivation(..)` | `TargetRuleRejected` means existing state violates a target rule: migrate it. The rest are storage or publication refusals. |
 
 `ProductActivation` carries `WorthQueryBranchAdoptionActivationDenial`:
-`CapacityExhausted`, `AllocationRejected`, `UnknownProductBranch`,
+`CapacityExhausted { limit, occupancy }`, `OccupancyOverflow`,
+`AllocationRejected`, `UnknownProductBranch`,
 `RegistryUnavailable`, `GateUnavailable`, `PublicationInProgress`, or
 `ProgramSupportUnavailable`.
 

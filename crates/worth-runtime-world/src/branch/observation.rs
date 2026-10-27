@@ -184,6 +184,25 @@ pub enum RuntimeWorldBranchAdmissionDenial {
     RetiredBranch,
     DuplicateName,
     CapacityExhausted,
+    /// Failed branch-slot reservation, sampled under the enforcing registry lock.
+    /// Counts the installed root, installed non-root heads and reserved creations.
+    /// Retired references and retained observations/cleanup are excluded; they
+    /// no longer hold World branch membership. The refused creation is excluded.
+    /// In-flight creations owning a branch reservation are included. Before a
+    /// ProductUnpublished is returned, its branch reservation is released;
+    /// retained component custody and cleanup are excluded.
+    /// Occupancy equals the installed limit at refusal. Admissions never exceed
+    /// that immutable limit; a larger count is an internal invariant failure.
+    BranchCapacityExhausted {
+        limit: usize,
+        occupancy: usize,
+    },
+    /// Branch registry arithmetic could not represent another membership slot.
+    /// Defensive: backed entries/reservations cannot reach this state while
+    /// their counters remain consistent.
+    BranchOccupancyOverflow,
+    /// Storage for the branch registry reservation could not be allocated.
+    BranchAllocationRejected,
     IdentityExhausted,
     /// A creation intent reached branch creation without the two explicit
     /// component postures a creation cell requires.

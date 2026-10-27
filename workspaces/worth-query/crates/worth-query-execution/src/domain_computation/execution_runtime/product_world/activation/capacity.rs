@@ -29,7 +29,19 @@ impl ActivationCapacity {
                     live.checked_add(1)
                 }
             })
-            .map_err(|_| WorthQueryProductActivationDenial::CapacityExhausted)?;
+            // fetch_update returns the value at the failed atomic reservation,
+            // rather than a later load that could race with a release.
+            .map_err(|occupancy| {
+                if let Some(limit) = self.maximum.filter(|maximum| occupancy >= *maximum) {
+                    debug_assert_eq!(
+                        occupancy, limit,
+                        "activation capacity occupancy exceeds its installed limit"
+                    );
+                    WorthQueryProductActivationDenial::CapacityExhausted { limit, occupancy }
+                } else {
+                    WorthQueryProductActivationDenial::OccupancyOverflow
+                }
+            })?;
         Ok(ActivationCapacityReservation(Arc::clone(self)))
     }
 }
@@ -55,11 +67,20 @@ mod tests {
         drop(held);
         assert_eq!(owner.live.load(Ordering::Acquire), 0);
         owner.live.store(usize::MAX, Ordering::Release);
-        assert!(matches!(
-            owner.reserve(),
-            Err(WorthQueryProductActivationDenial::CapacityExhausted)
-        ));
+        assert_eq!(
+            owner.reserve().err(),
+            Some(WorthQueryProductActivationDenial::OccupancyOverflow)
+        );
         assert_eq!(owner.live.load(Ordering::Acquire), usize::MAX);
         owner.live.store(0, Ordering::Release);
+    }
+
+    #[test]
+    #[cfg(debug_assertions)]
+    #[should_panic(expected = "activation capacity occupancy exceeds its installed limit")]
+    fn activation_capacity_desynchronization_is_loud_in_debug_builds() {
+        let owner = ActivationCapacity::new(Some(1));
+        owner.live.store(2, Ordering::Release);
+        let _ = owner.reserve();
     }
 }

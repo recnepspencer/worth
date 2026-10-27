@@ -6,6 +6,7 @@ use worth_query::facade::product::{
     WorthQueryProductBranchCloseDenial, WorthQueryProductBranchCreateError,
     WorthQueryProductBranchOwnerCleanupDenial,
 };
+use worth_query_execution::facade::product::WorthQueryProductBranchCreationDenial;
 
 #[test]
 fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
@@ -46,7 +47,12 @@ fn outer_workspace_close_releases_exact_branch_and_reuses_world_capacity() {
         .expect("installed host call opens");
     assert!(matches!(
         saturated,
-        Err(WorthQueryProductBranchCreateError::Creation(_))
+        Err(WorthQueryProductBranchCreateError::Creation(
+            WorthQueryProductBranchCreationDenial::CoordinationCapacityExhausted {
+                limit: 2,
+                occupancy: 2
+            }
+        ))
     ));
 
     let retained = workspace

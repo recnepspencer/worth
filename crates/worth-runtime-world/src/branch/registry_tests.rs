@@ -53,7 +53,10 @@ fn named_reservations_are_bounded_and_drop_restores_the_slot_and_name() {
     assert_eq!(registry.reserved_branch_count(), 1);
     assert!(matches!(
         registry.reserve_branch(owner, ProductBranchName::try_new("other").unwrap()),
-        Err(ProductBranchRegistryDenial::CapacityExhausted)
+        Err(ProductBranchRegistryDenial::CapacityExhausted {
+            limit: 1,
+            occupancy: 1
+        })
     ));
     assert!(matches!(
         registry.reserve_branch(owner, name.clone()),
@@ -81,5 +84,105 @@ fn foreign_owner_cannot_consume_branch_capacity() {
         ),
         Err(ProductBranchRegistryDenial::ForeignOwner)
     ));
+    assert_eq!(registry.reserved_branch_count(), 0);
+}
+
+#[test]
+fn defensive_branch_counter_overflow_and_allocation_have_distinct_producers() {
+    use crate::branch::RuntimeWorldBranchAdmissionDenial;
+    // A consistent live registry cannot reach these representational sizes.
+    // Inject only its bookkeeping counter; no authority or branch is fabricated.
+    for (reserved, expected) in [
+        (
+            usize::MAX,
+            RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow,
+        ),
+        (
+            usize::MAX - 1,
+            RuntimeWorldBranchAdmissionDenial::BranchAllocationRejected,
+        ),
+    ] {
+        let construction = RuntimeWorldOwnerConstructionContract::new().unwrap();
+        let owner = construction.owner_identity();
+        let registry = ProductBranchRegistry::new(
+            owner,
+            RuntimeWorldBudgets::without_policy_limits().live_product_branches(),
+        );
+        registry.state.lock().unwrap().reserved_branches = reserved;
+        let name = ProductBranchName::try_new("defensive-reservation").unwrap();
+        assert_eq!(
+            registry
+                .reserve_branch(owner, name.clone())
+                .map_err(RuntimeWorldBranchAdmissionDenial::from)
+                .err(),
+            Some(expected)
+        );
+        {
+            let state = registry.state.lock().unwrap();
+            assert_eq!(state.reserved_branches, reserved);
+            assert!(state.reserved_names.is_empty());
+            assert_eq!(state.entries.len(), 0);
+        }
+        registry.state.lock().unwrap().reserved_branches = 0;
+        drop(registry.reserve_branch(owner, name).unwrap());
+        assert_eq!(registry.reserved_branch_count(), 0);
+    }
+}
+
+#[test]
+#[cfg(debug_assertions)]
+#[should_panic(expected = "branch capacity occupancy exceeds its installed limit")]
+fn branch_capacity_desynchronization_is_loud_in_debug_builds() {
+    let construction = RuntimeWorldOwnerConstructionContract::new().unwrap();
+    let owner = construction.owner_identity();
+    let registry = ProductBranchRegistry::new(owner, branch_limit(1));
+    registry.state.lock().unwrap().reserved_branches = 2;
+    let _ = registry.reserve_root(owner);
+}
+
+#[test]
+fn installed_entry_and_reserved_counter_overflow_precedes_capacity_policy() {
+    use crate::branch::reference_test_fixture::{
+        bootstrap_product_head_protection, initial_snapshot, installed_root,
+    };
+    use crate::branch::{ProductBranchReferenceCell, RuntimeWorldBranchAdmissionDenial};
+
+    let (mut fixture, catalog, root) = installed_root();
+    let owner = fixture.owner_identity;
+    let registry = ProductBranchRegistry::new(owner, branch_limit(2));
+    let snapshot = initial_snapshot(&mut fixture, root);
+    let protection = bootstrap_product_head_protection(&fixture, &catalog, snapshot.clone());
+    let cell = ProductBranchReferenceCell::new(protection).unwrap();
+    registry
+        .reserve_root(owner)
+        .unwrap()
+        .install_root(
+            snapshot.branch().name().clone(),
+            snapshot.branch().clone(),
+            snapshot.lifecycle(),
+            cell,
+        )
+        .unwrap();
+    assert_eq!(registry.branch_count(), 1);
+    // Only desynchronize bookkeeping: the installed entry retains real owner,
+    // history and component protection. The first occupancy sum must overflow.
+    registry.state.lock().unwrap().reserved_branches = usize::MAX;
+    let name = ProductBranchName::try_new("overflow-with-installed-root").unwrap();
+    for _ in 0..2 {
+        assert_eq!(
+            registry
+                .reserve_branch(owner, name.clone())
+                .map_err(RuntimeWorldBranchAdmissionDenial::from)
+                .err(),
+            Some(RuntimeWorldBranchAdmissionDenial::BranchOccupancyOverflow)
+        );
+        let state = registry.state.lock().unwrap();
+        assert_eq!(state.entries.len(), 1);
+        assert_eq!(state.reserved_branches, usize::MAX);
+        assert!(state.reserved_names.is_empty());
+    }
+    registry.state.lock().unwrap().reserved_branches = 0;
+    drop(registry.reserve_branch(owner, name).unwrap());
+    assert_eq!(registry.branch_count(), 1);
     assert_eq!(registry.reserved_branch_count(), 0);
 }
