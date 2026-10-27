@@ -18,6 +18,11 @@ use super::{
     SignalInstalledDefinitionBinding,
 };
 
+mod completion_commit;
+mod managed_queue;
+pub use completion_commit::SignalOwnedAsyncCompletionCommit;
+pub use managed_queue::{SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncQueueDenial};
+
 /// Opaque proof that one presealed resource definition belongs to this exact
 /// conditional service occurrence. Copying node text cannot manufacture it.
 #[derive(Clone)]

@@ -14,6 +14,8 @@ use crate::data::temporal::{
 
 use super::BranchState;
 
+mod completion_commit;
+mod managed_queue;
 mod support;
 
 impl<D, I, T> BranchState<D, I, T>
@@ -26,6 +28,19 @@ where
         &mut self,
         node: ResourceNodeId,
     ) -> Result<SignalOwnedAsyncRequestAdmission, SignalConditionalServiceExecutionDenial> {
+        let report = self.admit_owned_async_request_report(node, true)?;
+        let in_flight = self.require_in_flight(report.admitted_request().handle())?;
+        Ok(SignalOwnedAsyncRequestAdmission::new(report, in_flight))
+    }
+
+    fn admit_owned_async_request_report(
+        &mut self,
+        node: ResourceNodeId,
+        allow_coalescing: bool,
+    ) -> Result<
+        crate::data::resource::ResourceRequestAdmissionReport,
+        SignalConditionalServiceExecutionDenial,
+    > {
         self.admit_owned_async_source(node)?;
         let tick = self.derived.temporal.clock_basis().current_tick();
         let timeout = self.schedule_owned_async_timeout(node, tick)?;
@@ -39,7 +54,7 @@ where
                 ResourceRequestIntent::new(node),
                 self.branch_id(),
                 tick,
-                true,
+                allow_coalescing,
                 timeout_admission,
                 capture.then_some(&mut self.derived.telemetry.resource),
             )
@@ -53,8 +68,7 @@ where
                 }
                 SignalConditionalServiceExecutionDenial::SlotAdmission(error)
             })?;
-        let in_flight = self.require_in_flight(report.admitted_request().handle())?;
-        Ok(SignalOwnedAsyncRequestAdmission::new(report, in_flight))
+        Ok(report)
     }
 
     pub(super) fn admit_owned_async_completion_with_lifecycle(

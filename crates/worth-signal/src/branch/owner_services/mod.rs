@@ -55,10 +55,12 @@ pub use conditional_execution::{
     SignalConditionalServiceExecutionRequest, SignalConditionalServiceIssuanceDenial,
     SignalConditionalSuccessorTransition, SignalConditionalTemporalPartition,
     SignalConditionalTemporalPartitionDenial, SignalConditionalTemporalPromotion,
-    SignalConditionalTemporalPromotionView, SignalOwnedAsyncRequestAdmission,
-    SignalOwnedAsyncRetryAdmission, SignalOwnedAsyncRetrySchedule,
-    SignalOwnedAsyncRevalidationAdmission, SignalOwnedAsyncSourceBinding,
-    SignalOwnedAsyncTimeoutAdmission, SignalPreparedConditionalInstallationExtension,
+    SignalConditionalTemporalPromotionView, SignalOwnedAsyncCompletionCommit,
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncQueueDenial,
+    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
+    SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
+    SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission,
+    SignalPreparedConditionalInstallationExtension,
 };
 pub(crate) use counters::SignalOwnerServiceCounters;
 pub use lifecycle_port::SignalBranchLifecyclePort;

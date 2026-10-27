@@ -898,6 +898,19 @@ repair alone.
 
 ## Phase 8: Managed Async Resources Through Decl And Host
 
+**Status:** Open. The native prerequisite adds World-qualified managed request
+admission, exact attempt-owned queue custody and genuine Signal completion commit.
+Completion admission remains distinct from commit; cancellation leaves queue drain
+custody with its owner. A committed result retains any refused timeout cleanup.
+These lower-owner operations do not yet provide the Decl/Host resource endpoint.
+Managed declarations refuse legacy admission, retry and revalidation entrances
+before effects. Atomic managed replacement remains required: the native cell must
+validate the old attempt and drained queue, admit its replacement and bind the new
+queue in one lock scope. The legacy unmanaged post-admission error handoff can
+lose successor custody and is not certified by this prerequisite; its migration,
+the real application control handoff, provider verification and fresh authorization
+and disclosure remain required before this phase can close.
+
 **Depends on:** Phase 7 and the completed application entry, provider, conditional
 runtime and 9.17.7 external-effect contracts. This carries the implemented 9.4
 resource machinery into the current application SDK; it does not reopen 9.4's

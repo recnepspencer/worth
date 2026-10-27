@@ -85,7 +85,8 @@ pub(crate) use operation_scope::{
     SignalConditionalDefinitionPublicationScope, SignalConditionalOperationScopeBinding,
 };
 pub use owned_async::{
-    SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
+    SignalOwnedAsyncCompletionCommit, SignalOwnedAsyncManagedAdmission,
+    SignalOwnedAsyncQueueDenial, SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
     SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
     SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission,
 };

@@ -8,6 +8,11 @@ use crate::facade::{
 use super::super::BridgeOwnedSignalRuntime;
 use super::BridgeOwnedAsyncRequestResponseDeclaration;
 
+pub(in crate::conditional_execution) struct BridgeInstalledOwnedAsyncDeclaration {
+    pub(super) lowered: LoweredBridgeAsyncSourceDeclaration,
+    pub(super) queue_capacity: Option<std::num::NonZeroU64>,
+}
+
 impl BridgeOwnedSignalRuntime {
     pub(in crate::conditional_execution) fn install_owned_async_request_response(
         &mut self,
@@ -105,7 +110,13 @@ impl BridgeOwnedSignalRuntime {
         self.async_declarations
             .get_mut()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(declaration.identity, lowered.clone());
+            .insert(
+                declaration.identity,
+                BridgeInstalledOwnedAsyncDeclaration {
+                    lowered: lowered.clone(),
+                    queue_capacity: declaration.managed_queue_capacity,
+                },
+            );
         Ok(lowered)
     }
 
@@ -117,7 +128,19 @@ impl BridgeOwnedSignalRuntime {
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .get(identity)
-            .cloned()
+            .map(|installed| installed.lowered.clone())
+    }
+
+    pub(super) fn owned_async_queue_capacity(
+        &self,
+        lowered: &LoweredBridgeAsyncSourceDeclaration,
+    ) -> Option<std::num::NonZeroU64> {
+        self.async_declarations
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .get(lowered.declaration_identity().as_str())
+            .filter(|installed| installed.lowered == *lowered)
+            .and_then(|installed| installed.queue_capacity)
     }
 
     pub fn owned_async_declaration_count(&self) -> usize {

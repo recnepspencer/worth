@@ -53,6 +53,24 @@ where
             .admit_owned_async_request(bridge, declaration, observation, relational_source)
     }
 
+    pub fn admit_managed_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        declaration: &worth_runtime_bridge::facade::LoweredBridgeAsyncSourceDeclaration,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        super::owner::RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    > {
+        self.root.admit_managed_owned_async_request(
+            bridge,
+            declaration,
+            observation,
+            relational_source,
+        )
+    }
+
     pub fn revalidate_owned_async_request(
         &self,
         bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,

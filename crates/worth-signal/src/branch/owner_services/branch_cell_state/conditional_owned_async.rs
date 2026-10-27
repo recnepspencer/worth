@@ -1,3 +1,6 @@
+mod completion_commit;
+mod managed_queue;
+
 use crate::branch::owner_services::conditional_execution::{
     SignalConditionalServiceExecutionDenial, SignalOwnedAsyncRequestAdmission,
     SignalOwnedAsyncRetryAdmission, SignalOwnedAsyncRetrySchedule,
