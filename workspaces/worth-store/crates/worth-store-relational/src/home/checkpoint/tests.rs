@@ -72,6 +72,7 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
         .runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             ExecutionAllocationPolicy::SystemAllocation,
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
@@ -86,9 +87,7 @@ fn a_late_capture_cannot_regress_the_selected_transition_frontier_or_membership(
     home.runtime
         .fork_branch(&execution, BranchId("later".into()), source)
         .unwrap();
-    let selected = home
-        .checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    let selected = home.checkpoint(&execution).unwrap();
     assert!(selected.covered_transitions().0 > earlier.covered_branch_transitions().unwrap().0);
     let refused = checkpoint_record::publish(
         &home.serving,

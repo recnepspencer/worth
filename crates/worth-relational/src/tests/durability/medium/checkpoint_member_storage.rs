@@ -13,6 +13,7 @@ fn filed_external_members_survive_checkpoint_replacement_and_obey_read_limits() 
         runtime
             .durability_authority()
             .native_checkpoint_with_policy(
+                execution,
                 execution.allocation_policy(),
                 RelationalCheckpointArtifactPolicy::ExternalMembers {
                     current_members: &[],

@@ -1,5 +1,4 @@
 use super::*;
-use worth_execution::ExecutionAllocationPolicy;
 
 #[test]
 fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds() {
@@ -43,7 +42,10 @@ fn discarded_ordering_stays_cold_after_native_checkpoint_restore_then_rebuilds()
     assert!(discarded.removed_generation_count() > 0);
     let checkpoint = runtime
         .durability_authority()
-        .native_checkpoint(ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(
+            execution,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
         .unwrap();
     let mut restored = durable_runtime_with_index_field_aspects();
     crate::tests::support::bind_durable_medium(

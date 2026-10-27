@@ -33,10 +33,14 @@ fn checkpoint(world: &world::World) -> crate::published_checkpoint::PublishedChe
     world
         .application
         .with_host_advancement(|phase| {
-            world.application.primary_provider.graph.with_runtime(
-                &phase.borrowed_request_for_test(),
-                crate::published_checkpoint::capture,
-            )
+            let execution = phase.borrowed_request_for_test();
+            world
+                .application
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
+                    crate::published_checkpoint::capture(runtime, &execution)
+                })
         })
         .unwrap()
 }

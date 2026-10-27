@@ -7,6 +7,7 @@ use super::DurabilityError;
 pub enum RelationalNativeCheckpointCaptureDenial {
     Durability(DurabilityError),
     Allocation(ExecutionAllocationDenial),
+    Request(crate::execution::RelationalExecutionDenialCause),
 }
 
 impl From<DurabilityError> for RelationalNativeCheckpointCaptureDenial {
@@ -25,6 +26,7 @@ impl std::fmt::Display for RelationalNativeCheckpointCaptureDenial {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Durability(error) => write!(formatter, "native checkpoint durability: {error:?}"),
+            Self::Request(cause) => write!(formatter, "native checkpoint request: {cause:?}"),
             Self::Allocation(error) => write!(formatter, "native checkpoint allocation: {error}"),
         }
     }
@@ -34,7 +36,7 @@ impl std::error::Error for RelationalNativeCheckpointCaptureDenial {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Allocation(error) => Some(error),
-            Self::Durability(_) => None,
+            Self::Durability(_) | Self::Request(_) => None,
         }
     }
 }
@@ -72,5 +74,17 @@ impl From<crate::storage::data::RelationalStorageUnavailable>
             unreachable!()
         };
         Self::Durability(error)
+    }
+}
+
+impl From<crate::storage::residency::RelationalResidencyDemandFailure>
+    for RelationalNativeCheckpointCaptureDenial
+{
+    fn from(failure: crate::storage::residency::RelationalResidencyDemandFailure) -> Self {
+        use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
+        match failure {
+            Failure::StorageUnavailable(failure) => failure.into(),
+            Failure::Request(cause) => Self::Request(cause),
+        }
     }
 }

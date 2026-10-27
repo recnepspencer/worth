@@ -12,6 +12,12 @@ use worth_store::physical_runtime::{
 
 #[test]
 fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
+    let request = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(None),
+        worth_execution::CancellationSource::new().token(),
+        None,
+    );
+    let execution = worth_execution::ExecutionRequest::serial(&request);
     let directory = tempfile::tempdir().unwrap();
     let serving = Arc::new(
         crate::physical_store::initialize(
@@ -25,6 +31,7 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            &execution,
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],
@@ -104,7 +111,6 @@ fn checkpoint_replacement_carries_a_member_until_its_last_read_custody_drops() {
         "the producer-written native basis still has its index member"
     );
     let provider_owner = source.retain_members(&remaining).unwrap();
-    drop(records);
     drop(source);
     let serving = match Arc::try_unwrap(serving) {
         Err(serving) => serving,

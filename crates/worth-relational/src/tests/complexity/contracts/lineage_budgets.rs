@@ -261,3 +261,26 @@ fn complexity_budget_replay_lineage_parity_reports_authority_basis_and_digest_wi
     );
     assert_eq!(counters.replay_lineage_authoritative_basis_rejections, 0);
 }
+
+#[test]
+fn complexity_budget_lineage_finalization_and_publication_report_artifact_width() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    for population in [1, 16] {
+        let runtime = runtime_with_test_schema();
+        for index in 0..population {
+            let created = create_entity_outcome(execution, &runtime, &format!("prior-{index}"));
+            release_test_commit_snapshot(&runtime, &created);
+        }
+        runtime.performance_access().reset_counters();
+        let created = create_entity_outcome(execution, &runtime, "measured");
+        release_test_commit_snapshot(&runtime, &created);
+        let counters = runtime.performance_access().counters();
+        let events = counters.lineage_finalization_event_batch_width;
+        let decisions = counters.lineage_finalization_decision_log_width;
+        assert!((1..8).contains(&events), "{counters:?}");
+        assert!((1..8).contains(&decisions), "{counters:?}");
+        assert_eq!(counters.lineage_publication_event_width, events);
+        assert_eq!(counters.lineage_publication_decision_width, decisions);
+    }
+}

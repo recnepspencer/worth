@@ -1,7 +1,8 @@
 # Residency phase 2 matrix ledger
 
-This is the current coverage inventory. Final clean-tree lane execution is
-still outstanding. Slice logs are intermediate evidence, not final acceptance.
+This is the current coverage inventory. Final lane evidence is recorded under
+`target/lane-evidence`. Independent review accepted those lanes except the
+clean-tree line-cap invocation, which is replaced by a phase-diff scoped run.
 The chronological boundary findings, corrections and slice results are in
 `residency-phase-2.md`.
 

@@ -141,6 +141,7 @@ fn head_write_capture_and_full_promotion_preserve_current_and_retained_reference
         .runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &members,

@@ -21,13 +21,16 @@ impl PartialEq for PublishedCheckpoint {
 }
 impl Eq for PublishedCheckpoint {}
 
-pub(crate) fn capture(runtime: &RelationalRuntime) -> PublishedCheckpoint {
+pub(crate) fn capture(
+    runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> PublishedCheckpoint {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
     let native = runtime
         .durability_authority()
-        .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     // Retain the owner's capture, before transport decoding discards its
     // member handles. Compare every member's locator AND bytes, never an empty

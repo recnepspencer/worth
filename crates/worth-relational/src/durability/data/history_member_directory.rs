@@ -17,6 +17,33 @@ pub(crate) struct RelationalHistoryMemberDirectory {
 }
 
 impl RelationalHistoryMemberDirectory {
+    /// Distinct encoded input and longest dependency path, without payload I/O.
+    /// Admission has already proven this graph acyclic.
+    pub(crate) fn fold_span(&self, root: RelationalDurableMemberLocator) -> (usize, u64) {
+        let mut depths = BTreeMap::<RelationalDurableMemberLocator, usize>::new();
+        let mut input_bytes = 0_u64;
+        let mut pending = vec![(root, false)];
+        while let Some((member, leaving)) = pending.pop() {
+            if depths.contains_key(&member) {
+                continue;
+            }
+            if leaving {
+                let depth = self
+                    .bases(member)
+                    .iter()
+                    .map(|base| depths[base])
+                    .max()
+                    .unwrap_or(0);
+                depths.insert(member, depth.saturating_add(1));
+                input_bytes = input_bytes.saturating_add(member.length);
+            } else {
+                pending.push((member, true));
+                pending.extend(self.bases(member).iter().rev().map(|base| (*base, false)));
+            }
+        }
+        (depths[&root], input_bytes)
+    }
+
     pub(crate) fn readmit(
         declarations: &[RelationalCheckpointHistoryDependency],
         roots: impl IntoIterator<Item = RelationalDurableMemberLocator>,

@@ -34,7 +34,7 @@ fn collision_dictionary() -> (
             (admitted.symbol, text)
         })
         .collect();
-    let (table, directory, source, _) = checkpoint_dictionary(&runtime);
+    let (table, directory, source, _) = checkpoint_dictionary(&execution, &runtime);
     (table, directory, source, texts)
 }
 

@@ -1,6 +1,6 @@
 //! A real Store home agrees with an independent memory runtime at every warmth.
 use super::{batches, durable_run, schema_transition, workload};
-use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
+use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::RelationalBranchObservation,
     history::BranchId,
@@ -73,8 +73,7 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
             .map(RecordRef::Entity)
             .collect::<Vec<_>>(),
     );
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     home.close();
     let home = durable_run::open(&location, &execution).unwrap();
     let reopened = home.cold_storage_reads();
@@ -140,8 +139,7 @@ fn cold_warm_and_full_home_reads_and_retained_observations_agree_with_memory() {
         let batch = batches::update(entities[0], 1000 + step);
         workload::commit(&reference, &execution, &branch, batch.clone()).unwrap();
         workload::commit(home.runtime(), &execution, &branch, batch).unwrap();
-        home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
+        home.checkpoint(&execution).unwrap();
         assert_eq!(
             render(home.runtime(), &execution, &selected, &entities),
             retained_expected,

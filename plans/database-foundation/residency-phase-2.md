@@ -3237,3 +3237,21 @@ clippy, package formatting, dirty line caps and agent-context pass. Composition
 finds zero scan errors and two existing long oracle functions; each keeps its
 action, independent model and assertions together. The full clean-tree Bank
 workspace lane is repeated after this test-only correction.
+
+### Home oracle acknowledged history during an indeterminate publication
+
+The final unbounded-worker home oracle passes 35 tests and fails only
+an_unresolved_commit_blocks_later_commits_until_reopen_then_resolves. Its
+full-history helper rereads cold envelope 1 after Store becomes indeterminate,
+and honestly receives typed Envelope(1)/SourceUnavailable. Phase 2 history on
+demand and D9 retire the assumption that all acknowledged bodies stay resident;
+the fixture is wrong to require that cold read while the medium is unavailable.
+Retain acknowledged artifact bytes before arming the fault, then use the
+existing append_live_artifacts oracle to inspect newly performed positions.
+Keep the original installed-count, exact unresolved-fate/blocking, journal
+refusal, recovered-count and digest-resolution assertions. Additionally compare
+the acknowledged byte prefix against fully reread recovery artifacts. No
+production failure is hidden or translated to absence, and no test is removed.
+The failed log is preserved as failed-final-home-oracle-cold-history-099ca047e1.log.
+Only the complete home-oracle lane is rerun after this fixture correction;
+the five Store library tests already pass and their source is unchanged.

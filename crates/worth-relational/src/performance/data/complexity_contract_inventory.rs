@@ -1,6 +1,8 @@
 use super::{ComplexityContract, ComplexityStatus};
 
 #[cfg(test)]
+mod history_capture;
+#[cfg(test)]
 mod index_access;
 
 #[cfg(test)]
@@ -11,7 +13,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(touched_partitions + changed_records + touched_partition_clone_on_write)",
         budget_summary: "Commit/apply must report the number of partitions touched so partition-aware IDs do not degrade into global work by accident.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_partition_local_commit_reports_touched_partitions"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_partition_local_commit_reports_touched_partitions"],
     },
     ComplexityContract {
         id: "runtime.bulk_create.allocate",
@@ -35,7 +37,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(touched_entity_slots + touched_relation_slots + adjacency_deltas)",
         budget_summary: "Commit-time mutation tracking must remain slot-local so structural validation can avoid rescanning untouched slots.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_mutation_structural_invariants_are_touched_slot_bounded"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_mutation_structural_invariants_are_touched_slot_bounded"],
     },
     ComplexityContract {
         id: "runtime.partition_edition.acquire",
@@ -47,7 +49,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
             "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_contract_partition_edition_acquisition_is_declared_and_measured",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_ordinary_commit_copies_neither_lane_of_the_substrate",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_write_under_an_outstanding_reader_copies_the_spine_once",
-            "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_forking_a_runtime_charges_the_reconstructive_lane",
+            "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_forking_defers_copy_cost_until_a_partition_is_written",
             "tests::complexity::contracts::substrate_edition_budgets::edition_copy_lanes::complexity_budget_read_only_retention_sweep_pins_one_edition_for_every_slot",
             "tests::complexity::contracts::substrate_edition_budgets::partition_copy_on_write::complexity_budget_unobserved_write_copies_no_partition",
             "tests::complexity::contracts::substrate_edition_budgets::partition_copy_on_write::complexity_budget_observed_write_copies_only_the_partition_it_touches",
@@ -80,10 +82,10 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.snapshot_pin_maintenance",
         function_path: "logic/runtime/state/subsystems/visibility/{snapshot_handles.rs,cache.rs}",
-        declared_time_complexity: "O(snapshot_delta_records)",
-        budget_summary: "Commit and release paths must not rebuild all pin counters from live snapshots.",
+        declared_time_complexity: "O(1) root obligation plus snapshot registry lookup; no per-record pin walk",
+        budget_summary: "Snapshot release drops its carried exact-root obligation without visiting record slots or rebuilding pin counters.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_snapshot_pin_maintenance_is_incremental"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::snapshot_visibility::complexity_budget_snapshot_release_uses_only_the_carried_root_obligation"],
     },
     ComplexityContract {
         id: "runtime.relation_identity_validation",
@@ -92,19 +94,19 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Duplicate relation identity checks scan the smaller current endpoint neighborhood, skip newly created targets, and use deterministic same-batch keys.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::complexity::contracts::complexity_budget_relation_identity_validation_avoids_partition_scan",
+            "tests::complexity::contracts::commit_budgets::relation_identity_validation::complexity_budget_relation_identity_validation_avoids_partition_scan",
             "authority::intent_merge::relation_validation::relation_identity_scan::tests::relation_identity_admission_scans_the_smaller_endpoint_and_skips_new_targets",
         ],
     },
     ComplexityContract {
         id: "runtime.unique_entity_invariant_lookup",
         function_path: "validation/engine/engine.rs::execute",
-        declared_time_complexity: "O(touched_entities + unique_lookup_hits)",
-        budget_summary: "Unique-field invariant checks should use touched entities plus the maintained lookup index instead of broad visible-entity scans when the changed set is known.",
+        declared_time_complexity: "O(selected_entity_slots + selected_unique_field_values)",
+        budget_summary: "Global uniqueness scans the exact selected state, including unrelated entities, and counts every visited slot; a maintained index is not the validation authority.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::complexity::contracts::complexity_budget_unique_entity_invariant_uses_changed_set_lookup",
-            "tests::complexity::contracts::complexity_budget_commit_boundary_unique_invariant_uses_merged_plan_lookup",
+            "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_unique_entity_invariant_scans_the_selected_state",
+            "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan",
         ],
     },
     ComplexityContract {
@@ -114,11 +116,11 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Relation-integrity invariants must stay narrowed to touched endpoints and declared contract families rather than rediscovering global legality during execution.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::schema::relation_integrity_declaration_lowering_is_stable",
-            "tests::complexity::contracts::complexity_budget_relation_integrity_skips_entity_only_mutation_work",
-            "tests::complexity::contracts::complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidates",
-            "tests::complexity::contracts::complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs",
-            "tests::complexity::contracts::complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_endpoints",
+            "tests::schema::relation_integrity::relation_integrity_declaration_lowering_is_stable",
+            "tests::complexity::contracts::commit_budgets::relation_integrity_counters::complexity_budget_relation_integrity_skips_entity_only_mutation_work",
+            "tests::complexity::contracts::commit_budgets::relation_integrity_counters::complexity_budget_relation_integrity_uniqueness_uses_adjacency_local_candidates",
+            "tests::complexity::contracts::commit_budgets::relation_integrity_counters::complexity_budget_relation_integrity_symmetry_checks_only_touched_pairs",
+            "tests::complexity::contracts::commit_budgets::relation_integrity_counters::complexity_budget_relation_integrity_endpoint_deletion_checks_only_deleted_endpoints",
         ],
     },
     ComplexityContract {
@@ -127,7 +129,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(visible_relation_slots + visible_entity_slots + candidate_endpoint_checks + observed_directed_pair_checks)",
         budget_summary: "Certification-bound minimum cardinality checks are allowed to scan visible relation and entity state broadly, but that breadth must be explicit, named, and separately measured from touched commit-bound relation-integrity work.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_relation_integrity_minimum_certification_reports_snapshot_breadth"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::relation_integrity_counters::complexity_budget_relation_integrity_minimum_certification_reports_snapshot_breadth"],
     },
     ComplexityContract {
         id: "runtime.visible_entities.scan",
@@ -135,7 +137,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(entity_slots)",
         budget_summary: "Visibility scans must report slot-scan cost explicitly; no hidden mutation is allowed.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_contract_visibility_scans_are_explicitly_measured"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::snapshot_visibility::complexity_contract_visibility_scans_are_explicitly_measured"],
     },
     ComplexityContract {
         id: "runtime.visible_relations.scan",
@@ -143,7 +145,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(relation_slots)",
         budget_summary: "Relation visibility scans must report slot-scan cost explicitly; no hidden mutation is allowed.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_contract_visibility_scans_are_explicitly_measured"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::snapshot_visibility::complexity_contract_visibility_scans_are_explicitly_measured"],
     },
     ComplexityContract {
         id: "runtime.query.packetization",
@@ -152,10 +154,11 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Immutable query execution must preserve request-shaped packetization; broad reads must report packet count, item breadth, peak packet width, scope units, and chosen execution strategy explicitly before reducer costs are considered.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::complexity::contracts::visibility_budgets::complexity_budget_query_packetization_reports_parallel_shape_for_cross_partition_reads",
-            "tests::complexity::contracts::visibility_budgets::complexity_budget_query_packetization_reports_serial_shape_for_narrow_reads",
+            "tests::complexity::contracts::visibility_budgets::query_packetization::complexity_budget_query_packetization_reports_parallel_shape_for_cross_partition_reads",
+            "tests::complexity::contracts::visibility_budgets::query_packetization::complexity_budget_query_packetization_reports_narrow_shape_with_a_lease",
         ],
     },
+    history_capture::BOUNDED_FOLD,
     index_access::ENTITY_FIELD,
     index_access::RELATION_FIELD,
     index_access::GENERATION_SELECTION,
@@ -166,7 +169,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(intents + distinct_client_keys * log(distinct_client_keys) + lineage_transition_width + worker_batch_evidence)",
         budget_summary: "Bulk mutation planning must remain intent-shaped: normalize persistent names, compute locality, lower lineage transitions, and capture worker provenance without performing authoritative mutation or hidden whole-state work.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evidence"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::bulk_mutation_admission::complexity_budget_bulk_mutation_planning_reports_identity_scope_and_batch_evidence"],
     },
     ComplexityContract {
         id: "runtime.bulk_mutation.admission",
@@ -174,7 +177,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(planned_intents + naming_width + lineage_transition_width + worker_batch_evidence)",
         budget_summary: "Bulk mutation admission must validate naming, lineage, and provenance proof boundaries without mutating authority or inflating planning counters during preflight inspection.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_commit"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::bulk_mutation_admission::complexity_budget_bulk_mutation_admission_remains_side_effect_free_until_commit"],
     },
     ComplexityContract {
         id: "runtime.lineage.finalization",
@@ -219,10 +222,10 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
     ComplexityContract {
         id: "runtime.retention.pass",
         function_path: "visibility/retention/retention_authority.rs::VisibilityRetentionAuthority::run_pass",
-        declared_time_complexity: "O(chunks_with_retained_records + reclaim_batch_size + changed_live_history)",
-        budget_summary: "Retention scans should stay chunk-filtered and live-history trimming must remain touched-record bounded.",
+        declared_time_complexity: "O(mirror_regions + cold_member_bytes + expanded_history_bytes + symbol_page_admission + occupied_slots * log(occupied_slots) + live_history_entries + retained_chunk_slots + reclaim_batch_size + observed_persistent_copy_paths)",
+        budget_summary: "An explicit maintenance pass demands Full on every mirror region. Live trimming visits all occupied slots and up to two passes over each live history; reclaim scans remain chunk-filtered. Cold fold, symbol admission and persistent copy costs are additional, never charged to ordinary publication.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_live_history_trimming_is_touched_record_bounded"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::retention_and_adjacency::live_history_trimming_runs_only_in_the_declared_full_retention_pass"],
     },
     ComplexityContract {
         id: "runtime.inspection.graph_summary",
@@ -230,7 +233,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(visible_entities + visible_relations within requested scope)",
         budget_summary: "Graph inspection must stay request-shaped and scope-explicit so broad traversal never hides behind a cheap-looking surface.",
         status: ComplexityStatus::Debt,
-        proof_tests: &["tests::inspection::graph_summary_is_scope_explicit_and_canonical"],
+        proof_tests: &["tests::inspection::graph_scope_summaries::graph_summary_is_scope_explicit_and_canonical"],
     },
     ComplexityContract {
         id: "runtime.inspection.connectivity_summary",
@@ -254,7 +257,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(1) for direct record lookup, O(visible_entities_in_scope) for fingerprint-family queries",
         budget_summary: "Structural identity inspection must keep direct evidence lookup sharp while broad fingerprint-family queries remain scoped and explicit.",
         status: ComplexityStatus::Debt,
-        proof_tests: &["tests::inspection::structural_identity_comparison_only_uses_fingerprint_truth"],
+        proof_tests: &["tests::inspection::structural_identity::structural_identity_comparison_only_uses_fingerprint_truth"],
     },
     ComplexityContract {
         id: "runtime.inspection.commit_reads",
@@ -271,7 +274,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Whole-neighborhood traversal must not require full relation scans, must resolve every candidate against one pinned edition rather than reacquiring the substrate per candidate, and must charge the candidate list it does copy.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::complexity::contracts::complexity_budget_bidirectional_adjacency_avoids_relation_scans",
+            "tests::complexity::contracts::visibility_budgets::retention_and_adjacency::complexity_budget_bidirectional_adjacency_avoids_relation_scans",
             "tests::complexity::contracts::substrate_edition_budgets::adjacency_leasing::complexity_budget_whole_neighborhood_read_charges_every_id_it_copies",
         ],
     },
@@ -282,7 +285,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Ordinary authorization must stay bounded to actual path frontiers and adjacency while historical re-observation must expose, count, and carry its reconstructive global relation scans.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "authorization::tests::actual_snapshot_observation_mints_exact_allow_evidence",
+            "authorization::tests::actual_snapshot_observation_mints_exact_neutral_evidence",
             "authorization::tests::unrelated_graph_scale_does_not_change_observation_work",
             "authorization::tests::revocation_changes_only_new_snapshot_authority",
         ],
@@ -293,7 +296,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(entity_slots_in_partition)",
         budget_summary: "Partition-scoped historical entity scans must stay bounded to the requested partition instead of silently degrading into global visibility scans.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_partition_scoped_historical_entity_scans_are_partition_bounded"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::partition_scoped_projection::complexity_budget_partition_scoped_historical_entity_scans_are_partition_bounded"],
     },
     ComplexityContract {
         id: "runtime.visible_relations.partition_scan",
@@ -301,21 +304,21 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(relation_slots_in_partition)",
         budget_summary: "Partition-scoped historical relation scans must stay bounded to the requested partition instead of silently degrading into global visibility scans.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::complexity_budget_partition_scoped_historical_relation_scans_are_partition_bounded"],
+        proof_tests: &["tests::complexity::contracts::visibility_budgets::partition_scoped_projection::complexity_budget_partition_scoped_historical_relation_scans_are_partition_bounded"],
     },
     ComplexityContract {
         id: "runtime.invariant.materialization",
         function_path: "validation/engine/engine.rs::execute",
-        declared_time_complexity: "Mixed: O(touched_entity_slots + touched_relation_slots) for structural mutation checks, O(merged_intents) for merged-plan limits, O(partitions) for current-version snapshot counts, O(entity_slots) for historical snapshot counts, O(touched_entities + lookup_hits) for unique-field checks",
+        declared_time_complexity: "Mixed: O(touched_entity_slots + touched_relation_slots) for structural mutation checks, O(merged_intents) for merged-plan limits, O(partitions) for current-version snapshot counts, O(entity_slots) for historical snapshot counts, O(selected_entity_slots + selected_unique_field_values) for unique-field checks",
         budget_summary: "Current invariant rules expose measurable fast paths, but the subsystem remains debt until broader future rules cannot silently reintroduce full-state materialization without updating the contract.",
         status: ComplexityStatus::Debt,
         proof_tests: &[
-            "tests::complexity::contracts::complexity_budget_mutation_structural_invariants_are_touched_slot_bounded",
-            "tests::complexity::contracts::complexity_budget_relation_structural_invariants_are_touched_slot_bounded",
-            "tests::complexity::contracts::complexity_budget_snapshot_entity_limit_uses_live_bitsets_for_current_version",
-            "tests::complexity::contracts::complexity_budget_unique_entity_invariant_uses_changed_set_lookup",
-            "tests::complexity::contracts::complexity_budget_commit_boundary_unique_invariant_uses_merged_plan_lookup",
-            "tests::complexity::contracts::complexity_contract_invariant_materialization_is_declared_and_measured",
+            "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_mutation_structural_invariants_are_touched_slot_bounded",
+            "tests::complexity::contracts::commit_budgets::partition_local_commit::complexity_budget_relation_structural_invariants_are_touched_slot_bounded",
+            "tests::complexity::contracts::visibility_budgets::invariant_materialization::complexity_budget_snapshot_entity_limit_uses_live_bitsets_for_current_version",
+            "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_unique_entity_invariant_scans_the_selected_state",
+            "tests::complexity::contracts::commit_budgets::unique_invariant_lookup::complexity_budget_commit_boundary_unique_invariant_applies_the_selected_plan",
+            "tests::complexity::contracts::visibility_budgets::invariant_materialization::complexity_contract_invariant_materialization_is_declared_and_measured",
         ],
     },
     ComplexityContract {
@@ -325,8 +328,8 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Preparation packetization must stay coarse enough to amortize scheduler and reducer overhead; broad deltas must not degenerate into one-item packets and narrow deltas should stay serial.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::complexity::contracts::complexity_budget_preparation_packetization_is_chunked_for_broad_deltas",
-            "tests::complexity::contracts::complexity_budget_preparation_narrow_delta_falls_back_to_serial",
+            "tests::complexity::contracts::commit_budgets::preparation_packetization::complexity_budget_preparation_packetization_is_chunked_for_broad_deltas",
+            "tests::complexity::contracts::commit_budgets::preparation_packetization::complexity_budget_preparation_narrow_delta_falls_back_to_serial",
         ],
     },
     ComplexityContract {
@@ -335,7 +338,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(changed_schema_atoms * log(changed_schema_atoms))",
         budget_summary: "Schema continuity must stay transition-local: only declared diff atoms may be classified, normalized, and fingerprinted on the normal path.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_schema_transition_classification_is_changed_atom_bounded"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::schema_continuity_boundaries::complexity_budget_schema_transition_classification_is_changed_atom_bounded"],
     },
     ComplexityContract {
         id: "runtime.subscriber_resume.continuity",
@@ -343,7 +346,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(crossed_boundaries + contract_match_checks)",
         budget_summary: "Subscriber continuation planning must consume canonical boundary descriptors and contract sets without reclassifying schema state.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_subscriber_resume_continuity_is_boundary_local"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::schema_continuity_boundaries::complexity_budget_subscriber_resume_continuity_is_boundary_local"],
     },
     ComplexityContract {
         id: "runtime.replay.verification.layers",
@@ -351,7 +354,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "Normal: O(replay_surfaces) digest/summary checks, Audit: O(replay_surfaces + deep_artifact_parity_surfaces)",
         budget_summary: "Replay verification must remain layered so normal verification does not silently pay deep artifact comparison cost.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::complexity::contracts::commit_budgets::complexity_budget_replay_verification_tracks_digest_and_deep_layers_separately"],
+        proof_tests: &["tests::complexity::contracts::commit_budgets::replay_verification::complexity_budget_replay_verification_tracks_digest_and_deep_layers_separately"],
     },
     ComplexityContract {
         id: "runtime.merge.planning",
@@ -361,7 +364,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         status: ComplexityStatus::Verified,
         proof_tests: &[
             "tests::complexity::contracts::merge_budgets::complexity_budget_merge_planning_reports_request_shaped_work",
-            "tests::history::milestone_7b::merge_planning_artifact_certification_is_stable_across_roundtrip_and_recovery",
+            "tests::history::milestone_7b::merge_planning_artifact_certification_is_stable_across_recovery",
         ],
     },
     ComplexityContract {
@@ -370,7 +373,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(relation_conflict_candidates + endpoint_incidences + connected_endpoint_neighborhood_breadth)",
         budget_summary: "Topology-region escalation must stay bounded to the merge relation conflict surface and its endpoint incidence graph; it must not rediscover full visible topology neighborhoods during planning.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::history::milestone_7d_phase_d::topology_region_conflict_detection_reports_bounded_neighborhood_counters"],
+        proof_tests: &["tests::history::milestone_7d_phase_d::topology_region::topology_region_conflict_detection_reports_bounded_neighborhood_counters"],
     },
     ComplexityContract {
         id: "runtime.merge.execution_verification",
@@ -378,7 +381,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         declared_time_complexity: "O(branch_head_checks + merge_base_check + schema_kinds_snapshotted + compiled_plan_digest_rows)",
         budget_summary: "Prepared merge verification must stay a proof check over authority freshness and sealed executable-plan integrity; it must not rerun planning or silently charge its work to merge planning counters.",
         status: ComplexityStatus::Verified,
-        proof_tests: &["tests::history::milestone_7c_phase_a::verify_prepared_merge_execution_reports_verification_counters_without_planning_work"],
+        proof_tests: &["tests::history::milestone_7c_phase_a::verification_counters::verify_prepared_merge_execution_reports_verification_counters_without_planning_work"],
     },
     ComplexityContract {
         id: "runtime.merge.execution_commit",
@@ -387,7 +390,7 @@ pub const COMPLEXITY_CONTRACTS: &[ComplexityContract] = &[
         budget_summary: "Prepared merge execution must distinguish execution attempts from successfully published merge commits, and successful merge commit deltas must report admitted record width and emitted mutation width explicitly.",
         status: ComplexityStatus::Verified,
         proof_tests: &[
-            "tests::history::milestone_7c_phase_e::execute_prepared_merge_reports_execution_counters_and_structural_summary",
+            "tests::history::milestone_7c_phase_e::execution_counters_diagnostics::execute_prepared_merge_reports_execution_counters_and_structural_summary",
             "tests::complexity::contracts::merge_budgets::complexity_budget_merge_execution_reports_admitted_records_and_emitted_mutations",
         ],
     },

@@ -31,8 +31,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
     }
     let record = observed.unwrap();
     let expected = workload::states_of(home.runtime(), std::slice::from_ref(&record));
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     home.close();
 
     let home = durable_run::open(&location, &execution).unwrap();
@@ -88,8 +87,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         "one-partition tail replay loaded {} members",
         replayed.member_reads
     );
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     assert_eq!(
         home.cold_storage_reads(),
         replayed,
@@ -106,7 +104,7 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
     let embedded = home
         .runtime()
         .durability_authority()
-        .native_checkpoint(ExecutionAllocationPolicy::SystemAllocation)
+        .native_checkpoint(&execution, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     let mut receiving = workload::runtime_builder(super::schema_transition::SOURCE).build();
     receiving
@@ -147,8 +145,7 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     super::schema_transition::commit(&reference, &execution, &branch, batches::create(2000))
         .unwrap();
     let expected = workload::states_of(&reference, &records);
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     home.close();
 
     let home = durable_run::open(&location, &execution).unwrap();
@@ -159,8 +156,7 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     // The schema transition is in the tail above the original cold manifest.
     let home = durable_run::open(&location, &execution).unwrap();
     let before = home.cold_storage_reads();
-    home.checkpoint(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
+    home.checkpoint(&execution).unwrap();
     assert_eq!(
         home.cold_storage_reads(),
         before,

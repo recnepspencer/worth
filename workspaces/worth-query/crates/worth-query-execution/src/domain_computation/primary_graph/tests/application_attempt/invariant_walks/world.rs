@@ -146,10 +146,13 @@ impl World {
     pub(super) fn checkpoint(&self) -> crate::published_checkpoint::PublishedCheckpoint {
         self.application
             .with_host_advancement(|phase| {
-                self.application.primary_provider.graph.with_runtime(
-                    &phase.borrowed_request_for_test(),
-                    crate::published_checkpoint::capture,
-                )
+                let execution = phase.borrowed_request_for_test();
+                self.application
+                    .primary_provider
+                    .graph
+                    .with_runtime(&execution, |runtime| {
+                        crate::published_checkpoint::capture(runtime, &execution)
+                    })
             })
             .unwrap()
     }

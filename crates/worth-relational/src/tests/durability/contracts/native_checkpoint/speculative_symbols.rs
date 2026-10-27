@@ -9,7 +9,10 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
     let capture = || {
         runtime
             .durability_authority()
-            .native_checkpoint(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .native_checkpoint(
+                execution,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
             .unwrap()
     };
     let before = capture();

@@ -11,6 +11,7 @@ fn publish_checkpoint(
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: current,

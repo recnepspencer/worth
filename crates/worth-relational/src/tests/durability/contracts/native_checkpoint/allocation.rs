@@ -32,7 +32,7 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let head = runtime.history().branch_head(&BranchId("main".into()));
     let system = runtime
         .durability_authority()
-        .native_checkpoint(Policy::SystemAllocation)
+        .native_checkpoint(execution, Policy::SystemAllocation)
         .unwrap();
     let quote = u64::try_from(system.bytes().len()).unwrap();
     let authority = crate::tests::support::test_execution_authority();
@@ -42,7 +42,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let zero = parent.child(request(0, CancellationToken::new())).unwrap();
     let Denial::Allocation(error) = runtime
         .durability_authority()
-        .native_checkpoint(Policy::Execution(&zero))
+        .native_checkpoint(
+            &worth_execution::ExecutionRequest::leased(&zero),
+            Policy::Execution(&zero),
+        )
         .unwrap_err()
     else {
         panic!("the encoded backing admission is the reached owner");
@@ -69,7 +72,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     cancellation.cancel();
     let Denial::Allocation(error) = runtime
         .durability_authority()
-        .native_checkpoint(Policy::Execution(&stopped))
+        .native_checkpoint(
+            &worth_execution::ExecutionRequest::leased(&stopped),
+            Policy::Execution(&stopped),
+        )
         .unwrap_err()
     else {
         panic!("caller cancellation must remain typed");
@@ -84,7 +90,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
             .unwrap();
         let captured = runtime
             .durability_authority()
-            .native_checkpoint(Policy::Execution(&child))
+            .native_checkpoint(
+                &worth_execution::ExecutionRequest::leased(&child),
+                Policy::Execution(&child),
+            )
             .unwrap();
         assert_eq!(captured.bytes(), system.bytes());
         assert_eq!(captured.captured_sections(), system.captured_sections());

@@ -111,7 +111,9 @@ impl WorthQueryCheckpointTransitionRecovery {
             .and_then(|()| {
                 self.graph
                     .with_runtime(execution, |runtime| {
-                        runtime.durability_authority().native_checkpoint(policy)
+                        runtime
+                            .durability_authority()
+                            .native_checkpoint(execution, policy)
                     })
                     .map_err(WorthQueryCheckpointCaptureDenial::from)
             })

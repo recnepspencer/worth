@@ -91,7 +91,7 @@ fn cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint() {
             assert!(records[2].is_none());
             let native = runtime
                 .durability_authority()
-                .native_checkpoint(execution.allocation_policy())
+                .native_checkpoint(execution, execution.allocation_policy())
                 .unwrap();
             let mut reopened = durable_runtime_with_test_schema();
             reopened

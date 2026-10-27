@@ -16,7 +16,7 @@ fn assert_destination_refused_unchanged(
     let schema = target.config().schema.registry;
     let history = target.history().immutable_commit_count();
     let snapshots = target.visibility.active_snapshot_count();
-    let checkpoint = capture(target);
+    let checkpoint = capture(execution, target);
     let error = target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(execution, native)
@@ -34,7 +34,7 @@ fn assert_destination_refused_unchanged(
     assert_eq!(target.config().schema.registry, schema);
     assert_eq!(target.history().immutable_commit_count(), history);
     assert_eq!(target.visibility.active_snapshot_count(), snapshots);
-    assert_eq!(capture(target), checkpoint);
+    assert_eq!(capture(execution, target), checkpoint);
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn fresh_destination_publication_binding_refuses_then_unbound_retry_restores() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
-    let native = capture(&source.runtime);
+    let native = capture(execution, &source.runtime);
     let (mut target, _sealed_receipt) = installed(2);
     let instance = target.runtime_instance_id();
     let publication = target.publication_port();
@@ -67,7 +67,7 @@ fn fresh_destination_preparation_port_remains_usable_and_unbound_retry_restores(
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
-    let native = capture(&source.runtime);
+    let native = capture(execution, &source.runtime);
     let (mut target, _sealed_receipt) = installed(2);
     let preparation = target.preparation_port();
     assert_destination_refused_unchanged(execution, &mut target, &native);
@@ -103,7 +103,7 @@ fn fresh_destination_actual_weak_state_binding_refuses_without_closing_settlemen
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
-    let native = capture(&source.runtime);
+    let native = capture(execution, &source.runtime);
     let (mut target, _sealed_receipt) = installed(2);
     let settlement = target.settlement_port();
     let instance = settlement.runtime_instance_id();
@@ -131,7 +131,7 @@ fn empty_destination_retained_native_basis_refuses_then_drop_allows_funded_retry
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
-    let native = capture(&source.runtime);
+    let native = capture(execution, &source.runtime);
     let (mut target, _sealed_receipt) = installed(2);
     let selected = basis(&target);
     assert!(selected.reference().target().is_empty());
@@ -157,7 +157,7 @@ fn published_destination_keeps_raw_source_exact_basis_and_usable_snapshot_after_
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
     let source = world(execution, true);
-    let native = capture(&source.runtime);
+    let native = capture(execution, &source.runtime);
     let (mut target, _sealed_receipt) = installed(2);
     let authored = create(
         execution,

@@ -67,6 +67,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
     let captured = head
         .cell()
         .capture_checkpoint(
+            execution,
             &fixture.cold.schema,
             fixture.cold.schema_carrier_digest,
             &symbols,

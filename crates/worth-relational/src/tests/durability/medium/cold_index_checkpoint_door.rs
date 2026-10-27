@@ -12,7 +12,7 @@ pub(super) fn read(
     if embedded {
         let image = runtime
             .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
+            .native_checkpoint(execution, execution.allocation_policy())
             .map_err(|stop| match stop {
                 crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(
                     error,

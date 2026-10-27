@@ -64,6 +64,7 @@ pub(super) fn checkpoint_fixture(
     let native = runtime
         .durability_authority()
         .native_checkpoint_with_policy(
+            execution,
             execution.allocation_policy(),
             RelationalCheckpointArtifactPolicy::ExternalMembers {
                 current_members: &[],

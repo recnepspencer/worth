@@ -388,6 +388,12 @@ unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
 - pinning requires a resident witness, so pinning a cold partition is
   unrepresentable.
 
+Detected member corruption puts the whole Store home into
+`ServingRequiresInspection` until reopen. Relational still records sticky
+damage only for the failed subject; other subjects receive source-unavailable
+refusals while Store requires inspection. Finer-grained Store isolation is out
+of scope for M2.
+
 **History on demand.**
 
 - The commit catalog keeps index entries only.
@@ -409,7 +415,16 @@ unavailable, damaged, integrity mismatch, limit exceeded or memory exhausted):
 - Reopen loads neither the full symbol table nor all lineage. A new text is
   interned after its bucket page is resident, so deduplication still holds.
 
-**Capture.** A checkpoint walks leaves and never loads. It carries a region
+**Capture.** Ordinary checkpoint capture walks leaves without loading. To keep
+Full reads live independently of restart count, capture consolidates a region
+before publishing more than eight dependency layers or more than 64 MiB of
+layered encoded fold input. It explicitly demands Full under the caller's
+request, authenticates the complete commitment, and writes a flat history
+image. This bounded maintenance exception stays below the 1 GiB Full fold limit
+for restart-induced layering. A single flat history image can exceed the 64 MiB
+target because of intrinsic history size; its existing Full limit still applies.
+Consolidation failures are fallible capture failures and acknowledge no locators.
+Below the thresholds, capture carries a region
 that has a locator and is unchanged, encodes a resident region that changed,
 and records new locators once publication completes. A one-partition commit
 followed by a checkpoint writes O(1) new members.

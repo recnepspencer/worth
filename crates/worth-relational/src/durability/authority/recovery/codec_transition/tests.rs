@@ -29,7 +29,7 @@ fn recovered(
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
     assert!(recovered.codec_transition_pending());
@@ -168,7 +168,7 @@ fn genuine_native_codec_adoption_preserves_raw_source_and_rebuilds_target_equali
         if entries.len()==1 && entries.iter().any(|(_,ids)| ids.iter().any(|id| *id == regenerated)))
     );
     assert_eq!(protected_payload(&target, world.authored), source_before);
-    let saved = capture(&target);
+    let saved = capture(execution, &target);
     let (mut reopened, receipt) = fixture::installed(2);
     reopened
         .durability_recovery()
@@ -223,7 +223,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
             rewrite_output(execution, &world);
         }
         let (mut target, mut recovered, _) = recovered(execution, &world);
-        let before = capture(&target);
+        let before = capture(execution, &target);
         let source = protected_payload(&target, world.authored);
         let (owner, installed) = target
             .durability_recovery()
@@ -255,7 +255,7 @@ fn ordinary_and_equal_ordinary_overwritten_rows_cannot_acquire_producer_retireme
             crate::runtime::RelationalSchemaTransitionAdmissionDenialKind::CodecClosureRejected
         );
         assert_eq!(source, protected_payload(&target, world.authored));
-        assert_eq!(before, capture(&target));
+        assert_eq!(before, capture(execution, &target));
         assert!(recovered.codec_transition_pending());
     }
 }
@@ -373,7 +373,7 @@ fn unsupported_ordering_index_refuses_codec_restore_without_replacing_the_target
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap_err();
     assert!(

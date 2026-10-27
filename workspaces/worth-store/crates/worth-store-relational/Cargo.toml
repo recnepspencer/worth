@@ -19,6 +19,7 @@ worth-store-recovery-runtime.workspace = true
 sha2 = "0.10"
 tempfile = "3"
 worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-store-physical-format.workspace = true
 
 [features]
 certification-test-authority = [
