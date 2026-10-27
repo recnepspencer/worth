@@ -179,6 +179,7 @@ pub(super) fn capture(
     world: &World<Payload>,
     key: u64,
 ) -> WorthQueryCapturedApplicationHistorySubjects<Schema, Relations> {
+    let input = ReadInput { key };
     let runtime = world.application.runtime();
     let request = request_scope();
     let external = authenticate_operator(runtime.installed_schema(), &request);
@@ -205,7 +206,7 @@ pub(super) fn capture(
                 .resolve_entity(
                     &phase,
                     NodeKey::reference(),
-                    key,
+                    input.key,
                     &request,
                     WorthQueryPrincipalResolutionMode::Ordinary,
                 )

@@ -57,7 +57,8 @@ impl WorthQueryGraphWorkAccessContextAffinity {
 enum WorthQueryGraphWorkBasis {
     Query {
         identity: WorthQueryApplicationBasisIdentity,
-        product: crate::basis::WorthQueryProductObservationLease,
+        // Retain query-truth custody separately from current authorization custody.
+        _product: crate::basis::WorthQueryProductObservationLease,
         authorization_product: crate::basis::WorthQueryProductObservationLease,
         port: WorthQueryGraphReadOwnerPort,
     },
@@ -235,17 +236,6 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
         self.mutation_lease()
             .map(WorthQueryApplicationSnapshotLease::product)
-    }
-
-    pub(in crate::domain_computation) fn product(
-        &self,
-    ) -> Option<&crate::basis::WorthQueryProductObservationLease> {
-        match &self.basis {
-            WorthQueryGraphWorkBasis::Query { product, .. } => Some(product),
-            WorthQueryGraphWorkBasis::Mutation(lease) => {
-                lease.as_ref().map(|lease| lease.product().read_lease_ref())
-            }
-        }
     }
 
     /// Query truth can remain historical while authorization uses the exact

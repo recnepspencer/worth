@@ -68,8 +68,6 @@ pub use causal::{
 pub(in crate::runtime) use causal::{
     causal_evidence_reference_index, causal_evidence_reference_index_record,
 };
-#[cfg(test)]
-pub(crate) use causal::{CausalObservationTargetHandle, CausalResultShapeContextHandle};
 pub use feedback::{
     WorthQueryFeedbackPhaseGraphInspection, WorthQueryFeedbackPhaseNode,
     WorthQueryFeedbackTermination,

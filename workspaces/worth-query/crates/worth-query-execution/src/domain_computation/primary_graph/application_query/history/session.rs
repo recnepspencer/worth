@@ -115,7 +115,7 @@ pub(super) fn page<Schema: ApplicationSchema, History: ApplicationHistoryQueryBi
     // Exactly one World parent is prepared outside the Native borrow. It never
     // also scans a canonical record, even when the visit limit is one.
     let world = match &original.position {
-        HistoryPosition::World(world) => Some(transition::prepare_world::<Schema, History>(
+        HistoryPosition::World(world) => Some(transition::prepare_world(
             execution,
             application,
             world,

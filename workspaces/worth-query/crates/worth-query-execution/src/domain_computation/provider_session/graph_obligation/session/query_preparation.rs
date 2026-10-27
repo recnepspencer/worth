@@ -120,7 +120,7 @@ impl WorthQueryManagedGraphWorkSession {
             authorization_branch,
             WorthQueryGraphWorkBasis::Query {
                 identity: basis.clone(),
-                product,
+                _product: product,
                 authorization_product: authorization_product.retained_clone(),
                 port,
             },
