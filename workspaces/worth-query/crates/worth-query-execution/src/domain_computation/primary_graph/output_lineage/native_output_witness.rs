@@ -121,22 +121,31 @@ impl PreparedNativeOutputWitness {
             if role.role != name || role.entity_name != entity_name || posture != role.posture {
                 return None;
             }
+            // Optional reuse proof can decline a typed cold pin. It cannot
+            // demand storage or create a new read failure after publication.
+            let metadata = match read.pin_resident_entity_metadata(committed, entity) {
+                Ok(Some(metadata)) => metadata,
+                Ok(None) => return None,
+                Err(worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::RegionNotResident(_)
+                    | worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::SymbolsNotResident(_)) => return None,
+            };
             if role.posture == WorthQueryApplicationOutputPosture::Retire {
-                let metadata = retirement::native_metadata(runtime, committed, entity)?;
-                if metadata.kind != role.kind || metadata.deleted_at != committed.version_id() {
+                let record = metadata.retirement()?;
+                let retired = retirement::RetirementMetadata {
+                    kind: record.kind_id(),
+                    created_at: record.created_at_version(),
+                    deleted_at: record.deleted_at_version(),
+                };
+                if retired.kind != role.kind || retired.deleted_at != committed.version_id() {
                     return None;
                 }
-                role.retirement = Some(metadata);
-            } else if read.exact_snapshot_live_entity_kind(committed, entity) != Some(role.kind) {
+                role.retirement = Some(retired);
+            } else if metadata.live_kind() != Some(role.kind) {
                 return None;
             }
             role.entity = Some(entity);
             for aspect in &mut self.aspects[role.first_aspect..role.end_aspect] {
-                aspect.revision = Some(read.exact_snapshot_entity_aspect_version(
-                    committed,
-                    entity,
-                    &aspect.aspect,
-                )?);
+                aspect.revision = Some(metadata.aspect_version(&aspect.aspect)?);
             }
         }
         let sealed = SealedNativeOutputWitness {
@@ -200,9 +209,10 @@ impl SealedNativeOutputWitness {
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
         for role in &self.roles {
-            if !role.remains_present(runtime, selected)? {
+            if !role.remains_present(runtime, selected, execution)? {
                 return Ok(false);
             }
         }
@@ -213,10 +223,11 @@ impl SealedNativeOutputWitness {
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
         let read = runtime.read_truth();
         for role in &self.roles {
-            if !role.remains_present(runtime, selected)? {
+            if !role.remains_present(runtime, selected, execution)? {
                 return Ok(false);
             }
             if role.posture == WorthQueryApplicationOutputPosture::Retire {
@@ -224,7 +235,14 @@ impl SealedNativeOutputWitness {
             }
             let entity = role.entity.expect("present role has an entity");
             for aspect in &self.aspects[role.first_aspect..role.end_aspect] {
-                if read.exact_snapshot_entity_aspect_version(selected, entity, &aspect.aspect)
+                if read
+                    .read_exact_snapshot_entity_aspect_version(
+                        execution,
+                        selected,
+                        entity,
+                        &aspect.aspect,
+                    )
+                    .map_err(CompanionPreflightStop::Execution)?
                     != aspect.revision
                 {
                     return Ok(false);
@@ -240,17 +258,20 @@ impl RoleProbe {
         &self,
         runtime: &RelationalRuntime,
         selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<bool, CompanionPreflightStop> {
         let Some(entity) = self.entity else {
             return Ok(false);
         };
         if self.posture == WorthQueryApplicationOutputPosture::Retire {
             return Ok(self.retirement.is_some()
-                && retirement::native_metadata(runtime, selected, entity) == self.retirement);
+                && retirement::native_metadata(runtime, selected, entity, execution)?
+                    == self.retirement);
         }
         Ok(runtime
             .read_truth()
-            .exact_snapshot_live_entity_kind(selected, entity)
+            .read_exact_snapshot_live_entity_kind(execution, selected, entity)
+            .map_err(CompanionPreflightStop::Execution)?
             == Some(self.kind))
     }
 }

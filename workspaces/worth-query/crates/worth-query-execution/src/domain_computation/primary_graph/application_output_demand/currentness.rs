@@ -119,7 +119,12 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .source_owner
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();
-        require_witnessed_output(relational, snapshot, read.native_output_witness.as_ref())?;
+        require_witnessed_output(
+            execution,
+            relational,
+            snapshot,
+            read.native_output_witness.as_ref(),
+        )?;
         // Exact lineage selection and the output witness precede the native mark.
         // Missing/dirty/discontinuous rows retain the original funded comparison.
         if let Some(selected) = currentness_basis(relational, snapshot)? {

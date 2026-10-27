@@ -28,9 +28,9 @@ accepting `None` or an empty answer. Growth assertions use headroom.
 | Tail replay | existing replay courts; full class expansion pending | existing replay courts; full class expansion pending | actual journal readmission | shared symbol admission | shared bucket admission | identity frontier courts | event pages (CHK11) | replay cache reconstruction |
 
 Current refusal family sizes: Full reads 792, envelope/export/checkpoint/replay/receipt 156,
-lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 216, intern bucket 30,
-remote invariant Head 18, aspect history 144, nonhead merge 18: 1,554 cells. Positive current and
-remote-invariant unavailable-history families add 126 cells. These totals are an
+lineage node 54, lineage events 66, index cache/build/export 60, current Head/ID symbol 264, intern bucket 30,
+remote invariant Head 18, aspect history 144, nonhead merge 18: 1,602 cells. Positive current and
+remote-invariant unavailable-history families add 150 cells. These totals are an
 inventory of the tables; final logs must prove the final tree's execution.
 
 Additional acceptance courts already present include probe miss/identity
@@ -80,3 +80,14 @@ Resident basis construction also has a type-level fence against Default and
 infallible promotion from a selected metadata-only basis. The native full run
 passes 1,996 tests with 31 ignored; the subsequent added type fence passes its
 own focused lane. All final clean-tree evidence remains outstanding.
+
+
+Issued-snapshot kind/status/aspect reads and retirement add four current doors
+(48 refusal cells and 24 unavailable-history positives). The same table now
+covers 22 current doors, including genuine absence only after successful guard
+admission. Separate actual deletion/reopen evidence proves original creation
+and deletion versions are in Head. Head-only metadata pin courts prove cold
+construction refuses without I/O, shared authenticated Head bytes do not admit
+a fork's dictionary, and accepted meaning survives a later commit or proven
+transport damage. Public pin types are aggregated through the native facade;
+post-publication optional witness sealing consumes this no-load capability.

@@ -86,7 +86,12 @@ fn suspend_restore_and_read() {
                 handle.with_runtime(execution, |runtime| {
                     runtime
                         .read_truth()
-                        .exact_snapshot_live_entity_kind(basis.snapshot_handle(), generated)
+                        .read_exact_snapshot_live_entity_kind(
+                            execution,
+                            basis.snapshot_handle(),
+                            generated,
+                        )
+                        .unwrap()
                         .unwrap()
                 })
             })

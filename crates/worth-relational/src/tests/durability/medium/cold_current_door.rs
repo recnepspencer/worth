@@ -9,6 +9,7 @@ use crate::transactions::data::{
 #[derive(Debug, Clone, Copy)]
 pub(super) enum CurrentDoor {
     Projection(super::projection_point_door::ProjectionPointDoor),
+    Snapshot(super::snapshot_point_door::SnapshotPointDoor),
     Entity,
     Relation,
     Validation,
@@ -17,7 +18,7 @@ pub(super) enum CurrentDoor {
     DeleteRelation,
 }
 impl CurrentDoor {
-    pub(super) const ALL: [Self; 18] = [
+    pub(super) const ALL: [Self; 22] = [
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecord),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRecordAdmitted),
         Self::Projection(super::projection_point_door::ProjectionPointDoor::EntityRevision),
@@ -34,6 +35,10 @@ impl CurrentDoor {
         Self::Projection(
             super::projection_point_door::ProjectionPointDoor::BoundedStructuralRevision,
         ),
+        Self::Snapshot(super::snapshot_point_door::SnapshotPointDoor::KindStatus),
+        Self::Snapshot(super::snapshot_point_door::SnapshotPointDoor::Kind),
+        Self::Snapshot(super::snapshot_point_door::SnapshotPointDoor::AspectRevision),
+        Self::Projection(super::projection_point_door::ProjectionPointDoor::Retirement),
         Self::Entity,
         Self::Relation,
         Self::Validation,
@@ -62,6 +67,15 @@ impl CurrentDoor {
                         other => {
                             panic!("current projection preserves its storage failure: {other:?}")
                         }
+                    })?
+            }
+            Self::Snapshot(door) => {
+                door.run(execution, runtime, entity)
+                    .map_err(|denial| match denial {
+                        crate::execution::RelationalExecutionDenialCause::StorageUnavailable(
+                            failure,
+                        ) => failure,
+                        other => panic!("snapshot point retains its storage cause: {other:?}"),
                     })?
             }
             Self::Entity => assert_eq!(

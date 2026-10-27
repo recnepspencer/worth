@@ -2672,3 +2672,98 @@ type-level fence rejects infallible raw-to-resident promotion and Default
 construction. Owner clippy and the type-level fence pass; boundary-check is being recorded.
 Formatting, caps, composition (23 files, 17 advisories, zero scan errors) and
 agent-context pass. Final complete lanes remain pending.
+
+
+### Issued point cutover: verified post-publication constraint and amended plan
+
+The new snapshot-point table fails at the Full retention accessor. Native exact
+kind/status/aspect probes and exact retirement must read Head with a request and
+preserve typed failures. Query's witness finish is different: commit execution
+allocates its optional witness before native preparation, but fills it in
+commit_execution/publication.rs after World has performed the effect. Restoration
+republication has the same optional-cache posture and explicitly keeps World
+truth authoritative if registration cannot finish. Opening a precommit snapshot
+retains metadata only; it proves no resident contents. Therefore adding a fresh
+fallible demand inside these finish paths would be wrong.
+
+Amended boundary plan: keep fresh snapshot/retirement reads explicit and fallible.
+Add one narrow Head entity-metadata pin to the existing native read capability
+owner. Its private construction requires a counted Head lease already held by the
+selected immutable root; it never loads a cell or consults fresh damage. Verify
+the selected record's aspect-name symbol meanings are already in this runtime's
+dictionary without loading, and freeze that dictionary. A genuinely absent
+partition is selected directory truth; a cold region or unadmitted metadata
+symbol is a typed cold-pin refusal. The capability exposes only current kind,
+aspect revision and retirement; no payload scan, historical accessor or implicit
+promotion. Export its public types through the facade and record the capability
+index change. This reuses the existing counted cell/lease mechanism, not another
+residency authority.
+
+Post-publication optional witness finish consumes this resident pin only, with
+explicit typed cold-pin decline and no new source failure. Fresh authoritative
+verification uses the request-aware reads and propagates native execution causes.
+Retirement fact comparisons become fallible; optional postcommit rebase uses the
+same resident metadata witness. Keep native and Query assertions intact. Extend
+the source/class table with retirement and all snapshot doors; prove resident
+pins do zero source reads, refuse cold construction by type/reason, preserve
+meaning after later damage, and respect per-runtime symbol admission. Run focused
+matrix/native owner checks and Query all-targets, then finish the deferred final
+lanes. This resolves the open finish-boundary fact before more source editing.
+
+
+### Issued snapshot points and Head metadata pin results
+
+All three request-free issued-snapshot probes are cut over to explicit
+request-aware Head reads; storage denial remains distinct from a missing handle
+or stale record. Exact retirement is request-aware too and reads typed current
+metadata. Query fact comparison, source currentness, actor dependencies and live
+witness verification propagate the native execution cause. Historical Full
+selection is not used to answer these current point operations.
+
+The post-publication finish constraint is now structural: witness sealing has no
+execution request and reads only RelationalPinnedEntityMetadata. Its constructor
+clones a counted Head lease already accepted by the exact immutable root and
+freezes already-admitted aspect-name meanings from that runtime. A cold region
+or missing symbol closure returns a named cold-pin refusal, without a source
+read. Optional proof sealing/rebase may decline that refusal; it never performs
+a fresh read or substitutes a missing record for a source failure. The public
+pin cannot open a Full view (compile-fail documentation). Both public types pass
+through every native facade aggregation, and the capability index is updated.
+
+`matrix-snapshot-points-red.log` first reproduced the Full-accessor panic.
+Mechanical cutover builds exposed missing Result handling and request handoffs,
+and a fixture typo in the crate name; these were repaired without dropping
+assertions. A rustfmt-skipped test block retained trailing whitespace from the
+argument insertion; stripping that whitespace restored formatting.
+`matrix-snapshot-points-current-complete.log` passes nine focused courts, with
+264 Head/ID-symbol refusals and 132 current unavailable-history positives; the
+remote invariant positives add 18. The overall refusal inventory is 1,602.
+The real deletion/reopen court proves original creation and deletion versions in
+Head with history unavailable. Metadata pins survive a later commit, a released
+snapshot and all six transport classes. A real cold fork first shares verified
+Head bytes without its own dictionary admission: metadata pinning refuses with
+SymbolsNotResident until the actual request-aware read admits those meanings.
+
+Query execution all-target checking passes, and its two native output witness
+courts pass with exact retirement and tampered recovery checks retained.
+Owner clippy, caps, composition (42 files, 39 advisories, zero scan errors),
+formatting and agent-context pass. The complete native lane passes 2,000 tests with 31 ignored. Boundary-check
+and the public Head metadata doc fence pass. Final full lane evidence is still
+outstanding.
+
+### Next matrix slice: projection adjacency and visibility-round effects
+
+Boundary review found public projection adjacency methods with paid read
+requests but no residency guard. Their footprint includes the selected anchor
+and relation partitions discovered through its adjacency. The existing native
+visibility counterpart already uses shared Full probe rounds. That counterexample
+must be tested too: a discarded partially resident round must not settle
+instrumentation or expose an admission callback. Existing ring recovery fixtures
+supply actual cross-partition relations. Next, extend the table with current and
+historical projection adjacency/frontier doors, add remote relation subject
+selection, and compare accepted-round counters on cold versus warm reads. Let
+those RED courts choose the necessary production cutover. Keep typed Head for
+current truth and Full for selected historical truth, retain counted accepted
+leases, reuse the shared bounded discovery policy, and keep callbacks/effects
+outside discarded rounds. Do not add another residency/discovery authority.
+Historical index and tail replay class matrices remain pending after that slice.

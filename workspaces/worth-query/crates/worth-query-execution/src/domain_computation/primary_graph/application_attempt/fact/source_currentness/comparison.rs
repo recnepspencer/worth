@@ -21,12 +21,14 @@ impl WorthQueryApplicationObservedFact {
                 ..
             } => Ok(super::super::retirement_equality::remains_equal(
                 runtime,
+                execution,
                 snapshot,
                 *entity_id,
                 *kind,
                 *created_at,
                 *deleted_at,
-            )),
+            )
+            .map_err(WorthQuerySourceCurrentnessFailure::Execution)?),
             Self::SourceEntity { entity_id } => {
                 let view = runtime
                     .read_truth()
@@ -64,9 +66,12 @@ impl WorthQueryApplicationObservedFact {
                 // Admit it before borrowing the exact selected root.
                 let Some(current) = runtime
                     .read_truth()
-                    .exact_snapshot_entity_aspect_version(snapshot, *entity_id, aspect)
+                    .read_exact_snapshot_entity_aspect_version(
+                        execution, snapshot, *entity_id, aspect,
+                    )
+                    .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                 else {
-                    return unanswered_probe(runtime, snapshot, *entity_id);
+                    return unanswered_probe(runtime, execution, snapshot, *entity_id);
                 };
                 Ok(current == *native_revision)
             }
@@ -85,7 +90,7 @@ impl WorthQueryApplicationObservedFact {
                     .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                     .flatten()
                 else {
-                    return unanswered_probe(runtime, snapshot, *entity_id);
+                    return unanswered_probe(runtime, execution, snapshot, *entity_id);
                 };
                 Ok(current == expected)
             }
@@ -115,7 +120,7 @@ impl WorthQueryApplicationObservedFact {
                         Err(WorthQuerySourceCurrentnessFailure::Execution(cause))
                     }
                     Err(AdjacencyStructuralRevisionDenial::AnchorUnavailable) => {
-                        unanswered_probe(runtime, snapshot, *anchor)
+                        unanswered_probe(runtime, execution, snapshot, *anchor)
                     }
                     Err(AdjacencyStructuralRevisionDenial::WorkBudgetExceeded) => {
                         Err(WorthQuerySourceCurrentnessFailure::WorkBudgetExceeded)
@@ -127,7 +132,8 @@ impl WorthQueryApplicationObservedFact {
             }
             Self::Entity { entity_id, kind } => Ok(runtime
                 .read_truth()
-                .exact_snapshot_live_entity_kind_status(snapshot, *entity_id)
+                .read_exact_snapshot_live_entity_kind_status(execution, snapshot, *entity_id)
+                .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
                 .ok_or(WorthQuerySourceCurrentnessFailure::Unavailable)?
                 == Some(*kind)),
             Self::Relation { .. } => {
@@ -254,15 +260,17 @@ impl WorthQueryApplicationObservedFact {
 /// longer live at this snapshot: the fact changed. So no fact's answer
 /// depends on the entity fact beside it being read first. Any other silence
 /// is a snapshot that could not be read.
-// Metadata comparison uses one fixed-key native liveness fact, so needs no request.
+// A selected fixed-key read still admits its region and preserves storage failure.
 fn unanswered_probe(
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     entity: worth_relational::facade::identity::EntityId,
 ) -> Result<bool, WorthQuerySourceCurrentnessFailure> {
     match runtime
         .read_truth()
-        .exact_snapshot_live_entity_kind_status(snapshot, entity)
+        .read_exact_snapshot_live_entity_kind_status(execution, snapshot, entity)
+        .map_err(WorthQuerySourceCurrentnessFailure::Execution)?
     {
         Some(None) => Ok(false),
         _ => Err(WorthQuerySourceCurrentnessFailure::Unavailable),

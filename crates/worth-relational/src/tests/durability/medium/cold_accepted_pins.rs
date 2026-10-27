@@ -18,6 +18,12 @@ fn accepted_pin_projections_survive_later_proven_member_damage() {
             .pin_read_capability(&snapshot, &[], execution)
             .unwrap();
         let accepted = pin.project_snapshot(&snapshot).unwrap();
+        let metadata = fixture
+            .runtime
+            .read_truth()
+            .pin_resident_entity_metadata(&snapshot, fixture.entity)
+            .unwrap()
+            .unwrap();
         let fresh = fixture
             .runtime
             .read_truth()
@@ -87,6 +93,12 @@ fn accepted_pin_projections_survive_later_proven_member_damage() {
             .unwrap()
             .records()
             .is_empty());
+        assert_eq!(metadata.live_kind(), Some(KindId(1)));
+        assert!(metadata
+            .aspect_version(&aspect_key("name"))
+            .unwrap()
+            .is_some());
+        assert_eq!(metadata.retirement(), None);
         assert_eq!(
             fixture.source.reads.load(Ordering::Relaxed),
             reads,

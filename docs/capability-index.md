@@ -115,6 +115,13 @@ exports `RelationalStorageUnavailable`, `RelationalStorageSubject`, and
 `RelationalStorageUnavailableCause`. Preserve that refusal when handling a
 provider-session failure; an unavailable record is not an absent record.
 
+Native platform owners read exact snapshot kind/aspect and retirement metadata
+through request-aware `read_*` operations. Post-publication optional proof
+sealing uses `pin_resident_entity_metadata`: it requires already accepted Head
+custody and this runtime's aspect-name meanings, performs no source read, and
+returns a typed cold-pin refusal. `RelationalPinnedEntityMetadata` exposes current
+kind, aspect revision and retirement only; historical reads require Full custody.
+
 Native storage statistics, partition statistics, chunk summaries and chunk
 diagnostics take the caller's execution request and return a fallible result.
 They explicitly demand the whole mirror and retain that resident edition for

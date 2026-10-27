@@ -151,7 +151,7 @@ std::iter::empty(),
         let mut native = vec![Fact::Entity {
             entity_id: output,
             kind: truth
-                .exact_snapshot_live_entity_kind(&snapshot, output)
+                 .read_exact_snapshot_live_entity_kind(request_execution, &snapshot, output).unwrap()
                 .unwrap(),
         }];
         for aspect in layout.native_output_aspects("Account") {
@@ -159,7 +159,7 @@ std::iter::empty(),
                 entity_id: output,
                 aspect: aspect.clone(),
                 native_revision: truth
-                    .exact_snapshot_entity_aspect_version(&snapshot, output, aspect)
+                     .read_exact_snapshot_entity_aspect_version(request_execution, &snapshot, output, aspect).unwrap()
                     .unwrap(),
             });
         }

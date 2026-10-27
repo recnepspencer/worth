@@ -19,8 +19,14 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
         .read_truth()
         .project_snapshot(&deleted.snapshot)
         .unwrap();
-    assert!(before.entity_retirement(entity).is_none());
-    let retirement = after.entity_retirement(entity).unwrap();
+    assert!(before
+        .read_entity_retirement(execution, entity)
+        .unwrap()
+        .is_none());
+    let retirement = after
+        .read_entity_retirement(execution, entity)
+        .unwrap()
+        .unwrap();
     assert_eq!(retirement.entity_id(), entity);
     assert_eq!(retirement.kind_id(), KindId(1));
     assert_eq!(retirement.created_at_version(), created.version_id);
@@ -35,23 +41,28 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
         .expect("read request remains live")
         .is_none());
     assert!(after
-        .entity_retirement(EntityId::new(
-            entity.partition_id,
-            entity.local_slot_value(),
-            entity.generation_value() + 1
-        ))
+        .read_entity_retirement(
+            execution,
+            EntityId::new(
+                entity.partition_id,
+                entity.local_slot_value(),
+                entity.generation_value() + 1
+            )
+        )
+        .unwrap()
         .is_none());
     assert!(after
-        .entity_retirement(EntityId::new(
-            entity.partition_id,
-            entity.local_slot_value(),
-            0
-        ))
+        .read_entity_retirement(
+            execution,
+            EntityId::new(entity.partition_id, entity.local_slot_value(), 0)
+        )
+        .unwrap()
         .is_none());
     assert!(runtime
         .read_truth()
         .project_historical_version(deleted.version_id)
-        .entity_retirement(entity)
+        .read_entity_retirement(execution, entity)
+        .unwrap()
         .is_none());
     let foreign = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     assert!(foreign

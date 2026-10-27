@@ -1,78 +1,97 @@
-//! Exact issued-snapshot output probes without projection or schema copies.
-
-use worth_foundational::facade::AspectKey;
-
+//! Request-aware point probes at an exact owner-issued snapshot.
+use super::VisibilityReadContext;
+use crate::execution::RelationalExecutionDenialCause;
 use crate::identity::data::{EntityId, KindId};
 use crate::snapshots::data::SnapshotHandle;
-use crate::storage::overlay::PartitionAccess;
-
-use super::VisibilityReadContext;
-
+use worth_foundational::facade::AspectKey;
 impl VisibilityReadContext<'_> {
-    /// An issued-root liveness/kind probe that distinguishes an unavailable
-    /// root (outer None) from a missing, retired, or reused entity (inner
-    /// None). No schema record or owned branch basis is materialized.
-    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
-    pub fn exact_snapshot_live_entity_kind_status(
+    /// An unavailable handle differs from an absent or retired entity. Cold
+    /// storage failure is neither and is returned before borrowing the slot.
+    pub fn read_exact_snapshot_live_entity_kind_status(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
         entity: EntityId,
-    ) -> Option<Option<KindId>> {
+    ) -> Result<Option<Option<KindId>>, RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
-            return None;
+            return Ok(None);
         }
-        let root = self
+        let Some(root) = self
             .runtime
             .visibility
-            .selected_snapshot_root(handle.snapshot_id)?;
+            .selected_snapshot_root(handle.snapshot_id)
+        else {
+            return Ok(None);
+        };
+        root.demand_regions_head(
+            execution,
+            &self.runtime.services.symbols,
+            [entity.partition_id],
+        )?;
         let kind = root
-            .get_partition(entity.partition_id)
-            .and_then(|partition| partition.entity_arena.get(&entity))
+            .admitted_head_region(entity.partition_id)
+            .and_then(|partition| partition.entity_arena().get(&entity))
             .and_then(|slot| slot.is_live().then(|| slot.kind_id()).flatten());
-        Some(kind)
+        Ok(Some(kind))
     }
-
-    /// The kind of a live entity at the root retained by this issued handle.
-    /// A retired, reused, foreign, or released handle is unavailable.
-    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
-    pub fn exact_snapshot_live_entity_kind(
+    /// The live kind at this exact selected root, with storage denials retained.
+    pub fn read_exact_snapshot_live_entity_kind(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
         entity: EntityId,
-    ) -> Option<KindId> {
-        self.exact_snapshot_live_entity_kind_status(handle, entity)
-            .flatten()
+    ) -> Result<Option<KindId>, RelationalExecutionDenialCause> {
+        self.read_exact_snapshot_live_entity_kind_status(execution, handle, entity)
+            .map(Option::flatten)
     }
-
-    /// Native aspect revision at the same issued exact root. An outer `None`
-    /// refuses stale identity or unavailable snapshot provenance.
-    /// Metadata read: fixed-key native identity/version probes, with no row iteration; no execution request is needed.
-    pub fn exact_snapshot_entity_aspect_version(
+    /// Revision of one aspect at the selected exact root. The outer option
+    /// rejects stale identity or missing snapshot provenance, never cold data.
+    pub fn read_exact_snapshot_entity_aspect_version(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         handle: &SnapshotHandle,
         entity: EntityId,
         aspect: &AspectKey,
-    ) -> Option<Option<u64>> {
+    ) -> Result<Option<Option<u64>>, RelationalExecutionDenialCause> {
+        crate::execution::check_request(execution)?;
         if handle.runtime_instance_id != self.runtime.runtime_instance_id() {
-            return None;
+            return Ok(None);
         }
-        let root = self
+        let Some(root) = self
             .runtime
             .visibility
-            .selected_snapshot_root(handle.snapshot_id)?;
-        let partition = root.get_partition(entity.partition_id)?;
-        let slot = partition.entity_arena.get(&entity)?;
+            .selected_snapshot_root(handle.snapshot_id)
+        else {
+            return Ok(None);
+        };
+        root.demand_regions_head(
+            execution,
+            &self.runtime.services.symbols,
+            [entity.partition_id],
+        )?;
+        let Some(partition) = root.admitted_head_region(entity.partition_id) else {
+            return Ok(None);
+        };
+        let Some(slot) = partition.entity_arena().get(&entity) else {
+            return Ok(None);
+        };
         if !slot.is_live() {
-            return None;
+            return Ok(None);
         }
         let symbol = self
             .runtime
             .services
             .symbols
             .with_read(|symbols| symbols.symbol(aspect.as_str()));
-        let versions = partition
-            .entity_arena
-            .aspect_versions_at(entity.slot_index())?;
-        Some(symbol.and_then(|symbol| versions.get(&symbol).copied()))
+        let Some(versions) = partition
+            .entity_arena()
+            .aspect_versions_at(entity.slot_index())
+        else {
+            return Ok(None);
+        };
+        Ok(Some(
+            symbol.and_then(|symbol| versions.get(&symbol).copied()),
+        ))
     }
 }

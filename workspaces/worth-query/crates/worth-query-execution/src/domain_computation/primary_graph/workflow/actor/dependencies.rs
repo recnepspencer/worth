@@ -125,7 +125,10 @@ impl WorkflowActorDependencies {
         };
         let kind = runtime
             .read_truth()
-            .exact_snapshot_live_entity_kind_status(snapshot, entity)
+            .read_exact_snapshot_live_entity_kind_status(execution, snapshot, entity)
+            .map_err(|cause| {
+                Denial::relational_read_stopped(cause, "workflow actor native identity")
+            })?
             .flatten()
             .ok_or_else(|| {
                 Denial::new(

@@ -16,8 +16,14 @@ mod current_fixture;
 mod failure_matrix;
 #[path = "cold_metadata_matrix.rs"]
 mod metadata_matrix;
+#[path = "cold_metadata_pins.rs"]
+mod metadata_pins;
 #[path = "cold_projection_point_door.rs"]
 mod projection_point_door;
+#[path = "cold_retirement_metadata.rs"]
+mod retirement_metadata;
+#[path = "cold_snapshot_point_door.rs"]
+mod snapshot_point_door;
 use current_door::CurrentDoor;
 use current_fixture::CurrentFixture;
 

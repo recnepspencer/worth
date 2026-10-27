@@ -1,3 +1,7 @@
+mod pinned_entity_metadata;
+pub use pinned_entity_metadata::{
+    RelationalEntityMetadataPinDenial, RelationalPinnedEntityMetadata,
+};
 pub(crate) mod adjacency_work_ledger;
 mod aspect_catalog;
 #[cfg(test)]

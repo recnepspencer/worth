@@ -34,9 +34,14 @@ pub(super) fn committed_retirement(
     entity_id: EntityId,
     fact: &Fact,
 ) -> Option<Fact> {
-    let view = runtime.read_truth().project_snapshot(snapshot)?;
-    let record = view.entity_retirement(entity_id)?;
-    if record.deleted_at_version() != view.version_id() {
+    let metadata = match runtime.read_truth().pin_resident_entity_metadata(snapshot, entity_id) {
+        Ok(Some(metadata)) => metadata,
+        Ok(None) => return None,
+        Err(worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::RegionNotResident(_)
+            | worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::SymbolsNotResident(_)) => return None,
+    };
+    let record = metadata.retirement()?;
+    if record.deleted_at_version() != snapshot.version_id() {
         return None;
     }
     Some(Fact::RetiredOutputEntity {

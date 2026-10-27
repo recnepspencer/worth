@@ -224,7 +224,7 @@ use crate::domain_computation::primary_graph::output_lineage::RecordedSourceIden
                             OutputDependencySelection::Reuse
                         )
                         && matches!(
-                            compare_retained_output_witness(
+                            compare_retained_output_witness(execution,
                                 runtime,
                                 selected.application_basis().snapshot_handle(),
                                 witness,

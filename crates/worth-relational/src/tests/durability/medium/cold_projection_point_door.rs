@@ -13,6 +13,7 @@ pub(super) enum ProjectionPointDoor {
     EntityRevisionAdmitted,
     RelationRevision,
     AdjacencyIds,
+    Retirement,
     EntityState,
     RelationMetadata,
     AspectVersion,
@@ -43,6 +44,9 @@ impl ProjectionPointDoor {
         let locator = revision_locator("name", "name");
         let direction = RelationalAdjacencyDirection::Outgoing;
         let answer = match self {
+            Self::Retirement => view
+                .read_entity_retirement(execution, entity)
+                .map(|answer| assert!(answer.is_none(), "the fixture entity is live")),
             Self::EntityState => view
                 .read_exact_entity_state(execution, entity, |metadata, _| {
                     callbacks.set(callbacks.get() + 1);

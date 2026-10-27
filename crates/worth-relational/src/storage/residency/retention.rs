@@ -175,6 +175,15 @@ impl RelationalRegionRetention {
             })
     }
 
+    /// Clone custody already accepted by this immutable root, without a fresh
+    /// admission decision. A cold cell alone supplies no witness here.
+    pub(crate) fn accepted_head_lease(&self) -> Option<RelationalResidencyLease<super::Head>> {
+        self.head
+            .get()
+            .cloned()
+            .or_else(|| self.full.get().map(|lease| lease.as_head()))
+    }
+
     pub(crate) fn pin_head_lease(
         &self,
     ) -> Result<

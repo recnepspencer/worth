@@ -324,7 +324,7 @@ impl RetainedInputCutoffCandidate {
             }
         }
         observation::reach(Gate::OutputCurrentness);
-        if !witness.unchanged_in(runtime, snapshot)? {
+        if !witness.unchanged_in(runtime, snapshot, execution)? {
             return Ok(None);
         }
         Ok(Some(VerifiedDependencies {
