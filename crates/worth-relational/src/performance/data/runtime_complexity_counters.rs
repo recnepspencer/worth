@@ -132,6 +132,9 @@ pub struct RuntimeComplexityCounters {
     pub lineage_publication_decision_width: usize,
     pub observation_commit_selections: usize,
     pub observation_commit_ancestry_visits: usize,
+    /// Whole-mirror live-history maintenance, including untouched records.
+    pub live_history_slots_visited: usize,
+    pub live_history_entries_visited: usize,
     pub live_entity_history_entries_trimmed: usize,
     pub live_relation_history_entries_trimmed: usize,
     pub forward_adjacency_updates: usize,
