@@ -50,7 +50,7 @@ fn routed_surface_scan_targets_reconcile_remaining_phase_six_seam_files() {
             true,
         ),
         (
-            "crates/worth-query/src/runtime/inspection/causal/builder_bridge.rs",
+            "crates/worth-query-execution/src/domain_computation/primary_graph/causal_inspection/builder_bridge.rs",
             true,
         ),
         ("crates/worth-query/src/frontier_signal_adapter.rs", true),

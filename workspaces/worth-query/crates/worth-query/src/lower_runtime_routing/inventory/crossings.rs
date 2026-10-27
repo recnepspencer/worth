@@ -259,7 +259,7 @@ const CROSSING_ROWS: &[WorthQueryLowerRuntimeCrossingRow] = &[
     WorthQueryLowerRuntimeCrossingRow::new(
         WorthQueryLowerRuntimeSeamKey::CausalBridgeMaterialization,
         "Causal bridge materialization",
-        "runtime/inspection/causal/builder_bridge.rs",
+        "worth-query-execution/src/domain_computation/primary_graph/causal_inspection/builder_bridge.rs",
         WorthQueryLowerRuntimeCrossingClassification::QueryBoundaryAdapter,
         WorthQueryLowerRuntimeRouteKind::RoutePlanning,
         WorthQueryLowerRuntimeAuthorityOwner::RuntimeBridge,
