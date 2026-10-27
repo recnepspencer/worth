@@ -8,7 +8,9 @@ use worth_relational::facade::commit_strategies::{
     StrategyPacketContract, StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass,
     StrategyReadScopeClass, StrategyTraversalBasis,
 };
-use worth_relational::facade::runtime::{RelationalRuntimeApi, RelationalRuntimeConstructionDenial};
+use worth_relational::facade::runtime::{
+    RelationalRuntimeApi, RelationalRuntimeConstructionDenial,
+};
 
 use crate::{
     RelationalStoreHome, RelationalStoreHomeClosed, RelationalStoreHomeOpenRefusal,

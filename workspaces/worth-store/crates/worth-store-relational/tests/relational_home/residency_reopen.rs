@@ -106,7 +106,9 @@ fn reopen_keeps_regions_cold_and_a_point_read_and_commit_demand_only_their_parti
         .durability_authority()
         .native_checkpoint(&execution, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let mut receiving = workload::runtime_builder(super::schema_transition::SOURCE).build();
+    let mut receiving = workload::runtime_builder(super::schema_transition::SOURCE)
+        .build()
+        .expect("valid native reference runtime configuration");
     receiving
         .durability_recovery()
         .restore_native_checkpoint(&execution, &embedded)
@@ -129,7 +131,9 @@ fn a_cold_schema_transition_replays_and_reframes_all_carriers_before_load_free_c
     let host = workload::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let home = durable_run::open(&location, &execution).unwrap();
-    let reference = workload::runtime_builder(super::schema_transition::SOURCE).build();
+    let reference = workload::runtime_builder(super::schema_transition::SOURCE)
+        .build()
+        .expect("valid native reference runtime configuration");
     let branch = BranchId("main".into());
     let mut records = Vec::new();
     for partition in 1..=8_u32 {
