@@ -264,6 +264,9 @@ impl ResidentLineageEventPage {
 impl Drop for ResidentLineageEventPage {
     fn drop(&mut self) {
         let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(previous > 0);
+        debug_assert!(
+            /* Proof: Each ResidentLineageEventPage constructor increments this page counter and owns a strong Arc; its non-Clone custody Drop decrements once. Loaded-page replacement cannot change the leased counter. */
+            previous > 0
+        );
     }
 }

@@ -69,10 +69,12 @@ fn complexity_budget_bidirectional_adjacency_avoids_relation_scans() {
     runtime.performance_access().reset_counters();
     let outgoing = runtime
         .storage_access()
-        .outgoing_relations_for_entity(source, version_id);
+        .outgoing_relations_for_entity(&execution, source, version_id)
+        .expect("funded adjacency read succeeds");
     let incoming = runtime
         .storage_access()
-        .incoming_relations_for_entity(target, version_id);
+        .incoming_relations_for_entity(&execution, target, version_id)
+        .expect("funded adjacency read succeeds");
     let counters = runtime.performance_access().counters();
 
     assert_eq!(outgoing, vec![relation]);

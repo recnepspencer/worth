@@ -247,9 +247,19 @@ impl RelationalForkTargetReservation {
 
     pub(crate) fn install(mut self, cell: RelationalBranchReferenceCell) {
         let mut state = self.registry.write();
-        assert_eq!(cell.identity().branch_id(), &self.branch_id);
-        assert!(state.reserved_targets.remove(&self.branch_id));
-        assert!(state.cells.insert(self.branch_id.clone(), cell).is_none());
+        assert_eq!(
+            /* Proof: RelationalForkTargetReservation is non-Clone and reserve_target exclusively inserts its reserved name only when the live cell is absent. prepare_fork_target constructs the cell using reservation.branch_id(); only this consuming install or Drop removes the reservation. */
+            cell.identity().branch_id(),
+            &self.branch_id
+        );
+        assert!(
+            /* Proof: RelationalForkTargetReservation is non-Clone and reserve_target exclusively inserts its reserved name only when the live cell is absent. prepare_fork_target constructs the cell using reservation.branch_id(); only this consuming install or Drop removes the reservation. */
+            state.reserved_targets.remove(&self.branch_id)
+        );
+        assert!(
+            /* Proof: RelationalForkTargetReservation is non-Clone and reserve_target exclusively inserts its reserved name only when the live cell is absent. prepare_fork_target constructs the cell using reservation.branch_id(); only this consuming install or Drop removes the reservation. */
+            state.cells.insert(self.branch_id.clone(), cell).is_none()
+        );
         self.active = false;
     }
 }

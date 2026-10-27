@@ -140,7 +140,8 @@ fn map_retention_denial(
         crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
             RelationalForkDenial::RetentionIdentityExhausted
         }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             RelationalForkDenial::RetentionInvariantViolation
         }
     }

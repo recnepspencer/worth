@@ -25,6 +25,9 @@ mod history_catalog_recovery;
 mod history_checkpoint_catalog;
 #[path = "history_construction.rs"]
 mod history_construction;
+#[path = "history_identity_allocation.rs"]
+mod history_identity_allocation;
+use history_identity_allocation::reserve_identity;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]
@@ -71,8 +74,10 @@ pub use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
 pub(crate) use history_publication::PreparedRecoveredVersionedArtifactPublication;
-pub(crate) use history_publication::PreparedVersionedArtifactAccelerators;
 pub(crate) use history_publication::PreparedVersionedArtifactPublication;
+pub(crate) use history_publication::{
+    PreparedCommitSequence, PreparedVersionedArtifactAccelerators,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RelationalPhase4ReferenceCostCounters {
@@ -256,7 +261,10 @@ impl HistorySubsystem {
         self.branch_cells.restore_all(cells);
         self.runtime_instance_id = runtime_instance_id;
         self.basis_registry_metrics = metrics;
-        self.reset_retention_owner(runtime_instance_id);
+        self.try_reset_retention_owner(runtime_instance_id)
+            .map_err(|_| {
+                crate::branch::RelationalBranchObservationConstructionDenial::RetentionUnavailable
+            })?;
         Ok(())
     }
 
@@ -275,7 +283,7 @@ impl HistorySubsystem {
             );
         }
         let positioned = self.canonical_publication_routes.performed_snapshot();
-        let mut fork = self.detached_owner_snapshot();
+        let mut fork = self.detached_owner_snapshot()?;
         let (next_commit_id, next_version_id) = {
             let mut ledger = fork.ledger.write();
             if let Some(maximum) = positioned
@@ -387,13 +395,4 @@ impl HistorySubsystem {
             .then_some(())
             .ok_or_else(|| format!("recovery checkpoint omitted branch cell `{}`", branch_id.0))
     }
-}
-
-fn reserve_identity(allocator: &AtomicU64, legacy_floor: u64) -> Option<u64> {
-    allocator.fetch_max(legacy_floor, Ordering::Relaxed);
-    allocator
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-            next.checked_add(1)
-        })
-        .ok()
 }

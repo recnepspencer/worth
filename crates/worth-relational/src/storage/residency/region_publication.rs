@@ -98,7 +98,9 @@ impl PreparedResidentRegion {
             Some((prior_commitment, &previous.partition, journal)),
         )
         .map_err(RegionContentFailure::Content)?;
-        let inventory = partition.allocation_inventory_since(&previous.partition, basis.inventory);
+        let inventory = partition
+            .allocation_inventory_since(&previous.partition, basis.inventory)
+            .map_err(RegionContentFailure::Content)?;
         let new_payload_bytes =
             partition.new_authoritative_allocation_bytes_since(&previous.partition);
         let delta = unavailable_delta(

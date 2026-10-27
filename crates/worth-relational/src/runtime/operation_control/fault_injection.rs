@@ -5,16 +5,12 @@ impl RelationalOperationControl {
         mut self,
         boundary: RelationalInterruptionBoundary,
         interruption: RelationalOperationInterruption,
-        trigger_on_visit: usize,
+        trigger_on_visit: std::num::NonZeroUsize,
     ) -> Self {
-        assert!(
-            trigger_on_visit > 0,
-            "an interruption seam needs a positive visit"
-        );
         self.injected_interruption = Some(RelationalInjectedInterruption {
             boundary,
             interruption,
-            trigger_on_visit,
+            trigger_on_visit: trigger_on_visit.get(),
             visits: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
         });
         self

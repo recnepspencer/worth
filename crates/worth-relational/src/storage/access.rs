@@ -145,11 +145,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn outgoing_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::outgoing_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )
@@ -157,11 +162,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn incoming_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::incoming_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )
@@ -169,11 +179,16 @@ impl<'runtime> StorageAccess<'runtime> {
 
     pub fn all_relations_for_entity(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: crate::identity::data::EntityId,
         version_id: crate::identity::data::VersionId,
-    ) -> Vec<crate::identity::data::RelationId> {
+    ) -> Result<
+        Vec<crate::identity::data::RelationId>,
+        crate::execution::RelationalExecutionDenialCause,
+    > {
         crate::storage::partition::adjacency_queries::all_relations_for_entity(
             self.runtime,
+            execution,
             entity_id,
             version_id,
         )

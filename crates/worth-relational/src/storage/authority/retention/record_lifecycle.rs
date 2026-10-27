@@ -57,7 +57,7 @@ impl StorageAuthority<'_> {
             return None;
         }
         arena.set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
-        arena.reset_slot(slot);
+        arena.reset_slot(slot)?;
         Some(crate::runtime::ReclaimedRecordSlot::new(
             class,
             partition_id,

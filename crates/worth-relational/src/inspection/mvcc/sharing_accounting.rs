@@ -280,7 +280,11 @@ impl RelationalAuthoritativeAllocationAccounting {
 
     fn insert(&mut self, locator: RelationalAuthoritativeAllocationLocator, bytes: u64) {
         if let Some(previous) = self.allocations.insert(locator, bytes) {
-            debug_assert_eq!(previous, bytes);
+            debug_assert_eq!(
+                /* Proof: The compared byte observations use one retained immutable StorageAllocation identity and the same owner-defined layout during this inventory; no allocation can be mutated or recycled while that root and its leases are retained. */
+                previous,
+                bytes
+            );
         }
     }
 }

@@ -1,10 +1,16 @@
 # Relational clean-cutover audit
 
-The starting revision is `6a135ca5a2`. The production module graph is followed from `src/lib.rs`, honoring `#[path]` and excluding `#[cfg(test)]` modules/items and test functions. The census counts method calls to `expect` and `unwrap`, and `panic!` / `unreachable!`, including expressions inside macro argument token trees. It does not count `unwrap_or`, `unwrap_or_else`, `Arc::try_unwrap`, assertions, or test/example code. Nested calls count separately. Platform-specific production branches are counted conservatively.
+The first sweep started at `6a135ca5a2`: 458 production expect/unwrap/panic/unreachable sites. Its initial report of 358 retained sites excluded assertions and overstated several construction proofs. Independent review rejected that result after reaching two retention panics on cold/damaged recovered runtimes and finding two broken doctests. That rejection supersedes the earlier retained-site claims.
 
-Starting census: **458** sites. Final census: **358** sites. **100** sites removed. The earlier intermediate census omitted two predecessor checks inside `format!`; both now use `if let` bindings.
+The correction starts at `086404cd22`. Its expanded census follows the production module graph from `src/lib.rs`, honors `#[path]`, excludes test modules/items/functions, and counts expect, unwrap, panic, unreachable, assert/assert_eq/assert_ne, and debug assertions, including expressions inside macro arguments. Platform branches are counted conservatively. It excludes indexing, unwrap_or/unwrap_or_else, Arc::try_unwrap, tests and doc examples. Nested sites count separately. Before: **446** sites (358 earlier categories plus 88 assertions). After: **366** sites (300 expect/unwrap/panic/unreachable plus 66 assertions): **80** total sites removed. The final census evidence records the exact reviewed source.
 
-Construction now returns `RelationalRuntimeConstructionDenial` before dispatch. Symbol and derived-index identity frontiers refuse without advancing or wrapping. Projection contract and historical visibility failures retain typed causes through Query. Storage reconstruction failures use their existing storage/residency classifications; guard admission, lease ownership, discovery rounds and damage stickiness retain their existing rules.
+The corrected read boundary separates a raw edition from a resident edition holding actual Full leases. Retention has no infallible lease, AsRef or Deref door. Public StorageAccess adjacency takes the caller request and runs the existing Full probe/demand court; all three doors belong to ReadDoor::ALL. Merge reconciliation snapshots use the same court. Checkpoint root reads and maintenance reads return existing typed storage failures. The selected edition spine remains observed while resident reads hold their payload custody.
+
+Envelope demand captures envelope and positioned custody under one lock. Missing performed positions and canonical digests refuse explicitly. Recovered catalog comparisons use the retained journal commitment when bodies are cold, and admitted indexed artifacts validate their body against that commitment. Checked commit successors, head binding custody, positioned settlement input and the actual envelope cell are carried across publication. Replay continuity returns its existing rejection. Cold history trie edits, native metadata construction, serialization and inventory arithmetic failures return refusals. Savepoint capacity zero represents disabled savepoints, continuation construction validates normalized length, and invalid invariant execution points refuse native runtime construction.
+
+Both doctests extract the construction Result. Positive test and certification fixtures extract new Results without weakening assertions. Bridge forwards occupied lock-observation refusal; Query's fresh-source test observer extracts that Option.
+
+Inline `Proof:` comments are authoritative. The [proof audit](CUTOVER_PANIC_PROOFS.md) describes how to regenerate the complete inventory rather than copying source line numbers into a permanent table. Verification and exact counts are recorded in `target/lane-evidence/INDEX.md`.
 
 ## Removed variants
 
@@ -44,6 +50,3 @@ Consumer-only residue retired with the same preflight forecast producer (`ee07da
 
 Forecast-only Query presentation rows were removed or replaced with rows for surviving actual counter refusals. These rows tested translation of the deliberately retired variants, not live quota enforcement. The required-hints journey now requires both hints to succeed instead of accepting a retired forecast-capacity deferral. No test was ignored or removed to bypass a live product claim.
 
-## Retained sites and proofs
-
-The complete [retained panic-site proof appendix](CUTOVER_PANIC_PROOFS.md) lists all 358 sites and the construction/type proof adjacent to each retained assertion.

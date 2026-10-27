@@ -237,6 +237,7 @@ impl ProjectionRecordReader<'_> {
         .map_err(NativeScanStop::Request)?;
         let read = scan.finish();
         debug_assert!(
+            /* Proof: This private scan collects from the canonical partition/slot iterator and never reorders records after visibility selection. */
             super::truth_access::authoritative_entity_records_are_canonical(read.records())
         );
         Ok(read)

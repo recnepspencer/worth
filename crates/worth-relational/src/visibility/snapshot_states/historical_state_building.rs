@@ -20,7 +20,10 @@ pub(crate) fn build_historical_visibility_state(
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
-    debug_assert!(basis.source_version().as_u64() >= basis.version_id().as_u64());
+    debug_assert!(
+        /* Proof: Historical basis admission rejects a requested version beyond its selected source before constructing this private basis; both versions remain immutable afterwards. */
+        basis.source_version().as_u64() >= basis.version_id().as_u64()
+    );
     record_memory::claim(memory, basis.branch_id().0.len() as u64)?;
     let handle = SnapshotHandle {
         runtime_instance_id: runtime.runtime_instance_id(),

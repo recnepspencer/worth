@@ -131,6 +131,8 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
 
     let before_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -172,6 +174,8 @@ fn root_capture_sabotage_leaves_storage_index_history_and_reference_unchanged() 
     );
     let after_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -209,6 +213,8 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
     create_entity_outcome(execution, &runtime, "root-capture-production-anchor");
     let before_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (
@@ -242,6 +248,8 @@ fn production_commit_root_capture_sabotage_precedes_durable_append_and_all_effec
 
     let after_storage = runtime
         .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody")
         .entries()
         .map(|(id, partition)| {
             (

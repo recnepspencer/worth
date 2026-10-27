@@ -60,15 +60,19 @@ pub(super) fn apply(
         let partition = context
             .state
             .get_partition_mut(intent.relation_id.partition_id);
-        partition.relation_arena.apply_extra_update(
-            slot,
-            RelationExtra {
-                endpoints: Some(endpoints.clone()),
-                authoritative_aspect_state: new_state.clone(),
-            },
-            version_id,
-        );
-    });
+        partition
+            .relation_arena
+            .apply_extra_update(
+                slot,
+                RelationExtra {
+                    endpoints: Some(endpoints.clone()),
+                    authoritative_aspect_state: new_state.clone(),
+                },
+                version_id,
+            )
+            .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
+        Ok::<_, CommitConflict>(())
+    })?;
     Ok(MutationOutcome::relation_updated(
         intent.relation_id,
         kind_id,

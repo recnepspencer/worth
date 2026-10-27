@@ -47,6 +47,7 @@ impl IndexReductionKey {
 impl ImportReductionKey {
     pub(crate) fn new(partition_id: PartitionId, kind_order: u8, packet_index: usize) -> Self {
         debug_assert!(
+            /* Proof: PackedReductionKey is private: keys are emitted from admitted packet indices and u32 local ordinals; the low word is masked with u32::MAX before extraction. */
             packet_index <= u32::MAX as usize,
             "packet index must fit into the packed key contract"
         );
@@ -73,6 +74,10 @@ impl ValidationReductionKey {
 }
 
 const fn pack_u64_pair(high: u64, low: usize) -> u64 {
-    debug_assert!(low <= u32::MAX as usize, "low word must fit into u32");
+    debug_assert!(
+        /* Proof: PackedReductionKey is private: keys are emitted from admitted packet indices and u32 local ordinals; the low word is masked with u32::MAX before extraction. */
+        low <= u32::MAX as usize,
+        "low word must fit into u32"
+    );
     (high << 32) | (low as u64)
 }

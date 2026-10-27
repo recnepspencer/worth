@@ -63,7 +63,7 @@ impl CapturedCheckpointBasis {
             schemas: branch_root_schema_images,
             kinds: root_kind_images,
         } = branch_root_images(branch_roots)?;
-        let mirror_partitions = partitions.materialize_owned_partitions();
+        let mirror_partitions = partitions.materialize_owned_partitions()?;
         let mirror_kind_images =
             crate::storage::residency::CheckpointRegionKindImages::capture(&mirror_partitions)
                 .map_err(|cause| {
@@ -150,7 +150,7 @@ fn branch_root_images(
             let retained_contracts = CheckpointAspectContractCatalog::from_contracts(
                 root.schema_authority().retained_aspect_contracts(),
             )?;
-            let partitions = root.partitions();
+            let partitions = root.partitions()?;
             root_kind_images.insert(
                 root.commit_id(),
                 crate::storage::residency::CheckpointRegionKindImages::capture(&partitions)

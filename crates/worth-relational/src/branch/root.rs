@@ -55,6 +55,8 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
     InvalidHistoryCoverage(PartitionId),
+    ContentEncoding(PartitionId),
+    AllocationAccountingOverflow(PartitionId),
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
     CanonicalEnvelopeMismatch,

@@ -15,6 +15,7 @@ where
 {
     pub(crate) fn new(items: Vec<(K, T)>) -> Self {
         debug_assert!(
+            /* Proof: merge_ordered receives only the private sorted per-packet reduction streams; their builder sorts by this exact key before handing the owned streams to this merge. */
             items.windows(2).all(|window| window[0].0 <= window[1].0),
             "ordered reduction streams must be locally sorted"
         );

@@ -47,16 +47,6 @@ impl HistorySubsystem {
         self.ledger.read().commit_catalog.snapshot()
     }
 
-    pub(crate) fn catalog_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
-        self.ledger
-            .read()
-            .commit_catalog
-            .snapshot()
-            .into_iter()
-            .map(|artifact| artifact.envelope())
-            .collect()
-    }
-
     pub(crate) fn catalog_len(&self) -> usize {
         self.ledger.read().commit_catalog.len()
     }

@@ -78,7 +78,11 @@ mod tests {
         ] {
             let boundary = RelationalInterruptionBoundary::ProposalValidation;
             let event = RelationalOperationControl::uninterrupted()
-                .with_injected_interruption_for_test(boundary, interruption, 1)
+                .with_injected_interruption_for_test(
+                    boundary,
+                    interruption,
+                    std::num::NonZeroUsize::MIN,
+                )
                 .observe(boundary)
                 .unwrap();
             let stop = replay_commit_stop(

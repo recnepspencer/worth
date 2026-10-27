@@ -41,8 +41,8 @@ pub(super) fn restore_checkpoint_state(
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
-    if checkpoint.directory.is_some() {
-        cold_directory::restore(execution, restored, &checkpoint, work)?;
+    if let Some(directory) = checkpoint.directory.clone() {
+        cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
         super::unshared_state(restored)?
             .durability
             .push_checkpoint(checkpoint);

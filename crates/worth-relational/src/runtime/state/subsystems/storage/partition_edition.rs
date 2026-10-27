@@ -54,9 +54,8 @@ impl PartitionEdition {
         symbols: &crate::runtime::RuntimeSymbolTable,
         id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.demand_partition(execution, id)?;
-        if let Some(region) = self.partitions.get(&id) {
-            region.lease().admit_symbols(execution, symbols)?;
+        if let Some(lease) = self.demand_partition(execution, id)? {
+            lease.admit_symbols(execution, symbols)?;
         }
         Ok(())
     }
@@ -67,23 +66,43 @@ impl PartitionEdition {
         }
     }
 
-    /// Lend one partition's authoritative state for the life of this edition.
-    ///
-    /// The borrow is tied to the edition handle, not to a lock, so callers keep
-    /// the handle alive for the whole traversal rather than copying out of it.
-    pub(crate) fn partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.partitions.get(&partition_id).map(AsRef::as_ref)
-    }
-
-    /// A counted handle onto one partition, for callers that must outlive the
-    /// edition itself.
+    /// Retain Full custody already admitted by an operation, without storage I/O.
     pub(crate) fn shared_partition(
         &self,
-        partition_id: PartitionId,
-    ) -> Option<RelationalResidencyLease<Full>> {
+        id: PartitionId,
+    ) -> Result<
+        Option<RelationalResidencyLease<Full>>,
+        crate::storage::data::RelationalStorageUnavailable,
+    > {
         self.partitions
-            .get(&partition_id)
-            .map(|region| region.lease().clone())
+            .get(&id)
+            .map(|region| region.pin_lease())
+            .transpose()
+    }
+
+    pub(crate) fn try_full_partition(
+        &self,
+        id: PartitionId,
+    ) -> Result<Option<&PartitionState>, crate::storage::data::RelationalStorageUnavailable> {
+        let Some(region) = self.partitions.get(&id) else {
+            return Ok(None);
+        };
+        region.cell().check_damage()?;
+        region.admitted_partition().map(Some).ok_or(
+            crate::storage::data::RelationalStorageUnavailable {
+                subject: crate::storage::data::RelationalStorageSubject::Region(id),
+                cause: crate::storage::data::RelationalStorageUnavailableCause::SourceUnavailable,
+            },
+        )
+    }
+
+    pub(crate) fn resident_full(
+        &self,
+    ) -> Result<ResidentPartitionEdition, crate::storage::data::RelationalStorageUnavailable> {
+        self.cells()
+            .map(|(id, region)| Ok((id, region.pin_lease()?)))
+            .collect::<Result<BTreeMap<_, _>, _>>()
+            .map(|leases| ResidentPartitionEdition::new(self.clone(), leases))
     }
 
     pub(crate) fn cells(&self) -> impl Iterator<Item = (PartitionId, &RelationalRegionRetention)> {
@@ -127,18 +146,25 @@ impl PartitionEdition {
             .pin_head_lease()
     }
 
-    pub(super) fn demand_partition(
+    pub(crate) fn demand_partition(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        if let Some(region) = self.partitions.get(&id) {
-            region.demand_full(
-                execution,
-                crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
-            )?;
-        }
-        Ok(())
+    ) -> Result<
+        Option<RelationalResidencyLease<Full>>,
+        crate::storage::residency::RelationalResidencyDemandFailure,
+    > {
+        crate::execution::check_request(execution)
+            .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
+        self.partitions
+            .get(&id)
+            .map(|region| {
+                region.demand_full(
+                    execution,
+                    crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                )
+            })
+            .transpose()
     }
 
     pub(crate) fn demand_partition_head(
@@ -171,39 +197,26 @@ impl PartitionEdition {
     {
         crate::execution::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
-        for region in self.partitions.values() {
-            region.demand_full(
+        let mut leases = BTreeMap::new();
+        for (id, region) in self.cells() {
+            let lease = region.demand_full(
                 execution,
                 crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
             )?;
-            region.lease().admit_symbols(execution, symbols)?;
+            lease.admit_symbols(execution, symbols)?;
+            leases.insert(id, lease);
         }
-        Ok(ResidentPartitionEdition::new(self.clone()))
+        Ok(ResidentPartitionEdition::new(self.clone(), leases))
     }
 
     pub(crate) fn len(&self) -> usize {
         self.partitions.len()
     }
 
-    pub(crate) fn entries(&self) -> impl Iterator<Item = (PartitionId, &PartitionState)> {
-        self.partitions
-            .iter()
-            .map(|(partition_id, partition)| (*partition_id, partition.as_ref()))
-    }
-
-    pub(crate) fn partitions(&self) -> impl Iterator<Item = &PartitionState> {
-        self.partitions.values().map(AsRef::as_ref)
-    }
-
-    /// Owned copies of every partition, for checkpoint capture and recovery.
-    ///
-    /// This is reconstructive-lane work by construction: it materializes the
-    /// whole substrate and its callers must charge it accordingly.
-    pub(crate) fn materialize_owned_partitions(&self) -> Vec<PartitionState> {
-        self.partitions
-            .values()
-            .map(|partition| partition.as_ref().clone())
-            .collect()
+    pub(crate) fn materialize_owned_partitions(
+        &self,
+    ) -> Result<Vec<PartitionState>, crate::storage::data::RelationalStorageUnavailable> {
+        Ok(self.resident_full()?.partitions().cloned().collect())
     }
 
     /// Exclusive access to the map spine, copying it only when another edition
@@ -214,33 +227,6 @@ impl PartitionEdition {
     pub(super) fn map_mut(&mut self) -> (&mut PartitionMap, bool) {
         let copied = Arc::get_mut(&mut self.partitions).is_none();
         (Arc::make_mut(&mut self.partitions), copied)
-    }
-}
-
-impl PartitionAccess for PartitionEdition {
-    fn probe_full_partition(
-        &self,
-        id: PartitionId,
-    ) -> crate::storage::residency::PartitionProbe<'_> {
-        use crate::storage::residency::PartitionProbe;
-        match self.partitions.get(&id) {
-            None => PartitionProbe::Absent,
-            Some(region) => match region.admitted_partition() {
-                Some(partition) => PartitionProbe::Resident(partition),
-                None => PartitionProbe::Cold,
-            },
-        }
-    }
-
-    fn demand_full_partition(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        id: PartitionId,
-    ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        self.demand_partition(execution, id)
-    }
-    fn get_partition(&self, partition_id: PartitionId) -> Option<&PartitionState> {
-        self.partition(partition_id)
     }
 }
 

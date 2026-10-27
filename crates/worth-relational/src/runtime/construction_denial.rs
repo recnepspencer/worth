@@ -6,6 +6,10 @@ use crate::validation::DuplicateCustomInvariantRegistration;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RelationalRuntimeConstructionDenial {
+    InvariantExecutionPoint {
+        registration: usize,
+        execution_point: crate::validation::data::InvariantExecutionPoint,
+    },
     CustomInvariant(DuplicateCustomInvariantRegistration),
     CommitStrategy(DuplicateCommitStrategyRegistration),
     CommitStrategyExecutor(CommitStrategyExecutionRegistryError),

@@ -69,7 +69,7 @@ impl ResidentMirrorTarget {
         {
             ResidentTargetContents::Resident { lease, .. } => lease.retention(),
             ResidentTargetContents::Editing => unreachable!(
-                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                /* Proof: PartitionEditionWriter holds RwLockWriteGuard<CurrentMirror> for its whole lifetime. Every edit entry is reused before taking a target again, and finish_edits restores its lease before releasing that guard; mirror accessors cannot run concurrently with an edit. */
                 "exclusive writer owns this edit"
             ),
         }
@@ -101,23 +101,20 @@ impl ResidentMirrorTarget {
             }
             ResidentTargetContents::Editing => {
                 unreachable!(
-                    /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                    /* Proof: PartitionEditionWriter holds RwLockWriteGuard<CurrentMirror> for its whole lifetime. Every edit entry is reused before taking a target again, and finish_edits restores its lease before releasing that guard; mirror accessors cannot run concurrently with an edit. */
                     "exclusive writer owns every target edit"
                 )
             }
         }
     }
-    pub(super) fn current_lease(&self) -> RelationalResidencyLease<Head> {
+    pub(super) fn current_lease(&self) -> Option<RelationalResidencyLease<Head>> {
         match &*self
             .contents
             .lock()
             .unwrap_or_else(|error| error.into_inner())
         {
-            ResidentTargetContents::Resident { lease, .. } => lease.head_lease(),
-            ResidentTargetContents::Editing => unreachable!(
-                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
-                "exclusive writer owns target edit"
-            ),
+            ResidentTargetContents::Resident { lease, .. } => Some(lease.head_lease()),
+            ResidentTargetContents::Editing => None,
         }
     }
     pub(super) fn begin_metadata_edit(&self) -> (ResidentRegionEdit, bool) {
@@ -134,7 +131,7 @@ impl ResidentMirrorTarget {
                 (edit, copied)
             }
             ResidentTargetContents::Editing => unreachable!(
-                /* Proof: Only the exclusive edition writer constructs these private Editing targets; public resident targets use a separate branch and cannot enter these edit-only methods. */
+                /* Proof: PartitionEditionWriter holds RwLockWriteGuard<CurrentMirror> for its whole lifetime. Every edit entry is reused before taking a target again, and finish_edits restores its lease before releasing that guard; mirror accessors cannot run concurrently with an edit. */
                 "exclusive writer owns target edit"
             ),
         }
@@ -159,7 +156,7 @@ impl ResidentMirrorTarget {
         } = std::mem::replace(&mut *contents, ResidentTargetContents::Editing)
         else {
             unreachable!(
-                /* Proof: This private target was constructed only after successful Full lease admission; Head or Cold custody cannot construct this variant. */
+                /* Proof: The immediately preceding matches! holds this same contents Mutex and rejects Editing and Head. No mutation intervenes before mem::replace, so its removed value is Resident Full. */
                 "checked resident Full custody"
             )
         };

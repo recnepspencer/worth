@@ -27,10 +27,9 @@ impl RelationalCommitEnvelopeResidency {
             return Artifact::from_positioned(&commit, policy);
         }
         let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
-            unreachable!(
-                /* Proof: Memory history constructs its envelope cell resident without cold backing and retains the performed body; only backed history can unload a body. */
-                "memory history retains its performed body"
-            )
+            return Err(Denial::PayloadEncoding {
+                detail: "memory envelope has no performed position".to_owned(),
+            });
         };
         let failure = |cause| RelationalStorageUnavailable {
             subject: RelationalStorageSubject::Envelope(entry.position),

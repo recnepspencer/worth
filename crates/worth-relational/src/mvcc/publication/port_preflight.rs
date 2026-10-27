@@ -244,6 +244,7 @@ impl PreparedCanonicalBranchMovement {
                 completion,
                 published_snapshot_basis,
                 control: control.clone(),
+                envelope_cell: movement.canonical_publication_route.envelope_residency(),
             },
         ) {
             Ok(reservation) => reservation,

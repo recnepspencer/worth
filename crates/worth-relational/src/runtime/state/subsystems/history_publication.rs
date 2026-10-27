@@ -1,3 +1,6 @@
+#[path = "history_publication/sequence.rs"]
+mod sequence;
+pub(crate) use sequence::PreparedCommitSequence;
 use std::sync::Arc;
 
 use crate::branch::RelationalBranchReferenceCell;
@@ -17,6 +20,7 @@ pub(crate) struct PreparedVersionedArtifactPublication {
     pub(crate) artifact: RelationalCommitArtifact,
     pub(crate) new_authoritative_bytes: u64,
     pub(crate) recovery_readmission: bool,
+    pub(crate) sequence: PreparedCommitSequence,
 }
 
 /// Recovery-only versioned artifact installation input.
@@ -36,6 +40,7 @@ pub(crate) struct PreparedVersionedArtifactAccelerators {
     artifact: RelationalCommitArtifact,
     new_authoritative_bytes: u64,
     recovery_readmission: bool,
+    sequence: PreparedCommitSequence,
 }
 
 impl PreparedVersionedArtifactPublication {
@@ -55,6 +60,7 @@ impl PreparedVersionedArtifactPublication {
             artifact: self.artifact,
             new_authoritative_bytes: self.new_authoritative_bytes,
             recovery_readmission: self.recovery_readmission,
+            sequence: self.sequence,
         };
         (self.next_cell, self.root, self.envelope, accelerator)
     }
@@ -83,7 +89,7 @@ impl HistorySubsystem {
     ) -> Result<(), String> {
         let prepared = prepared.into_prepared();
         let (mut next_cell, root, _, accelerators) = prepared.into_canonical_and_accelerators();
-        next_cell.install_root(root);
+        next_cell.install_root(Arc::clone(&root));
         let branch_id = accelerators.branch_id.clone();
         let current_cell = self.branch_cell(&branch_id).ok_or_else(|| {
             format!(
@@ -97,23 +103,18 @@ impl HistorySubsystem {
                 branch_id.0
             )
         })?;
-        let mut head_retirement = self
+        let head_retirement = self
             .reserve_branch_head_retirement(
                 current_cell.identity(),
                 &previous_root,
                 current_cell.head_retention(),
             )
             .map_err(|denial| format!("recovery head replacement denied: {denial:?}"))?;
-        let next_root = next_cell
-            .root()
-            .expect(/* Proof: Recovery preparation installs and pins this captured root in its registered branch before minting the private publication phase. */ "prepared recovered publication installed its captured root");
+        let next_root = root;
         self.install_prepared_versioned_accelerators(accelerators, positioned.position());
         // Recovery truth still installs a complete reconstructed owner cell.
-        self.branch_cell(&branch_id)
-            .expect(/* Proof: Recovery preparation installs and pins this captured root in its registered branch before minting the private publication phase. */ "prepared recovery branch remains registered")
-            .replace_state(next_cell.state_snapshot());
-        head_retirement.transfer_head(&previous_root, &next_root);
-        head_retirement.replace_head(previous_root);
+        current_cell.replace_state(next_cell.state_snapshot());
+        head_retirement.transfer_head(&next_root).replace_head();
         Ok(())
     }
 
@@ -130,6 +131,7 @@ impl HistorySubsystem {
             artifact,
             new_authoritative_bytes,
             recovery_readmission,
+            sequence,
         } = prepared;
         self.with_ledger_mut(|ledger| {
             ledger.install_published_commit(
@@ -138,6 +140,7 @@ impl HistorySubsystem {
                 artifact,
                 patch_position,
                 recovery_readmission,
+                sequence,
             );
         });
         self.record_root_publication(&branch_id, &root, new_authoritative_bytes);

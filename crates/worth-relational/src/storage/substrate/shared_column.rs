@@ -152,7 +152,11 @@ impl<T: Clone> SharedColumn<T> {
         if index == self.len {
             self.push_shared(value)
         } else {
-            assert!(index < self.len, "column index out of bounds");
+            assert!(
+                /* Proof: SharedColumn is private native storage with an Index-style in-range precondition; arena callers derive physical indices from their admitted slot directory, whose readmission validates every column length before construction. */
+                index < self.len,
+                "column index out of bounds"
+            );
             self.set_shared(index, value)
         }
     }
@@ -183,7 +187,11 @@ impl<T: Clone> SharedColumn<T> {
 
     /// Replace without detaching or cloning the displaced value.
     pub(crate) fn set(&mut self, index: usize, value: T) {
-        assert!(index < self.len, "column index out of bounds");
+        assert!(
+            /* Proof: SharedColumn is private native storage with an Index-style in-range precondition; arena callers derive physical indices from their admitted slot directory, whose readmission validates every column length before construction. */
+            index < self.len,
+            "column index out of bounds"
+        );
         self.set_shared(index, Arc::new(value));
     }
 

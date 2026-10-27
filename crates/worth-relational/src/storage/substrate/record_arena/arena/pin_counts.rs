@@ -24,7 +24,11 @@ impl RecordPinCounts {
         (index < self.len).then(|| self.values.get(&index).unwrap_or(&0))
     }
     pub(crate) fn set(&mut self, index: usize, value: u32) {
-        assert!(index < self.len, "pin row is absent");
+        assert!(
+            /* Proof: RecordPinCounts is private arena metadata. Construction/readmission creates one pin row per materialized physical arena row; callers select physical indices from that same arena, and remap_from maps only to rows installed in the destination arena. */
+            index < self.len,
+            "pin row is absent"
+        );
         if value == 0 {
             self.values.remove(&index);
         } else {
@@ -37,15 +41,14 @@ impl RecordPinCounts {
         Some(())
     }
     pub(super) fn remap_from(&mut self, source: &Self, map: impl Fn(usize) -> Option<usize>) {
-        self.fill(0);
+        self.clear();
         for (&physical, &count) in &source.values {
             if let Some(destination) = map(physical) {
                 self.set(destination, count);
             }
         }
     }
-    pub(super) fn fill(&mut self, value: u32) {
-        assert_eq!(value, 0, "retention counters only bulk-reset to zero");
+    pub(super) fn clear(&mut self) {
         self.values = SharedMap::new();
     }
     pub(crate) fn into_vec(self) -> Vec<u32> {

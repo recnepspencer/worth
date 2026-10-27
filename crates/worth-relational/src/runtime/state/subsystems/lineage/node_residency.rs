@@ -184,7 +184,10 @@ struct NodePageLease {
 impl Drop for NodePageLease {
     fn drop(&mut self) {
         let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(previous > 0);
+        debug_assert!(
+            /* Proof: NodePageLease is non-Clone, is constructed only after incrementing this cell counter, and retains a strong Arc; Drop decrements its issued count once. */
+            previous > 0
+        );
     }
 }
 

@@ -190,7 +190,8 @@ fn historical_retention_denial(
             HistoricalVisibilityDenial::RetentionIdentityExhausted
         }
         crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable
-        | crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             HistoricalVisibilityDenial::RetentionUnavailable
         }
     }

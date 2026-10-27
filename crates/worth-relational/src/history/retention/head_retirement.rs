@@ -17,12 +17,10 @@ use super::{
 pub(crate) struct RelationalHeadRetirementReservation {
     owner: Arc<RelationalBranchRetentionOwnerInner>,
     retention_binding: RelationalBranchRetentionBinding,
-    head_retention: Arc<RelationalBranchHeadRetentionCell>,
-    owner_identity: usize,
-    identity: RelationalBranchIdentity,
+    head: Option<super::head_cell::CheckedHeadObligation>,
+    previous_root: Arc<RelationalBranchRoot>,
     root_key: usize,
     generation: u64,
-    head_transferred: bool,
     terminal: bool,
 }
 
@@ -37,6 +35,7 @@ impl RelationalBranchRetentionBinding {
             .owner
             .upgrade()
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
+        let head = head_retention.reserve(&owner, identity, root)?;
         let branch_binding = head_retention.binding()?;
         let root_key = Arc::as_ptr(root) as usize;
         let generation = match owner.retired_roots.entry(root_key) {
@@ -55,7 +54,7 @@ impl RelationalBranchRetentionBinding {
             Entry::Vacant(entry) => {
                 let generation = reserve_retirement_slot(&owner)?;
                 entry.insert(RelationalRetiredBranchRoot {
-                    root: Some(Arc::clone(root)),
+                    root: Arc::clone(root),
                     branch_bindings: std::collections::BTreeMap::from([(
                         identity.branch_id().clone(),
                         branch_binding,
@@ -74,55 +73,52 @@ impl RelationalBranchRetentionBinding {
             }
         };
         Ok(RelationalHeadRetirementReservation {
-            owner_identity: Arc::as_ptr(&owner) as usize,
             owner,
             retention_binding: self.clone(),
-            head_retention: Arc::clone(head_retention),
-            identity: identity.clone(),
+            head: Some(head),
+            previous_root: Arc::clone(root),
             root_key,
             generation,
-            head_transferred: false,
             terminal: false,
         })
     }
 }
 
+/// Only a completed transfer can consume retirement as a head replacement.
+#[derive(Debug)]
+pub(crate) struct TransferredHeadRetirement {
+    retirement: RelationalHeadRetirementReservation,
+}
+impl TransferredHeadRetirement {
+    pub(crate) fn replace_head(mut self) {
+        self.retirement.retire();
+    }
+
+    pub(crate) fn replace_head_for_publication(
+        mut self,
+        candidate: super::RelationalCandidateRetentionObligation,
+        root: Arc<RelationalBranchRoot>,
+    ) -> super::RelationalPerformedSettlementObligation {
+        let performed = candidate.into_performed_settlement(root, &self.retirement.owner);
+        self.retirement.retire();
+        performed
+    }
+}
 impl RelationalHeadRetirementReservation {
     pub(crate) fn transfer_head(
-        &mut self,
-        previous_root: &Arc<RelationalBranchRoot>,
+        mut self,
         next_root: &Arc<RelationalBranchRoot>,
-    ) {
-        self.require_reserved_root(previous_root);
-        assert!(!self.terminal && !self.head_transferred);
-        self.head_retention.transfer(
-            self.owner_identity,
-            &self.identity,
-            previous_root,
-            next_root,
-        );
-        self.head_transferred = true;
+    ) -> TransferredHeadRetirement {
+        self.head.take().expect(/* Proof: reserve_head_retirement constructs Some(CheckedHeadObligation); this non-Clone reservation is consumed by transfer_head or retire_head, so no earlier take can occur. */ "reserved head custody is consumed once").transfer(next_root);
+        TransferredHeadRetirement { retirement: self }
     }
-
-    pub(crate) fn replace_head(mut self, previous_root: Arc<RelationalBranchRoot>) {
-        assert!(
-            self.head_transferred,
-            "head obligation transfers at cutover"
-        );
-        self.retire(previous_root);
-    }
-
-    pub(crate) fn retire_head(mut self, previous_root: Arc<RelationalBranchRoot>) -> u64 {
-        self.require_reserved_root(&previous_root);
-        self.head_retention
-            .consume(self.owner_identity, &self.identity, &previous_root);
-        let root_id = previous_root.id();
-        self.retire(previous_root);
+    pub(crate) fn retire_head(mut self) -> u64 {
+        self.head.take().expect(/* Proof: reserve_head_retirement constructs Some(CheckedHeadObligation); this non-Clone reservation is consumed by transfer_head or retire_head, so no earlier take can occur. */ "reserved head custody is consumed once").consume();
+        let root_id = self.previous_root.id();
+        self.retire();
         root_id
     }
-
-    fn retire(&mut self, root: Arc<RelationalBranchRoot>) {
-        self.require_reserved_root(&root);
+    fn retire(&mut self) {
         let mut entry = self
             .owner
             .retired_roots
@@ -135,7 +131,6 @@ impl RelationalHeadRetirementReservation {
         let first_retirement = !entry.retired;
         entry.retired = true;
         drop(entry);
-        drop(root);
         if first_retirement {
             self.owner
                 .retired_root_count
@@ -149,10 +144,6 @@ impl RelationalHeadRetirementReservation {
                 .fetch_add(1, Ordering::Relaxed);
         }
         self.terminal = true;
-    }
-
-    fn require_reserved_root(&self, root: &Arc<RelationalBranchRoot>) {
-        assert_eq!(Arc::as_ptr(root) as usize, self.root_key);
     }
 
     fn release(&mut self) {
@@ -182,9 +173,7 @@ impl RelationalHeadRetirementReservation {
                             && !entry.retired
                     })
         {
-            if let Some(root) = entry.root
-                && let Some(commit_id) = root.commit_id()
-            {
+            if let Some(commit_id) = entry.root.commit_id() {
                 self.owner
                     .retired_roots_by_commit
                     .remove_if(&commit_id, |_, indexed| {

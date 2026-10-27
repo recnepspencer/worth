@@ -56,13 +56,15 @@ pub(super) fn apply(
         let mut extra = partition
             .entity_arena
             .extra_at(slot)
-            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity aspect patch requires a materialized slot")
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
             .clone();
         extra.authoritative_aspect_state = new_state.clone();
         partition
             .entity_arena
-            .apply_extra_update(slot, extra, version_id);
-    });
+            .apply_extra_update(slot, extra, version_id)
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
+        Ok::<_, CommitConflict>(())
+    })?;
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
         intent.entity_id,
         kind_id,

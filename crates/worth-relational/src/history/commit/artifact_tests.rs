@@ -137,8 +137,12 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
     assert_eq!(relinked.parentage(), legacy.parentage());
     assert_eq!(relinked.roots(), legacy.roots());
     assert_eq!(
-        relinked.canonical_payload_digest(),
-        legacy.canonical_payload_digest()
+        relinked
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest"),
+        legacy
+            .canonical_payload_digest()
+            .expect("resident fixture has a canonical digest")
     );
 
     let equal_but_unsealed = Arc::new((*envelope).clone());

@@ -334,8 +334,12 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
         assert_eq!(readmitted.parentage(), original.parentage());
         assert_eq!(readmitted.roots(), original.roots());
         assert_eq!(
-            readmitted.canonical_payload_digest(),
-            original.canonical_payload_digest()
+            readmitted
+                .canonical_payload_digest()
+                .expect("resident fixture has a canonical digest"),
+            original
+                .canonical_payload_digest()
+                .expect("resident fixture has a canonical digest")
         );
     }
 }

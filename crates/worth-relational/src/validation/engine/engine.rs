@@ -205,10 +205,13 @@ impl InvariantEngine<'_> {
             touched.len()
         };
         self.record_preparation_shape(counters.packet_count, scope_units, planned.strategy);
-        debug_assert!(planned
-            .packets
-            .iter()
-            .all(|packet| packet.planning_context == planned.context));
+        debug_assert!(
+            /* Proof: The owned planned evaluation is built with one context; every private packet constructor copies that same context before the collection is exposed to execution. */
+            planned
+                .packets
+                .iter()
+                .all(|packet| packet.planning_context == planned.context)
+        );
     }
 
     fn record_preparation_shape(

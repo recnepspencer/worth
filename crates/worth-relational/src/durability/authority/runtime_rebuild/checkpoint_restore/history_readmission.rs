@@ -12,7 +12,15 @@ pub(super) fn prepare_history(
     symbols: &crate::symbols::data::StringInterner,
     work: &mut CheckpointRestoreWork,
 ) -> Result<HistorySubsystem, DurabilityError> {
-    let mut history = restored.history.detached_owner_snapshot();
+    let mut history = restored
+        .history
+        .detached_owner_snapshot()
+        .map_err(|denial| {
+            DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                format!("history snapshot denied: {denial:?}"),
+            )
+        })?;
     let mut catalog = crate::history::RelationalCommitCatalog::default();
     for commit in &checkpoint.envelopes {
         catalog

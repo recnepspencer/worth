@@ -129,11 +129,13 @@ pub(crate) fn encode_captured(
                 .iter()
                 .map(|(key, member)| {
                     let RelationalCheckpointMember::New { bytes, .. } = member else {
-                        unreachable!(/* Proof: Inline member admission is matched and returned above; this branch is reached only with the other member representation. */ "inline member admitted above")
+                        return Err(super::manifest_capture::corrupt(
+                            "inline capture still carries an unresolved member",
+                        ));
                     };
-                    (*key, ByteString(bytes))
+                    Ok((*key, ByteString(bytes)))
                 })
-                .collect()
+                .collect::<Result<Vec<_>, crate::durability::data::DurabilityError>>()?
         } else {
             Vec::new()
         },

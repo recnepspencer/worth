@@ -151,8 +151,6 @@ impl Index<usize> for SparseAdjacencyTable {
 
 impl IndexMut<usize> for SparseAdjacencyTable {
     fn index_mut(&mut self, slot: usize) -> &mut Self::Output {
-        self.entries
-            .get_mut(&slot)
-            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "adjacency slot must be materialized")
+        self.entries.entry(slot).or_default()
     }
 }

@@ -52,16 +52,11 @@ impl super::RelationalBranchRetentionOwner {
                     retired.generation == generation
                         && retired.retired
                         && retired.reservations == 0
-                        && retired
-                            .root
-                            .as_ref()
-                            .is_some_and(|root| Arc::strong_count(root) == 1)
+                        && Arc::strong_count(&retired.root) == 1
                 })
                 .map(|(_, retired)| retired);
             if let Some(retired) = reclaimable {
-                let root = retired
-                    .root
-                    .expect(/* Proof: Only retirement of a retained head inserts these entries, moving Some(root) into the inventory; extraction consumes the entry once. */ "retired inventory entry owns its exact root");
+                let root = retired.root;
                 if let Some(commit_id) = root.commit_id() {
                     remove_commit_root(&self.inner, commit_id, root_key, generation);
                 }

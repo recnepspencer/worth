@@ -33,6 +33,9 @@ impl Clone for RegionLeaseCustody {
 impl Drop for RegionLeaseCustody {
     fn drop(&mut self) {
         let previous = self.cell.leases.fetch_sub(1, Ordering::AcqRel);
-        debug_assert!(previous > 0);
+        debug_assert!(
+            /* Proof: RegionLeaseCustody::accepted is private to lease admission after its count increment; Clone increments separately before constructing the copy. Each custody owns a strong Arc and Drop decrements its one issued count once. */
+            previous > 0
+        );
     }
 }

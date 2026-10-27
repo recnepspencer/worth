@@ -30,7 +30,9 @@ impl RecordContentIndex {
                     .len()
                     .checked_sub(1)
                     .and_then(|index| metadata.get(index))
-                    .map(|value| hash_value(b"metadata", value));
+                    .map(|value| hash_value(b"metadata", value))
+                    .transpose()
+                    .ok()?;
                 Some((slot, history.append_frontier(last_value)?))
             })
             .collect()
@@ -54,10 +56,14 @@ impl RecordContentIndex {
         for (slot, frontier) in frontiers {
             let history = DigestIndex::from_append_frontier(frontier)?;
             let metadata = arena.metadata_history_at(usize::try_from(*slot).ok()?)?;
-            if metadata.len() != usize::from(history.next_history_index() > 0) {
+            if metadata.len() != usize::from(history.next_history_index()? > 0) {
                 return None;
             }
-            let last = metadata.get(0).map(|value| hash_value(b"metadata", value));
+            let last = metadata
+                .get(0)
+                .map(|value| hash_value(b"metadata", value))
+                .transpose()
+                .ok()?;
             history.append_frontier(last)?;
             result.history_bytes += history.allocation_bytes();
             if result.histories.contains_key(slot) {
@@ -85,7 +91,7 @@ impl RecordContentIndex {
         for slot in slots {
             let physical = arena
                 .physical_index(slot)
-                .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "journal-selected record exists");
+                .ok_or(PartitionContentDigestError::InvalidHistoryCoverage)?;
             let carried_head = previous.is_none() && self.histories.contains_key(&(slot as u64));
             let cached = self
                 .histories
@@ -117,14 +123,14 @@ impl RecordContentIndex {
                     extra(&arena.extra[physical], symbols)?,
                     versions,
                 ),
-            );
+            )?;
             hashed_values += 1;
             self.history_bytes = self
                 .history_bytes
                 .checked_sub(old_bytes)
-                .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ )
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?
                 .checked_add(history.allocation_bytes())
-                .unwrap(/* Proof: The owner inventory includes the removed allocation exactly once; replacement bytes describe simultaneously live allocations whose total fits the process address space. */ );
+                .ok_or(PartitionContentDigestError::AllocationAccountingOverflow)?;
             if let Some(entries) = &mut cold_histories {
                 entries.push((slot as u64, history));
             } else {
@@ -133,7 +139,7 @@ impl RecordContentIndex {
             if let Some(entries) = &mut cold_records {
                 entries.push((slot as u128, digest));
             } else {
-                self.records.set(slot as u128, Some(digest));
+                self.records.set(slot as u128, Some(digest))?;
             }
         }
         if let Some(mut entries) = cold_records {
@@ -150,8 +156,10 @@ impl RecordContentIndex {
         {
             self.live_words.set(
                 word as u128,
-                value.map(|value| hash_value(b"live-word", &value)),
-            );
+                value
+                    .map(|value| hash_value(b"live-word", &value))
+                    .transpose()?,
+            )?;
             hashed_values += u64::from(value.is_some());
         }
         for (word, value) in arena
@@ -160,8 +168,10 @@ impl RecordContentIndex {
         {
             self.reclaimable_words.set(
                 word as u128,
-                value.map(|value| hash_value(b"reclaimable-word", &value)),
-            );
+                value
+                    .map(|value| hash_value(b"reclaimable-word", &value))
+                    .transpose()?,
+            )?;
             hashed_values += u64::from(value.is_some());
         }
         Ok(hashed_values)
@@ -175,7 +185,7 @@ impl RecordContentIndex {
                 self.live_words.digest(),
                 self.reclaimable_words.digest(),
             ),
-        )
+        ).expect(/* Proof: this hash serializes only a fixed tuple of three [u8; 32] arrays into the infallible Sha256Writer. No input-sized collection or custom serializer occurs in this concrete tuple's Serialize implementation. */ "fixed native digest tuple is serializable")
     }
     pub(super) fn allocation_bytes(&self) -> u64 {
         self.records.allocation_bytes()

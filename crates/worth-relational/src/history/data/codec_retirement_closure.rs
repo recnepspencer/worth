@@ -100,7 +100,7 @@ impl OwnedCodecRetirementClosure {
             let member = &origin.members[origin
                 .members
                 .binary_search_by_key(id, |member| member.id)
-                .expect(/* Proof: Closure admission validates the actual producer birth and complete sorted membership before constructing this private capture; this lookup uses an admitted member ID. */ "readmitted full membership")];
+                .expect(/* Proof: The only origins.push is preceded by membership::validate_member, which checks this exact id in validate_output_membership_header's sorted immutable members. OwnedCodecRetirementClosure fields are private and neither the id nor the Arc origin is mutated afterwards. */ "readmitted full membership")];
             (
                 *id,
                 *kind,

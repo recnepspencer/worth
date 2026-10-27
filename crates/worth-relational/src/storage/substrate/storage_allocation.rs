@@ -3,7 +3,10 @@ use std::sync::Arc;
 
 // Inspection identifiers describe process-local live backing, never authority
 // or durable identity. Every supported pointer fits the observation's u64.
-const _: () = assert!(usize::BITS <= u64::BITS);
+const _: () = assert!(
+    /* Proof: This is a compile-time platform check: a target whose usize pointers do not fit u64 cannot compile this allocation-identity representation. */
+    usize::BITS <= u64::BITS
+);
 
 /// Inspectable copy-on-write ownership; cloning a handle preserves identity,
 /// detaching its value issues a new identity. It conveys no mutation authority.
@@ -47,7 +50,7 @@ impl<T> StorageAllocation<T> {
     pub(crate) fn layout_bytes() -> u64 {
         std::alloc::Layout::new::<[usize; 2]>()
             .extend(std::alloc::Layout::new::<T>())
-            .expect(/* Proof: T is already allocated behind Arc<T>, whose allocation includes the two-usize header; this computes that same representable allocation layout. */ "storage layout fits")
+            .expect(/* Proof: StorageAllocation is crate-private. Its closed native monomorphizations are column/map/digest nodes and fixed owner metadata; their dynamic values are behind Vec/Arc/map headers, never input-sized inline arrays. These concrete layouts plus two usize headers are below isize::MAX on supported targets, including the preallocation callers that have not yet allocated T. */ "storage layout fits")
             .0
             .pad_to_align()
             .size() as u64

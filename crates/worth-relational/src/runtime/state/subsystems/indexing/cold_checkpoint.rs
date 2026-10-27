@@ -116,10 +116,25 @@ impl IndexingSubsystem {
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }
+        let history =
+            history
+                .detached_owner_snapshot()
+                .map_err(|_| RelationalStorageUnavailable {
+                    subject: RelationalStorageSubject::Index(
+                        directory
+                            .manifest
+                            .index_definitions
+                            .first()
+                            .map_or(crate::indexes::data::DerivedIndexId(0), |definition| {
+                                definition.index_id
+                            }),
+                    ),
+                    cause: Cause::Damaged,
+                })?;
         state.cold_checkpoint = Some(Arc::new(DeferredIndexImage {
             _placement: placement,
             directory,
-            history: history.detached_owner_snapshot(),
+            history,
             admitted: Mutex::new(None),
         }));
         self.install(state);

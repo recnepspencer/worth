@@ -68,7 +68,10 @@ fn publication_edits_the_latest_target_pins_and_preserves_earlier_editions() {
         .visible_entity_at_version(execution, entity, before_commit.version_id)
         .unwrap()
         .unwrap();
-    let old_edition = runtime.acquire_partition_edition();
+    let old_edition = runtime
+        .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody");
     let witness = old_edition.resident_pin_lease(entity.partition_id).unwrap();
     let candidate = prepare(
         execution,
@@ -97,7 +100,10 @@ fn publication_edits_the_latest_target_pins_and_preserves_earlier_editions() {
             1,
             runtime.current_version_id(),
         );
-    let pinned = runtime.acquire_partition_edition();
+    let pinned = runtime
+        .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody");
     assert_eq!(
         pinned
             .partition(entity.partition_id)
@@ -107,7 +113,10 @@ fn publication_edits_the_latest_target_pins_and_preserves_earlier_editions() {
         Some(1)
     );
     let outcome = publish(execution, &runtime, candidate);
-    let current = runtime.acquire_partition_edition();
+    let current = runtime
+        .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody");
     assert_eq!(
         current
             .partition(entity.partition_id)

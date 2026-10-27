@@ -57,6 +57,7 @@ impl LineageState {
     ) {
         let event_position = self.published_events.len();
         assert!(
+            /* Proof: Live installation takes ValidatedLineageEventBatch after validate_reserved_lineage_events checks the exact batch from the unique owner allocator. install_recovered_event_batch rejects existing and non-increasing ids first; admit_readmitted_events skips ids already installed under the same exclusive state borrow. */
             self.published_event_positions
                 .insert(event.event_id(), event_position)
                 .is_none(),

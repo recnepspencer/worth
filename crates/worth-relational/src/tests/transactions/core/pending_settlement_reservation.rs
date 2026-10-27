@@ -89,7 +89,7 @@ fn interrupted_publication_releases_its_pending_settlement_reservation() {
             .with_injected_interruption_for_test(
                 RelationalInterruptionBoundary::BeforeCriticalSection,
                 interruption,
-                1,
+                std::num::NonZeroUsize::MIN,
             );
         let mut transaction = runtime
             .begin_branch_transaction_with_control(

@@ -139,6 +139,7 @@ impl GenerationCatalog {
 
     pub(super) fn publish(&mut self, generation: DerivedIndexGeneration) {
         assert!(
+            /* Proof: Only native generation publication calls publish. Generation identities are allocated by the checked, non-wrapping owner issuer; recovery uses insert/readmission instead and advances that issuer before publication resumes. No facade accepts a caller-chosen generation identity for this insertion. */
             !self.entries.contains_key(&generation.generation_id),
             "native index publication cannot replace a retained generation identity"
         );

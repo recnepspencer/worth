@@ -18,7 +18,8 @@ fn consuming_full_custody_releases_its_lease_and_keeps_shared_history_immutable(
         .clone();
     owned
         .entity_arena
-        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000));
+        .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(1_000))
+        .expect("fixture slot is materialized");
     assert_eq!(
         owned
             .entity_arena

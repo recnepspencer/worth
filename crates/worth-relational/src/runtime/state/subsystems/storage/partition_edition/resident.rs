@@ -1,56 +1,67 @@
-//! Whole-edition Full custody, issued only after every declared demand succeeds.
-use super::{PartitionAccess, PartitionEdition, PartitionId, PartitionState};
+//! Full reads own the exact leases admitted for the selected edition.
+use super::{Full, PartitionAccess, PartitionId, PartitionState, RelationalResidencyLease};
+use std::collections::BTreeMap;
 
-/// The retained edition owns every counted Full lease that backs these reads.
+#[derive(Debug)]
 pub(crate) struct ResidentPartitionEdition {
-    edition: PartitionEdition,
+    // Keep the selected spine observed as well as its admitted payloads.
+    _edition: super::PartitionEdition,
+    leases: BTreeMap<PartitionId, RelationalResidencyLease<Full>>,
 }
 
 impl ResidentPartitionEdition {
-    pub(super) fn new(edition: PartitionEdition) -> Self {
-        Self { edition }
+    pub(super) fn new(
+        edition: super::PartitionEdition,
+        leases: BTreeMap<PartitionId, RelationalResidencyLease<Full>>,
+    ) -> Self {
+        Self {
+            _edition: edition,
+            leases,
+        }
     }
-
     pub(crate) fn partition(&self, id: PartitionId) -> Option<&PartitionState> {
-        self.edition.partition(id)
+        self.leases
+            .get(&id)
+            .map(|lease| lease.full_view().partition())
     }
-
     pub(crate) fn entries(&self) -> impl Iterator<Item = (PartitionId, &PartitionState)> {
-        self.edition.entries()
+        self.leases
+            .iter()
+            .map(|(id, lease)| (*id, lease.full_view().partition()))
     }
-
     pub(crate) fn partitions(&self) -> impl Iterator<Item = &PartitionState> {
-        self.edition.partitions()
+        self.leases
+            .values()
+            .map(|lease| lease.full_view().partition())
     }
 }
-
 impl PartitionAccess for ResidentPartitionEdition {
     fn get_partition(&self, id: PartitionId) -> Option<&PartitionState> {
         self.partition(id)
     }
 }
-
 impl crate::storage::overlay::CurrentPartitionAccess for ResidentPartitionEdition {
     fn get_current_partition(
         &self,
-        id: crate::identity::data::PartitionId,
+        id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        crate::storage::overlay::PartitionAccess::get_partition(self, id)
+        self.partition(id)
             .map(crate::storage::residency::RelationalRegionHeadView::from_owned_partition)
     }
-
     fn partition_ids(&self) -> Vec<PartitionId> {
-        self.edition.partition_ids()
+        self.leases.keys().copied().collect()
     }
-
     fn partition_ids_iter(&self) -> Box<dyn Iterator<Item = PartitionId> + '_> {
-        self.edition.partition_ids_iter()
+        Box::new(self.leases.keys().copied())
     }
-
     fn partition_ids_with_memory(
         &self,
         memory: &mut dyn crate::storage::overlay::PartitionIdMemory,
     ) -> Result<Vec<PartitionId>, crate::storage::overlay::PartitionIdsDenial> {
-        self.edition.partition_ids_with_memory(memory)
+        crate::storage::overlay::collect_partition_ids(
+            self.leases.len(),
+            self.leases.keys().copied(),
+            memory,
+        )
     }
 }

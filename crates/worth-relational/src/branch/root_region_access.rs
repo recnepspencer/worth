@@ -149,8 +149,9 @@ impl RelationalBranchRoot {
                 let Some(region) = self.regions.get(id) else {
                     return Probe::Absent;
                 };
-                let lease = region.partition.lease();
-                if symbols.region_symbols_admitted(lease.symbol_admission_identity()) {
+                if region.partition.admitted_full_lease().is_some_and(|lease| {
+                    symbols.region_symbols_admitted(lease.symbol_admission_identity())
+                }) {
                     Probe::Resident(partition)
                 } else {
                     Probe::Cold
@@ -177,8 +178,10 @@ impl RelationalBranchRoot {
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
-                region.partition.demand_full(execution, 1 << 30)?;
-                region.partition.lease().admit_symbols(execution, symbols)?;
+                region
+                    .partition
+                    .demand_full(execution, 1 << 30)?
+                    .admit_symbols(execution, symbols)?;
             }
         }
         Ok(())

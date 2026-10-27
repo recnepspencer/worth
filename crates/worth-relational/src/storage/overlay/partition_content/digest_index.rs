@@ -1,5 +1,6 @@
 //! Rebuildable canonical Patricia commitment. Shape depends only on keys, never
 //! insertion order, allocation identity, balancing history, or retained roots.
+use super::PartitionContentDigestError;
 use crate::storage::substrate::{StorageAllocation as Arc, StorageAllocationVisitor};
 use sha2::{Digest, Sha256};
 
@@ -32,7 +33,10 @@ impl DigestIndex {
     /// Cold reconstruction of the same key-shaped Patricia commitment without
     /// copying an immutable path for every successive insertion.
     pub(super) fn from_sorted_entries(entries: &[(u128, [u8; 32])]) -> Self {
-        debug_assert!(entries.windows(2).all(|pair| pair[0].0 < pair[1].0));
+        debug_assert!(
+            /* Proof: from_sorted_entries is private to commitment rebuilds: its callers sort the unique arena slot or adjacency slot keys before construction. Partial media frontiers use from_append_frontier validation instead. */
+            entries.windows(2).all(|pair| pair[0].0 < pair[1].0)
+        );
         Self {
             root: (!entries.is_empty()).then(|| build_sorted(entries)),
             history_last_value: None,
@@ -45,7 +49,22 @@ impl DigestIndex {
             .map_or_else(|| hash(0, &[]), |root| root.digest)
     }
 
-    pub(super) fn set(&mut self, key: u128, value: Option<[u8; 32]>) {
+    pub(super) fn set(
+        &mut self,
+        key: u128,
+        value: Option<[u8; 32]>,
+    ) -> Result<(), PartitionContentDigestError> {
+        let changed = match value {
+            Some(digest) => insert(self.root.take(), key, digest).map(Some),
+            None => remove(self.root.take(), key),
+        };
+        match changed {
+            Ok(root) => self.root = root,
+            Err(root) => {
+                self.root = Some(root);
+                return Err(PartitionContentDigestError::InvalidHistoryCoverage);
+            }
+        }
         if self
             .history_last_value
             .as_ref()
@@ -53,10 +72,7 @@ impl DigestIndex {
         {
             self.history_last_value = value.map(|value| Arc::new(HistoryLastValue { key, value }));
         }
-        self.root = match value {
-            Some(digest) => Some(insert(self.root.take(), key, digest)),
-            None => remove(self.root.take(), key),
-        };
+        Ok(())
     }
 
     pub(super) fn allocation_bytes(&self) -> u64 {
@@ -100,21 +116,18 @@ fn build_sorted(entries: &[(u128, [u8; 32])]) -> Arc<Node> {
     }
     let bit = (entries[0].0 ^ entries[entries.len() - 1].0).leading_zeros();
     let split = entries.partition_point(|(key, _)| direction(*key, bit) == 0);
-    let mut parent = Node {
-        key: entries[0].0,
+    Arc::new(Node::branch(
         bit,
-        digest: [0; 32],
-        children: Some([
+        [
             build_sorted(&entries[..split]),
             build_sorted(&entries[split..]),
-        ]),
-        nodes: 0,
-    };
-    refresh(&mut parent);
-    Arc::new(parent)
+        ],
+    ))
 }
 
-fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Arc<Node> {
+// An Err retains the original root. Opaque checkpoint siblings may be carried,
+// but only an admitted Full image can expose their contents for edits.
+fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Result<Arc<Node>, Arc<Node>> {
     let leaf = || {
         Arc::new(Node {
             key,
@@ -125,7 +138,7 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Arc<Node> {
         })
     };
     let Some(mut root) = root else {
-        return leaf();
+        return Ok(leaf());
     };
     let differing_bit = (root.key ^ key).leading_zeros();
     if differing_bit < root.bit {
@@ -135,64 +148,79 @@ fn insert(root: Option<Arc<Node>>, key: u128, digest: [u8; 32]) -> Arc<Node> {
         } else {
             [root, next]
         };
-        let mut parent = Node {
-            key: children[0].key,
-            bit: differing_bit,
-            digest: [0; 32],
-            children: Some(children),
-            nodes: 0,
-        };
-        refresh(&mut parent);
-        return Arc::new(parent);
+        return Ok(Arc::new(Node::branch(differing_bit, children)));
     }
     if root.bit == 128 {
-        return leaf();
+        return Ok(leaf());
     }
-    let node = Arc::make_mut(&mut root);
-    let side = direction(key, node.bit);
-    let child = &mut node.children.as_mut().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ )
-        [side];
-    *child = insert(Some(child.clone()), key, digest);
-    refresh(node);
-    root
-}
-
-fn remove(root: Option<Arc<Node>>, key: u128) -> Option<Arc<Node>> {
-    let mut root = root?;
-    if (root.key ^ key).leading_zeros() < root.bit {
-        return Some(root);
-    }
-    if root.bit == 128 {
-        return None;
-    }
+    let Some(children) = &root.children else {
+        return Err(root);
+    };
     let side = direction(key, root.bit);
+    let changed = match insert(Some(children[side].clone()), key, digest) {
+        Ok(changed) => changed,
+        Err(_) => return Err(root),
+    };
     let node = Arc::make_mut(&mut root);
-    let children = node.children.as_mut().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ );
-    if let Some(changed) = remove(Some(children[side].clone()), key) {
-        children[side] = changed;
-        refresh(node);
-        Some(root)
-    } else {
-        Some(children[1 - side].clone())
-    }
-}
-
-fn refresh(node: &mut Node) {
-    let children = node.children.as_ref().unwrap(/* Proof: The private digest trie constructor creates child arrays for every non-leaf node; traversal tests the level before accessing that array. */ );
+    let Some(children) = &mut node.children else {
+        return Err(root);
+    };
+    children[side] = changed;
     node.key = children[0].key;
     node.nodes = 1 + children[0].nodes + children[1].nodes;
-    node.digest = hash(
-        2,
-        &[
-            &node.bit.to_be_bytes(),
-            &children[0].digest,
-            &children[1].digest,
-        ],
-    );
+    node.digest = branch_digest(node.bit, children);
+    Ok(root)
 }
 
-fn direction(key: u128, bit: u32) -> usize {
-    ((key >> (127 - bit)) & 1) as usize
+fn remove(root: Option<Arc<Node>>, key: u128) -> Result<Option<Arc<Node>>, Arc<Node>> {
+    let Some(mut root) = root else {
+        return Ok(None);
+    };
+    if (root.key ^ key).leading_zeros() < root.bit {
+        return Ok(Some(root));
+    }
+    if root.bit == 128 {
+        return Ok(None);
+    }
+    let Some(children) = &root.children else {
+        return Err(root);
+    };
+    let side = direction(key, root.bit);
+    let changed = match remove(Some(children[side].clone()), key) {
+        Ok(changed) => changed,
+        Err(_) => return Err(root),
+    };
+    if let Some(changed) = changed {
+        let node = Arc::make_mut(&mut root);
+        let Some(children) = &mut node.children else {
+            return Err(root);
+        };
+        children[side] = changed;
+        node.key = children[0].key;
+        node.nodes = 1 + children[0].nodes + children[1].nodes;
+        node.digest = branch_digest(node.bit, children);
+        Ok(Some(root))
+    } else {
+        Ok(Some(children[1 - side].clone()))
+    }
+}
+
+impl Node {
+    fn branch(bit: u32, children: [Arc<Node>; 2]) -> Self {
+        Self {
+            key: children[0].key,
+            bit,
+            digest: branch_digest(bit, &children),
+            nodes: 1 + children[0].nodes + children[1].nodes,
+            children: Some(children),
+        }
+    }
+}
+fn branch_digest(bit: u32, children: &[Arc<Node>; 2]) -> [u8; 32] {
+    hash(
+        2,
+        &[&bit.to_be_bytes(), &children[0].digest, &children[1].digest],
+    )
 }
 
 fn hash(tag: u8, chunks: &[&[u8]]) -> [u8; 32] {

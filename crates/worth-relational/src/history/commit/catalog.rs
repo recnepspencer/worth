@@ -65,6 +65,7 @@ impl RelationalCommitCatalog {
     pub(crate) fn install_prepared(&mut self, artifact: RelationalCommitArtifact) {
         let commit_id = artifact.commit_id();
         assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
             !self.entries.contains_key(&commit_id),
             "prepared catalog artifact was validated as unique"
         );
@@ -74,9 +75,12 @@ impl RelationalCommitCatalog {
 
     pub(crate) fn install_prepared_recovery(&mut self, artifact: RelationalCommitArtifact) {
         let commit_id = artifact.commit_id();
-        debug_assert!(self.entries.get(&commit_id).is_none_or(|existing| existing
-            .resident_envelope()
-            .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope))));
+        debug_assert!(
+            /* Proof: Live PreparedVersionedArtifactPublication is issued only after validate_new_envelope rejects an existing id, using the unique non-wrapping commit issuer. Recovery preparation instead calls validate_envelope on that exact immutable body before issuing PreparedRecoveredVersionedArtifactPublication; recovery holds exclusive runtime custody. */
+            self.entries.get(&commit_id).is_none_or(|existing| existing
+                .resident_envelope()
+                .is_none_or(|envelope| artifact.resident_envelope() == Some(envelope)))
+        );
         self.materializations.fetch_add(1, Ordering::Relaxed);
         self.entries.insert(commit_id, Arc::new(artifact));
     }

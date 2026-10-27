@@ -181,7 +181,7 @@ fn interruption_after_movement_retains_its_pending_settlement() {
             .with_injected_interruption_for_test(
                 RelationalInterruptionBoundary::AfterLinearization,
                 interruption,
-                1,
+                std::num::NonZeroUsize::MIN,
             );
         let mut transaction = runtime
             .begin_branch_transaction_with_control(

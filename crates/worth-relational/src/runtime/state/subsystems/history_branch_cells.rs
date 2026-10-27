@@ -71,10 +71,10 @@ impl HistorySubsystem {
                         let previous_root = existing
                             .get(cell.identity().branch_id())
                             .and_then(RelationalBranchReferenceCell::root)
-                            .expect(/* Proof: The transition walks the live branch cells under the owner lock and installs a schema root for every empty cell before reading either selected root. */ "live empty branch retains its pre-transition root");
+                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
                         let next_root = cell
                             .root()
-                            .expect(/* Proof: The transition walks the live branch cells under the owner lock and installs a schema root for every empty cell before reading either selected root. */ "transitioned empty branch retains its schema root");
+                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
                         self.reserve_branch_head_retirement(
                             cell.identity(),
                             &previous_root,
@@ -92,9 +92,8 @@ impl HistorySubsystem {
                     }
                 };
                 self.branch_cells.restore_all(cells);
-                for (mut reservation, previous_root, next_root) in reservations {
-                    reservation.transfer_head(&previous_root, &next_root);
-                    reservation.replace_head(previous_root);
+                for (reservation, _previous_head_custody, next_root) in reservations {
+                    reservation.transfer_head(&next_root).replace_head();
                 }
                 Ok(())
             }
@@ -311,8 +310,10 @@ impl HistorySubsystem {
             roots.insert(commit_id, Arc::clone(&root));
         }
         Ok(roots
-            .into_values()
-            .map(crate::branch::RelationalBranchRootCheckpoint::new)
+            .into_iter()
+            .map(|(commit_id, root)| {
+                crate::branch::RelationalBranchRootCheckpoint::new(commit_id, root)
+            })
             .collect())
     }
 
@@ -341,7 +342,8 @@ fn branch_head_retirement_denial(
         crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable => {
             RelationalBranchCellDenial::RetentionOwnerUnavailable
         }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             RelationalBranchCellDenial::RetentionRootSetTooLarge
         }
     }

@@ -171,7 +171,16 @@ impl<'runtime> HistoryAccess<'runtime> {
             .history
             .commit_artifacts()
             .into_iter()
-            .map(|artifact| (artifact.commit_id(), artifact.envelope().as_ref().clone()))
+            .map(|artifact| {
+                (
+                    artifact.commit_id(),
+                    artifact
+                        .resident_envelope()
+                        .expect("memory fixture retains its envelopes")
+                        .as_ref()
+                        .clone(),
+                )
+            })
             .collect::<std::collections::BTreeMap<_, _>>();
         for envelope in self.runtime.history.performed_canonical_envelopes() {
             envelopes.insert(envelope.commit.commit_id, envelope.as_ref().clone());

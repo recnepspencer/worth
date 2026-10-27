@@ -11,7 +11,7 @@ impl StorageAuthority<'_> {
         &self,
         partition: &mut ResidentPartitionEntry<'_>,
         oldest_retained: VersionId,
-    ) -> usize
+    ) -> Result<usize, crate::execution::RelationalExecutionDenialCause>
     where
         K::Meta: HistoricalMetadata,
     {
@@ -19,9 +19,9 @@ impl StorageAuthority<'_> {
         let mut trimmed = 0;
         let mut slots_visited = 0;
         let mut entries_visited = 0;
-        for slot in K::arena(partition.read()).occupied_slots() {
+        for slot in K::arena(partition.read()?).occupied_slots() {
             slots_visited += 1;
-            let arena = K::arena(partition.read());
+            let arena = K::arena(partition.read()?);
             if arena
                 .get_slot(slot)
                 .is_none_or(|view| view.lifecycle() != RecordLifecycleState::Live)
@@ -55,6 +55,6 @@ impl StorageAuthority<'_> {
             counters.live_history_slots_visited += slots_visited;
             counters.live_history_entries_visited += entries_visited;
         });
-        trimmed
+        Ok(trimmed)
     }
 }

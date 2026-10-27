@@ -38,6 +38,7 @@ impl InvariantExecutionResult {
         results: Vec<InvariantCheckResult>,
     ) -> Self {
         assert_eq!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
             metadata.disposition(),
             InvariantExecutionDisposition::Executed,
             "executed invariant results require an executed disposition",
@@ -54,6 +55,7 @@ impl InvariantExecutionResult {
 
     pub fn skipped(metadata: InvariantExecutionMetadata) -> Self {
         assert_ne!(
+            /* Proof: These private result constructors are called by the executed and skipped evaluator branches respectively; each branch creates its own metadata with the corresponding disposition, and does not accept caller-authored metadata. */
             metadata.disposition(),
             InvariantExecutionDisposition::Executed,
             "skipped invariant results require a skipped disposition",

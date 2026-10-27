@@ -15,21 +15,20 @@ impl LockObservationSlot {
     pub(super) fn install(
         &self,
         acquired: impl Fn() + Send + Sync + 'static,
-    ) -> RelationalRuntimeLockObservationForTest {
+    ) -> Option<RelationalRuntimeLockObservationForTest> {
         let listener = Arc::new(Listener(Box::new(acquired)));
         let mut slot = self
             .0
             .get_or_init(|| Mutex::new(Weak::new()))
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        assert!(
-            slot.upgrade().is_none(),
-            "this runtime handle already has a lock observer"
-        );
-        *slot = Arc::downgrade(&listener);
-        RelationalRuntimeLockObservationForTest {
-            _listener: listener,
+        if slot.upgrade().is_some() {
+            return None;
         }
+        *slot = Arc::downgrade(&listener);
+        Some(RelationalRuntimeLockObservationForTest {
+            _listener: listener,
+        })
     }
     pub(super) fn record(&self) {
         if let Some(slot) = self.0.get() {

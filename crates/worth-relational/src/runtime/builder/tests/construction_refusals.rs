@@ -107,3 +107,27 @@ fn executor_registration_refuses_before_dispatch() {
         ))
     ));
 }
+
+#[test]
+fn unsupported_declared_invariant_execution_point_refuses_runtime_construction() {
+    use crate::validation::data::{
+        InvariantCatalog, InvariantExecutionPoint, InvariantRegistration, InvariantRule,
+    };
+    let catalog = InvariantCatalog {
+        registrations: vec![InvariantRegistration::commit_boundary_blocking(
+            InvariantRule::MaxSnapshotEntities(1),
+        )],
+    };
+    let result = crate::facade::runtime::RelationalRuntimeApi::builder()
+        .invariant_catalog(catalog)
+        .build();
+    assert!(matches!(
+        result,
+        Err(
+            crate::runtime::RelationalRuntimeConstructionDenial::InvariantExecutionPoint {
+                registration: 0,
+                execution_point: InvariantExecutionPoint::CommitBoundary
+            }
+        )
+    ));
+}

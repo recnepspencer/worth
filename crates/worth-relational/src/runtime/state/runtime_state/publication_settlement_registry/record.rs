@@ -12,6 +12,7 @@ pub(crate) struct ReservedRelationalSettlement {
     pub(crate) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
+    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
 }
 
 /// The same input after the branch reference moved, authorized against the
@@ -22,6 +23,7 @@ pub(crate) struct PerformedRelationalSettlement {
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
+    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
     pub(crate) settlement_retention:
         crate::history::retention::RelationalPerformedSettlementObligation,
     pub(crate) late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
@@ -146,6 +148,7 @@ impl PendingRelationalPublicationSettlement {
                 published_snapshot_basis: reserved.published_snapshot_basis,
                 control: reserved.control,
                 positioned,
+                envelope_cell: reserved.envelope_cell,
                 settlement_retention,
                 late_interruption,
             }));

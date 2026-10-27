@@ -5,7 +5,9 @@ use std::sync::Arc;
 use super::RelationalBranchBasisRegistryMetrics;
 
 impl HistorySubsystem {
-    pub(crate) fn detached_owner_snapshot(&self) -> Self {
+    pub(crate) fn detached_owner_snapshot(
+        &self,
+    ) -> Result<Self, crate::runtime::RelationalRuntimeForkDenial> {
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         let branch_cells = self.branch_cells.detached_owner_snapshot();
         let mut cells = branch_cells.take_all();
@@ -21,14 +23,16 @@ impl HistorySubsystem {
         for positioned in self.canonical_publication_routes.performed_snapshot() {
             let artifact = self
                 .commit_artifact(positioned.commit.commit_id)
-                .expect(/* Proof: Owner canonical inventory inserts catalog entries with the performed envelopes; detached import reads that same validated inventory without changing identities or positions. */ "performed owner inventory has its catalog entry");
+                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
             canonical_publication_routes
                 .install_recovered(
                     positioned,
                     artifact.envelope_residency(),
                     artifact.roots().clone(),
                 )
-                .expect(/* Proof: Owner canonical inventory inserts catalog entries with the performed envelopes; detached import reads that same validated inventory without changing identities or positions. */ "owner canonical inventory is valid when detached");
+                .map_err(|_| {
+                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                })?;
         }
         let mut snapshot = Self {
             runtime_instance_id: self.runtime_instance_id,
@@ -55,11 +59,32 @@ impl HistorySubsystem {
             )),
             canonical_publication_routes,
         };
-        snapshot.reset_retention_owner(snapshot.runtime_instance_id);
         snapshot
+            .try_reset_retention_owner(snapshot.runtime_instance_id)
+            .map_err(|_| crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+        Ok(snapshot)
     }
 
     pub(crate) fn restore_detached_recovery_snapshot(&mut self, snapshot: Self) {
         *self = snapshot;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::runtime::RelationalRuntimeForkDenial;
+    use crate::tests::support::{create_entity, runtime_with_test_schema};
+
+    #[test]
+    fn fork_refuses_a_missing_performed_artifact_without_reconstructing_inventory() {
+        let host = crate::test_execution_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        let runtime = runtime_with_test_schema();
+        create_entity(&execution, &runtime, "performed-inventory");
+        runtime.history.install_commit_catalog(Default::default());
+        assert!(matches!(
+            runtime.fork(),
+            Err(RelationalRuntimeForkDenial::CanonicalInventoryInvalid)
+        ));
     }
 }

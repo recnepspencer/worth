@@ -185,30 +185,55 @@ impl RelationalCommitEnvelopeResidency {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
-    ) -> Result<PositionedCanonicalCommit, Failure> {
-        let _resident = self.demand(execution, limit)?;
-        Ok(self
-            .positioned_if_resident()
-            .expect(/* Proof: This private access follows successful envelope demand admission and retains its custody; admission seals both the envelope payload and its exact position. */ "admitted envelope retains its sealed position"))
+    ) -> Result<PositionedCanonicalCommit, RelationalRecoveryStop> {
+        self.demand_read(execution, limit)?
+            .positioned
+            .ok_or_else(|| {
+                crate::durability::data::DurabilityError::new(
+                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                    "checkpoint envelope has no performed position",
+                )
+                .into()
+            })
     }
     pub(crate) fn demand(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         limit: u64,
     ) -> Result<Arc<CanonicalCommitEnvelope>, Failure> {
+        self.demand_read(execution, limit).map(|read| read.envelope)
+    }
+    fn demand_read(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        limit: u64,
+    ) -> Result<ResidentEnvelopeRead, Failure> {
         crate::execution::check_request(execution).map_err(Failure::Request)?;
         let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         if let Some(failure) = state.damage {
             return Err(failure.into());
         }
         if let Some(envelope) = state.resident_envelope() {
-            return Ok(envelope);
+            let positioned = state
+                .position
+                .as_ref()
+                .and_then(RetainedCanonicalPosition::resident);
+            return Ok(ResidentEnvelopeRead {
+                envelope,
+                positioned,
+            });
         }
-        let EnvelopeBacking::Journal { entry, source, .. } = &state.backing else {
-            unreachable!(
-                /* Proof: Memory history constructs its envelope cell resident without cold backing and retains the performed body; only backed history can unload a body. */
-                "memory history owns its body"
-            )
+        let (entry, source) = match &state.backing {
+            EnvelopeBacking::Memory(envelope) => {
+                return Ok(ResidentEnvelopeRead {
+                    envelope: envelope.clone(),
+                    positioned: state
+                        .position
+                        .as_ref()
+                        .and_then(RetainedCanonicalPosition::resident),
+                })
+            }
+            EnvelopeBacking::Journal { entry, source, .. } => (entry, source),
         };
         let result =
             Self::readmit_positioned(entry, source.as_ref(), execution, limit).map_err(|stop| {
@@ -242,7 +267,10 @@ impl RelationalCommitEnvelopeResidency {
                 let envelope = commit.canonical_arc().clone();
                 state.position = Some(RetainedCanonicalPosition::from_positioned(&commit));
                 state.lineage = Some(lineage_delta(commit.envelope()));
-                Ok(envelope)
+                Ok(ResidentEnvelopeRead {
+                    envelope,
+                    positioned: Some(commit),
+                })
             }
             Err(stop) => {
                 if let Failure::StorageUnavailable(failure) = &stop
@@ -305,4 +333,10 @@ fn lineage_delta(
         basis.lineage_event_count(),
         basis.lineage_decision_count(),
     )
+}
+
+/// Both owners are captured while the cell is locked; settlement cannot revoke them.
+struct ResidentEnvelopeRead {
+    envelope: Arc<CanonicalCommitEnvelope>,
+    positioned: Option<PositionedCanonicalCommit>,
 }

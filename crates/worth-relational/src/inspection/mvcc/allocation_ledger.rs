@@ -121,7 +121,9 @@ impl RelationalRuntime {
                 .ok_or(RelationalBranchSharingInspectionDenial::RootUnavailable)?;
             canonical_payloads.insert(RelationalCanonicalPayloadObservation {
                 commit_id,
-                digest: artifact.canonical_payload_digest(),
+                digest: artifact
+                    .canonical_payload_digest()
+                    .map_err(|_| RelationalBranchSharingInspectionDenial::RootUnavailable)?,
             });
             let derived_cache_bytes = self
                 .indexes

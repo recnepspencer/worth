@@ -71,8 +71,15 @@ impl HistorySource for FakeHistorySource {
         None
     }
 
-    fn authoritative_commit_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
-        self.envelopes.values().map(Arc::clone).collect()
+    fn has_committed_version_at_or_before_outside_closure(
+        &self,
+        version_id: crate::identity::data::VersionId,
+        closure: &std::collections::BTreeSet<CommitId>,
+    ) -> bool {
+        self.envelopes.values().any(|envelope| {
+            envelope.commit.version_id <= version_id
+                && !closure.contains(&envelope.commit.commit_id)
+        })
     }
 }
 

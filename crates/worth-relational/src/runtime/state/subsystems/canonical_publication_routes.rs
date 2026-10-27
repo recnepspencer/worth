@@ -255,6 +255,12 @@ impl PreparedCanonicalPublicationRoute {
     /// Owner-issued commit identity of the candidate this route publishes.
     /// Settlement is keyed by it before movement, so it must be readable
     /// without waiting for the route to perform.
+    pub(crate) fn envelope_residency(
+        &self,
+    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+        Arc::clone(&self.route.envelope)
+    }
+
     pub(crate) fn commit_id(&self) -> CommitId {
         self.route.commit.commit_id
     }
@@ -270,7 +276,7 @@ impl PreparedCanonicalPublicationRoute {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    pub(crate) fn record_performed_with_cutover(
+    pub(crate) fn record_performed_with_cutover<T>(
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
@@ -281,8 +287,8 @@ impl PreparedCanonicalPublicationRoute {
             Option<crate::durability::medium::RelationalDurableCommitReadmission>,
             crate::durability::medium::RelationalDurableStepStop,
         >,
-        cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition),
-    ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
+        cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
+    ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         self.route
             .handoff
             .lock()

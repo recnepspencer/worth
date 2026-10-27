@@ -195,7 +195,8 @@ fn map_retention_denial(
         crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
             RelationalBranchBasisDenial::RetentionIdentityExhausted
         }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             RelationalBranchBasisDenial::OwnerFailure
         }
     }

@@ -252,6 +252,7 @@ fn prepare_versioned_publication(
         envelope: envelope.as_ref(),
         sequence,
     })?;
+    let sequence_successors = crate::runtime::PreparedCommitSequence::new(&commit_reference)?;
     let prepared_root = runtime.prepare_publication_root(
         selected_branch_state,
         &published_partition_delta,
@@ -269,11 +270,12 @@ fn prepare_versioned_publication(
             .root()
             .descriptor()
             .cloned()
-            .expect(/* Proof: The private prepared publication root is constructed with its descriptor and canonical envelope before exposing the prepared phase. */ "prepared branch root has a descriptor"),
+            .ok_or_else(|| "prepared branch root has no descriptor".to_owned())?,
     );
     validated
         .next_cell
-        .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target));
+        .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target))
+        .map_err(|denial| format!("prepared target binding denied: {denial:?}"))?;
     let root = prepared_root.into_root();
     let artifact =
         RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
@@ -298,6 +300,7 @@ fn prepare_versioned_publication(
         artifact,
         new_authoritative_bytes,
         recovery_readmission: matches!(sequence, PublicationSequence::RecoveryTruth),
+        sequence: sequence_successors,
     })
 }
 

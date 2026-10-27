@@ -64,7 +64,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 self.runtime,
                 &mut partition,
                 retention_fence,
-            );
+            )?;
             branch_pinned_entities += entity_counts.branch_pinned;
             replay_pinned_entities += entity_counts.replay_pinned;
             snapshot_pinned_entities += entity_counts.snapshot_pinned;
@@ -75,7 +75,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                 self.runtime,
                 &mut partition,
                 retention_fence,
-            );
+            )?;
             branch_pinned_relations += relation_counts.branch_pinned;
             replay_pinned_relations += relation_counts.replay_pinned;
             snapshot_pinned_relations += relation_counts.snapshot_pinned;
@@ -152,11 +152,11 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
             entity_history_trimmed += self
                 .runtime
                 .storage_authority()
-                .trim_full_live_history::<EntityRecordKind>(&mut partition, history_fence);
+                .trim_full_live_history::<EntityRecordKind>(&mut partition, history_fence)?;
             relation_history_trimmed += self
                 .runtime
                 .storage_authority()
-                .trim_full_live_history::<RelationRecordKind>(&mut partition, history_fence);
+                .trim_full_live_history::<RelationRecordKind>(&mut partition, history_fence)?;
             let entity_counts = run_partition_retention_pass::<EntityRecordKind>(
                 self.runtime,
                 &mut partition,
@@ -175,7 +175,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                     counters.retention_entity_slots_scanned += 1;
                 },
                 &mut reclaimed,
-            );
+            )?;
             outcome.entity_chunks_scanned += entity_counts.chunks_scanned;
             outcome.entity_reclaimable += entity_counts.reclaimable;
             outcome.entity_reclaimed += entity_counts.reclaimed;
@@ -198,7 +198,7 @@ impl<'runtime> VisibilityRetentionAuthority<'runtime> {
                     counters.retention_relation_slots_scanned += 1;
                 },
                 &mut reclaimed,
-            );
+            )?;
             outcome.relation_chunks_scanned += relation_counts.chunks_scanned;
             outcome.relation_reclaimable += relation_counts.reclaimable;
             outcome.relation_reclaimed += relation_counts.reclaimed;

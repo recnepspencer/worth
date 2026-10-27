@@ -13,15 +13,14 @@ pub(super) fn restore(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
+    directory: Arc<crate::durability::data::RelationalCheckpointDirectory>,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-    let directory = checkpoint
-        .directory
-        .as_ref()
-        .expect(/* Proof: Cold checkpoint dispatch selects this function only for a checkpoint carrying a validated directory; inline checkpoints take the other restore branch. */ "cold restore has a directory")
-        .clone();
-    let mut history = runtime.history.detached_owner_snapshot();
+    let mut history = runtime
+        .history
+        .detached_owner_snapshot()
+        .map_err(|denial| corrupt(format!("cold history snapshot denied: {denial:?}")))?;
     let mut symbols = runtime.services.symbols.interner_snapshot();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
     let paged_symbols = runtime.services.symbols.detached_owner_snapshot();

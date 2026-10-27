@@ -157,7 +157,10 @@ pub(in super::super) fn reopened(
     let symbols = producer.services.symbols.interner_snapshot();
     let historical = symbols.symbol("paged-view-value-0300").unwrap();
     let current = symbols.symbol("paged-view-value-0600").unwrap();
-    let mirror = producer.acquire_partition_edition();
+    let mirror = producer
+        .acquire_partition_edition()
+        .resident_full()
+        .expect("resident fixture has Full custody");
     assert!(
         mirror
             .partition(entity.partition_id)

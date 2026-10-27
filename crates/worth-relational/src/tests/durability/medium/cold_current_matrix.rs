@@ -1,4 +1,6 @@
 //! Current operations must not depend on unavailable historical payloads.
+#[path = "cold_storage_adjacency.rs"]
+mod storage_adjacency;
 use super::cold_read_matrix::FAILURES;
 use super::cold_source::ColdRead;
 use super::*;

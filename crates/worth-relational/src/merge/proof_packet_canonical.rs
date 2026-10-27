@@ -132,6 +132,7 @@ fn digest_entry(locus: &str, value: &str) -> CanonicalBasisEntry {
 
 fn canonical_digest_id(value: &str) -> CanonicalDigestId {
     assert_eq!(
+        /* Proof: RelationalMergeProofPacket fields are private. Its builder computes SHA-256 lowercase hex; its custom Deserialize validates the supplied hex digests before construction and computes the remaining digests with the same encoder. This function never accepts an arbitrary facade string. */
         value.len(),
         64,
         "canonical merge proof packet digests must be lowercase sha256 hex",

@@ -17,7 +17,11 @@ pub(crate) fn build_visibility_state(
         .axes()
         .map(|axes| crate::identity::data::VersionId(axes.storage_version))
     {
-        debug_assert_eq!(root_version, basis.version_id());
+        debug_assert_eq!(
+            /* Proof: The exact basis key and root version are derived together from the same admitted immutable branch observation; callers cannot independently replace the private basis root. */
+            root_version,
+            basis.version_id()
+        );
     }
     let handle = SnapshotHandle {
         runtime_instance_id: runtime.runtime_instance_id(),

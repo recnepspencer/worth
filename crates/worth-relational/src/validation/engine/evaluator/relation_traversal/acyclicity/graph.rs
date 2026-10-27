@@ -84,7 +84,9 @@ impl<'scope> TraversalGraph<'scope> {
         let index =
             super::index_order::lower_bound(&self.vertices, context, |probe| *probe < vertex)?;
         assert_eq!(
-            *self.vertices[index], *vertex,
+            /* Proof: The index is obtained by looking up this exact vertex in the same immutable prepared vertex table; the graph cannot add or remove vertices during traversal. */
+            *self.vertices[index],
+            *vertex,
             "prepared endpoint belongs to the index"
         );
         Some(index)

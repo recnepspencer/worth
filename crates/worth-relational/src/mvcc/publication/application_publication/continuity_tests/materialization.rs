@@ -190,7 +190,10 @@ fn run(owned: bool, changed: u8, fieldless: bool) {
     }
     if fieldless {
         runtime.retention().run_pass(execution).unwrap();
-        let edition = runtime.acquire_partition_edition();
+        let edition = runtime
+            .acquire_partition_edition()
+            .resident_full()
+            .expect("resident fixture has Full custody");
         let partition = edition.partition(relation.partition_id).unwrap();
         assert!(
             partition

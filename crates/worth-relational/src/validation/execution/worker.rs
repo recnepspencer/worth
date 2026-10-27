@@ -56,6 +56,7 @@ fn evaluate_invariant_packet_inner<'state>(
 ) -> InvariantWorkerEnvelope {
     let preparation_failures = invariant_packet_failures(packet);
     debug_assert!(
+        /* Proof: Planned packets carry the exact prepared inputs issued by their profile planner; the worker executes only that sealed plan and does not re-resolve an external packet or accept missing preparation evidence. */
         preparation_failures.is_empty(),
         "planned invariant packet violated preparation proof contract: {:?}",
         preparation_failures

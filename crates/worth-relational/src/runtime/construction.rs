@@ -135,6 +135,23 @@ impl RelationalRuntime {
         config: super::RelationalRuntimeConfig,
         mut extensions: RuntimeExtensions,
     ) -> Result<Self, Denial> {
+        for (registration, declaration) in config
+            .schema
+            .invariant_catalog
+            .registrations
+            .iter()
+            .enumerate()
+        {
+            if !declaration
+                .rule
+                .supports_execution_point(declaration.execution_point)
+            {
+                return Err(Denial::InvariantExecutionPoint {
+                    registration,
+                    execution_point: declaration.execution_point,
+                });
+            }
+        }
         let schema_contract_runtime =
             extensions.build_schema_contract_runtime_subsystem(&config)?;
         let commit_strategies = extensions.build_commit_strategy_subsystem(&config)?;

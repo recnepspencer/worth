@@ -162,6 +162,8 @@ pub enum MergeExecutionCompilationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergeExecutionMutationPlanError {
+    /// Target read failed before executable mutation intents were produced.
+    Read(crate::execution::RelationalExecutionDenialCause),
     MissingTargetEntitySnapshot {
         record: RecordRef,
     },

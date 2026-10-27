@@ -88,7 +88,8 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
                 let adjacency_started_at = Instant::now();
                 let outgoing_relations = runtime
                     .storage_access()
-                    .outgoing_relations_for_entity(source, commit.version_id);
+                    .outgoing_relations_for_entity(&execution, source, commit.version_id)
+                    .expect("funded adjacency read succeeds");
                 total_adjacency_micros += adjacency_started_at.elapsed().as_micros();
                 max_outgoing_relation_count =
                     max_outgoing_relation_count.max(outgoing_relations.len());

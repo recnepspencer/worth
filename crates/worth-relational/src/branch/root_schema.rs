@@ -32,7 +32,7 @@ impl RelationalBranchRootSchemaAuthority {
         registry_for_snapshot(registry, expected).map(|registry| {
             let aspect_plans = crate::schema::lower_aspect_plans(&registry);
             let retained_aspect_contracts = retain_aspect_contracts(previous, &aspect_plans);
-            debug_assert!(plans_match_snapshot(&aspect_plans, expected));
+            debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
                 allocation_id,
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(
@@ -55,7 +55,7 @@ impl RelationalBranchRootSchemaAuthority {
     ) -> Option<Arc<Self>> {
         (registry.authority_snapshot() == *expected).then(|| {
             let aspect_plans = crate::schema::lower_aspect_plans(&registry);
-            debug_assert!(plans_match_snapshot(&aspect_plans, expected));
+            debug_assert!(/* Proof: RelationalBranchRootSchemaAuthority constructors lower these plans directly from the retained immutable schema snapshot with the selected descriptor semantics; the private plan table cannot be independently supplied or changed. */ plans_match_snapshot(&aspect_plans, expected));
             Arc::new(Self {
                 allocation_id,
                 authority_digest: crate::schema::data::schema_authority_snapshot_digest_bytes(

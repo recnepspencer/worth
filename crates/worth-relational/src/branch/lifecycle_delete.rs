@@ -177,10 +177,10 @@ impl crate::runtime::RelationalRuntime {
                     .history
                     .remove_branch_cell(&branch)
                     .expect(/* Proof: The deletion coordinator retains the branch operation gate across validation and removal; another deletion cannot remove this cell in between. */ "coordinated branch cell remains registered until deletion cutover");
-                assert_eq!(removed_cell.identity(), identity);
+                assert_eq!(/* Proof: The deletion holds the selected publication-cell state guard and branch coordination gate from identity validation through this cutover. The registry cannot replace that branch identity while those guards are held. */ removed_cell.identity(), identity);
                 // Coordination and state have been held since selection; the
                 // removed cell still selects this exact prepared root.
-                let retired_root_identity = head_retirement.retire_head(selected_root);
+                let retired_root_identity = head_retirement.retire_head();
                 self.history
                     .move_branch_head_version(previous_head_version, None);
                 self.visibility_pins()

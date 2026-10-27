@@ -101,7 +101,7 @@ impl<'runtime> MergeAccess<'runtime> {
             bound_executable_plan,
         );
         let mutation_plan = self
-            .derive_merge_commit_mutation_plan(&compiled)
+            .derive_merge_commit_mutation_plan(execution, &compiled)
             .map_err(MergeExecutionPreparationError::MutationPlan)?;
         Ok(PreparedMergeExecution::from_compiled(
             compiled,
@@ -143,6 +143,7 @@ impl<'runtime> MergeAccess<'runtime> {
     #[cfg(test)]
     pub(crate) fn replace_bound_merge_plan_for_test(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         prepared: &mut PreparedMergeExecution,
         bound_executable_plan: crate::merge::data::BoundExecutableMergePlan,
     ) -> Result<(), crate::merge::data::MergeExecutionMutationPlanError> {
@@ -152,7 +153,7 @@ impl<'runtime> MergeAccess<'runtime> {
             prepared.execution_ready_plan().clone(),
             bound_executable_plan.clone(),
         );
-        let mutation_plan = self.derive_merge_commit_mutation_plan(&compiled)?;
+        let mutation_plan = self.derive_merge_commit_mutation_plan(execution, &compiled)?;
         prepared
             .replace_bound_plan_and_mutation_plan_for_test(bound_executable_plan, mutation_plan);
         Ok(())

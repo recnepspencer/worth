@@ -152,6 +152,7 @@ impl RelationalPendingSettlementReservation {
         late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
     ) -> Arc<PendingRelationalPublicationSettlement> {
         assert!(
+            /* Proof: The non-Clone RelationalPendingSettlementReservation owns the newly inserted Reserved record. Only its consuming authorize can transition Reserved to Performed; repair claim leaves Reserved unchanged, and Drop removes only an unconsumed reservation. */
             self.record
                 .authorize_performed(positioned, settlement_retention, late_interruption),
             "one linearized candidate authorizes its reservation exactly once"

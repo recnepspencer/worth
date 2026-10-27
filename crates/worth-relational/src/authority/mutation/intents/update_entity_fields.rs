@@ -68,12 +68,13 @@ pub(super) fn apply(
         let mut updated_extra = partition
             .entity_arena
             .extra_at(slot)
-            .expect(/* Proof: The owner selects this slot from the same retained arena after existence and visibility admission; arena materialization installs its kind, extra and creation columns together. */ "entity field update requires a materialized slot")
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?
             .clone();
         updated_extra.authoritative_aspect_state = new_authoritative_aspect_state.clone();
         partition
             .entity_arena
-            .apply_extra_update(slot, updated_extra, version_id);
+            .apply_extra_update(slot, updated_extra, version_id)
+            .ok_or_else(|| missing(intent, EntityFieldUpdateMissingState::Slot))?;
         Ok::<_, CommitConflict>(())
     })?;
     Ok(MutationOutcome::entity_updated_with_authoritative_patch(
@@ -83,4 +84,14 @@ pub(super) fn apply(
         new_authoritative_aspect_state,
         patch,
     ))
+}
+
+fn missing(
+    intent: &UpdateEntityFieldsIntent,
+    missing: EntityFieldUpdateMissingState,
+) -> CommitConflict {
+    CommitConflict::new(ConflictClass::EntityFieldUpdateStateInconsistency {
+        entity_id: intent.entity_id,
+        missing,
+    })
 }

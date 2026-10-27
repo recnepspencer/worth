@@ -133,8 +133,7 @@ impl PreparedBranchPublicationPreflight {
             .canonical_envelope()
             .map(|envelope| envelope.commit.version_id);
 
-        let retired_root = std::cell::RefCell::new(None);
-        let head_retirement = &mut self.head_retirement;
+        let head_retirement = self.head_retirement;
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
         let medium = self.medium.clone();
@@ -146,7 +145,7 @@ impl PreparedBranchPublicationPreflight {
             None => crate::runtime::PatchPositionReservationAdmission::DeferBehindCommit(execution),
         };
         let symbol_meanings = self.movement.symbol_meanings;
-        let positioned_commit = match self
+        let (positioned_commit, head_retirement) = match self
             .movement
             .canonical_publication_route
             .record_performed_with_cutover(
@@ -159,7 +158,7 @@ impl PreparedBranchPublicationPreflight {
                 |position| {
                     symbol_meanings
                         .publish()
-                        .expect(/* Proof: The shared owner reservation assigns each text one identity and reserves its frontier before candidate import; same-owner candidate meanings therefore cannot alias. */ "minted symbol reservations preserve owner meaning");
+                        .expect(/* Proof: PreparedSymbolPublication can only be issued by seal_for_publication after validating the canonical snapshot against the candidate interner. Its strong owner and retained ReservedSymbolMeaning tokens pin the unique identities allocated by reserve_identity; checked owner imports cannot replace either mapping, and recovery requires exclusive runtime access. */ "minted symbol reservations preserve owner meaning");
                     // The cutover is the only orchestration this port runs while the
                     // global patch-position reservation is held, so this is where a
                     // concurrent publisher can be made to meet it.
@@ -168,11 +167,12 @@ impl PreparedBranchPublicationPreflight {
                     if let Some(companion) = &mut companion_cutover {
                         companion.install_at(position);
                     }
-                    head_retirement.transfer_head(&previous_root, next_root);
+                    let transferred = head_retirement.transfer_head(next_root);
                     self.branch_head_versions
                         .move_head(previous_head_version, next_head_version);
-                    *retired_root.borrow_mut() = Some(previous_root);
+                    drop(previous_root);
                     drop(publication_state);
+                    transferred
                 },
             ) {
             Ok(positioned) => positioned,
@@ -195,16 +195,13 @@ impl PreparedBranchPublicationPreflight {
             }
         };
         drop(companion_cutover);
-        let retired_root = retired_root
-            .into_inner()
-            .expect(/* Proof: The performed cutover consumes the previous live head and returns its retained root; empty/unprepared cells cannot enter this phase. */ "performed cutover returns the exact previous head root");
         self.control.pause_after_linearization_for_test();
         drop(_critical_section);
-        self.head_retirement.replace_head(retired_root);
+        let settlement_retention = head_retirement.replace_head_for_publication(
+            self.candidate_retention,
+            Arc::clone(&self.movement.root),
+        );
         drop(_publication_lifecycle);
-        let settlement_retention = self
-            .candidate_retention
-            .into_performed_settlement(Arc::clone(&self.movement.root));
         self.movement.record_allocations.commit();
         let late_interruption = self
             .control

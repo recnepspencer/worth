@@ -94,7 +94,7 @@ fn optional_canonical_nested_bytes<T: serde::Serialize>(value: &Option<T>) -> u6
         .as_ref()
         .map(|value| {
             rmp_serde::to_vec(value)
-                .expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "canonical authority fields are serializable")
+                .expect(/* Proof: Production callers reach this private function only through RelationalCommitArtifact: from_envelope first calls encode_canonical_payload successfully on every optional authority record below; cold demand likewise validates authoritative_payload_digest before exposing the immutable Arc. The same closed derived-Serialize fields cannot introduce a new serialization refusal when encoded as their nested Option values into Vec. */ "canonical authority fields are serializable")
                 .len() as u64
         })
         .unwrap_or(0)

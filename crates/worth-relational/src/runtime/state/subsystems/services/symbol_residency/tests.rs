@@ -26,7 +26,11 @@ fn pending_symbols_refuse_a_cold_bucket_before_issuing_an_identity() {
     table.demand_text(&execution, value.as_str()).unwrap();
     assert_eq!(candidate.reserve(value.as_str()).unwrap(), *existing);
     let meanings = candidate.interner().snapshot();
-    candidate.seal_for_publication(&meanings).publish().unwrap();
+    candidate
+        .seal_for_publication(&meanings)
+        .expect("fixture meanings agree with the candidate")
+        .publish()
+        .unwrap();
 }
 mod region_admission_tests;
 

@@ -85,11 +85,17 @@ fn head_prefixes_rebuild_owned_history_after_endpoint_edits_and_generation_reuse
             .extra()
             .clone();
         let endpoints = extra.endpoints.clone().unwrap();
-        partition.relation_arena.retire(slot, VersionId(1_001));
+        partition
+            .relation_arena
+            .retire(slot, VersionId(1_001))
+            .expect("fixture slot is materialized");
         partition
             .relation_arena
             .set_lifecycle_for_slot(slot, RecordLifecycleState::Reusable);
-        partition.relation_arena.reset_slot(slot);
+        partition
+            .relation_arena
+            .reset_slot(slot)
+            .expect("fixture slot is materialized");
         partition
             .relation_arena
             .write_reserved_slot(
@@ -183,7 +189,8 @@ fn update_target(
     endpoints.target = target;
     partition
         .relation_arena
-        .apply_extra_update(relation.slot_index(), extra, version);
+        .apply_extra_update(relation.slot_index(), extra, version)
+        .expect("fixture slot is materialized");
     partition
         .reverse_adjacency
         .get_mut(old.slot_index())

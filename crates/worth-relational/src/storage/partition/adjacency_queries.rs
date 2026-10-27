@@ -22,27 +22,51 @@ pub(crate) fn relation_candidates_from_state(
 
 pub(crate) fn outgoing_relations_for_entity(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity_id: EntityId,
     version_id: VersionId,
-) -> Vec<RelationId> {
-    whole_neighborhood(runtime, entity_id, version_id, AdjacencyDirection::Outgoing)
+) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
+    whole_neighborhood(
+        runtime,
+        execution,
+        entity_id,
+        version_id,
+        AdjacencyDirection::Outgoing,
+    )
 }
 
 pub(crate) fn incoming_relations_for_entity(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity_id: EntityId,
     version_id: VersionId,
-) -> Vec<RelationId> {
-    whole_neighborhood(runtime, entity_id, version_id, AdjacencyDirection::Incoming)
+) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
+    whole_neighborhood(
+        runtime,
+        execution,
+        entity_id,
+        version_id,
+        AdjacencyDirection::Incoming,
+    )
 }
 
 pub(crate) fn all_relations_for_entity(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity_id: EntityId,
     version_id: VersionId,
-) -> Vec<RelationId> {
+) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
     let edition = runtime.acquire_partition_edition();
-    all_relations_for_entity_from_state(runtime, &edition, entity_id, version_id)
+    crate::visibility::materialization::read_records::read_work::with_full_residency(
+        execution,
+        &edition,
+        &runtime.services.symbols,
+        |state| {
+            Ok(all_relations_for_entity_from_state(
+                runtime, state, entity_id, version_id,
+            ))
+        },
+    )
 }
 
 pub(crate) fn all_relations_for_entity_from_state(
@@ -71,19 +95,26 @@ pub(crate) fn all_relations_for_entity_from_state(
 /// bounded readers' zero interpretable: they lease the same slice instead.
 fn whole_neighborhood(
     runtime: &RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     entity_id: EntityId,
     version_id: VersionId,
     direction: AdjacencyDirection,
-) -> Vec<RelationId> {
-    let slot = entity_id.slot_index();
+) -> Result<Vec<RelationId>, crate::execution::RelationalExecutionDenialCause> {
     let edition = runtime.acquire_partition_edition();
-    let candidates = edition
-        .partition(entity_id.partition_id)
-        .and_then(|partition| direction.table(partition).get(slot))
-        .map(|relations| relations.current_ids().to_vec())
-        .unwrap_or_default();
-    charge_copied_ids(runtime, candidates.len());
-    retain_visible(runtime, &edition, candidates, version_id)
+    crate::visibility::materialization::read_records::read_work::with_full_residency(
+        execution,
+        &edition,
+        &runtime.services.symbols,
+        |state| {
+            let candidates = state
+                .get_partition(entity_id.partition_id)
+                .and_then(|partition| direction.table(partition).get(entity_id.slot_index()))
+                .map(|relations| relations.current_ids().to_vec())
+                .unwrap_or_default();
+            charge_copied_ids(runtime, candidates.len());
+            Ok(retain_visible(runtime, state, candidates, version_id))
+        },
+    )
 }
 
 /// Resolve every candidate against the one edition already pinned.

@@ -50,7 +50,7 @@ impl SubscriberContinuationAssessment {
             Vec::new(),
             SchemaContinuationClassification::ContinueUnchanged,
             false,
-            NormalizedContinuationProof::new(Vec::new(), descriptor_semantics_version),
+            NormalizedContinuationProof::empty(descriptor_semantics_version),
             SubscriberContinuationSummary::unchanged(contract_id, descriptor_semantics_version),
             Vec::new(),
         )

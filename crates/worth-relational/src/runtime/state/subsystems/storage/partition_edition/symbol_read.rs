@@ -25,9 +25,10 @@ impl PartitionAccess for SymbolAdmittedEdition<'_> {
             None => PartitionProbe::Absent,
             Some(region) => match region.admitted_partition() {
                 Some(partition)
-                    if self
-                        .symbols
-                        .region_symbols_admitted(region.lease().symbol_admission_identity()) =>
+                    if region.admitted_full_lease().is_some_and(|lease| {
+                        self.symbols
+                            .region_symbols_admitted(lease.symbol_admission_identity())
+                    }) =>
                 {
                     PartitionProbe::Resident(partition)
                 }

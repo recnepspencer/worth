@@ -109,16 +109,18 @@ fn appending_at_head_across_reopened_layers_matches_complete_history() {
             .unwrap()
             .extra()
             .clone();
-        partial.entity_arena.apply_extra_update(
-            fixture.entity.slot_index(),
-            extra.clone(),
-            VersionId(version),
-        );
-        oracle.entity_arena.apply_extra_update(
-            fixture.entity.slot_index(),
-            extra,
-            VersionId(version),
-        );
+        partial
+            .entity_arena
+            .apply_extra_update(
+                fixture.entity.slot_index(),
+                extra.clone(),
+                VersionId(version),
+            )
+            .expect("fixture slot is materialized");
+        oracle
+            .entity_arena
+            .apply_extra_update(fixture.entity.slot_index(), extra, VersionId(version))
+            .expect("fixture slot is materialized");
         let before = source.reads.load(Ordering::SeqCst);
         let (next, next_source) = encode_layer(&cold, &source, &partial);
         assert_eq!(source.reads.load(Ordering::SeqCst), before);
