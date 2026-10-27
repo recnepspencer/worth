@@ -56,6 +56,8 @@ use worth_runtime_bridge::facade::*;
 
 The facade exposes both the standard standalone Bridge workflow and the exact
 installation surfaces Query uses. Do not import implementation modules.
+Standard routing, explicit controls, and replay/certification capabilities all
+use this same root import. Those usage categories are documentation groupings.
 
 ## Standard Standalone Path
 
