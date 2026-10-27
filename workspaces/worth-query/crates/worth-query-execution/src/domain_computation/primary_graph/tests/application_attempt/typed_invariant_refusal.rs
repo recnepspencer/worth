@@ -1,4 +1,6 @@
 //! Domain evidence reaches the caller that attempted the installed commit.
+#[path = "../../../../../../../../../crates/worth-relational/tests/support/checkpoint_atomicity.rs"]
+mod checkpoint_atomicity;
 mod ledger_rule;
 mod producer_requirement;
 mod program;
@@ -13,13 +15,35 @@ use std::sync::{Arc, Mutex};
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryCancellationSource, WorthQueryRequestScope,
 };
+use worth_relational::facade::{
+    durability::{RelationalCheckpointInspection, RelationalNativeCheckpoint},
+    transactions::RecordRef,
+};
+use WorthQueryCheckpointRecordClass as Class;
 
 struct Case {
     denial: WorthQueryApplicationCommitDenial,
     before: Vec<u8>,
     after: Vec<u8>,
+    reservations: WorthQueryRecordReservationReport,
     visits: Vec<u64>,
     reads: Vec<rule::ReadSample>,
+}
+
+impl Case {
+    fn assert_model_unchanged(&self) {
+        let host = crate::test_request_policy::serial_request();
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        assert!(
+            self.reservations.records().len() > 0,
+            "this refused commit really reserved ids"
+        );
+        checkpoint_atomicity::assert_model_unchanged(
+            RelationalNativeCheckpoint::inspect_bytes(&execution, &self.before).unwrap(),
+            RelationalNativeCheckpoint::inspect_bytes(&execution, &self.after).unwrap(),
+            self.reservations.records(),
+        );
+    }
 }
 
 struct RestorePlacement(WorthQueryExecutionPlacementForTest);
@@ -61,6 +85,19 @@ fn run_cancelled_by(status: String, canceller: Option<u64>) -> Case {
     let scope = WorthQueryRequestScope::new(None, cancellation.token());
     let program = program::prepare(&world, &scope, status);
     let before = checkpoint(&world);
+    let reservations = world
+        .application
+        .with_host_advancement(|phase| {
+            world
+                .application
+                .observe_record_reservations(
+                    &phase,
+                    16,
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
     let _restore = RestorePlacement(place_managed_computations_on_this_thread_for_test(
         WorthQueryExecutionPlacementForTest::Leased(std::num::NonZeroUsize::new(2).unwrap()),
     ));
@@ -91,6 +128,9 @@ fn run_cancelled_by(status: String, canceller: Option<u64>) -> Case {
         denial,
         before,
         after,
+        reservations: reservations
+            .report(worth_execution::ExecutionAllocationPolicy::SystemAllocation)
+            .unwrap(),
         visits,
         reads,
     }
@@ -115,9 +155,13 @@ fn typed_refusal_round_trips_to_the_original_publication_caller() {
 }
 
 #[test]
-fn refused_candidate_keeps_native_checkpoint_bytes_equal() {
+fn refused_candidate_changes_no_native_model_bytes() {
     let case = run("closed".into(), false);
-    assert_eq!(case.before, case.after);
+    assert!(case
+        .denial
+        .decode_invariant_refusal::<RefusalBinding>()
+        .is_ok());
+    case.assert_model_unchanged();
 }
 
 /// Rules run on parallel workers, so the other rule may or may not have
@@ -138,7 +182,7 @@ fn assert_cancelled_without_domain_evidence(case: &Case, canceller: u64) {
         1
     );
     assert!(case.visits.iter().all(|&rule| rule == 1 || rule == 2));
-    assert_eq!(case.before, case.after);
+    case.assert_model_unchanged();
 }
 
 #[test]
@@ -187,7 +231,7 @@ fn oversized_refusal_is_an_evaluation_error() {
         worth_relational::facade::transactions::ResultCustomInvariantFailureKind::ExecutionError
     );
     assert!(case.denial.invariant_refusal_bytes().is_none());
-    assert_eq!(case.before, case.after);
+    case.assert_model_unchanged();
 }
 
 #[test]

@@ -1,5 +1,10 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
+use crate::durability::data::RelationalCheckpointInspection;
+use crate::history::data::RecordAllocationClass as Class;
+use crate::transactions::data::RecordRef;
+#[path = "../../../../../tests/support/checkpoint_atomicity.rs"]
+mod atomicity;
 #[path = "retirement/ordinary.rs"]
 mod ordinary;
 
@@ -231,6 +236,10 @@ fn cold_replacement(
         .durability_authority()
         .native_checkpoint(execution.allocation_policy())
         .unwrap();
+    let reservations = runtime
+        .inspect_what_happened()
+        .observe_record_reservations(16, execution.allocation_policy())
+        .unwrap();
     // Existing spellings still request fresh native allocations. Equal keys
     // cannot authorize Birth, and ordinary key interning is not this court.
     let (batch, targets) = creates(["new-left", "new-right"]);
@@ -258,12 +267,20 @@ fn cold_replacement(
         absence.is_none(),
         "a published route requires its exact predecessor"
     );
+    let after = runtime
+        .durability_authority()
+        .native_checkpoint(execution.allocation_policy())
+        .unwrap();
+    let report = reservations.report(execution.allocation_policy()).unwrap();
     assert_eq!(
-        runtime
-            .durability_authority()
-            .native_checkpoint(execution.allocation_policy())
-            .unwrap(),
-        before
+        report.records().len(),
+        2,
+        "the rejected Birth reserved two entities"
+    );
+    atomicity::assert_model_unchanged(
+        before.inspect(execution).unwrap(),
+        after.inspect(execution).unwrap(),
+        report.records(),
     );
     let roles = replacement_ids
         .into_iter()
