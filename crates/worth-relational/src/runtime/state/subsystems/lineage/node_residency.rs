@@ -1,4 +1,5 @@
 //! A node page has one shared load, sticky storage damage and counted readers.
+mod member_export;
 use super::node_page::{self, ReadmittedLineageNodePage};
 use crate::durability::data::{RelationalCheckpointDirectory, RelationalCheckpointPage};
 use crate::durability::medium::RelationalDurableColdSource;

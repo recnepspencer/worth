@@ -36,12 +36,40 @@ fn residency_failure_matrix_lineage_doors_preserve_every_failure_class() {
             );
             fixture.source.failures.lock().unwrap().clear();
             let reads = fixture.source.reads.load(Ordering::Relaxed);
+            let failed_reads = || {
+                fixture
+                    .source
+                    .member_reads
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|member| **member == fixture.page.member)
+                    .count()
+            };
+            let failed_before = failed_reads();
             if sticky {
                 assert_eq!(door.read(&fixture, execution), Err(expected));
-                assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                if matches!(
+                    door,
+                    NodeDoor::MemoryCheckpoint | NodeDoor::EmbeddedCheckpoint
+                ) {
+                    assert_eq!(failed_reads(), failed_before);
+                } else {
+                    assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                }
             } else {
                 door.read(&fixture, execution).unwrap();
                 assert!(fixture.source.reads.load(Ordering::Relaxed) > reads);
+                if matches!(door, NodeDoor::EmbeddedCheckpoint) {
+                    assert_eq!(
+                        fixture
+                            .runtime
+                            .lineage_access()
+                            .for_record(execution, fixture.expected.entity_id())
+                            .unwrap(),
+                        Some(fixture.expected.clone())
+                    );
+                }
                 assert!(
                     fixture
                         .runtime

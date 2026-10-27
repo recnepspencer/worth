@@ -48,7 +48,7 @@ impl CapturedCheckpointBasis {
                 .collect::<std::collections::BTreeSet<_>>();
             event_rows.retain(|row| !covered.contains(&row.publication_commit_id));
         }
-        let lineage_event_sources = std::mem::take(&mut self.lineage_event_sources);
+        let guarded_member_sources = std::mem::take(&mut self.guarded_member_sources);
         let _lineage_event_leases = std::mem::take(&mut self.lineage_event_leases);
         let carried_index_image = self.carried_index_image;
         let roots = std::mem::take(&mut self.branch_roots);
@@ -131,6 +131,12 @@ impl CapturedCheckpointBasis {
                 .map_err(storage_failure)?;
                 leaves.push(capture.leaf);
                 captured.publications.push(capture.publication);
+                captured.guarded_members.extend(
+                    region
+                        .cell
+                        .checkpoint_export_sources(&capture.members, captured.cold_source.clone())
+                        .map_err(storage_failure)?,
+                );
                 for member in capture.members {
                     insert_member(&mut captured, member);
                 }
@@ -160,6 +166,12 @@ impl CapturedCheckpointBasis {
                 .map_err(storage_failure)?;
                 captured.manifest.mirror.push(capture.leaf);
                 captured.publications.push(capture.publication);
+                captured.guarded_members.extend(
+                    region
+                        .cell()
+                        .checkpoint_export_sources(&capture.members, captured.cold_source.clone())
+                        .map_err(storage_failure)?,
+                );
                 for member in capture.members {
                     insert_member(&mut captured, member);
                 }
@@ -230,7 +242,7 @@ impl CapturedCheckpointBasis {
                 );
             }
         }
-        captured.guarded_members.extend(lineage_event_sources);
+        captured.guarded_members.extend(guarded_member_sources);
         if placement.is_embedded() {
             captured.materialize_resident_event_members(&resident_event_rows, policy)?;
         }

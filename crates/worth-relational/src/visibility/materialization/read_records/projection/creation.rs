@@ -2,6 +2,10 @@
 use super::VisibilityProjectionView;
 use crate::runtime::RelationalRuntime;
 impl VisibilityProjectionView {
+    pub(crate) fn refresh_symbol_meanings(&mut self, symbols: &crate::runtime::RuntimeSymbolTable) {
+        self.symbols = symbols.interner_snapshot();
+    }
+
     pub(crate) fn new(
         runtime: &RelationalRuntime,
         basis: crate::visibility::snapshot_states::SnapshotStateBasis,

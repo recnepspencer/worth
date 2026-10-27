@@ -8,9 +8,15 @@ use crate::execution::RelationalExecutionDenialCause;
 fn every_full_read_door_admits_its_runtime_dictionary_or_preserves_page_damage() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    for door in ReadDoor::ALL {
+    // The original query admission claim applies to reads; opaque checkpoint
+    // transport has its independent symbol failure cells in cold_read_matrix.
+    for door in ReadDoor::ALL
+        .into_iter()
+        .filter(|door| !door.is_checkpoint())
+    {
         for damage in [false, true] {
             let fixture = reopened(execution);
+            door.prepare(&fixture.runtime);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
             if damage {
                 *fixture.source.failed_member.lock().unwrap() = Some(fixture.historical_page);

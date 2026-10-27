@@ -2439,3 +2439,59 @@ agree with the memory-only runtime. An observation retained across three new
 commits and home checkpoints keeps its earlier meaning while current reads and
 canonical artifacts agree with the reference. A final reopen agrees again.
 The complete home oracle and all final lanes are still unrun for this slice.
+
+
+### Checkpoint and index-build matrix expansion (in progress)
+
+`matrix-checkpoint-full-first.log` exposed a real generic-corruption export
+refusal for a failed cold region. `matrix-index-build-red.log` exposed a cold
+index build reaching the resident-only region accessor, panicking and becoming
+WorkerFailed instead of the exact storage refusal. Neither test was weakened.
+The new checkpoint cells measure repeat reads of the failed member itself;
+reconstructive exports may reread unrelated healthy members. Existing read-door
+checks retain their original stronger whole-read-counter assertions.
+
+Native embedding now selects exact per-member export providers which share
+region, dictionary, node, event and index damage ledgers. No second failure
+ledger is introduced. The provider retains its actual owning cell and rejects
+foreign locators; transport verifies the authentic member digest before output.
+Node and symbol providers bind one page, keeping export routing linear rather
+than scanning the complete directory for each member. Region providers choose
+the actual cold or adopted-prefix source, with selected publication storage as
+the fallback only for members it owns. Native external capture selects these
+providers without reading payloads.
+
+Index construction explicitly admits retained generation state before it can
+allocate a successor. Commit metadata comes from the indexed receipt, without
+requiring a cold envelope for a metadata-only lookup. The selected source root
+is demanded at Full before scan execution, and its admitted symbol meanings
+refresh the same selected projection. Both exact-basis and commit build paths
+receive this admission. Memory checkpoint materialization carries its captured
+index state and selected retention roots, readmits that exact image, then
+encodes the selected generations; it does not silently omit a cold index or
+reselect a later runtime state. Validation of this slice is still in progress.
+
+
+Checkpoint/index slice validation: `matrix-checkpoint-build-native-fixed.log`
+passes 1,993 native tests with 31 ignored. Both public index build doors join
+the region/history/symbol table; index-image failures cover ten doors, and node
+failures now include both exports. The inventory is 1,266 refusal cells plus
+54 positive unavailable-history cells. `matrix-index-transport-contents-fixed.log`
+then passes the strengthened 60-cell index table: successful memory and embedded
+exports preserve the actual complete producer generation, and rebuilt successor
+IDs advance within headroom while preserving entries. The first strengthened
+proof had an Arc-reference type mismatch in the new test; it is corrected.
+
+The first full run of this slice exposed a new fixture's mistaken assumption
+that registration honors a caller-supplied index ID; it now uses the actual
+owner-issued definition. The original query-specific symbol-admission court
+keeps its original query claim and adds both build doors with actual setup;
+opaque checkpoint transport is covered by its own symbol table cells rather
+than claiming query-index admission as a transport side effect. No original
+query door or assertion was removed. A product regression in early request
+refusal dropped the original packet identity; the guard now preserves first
+packet provenance for request stops. The existing cancellation/deadline court
+passes unchanged in the complete native rerun. Owner lib/tests clippy, line
+caps and agent-context pass. Boundary and composition gates are being recorded.
+Final clean-commit lanes, historical index selection, cold index placement
+custody and the public projection read inventory remain to be closed.

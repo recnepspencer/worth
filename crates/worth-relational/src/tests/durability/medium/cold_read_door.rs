@@ -4,6 +4,10 @@ use crate::execution::RelationalExecutionDenialCause;
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum ReadDoor {
+    IndexCommitBuild,
+    IndexBasisBuild,
+    MemoryCheckpoint,
+    EmbeddedCheckpoint,
     GraphInspection,
     SnapshotRead,
     SnapshotCapabilityPin,
@@ -39,7 +43,11 @@ pub(super) enum ReadDoor {
 }
 
 impl ReadDoor {
-    pub(super) const ALL: [Self; 32] = [
+    pub(super) const ALL: [Self; 36] = [
+        Self::IndexCommitBuild,
+        Self::IndexBasisBuild,
+        Self::MemoryCheckpoint,
+        Self::EmbeddedCheckpoint,
         Self::GraphInspection,
         Self::SnapshotRead,
         Self::SnapshotCapabilityPin,
@@ -74,6 +82,14 @@ impl ReadDoor {
         Self::Version,
     ];
 
+    pub(super) fn is_checkpoint(self) -> bool {
+        matches!(self, Self::MemoryCheckpoint | Self::EmbeddedCheckpoint)
+    }
+    pub(super) fn prepare(self, runtime: &crate::runtime::RelationalRuntime) {
+        if matches!(self, Self::IndexCommitBuild | Self::IndexBasisBuild) {
+            super::cold_index_build_door::IndexBuildDoor::register(runtime);
+        }
+    }
     pub(super) fn run(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -83,6 +99,22 @@ impl ReadDoor {
         let version = runtime.current_version_id();
         let reader = runtime.read_truth();
         match self {
+            Self::IndexCommitBuild | Self::IndexBasisBuild => {
+                let door = if matches!(self, Self::IndexCommitBuild) { super::cold_index_build_door::IndexBuildDoor::Commit } else { super::cold_index_build_door::IndexBuildDoor::Basis };
+                door.read(runtime, execution, runtime.index_access().definitions_snapshot().iter().find(|definition| definition.name == "residency-read-matrix-build").expect("the matrix setup registered its actual definition").index_id)
+            }
+            Self::MemoryCheckpoint => runtime.durability_authority().checkpoint(execution)
+                .map(|image| { assert!(!image.partition_images.is_empty()); })
+                .map_err(|stop| match stop {
+                    RelationalRecoveryStop::Durability(error) => RelationalExecutionDenialCause::StorageUnavailable(error.storage_unavailable.expect("cold memory-image refusal remains typed")),
+                    other => panic!("funded whole-image operation: {other:?}"),
+                }),
+            Self::EmbeddedCheckpoint => runtime.durability_authority().native_checkpoint(execution.allocation_policy())
+                .map(|image| { assert!(!image.bytes().is_empty()); })
+                .map_err(|stop| match stop {
+                    crate::durability::data::RelationalNativeCheckpointCaptureDenial::Durability(error) => RelationalExecutionDenialCause::StorageUnavailable(error.storage_unavailable.expect("cold embedded-image refusal remains typed")),
+                    other => panic!("funded whole-image operation: {other:?}"),
+                }),
             Self::SnapshotRead
             | Self::SnapshotCapabilityPin
             | Self::SnapshotInspection

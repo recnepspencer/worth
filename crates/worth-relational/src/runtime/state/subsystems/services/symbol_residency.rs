@@ -13,6 +13,7 @@ use crate::storage::data::{
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use crate::symbols::data::Symbol;
 
+mod member_export;
 mod page_shape;
 use page_shape::{SymbolPageSelection, SymbolPageShape};
 

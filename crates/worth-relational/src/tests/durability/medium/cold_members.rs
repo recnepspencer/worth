@@ -12,6 +12,10 @@ mod cold_envelope_lifetime;
 mod cold_envelope_matrix;
 #[path = "cold_envelopes.rs"]
 mod cold_envelopes;
+#[path = "cold_index_build_door.rs"]
+mod cold_index_build_door;
+#[path = "cold_index_checkpoint_door.rs"]
+mod cold_index_checkpoint_door;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
 #[path = "cold_invariants.rs"]

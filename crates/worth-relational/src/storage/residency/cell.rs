@@ -1,3 +1,5 @@
+#[path = "cell/member_export.rs"]
+mod member_export;
 #[path = "cell/observation.rs"]
 mod observation;
 #[path = "cell/resident_head.rs"]

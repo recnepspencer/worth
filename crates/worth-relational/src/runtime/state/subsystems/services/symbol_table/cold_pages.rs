@@ -94,6 +94,26 @@ impl RuntimeSymbolTable {
         Ok(())
     }
 
+    pub(crate) fn checkpoint_export_sources(
+        &self,
+    ) -> std::collections::BTreeMap<
+        crate::durability::medium::RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    > {
+        let Some(pages) = self
+            .cold
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .clone()
+        else {
+            return Default::default();
+        };
+        pages.export_sources()
+    }
+
     pub(crate) fn demand_symbol_ids(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

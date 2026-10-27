@@ -34,6 +34,9 @@ impl<'runtime> IndexAuthority<'runtime> {
             );
         }
 
+        if let Err(refusal) = self.demand_build_index_image(execution, &request) {
+            return refusal;
+        }
         let work_budget = lease.map(|_| crate::execution::RequestWorkBudget::new());
         let (definitions, checked_inputs, present_indexes, missing_indexes) =
             if let Some(lease) = lease {
@@ -74,7 +77,7 @@ impl<'runtime> IndexAuthority<'runtime> {
             choose_index_preparation_strategy(self.runtime, lease, present_indexes.len());
         record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
 
-        let selected_projection =
+        let mut selected_projection =
             match IndexBuildProjection::select(self.runtime, &source_branch_id, version_id) {
                 Ok(projection) => projection,
                 Err(denial) => {
@@ -87,6 +90,11 @@ impl<'runtime> IndexAuthority<'runtime> {
                     );
                 }
             };
+        if let Some(selected) = &mut selected_projection
+            && let Err(cause) = selected.demand(execution, self.runtime)
+        {
+            return super::build_residency::refused(&request, cause);
+        }
         let Some(projection) = selected_projection
             .as_ref()
             .and_then(IndexBuildProjection::source)
@@ -171,9 +179,9 @@ impl<'runtime> IndexAuthority<'runtime> {
         crate::history::data::BranchId,
     )> {
         self.runtime
-            .history
-            .recorded_commit_envelope(commit_id)
-            .map(|commit| (commit.commit.version_id, commit.branch_context.clone()))
+            .history()
+            .immutable_commit_receipt(commit_id)
+            .map(|commit| (commit.version_id, commit.branch_id))
     }
 
     pub(super) fn publish_build_diagnostic(

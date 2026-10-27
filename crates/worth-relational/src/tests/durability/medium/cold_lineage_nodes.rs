@@ -44,6 +44,8 @@ fn a_cold_lineage_point_read_loads_one_node_page_and_no_region_history() {
 
 #[derive(Clone, Copy, Debug)]
 pub(super) enum NodeDoor {
+    MemoryCheckpoint,
+    EmbeddedCheckpoint,
     Point,
     RecordHistory,
     AspectHistory,
@@ -54,7 +56,9 @@ pub(super) enum NodeDoor {
 }
 
 impl NodeDoor {
-    pub(super) const ALL: [Self; 7] = [
+    pub(super) const ALL: [Self; 9] = [
+        Self::MemoryCheckpoint,
+        Self::EmbeddedCheckpoint,
         Self::Point,
         Self::RecordHistory,
         Self::AspectHistory,
@@ -69,6 +73,10 @@ impl NodeDoor {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalExecutionDenialCause> {
         match self {
+            Self::MemoryCheckpoint | Self::EmbeddedCheckpoint => {
+                let door = if matches!(self, Self::MemoryCheckpoint) { super::cold_read_door::ReadDoor::MemoryCheckpoint } else { super::cold_read_door::ReadDoor::EmbeddedCheckpoint };
+                door.run(execution, &fixture.runtime, fixture.expected.entity_id())
+            },
             Self::Graph => fixture.runtime.lineage_access().graph(execution,
                 crate::lineage::data::LineageGraphRequest {
                     branch_id: BranchId("main".into()),
@@ -136,6 +144,12 @@ fn every_node_guard_preserves_a_sticky_typed_page_failure_without_publication() 
     let backing = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&backing);
     for door in NodeDoor::ALL {
+        if matches!(
+            door,
+            NodeDoor::MemoryCheckpoint | NodeDoor::EmbeddedCheckpoint
+        ) {
+            continue;
+        }
         let fixture = reopened(execution);
         fixture
             .runtime

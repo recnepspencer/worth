@@ -6,13 +6,6 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) fn checkpoint_derived_index_artifacts(
-    runtime: &RelationalRuntime,
-    retained: &crate::history::retention::RetainedIndexRoots,
-) -> Result<DerivedIndexCheckpointArtifacts, crate::durability::data::DurabilityError> {
-    DerivedIndexCheckpointArtifacts::capture(runtime.indexes.retained_generations(retained))
-}
-
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
     indexes: &mut crate::runtime::IndexingState,
     history: &crate::runtime::HistorySubsystem,

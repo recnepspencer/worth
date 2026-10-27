@@ -8,6 +8,10 @@ use crate::storage::data::{RelationalStorageSubject, RelationalStorageUnavailabl
 
 #[derive(Debug, Clone, Copy)]
 enum IndexDoor {
+    Build,
+    BasisBuild,
+    MemoryCheckpoint,
+    EmbeddedCheckpoint,
     SnapshotPin,
     ViewPin,
     FieldPreparation,
@@ -16,7 +20,11 @@ enum IndexDoor {
     Commit,
 }
 impl IndexDoor {
-    const ALL: [Self; 6] = [
+    const ALL: [Self; 10] = [
+        Self::Build,
+        Self::BasisBuild,
+        Self::MemoryCheckpoint,
+        Self::EmbeddedCheckpoint,
         Self::SnapshotPin,
         Self::ViewPin,
         Self::FieldPreparation,
@@ -29,6 +37,7 @@ impl IndexDoor {
         runtime: &crate::runtime::RelationalRuntime,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         index: DerivedIndexId,
+        expected_generation: &crate::indexes::data::DerivedIndexGeneration,
     ) -> Result<bool, Execution> {
         use crate::runtime::RelationalPinnedReadAdmissionDenial as Pin;
         let pin_denial = |denial| match denial {
@@ -41,6 +50,34 @@ impl IndexDoor {
             .observe_branch(&runtime.main_branch_identity())
             .unwrap();
         match self {
+            Self::MemoryCheckpoint | Self::EmbeddedCheckpoint => {
+                super::cold_index_checkpoint_door::read(
+                    execution,
+                    runtime,
+                    matches!(self, Self::EmbeddedCheckpoint),
+                    expected_generation,
+                )
+            }
+            Self::Build | Self::BasisBuild => {
+                let door = if matches!(self, Self::Build) {
+                    super::cold_index_build_door::IndexBuildDoor::Commit
+                } else {
+                    super::cold_index_build_door::IndexBuildDoor::Basis
+                };
+                door.read(runtime, execution, index).map(|_| {
+                    let successor = runtime
+                        .index_access()
+                        .latest_generation(index, &expected_generation.source_branch_id)
+                        .unwrap();
+                    assert!(successor.generation_id > expected_generation.generation_id);
+                    assert!(
+                        successor.generation_id.0 < expected_generation.generation_id.0 + 16,
+                        "successor generation growth has headroom"
+                    );
+                    assert_eq!(successor.entries, expected_generation.entries);
+                    true
+                })
+            }
             Self::SnapshotPin => {
                 let handle = runtime
                     .snapshots()
@@ -227,7 +264,7 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
                 cause,
             });
             assert_eq!(
-                door.read(&runtime, execution, index),
+                door.read(&runtime, execution, index, &generation),
                 Err(expected),
                 "{door:?} x {cause:?}: a cold index must not become absence"
             );
@@ -235,12 +272,32 @@ fn residency_failure_matrix_index_doors_preserve_every_failure_class() {
             assert_eq!(attached_test_medium(&runtime).offered().len(), offered);
             source.failures.lock().unwrap().clear();
             let reads = source.reads.load(Ordering::Relaxed);
+            let failed_reads = || {
+                source
+                    .member_reads
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .filter(|member| **member == manifest.derived_indexes)
+                    .count()
+            };
+            let failed_before = failed_reads();
             if sticky {
-                assert_eq!(door.read(&runtime, execution, index), Err(expected));
-                assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+                assert_eq!(
+                    door.read(&runtime, execution, index, &generation),
+                    Err(expected)
+                );
+                if matches!(
+                    door,
+                    IndexDoor::MemoryCheckpoint | IndexDoor::EmbeddedCheckpoint
+                ) {
+                    assert_eq!(failed_reads(), failed_before);
+                } else {
+                    assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+                }
             } else {
                 assert!(
-                    door.read(&runtime, execution, index).unwrap(),
+                    door.read(&runtime, execution, index, &generation).unwrap(),
                     "retry must retain a genuine generation"
                 );
                 assert!(source.reads.load(Ordering::Relaxed) > reads);

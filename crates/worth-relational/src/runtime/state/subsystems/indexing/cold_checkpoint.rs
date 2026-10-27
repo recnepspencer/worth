@@ -1,4 +1,5 @@
 //! A retained index image is admitted explicitly, before an operation uses it.
+mod member_export;
 use super::super::RuntimeOwnedState;
 use super::{IndexDefinitionReadBinding, IndexingState, IndexingSubsystem};
 use crate::durability::data::RelationalCheckpointDirectory;
@@ -149,4 +150,21 @@ fn demand(
         state.cold_checkpoint = None;
     }
     Ok(())
+}
+
+impl IndexingState {
+    pub(crate) fn demand_checkpoint_image(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), Failure> {
+        let Some(image) = self.cold_checkpoint.clone() else {
+            return Ok(());
+        };
+        let admitted = image.readmit(execution)?;
+        for generation in admitted.generations.all() {
+            self.restore_generation(generation.as_ref().clone());
+        }
+        self.cold_checkpoint = None;
+        Ok(())
+    }
 }

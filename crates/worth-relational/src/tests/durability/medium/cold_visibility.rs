@@ -23,6 +23,7 @@ fn cold_visibility_doors_preserve_storage_failure_and_never_advance_publication(
             .durability_recovery()
             .recover(execution, plan)
             .unwrap();
+        door.prepare(&runtime);
         let before = runtime.history().latest_patch_stream_position();
         let failure = door.run(execution, &runtime, entity).unwrap_err();
         assert!(

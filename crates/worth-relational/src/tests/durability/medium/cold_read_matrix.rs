@@ -144,6 +144,7 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
         for door in ReadDoor::ALL {
             for (cause, sticky) in FAILURES {
                 let fixture = MatrixFixture::new(subject, execution);
+                door.prepare(&fixture.runtime);
                 let frontier = fixture.runtime.history().latest_patch_stream_position();
                 let offered = attached_test_medium(&fixture.runtime).offered().len();
                 fixture.inject(cause);
@@ -155,13 +156,31 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                 fixture.assert_subject(failure);
                 fixture.source.failures.lock().unwrap().clear();
                 let reads = fixture.source.reads.load(Ordering::Relaxed);
+                let failed_reads = || {
+                    fixture
+                        .source
+                        .member_reads
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .filter(|member| fixture.targets.contains(member))
+                        .count()
+                };
+                let failed_before = failed_reads();
                 if sticky {
                     assert_eq!(
                         fixture.run(door, execution),
                         Err(denial),
                         "{subject:?}  x  {door:?}  x  {cause:?}"
                     );
-                    assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                    if matches!(
+                        door,
+                        ReadDoor::MemoryCheckpoint | ReadDoor::EmbeddedCheckpoint
+                    ) {
+                        assert_eq!(failed_reads(), failed_before);
+                    } else {
+                        assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                    }
                 } else {
                     fixture.run(door, execution).unwrap_or_else(|failure| {
                         panic!("retry {subject:?}  x  {door:?}  x  {cause:?}: {failure:?}")

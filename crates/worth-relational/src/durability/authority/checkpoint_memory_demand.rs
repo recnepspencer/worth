@@ -51,6 +51,12 @@ impl CapturedCheckpointBasis {
             })
             .collect();
         self.lineage_event_pages_resident = true;
+        self.index_state.demand_checkpoint_image(execution)?;
+        self.derived_index_checkpoint =
+            super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+                self.index_state
+                    .retained_generations(&self.retained_indexes),
+            )?;
         self.symbol_table = runtime.services.symbols.snapshot();
         self.lineage_nodes = runtime.lineage_access().resident_nodes_snapshot();
         Ok(self)

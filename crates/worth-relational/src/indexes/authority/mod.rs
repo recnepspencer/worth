@@ -1,4 +1,5 @@
 mod build_projection;
+mod build_residency;
 use build_projection::IndexBuildProjection;
 mod generation_publication;
 use generation_publication::{

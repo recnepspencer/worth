@@ -34,13 +34,15 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) lineage_events: Vec<crate::durability::data::RelationalCheckpointLineageEventRow>,
     pub(super) lineage_event_pages_resident: bool,
     pub(super) lineage_event_leases: Vec<crate::runtime::ResidentLineageEventPage>,
-    pub(super) lineage_event_sources: std::collections::BTreeMap<
+    pub(super) guarded_member_sources: std::collections::BTreeMap<
         crate::durability::medium::RelationalDurableMemberLocator,
         (
             crate::storage::data::RelationalStorageSubject,
             std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         ),
     >,
+    pub(super) index_state: crate::runtime::IndexingState,
+    pub(super) retained_indexes: crate::history::retention::RetainedIndexRoots,
     pub(super) index_definitions: Vec<crate::indexes::data::DerivedIndexDefinition>,
     pub(super) carried_index_image:
         Option<crate::durability::medium::RelationalDurableMemberLocator>,
@@ -192,6 +194,11 @@ impl CapturedCheckpointBasis {
                     .or_insert_with(|| row.clone());
             }
         }
+        let index_state = runtime.indexes.snapshot();
+        let derived_index_checkpoint =
+            super::super::derived_index_artifacts::DerivedIndexCheckpointArtifacts::capture(
+                index_state.retained_generations(&retained),
+            )?;
         let captured = Self {
             envelope_cells: artifacts
                 .iter()
@@ -234,14 +241,20 @@ impl CapturedCheckpointBasis {
             lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
             lineage_event_pages_resident,
             lineage_event_leases,
-            lineage_event_sources: runtime.lineage.event_member_sources(),
+            guarded_member_sources: runtime
+                .lineage
+                .event_member_sources()
+                .into_iter()
+                .chain(runtime.lineage.node_export_sources())
+                .chain(runtime.services.symbols.checkpoint_export_sources())
+                .chain(runtime.indexes.checkpoint_export_sources())
+                .collect(),
             lineage_events: lineage_events.into_values().collect(),
             index_definitions: runtime.index_access().definitions_snapshot(),
             carried_index_image: runtime.indexes.carried_checkpoint_image(),
-            derived_index_checkpoint:
-                super::super::derived_index_artifacts::checkpoint_derived_index_artifacts(
-                    runtime, &retained,
-                )?,
+            index_state,
+            retained_indexes: retained,
+            derived_index_checkpoint,
             symbol_table: runtime.services.symbols.snapshot(),
             symbol_identity_frontier: runtime
                 .services

@@ -83,6 +83,20 @@ impl LineageSubsystem {
             .map(|(member, subject)| (member, (subject, source.clone())))
             .collect()
     }
+    pub(crate) fn node_export_sources(
+        &self,
+    ) -> std::collections::BTreeMap<
+        crate::durability::medium::RelationalDurableMemberLocator,
+        (
+            crate::storage::data::RelationalStorageSubject,
+            Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+        ),
+    > {
+        let Some(pages) = self.node_residency.read().clone() else {
+            return Default::default();
+        };
+        pages.export_sources()
+    }
     pub(crate) fn has_paged_events(&self) -> bool {
         self.event_residency.read().is_some()
     }
