@@ -1,26 +1,8 @@
 //! Preclaim the native collector's clones and vector coexistence on its original ticket.
-use crate::execution::{denial::lease_denial, RelationalExecutionDenialCause as Cause};
-use worth_execution::{ExecutionResultMemory, LeaseDenial};
+use crate::execution::RelationalExecutionDenialCause as Cause;
+use worth_execution::ExecutionResultMemory;
 
-pub(crate) fn claim(memory: &mut ExecutionResultMemory<'_>, bytes: u64) -> Result<(), Cause> {
-    let total = memory
-        .bytes()
-        .checked_add(bytes)
-        .ok_or(Cause::ChargedBytesOverflow)?;
-    memory
-        .resize(total)
-        .map_err(|cause| lease_denial(LeaseDenial::MemoryExhausted(cause)))
-}
-
-pub(crate) fn release(memory: &mut ExecutionResultMemory<'_>, bytes: u64) -> Result<(), Cause> {
-    let total = memory
-        .bytes()
-        .checked_sub(bytes)
-        .ok_or(Cause::ChargedBytesOverflow)?;
-    memory
-        .resize(total)
-        .map_err(|cause| lease_denial(LeaseDenial::MemoryExhausted(cause)))
-}
+pub(crate) use crate::execution::result_memory::{claim, release};
 
 pub(crate) fn vector_bytes<T>(capacity: usize) -> Result<u64, Cause> {
     u64::try_from(capacity)

@@ -1,5 +1,7 @@
 pub(crate) mod denial;
 mod denial_cause;
+pub(crate) mod request_stage;
+pub(crate) mod result_memory;
 pub(crate) use denial::{allocation_commit_error, kernel_failure};
 mod ordered_scan;
 pub use denial_cause::RelationalExecutionDenialCause;

@@ -7,6 +7,12 @@ use super::edition_copy_lane::{PartitionCopyTally, PartitionEditionCopyLane};
 use super::partition_edition::{PartitionEdition, PartitionMap};
 use crate::runtime::state::subsystems::RuntimeInstrumentation;
 
+pub(crate) enum TryPartitionMutationDenied<E> {
+    Observed,
+    SizeOverflow,
+    Admission(E),
+}
+
 /// Exclusive authority to install the next edition of the record substrate.
 ///
 /// The guard deliberately exposes no `DerefMut`. Every mutable entry point can
@@ -73,6 +79,38 @@ impl<'subsystem> PartitionEditionWriter<'subsystem> {
         }
         map.get_mut(&partition_id)
             .map(|partition| own_partition(copies, partition))
+    }
+
+    /// Borrow an unobserved spine and admit a necessary shallow partition owner
+    /// before detaching it. The caller separately admits its selected value paths.
+    pub(crate) fn try_partition_mut<E>(
+        &mut self,
+        partition_id: PartitionId,
+        prepare: &mut impl FnMut(u64, u64) -> Result<(), E>,
+    ) -> Result<Option<&mut PartitionState>, TryPartitionMutationDenied<E>> {
+        let Self {
+            edition, copies, ..
+        } = self;
+        let map = edition
+            .unobserved_map_mut()
+            .ok_or(TryPartitionMutationDenied::Observed)?;
+        // The standard map exposes no search height. Its entry count bounds
+        // comparisons without depending on private B-tree node geometry. This
+        // conservative admission belongs only to explicit global maintenance.
+        prepare(map.len() as u64, 0).map_err(TryPartitionMutationDenied::Admission)?;
+        let Some(partition) = map.get_mut(&partition_id) else {
+            return Ok(None);
+        };
+        if Arc::get_mut(partition).is_none() {
+            let bytes = std::alloc::Layout::new::<[usize; 2]>()
+                .extend(std::alloc::Layout::new::<PartitionState>())
+                .map_err(|_| TryPartitionMutationDenied::SizeOverflow)?
+                .0
+                .pad_to_align()
+                .size() as u64;
+            prepare(1, bytes).map_err(TryPartitionMutationDenied::Admission)?;
+        }
+        Ok(Some(own_partition(copies, partition)))
     }
 
     /// Exclusive access to every partition, copying each one that an observer

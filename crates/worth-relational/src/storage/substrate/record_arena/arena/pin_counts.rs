@@ -8,6 +8,21 @@ pub(crate) struct RecordPinCounts {
 }
 
 impl RecordPinCounts {
+    pub(super) fn lookup_work_bound(&self) -> u64 {
+        self.values.navigation_work_bound() as u64
+    }
+    pub(super) fn reset_work_bound(&self) -> Option<u64> {
+        // Presence guard, selected removal, successor path and AVL rotations.
+        (self.values.navigation_work_bound() as u64).checked_mul(8)
+    }
+    pub(super) fn reset_allocation_bound(&self, index: usize) -> Option<u64> {
+        if !self.values.contains_key(&index) {
+            return Some(0);
+        }
+        // Deletion can detach its search path and the successor's path. Each
+        // path admits the same ancestor/rotation coexistence as adoption.
+        self.values.adoption_allocation_bound()?.checked_mul(2)
+    }
     pub(super) fn new() -> Self {
         Self {
             len: 0,

@@ -231,12 +231,13 @@ pub mod runtime {
         RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
         RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
         RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
-        RelationalRuntime, RelationalRuntimeConfig, RelationalRuntimeForkDenial,
+        RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
+        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
         RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
-        RelationalSnapshotPositionAdmissionStop, ReplaySchemaVersion, RuntimeComplexityCounters,
-        SimulationAccess, SimulationAuthority, SnapshotGuard, SnapshotPositionDenial,
-        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
-        VisibilityRetentionAuthority,
+        RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
+        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
+        VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

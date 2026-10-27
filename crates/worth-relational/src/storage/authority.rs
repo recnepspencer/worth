@@ -1,6 +1,8 @@
 mod pinning;
 mod publication;
 mod retention;
+mod retention_step;
+pub use retention_step::RelationalRetentionPassStop;
 
 pub(crate) use publication::RelationalPublishedPartitionDelta;
 

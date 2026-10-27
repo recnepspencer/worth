@@ -345,3 +345,5 @@ mod closed_delivery_contract;
 mod collection_contract;
 
 mod logical_member_contract;
+
+mod storage_retention_contract;

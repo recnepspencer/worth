@@ -35,6 +35,9 @@ impl<S, Set, M> WorthQueryInvariantGraphComponent<S, Set, M> {
             _allocation: allocation,
         }
     }
+    /// Members in the retained Native cohort's canonical member-key order.
+    /// The first member is the anchor of that retained cohort; display labels
+    /// do not define this ordering.
     pub fn members(&self) -> &[WorthQueryInvariantGraphMember<S, M>] {
         &self.members
     }

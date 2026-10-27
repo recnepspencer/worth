@@ -5,34 +5,7 @@ use crate::tests::support::*;
 
 #[test]
 fn entity_slot_reuse_increments_generation() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::AiWorkflow);
-    let create_outcome = create_entity_outcome(execution, &runtime, "first");
-    let entity_a = changed_entities(&create_outcome)[0];
-    assert!(runtime
-        .visibility_authority()
-        .release_snapshot(&create_outcome.snapshot)
-        .is_ok());
-    let delete_outcome = delete_entity(execution, &runtime, entity_a);
-    assert!(runtime
-        .visibility_authority()
-        .release_snapshot(&delete_outcome.snapshot)
-        .is_ok());
-    let retention = runtime.retention().run_pass();
-    let entity_b = create_entity(execution, &runtime, "second");
-
-    assert!(retention.entity_reclaimed <= 1);
-    assert_eq!(
-        runtime
-            .storage_access()
-            .storage_stats()
-            .reusable_entity_slots,
-        0
-    );
-    assert_eq!(entity_a.local_slot, entity_b.local_slot);
-    assert!(entity_b.generation.0 > entity_a.generation.0);
+    request_owned::entity_slot_reuse_increments_generation();
 }
 
 #[test]
@@ -148,7 +121,7 @@ fn historical_reads_preserve_generation_and_aspects_after_slot_reuse() {
         .visibility_authority()
         .release_snapshot(&deleted.snapshot)
         .is_ok());
-    let _ = runtime.retention().run_pass();
+    runtime.retention().try_run_pass(execution).unwrap();
     let replacement = create_entity(execution, &runtime, "after");
 
     let historical = runtime
@@ -384,3 +357,5 @@ fn external_basis_retention_keeps_observed_truth_until_independent_release() {
 }
 
 mod read_record_metadata;
+
+mod request_owned;

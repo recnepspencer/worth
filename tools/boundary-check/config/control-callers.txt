@@ -574,3 +574,6 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 # 9.18: exact family/locality courts observe native owner work and selected roots.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/correction.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/oracle/collection/lifecycle/locality.rs
+
+# Native inherited-accounting refusal leaves exactly the SDK-owned outer frame.
+crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs
