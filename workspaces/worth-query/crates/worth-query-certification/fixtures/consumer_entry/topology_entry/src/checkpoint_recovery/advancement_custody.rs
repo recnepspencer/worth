@@ -348,7 +348,7 @@ fn serial_and_one_worker_native_commit_have_equal_work_and_span() {
             other => panic!("unknown declared posture {other}"),
         };
         let report = mutation_commit_report(placement);
-        println!("NATIVE_COMMIT_REPORT:{report:?}");
+        println!("\nNATIVE_COMMIT_REPORT:{report:?}");
         return;
     }
     assert_eq!(

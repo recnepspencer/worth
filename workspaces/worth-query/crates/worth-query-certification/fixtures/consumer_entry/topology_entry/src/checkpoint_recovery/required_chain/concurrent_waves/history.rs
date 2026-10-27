@@ -338,7 +338,7 @@ fn a_real_diamond_agrees_across_widths_and_failure_phases() {
             );
         }
         // Captured subprocess protocol, not a recorded expected value.
-        println!("WORTH_WAVE_OBSERVATION:{observed:?}");
+        println!("\nWORTH_WAVE_OBSERVATION:{observed:?}");
         return;
     }
     for failure in [
