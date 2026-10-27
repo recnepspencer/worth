@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 pub(crate) struct RelationalBranchHeadRetentionCell {
     obligation: Mutex<Option<Arc<Mutex<RelationalHeadRetentionObligation>>>>,
 }
-/// Pinned native obligation; only `reserve` can check and construct it.
+/// Pinned owner/identity custody; root binding is checked at coordinated cutover.
 #[derive(Debug)]
 pub(super) struct CheckedHeadObligation {
     obligation: Arc<Mutex<RelationalHeadRetentionObligation>>,
@@ -63,7 +63,6 @@ impl RelationalBranchHeadRetentionCell {
         &self,
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
         identity: &RelationalBranchIdentity,
-        root: &Arc<RelationalBranchRoot>,
     ) -> Result<CheckedHeadObligation, RelationalRetentionAcquisitionDenial> {
         let obligation = self
             .obligation
@@ -75,7 +74,7 @@ impl RelationalBranchHeadRetentionCell {
         obligation
             .lock()
             .unwrap_or_else(|error| error.into_inner())
-            .validate_binding(owner, identity, root)?;
+            .validate_binding(owner, identity)?;
         Ok(CheckedHeadObligation {
             obligation,
             owner: owner.clone(),
@@ -83,6 +82,15 @@ impl RelationalBranchHeadRetentionCell {
     }
 }
 impl CheckedHeadObligation {
+    pub(super) fn validate_root(
+        &self,
+        root: &Arc<RelationalBranchRoot>,
+    ) -> Result<(), RelationalRetentionAcquisitionDenial> {
+        self.obligation
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .validate_root(root)
+    }
     pub(super) fn transfer(self, next_root: &Arc<RelationalBranchRoot>) {
         self.obligation
             .lock()

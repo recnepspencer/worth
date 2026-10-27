@@ -97,6 +97,19 @@ impl PreparedBranchPublicationPreflight {
             ));
         }
 
+        // Capacity was reserved before head comparison so stale attempts still
+        // release their exact preflight reservation. Only this coordinated,
+        // unchanged head can turn capacity into a transfer witness.
+        let head_retirement = match self.head_retirement.bind_current_head() {
+            Ok(reservation) => reservation,
+            Err(denial) => {
+                return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
+                    RelationalPublicationFailureKind::RetentionOwner,
+                    format!("selected head retention binding refused before movement: {denial:?}"),
+                ))
+            }
+        };
+
         if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding)
             && let Err(stop) = effect.matches(binding)
         {
@@ -133,7 +146,6 @@ impl PreparedBranchPublicationPreflight {
             .canonical_envelope()
             .map(|envelope| envelope.commit.version_id);
 
-        let head_retirement = self.head_retirement;
         let next_root = &self.movement.root;
         let reservation_pause = &self.control;
         let medium = self.medium.clone();

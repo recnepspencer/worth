@@ -42,13 +42,20 @@ impl RelationalHeadRetentionObligation {
         &self,
         owner: &Arc<RelationalBranchRetentionOwnerInner>,
         identity: &RelationalBranchIdentity,
-        root: &Arc<RelationalBranchRoot>,
     ) -> Result<(), super::RelationalRetentionAcquisitionDenial> {
         if self.terminal
             || self.owner_identity != Arc::as_ptr(owner) as usize
             || &self.identity != identity
-            || !Arc::ptr_eq(&self.root, root)
         {
+            return Err(super::RelationalRetentionAcquisitionDenial::BindingMismatch);
+        }
+        Ok(())
+    }
+    pub(super) fn validate_root(
+        &self,
+        root: &Arc<RelationalBranchRoot>,
+    ) -> Result<(), super::RelationalRetentionAcquisitionDenial> {
+        if self.terminal || !Arc::ptr_eq(&self.root, root) {
             return Err(super::RelationalRetentionAcquisitionDenial::BindingMismatch);
         }
         Ok(())

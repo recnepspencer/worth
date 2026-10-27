@@ -188,7 +188,7 @@ impl PreparedCanonicalBranchMovement {
                 ));
             }
         };
-        let head_retirement = match retention_binding.reserve_head_retirement(
+        let head_retirement = match retention_binding.reserve_head_retirement_capacity(
             movement.next_cell.identity(),
             &expected_root,
             publication_cell.head_retention(),

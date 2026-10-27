@@ -24,6 +24,25 @@ pub(crate) struct RelationalHeadRetirementReservation {
     terminal: bool,
 }
 
+/// Capacity can be reserved before the current head is compared. It grants no transfer.
+#[derive(Debug)]
+pub(crate) struct RelationalHeadRetirementCapacity {
+    reservation: RelationalHeadRetirementReservation,
+}
+impl RelationalHeadRetirementCapacity {
+    /// Call under branch coordination, after comparing the selected head.
+    pub(crate) fn bind_current_head(
+        self,
+    ) -> Result<RelationalHeadRetirementReservation, RelationalRetentionAcquisitionDenial> {
+        self.reservation
+            .head
+            .as_ref()
+            .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?
+            .validate_root(&self.reservation.previous_root)?;
+        Ok(self.reservation)
+    }
+}
+
 impl RelationalBranchRetentionBinding {
     pub(crate) fn reserve_head_retirement(
         &self,
@@ -31,11 +50,21 @@ impl RelationalBranchRetentionBinding {
         root: &Arc<RelationalBranchRoot>,
         head_retention: &Arc<RelationalBranchHeadRetentionCell>,
     ) -> Result<RelationalHeadRetirementReservation, RelationalRetentionAcquisitionDenial> {
+        self.reserve_head_retirement_capacity(identity, root, head_retention)?
+            .bind_current_head()
+    }
+
+    pub(crate) fn reserve_head_retirement_capacity(
+        &self,
+        identity: &RelationalBranchIdentity,
+        root: &Arc<RelationalBranchRoot>,
+        head_retention: &Arc<RelationalBranchHeadRetentionCell>,
+    ) -> Result<RelationalHeadRetirementCapacity, RelationalRetentionAcquisitionDenial> {
         let owner = self
             .owner
             .upgrade()
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
-        let head = head_retention.reserve(&owner, identity, root)?;
+        let head = head_retention.reserve(&owner, identity)?;
         let branch_binding = head_retention.binding()?;
         let root_key = Arc::as_ptr(root) as usize;
         let generation = match owner.retired_roots.entry(root_key) {
@@ -72,14 +101,16 @@ impl RelationalBranchRetentionBinding {
                 generation
             }
         };
-        Ok(RelationalHeadRetirementReservation {
-            owner,
-            retention_binding: self.clone(),
-            head: Some(head),
-            previous_root: Arc::clone(root),
-            root_key,
-            generation,
-            terminal: false,
+        Ok(RelationalHeadRetirementCapacity {
+            reservation: RelationalHeadRetirementReservation {
+                owner,
+                retention_binding: self.clone(),
+                head: Some(head),
+                previous_root: Arc::clone(root),
+                root_key,
+                generation,
+                terminal: false,
+            },
         })
     }
 }
@@ -109,11 +140,11 @@ impl RelationalHeadRetirementReservation {
         mut self,
         next_root: &Arc<RelationalBranchRoot>,
     ) -> TransferredHeadRetirement {
-        self.head.take().expect(/* Proof: reserve_head_retirement constructs Some(CheckedHeadObligation); this non-Clone reservation is consumed by transfer_head or retire_head, so no earlier take can occur. */ "reserved head custody is consumed once").transfer(next_root);
+        self.head.take().expect(/* Proof: reserve_head_retirement_capacity installs Some(CheckedHeadObligation), and bind_current_head moves that non-Clone reservation without taking it. Only consuming transfer_head or retire_head takes the obligation. */ "reserved head custody is consumed once").transfer(next_root);
         TransferredHeadRetirement { retirement: self }
     }
     pub(crate) fn retire_head(mut self) -> u64 {
-        self.head.take().expect(/* Proof: reserve_head_retirement constructs Some(CheckedHeadObligation); this non-Clone reservation is consumed by transfer_head or retire_head, so no earlier take can occur. */ "reserved head custody is consumed once").consume();
+        self.head.take().expect(/* Proof: reserve_head_retirement_capacity installs Some(CheckedHeadObligation), and bind_current_head moves that non-Clone reservation without taking it. Only consuming transfer_head or retire_head takes the obligation. */ "reserved head custody is consumed once").consume();
         let root_id = self.previous_root.id();
         self.retire();
         root_id
