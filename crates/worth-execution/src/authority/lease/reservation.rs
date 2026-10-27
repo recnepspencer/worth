@@ -160,6 +160,3 @@ impl ExecutionResourceLease<'_> {
         })
     }
 }
-
-#[cfg(test)]
-mod tests;

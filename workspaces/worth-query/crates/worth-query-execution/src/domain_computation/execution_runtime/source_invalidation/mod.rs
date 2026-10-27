@@ -48,9 +48,3 @@ impl WorthQueryInvalidationResources {
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     }
 }
-
-impl Default for WorthQueryInvalidationResources {
-    fn default() -> Self {
-        Self::new()
-    }
-}

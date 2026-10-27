@@ -261,10 +261,6 @@ fn structural_identity_recovery_preserves_current_evidence_and_queries() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = durable_runtime_with_test_schema();
-    let family = runtime
-        .services
-        .symbols
-        .with_write(|symbols| symbols.intern("inspection.structural.family"));
     let left = create_entity(execution, &runtime, "left");
     let right = create_entity(execution, &runtime, "right");
     // Recovery requires a real retained meaning, not a fabricated numeric symbol.

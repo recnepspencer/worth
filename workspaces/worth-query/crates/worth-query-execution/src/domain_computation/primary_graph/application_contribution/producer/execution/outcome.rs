@@ -274,7 +274,6 @@ fn refused_preflight(
         | Stop::WorkCounterOverflow => Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded),
         Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCounterOverflow { .. }
         | Stop::RetainedCompanionCapacityExhausted { .. } => {
             Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
         }

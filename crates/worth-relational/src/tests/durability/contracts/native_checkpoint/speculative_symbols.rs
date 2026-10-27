@@ -4,7 +4,7 @@ use super::*;
 fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore() {
     let request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&request);
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity_outcome(execution, &runtime, "published-before-abandonment");
     let capture = || {
         runtime
@@ -20,11 +20,8 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
             worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    candidate
-        .merged_plan(
-            &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+    let candidate = runtime
+        .prepare_branch_transaction(execution, candidate)
         .unwrap();
     // Preparation retains the key in candidate custody until durable publication.
     assert!(!runtime
@@ -54,12 +51,23 @@ fn unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_
 
     let committed = create_entity_outcome(execution, &runtime, "published-after-abandonment");
     let published = capture();
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let restored = recovered
         .durability_recovery()
         .restore_native_checkpoint(execution, &published)
         .unwrap();
     assert_eq!(restored.latest_commit, Some(committed.commit.clone()));
+    recovered
+        .services
+        .symbols
+        .demand_text(execution, "published-after-abandonment")
+        .unwrap();
+    recovered
+        .services
+        .symbols
+        .demand_text(execution, "unpublished-client-key")
+        .unwrap();
     assert!(recovered
         .services
         .symbols
