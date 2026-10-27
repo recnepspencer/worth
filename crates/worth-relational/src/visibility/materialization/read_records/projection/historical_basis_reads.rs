@@ -99,6 +99,7 @@ impl<'view> HistoricalProjectionReader<'view> {
     ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_entity_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_entity_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
@@ -178,6 +179,7 @@ impl<'view> HistoricalProjectionReader<'view> {
     ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
         self.collect_relation_records(Some(kind), charge, memory)
     }
+    #[cfg(test)]
     pub(super) fn all_relation_records(
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,

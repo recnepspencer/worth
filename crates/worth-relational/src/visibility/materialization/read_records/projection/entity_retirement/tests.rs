@@ -60,7 +60,8 @@ fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projectio
         .is_none());
     assert!(runtime
         .read_truth()
-        .project_historical_version(deleted.version_id)
+        .try_project_historical_version(deleted.version_id)
+        .unwrap()
         .read_entity_retirement(execution, entity)
         .unwrap()
         .is_none());

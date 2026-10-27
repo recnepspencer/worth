@@ -179,17 +179,6 @@ impl<'runtime> HistoryAccess<'runtime> {
         envelopes.into_values().collect()
     }
 
-    pub(crate) fn positioned_commits_snapshot(
-        &self,
-    ) -> Vec<crate::history::data::PositionedCanonicalCommit> {
-        self.runtime
-            .history
-            .positioned_canonical_commits_snapshot()
-            .into_iter()
-            .map(|commit| commit.as_ref().clone())
-            .collect()
-    }
-
     pub(crate) fn branch_cells_snapshot(
         &self,
     ) -> Vec<crate::branch::RelationalBranchCellCheckpoint> {

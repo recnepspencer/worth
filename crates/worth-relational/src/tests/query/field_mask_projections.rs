@@ -131,7 +131,8 @@ fn entity_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .entities::<SummaryTitleFieldProjection>(execution)
         .expect("read request remains live");
 
@@ -158,7 +159,8 @@ fn whole_aspect_projection_still_reads_full_struct_aspect() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .entities::<SummaryWholeAspectProjection>(execution)
         .expect("read request remains live");
 
@@ -177,7 +179,8 @@ fn scalar_aspect_rejects_field_mask_projection_at_use_boundary() {
 
     let _ = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .entities::<NameFieldMaskProjection>(execution)
         .expect("read request remains live");
 }
@@ -202,7 +205,8 @@ fn relation_field_mask_projection_reads_only_declared_struct_field() {
 
     let projected = runtime
         .read_truth()
-        .project_historical_version(runtime.current_version_id())
+        .try_project_historical_version(runtime.current_version_id())
+        .unwrap()
         .relations::<RelationSummaryTitleFieldProjection>(execution)
         .expect("read request remains live");
 

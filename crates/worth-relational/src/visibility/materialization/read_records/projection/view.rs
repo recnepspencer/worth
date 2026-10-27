@@ -156,14 +156,6 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         }))
     }
 
-    pub(crate) fn project_historical_version(
-        &self,
-        version_id: VersionId,
-    ) -> VisibilityProjectionView {
-        self.try_project_historical_version(version_id)
-            .expect("internal historical projection requires retained MVCC coverage")
-    }
-
     /// Projects the exact state at `version_id` on the branch that committed
     /// it, so a fork's commit is read from the fork's own root.
     pub fn try_project_historical_version(

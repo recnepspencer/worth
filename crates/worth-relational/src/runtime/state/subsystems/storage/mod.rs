@@ -19,7 +19,9 @@ use crate::runtime::state::subsystems::{
     RuntimeInstrumentation, RuntimeOwnedState, RuntimeSubsystem,
 };
 use crate::storage::overlay::PartitionState;
-use crate::storage::residency::{Full, RelationalRegionRetention, RelationalResidencyLease};
+use crate::storage::residency::RelationalRegionRetention;
+#[cfg(test)]
+use crate::storage::residency::{Full, RelationalResidencyLease};
 
 /// The runtime's record substrate, owned behind its own lock.
 ///
@@ -83,6 +85,7 @@ impl StorageSubsystem {
         self.partitions.read().edition.partition_ids()
     }
 
+    #[cfg(test)]
     pub(crate) fn partition(
         &self,
         partition_id: PartitionId,

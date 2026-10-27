@@ -114,7 +114,8 @@ fn retained_scale_fixture(
             .version_id;
         current = runtime
             .read_truth()
-            .project_historical_version(version)
+            .try_project_historical_version(version)
+            .unwrap()
             .all_authoritative_entity_records(execution)
             .expect("read request remains live")
             .into_iter()

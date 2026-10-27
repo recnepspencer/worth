@@ -259,7 +259,8 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
     );
     let main_view = runtime
         .read_truth()
-        .project_historical_version(main_commit.version_id)
+        .try_project_historical_version(main_commit.version_id)
+        .unwrap()
         .all_authoritative_relation_records(execution)
         .expect("read request remains live");
     let feature_commit = runtime
@@ -269,7 +270,8 @@ fn chip_profile_branch_local_topology_pressure_preserves_relation_history_isolat
         .clone();
     let feature_view = runtime
         .read_truth()
-        .project_historical_version(feature_commit.version_id)
+        .try_project_historical_version(feature_commit.version_id)
+        .unwrap()
         .all_authoritative_relation_records(execution)
         .expect("read request remains live");
     let feature_artifact = runtime

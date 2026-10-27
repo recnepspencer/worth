@@ -87,7 +87,6 @@ impl<'a> MutationWorkspace<'a> {
             .expect("authoritative record creation requires allocation authority");
         f(MutationContext {
             state: self.state,
-            symbols: self.symbols.interner(),
             schema: self.schema,
             record_allocations,
         })

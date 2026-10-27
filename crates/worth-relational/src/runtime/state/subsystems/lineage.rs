@@ -160,6 +160,7 @@ impl LineageSubsystem {
         self.state.write().record_node(node);
     }
 
+    #[cfg(test)]
     pub(crate) fn node(&self, lineage_id: LineageId) -> Option<LineageNode> {
         self.state.read().nodes.get(&lineage_id).cloned()
     }

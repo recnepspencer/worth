@@ -51,6 +51,7 @@ impl VisibilityPinAuthority<'_> {
     }
 
     /// Resident-only admission refuses cold pinning without performing I/O.
+    #[cfg(test)]
     pub(crate) fn resident_replay_pins(
         &self,
         state: SnapshotState,

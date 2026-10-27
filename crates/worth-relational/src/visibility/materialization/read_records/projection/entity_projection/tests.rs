@@ -127,10 +127,12 @@ fn projection_preserves_identity_kind_and_lifecycle_across_exact_and_historical_
         .unwrap();
     let historical_before = runtime
         .read_truth()
-        .project_historical_version(created.version_id);
+        .try_project_historical_version(created.version_id)
+        .unwrap();
     let historical_after = runtime
         .read_truth()
-        .project_historical_version(deleted.version_id);
+        .try_project_historical_version(deleted.version_id)
+        .unwrap();
     for (before, after) in [(before, after), (historical_before, historical_after)] {
         assert_projection_lifecycle(execution, &before, &after, entity);
     }
