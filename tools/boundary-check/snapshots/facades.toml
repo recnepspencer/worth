@@ -666,6 +666,7 @@ exports = [
     "WorthQueryApplicationStaleAttempt",
     "WorthQueryApplicationTypedOutputCorrespondence",
     "WorthQueryApplicationUncommitted",
+    "WorthQueryApplicationUnobservedWrite",
     "WorthQueryApplicationUnresolvedCommitEvidence",
     "WorthQueryApprovedElevation",
     "WorthQueryAuthenticatedInboundOccurrence",

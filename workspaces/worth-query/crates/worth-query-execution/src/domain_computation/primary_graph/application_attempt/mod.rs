@@ -110,7 +110,10 @@ pub(in crate::domain_computation::primary_graph) use compare_and_commit::{
     WorthQueryProgramActivationUnresolved,
 };
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
-pub use denial::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+pub use denial::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationUnobservedWrite,
+};
 pub(in crate::domain_computation::primary_graph) use effect_program::{
     OutputRoleUse, WorthQueryAdmittedApplicationEmissionBatch,
     WorthQueryApplicationCreationPartition, WorthQueryApplicationEmission,

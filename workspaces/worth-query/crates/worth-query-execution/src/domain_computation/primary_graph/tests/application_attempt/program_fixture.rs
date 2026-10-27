@@ -185,7 +185,7 @@ pub(super) fn admitted_mutation_free_program(
     effects.finish().unwrap()
 }
 
-pub(super) fn admitted_program(
+pub(in crate::domain_computation::primary_graph) fn admitted_program(
     phase_custody: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     world: &World,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, u64>,

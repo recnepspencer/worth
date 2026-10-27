@@ -11,7 +11,8 @@ pub(super) fn application_commit_cause(
         | Kind::ExecutionIdentitiesNotCanonical { .. } => {
             WorthQueryConditionalExecutionCause::ApplicationCommitDenied(kind)
         }
-        Kind::ProviderRejected
+        Kind::UnobservedWrite
+        | Kind::ProviderRejected
         | Kind::CustomInvariantDenied
         | Kind::WorkflowSettlementDenied { .. }
         | Kind::ProductBasisStale

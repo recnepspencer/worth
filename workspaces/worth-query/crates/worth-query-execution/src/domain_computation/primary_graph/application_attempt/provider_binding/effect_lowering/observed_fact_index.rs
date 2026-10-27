@@ -75,7 +75,9 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
                 | WorthQueryApplicationObservedFact::AbsentField { kind, .. }
                 | WorthQueryApplicationObservedFact::OptionalAspectAbsent { kind, .. },
             ) => Ok(*kind),
-            _ => Err(progression_denial()),
+            _ => Err(WorthQueryApplicationAttemptDenial::unobserved_field_write(
+                entity_id, locator,
+            )),
         }
     }
 
@@ -94,7 +96,9 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
                 WorthQueryApplicationObservedFact::Field { .. }
                 | WorthQueryApplicationObservedFact::AbsentField { .. },
             ) => Ok(false),
-            _ => Err(progression_denial()),
+            _ => Err(WorthQueryApplicationAttemptDenial::unobserved_field_write(
+                entity, locator,
+            )),
         }
     }
 
@@ -138,7 +142,9 @@ impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
                     .expect("indexed observed fact")
                     .locator_identity()
             })
-            .ok_or_else(progression_denial)
+            .ok_or_else(|| {
+                WorthQueryApplicationAttemptDenial::unobserved_field_write(entity_id, locator)
+            })
     }
 
     pub(super) fn entity_identity(
@@ -205,7 +211,17 @@ mod tests {
             .effect_routes(&body)
             .unwrap()
             .matches_body(&unrelated));
-        let (_, routes) = content.effect_routes(&body).unwrap().into_parts();
+        let completed = content.effect_routes(&body).unwrap();
+        assert_eq!(completed.observes_field(&unrelated, entity, &locator), None);
+        assert_eq!(
+            completed.observes_field(&body, entity, &locator),
+            Some(true)
+        );
+        assert_eq!(
+            completed.observes_field(&body, EntityId::new(PartitionId::new(1), 7, 2), &locator),
+            Some(false)
+        );
+        let (_, routes) = completed.into_parts();
         assert_eq!(routes.field(entity, &locator), Some(0));
         let index = ObservedFactIndex::completed(&body, routes);
         assert_eq!(index.field_kind(entity, &locator).unwrap(), KindId(7));

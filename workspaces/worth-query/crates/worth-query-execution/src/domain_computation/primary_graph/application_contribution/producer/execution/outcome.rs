@@ -213,6 +213,13 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 .execution_denial_cause()
                 .map(|cause| (commit_denial.stage(), cause));
             let failure = match kind {
+                Kind::UnobservedWrite => match commit_denial.unobserved_write() {
+                    Some(cause) => denial(
+                        WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
+                        identity.to_owned(),
+                    ),
+                    None => failed(identity, commit_denial),
+                },
                 Kind::ProductBasisStale => denial(
                     WorthQueryOutputDemandDenialKind::PublicationStale,
                     identity.to_owned(),
