@@ -907,10 +907,18 @@ Signal completion admission, queue and timeout-cleanup owners retain their actua
 originating service/source binding. Public report DTOs remain diagnostic
 projections and cannot construct admission or lend authority across runtimes.
 Managed declarations refuse legacy admission, retry and revalidation entrances
-before effects. Atomic managed replacement remains required: the native cell must
-validate the old attempt and drained queue, admit its replacement and bind the new
-queue in one lock scope. The legacy unmanaged post-admission error handoff can
-lose successor custody and is not certified by this prerequisite; its migration,
+before effects. Managed retry and revalidation retain one native custodian. One
+cell lock validates the exact prior occurrence, installed definition and drained
+queue, performs the native transition, and binds only a genuinely new occurrence.
+Coalescing preserves the winner's queue and original business-source claim while
+the custodian moves to the current service origin. Retry schedules retain their
+issuer; foreign schedules cannot advance another runtime's clock. Actual partial
+clock progress and acquired or retired wakes remain in a bounded cleanup handoff,
+which blocks overlapping progression and cannot clear a successor's pending retry.
+Timeout admission precedes fallible wake retirement, so cleanup cannot discard a
+timeout transition. Bridge installs the matching port and invalidates its stale
+receipt before fallible descriptive assembly. The legacy unmanaged post-admission
+error handoff can lose successor custody and is not certified by this prerequisite; its migration,
 the real application control handoff, provider verification and fresh authorization
 and disclosure remain required before this phase can close.
 

@@ -9,8 +9,8 @@ pub use close::{
     RuntimeWorldCloseDenial, RuntimeWorldCloseReport, RuntimeWorldRetainedRecordReport,
 };
 pub use owner::{
-    RuntimeWorldOwnedAsyncRequestAdmissionDenial, RuntimeWorldOwnedAsyncRevalidationDenial,
-    RuntimeWorldOwnerRoot,
+    RuntimeWorldOwnedAsyncManagedRevalidationDenial, RuntimeWorldOwnedAsyncRequestAdmissionDenial,
+    RuntimeWorldOwnedAsyncRevalidationDenial, RuntimeWorldOwnerRoot,
 };
 pub use owner_inputs::RuntimeWorldOwnerInputs;
 #[allow(unused_imports)]

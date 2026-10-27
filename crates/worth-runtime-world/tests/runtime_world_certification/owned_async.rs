@@ -1,3 +1,12 @@
+#[path = "owned_async/native_service.rs"]
+mod native_service;
+
+#[path = "owned_async/managed_replacement.rs"]
+mod managed_replacement;
+
+#[path = "owned_async/native_replacement.rs"]
+mod native_replacement;
+
 #[path = "owned_async/fixture.rs"]
 mod fixture;
 

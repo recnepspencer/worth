@@ -86,7 +86,8 @@ pub(crate) use operation_scope::{
 };
 pub use owned_async::{
     SignalOwnedAsyncCompletionAdmission, SignalOwnedAsyncCompletionCommit,
-    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedQueueBinding,
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,
+    SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncManagedReport,
     SignalOwnedAsyncQueueDenial, SignalOwnedAsyncRequestAdmission, SignalOwnedAsyncRetryAdmission,
     SignalOwnedAsyncRetrySchedule, SignalOwnedAsyncRevalidationAdmission,
     SignalOwnedAsyncSourceBinding, SignalOwnedAsyncTimeoutAdmission,
@@ -99,4 +100,9 @@ pub(in crate::branch::owner_services) use temporal::SignalConditionalTemporalReg
 pub use temporal::{
     SignalConditionalTemporalPartition, SignalConditionalTemporalPartitionDenial,
     SignalConditionalTemporalPromotion, SignalConditionalTemporalPromotionView,
+};
+
+pub(crate) use owned_async::{
+    SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
+    SignalOwnedAsyncManagedWakeCleanup,
 };

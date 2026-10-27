@@ -99,7 +99,8 @@ pub use managed_time::{
 pub use managed_wake_execution::BridgeManagedConditionalExecutionRequest;
 pub use owned_async::{
     BridgeOwnedAsyncCommittedCompletion, BridgeOwnedAsyncManagedDenial,
-    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncRequestResponseDeclaration,
+    BridgeOwnedAsyncManagedRequestAdmission, BridgeOwnedAsyncManagedRevalidation,
+    BridgeOwnedAsyncRequestResponseDeclaration,
 };
 pub use owned_async_observation::{
     BridgeAsyncEffectsIndeterminateObservation, BridgeOwnedAsyncCompletionAdmission,

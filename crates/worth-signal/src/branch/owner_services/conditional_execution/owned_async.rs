@@ -21,13 +21,20 @@ use super::{
 mod completion_admission;
 mod completion_commit;
 mod managed_queue;
+mod managed_replacement;
+mod managed_request;
 pub use completion_admission::SignalOwnedAsyncCompletionAdmission;
 pub use completion_commit::SignalOwnedAsyncCompletionCommit;
 pub(crate) use completion_commit::SignalOwnedAsyncCompletionCommitState;
 pub(crate) use managed_queue::SignalOwnedAsyncManagedAdmissionState;
-pub use managed_queue::{
-    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedQueueBinding,
-    SignalOwnedAsyncQueueDenial,
+pub use managed_queue::{SignalOwnedAsyncManagedQueueBinding, SignalOwnedAsyncQueueDenial};
+pub use managed_request::{
+    SignalOwnedAsyncManagedAdmission, SignalOwnedAsyncManagedProgress,
+    SignalOwnedAsyncManagedReport,
+};
+pub(crate) use managed_request::{
+    SignalOwnedAsyncManagedHandoff, SignalOwnedAsyncManagedQueueHandoff,
+    SignalOwnedAsyncManagedWakeCleanup,
 };
 
 /// Opaque proof that one presealed resource definition belongs to this exact
@@ -57,6 +64,7 @@ pub struct SignalOwnedAsyncTimeoutAdmission {
 }
 
 pub struct SignalOwnedAsyncRetrySchedule {
+    origin: SignalOwnedAsyncSourceBinding,
     report: ResourceRetryScheduleReport,
 }
 
@@ -110,8 +118,8 @@ impl SignalOwnedAsyncTimeoutAdmission {
 }
 
 impl SignalOwnedAsyncRetrySchedule {
-    pub(crate) fn new(report: ResourceRetryScheduleReport) -> Self {
-        Self { report }
+    fn new(origin: SignalOwnedAsyncSourceBinding, report: ResourceRetryScheduleReport) -> Self {
+        Self { origin, report }
     }
 
     pub fn report(&self) -> &ResourceRetryScheduleReport {
@@ -238,7 +246,7 @@ where
         handle: ResourceRequestHandle,
     ) -> Result<SignalOwnedAsyncRetrySchedule, SignalConditionalServiceExecutionDenial> {
         self.require_owned_async_binding(binding)?;
-        self.with_owned_async_cell(&binding.basis, |cell, admission| {
+        let report = self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.schedule_conditional_owned_async_retry(
                 admission,
                 &binding.basis,
@@ -246,7 +254,8 @@ where
                 binding.node,
                 handle,
             )
-        })
+        })?;
+        Ok(SignalOwnedAsyncRetrySchedule::new(binding.clone(), report))
     }
 
     pub fn advance_owned_async_retry(
@@ -257,6 +266,7 @@ where
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncRetryAdmission, SignalConditionalServiceExecutionDenial> {
         self.require_owned_async_binding(binding)?;
+        self.require_owned_async_binding(&schedule.origin)?;
         self.with_owned_async_cell(&binding.basis, |cell, admission| {
             cell.advance_conditional_owned_async_retry(
                 admission,

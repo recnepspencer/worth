@@ -85,6 +85,24 @@ where
             .revalidate_owned_async_request(bridge, request, observation, relational_source)
     }
 
+    pub fn revalidate_managed_owned_async_request(
+        &self,
+        bridge: &worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly,
+        request: &mut worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRequestAdmission,
+        observation: &crate::branch::ProductBranchObservation,
+        relational_source: &worth_runtime_bridge::facade::RelationalBridgeObservationLease,
+    ) -> Result<
+        worth_runtime_bridge::facade::BridgeOwnedAsyncManagedRevalidation,
+        super::owner::RuntimeWorldOwnedAsyncManagedRevalidationDenial,
+    > {
+        self.root.revalidate_managed_owned_async_request(
+            bridge,
+            request,
+            observation,
+            relational_source,
+        )
+    }
+
     pub(super) fn from_inputs(
         inputs: RuntimeWorldOwnerInputs<D, I, E, Ctx, T>,
     ) -> Result<Self, RuntimeWorldIdentityExhaustion> {

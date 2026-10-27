@@ -1,5 +1,6 @@
 mod completion_commit;
 mod managed_queue;
+mod managed_replacement;
 
 use crate::branch::owner_services::conditional_execution::{
     SignalConditionalServiceExecutionDenial, SignalOwnedAsyncRequestAdmission,
@@ -73,7 +74,10 @@ where
         &mut self,
         node: ResourceNodeId,
         handle: crate::data::resource::ResourceRequestHandle,
-    ) -> Result<SignalOwnedAsyncRetrySchedule, SignalConditionalServiceExecutionDenial> {
+    ) -> Result<
+        crate::data::resource::ResourceRetryScheduleReport,
+        SignalConditionalServiceExecutionDenial,
+    > {
         self.state.schedule_owned_async_retry(node, handle)
     }
 

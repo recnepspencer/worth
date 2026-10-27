@@ -16,7 +16,15 @@ use super::BranchState;
 
 mod completion_commit;
 mod managed_queue;
-mod support;
+mod managed_replacement;
+mod replacement_handoff;
+mod request_custody;
+mod retry;
+mod retry_schedule;
+mod revalidation;
+mod temporal_progress;
+mod timeout;
+mod wake_cleanup;
 
 impl<D, I, T> BranchState<D, I, T>
 where
@@ -90,52 +98,14 @@ where
         intent: ResourceRevalidationIntent,
     ) -> Result<SignalOwnedAsyncRevalidationAdmission, SignalConditionalServiceExecutionDenial>
     {
-        self.admit_owned_async_source(node)?;
-        if intent.node() != node {
-            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
-        }
-        let capture = self.captures_telemetry();
-        let digest = self
-            .derived
-            .resource
-            .descriptor_for_node(node)
-            .expect("admitted source retains its descriptor")
-            .revalidation_decision_plan()
-            .decision_digest()
-            .clone();
-        let prepared = match self
-            .derived
-            .resource
-            .prepare_explicit_resource_revalidation(
-                intent,
-                digest,
-                capture.then_some(&mut self.derived.telemetry.resource),
-            ) {
-            Ok(prepared) => prepared,
-            Err(report) => return Ok(SignalOwnedAsyncRevalidationAdmission::new(report, None)),
+        let handoff = self.revalidate_owned_async_request_handoff(node, intent)?;
+        replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
+        let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Revalidation(report) = handoff.report else {
+            unreachable!("revalidation retains its actual native report")
         };
-        let prior_timeout = self.derived.resource.active_timeout_wake_for_node(node);
-        let tick = self.derived.temporal.clock_basis().current_tick();
-        let timeout = self.schedule_owned_async_timeout(node, tick)?;
-        let timeout_wake = timeout.as_ref().map(|(wake, _)| wake.id());
-        let report = self.derived.resource.admit_prepared_resource_revalidation(
-            prepared,
-            self.branch_id(),
-            tick,
-            timeout.map(|(_, admission)| admission),
-            capture.then_some(&mut self.derived.telemetry.resource),
-        );
-        if report.admitted_revalidation().is_some() {
-            self.retire_optional_wake(prior_timeout, TemporalWakeRetirementReason::Superseded)?;
-        } else {
-            self.retire_optional_wake(timeout_wake, TemporalWakeRetirementReason::Disposed)?;
-        }
-        let in_flight = report
-            .admitted_revalidation()
-            .map(|admitted| self.require_in_flight(admitted.admitted_request().handle()))
-            .transpose()?;
         Ok(SignalOwnedAsyncRevalidationAdmission::new(
-            report, in_flight,
+            report,
+            handoff.in_flight,
         ))
     }
 
@@ -167,20 +137,11 @@ where
         handle: ResourceRequestHandle,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncTimeoutAdmission, SignalConditionalServiceExecutionDenial> {
-        self.require_owned_async_handle(node, handle)?;
-        let wake = self
-            .derived
-            .resource
-            .active_timeout_wake_for_handle(handle)
-            .ok_or(SignalConditionalServiceExecutionDenial::DefinitionMismatch)?;
-        let ready = self.advance_owned_async_wake(wake, coordinate)?;
-        self.retire_optional_wake(Some(wake), TemporalWakeRetirementReason::Consumed)?;
-        let capture = self.captures_telemetry();
-        let report = self.derived.resource.admit_resource_timeout(
-            handle,
-            ready,
-            capture.then_some(&mut self.derived.telemetry.resource),
-        );
+        let handoff = self.advance_owned_async_timeout_handoff(node, handle, coordinate)?;
+        replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
+        let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Timeout(report) = handoff.report else {
+            unreachable!("a temporal deferred handoff carries its actual refusal")
+        };
         Ok(SignalOwnedAsyncTimeoutAdmission::new(report))
     }
 
@@ -188,52 +149,16 @@ where
         &mut self,
         node: ResourceNodeId,
         handle: ResourceRequestHandle,
-    ) -> Result<SignalOwnedAsyncRetrySchedule, SignalConditionalServiceExecutionDenial> {
-        self.admit_owned_async_source(node)?;
-        let capture = self.captures_telemetry();
-        let tick = self.derived.temporal.clock_basis().current_tick();
-        let (delay, next_attempt, digest, budget) =
-            match self.derived.resource.retry_backoff_delay_for_handle(
-                handle,
-                tick,
-                capture.then_some(&mut self.derived.telemetry.resource),
-            ) {
-                Ok(decision) => decision,
-                Err(class) => {
-                    let report = self.derived.resource.deny_resource_retry_schedule(
-                        handle,
-                        class,
-                        capture.then_some(&mut self.derived.telemetry.resource),
-                    );
-                    return Ok(SignalOwnedAsyncRetrySchedule::new(report));
-                }
-            };
-        let due = ClockTick::new(tick.get().saturating_add(delay.get()));
-        let wake = self
-            .derived
-            .temporal
-            .schedule_owned_wake(
-                TemporalWakeOwner::ResourceNode(node.node()),
-                TemporalCondition::after(delay.get())
-                    .map_err(SignalConditionalServiceExecutionDenial::SlotAdmission)?,
-                due,
-                capture.then_some(&mut self.derived.telemetry.temporal),
-            )
-            .map_err(SignalConditionalServiceExecutionDenial::SlotAdmission)?;
-        let report = self.derived.resource.schedule_resource_retry(
-            handle,
-            ResourceRetryReason::TimedOut,
-            wake.id(),
-            next_attempt,
-            delay,
-            digest,
-            budget,
-            capture.then_some(&mut self.derived.telemetry.resource),
-        );
-        if report.denied_retry().is_some() {
-            self.retire_optional_wake(Some(wake.id()), TemporalWakeRetirementReason::Disposed)?;
-        }
-        Ok(SignalOwnedAsyncRetrySchedule::new(report))
+    ) -> Result<
+        crate::data::resource::ResourceRetryScheduleReport,
+        SignalConditionalServiceExecutionDenial,
+    > {
+        let handoff = self.schedule_owned_async_retry_handoff(node, handle)?;
+        replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
+        let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::RetrySchedule(report) = handoff.report else {
+            unreachable!("retry scheduling retains its actual native report")
+        };
+        Ok(report)
     }
 
     pub(crate) fn advance_owned_async_retry(
@@ -243,50 +168,15 @@ where
         schedule: &SignalOwnedAsyncRetrySchedule,
         coordinate: u64,
     ) -> Result<SignalOwnedAsyncRetryAdmission, SignalConditionalServiceExecutionDenial> {
-        self.admit_owned_async_source(node)?;
-        let scheduled = schedule
-            .report()
-            .scheduled_retry()
-            .filter(|scheduled| scheduled.previous() == handle)
-            .ok_or(SignalConditionalServiceExecutionDenial::DefinitionMismatch)?;
-        let wake = scheduled.backoff_wake_id();
-        if self.derived.resource.pending_retry_wake_for_handle(handle) != Some(wake) {
-            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
-        }
-        let ready = self.advance_owned_async_wake(wake, coordinate)?;
-        let capture = self.captures_telemetry();
-        let prepared = match self.derived.resource.prepare_scheduled_resource_retry(
-            handle,
-            &ready,
-            capture.then_some(&mut self.derived.telemetry.resource),
-        ) {
-            Ok(prepared) => prepared,
-            Err(report) => return Ok(SignalOwnedAsyncRetryAdmission::new(report, None)),
+        let handoff = self.advance_owned_async_retry_handoff(node, handle, schedule, coordinate)?;
+        replacement_handoff::legacy_replacement_refusal(handoff.refusal)?;
+        let crate::branch::owner_services::conditional_execution::SignalOwnedAsyncManagedReport::Retry(report) = handoff.report else {
+            unreachable!("a temporal deferred handoff carries its actual refusal")
         };
-        self.retire_optional_wake(Some(wake), TemporalWakeRetirementReason::Consumed)?;
-        let generation_started = prepared.previous().generation_started_tick();
-        let tick = self.derived.temporal.clock_basis().current_tick();
-        let timeout = self.schedule_owned_async_timeout(node, generation_started)?;
-        let timeout_wake = timeout.as_ref().map(|(wake, _)| wake.id());
-        let report = self
-            .derived
-            .resource
-            .admit_prepared_scheduled_resource_retry(
-                prepared,
-                ready,
-                self.branch_id(),
-                tick,
-                timeout.map(|(_, admission)| admission),
-                capture.then_some(&mut self.derived.telemetry.resource),
-            );
-        if report.denied_retry().is_some() {
-            self.retire_optional_wake(timeout_wake, TemporalWakeRetirementReason::Disposed)?;
-        }
-        let in_flight = report
-            .admitted_retry()
-            .map(|admitted| self.require_in_flight(admitted.admitted_request().handle()))
-            .transpose()?;
-        Ok(SignalOwnedAsyncRetryAdmission::new(report, in_flight))
+        Ok(SignalOwnedAsyncRetryAdmission::new(
+            report,
+            handoff.in_flight,
+        ))
     }
 
     pub(crate) fn owned_async_active_request_count(
@@ -300,5 +190,11 @@ where
                 .active_request_handle_for_node(node)
                 .is_some(),
         ))
+    }
+
+    fn captures_telemetry(&self) -> bool {
+        self.graph().captures_observation_surface(
+            crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
+        )
     }
 }
