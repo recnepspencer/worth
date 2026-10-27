@@ -569,3 +569,12 @@ typed async, persistent-index, capability-registration or unsupported refusals.
 The execution receipt retains the admitted plan and executor observations.
 Use inline execution for supported synchronous reads; an asynchronous requirement
 returns its typed refusal when native asynchronous support is unavailable.
+
+### Retain privileged read authority when restoring a program
+
+The composition root calls `application_installation::in_memory_program_from_checkpoint_with_projection`
+on `worth-query-host` to receive the restored runtime and its
+`WorthQueryApplicationInvariantProjectionAuthority`. This is the same read-only
+capability retained during bootstrap; it grants no initial-state authoring on
+restore. Ordinary runtime holders cannot mint it. Restoration and admission use
+the existing checkpoint owner and resource limits.

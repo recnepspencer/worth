@@ -100,3 +100,66 @@ fn tracked_aspect_absence_survives_query_checkpoint_then_invalidates_on_other_fi
     assert!(!refreshed.is_stably_reused());
     assert_eq!(court::readmit(&restored, &refreshed, true), ids);
 }
+
+#[test]
+fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
+    let runtime = installation::install::<OptionalSchema>(false);
+    let checkpoint = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    drop(runtime);
+    let (restored, projection) =
+        installation::restore_with_projection::<OptionalSchema>(checkpoint);
+    let before = restored
+        .with_host_advancement(|phase| {
+            restored
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    restored
+        .with_host_advancement(|phase| {
+            let completed = projection
+                .project(
+                    &phase,
+                    |reader| {
+                        let anchor = reader
+                            .resolve_entity(BodyKey::reference(), installation::ANCHOR.to_owned())
+                            .unwrap();
+                        assert_eq!(
+                            reader.field(&anchor, BodyKey::reference()),
+                            Some(installation::ANCHOR.to_owned())
+                        );
+                    },
+                    worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+                )
+                .unwrap();
+            completed.into_parts().0
+        })
+        .unwrap();
+    let after = restored
+        .with_host_advancement(|phase| {
+            restored
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    assert_eq!(
+        before.bytes(),
+        after.bytes(),
+        "restoring and observing author no model state"
+    );
+}
