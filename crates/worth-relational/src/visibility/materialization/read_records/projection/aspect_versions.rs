@@ -27,8 +27,7 @@ impl VisibilityProjectionView {
         entity: EntityId,
         aspect: &AspectKey,
     ) -> Option<Option<u64>> {
-        let root = self.selected_root()?;
-        let partition = root.admitted_head_region(entity.partition_id)?;
+        let partition = self.admitted_head_region(entity.partition_id)?;
         let slot = partition.entity_arena().get_slot(entity.slot_index())?;
         if slot.generation() != entity.generation_value()
             || slot.partition_id() != entity.partition_id

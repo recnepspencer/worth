@@ -75,7 +75,7 @@ impl VisibilityProjectionView {
             return Err(AdjacencyStructuralRevisionDenial::BasisUnavailable);
         };
         let revision = if self.is_exact_basis() {
-            root.admitted_head_region(anchor.partition_id)
+            self.admitted_head_region(anchor.partition_id)
                 .and_then(|partition| partition.adjacency(direction).get(anchor.slot_index()))
                 .and_then(|adjacency| adjacency.structural_revision(relation_kind))
         } else {

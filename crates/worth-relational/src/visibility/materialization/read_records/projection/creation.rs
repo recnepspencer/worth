@@ -20,6 +20,7 @@ impl VisibilityProjectionView {
             instrumentation: runtime.services.instrumentation.clone(),
             symbols: runtime.services.symbols.clone(),
             schema,
+            resident: None,
             basis,
         }
     }

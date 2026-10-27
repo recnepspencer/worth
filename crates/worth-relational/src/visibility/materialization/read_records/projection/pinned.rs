@@ -13,6 +13,7 @@ impl VisibilityProjectionView {
             schema: ProjectionSchemaCustody::Published(
                 read.pinned_basis().root().retained_schema_authority(),
             ),
+            resident: Some(read.resident_basis().clone()),
             basis: crate::visibility::snapshot_states::SnapshotStateBasis::Exact(
                 read.pinned_basis().clone(),
             ),

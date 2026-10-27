@@ -70,3 +70,13 @@ entity projection, ordinary/admitted entity revision, relation revision and
 current adjacency IDs): 72 refusal cells and 36 positive history-untouched
 cells. Actual callbacks remain at zero on a failed demand. The original
 transaction/preparation doors and their assertions are retained.
+
+
+Accepted-pin damage isolation now crosses actual embedded transport for all six
+failure classes. A raw view rejects proven damage; an accepted pin's metadata,
+point projection and Full scan keep their immutable meaning with zero further
+loads. Unproven transport failures preserve the healthy resident raw view.
+Resident basis construction also has a type-level fence against Default and
+infallible promotion from a selected metadata-only basis. The native full run
+passes 1,996 tests with 31 ignored; the subsequent added type fence passes its
+own focused lane. All final clean-tree evidence remains outstanding.

@@ -25,8 +25,7 @@ pub(super) fn entity_kind(
     }
     work.read()?;
     work.prepare(view.exact_entity_state_read_work_bound().unwrap(), 0)?;
-    view
-        .read_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
+    view.read_exact_entity_state(execution, id, |metadata, _| metadata.kind_id)
         .map_err(|denial| match denial {
             crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
                 Denial::SnapshotUnavailable

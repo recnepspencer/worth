@@ -2625,3 +2625,50 @@ Ok/question-mark wrapper; it was removed without a behavior change. Line caps,
 composition (23 files, 22 advisories, zero scan errors), boundary-check and
 agent-context pass. Contracts pass 203 tests with 3 ignored. Resident pin proof is the next step of the recorded boundary
 plan, with no phase-completion claim.
+
+
+### Remaining issued-snapshot point boundary
+
+The request-free native output probes also call the Full partition accessor.
+Their exact handles select provenance, not residency. The next matrix extension
+must cover native kind-status, kind and aspect revision probes over a real
+recovered snapshot, with all six Head/symbol failure classes and failed history
+left untouched. Cut these APIs over to explicit request-aware reads and carry
+storage denials through Query fact/currentness, workflow and output-witness
+owners. Preserve genuine unavailable-handle and stale-record distinctions.
+The native output witness finish runs after publication, so verify its existing
+optional-proof boundary and carry admitted custody rather than introducing a
+new fallible publication load. Do not substitute an empty proof for a storage
+failure in an authoritative read. This integration fact is to be resolved from
+the actual caller before that slice is implemented.
+
+
+### Resident basis required by pin construction
+
+`matrix-accepted-pin-red.log` failed after a real pin admitted its selected Head
+and history, then native export received MissingMember from that actual Head
+carrier. The fresh view correctly refused; a projection made from the accepted
+pin incorrectly refused too. The product was wrong. Pin construction now consumes
+a private ResidentVisibilitySnapshotBasis obtained only by Full admission of its
+exact immutable root and runtime dictionary. The root retains counted leases;
+holding the refined basis keeps those accepted leases alive. Prepared field
+lookups and their continuations require the same refined basis, and explicit
+pinned fragment execution accepts it as well. There is no unchecked raw-basis
+constructor for these capabilities.
+
+Pin-derived projections retain that resident custody and frozen dictionary.
+Their read guards still check the request, then borrow accepted source meaning
+without consulting later cold damage. Raw projections continue to demand their
+selected root and reject proven damage. All typed Head projections share the
+same private selected-custody accessor. The six-class actual transport court
+checks both paths, real metadata and Full scans, zero readmission loads and no
+journal advance. Unproven transport failures never poison the fresh view.
+Initial fixture compilation mistakes (import, scan bound/result access) and
+mechanical refined-basis handoff errors were corrected without weakening claims.
+
+`matrix-accepted-pin-fixed.log` passes the six-class court. The complete native
+lane passes 1,996 tests with 31 ignored; all-target checking passes. A separate
+type-level fence rejects infallible raw-to-resident promotion and Default
+construction. Owner clippy and the type-level fence pass; boundary-check is being recorded.
+Formatting, caps, composition (23 files, 17 advisories, zero scan errors) and
+agent-context pass. Final complete lanes remain pending.

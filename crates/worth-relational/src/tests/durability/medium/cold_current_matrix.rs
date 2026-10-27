@@ -4,6 +4,8 @@ use super::cold_source::ColdRead;
 use super::*;
 use crate::identity::data::{EntityId, RelationId};
 
+#[path = "cold_accepted_pins.rs"]
+mod accepted_pins;
 #[path = "cold_aspect_history_matrix.rs"]
 mod aspect_history_matrix;
 #[path = "cold_current_door.rs"]

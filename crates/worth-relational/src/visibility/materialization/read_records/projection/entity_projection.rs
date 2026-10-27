@@ -60,7 +60,7 @@ impl VisibilityProjectionView {
 
     fn selected_entity_projection(&self, entity: EntityId) -> Option<SelectedEntityProjection<'_>> {
         let root = self.basis.root()?;
-        let partition = root.admitted_head_region(entity.partition_id)?;
+        let partition = self.admitted_head_region(entity.partition_id)?;
         let slot = partition.entity_arena().get_slot(entity.slot_index())?;
         if !slot.is_live()
             || (!entity.generation.is_zero() && slot.generation() != entity.generation_value())

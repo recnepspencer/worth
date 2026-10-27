@@ -6,7 +6,9 @@ use crate::query::data::QueryPlanContextId;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::snapshots::data::SnapshotHandle;
 use crate::symbols::data::StringInterner;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
+use crate::visibility::snapshot_states::{
+    ResidentVisibilitySnapshotBasis, VisibilitySnapshotBasis,
+};
 use std::{collections::BTreeMap, sync::Arc};
 
 #[cfg(test)]
@@ -59,7 +61,7 @@ pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) current_version: crate::identity::data::VersionId,
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
-    pub(super) basis: VisibilitySnapshotBasis,
+    pub(super) basis: ResidentVisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
     pub(super) symbols: StringInterner,
     pub(super) indexes: BTreeMap<DerivedIndexId, PinnedIndex>,
@@ -120,6 +122,9 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
         self.context.runtime_instance_id
     }
     pub(crate) fn pinned_basis(&self) -> &VisibilitySnapshotBasis {
+        self.basis.basis()
+    }
+    pub(crate) fn resident_basis(&self) -> &ResidentVisibilitySnapshotBasis {
         &self.basis
     }
     pub(crate) fn pinned_current_version(&self) -> crate::identity::data::VersionId {

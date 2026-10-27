@@ -91,7 +91,7 @@ impl VisibilityProjectionView {
         self.demand_regions_head(execution, [entity.partition_id])
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
-        let Some(partition) = root.admitted_head_region(entity.partition_id) else {
+        let Some(partition) = self.admitted_head_region(entity.partition_id) else {
             return Ok(None);
         };
         let Some(slot) = partition.entity_arena().get_slot(entity.slot_index()) else {
@@ -140,7 +140,7 @@ impl VisibilityProjectionView {
         self.demand_regions_head(execution, [relation.partition_id])
             .map_err(RelationalBorrowedRecordReadDenial::Execution)?;
         let root = basis.root();
-        let Some(partition) = root.admitted_head_region(relation.partition_id) else {
+        let Some(partition) = self.admitted_head_region(relation.partition_id) else {
             return Ok(None);
         };
         let Some(slot) = partition.relation_arena().get_slot(relation.slot_index()) else {

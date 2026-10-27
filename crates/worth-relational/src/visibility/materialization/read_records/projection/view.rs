@@ -13,6 +13,8 @@ pub struct VisibilityProjectionView {
     pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
     pub(super) symbols: crate::runtime::RuntimeSymbolTable,
     pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
+    pub(super) resident:
+        Option<crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis>,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
 }
 

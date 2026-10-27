@@ -41,8 +41,8 @@ impl VisibilityReadContext<'_> {
             .ok_or_else(|| denied(Denial::SnapshotUnavailable))?;
         let (schema_version, _, _) =
             super::super::snapshot_reads::query_schema_context_for_root(basis.root());
-        let indexes = self.pin_indexes(
-            &basis,
+        let (basis, indexes) = self.pin_indexes(
+            basis,
             schema_version,
             selected_indexes,
             request,
@@ -119,8 +119,8 @@ impl VisibilityReadContext<'_> {
             descriptor_semantics_version,
             evidence_basis,
         };
-        let indexes = self.pin_indexes(
-            &basis,
+        let (basis, indexes) = self.pin_indexes(
+            basis,
             schema_version,
             selected_indexes,
             request,
@@ -142,13 +142,19 @@ impl VisibilityReadContext<'_> {
 
     fn pin_indexes<E>(
         &self,
-        basis: &VisibilitySnapshotBasis,
+        basis: VisibilitySnapshotBasis,
         schema: crate::schema::data::SchemaVersionId,
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
         validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,
         denied: impl Fn(RelationalPinnedReadAdmissionDenial) -> E,
-    ) -> Result<BTreeMap<DerivedIndexId, PinnedIndex>, E> {
+    ) -> Result<
+        (
+            ResidentVisibilitySnapshotBasis,
+            BTreeMap<DerivedIndexId, PinnedIndex>,
+        ),
+        E,
+    > {
         use RelationalPinnedReadAdmissionDenial as Denial;
         let mut definitions = BTreeMap::new();
         for &index in selected_indexes {
@@ -160,10 +166,9 @@ impl VisibilityReadContext<'_> {
             validate(&definition)?;
             definitions.insert(index, definition);
         }
-        basis
-            .root()
-            .demand_all_full(request, &self.runtime.services.symbols)
-            .map_err(|failure| denied(Denial::Request(failure.into())))?;
+        let basis =
+            ResidentVisibilitySnapshotBasis::admit(basis, request, &self.runtime.services.symbols)
+                .map_err(|cause| denied(Denial::Request(cause)))?;
         if !definitions.is_empty() {
             self.runtime
                 .indexes
@@ -187,6 +192,6 @@ impl VisibilityReadContext<'_> {
                 },
             );
         }
-        Ok(indexes)
+        Ok((basis, indexes))
     }
 }

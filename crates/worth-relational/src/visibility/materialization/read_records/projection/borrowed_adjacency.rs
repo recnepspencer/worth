@@ -47,7 +47,7 @@ impl VisibilityProjectionView {
         direction: RelationalAdjacencyDirection,
         mut admit: impl FnMut(u64) -> Result<(), Stop>,
     ) -> Result<Result<Option<VersionId>, RelationalBorrowedRecordReadDenial>, Stop> {
-        let SnapshotStateBasis::Exact(basis) = &self.basis else {
+        let SnapshotStateBasis::Exact(_) = &self.basis else {
             return Ok(Err(RelationalBorrowedRecordReadDenial::ExactBasisRequired));
         };
         if let Err(cause) = self.demand_regions_head(execution, [anchor.partition_id]) {
@@ -67,7 +67,7 @@ impl VisibilityProjectionView {
             RelationalAdjacencyDirection::Outgoing => AdjacencyDirection::Outgoing,
             RelationalAdjacencyDirection::Incoming => AdjacencyDirection::Incoming,
         };
-        let Some(partition) = basis.root().admitted_head_region(anchor.partition_id) else {
+        let Some(partition) = self.admitted_head_region(anchor.partition_id) else {
             return Ok(Ok(None));
         };
         let table = partition.adjacency(direction);
@@ -91,9 +91,7 @@ impl VisibilityProjectionView {
     ) -> Result<Result<(), Stop>, crate::execution::RelationalExecutionDenialCause> {
         if self.is_exact_basis() {
             self.demand_regions_head(execution, [entity.partition_id])?;
-            let head = self
-                .selected_root()
-                .and_then(|root| root.admitted_head_region(entity.partition_id));
+            let head = self.admitted_head_region(entity.partition_id);
             return crate::visibility::materialization::read_records::read_request::checked(
                 execution,
                 || {

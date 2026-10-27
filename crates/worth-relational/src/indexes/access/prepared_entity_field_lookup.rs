@@ -12,7 +12,7 @@ use crate::indexes::data::{
     DerivedIndexId, DerivedIndexKind,
 };
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::snapshot_states::VisibilitySnapshotBasis;
+use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
 
 use super::entity_field_collection::{collect, EntityFieldCollectionRead};
 
@@ -21,7 +21,7 @@ use super::entity_field_collection::{collect, EntityFieldCollectionRead};
 pub struct PreparedEntityFieldLookup {
     runtime_identity: u64,
     instrumentation: crate::runtime::RuntimeInstrumentation,
-    basis: VisibilitySnapshotBasis,
+    basis: ResidentVisibilitySnapshotBasis,
     definition: Arc<DerivedIndexDefinition>,
     generation: Arc<DerivedIndexGeneration>,
     kind: KindId,
@@ -50,7 +50,7 @@ impl std::fmt::Debug for PreparedEntityFieldLookup {
         formatter
             .debug_struct("PreparedEntityFieldLookup")
             .field("runtime_identity", &self.runtime_identity)
-            .field("root_identity", &self.basis.root_id())
+            .field("root_identity", &self.basis.root().id())
             .field("index_id", &self.index_id())
             .field("generation_id", &self.generation.generation_id)
             .finish()
@@ -233,7 +233,7 @@ impl PreparedEntityFieldLookup {
     }
     pub(crate) fn pin(
         runtime_identity: u64,
-        basis: VisibilitySnapshotBasis,
+        basis: ResidentVisibilitySnapshotBasis,
         definition: Arc<DerivedIndexDefinition>,
         kind: KindId,
         locator: &AspectFieldLocator,

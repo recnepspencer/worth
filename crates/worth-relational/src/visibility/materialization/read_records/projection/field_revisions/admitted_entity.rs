@@ -48,7 +48,7 @@ impl VisibilityProjectionView {
                 if let Err(stop) = admit_work(33) {
                     break 'read Err(stop);
                 }
-                let Some(partition) = root.admitted_head_region(entity.partition_id) else {
+                let Some(partition) = self.admitted_head_region(entity.partition_id) else {
                     break 'read Ok(None);
                 };
                 if let Err(stop) = admit_work(3) {

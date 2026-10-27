@@ -80,7 +80,7 @@ impl PreparedEntityFieldLookup {
         let start = match after {
             Some(boundary)
                 if boundary.runtime == self.runtime_identity
-                    && boundary.basis.key() == self.basis.key()
+                    && boundary.basis.basis().key() == self.basis.basis().key()
                     && Arc::ptr_eq(&boundary.generation, &self.generation)
                     && boundary.kind == self.kind
                     && boundary.key == key =>

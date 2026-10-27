@@ -45,10 +45,7 @@ impl VisibilityProjectionView {
             return Ok(None);
         }
         self.demand_regions_head(execution, [relation.partition_id])?;
-        let Some(partition) = self
-            .selected_root()
-            .and_then(|root| root.admitted_head_region(relation.partition_id))
-        else {
+        let Some(partition) = self.admitted_head_region(relation.partition_id) else {
             return Ok(None);
         };
         super::super::read_work::metered(
