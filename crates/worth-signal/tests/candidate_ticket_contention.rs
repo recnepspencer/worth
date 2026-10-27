@@ -209,10 +209,9 @@ fn checked_epoch_contention_obeys_d12_admission_and_result_contract() {
         ),
         "{memory:?}"
     );
-    assert_eq!(
-        stop.disposition(),
-        SignalPublicationDisposition::WorkerLocal
-    );
+    // Admission refused before dispatch; the callback-local assertion below
+    // still protects the original court's WorkerLocal publication boundary.
+    assert_eq!(stop.disposition(), SignalPublicationDisposition::NoWork);
     assert_eq!(stop.publication_progress().completed_tasks(), 0);
     assert_eq!(calls.load(Ordering::SeqCst), 0);
     assert_eq!(
