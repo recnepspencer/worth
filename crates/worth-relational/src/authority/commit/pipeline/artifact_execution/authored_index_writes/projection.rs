@@ -99,7 +99,6 @@ impl Projection<'_, '_, '_, '_, '_> {
     }
 
     fn record(&mut self, entity: EntityId, aspect: Option<&AspectKey>) -> Result<(), Denial> {
-        self.point_work()?;
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
         let runtime = self.runtime;
@@ -152,18 +151,7 @@ impl Projection<'_, '_, '_, '_, '_> {
         Ok(())
     }
 
-    fn point_work(&mut self) -> Result<(), Denial> {
-        // Selected partitions use the owning fixed u32 radix; working partitions
-        // are the real preparation BTreeMap. Include both exact slot probes.
-        let units = (self.working.partitions.len() as u64)
-            .checked_add(1)
-            .and_then(|n| n.checked_add(u64::from(u32::BITS) + 3))
-            .ok_or_else(overflow)?;
-        work(self.context, units)
-    }
-
     fn field(&mut self, entity: EntityId, locus: &Locus<'_>) -> Result<(), Denial> {
-        self.point_work()?;
         let before = values::live(&self.execution, self.selected, entity)?;
         let after = values::live(&self.execution, self.working, entity)?;
         let context = &mut *self.context;
