@@ -160,15 +160,14 @@ fn recover(
     held: worth_store::physical_runtime::QualifiedRecoveryFilesystemMedia,
 ) -> Result<ServingPhysicalRuntime, Refusal> {
     let handoff = recover_custody(root, opening.recovery_yieldpoint.clone(), held)?;
-    if let Some(yieldpoint) = &opening.recovery_yieldpoint {
-        if yieldpoint
+    if let Some(yieldpoint) = &opening.recovery_yieldpoint
+        && yieldpoint
             .pause_after(
                 worth_store::physical_runtime::PhysicalRecoveryYieldpointStage::ServingHandoff,
             )
             .is_interrupted()
-        {
-            return Err(Refusal::new(Stage::Recovery, "serving handoff interrupted"));
-        }
+    {
+        return Err(Refusal::new(Stage::Recovery, "serving handoff interrupted"));
     }
     let admission = PhysicalRuntimeAdmission::new(root)
         .map_err(|error| Refusal::new(Stage::RuntimeAdmission, format!("{error:?}")))?;
