@@ -1,6 +1,6 @@
 //! Genuine application contribution, authenticated principal and committed source.
 use super::super::{authentication, resources};
-use super::{boxes, mutation, prefix, schema::*};
+use super::{boxes, directory, mutation, prefix, schema::*};
 use std::sync::Arc;
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::{
@@ -22,6 +22,8 @@ impl ApplicationProgramDefinition<Catalog> for Program {
         ApplicationProgramIdentity::new("managed-catalog.program.v1");
     fn feature_specs() -> Vec<ApplicationFeatureSpec> {
         vec![ApplicationFeatureSpec::root::<Catalog, Feature>()
+            .native_action::<directory::Binding>()
+            .finish_action()
             .native_action::<mutation::Binding>()
             .finish_action()
             .native_action::<boxes::status::Binding>()
@@ -36,15 +38,27 @@ impl WorthQueryApplicationContribution<Catalog> for CatalogContribution {
         configuration: Self::Configuration,
         setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-        setup.managed_index::<prefix::PrefixIndex, _>(prefix::Provider(configuration.prefix))?;
+        match configuration.prefix {
+            PrefixExecutable::Current(provider) => {
+                setup.managed_index::<prefix::PrefixIndex, _>(provider)?
+            }
+            PrefixExecutable::Incompatible(provider) => {
+                setup.managed_index::<prefix::PrefixIndex, _>(provider)?
+            }
+        }
         setup.handler::<mutation::Binding, _>(mutation::Handler)?;
+        setup.handler::<directory::Binding, _>(directory::Handler)?;
         boxes::configure(configuration.boxes, configuration.incompatible, setup)
     }
 }
 pub struct Configuration {
-    pub prefix: Arc<prefix::Calls>,
+    pub prefix: PrefixExecutable,
     pub boxes: Arc<boxes::Calls>,
     pub incompatible: bool,
+}
+pub enum PrefixExecutable {
+    Current(prefix::Provider),
+    Incompatible(prefix::IncompatibleVersion),
 }
 pub type Host = WorthQueryProgramApplicationRuntime<Catalog, Program>;
 pub fn install(calls: Arc<prefix::Calls>) -> Host {
@@ -59,6 +73,27 @@ pub fn try_install(
     boxes: Arc<boxes::Calls>,
     incompatible: bool,
 ) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+    install_configuration(Configuration {
+        prefix: PrefixExecutable::Current(prefix::Provider(prefix)),
+        boxes,
+        incompatible,
+    })
+}
+pub fn try_install_prefix_version(
+    prefix: Arc<prefix::Calls>,
+    boxes: Arc<boxes::Calls>,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
+    install_configuration(Configuration {
+        prefix: PrefixExecutable::Incompatible(prefix::IncompatibleVersion(prefix::Provider(
+            prefix,
+        ))),
+        boxes,
+        incompatible: false,
+    })
+}
+fn install_configuration(
+    configuration: Configuration,
+) -> Result<Host, WorthQueryInMemoryApplicationDenial> {
     let declaration = Catalog::declaration().unwrap();
     in_memory_program(
         ApplicationProgramAuthoring::<Catalog, Program>::begin()
@@ -66,11 +101,7 @@ pub fn try_install(
             .validated_program()
             .unwrap(),
         declaration,
-        (Configuration {
-            prefix,
-            boxes,
-            incompatible,
-        },),
+        (configuration,),
         ApplicationBuildIdentity::parse("19191919-1919-1919-1919-191919191919").unwrap(),
         resources::application_limits(),
         |_, graph, installed| {

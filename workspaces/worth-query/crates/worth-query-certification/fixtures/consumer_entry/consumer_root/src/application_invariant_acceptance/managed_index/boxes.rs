@@ -1,9 +1,13 @@
 //! A sibling public provider: exact fixture boxes and actual scoped capability reads.
 pub(super) mod access;
+#[cfg(test)]
+mod affinity;
 mod authority;
 mod coordinates;
 mod field;
 mod geometry;
+#[cfg(test)]
+mod lifecycle;
 mod provider;
 mod query;
 pub(super) mod seed;

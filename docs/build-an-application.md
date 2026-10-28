@@ -5326,7 +5326,13 @@ status, not fresh authorization. `evict()` releases its image; explicit rebuild
 is required before another indexed read. `close()` disposes and unregisters it
 for every sibling handle; later open creates a fresh registration. Dropping a
 handle leaves the runtime-owned cache alive; explicit close or final runtime
-disposal releases it.
+disposal releases the registration's image. Outstanding results, Source
+observations or in-flight selections can retain their own backing. Final
+release requires those owners and all runtime keepalives to close or drop.
+A stopped cold rebuild may leave Failed status; it publishes no Ready image.
+Use a fresh lawful request for another explicit rebuild. Historical/pinned
+managed-index reads and rebuilds remain unsupported; ordinary historical Source
+reads retain their existing contract.
 
 Indexed results retain complete positive, empty and ordering dependencies from
 the original Source, including nonmatching rows. The ordinary `expect_source`
@@ -5347,14 +5353,41 @@ managed expansion. The
 [managed expectation cases](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/expectations/membership.rs)
 exercise the public API, stale nonmatches, empty results and recorded retry.
 Focused managed-fact, prefix and governed-box regressions pass on the current
-implementation. Local membership routing, narrowed footprints and full Phase1
-remain unfinished.
+implementation at the reviewed qualification baseline. The new
+[lifecycle fixtures](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle.rs)
+add cancellation after the first real node write, fresh-request reconstruction
+and physical final-owner release checks. The original prefix lifecycle packet
+has passed focused runtime qualification. The added
+[box journeys](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/lifecycle.rs)
+exercise the actual BVH adapter's mid-build stop, partial backing release,
+fresh-request reference parity and final runtime disposal. Their
+[affinity journeys](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/affinity.rs)
+exercise same-runtime branch isolation, a genuinely older retained basis and
+Native-reclaimed scope-slot generation replacement. Complementary
+[prefix installation twins](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/lifecycle/installation.rs)
+and [box basis anchors](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/boxes/affinity.rs)
+cover the actual incompatible executable version, foreign runtime/branch and
+retained historical basis before callbacks. All eleven focused consumer cases
+pass on the current fixture source, including exact typed original-request
+cancellation and physical release through both adapters. Narrow fixture joins
+use the installed mutation's genuine result-set Source and preserve the
+provider control owner's exact cancellation cause. Final independent review
+and Phase1 acceptance remain pending. Allocation observations use the same
+consumer executable, one exact case per process and one test thread; they do
+not measure another process's allocations or establish concurrent build cost.
+Existing box geometry, version and independent capability/READ controls remain
+carried. The affected compiled-example inventory test and mandatory
+boundary/context checks remain requirements before Phase1 acceptance.
+Local membership routing, narrowed footprints and full Phase1 remain unfinished.
 The
 [public prefix consumer](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/journey.rs)
 shows explicit construction, UTF-8 prefix reads, an ordinary scan oracle and
 shared-handle cleanup; its
 [provider adapter](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/managed_index/prefix.rs)
-uses the same finite storage contract as other providers.
+uses the same finite storage contract as other providers. Prefix v1 uses
+unnormalized, case-sensitive UTF-8 prefix matching. Construction consumes
+canonical full-generation Source order; the Parent returns final rows in
+identity order.
 
 The prefix and closed-box adapters declare the same source/probe/provider
 contract. Their probe codecs retain their complete canonical meaning:

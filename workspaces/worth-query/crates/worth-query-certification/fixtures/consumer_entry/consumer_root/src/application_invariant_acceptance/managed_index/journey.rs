@@ -109,14 +109,7 @@ fn run() {
     );
     for prefix in ["", "al", "alpha", "ál", "a\u{301}", "missing", "β"] {
         let actual = request.query(input("catalog", prefix)).execute().unwrap();
-        let mut expected = source
-            .rows()
-            .iter()
-            .filter(|row| row.enabled && row.name.starts_with(prefix))
-            .cloned()
-            .collect::<Vec<_>>();
-        expected.sort_by(|a, b| a.identity.cmp(&b.identity));
-        assert_eq!(actual.rows(), expected, "UTF-8 prefix {prefix:?} preserves actual distinct source occurrences and Parent ordering");
+        assert_eq!(actual.rows(), expected(source.rows(), prefix), "UTF-8 prefix {prefix:?} preserves actual distinct source occurrences and Parent ordering");
     }
     let duplicates = request.query(input("catalog", "alpha")).execute().unwrap();
     assert_eq!(
@@ -152,6 +145,11 @@ fn run() {
         .unwrap();
     assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     assert_eq!(calls.totals(), (2, 2, before.2));
+    // Ready/callback counts alone cannot establish reconstructed query meaning.
+    for prefix in ["", "al", "alpha", "\u{e1}l", "missing"] {
+        let actual = request.query(input("catalog", prefix)).execute().unwrap();
+        assert_eq!(actual.rows(), expected(source.rows(), prefix));
+    }
     sibling.close();
     assert_eq!(index.lifecycle(), WorthQueryManagedIndexLifecycle::Disposed);
     assert_eq!(
@@ -195,4 +193,14 @@ fn run() {
     assert_eq!(calls.canonical_rows.load(Ordering::SeqCst), 0);
     assert_eq!(empty.lifecycle(), WorthQueryManagedIndexLifecycle::Ready);
     empty.close();
+}
+
+pub(super) fn expected(rows: &[query::ItemRow], prefix: &str) -> Vec<query::ItemRow> {
+    let mut expected = rows
+        .iter()
+        .filter(|row| row.enabled && row.name.starts_with(prefix))
+        .cloned()
+        .collect::<Vec<_>>();
+    expected.sort_by(|a, b| a.identity.cmp(&b.identity));
+    expected
 }

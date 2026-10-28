@@ -30,6 +30,8 @@ pub struct Calls {
     pub builds: AtomicUsize,
     pub queries: AtomicUsize,
     pub canonical_rows: AtomicUsize,
+    // Consumer fixture observation, invoked only after a genuine first node write.
+    pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub canonical_coordinates: Mutex<[(u32, u64, u32); 8]>,
 }
 impl Calls {
@@ -88,6 +90,7 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
                 sources,
                 nodes,
                 control,
+                after_first_node: &self.0.after_first_node,
             },
         )
     }
@@ -111,5 +114,39 @@ impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for Provider {
                 control,
             },
         )
+    }
+}
+
+/// A genuine incompatible executable version for the installation boundary twin.
+pub struct IncompatibleVersion(pub Provider);
+impl WorthQueryManagedIndexProvider<Catalog, PrefixIndex> for IncompatibleVersion {
+    type Node = Node;
+    type Denial = PrefixIndexDenial;
+    const IDENTITY: &'static str = PrefixIndex::PROVIDER;
+    const VERSION: u32 = 2;
+    fn node_capacity(
+        &self,
+        count: usize,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<usize, Stop> {
+        self.0.node_capacity(count, control)
+    }
+    fn build(
+        &self,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        nodes: &mut WorthQueryManagedIndexNodeWriter<'_, Node>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
+        self.0.build(sources, nodes, control)
+    }
+    fn query(
+        &self,
+        sources: &WorthQueryManagedIndexSourceRows<'_, Catalog, PrefixIndex>,
+        nodes: &WorthQueryManagedIndexNodes<Node>,
+        probe: &query::Probe,
+        candidates: &mut WorthQueryManagedIndexCandidateWriter<'_>,
+        control: &WorthQueryManagedIndexControl<'_>,
+    ) -> Result<(), Stop> {
+        self.0.query(sources, nodes, probe, candidates, control)
     }
 }

@@ -8,6 +8,7 @@ pub(super) struct Build<'call, 'source, 'node, 'control> {
     pub sources: &'call WorthQueryManagedIndexSourceRows<'source, Catalog, PrefixIndex>,
     pub nodes: &'call mut WorthQueryManagedIndexNodeWriter<'node, Node>,
     pub control: &'call WorthQueryManagedIndexControl<'control>,
+    pub after_first_node: &'call Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 fn invalid() -> Stop {
     Stop::Domain(PrefixIndexDenial::InvalidTopology)
@@ -38,7 +39,14 @@ impl PrefixBuildStorage for Build<'_, '_, '_, '_> {
         })
     }
     fn append(&mut self, node: Node) -> Result<Self::Id, Stop> {
-        self.nodes.push(node).map_err(Into::into)
+        let id = self.nodes.push(node)?;
+        if self.nodes.len() == 1 {
+            let observe = self.after_first_node.lock().unwrap().take();
+            if let Some(observe) = observe {
+                observe();
+            }
+        }
+        Ok(id)
     }
     fn read(&mut self, id: Self::Id) -> Result<Node, Stop> {
         self.nodes.get(id).map_err(Into::into)

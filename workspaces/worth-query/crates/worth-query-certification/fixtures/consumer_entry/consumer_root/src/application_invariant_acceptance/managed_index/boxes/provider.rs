@@ -28,6 +28,8 @@ pub struct Calls {
     builds: AtomicUsize,
     queries: AtomicUsize,
     pub navigation: AtomicUsize,
+    // Consumer observation after a genuine BVH node enters framework storage.
+    pub after_first_node: Mutex<Option<Box<dyn FnOnce() + Send>>>,
     pub coordinates: Mutex<[(u32, u64, u32); 16]>,
 }
 impl Calls {
@@ -94,7 +96,16 @@ impl WorthQueryManagedIndexProvider<Catalog, BoxIndex> for Provider {
                     .map_err(|_| Stop::Domain(BoxIndexDenial::InvalidTopology))?;
                 Box2::new(raw.raw()).map_err(|cause| Stop::Domain(BoxIndexDenial::Bounds(cause)))
             },
-            |node| nodes.push(node).map_err(Stop::Controlled),
+            |node| {
+                let id = nodes.push(node).map_err(Stop::Controlled)?;
+                if nodes.len() == 1 {
+                    let observe = self.0.after_first_node.lock().unwrap().take();
+                    if let Some(observe) = observe {
+                        observe();
+                    }
+                }
+                Ok(id)
+            },
             |work| control.checkpoint(work).map_err(Stop::Controlled),
         )
     }
