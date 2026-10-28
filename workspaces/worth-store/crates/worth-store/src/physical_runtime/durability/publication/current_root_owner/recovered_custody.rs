@@ -8,6 +8,10 @@ use crate::physical_runtime::record_serving::VerifiedRecoveredCheckpointCustody;
 use crate::physical_runtime::recovery_residency::StoreRejoinResidentLedger;
 
 pub(in crate::physical_runtime) struct PreparedRecoveredCheckpointCustody {
+    backing: Box<PreparedCheckpointCustodyState>,
+}
+
+struct PreparedCheckpointCustodyState {
     source: VerifiedRecoveredCheckpointCustody,
     selected_root: worth_store_physical_format::DurablePhysicalRootManifest,
     release_ledger: release_capacity::ReleaseLedgerState,
@@ -21,6 +25,12 @@ impl PreparedRecoveredCheckpointCustody {
         resident: &mut StoreRejoinResidentLedger,
     ) -> Result<Self, release_capacity::RecoveredReleaseLedgerDenial> {
         use release_capacity::RecoveredReleaseLedgerDenial as Denial;
+        // Only recovered entry needs this schema-wide proof. Ordinary genesis
+        // must not carry its largest possible value through every stack frame.
+        // Fund the exact backing before allocating it or lowering its ledger.
+        resident
+            .retain(std::mem::size_of::<PreparedCheckpointCustodyState>() as u64)
+            .map_err(Denial::Resident)?;
         let (head_v2, no_release, pending, effective, historical, tier) =
             source.seal().verified_basis();
         let selected_root = head_v2
@@ -81,21 +91,23 @@ impl PreparedRecoveredCheckpointCustody {
             None => return Err(Denial::SelectedFactMismatch),
         };
         Ok(Self {
-            source,
-            selected_root,
-            release_ledger,
-            checkpoint_custody,
+            backing: Box::new(PreparedCheckpointCustodyState {
+                source,
+                selected_root,
+                release_ledger,
+                checkpoint_custody,
+            }),
         })
     }
 
     pub(super) fn release_ledger_mut(&mut self) -> &mut release_capacity::ReleaseLedgerState {
-        &mut self.release_ledger
+        &mut self.backing.release_ledger
     }
 
     pub(in crate::physical_runtime) fn pending_wal_release(
         &self,
     ) -> Option<&worth_store_recovery_physics::VerifiedPendingWalReleaseCustody> {
-        self.source.seal().pending_wal_release()
+        self.backing.source.seal().pending_wal_release()
     }
 }
 
@@ -104,12 +116,12 @@ impl PhysicalCurrentRootOwner {
         &self,
         recovered: PreparedRecoveredCheckpointCustody,
     ) {
-        let PreparedRecoveredCheckpointCustody {
+        let PreparedCheckpointCustodyState {
             source,
             selected_root,
             release_ledger,
             checkpoint_custody,
-        } = recovered;
+        } = *recovered.backing;
         let mut state = self.lock_publication_state();
         assert_eq!(selected_root, state.current_root);
         if let Some(tier) = source.seal().verified_basis().5 {
