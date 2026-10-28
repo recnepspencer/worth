@@ -53,8 +53,8 @@ pub(super) fn require(
                 "2"
             } else {
                 match (target.family, runtime) {
-                    ("root_manifest", true) => "2|3|4|5|6|7|9|10|11",
-                    ("root_manifest", false) => "2|3|4|5|6|7|9",
+                    ("root_manifest", true) => "2|3|4|5|6|7|9|10|12",
+                    ("root_manifest", false) => "2|3|4|5|6|7|9|12",
                     ("root_routing_block", _) => "2|3",
                     _ => "2",
                 }

@@ -89,10 +89,10 @@ fn qualify_recovery_with_schedule(
     }
     .map_err(map_owner_failure)?;
     let parts = finish_existing_qualification(root, owner, access)?;
-    if let Some(expected) = &expected {
-        if super::qualification_basis_drift::basis_drift(expected, &parts.binding).is_some() {
-            return Err(RecoveryFilesystemQualificationError::RootIdentityChanged);
-        }
+    if let Some(expected) = &expected
+        && super::qualification_basis_drift::basis_drift(expected, &parts.binding).is_some()
+    {
+        return Err(RecoveryFilesystemQualificationError::RootIdentityChanged);
     }
     Ok(parts)
 }
