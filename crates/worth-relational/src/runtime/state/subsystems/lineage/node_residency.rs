@@ -166,12 +166,10 @@ impl NodePageCell {
                 })
             }
             NodePageState::Damaged(failure) => Err((*failure).into()),
-            NodePageState::Cold => {
-                return Err(node_page::failure(
-                    &self.descriptor,
-                    Cause::SourceUnavailable,
-                ))
-            }
+            NodePageState::Cold => Err(node_page::failure(
+                &self.descriptor,
+                Cause::SourceUnavailable,
+            )),
         }
     }
 }

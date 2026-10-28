@@ -181,14 +181,13 @@ impl RelationalCommitArtifact {
         source: Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
         admitted: Option<crate::history::data::PositionedCanonicalCommit>,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
-        if let Some(commit) = &admitted {
-            if commit.position() != entry.position || commit.commit != entry.commit
+        if let Some(commit) = &admitted
+            && (commit.position() != entry.position || commit.commit != entry.commit
                 || commit.schema_version != entry.schema_version
                 || entry.root.schema_root() != &crate::schema::data::schema_authority_snapshot_digest_bytes(&commit.schema_authority)
                 || crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::positioned_payload_digest(commit)
-                    .map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? != entry.payload_digest {
+                    .map_err(|_| RelationalCommitArtifactDenial::CanonicalPayloadEncoding)? != entry.payload_digest) {
                 return Err(RelationalCommitArtifactDenial::RootLinkage);
-            }
         }
         let canonical_payload = admitted
             .as_ref()
