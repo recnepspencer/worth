@@ -72,7 +72,7 @@ pub(in crate::domain_computation::primary_graph::provider::aftermath_causality) 
         })
         .map_err(|cause| match cause {
             worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::Unavailable,
-            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::ExecutionDenied(crate::facade::primary_graph::relational_execution_kind(cause, None)),
+            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
         })?
         .ok_or(Denial::Unavailable)?
     })

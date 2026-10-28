@@ -21,6 +21,7 @@ pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
     SizeOverflow,
     Unavailable,
     Basis(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
 pub(super) fn run<T>(
