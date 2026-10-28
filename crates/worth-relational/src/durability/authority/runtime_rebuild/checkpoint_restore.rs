@@ -170,6 +170,7 @@ fn prepare_indexes(
         ));
     }
     let mut indexes = IndexingState::default();
+    indexes.next_generation_id = checkpoint.index_generation_frontier;
     for definition in &checkpoint.index_definitions {
         indexes.insert_definition(definition.clone());
         work.index_definitions_readmitted += 1;
@@ -179,6 +180,7 @@ fn prepare_indexes(
         history,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
+        checkpoint.index_generation_frontier,
         work,
     )?;
     Ok(indexes)

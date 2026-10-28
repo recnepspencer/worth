@@ -24,6 +24,8 @@ mod cold_index_checkpoint_door;
 mod cold_index_custody;
 #[path = "cold_index_fixture.rs"]
 mod cold_index_fixture;
+#[path = "cold_index_frontier.rs"]
+mod cold_index_frontier;
 #[path = "cold_index_matrix.rs"]
 mod cold_index_matrix;
 #[path = "cold_invariants.rs"]

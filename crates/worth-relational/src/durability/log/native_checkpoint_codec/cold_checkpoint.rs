@@ -43,6 +43,7 @@ pub(super) fn readmit(
         record_generation_high_water: Vec::new(), reusable_record_slots: Vec::new(), record_slot_frontiers: Vec::new(),
         envelopes, partition_images: Vec::new(), aspect_contracts: manifest.aspect_contracts,
         lineage: crate::lineage::data::LineageCheckpointArtifact::new(manifest.lineage_basis, Vec::new()),
+        index_generation_frontier: manifest.index_generation_frontier,
         index_definitions: manifest.index_definitions, derived_index_artifacts: Default::default(),
         derived_index_checkpoint: None,
         derived_index_checkpoint_format: crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION,

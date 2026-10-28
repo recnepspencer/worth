@@ -63,6 +63,7 @@ impl DeferredIndexImage {
                 return Err(refusal(Cause::Damaged).into());
             }
             let mut state = IndexingState::default();
+            state.next_generation_id = self.directory.manifest.index_generation_frontier;
             for definition in &self.directory.manifest.index_definitions {
                 state.insert_definition(definition.clone());
             }
@@ -71,6 +72,7 @@ impl DeferredIndexImage {
                 &self.history,
                 &legacy,
                 checkpoint.as_ref(),
+                self.directory.manifest.index_generation_frontier,
                 &mut Default::default(),
             )
             .map_err(|_| refusal(Cause::Damaged))?;
@@ -113,6 +115,7 @@ impl IndexingSubsystem {
                 cause,
             })?;
         let mut state = IndexingState::default();
+        state.next_generation_id = directory.manifest.index_generation_frontier;
         for definition in &directory.manifest.index_definitions {
             state.insert_definition(definition.clone());
         }

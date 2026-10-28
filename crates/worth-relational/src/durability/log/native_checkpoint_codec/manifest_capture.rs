@@ -162,6 +162,7 @@ impl CapturedManifest {
                 record_identity: checkpoint.record_identity.clone(),
                 aspect_contracts: checkpoint.aspect_contracts.clone(),
                 index_definitions: checkpoint.index_definitions.clone(),
+                index_generation_frontier: checkpoint.index_generation_frontier,
                 roots: Vec::new(),
                 mirror_schema: checkpoint.mirror_schema_digest,
                 mirror: Vec::new(),

@@ -306,6 +306,7 @@ pub struct DurableCheckpoint {
     pub partition_images: Vec<PartitionCheckpointImage>,
     pub aspect_contracts: Vec<PortableAspectContract>,
     pub lineage: LineageCheckpointArtifact,
+    pub(crate) index_generation_frontier: u64,
     pub index_definitions: Vec<DerivedIndexDefinition>,
     pub derived_index_artifacts: DerivedIndexArtifacts,
     pub(crate) derived_index_checkpoint:

@@ -11,13 +11,18 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
+    generation_frontier: u64,
     work: &mut crate::durability::data::CheckpointRestoreWork,
 ) -> Result<(), crate::durability::data::DurabilityError> {
+    if generation_frontier == 0 {
+        return Err(corrupt("checkpoint index generation frontier is zero"));
+    }
     if let Some(checkpoint) = checkpoint {
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
         }
         for generation in checkpoint.readmit()? {
+            require_generation_below_frontier(generation.generation_id, generation_frontier)?;
             let definition = indexes
                 .definitions
                 .get(&generation.index_id)
@@ -63,9 +68,22 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         }
     } else {
         for generation in legacy.generations() {
+            require_generation_below_frontier(generation.generation_id, generation_frontier)?;
             indexes.restore_generation(generation.clone());
             work.index_generations_readmitted += 1;
         }
+    }
+    Ok(())
+}
+
+fn require_generation_below_frontier(
+    generation: crate::indexes::data::DerivedIndexGenerationId,
+    frontier: u64,
+) -> Result<(), crate::durability::data::DurabilityError> {
+    if generation.0 == 0 || generation.0 >= frontier {
+        return Err(corrupt(
+            "checkpoint index generation exceeds its eager identity frontier",
+        ));
     }
     Ok(())
 }

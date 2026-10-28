@@ -11,10 +11,40 @@ pub(crate) struct NormalizedContinuationProofLimitExceeded {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "NormalizedContinuationProofInput")]
 pub struct NormalizedContinuationProof {
     boundary_fingerprints: Vec<SchemaBoundaryFingerprint>,
     descriptor_semantics_version: DescriptorSemanticsVersion,
     normalized_boundary_count: usize,
+}
+
+#[derive(Deserialize)]
+struct NormalizedContinuationProofInput {
+    boundary_fingerprints: Vec<SchemaBoundaryFingerprint>,
+    descriptor_semantics_version: DescriptorSemanticsVersion,
+    normalized_boundary_count: usize,
+}
+
+impl TryFrom<NormalizedContinuationProofInput> for NormalizedContinuationProof {
+    type Error = &'static str;
+
+    fn try_from(input: NormalizedContinuationProofInput) -> Result<Self, Self::Error> {
+        if input.boundary_fingerprints.len() > MAX_NORMALIZED_CONTINUATION_BOUNDARIES {
+            return Err("continuation proof exceeds the normalized boundary limit");
+        }
+        if input.normalized_boundary_count != input.boundary_fingerprints.len() {
+            return Err("continuation proof count disagrees with its boundaries");
+        }
+        let proof = Self::new(
+            input.boundary_fingerprints,
+            input.descriptor_semantics_version,
+        )
+        .map_err(|_| "continuation proof exceeds the normalized boundary limit")?;
+        if proof.normalized_boundary_count != input.normalized_boundary_count {
+            return Err("continuation proof boundaries are not deduplicated");
+        }
+        Ok(proof)
+    }
 }
 
 impl NormalizedContinuationProof {
@@ -85,6 +115,35 @@ impl Default for NormalizedContinuationProof {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn continuation_deserialization_checks_limit_count_and_normalization() {
+        let fingerprints = (0..65)
+            .map(|n| {
+                let mut bytes = [0; 32];
+                bytes[..8].copy_from_slice(&(n as u64).to_le_bytes());
+                SchemaBoundaryFingerprint::new(bytes)
+            })
+            .collect::<Vec<_>>();
+        let version = DescriptorSemanticsVersion::default();
+        for (boundaries, count) in [
+            (fingerprints.clone(), 65),
+            (fingerprints.clone(), 0),
+            (fingerprints[..1].to_vec(), 65),
+            (vec![fingerprints[0]; 2], 2),
+        ] {
+            let bytes = rmp_serde::to_vec(&(boundaries, version, count)).unwrap();
+            assert!(rmp_serde::from_slice::<NormalizedContinuationProof>(&bytes).is_err());
+        }
+        for boundaries in [Vec::new(), fingerprints[..64].to_vec()] {
+            let admitted = NormalizedContinuationProof::new(boundaries, version).unwrap();
+            let bytes = rmp_serde::to_vec(&admitted).unwrap();
+            assert_eq!(
+                rmp_serde::from_slice::<NormalizedContinuationProof>(&bytes).unwrap(),
+                admitted
+            );
+        }
+    }
+
     #[test]
     fn continuation_constructor_refuses_only_the_normalized_boundary_excess() {
         let fingerprints = (0..=MAX_NORMALIZED_CONTINUATION_BOUNDARIES)

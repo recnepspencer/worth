@@ -3,7 +3,7 @@
 
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 
-pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK12\n";
+pub(crate) const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK13\n";
 
 mod checkpoint_decoding;
 mod checkpoint_encoding;
