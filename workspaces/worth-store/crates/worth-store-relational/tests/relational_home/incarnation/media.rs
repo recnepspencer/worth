@@ -54,9 +54,10 @@ fn incarnation_advance_media_sweep_preserves_identity_and_selects_one_complete_a
         faulted_open(&location, &media_faults::counters(), &execution).unwrap();
     counted.unwrap().close();
     let counts = media_faults::counts(&counters);
-    assert!(counts
-        .iter()
-        .any(|(role, _)| *role == MediaOperationRole::FileSync));
+    assert!(counts.iter().any(|(role, _)| matches!(
+        *role,
+        MediaOperationRole::SynchronizeFileData | MediaOperationRole::SynchronizeFileState
+    )));
     let mut cases = 0;
     for (role, count) in counts {
         for ordinal in 1..=count {

@@ -157,3 +157,29 @@ fn limits(scale: u64) -> PhysicalRecoveryLimits {
     })
     .expect("bounded limits")
 }
+
+#[test]
+fn a_held_media_owner_cannot_admit_recovery_for_another_root() {
+    let parent = tempfile::tempdir().unwrap();
+    let held_root = parent.path().join("held");
+    let other_root = parent.path().join("other");
+    initialize_store(&held_root);
+    initialize_store(&other_root);
+    let media = QualifiedRecoveryFilesystemMedia::qualify_existing(&held_root).unwrap();
+    let refused = PhysicalRecoveryPlatformAuthority::from_held_media(
+        other_root,
+        PhysicalRecoveryStaticConfiguration::current(),
+        limits(8),
+        media,
+    );
+    assert!(matches!(
+        refused,
+        Err(
+            PhysicalRecoveryPlatformAdmissionError::BackendQualification(
+                RecoveryFilesystemQualificationError::RootIdentityChanged
+            )
+        )
+    ));
+    // The refusal released only the held root; a fresh owner can acquire it.
+    assert!(QualifiedRecoveryFilesystemMedia::qualify_existing(&held_root).is_ok());
+}

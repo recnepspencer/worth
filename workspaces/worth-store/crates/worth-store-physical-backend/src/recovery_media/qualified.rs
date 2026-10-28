@@ -10,6 +10,12 @@ pub struct QualifiedRecoveryFilesystemMedia {
 }
 
 impl QualifiedRecoveryFilesystemMedia {
+    /// Verify the caller's location against the still-held root directory.
+    /// This reads identity only and never reacquires or mutates the lease.
+    pub fn verify_root(&self, root: &Path) -> Result<(), RecoveryFilesystemQualificationError> {
+        self.parts.verify_root(root)
+    }
+
     pub(crate) fn from_parts(
         parts: crate::filesystem_media::recovery_qualification::QualifiedRecoveryParts,
     ) -> Self {

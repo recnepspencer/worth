@@ -56,6 +56,9 @@ impl PhysicalRecoveryPlatformAuthority {
         limits: PhysicalRecoveryLimits,
         media: QualifiedRecoveryFilesystemMedia,
     ) -> Result<Self, PhysicalRecoveryPlatformAdmissionError> {
+        media
+            .verify_root(&root)
+            .map_err(PhysicalRecoveryPlatformAdmissionError::BackendQualification)?;
         let Some(freshness) = PhysicalRecoveryFreshnessPort::admit(&media) else {
             return Err(PhysicalRecoveryPlatformAdmissionError::FreshnessUnavailable);
         };

@@ -113,6 +113,18 @@ pub(super) fn finish_existing_qualification(
 }
 
 impl QualifiedRecoveryParts {
+    pub(crate) fn verify_root(
+        &self,
+        root: &Path,
+    ) -> Result<(), RecoveryFilesystemQualificationError> {
+        super::namespace_admission::require_opened_root_identity(
+            root,
+            self.owner.root_directory_handle().directory(),
+            self.owner.boundary(),
+        )
+        .map_err(|_| RecoveryFilesystemQualificationError::RootIdentityChanged)
+    }
+
     pub(crate) fn root_ownership_identity(&self) -> super::MediaOwnerIdentity {
         self.owner.identity()
     }
