@@ -1,5 +1,6 @@
 mod aggregate_identity;
 mod aspect_patch_publication;
+mod authored_write_history;
 mod branch_local_empty_basis;
 mod branch_root_selection_denials;
 mod branch_snapshot_affinity;

@@ -108,6 +108,13 @@ pub mod history {
     };
     pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
     pub use crate::history::{
+        RelationalAuthoredEntityIndexDefinition, RelationalAuthoredWriteCursor,
+        RelationalAuthoredWriteDenial, RelationalAuthoredWriteOccurrence,
+        RelationalAuthoredWritePage, RelationalAuthoredWritePageLimits,
+        RelationalAuthoredWriteScope, RelationalAuthoredWriteSelector,
+        RelationalPreparedAuthoredWritePage,
+    };
+    pub use crate::history::{
         RelationalCanonicalRecordHistoryCursor, RelationalPreparedRecordHistoryPage,
         RelationalRecordHistoryChange, RelationalRecordHistoryDenial, RelationalRecordHistoryPage,
         RelationalRecordHistoryPageLimits, RelationalRecordHistorySelection,
@@ -226,18 +233,19 @@ pub mod runtime {
         RelationProjectionRecord, RelationRecordProjection, RelationalAdjacencyDirection,
         RelationalAdjacencyVisit, RelationalBorrowedRecordReadDenial,
         RelationalCandidateInputCounters, RelationalEntityMetadata, RelationalEntityRetirement,
-        RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
-        RelationalInitialSchemaInstallationDenialKind, RelationalInitialSchemaInstallationReceipt,
-        RelationalPatchPositionReservationCounters, RelationalPhase4ReferenceCostCounters,
-        RelationalPinnedRead, RelationalPinnedReadAdmissionDenial,
-        RelationalProjectedFieldObservation, RelationalRelationMetadata, RelationalReplayRecord,
-        RelationalRetentionPassProgress, RelationalRetentionPassStop, RelationalRuntime,
-        RelationalRuntimeConfig, RelationalRuntimeForkDenial,
-        RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
-        RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
-        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
-        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
-        VisibilityReadContext, VisibilityRetentionAuthority,
+        RelationalFieldSupportComparisonDenial, RelationalInitialSchemaInstallation,
+        RelationalInitialSchemaInstallationDenial, RelationalInitialSchemaInstallationDenialKind,
+        RelationalInitialSchemaInstallationReceipt, RelationalPatchPositionReservationCounters,
+        RelationalPhase4ReferenceCostCounters, RelationalPinnedRead,
+        RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+        RelationalRelationMetadata, RelationalReplayRecord, RelationalRetentionPassProgress,
+        RelationalRetentionPassStop, RelationalRuntime, RelationalRuntimeConfig,
+        RelationalRuntimeForkDenial, RelationalSchemaTransitionAdmissionDenial,
+        RelationalSchemaTransitionAdmissionDenialKind, RelationalSnapshotPositionAdmissionStop,
+        RelationalStoppedRetentionPass, ReplaySchemaVersion, RuntimeComplexityCounters,
+        SimulationAccess, SimulationAuthority, SnapshotGuard, SnapshotPositionDenial,
+        TopologyFreezeMode, VisibilityProjectionView, VisibilityReadContext,
+        VisibilityRetentionAuthority,
     };
     pub use crate::storage::data::{
         ChunkVisibilitySummary, ChunkedStorageSummary, EntityReadRecord, PartitionStorageStats,

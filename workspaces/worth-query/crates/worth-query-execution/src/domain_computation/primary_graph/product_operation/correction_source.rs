@@ -22,6 +22,8 @@ pub use alternatives::{
 };
 pub(in crate::domain_computation::primary_graph) use authored_identity::AuthoredCorrectionCandidateDenial;
 mod compatibility;
+mod restored_support;
+pub use restored_support::WorthQueryCorrectionRestoredSupportDenial;
 mod derivation;
 mod inspection;
 mod intent;

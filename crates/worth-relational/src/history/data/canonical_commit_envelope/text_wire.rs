@@ -22,6 +22,8 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     #[serde(default)]
     required_output_materialization:
         Option<std::sync::Arc<super::CanonicalRequiredOutputMaterialization>>,
+    #[serde(default)]
+    authored_index_writes: super::CanonicalAuthoredIndexWrites,
     commit: RelationalCommitReceipt,
     branch_context: BranchId,
     branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
@@ -72,6 +74,7 @@ impl CanonicalEnvelopeWire<'_> {
             required_output_codec_retirements: self.required_output_codec_retirements,
             required_output_origin: self.required_output_origin,
             required_output_materialization: self.required_output_materialization,
+            authored_index_writes: self.authored_index_writes,
             commit: self.commit,
             branch_context: self.branch_context,
             branch_cell_checkpoint: self.branch_cell_checkpoint,

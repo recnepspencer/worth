@@ -14,8 +14,9 @@ pub use correction_source::{
     WorthQueryCorrectionAlternativesPage, WorthQueryCorrectionCommandKey,
     WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionInputSelection,
     WorthQueryCorrectionIntent, WorthQueryCorrectionOutputProjectionDenial,
-    WorthQueryCorrectionSelectionDenial, WorthQueryPreparedCorrectionSource,
-    WorthQuerySelectedCorrectionAlternative, WorthQuerySelectedCorrectionSource,
+    WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
+    WorthQueryPreparedCorrectionSource, WorthQuerySelectedCorrectionAlternative,
+    WorthQuerySelectedCorrectionSource,
 };
 mod generated_materialization;
 pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;

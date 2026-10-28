@@ -35,9 +35,9 @@ impl IndexingSubsystem {
         SelectedIndexGenerationAdmissionStop<Stop>,
     > {
         let state = self.state.read();
-        let visits = navigation_work(state.definitions.len(), 1)?;
+        let visits = navigation_work(state.catalog.definitions.len(), 1)?;
         prepare(visits, 0).map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        let Some(definition) = state.definitions.get(&index) else {
+        let Some(definition) = state.catalog.definitions.get(&index) else {
             return Ok(None);
         };
         let generation = state.generations.published_for_commit_admitted(
@@ -81,10 +81,10 @@ impl IndexingSubsystem {
             return Ok(false);
         };
         let state = self.state.read();
-        let definition_work = navigation_work(state.definitions.len(), 1)?;
+        let definition_work = navigation_work(state.catalog.definitions.len(), 1)?;
         prepare(SelectedIndexReadWork::OrderedNavigation(definition_work), 0)
             .map_err(SelectedIndexGenerationAdmissionStop::Admission)?;
-        let Some(definition) = state.definitions.get(&index) else {
+        let Some(definition) = state.catalog.definitions.get(&index) else {
             return Ok(false);
         };
         state.generations.has_published_for_commit_admitted(

@@ -116,6 +116,13 @@ pub struct WorthQueryCommittedAftermathCausality {
 }
 
 impl WorthQueryCommittedAftermathCausality {
+    pub(in crate::domain_computation) fn owned_receipt_backing_bytes(&self) -> Option<u64> {
+        receipt_backing_bytes(&self.parent)?
+            .checked_add(receipt_backing_bytes(&self.child)?)?
+            .checked_add(receipt_backing_bytes(self.source.relational())?)?
+            .checked_add(self.lineage.owned_receipt_backing_bytes()?)
+    }
+
     pub(crate) fn seal(
         pending: WorthQueryPendingAftermathCausality,
         child: RelationalCommitReceipt,
@@ -167,4 +174,10 @@ impl WorthQueryCommittedAftermathCausality {
             && self.lineage == pending.lineage
             && self.child.branch_id == pending.target_branch
     }
+}
+
+fn receipt_backing_bytes(receipt: &RelationalCommitReceipt) -> Option<u64> {
+    (receipt.parents.capacity() as u64)
+        .checked_mul(std::mem::size_of::<CommitId>() as u64)?
+        .checked_add(receipt.branch_id.0.capacity() as u64)
 }

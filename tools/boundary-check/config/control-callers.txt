@@ -577,3 +577,10 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 # Native inherited-accounting refusal leaves exactly the SDK-owned outer frame.
 crates/worth-execution/ crates/worth-relational/src/tests/transactions/core/snapshot_and_retention/request_owned.rs
+
+# Original witness payer court reads only the actual SDK scope-frame quote.
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/correction_witness/tests.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/examples/application_correction_support/tree_reapplication.rs
+
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-certification/tests/application_graph/correction/consecutive_undo.rs

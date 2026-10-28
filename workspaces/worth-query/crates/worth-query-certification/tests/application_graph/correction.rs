@@ -8,6 +8,9 @@ use std::num::NonZeroUsize;
 use worth_query_host::facade::application_entry::*;
 use worth_query_host::facade::primary_graph::WorthQueryCorrectionDerivationDenial;
 
+#[path = "correction/consecutive_undo.rs"]
+mod consecutive_undo;
+
 #[test]
 fn retained_reapplication_uses_explicit_alternatives_and_active_consumption() {
     model::tree_reapplication::run();

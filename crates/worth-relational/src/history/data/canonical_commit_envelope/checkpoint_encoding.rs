@@ -43,6 +43,7 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
         S: serde::Serializer,
     {
         let CanonicalCommitEnvelope {
+            authored_index_writes,
             required_output_codec_retirements,
             required_output_origin,
             required_output_materialization,
@@ -69,12 +70,17 @@ impl Serialize for CheckpointCanonicalEnvelopeRef<'_> {
             schema_reconciliation_descriptor,
             descriptor_semantics_version,
         } = self.envelope;
-        let field_count = if self.include_descriptive_touches {
-            25
-        } else {
-            24
-        } - usize::from(!self.include_codec_retirements);
+        let field_count = usize::from(!authored_index_writes.is_unavailable())
+            + if self.include_descriptive_touches {
+                25
+            } else {
+                24
+            }
+            - usize::from(!self.include_codec_retirements);
         let mut fields = serializer.serialize_struct("CanonicalCommitEnvelope", field_count)?;
+        if !authored_index_writes.is_unavailable() {
+            fields.serialize_field("authored_index_writes", authored_index_writes)?;
+        }
         if self.include_codec_retirements {
             fields.serialize_field(
                 "required_output_codec_retirements",

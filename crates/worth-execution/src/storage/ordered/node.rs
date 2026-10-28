@@ -1,5 +1,5 @@
-use super::ExecutionOrderedMapDenial as Denial;
-use crate::{ChargedBytes, ExecutionAllocationPolicy, ExecutionMemoryReservation};
+use super::{funding::Funding, ExecutionOrderedMapDenial as Denial};
+use crate::{ChargedBytes, ExecutionMemoryReservation};
 use std::{alloc::Layout, sync::Arc};
 pub(super) type Link<K, V> = Option<Arc<Node<K, V>>>;
 pub(super) struct Entry<K, V> {
@@ -30,11 +30,7 @@ pub(crate) fn cell_bytes<K, V>() -> Result<u64, Denial> {
         .ok_or(Denial::CapacityOverflow)
 }
 impl<K: Clone + ChargedBytes, V: Clone + ChargedBytes> Entry<K, V> {
-    pub(super) fn cloned(
-        key: &K,
-        value: &V,
-        policy: ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<Arc<Self>, Denial> {
+    pub(super) fn cloned(key: &K, value: &V, policy: Funding<'_, '_>) -> Result<Arc<Self>, Denial> {
         if !policy.uses_accounting() {
             return Self::cloned_with_bytes(key, value, policy, None);
         }
@@ -49,7 +45,7 @@ impl<K: Clone, V: Clone> Entry<K, V> {
     pub(super) fn cloned_native(
         key: &K,
         value: &V,
-        policy: ExecutionAllocationPolicy<'_, '_>,
+        policy: Funding<'_, '_>,
     ) -> Result<Arc<Self>, Denial> {
         let bytes = if policy.uses_accounting() {
             Some(arc_bytes::<Self>()?)
@@ -61,7 +57,7 @@ impl<K: Clone, V: Clone> Entry<K, V> {
     fn cloned_with_bytes(
         key: &K,
         value: &V,
-        policy: ExecutionAllocationPolicy<'_, '_>,
+        policy: Funding<'_, '_>,
         bytes: Option<u64>,
     ) -> Result<Arc<Self>, Denial> {
         let memory = bytes
@@ -84,7 +80,7 @@ pub(super) fn build<K, V>(
     entry: Arc<Entry<K, V>>,
     left: Link<K, V>,
     right: Link<K, V>,
-    policy: ExecutionAllocationPolicy<'_, '_>,
+    policy: Funding<'_, '_>,
 ) -> Result<Arc<Node<K, V>>, Denial> {
     let allocation = if policy.uses_accounting() {
         Some(arc_bytes::<Node<K, V>>()?)

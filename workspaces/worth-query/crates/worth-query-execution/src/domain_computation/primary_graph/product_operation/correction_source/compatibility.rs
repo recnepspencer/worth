@@ -2,10 +2,6 @@
 use super::disclosure::WorthQueryCorrectionDerivationDenial as Denial;
 use super::*;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
-use crate::domain_computation::primary_graph::{
-    exact_basis_access::open_exact_basis_snapshot,
-    output_reuse::{first_moved_fact, retained_fact_denial},
-};
 use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
 
 pub(super) fn require_compatible_source<Schema, C>(
@@ -32,27 +28,7 @@ where
         .commit_evidence()
         .rebased_source_facts()
         .map_err(|_| Denial::SemanticMaterialUnavailable)?;
-    let application = target.application();
-    let execution = phase
-        .execution_request_for(&application.product_runtime)
-        .map_err(|_| Denial::ForeignPhase)?;
-    application
-        .primary_provider
-        .graph
-        .with_runtime_mut(&execution, |runtime| {
-            let snapshot = open_exact_basis_snapshot(runtime, target.product().relational_basis())
-                .map_err(Denial::Basis)?;
-            let comparison = first_moved_fact(&execution, runtime, &snapshot, facts.iter());
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            match comparison {
-                Ok(None) => Ok(()),
-                Ok(Some(_)) => Err(Denial::SourceDiverged),
-                Err(stop) => Err(Denial::DependencyComparison(retained_fact_denial(
-                    stop,
-                    "correction semantic dependency",
-                ))),
-            }
-        })?;
+    super::restored_support::require(target, phase, source, &facts)?;
     Ok(interpretation)
 }
 

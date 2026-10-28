@@ -284,16 +284,11 @@ pub(super) fn prepare_publication_phase(
     let canonical_publication_route = runtime
         .history
         .reserve_canonical_publication_route(
+            *execution,
             Arc::clone(&canonical_commit_envelope),
             Arc::clone(prepared_history.root()),
         )
-        .map_err(|detail| {
-            TransactionCommitError::publication(PublicationError::new(
-                PublicationStage::BundleAssembly,
-                detail,
-            ))
-            .with_commit_log(commit_log.clone())
-        })?;
+        .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
     Ok(PreparedPublicationPhase {
         durable_bytes,
