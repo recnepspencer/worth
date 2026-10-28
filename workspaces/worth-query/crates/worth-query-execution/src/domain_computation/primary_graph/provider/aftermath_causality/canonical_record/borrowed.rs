@@ -71,8 +71,8 @@ pub(in crate::domain_computation::primary_graph::provider::aftermath_causality) 
                 && fields.value(&layout.lineage.consumed_reversal)?.is_none())
         })
         .map_err(|cause| match cause {
-            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
             worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::Unavailable,
+            worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
         })?
         .ok_or(Denial::Unavailable)?
     })

@@ -161,14 +161,14 @@ fn witness_denial(cause: CorrectionWitnessDenial) -> Denial {
         CorrectionWitnessDenial::Interrupted(cause) => {
             Denial::RestoredSupport(Stop::Interrupted(cause))
         }
-        CorrectionWitnessDenial::Execution(cause) => {
-            Denial::RestoredSupport(Stop::Execution(cause))
-        }
         CorrectionWitnessDenial::SizeOverflow => Denial::RestoredSupport(Stop::SizeOverflow),
         CorrectionWitnessDenial::Unavailable => {
             Denial::RestoredSupport(Stop::CanonicalEvidenceUnavailable)
         }
         CorrectionWitnessDenial::Basis(cause) => Denial::Basis(cause),
+        CorrectionWitnessDenial::Execution(cause) => {
+            Denial::RestoredSupport(Stop::Execution(cause))
+        }
     }
 }
 
