@@ -67,15 +67,20 @@ impl WorthQueryApplicationContribution<NumericSchema> for NumericContribution {
     }
 }
 pub fn install() -> Host {
+    install_with_resources(world_resources::world_resources(256, 4 * 1024 * 1024, 256))
+}
+pub fn install_with_resources(resources: runtime::WorthQueryProductWorldResources) -> Host {
     install_program(
         validated::<Program>(),
         roster().support(validated::<super::output_program::OutputProgram>()),
+        resources,
     )
 }
 pub fn install_with_outputs() -> OutputHost {
     install_program(
         validated::<super::output_program::OutputProgram>(),
         roster().support(validated::<Program>()),
+        world_resources::world_resources(256, 4 * 1024 * 1024, 256),
     )
 }
 fn roster() -> WorthQueryApplicationProgramRoster<'static, NumericSchema> {
@@ -87,6 +92,7 @@ fn roster() -> WorthQueryApplicationProgramRoster<'static, NumericSchema> {
 fn install_program<P>(
     program: ValidatedApplicationProgram<NumericSchema, P>,
     roster: WorthQueryApplicationProgramRoster<'_, NumericSchema>,
+    resources: runtime::WorthQueryProductWorldResources,
 ) -> WorthQueryProgramApplicationRuntime<NumericSchema, P>
 where
     P: ApplicationProgramDefinition<NumericSchema, Contributions = (NumericContribution,)>,
@@ -99,7 +105,7 @@ where
         ((),),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
         WorthQueryInMemoryApplicationLimits::new(
-            world_resources::world_resources(256, 4 * 1024 * 1024, 256),
+            resources,
             runtime::WorthQueryApplicationQueryResourceProfile::new(
                 std::num::NonZeroUsize::new(128).unwrap(),
             ),

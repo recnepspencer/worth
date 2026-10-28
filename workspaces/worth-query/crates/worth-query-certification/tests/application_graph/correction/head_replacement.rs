@@ -35,7 +35,19 @@ fn fork(host: &host::Host, read: &WorthQueryApplicationReadObservation) -> Worth
 
 #[test]
 fn saved_head_replacement_refuses_moved_images_and_retains_late_stop_cleanup() {
-    let host = host::install();
+    // Native advancement checks the original controls at final handoff;
+    // accounted advancement instead preserves a completed callback's value.
+    let resources = crate::document_retention_model::host::world_resources::world_resources(
+        256,
+        4 * 1024 * 1024,
+        256,
+    )
+    .with_execution_policy(worth_foundational::ExecutionRequestPolicy::for_workers(
+        worth_foundational::ExecutionPosture::Serial,
+        worth_foundational::DeterminismContract::CanonicalBitwise,
+        std::num::NonZeroUsize::MIN,
+    ));
+    let host = host::install_with_resources(resources);
     let root = pin(&host, host.current_world());
     let old = fork(&host, &root);
     host::edit_on(&host, old, Value::Primary(11), "saved-old-eleven");
@@ -143,12 +155,15 @@ fn saved_head_replacement_refuses_moved_images_and_retains_late_stop_cleanup() {
         // the caller stops its original request at the outer handoff.
         cancellation.cancel();
     });
-    assert!(matches!(
-        outer,
-        Err(WorthQueryAdvancementDenial::Interrupted(
-            WorthQueryManagedComputationInterruption::Cancelled
-        ))
-    ));
+    assert!(
+        matches!(
+            outer,
+            Err(WorthQueryAdvancementDenial::Interrupted(
+                WorthQueryManagedComputationInterruption::Cancelled
+            ))
+        ),
+        "native outer advancement must observe the late stop: {outer:?}"
+    );
     let retired = terminal.expect("actual retired custody survives the stopped outer handoff");
     assert_eq!(retired.retired_head(), current_old.selected_commit());
     assert!(

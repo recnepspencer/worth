@@ -6,6 +6,7 @@ use crate::identity::{ProductBranchIdentity, ProductBranchIncarnation};
 
 use super::{CustodyComponent, OwnerCreatedComponentCustodyRecord, OwnerRetirementWork};
 
+#[path = "registry/retirement.rs"]
 mod retirement;
 
 #[derive(Debug)]

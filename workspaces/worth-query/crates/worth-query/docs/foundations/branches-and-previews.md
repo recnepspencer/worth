@@ -125,7 +125,9 @@ Success has an effect even when the original request stops at final handoff.
 Inspect `handoff_stop()` and preserve the returned terminal artifact. If an outer
 `with_application_advancement` callback can stop after the lifecycle call,
 save its terminal result outside that callback before inspecting the outer
-advancement result. An outer stop does not prove the old reference survived.
+advancement result. Native worker-policy advancement checks cancellation at
+final handoff; accounted advancement preserves a completed callback's value.
+An outer stop does not prove the old reference survived.
 
 Cleanup remains owned by the installed runtime. Discover it through
 `application.branches().pending_cleanup()`; that existing path releases the old

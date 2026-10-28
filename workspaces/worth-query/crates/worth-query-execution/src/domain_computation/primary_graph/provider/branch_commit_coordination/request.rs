@@ -12,7 +12,7 @@ pub(crate) enum BranchCoordinationDenial {
 }
 
 impl WorthQueryApplicationBranchCommitCoordinator {
-    pub(super) fn lane_for_request(
+    pub(in crate::domain_computation::primary_graph::provider) fn lane_for_request(
         &self,
         occurrence: ProductBranchIncarnation,
         request: ExecutionRequest<'_, '_>,
