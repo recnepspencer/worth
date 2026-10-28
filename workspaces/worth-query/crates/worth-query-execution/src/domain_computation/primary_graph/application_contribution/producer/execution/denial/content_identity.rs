@@ -25,6 +25,9 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
                 }
             })
         }
+        Identity::DependencyStorage(StoreDenial::ExecutionRequest(cause)) => {
+            Some(advancement_scope_stop(*cause))
+        }
         Identity::DependencyStorage(StoreDenial::Allocation(allocation)) => {
             match allocation.classify() {
                 ExecutionAllocationDenialClass::Request(stop) => Some(advancement_scope_stop(stop)),

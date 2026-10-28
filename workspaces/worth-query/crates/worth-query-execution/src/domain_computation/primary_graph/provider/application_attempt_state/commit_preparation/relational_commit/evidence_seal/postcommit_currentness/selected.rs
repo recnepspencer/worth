@@ -282,6 +282,7 @@ impl SelectedRebase {
 fn storage_stop(cause: StoreDenial, own_effect: OwnEffectOnReads) -> RebasedSourceFacts {
     use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
     let reason = match cause {
+        StoreDenial::ExecutionRequest(cause) => RebaseVerificationReason::Execution(cause.into()),
         StoreDenial::Allocation(cause) => return rebase_walk::storage_stopped(cause, own_effect),
         StoreDenial::RequestInterruption(stop) => RebaseVerificationReason::Execution(match stop {
             Stop::Cancelled => worth_relational::facade::transactions::RelationalExecutionDenialCause::Cancelled,

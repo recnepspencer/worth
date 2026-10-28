@@ -12,6 +12,8 @@ mod entity_retirement;
 mod exact_basis_reads;
 mod exact_observation;
 mod field_revisions;
+mod field_support;
+pub use field_support::RelationalFieldSupportComparisonDenial;
 mod frontier_adjacency;
 mod historical_basis_reads;
 mod kind_scans;

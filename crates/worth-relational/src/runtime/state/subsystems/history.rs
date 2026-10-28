@@ -59,6 +59,9 @@ mod history_retention;
 mod history_root_capture;
 pub use canonical_publication_routes::RelationalPatchPositionReservationCounters;
 pub(crate) use canonical_publication_routes::{
+    authored_write_commit_denial, AuthoredWriteGeneration,
+};
+pub(crate) use canonical_publication_routes::{
     readmit_positioned_canonical_commit, CanonicalCheckpointAdmissionError,
     CanonicalPositionAdmission, CanonicalPublicationRecordError, PerformedCheckpointSelection,
     PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,

@@ -4,6 +4,20 @@ use super::{
 };
 
 impl WorthQueryPrimaryGraphProvider {
+    pub(in crate::domain_computation::primary_graph) fn capture_correction_witness(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        commit: &worth_relational::facade::history::RelationalCommitReceipt,
+    ) -> Result<
+        Option<std::sync::Arc<super::CorrectionPerformedWitness>>,
+        super::CorrectionWitnessDenial,
+    > {
+        self.completed_commit_evidence
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .capture_correction_witness(execution, commit)
+    }
+
     pub(in crate::domain_computation::primary_graph) fn observe_completed_application(
         &self,
         commit: &worth_relational::facade::history::RelationalCommitReceipt,

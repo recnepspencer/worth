@@ -46,6 +46,7 @@ pub enum WorthQueryCorrectionDerivationDenial {
     InputCapture(crate::domain_computation::primary_graph::WorthQueryOperationInputCaptureDenial),
     CommandKey(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
     SourceDiverged,
+    RestoredSupport(super::WorthQueryCorrectionRestoredSupportDenial),
     UnsupportedTargetProgram,
     ProgramComparison(
         Box<worth_query_installation::facade::WorthQueryProgramAdoptionRequirementsDenial>,

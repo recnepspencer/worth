@@ -7,6 +7,7 @@ use worth_runtime_world::facade::CompositeCommitIdentity;
 use super::super::idempotency::WorthQueryIdempotencyLookupKey;
 use super::super::WorthQueryPrimaryGraphCommittedApplication;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold;
+mod correction_witness;
 
 /// Immutable owner evidence indexed by the Relational commit that produced it.
 #[derive(Default)]

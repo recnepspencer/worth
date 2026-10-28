@@ -90,6 +90,23 @@ pub(in crate::domain_computation::primary_graph) fn storage_read_set_failure(
     use super::super::application_attempt::retained_decision_facts::StoreDenial as Store;
     use crate::domain_computation::WorthQueryDecisionReadSetDenialKind as Kind;
     match failure {
+        Store::ExecutionRequest(stop) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
+            let cause = stop.into();
+            let kind =
+                match super::relational_execution_denial::relational_execution_kind(cause, None) {
+                    Ok(kind) => Kind::ExecutionRequest(kind),
+                    Err(Control::Cancelled) => Kind::RequestInterrupted(Interruption::Cancelled),
+                    Err(Control::TimedOut) => {
+                        Kind::RequestInterrupted(Interruption::DeadlineExceeded)
+                    }
+                };
+            WorthQueryDecisionReadSetFailure::new(kind, "original read storage request refused")
+                .with_native_query_read_stop(
+                    worth_relational::facade::runtime::QueryReadExecutionStop::ReadRequest(cause),
+                )
+        }
         Store::Allocation(denial) => WorthQueryDecisionReadSetFailure::allocation_denied(denial),
         Store::RequestInterruption(stop) => WorthQueryDecisionReadSetFailure::new(
             Kind::RequestInterrupted(stop),

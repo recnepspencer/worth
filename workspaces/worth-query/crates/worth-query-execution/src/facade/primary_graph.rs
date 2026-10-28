@@ -1,9 +1,8 @@
 //! Primary Graph application contracts.
-pub use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
-pub use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 pub use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
-    WorthQueryCorrectionLineageBinding,
+    WorthQueryCorrectionLineageBinding, WorthQueryCorrectionSourceCoordinates,
+    WorthQueryRecordedCorrectionSource,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
@@ -210,19 +209,20 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryCorrectionAlternativeRef, WorthQueryCorrectionAlternativeResolution,
     WorthQueryCorrectionAlternativesContinuation, WorthQueryCorrectionAlternativesPage,
     WorthQueryCorrectionDerivationDenial, WorthQueryCorrectionOutputProjectionDenial,
-    WorthQueryCorrectionSelectionDenial, WorthQueryCorrelatedInboundOccurrence,
-    WorthQueryCurrentBodyRequirementAssessment, WorthQueryCurrentOutputDenial,
-    WorthQueryCurrentOutputDenialKind, WorthQueryCurrentOutputSelection,
-    WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan, WorthQueryDelegationActivationProgram,
-    WorthQueryElevationApprovalAuthorizationDenial, WorthQueryElevationApprovalOutcome,
-    WorthQueryElevationApprovalProgram, WorthQueryElevationCloseAuthorizationDenial,
-    WorthQueryElevationCloseOutcome, WorthQueryElevationCloseProgram,
-    WorthQueryElevationClosureKind, WorthQueryElevationRequestOutcome,
-    WorthQueryElevationRequestProgram, WorthQueryEntityResolutionDenial,
-    WorthQueryEntityResolutionDenialKind, WorthQueryEntityResolutionRefusalKind,
-    WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,
-    WorthQueryExternalRedispatchDenial, WorthQueryExternalTransportInstallationDenial,
-    WorthQueryGeneratedEntity, WorthQueryGeneratedOutputInvariantAdmissionDenial,
+    WorthQueryCorrectionRestoredSupportDenial, WorthQueryCorrectionSelectionDenial,
+    WorthQueryCorrelatedInboundOccurrence, WorthQueryCurrentBodyRequirementAssessment,
+    WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind,
+    WorthQueryCurrentOutputSelection, WorthQueryCustomInvariantDenial, WorthQueryDecisionPlan,
+    WorthQueryDelegationActivationProgram, WorthQueryElevationApprovalAuthorizationDenial,
+    WorthQueryElevationApprovalOutcome, WorthQueryElevationApprovalProgram,
+    WorthQueryElevationCloseAuthorizationDenial, WorthQueryElevationCloseOutcome,
+    WorthQueryElevationCloseProgram, WorthQueryElevationClosureKind,
+    WorthQueryElevationRequestOutcome, WorthQueryElevationRequestProgram,
+    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
+    WorthQueryEntityResolutionRefusalKind, WorthQueryExternalDispatchAttemptDenial,
+    WorthQueryExternalDispatchPreparationDenial, WorthQueryExternalRedispatchDenial,
+    WorthQueryExternalTransportInstallationDenial, WorthQueryGeneratedEntity,
+    WorthQueryGeneratedOutputInvariantAdmissionDenial,
     WorthQueryGeneratedOutputPublicationNoEffect,
     WorthQueryGeneratedOutputPublicationNoEffectCause, WorthQueryGeneratedOutputReconstruction,
     WorthQueryGeneratedOutputReconstructionDenial, WorthQueryGeneratedOutputReconstructionFailure,

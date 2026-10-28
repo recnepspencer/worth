@@ -55,6 +55,7 @@ impl CheckpointDecodeDenial {
             FactDecodeDenial::Format(message) => message.into(),
             FactDecodeDenial::Execution(cause) => Self::native_execution(cause,
                 "checkpoint fact reconstruction stopped".to_owned()),
+            FactDecodeDenial::Retention(StoreDenial::ExecutionRequest(cause)) => Self::execution(cause),
             FactDecodeDenial::Retention(StoreDenial::Allocation(cause)) => match cause.classify() {
                 ExecutionAllocationDenialClass::Request(stop) => Self::execution(stop),
                 ExecutionAllocationDenialClass::Physical(_) => Self {

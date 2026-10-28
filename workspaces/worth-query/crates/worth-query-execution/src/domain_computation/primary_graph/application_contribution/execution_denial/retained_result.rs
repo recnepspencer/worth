@@ -31,6 +31,9 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
         denial: worth_execution::ExecutionOrderedMapDenial,
     ) -> Self {
         match denial {
+            worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
+                Self::from_work_ceiling(cause, Self::ReducerPanicked)
+            }
             worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
                 Self::Resource(Resource::CapacityOverflow)
             }

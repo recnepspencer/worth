@@ -738,6 +738,7 @@ exports = [
     "WorthQueryCorrectionDerivationDenial",
     "WorthQueryCorrectionLineageBinding",
     "WorthQueryCorrectionOutputProjectionDenial",
+    "WorthQueryCorrectionRestoredSupportDenial",
     "WorthQueryCorrectionSelectionDenial",
     "WorthQueryCorrectionSourceCoordinates",
     "WorthQueryCorrelatedInboundOccurrence",

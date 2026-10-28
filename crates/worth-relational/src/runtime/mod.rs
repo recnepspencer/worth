@@ -34,7 +34,8 @@ pub use crate::visibility::materialization::read_records::{
     QueryReadExecutionStop, QueryReadPacketDenial, RelationProjectionRecord,
     RelationRecordProjection, RelationalAdjacencyDirection, RelationalAdjacencyVisit,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata, RelationalEntityRetirement,
-    RelationalPinnedRead, RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
+    RelationalFieldSupportComparisonDenial, RelationalPinnedRead,
+    RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,
 };
@@ -71,12 +72,13 @@ pub(crate) use construction::RuntimeExtensions;
 pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
-    readmit_positioned_canonical_commit, AdmittedRelationalRuntimeOperation,
-    BranchHeadVersionIndexAuthority, CanonicalCheckpointAdmissionError, CanonicalPositionAdmission,
-    CanonicalPublicationRecordError, CommitStrategiesSubsystem, DurabilitySubsystem,
-    HistorySubsystem, IndexingState, IndexingSubsystem, LineageIdentityAllocator, LineageState,
-    LineageSubsystem, PartitionEdition, PendingRecordAllocations, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
+    authored_write_commit_denial, readmit_positioned_canonical_commit,
+    AdmittedRelationalRuntimeOperation, AuthoredWriteGeneration, BranchHeadVersionIndexAuthority,
+    CanonicalCheckpointAdmissionError, CanonicalPositionAdmission, CanonicalPublicationRecordError,
+    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage,
+    IndexDefinitionCatalog, IndexingState, IndexingSubsystem, LineageIdentityAllocator,
+    LineageState, LineageSubsystem, PartitionEdition, PendingRecordAllocations,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedGenerationBatch,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
     PreparedVersionedArtifactPublication, PublicationSubsystem, PublishedSnapshotCapacityOwner,
     PublishedSnapshotCloseout, PublishedSnapshotReservationDenial,

@@ -7,12 +7,16 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonica
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 
+#[path = "canonical_publication_routes/authored_writes.rs"]
+mod authored_writes;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
 mod position_admission;
+pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
+pub(crate) use authored_writes::AuthoredWriteGeneration;
 
 pub(crate) use performed_stream::PerformedCheckpointSelection;
 pub use performed_stream::RelationalPatchPositionReservationCounters;
@@ -39,6 +43,7 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 }
 
 struct CanonicalPublicationRoute {
+    authored_writes: Mutex<Option<AuthoredWriteGeneration>>,
     envelope: Arc<CanonicalCommitEnvelope>,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
     performed_position: AtomicU64,
@@ -89,6 +94,8 @@ impl RelationalCanonicalPublicationRoutes {
         let installs_version_route = positioned.envelope().authority_kind()
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
         let route = Arc::new(CanonicalPublicationRoute {
+            // Cold recovery may explicitly rebuild this discardable accelerator.
+            authored_writes: Mutex::new(None),
             envelope: Arc::clone(positioned.canonical_arc()),
             handoff: Mutex::new(None),
             performed_position: AtomicU64::new(0),
@@ -123,8 +130,10 @@ impl RelationalCanonicalPublicationRoutes {
         routes: &Arc<Self>,
         envelope: Arc<CanonicalCommitEnvelope>,
         root: Arc<crate::branch::RelationalBranchRoot>,
+        authored_writes: Option<AuthoredWriteGeneration>,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
         let route = Arc::new(CanonicalPublicationRoute {
+            authored_writes: Mutex::new(authored_writes),
             envelope,
             handoff: Mutex::new(Some(CanonicalPublicationHandoff {
                 root,
