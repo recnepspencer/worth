@@ -36,15 +36,21 @@ impl ChargedBytes for Postings {
 
 impl super::RelationalCanonicalPublicationRoutes {
     pub(crate) fn authored_generation(&self, commit: CommitId) -> Option<AuthoredWriteGeneration> {
-        let route = self.by_commit.get(&commit)?;
-        if !route.is_visible() {
-            return None;
-        }
-        route
-            .authored_writes
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .clone()
+        self.authored_generation_owner(commit)?
+            .authored_write_generation()
+    }
+
+    pub(super) fn authored_generation_owner(
+        &self,
+        commit: CommitId,
+    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+        self.performed_envelope_residency(commit).or_else(|| {
+            self.checkpoint_catalog
+                .read()
+                .unwrap_or_else(|p| p.into_inner())
+                .get(&commit)
+                .map(|artifact| artifact.envelope_residency())
+        })
     }
 
     pub(crate) fn prepare_authored_generation(
@@ -84,7 +90,6 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
         })
     };
     match cause {
-        Denial::Execution(cause) => request(cause),
         Denial::BackingAllocation(_) => {
             request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
         }
@@ -101,6 +106,7 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
             ))
         }
         Denial::Interrupted(cause) => request(crate::execution::denial::kernel_stop(cause)),
+        Denial::Execution(cause) => request(cause),
         Denial::SizeOverflow
         | Denial::OrderedStorage(worth_execution::ExecutionOrderedMapDenial::CapacityOverflow) => {
             request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)

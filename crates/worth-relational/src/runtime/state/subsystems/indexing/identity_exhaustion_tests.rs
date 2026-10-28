@@ -24,9 +24,14 @@ fn exhausted_definition_frontier_refuses_without_inserting() {
     }
     let state = owner.state.read();
     assert_eq!(state.next_index_id, u64::MAX);
-    assert_eq!(state.definitions.len(), 1);
+    assert_eq!(state.catalog.definitions.len(), 1);
     assert_eq!(
-        state.definitions.get(&first.index_id).unwrap().as_ref(),
+        state
+            .catalog
+            .definitions
+            .get(&first.index_id)
+            .unwrap()
+            .as_ref(),
         &first
     );
 }

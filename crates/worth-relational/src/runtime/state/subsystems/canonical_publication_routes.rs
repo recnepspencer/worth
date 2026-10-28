@@ -67,7 +67,6 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 }
 
 struct CanonicalPublicationRoute {
-    authored_writes: Mutex<Option<AuthoredWriteGeneration>>,
     envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
     commit: crate::history::data::RelationalCommitReceipt,
     roots: crate::branch::RelationalBranchRootDescriptor,
@@ -141,7 +140,6 @@ impl RelationalCanonicalPublicationRoutes {
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
         envelope.bind_performed(&positioned, None);
         let route = Arc::new(CanonicalPublicationRoute {
-            authored_writes: Mutex::new(None),
             envelope,
             commit: positioned.commit.clone(),
             roots,
@@ -186,8 +184,8 @@ impl RelationalCanonicalPublicationRoutes {
             .descriptor()
             .cloned()
             .ok_or("prepared root has no committed descriptor")?;
+        envelope.replace_authored_write_generation(authored_writes);
         let route = Arc::new(CanonicalPublicationRoute {
-            authored_writes: Mutex::new(authored_writes),
             envelope,
             commit,
             roots,

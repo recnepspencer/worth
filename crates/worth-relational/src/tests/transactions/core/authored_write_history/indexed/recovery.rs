@@ -116,6 +116,24 @@ fn index_rebuild_requires_live_verified_canonical_evidence() {
     recovered
         .rebuild_authored_write_generation(execution, selected(&recovered, &recovered_target))
         .unwrap();
+    assert_eq!(
+        scan(
+            &recovered,
+            execution,
+            &recovered_source,
+            &recovered_target,
+            RelationalAuthoredWriteSelector::Record {
+                record: RecordRef::Entity(entity),
+                scope: RelationalAuthoredWriteScope::Field(
+                    aspect_key("name"),
+                    CanonicalFieldPath::single(field_key("name")),
+                ),
+            },
+        )
+        .0,
+        [equal.commit.commit_id],
+        "cold field history retains the exact authored no-op despite an unchanged value"
+    );
     assert!(matches!(
         recovered.authored_write_history_cursor(
             execution,
