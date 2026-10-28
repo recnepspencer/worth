@@ -17,4 +17,7 @@ pub use limits::{
     WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationQueryLimits,
     WorthQueryResolvedApplicationQueryLimits,
 };
-pub use observation::WorthQueryInstalledApplicationQueryBindingObservation;
+pub use observation::{
+    WorthQueryInstalledApplicationInspectionContract,
+    WorthQueryInstalledApplicationQueryBindingObservation,
+};

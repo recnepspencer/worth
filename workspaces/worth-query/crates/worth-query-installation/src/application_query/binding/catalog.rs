@@ -142,7 +142,20 @@ where
             return Err(denial(kind, descriptor.identity()));
         }
     }
-    crate::application_query::inspection::validate(schema, &bindings)?;
+    let inspection = crate::application_query::inspection::validate(schema, &bindings)?;
+    for definition in &inspection {
+        let name = definition.parts().binding.parts().binding.as_str();
+        let binding = bindings
+            .get_mut(name)
+            .expect("the complete roster was validated");
+        let meaning = crate::application_query::inspection::CompiledInspectionMeaning::compile(
+            schema, binding, definition,
+        )?;
+        Arc::get_mut(binding)
+            .expect("unpublished catalog uniquely owns each binding")
+            .finish_inspection(meaning);
+    }
+    crate::application_query::inspection::refuse_unavailable(&inspection)?;
     Ok(WorthQueryInstalledApplicationQueryCatalog {
         histories: crate::application_query::history::compile(schema, &bindings)?,
         certification: CertificationQueryCatalog::new(queries.into_values().collect()),

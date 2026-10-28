@@ -40,6 +40,10 @@ impl WorthQueryInstalledGraphCapabilityRequirement {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryInstalledGraphObligationResourcePosture {
+    ApplicationInspection {
+        meaning: CanonicalDigestId,
+        maximum_authorization_facts: usize,
+    },
     ApplicationResource {
         maximum_authorization_facts: usize,
     },

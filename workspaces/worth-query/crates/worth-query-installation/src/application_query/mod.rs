@@ -26,7 +26,8 @@ mod cardinality_tests;
 mod tests;
 
 pub use binding::{
-    WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationQueryBindingObservation,
+    WorthQueryApplicationQueryLimitDenial, WorthQueryInstalledApplicationInspectionContract,
+    WorthQueryInstalledApplicationQueryBindingObservation,
     WorthQueryInstalledApplicationQueryLimits, WorthQueryResolvedApplicationQueryLimits,
 };
 pub use canonical_basis::WorthQueryApplicationCanonicalArtifact;

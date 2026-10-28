@@ -1,29 +1,21 @@
 # Cross-Runtime Causal Inspection
 
-> **Internal engine surface.** This page documents `WorthQueryWorkspace` (`worth_query::facade`), the engine surface that `worth-ui-query-binding` uses. Application code uses `worth-query-decl` and `worth-query-host`; start with the [application front door](../foundations/ordinary-application-front-door.md).
+Application code uses `worth-query-decl` and `worth-query-host`; start with the
+[application front door](../foundations/ordinary-application-front-door.md).
 
 ## What This Feature Is
 
-Cross-runtime causal inspection explains why an observed Query result changed,
-was suppressed, was denied, or was replayed across Query, bridge, relational,
-and signal boundaries. It starts from an observation receipt plus a sealed
-inspection-basis capability, then produces an admitted explanation plan and an
-inspectable artifact.
+Use completed query observations to retain the original binding, parameters,
+source footprints and optional disclosed projection after business rows drop.
+These owners retain evidence without retaining a Native reader or granting a new
+read permission. Close an observation or drop its last clone to release its custody.
 
-The operational implementation lives in
-`worth-query-execution/src/domain_computation/primary_graph/causal_inspection/`.
-The older engine preserves its supported receipt constructors through a
-directional adapter containing one Execution receipt; it retains only old-receipt
-translation and historical certification. Anchoring, reference resolution,
-admission and materialization have one Execution owner.
-
-Completed application-query publication receipts retain an opaque native
-observation when their disclosed source owner supplies one. It carries original
-source, original bound interpretation, parameter, scope and basis evidence,
-without a snapshot pin or current
-permission. The ordinary Decl/Host inspection entrance and fresh governed
-disclosure remain unfinished in milestone 9.18.1 Phase 9. The older diagnostic
-builder described here does not provide that application admission.
+The `WorthQueryWorkspace` (`worth_query::facade`) diagnostic builder accepts an
+observation receipt and a sealed inspection-basis capability to plan and
+materialize its supported cross-runtime explanations. It does not supply
+application READ or metadata admission.
+A valid optional inspection definition currently returns `InspectionUnavailable`
+at installation; the declaration requirements are below.
 
 Output-readiness delivery also privately retains the actual Native conditional
 observation. Its immutable Bridge backing preserves the real Signal decision,
@@ -31,8 +23,7 @@ semantic observations, admitted snapshot identity and Signal-issued invalidation
 observation, without keeping the operational snapshot reader or reentry seed.
 The unique performed invalidation receipt still transfers only once; the
 read-only observer shares its original funded backing and grants no execution or
-disclosure authority. This retention does not yet connect the complete producer
-chain to an application inspection entrance. See
+disclosure authority. This observer supplies evidence, not a producer-to-row explanation. See
 [Native observation custody](../../../../../../crates/worth-runtime-bridge/README.md#read-only-native-observation-custody)
 for ownership, funding and release details.
 
@@ -45,17 +36,16 @@ envelope closes, and derives an invalidation reference only when that original
 backing contains an actual performed invalidation. Operational reentry's lack of
 a new performed receipt does not erase the original causal observation.
 
-This uses the same envelope assembly owner as legacy diagnostics, with a closed
-source distinction. Legacy diagnostics still require an actual retained Route;
+Route-based diagnostics require an actual retained Route;
 Native conditional evidence cannot be reconstructed from that route or from
 reporting identities. Its summary binds both the causal anchor and the distinct
 expected Query observation, rather than treating those different identities as
 equal. A summary is descriptive and cannot substitute fresh read authority.
 
-This is a lower-runtime prerequisite. Ordinary Host inspection, current READ and
-metadata admission, DiagnosticMask checks, comparison and exact producer/source
-association remain unfinished. The generic legacy inspection basis cannot admit
-Native envelope materialization; it receives typed `NativeInspectionAdmissionRequired`.
+The generic diagnostic inspection basis cannot admit Native envelope
+materialization: it returns typed `NativeInspectionAdmissionRequired`. Retained
+Native evidence cannot substitute for current READ, metadata or DiagnosticMask
+admission.
 
 ### Original Query Binding Custody
 
@@ -69,14 +59,11 @@ are copied for this binding handoff.
 Two bindings can name the same query while differing in input, result, scope or
 principal meaning. A matching query identity cannot substitute for the original
 catalog binding. Queries issued through the raw certification owner retain no
-binding, and later inspection cannot infer one. The carrier stays opaque: it
+binding, and inspection cannot infer one. The carrier stays opaque: it
 exposes neither protected metadata nor permission through the application receipt.
 The [Native query court](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs)
 executes two actual same-query bindings and an unbound query, preserving their
 distinct custody after operational query bases have closed.
-
-This prerequisite supplies the original interpretation for fresh Host admission;
-it does not complete that admission, producer-chain association or Phase 9.
 
 ### Original Query Row Evidence
 
@@ -98,13 +85,13 @@ Result-set membership remains a separate meaning. Its selection footprint is not
 a union of projected row reads: many rows retain their own exact field footprints,
 and an empty result has an empty row roster with its original selection evidence.
 The [many and empty query court](../../../worth-query-execution/src/domain_computation/primary_graph/causal_inspection/application_observation/declared_query/tests.rs)
-executes both through actual query admission and completion. A future inspector
-must admit requested metadata before traversing these retained footprints. This
-capture grants no fresh permission and does not yet associate a producer chain.
+provides examples of both through query admission and completion. Reading retained
+footprints requires independent metadata admission; capture grants no permission
+and establishes no producer-to-row association.
 
 ### Original Settled Producer Custody
 
-An actual output settlement now attaches one opaque readonly producer capsule to
+An actual output settlement attaches one opaque readonly producer capsule to
 its retained read. A query issued through that exact read shares the capsule with
 its original parameters and row evidence. Retained, shared and batch query routes
 preserve the same supplier; a plain head query cannot infer it from equal source
@@ -130,8 +117,8 @@ exercise those actual production routes.
 This is supplier custody, not proof that a result row or field was produced by
 that supplier. Fresh metadata admission must precede even checking its availability.
 Connecting a cause still requires exact entity generation, field, performed
-revision and declared output-role overlap. Fresh Host admission and that correlation
-remain unfinished in Phase 9; a matching entity, aspect or value is insufficient.
+revision and declared output-role overlap. A matching entity, aspect or value
+alone cannot establish that association.
 
 ### Original Disclosed Projection Custody
 
@@ -164,21 +151,17 @@ publishes no completed observation. The
 use actual query completion and field publications, including an equal-value
 rewrite, and check final-clone release alongside unchanged ordinary decoding.
 
-A completed read establishes an observation. It cannot establish that a result
-changed. Planned fresh `why_observed` admission will inspect one such observation;
-planned paired `why_changed` admission must compare genuine before/after retained
-Native disclosed projections under the same original binding, parameters, full
-scope, result shape, ordering and disclosure interpretation. Revision changes,
-producer contacts and equal source identities cannot replace that comparison.
-Only declared cell values/presence, ordered rows and nesting belong to this
-payload meaning; private predicate/dependency provenance does not. Arbitrary DTO
-comparison needs its own explicitly authored contract and is outside this meaning.
+A completed read establishes an observation, not a changed result. The captured
+payload describes Native cell values/presence, ordered rows and nesting. Revision
+changes, producer contacts and equal source identities do not establish payload
+equality or a change. Private dependency provenance and arbitrary application DTO
+comparison are outside this retained meaning.
 
-Custody grants no inspection access. Fresh read/metadata admission and the current
-subject's DiagnosticMask must precede availability checks or body traversal.
-The fresh single/paired Host issuer, Native Bridge assembly and exact producer
-association remain unfinished in Phase 9. Older observations without this explicit
-body will have typed comparison unavailability; they are never reconstructed.
+Capture grants no inspection permission. Current READ, metadata and DiagnosticMask
+admission must precede availability checks or body traversal. An observation
+without this explicit body cannot recover it by rerunning the source. Closing the
+observation releases its share of capture custody; the original reservation ends
+when its final owner drops.
 
 ### Optional Query Inspection Metadata Meaning
 
@@ -198,14 +181,16 @@ the full binding, including its input, query, result, scope and principal meanin
 matching names cannot transfer a rule to another binding. Explicit public metadata
 uses `ApplicationQueryDisclosureContract::public()` without rules.
 
-This is portable meaning only. Installation resolves every definition against the
-actual compiled query bindings, then returns typed `InspectionUnavailable` until
-the fresh Host issuer is implemented. The ordinary binding without this optional
-definition continues to install. Payload disclosure grants no metadata access,
-and a diagnostic-fields metadata rule grants no field values: those still require
-the separately admitted current subject's diagnostic mask. The Archive encoding
-adds member45/v1 and selector8/v1 without changing unextended schema bytes or
-identity. These declarations do not complete the Host inspection entrance.
+Installation checks every definition against its actual compiled binding before
+resolving metadata capabilities. Governed metadata must name an installed
+capability; an absent capability returns `InvalidInspectionDefinition`. A valid
+optional definition currently returns `InspectionUnavailable`. Declare the ordinary
+binding without that optional definition to execute queries.
+
+Payload disclosure grants no metadata access. A diagnostic-fields metadata rule
+grants no field values: those require the separately admitted current subject's
+diagnostic mask. Portable transport supports member45/v1 and selector8/v1 while
+preserving unextended schema bytes and identity.
 
 An application mutation may independently declare its original source-disclosure
 meaning with `ApplicationSourceDisclosureBinding<Schema>` and the mutation macro's
@@ -224,8 +209,8 @@ framework retention. Unaccounted serial requests keep their native posture and
 original control checkpoints, without a fabricated accounting reservation.
 Inspection alone retains neither the business input nor a correction contract.
 Correction keeps its additional input/inverse custody where required. These
-captures provide evidence for later fresh admission; the ordinary and governed
-Host inspection entrances and connected producer-chain journey remain unfinished.
+captures retain evidence only. They grant neither a new query read nor metadata
+disclosure, and they do not establish a producer-to-row cause.
 
 This is different from `workspace.inspections()?.inspect(...)`, which explains one retained
 workspace target. Use causal inspection when the question crosses runtime

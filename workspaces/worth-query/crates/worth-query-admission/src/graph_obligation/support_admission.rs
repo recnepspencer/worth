@@ -261,7 +261,10 @@ fn operation_resource_contract(
                 Some(contract)
             }
             WorthQueryInstalledGraphObligationResourcePosture::ApplicationQuery { .. }
-            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. } => None,
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationResource { .. }
+            | WorthQueryInstalledGraphObligationResourcePosture::ApplicationInspection { .. } => {
+                None
+            }
         })
         .ok_or(WorthQueryGraphWorkAdmissionDenial::IntentMismatch)
 }

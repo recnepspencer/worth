@@ -75,32 +75,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
 
-        if !std::ptr::eq(issued_principal.selected(), selected)
-            || !std::ptr::eq(issued_scope.selected(), selected)
-            || !std::ptr::eq(issued_principal.principal(), access.principal())
-            || !std::ptr::eq(issued_scope.scope(), access.scope())
-            || !issued_principal.request().same_request(request)
-            || !issued_scope.request().same_request(request)
-            || issued_principal.issued_root().admission_identity()
-                != issued_scope.issued_root().admission_identity()
-            || !std::ptr::eq(
-                issued_principal.issued_snapshot(),
-                issued_scope.issued_snapshot(),
-            )
-        {
-            return Err(denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis,
-                query.name(),
-            ));
-        }
-        let selected_access = SelectedIssuedAccessRoot {
-            principal: issued_principal.principal(),
-            scope: issued_scope.scope(),
-            root: issued_principal.issued_root(),
-            snapshot: issued_principal.issued_snapshot(),
-            product: selected.product().observation(),
-            request: issued_principal.request(),
-        };
+        let selected_access = SelectedIssuedAccessRoot::from_issued(
+            selected,
+            &access,
+            issued_principal,
+            issued_scope,
+            request,
+            query.name(),
+        )?;
         crate::domain_computation::primary_graph::application_query::admission_preparation::validate_admission_request(request, query.name())?;
         let (basis_selection, security_product, controls) = controls.into_admission_parts();
         let shape = crate::domain_computation::primary_graph::application_query::execution_shape::prepare_one_shot_shape_admitted(query, &controls)?;
@@ -142,41 +124,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 query.name(),
             )
         })?;
-        let principal_currentness =
-            principal_dependency::capture(self, access.principal(), session.identity())?;
-        let (authorization, authorization_work) = match query.authorization() {
-            WorthQueryInstalledApplicationQueryAuthorization::Public => (
-                WorthQueryRetainedAuthorizationDecisionFacts::principal(principal_currentness),
-                WorthQueryApplicationAuthorizationWorkEvidence::from_dependencies(&[]),
-            ),
-            WorthQueryInstalledApplicationQueryAuthorization::Ability(requirement) => {
-                // A semantic refusal retains the original operation denial in
-                // one Query-owned Box. Reserve its backing before observation.
-
-                let decisions = native.with_runtime_mut(graph, execution, || crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenial::new(
-                        crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(
-                            crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind::ForeignRuntime), query.name()), |relational| {
-                        self.observe_query_authorization_requirement(execution, session.identity(), relational, selected_snapshot.clone(), query, &access, requirement)
-                    })
-                    .map_err(WorthQueryApplicationQueryAdmissionDenial::from_authorization)?;
-
-                let work =
-                    WorthQueryApplicationAuthorizationWorkEvidence::from_dependencies(&decisions);
-                (
-                    WorthQueryRetainedAuthorizationDecisionFacts::abilities(
-                        principal_currentness,
-                        decisions,
-                    ),
-                    work,
-                )
-            }
-        };
-        if !authorization.belongs_to_session(session.identity()) {
-            return Err(denial(
-                WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
-                query.name(),
-            ));
-        }
+        let (authorization, authorization_work) = self
+            .observe_issued_query_read_authorization_with_native(
+                execution,
+                query,
+                &selected_access,
+                &session,
+                native,
+            )?;
         Ok(PreparedApplicationQueryPermission {
             issuer: self,
             query,

@@ -40,6 +40,8 @@ impl QueryObservationReceiptFamily {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CausalObservationOutcome {
+    /// One completed read; no before/after comparison has established a change.
+    Observed,
     Changed,
     Suppressed,
     Denied,
@@ -50,6 +52,7 @@ pub enum CausalObservationOutcome {
 impl CausalObservationOutcome {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::Observed => "observed",
             Self::Changed => "changed",
             Self::Suppressed => "suppressed",
             Self::Denied => "denied",
@@ -61,6 +64,7 @@ impl CausalObservationOutcome {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CausalInspectionReason {
+    ObservedResult,
     ChangedResult,
     SuppressedResult,
     DeniedResult,
@@ -71,6 +75,7 @@ pub enum CausalInspectionReason {
 impl CausalInspectionReason {
     pub fn as_str(&self) -> &'static str {
         match self {
+            Self::ObservedResult => "observed_result",
             Self::ChangedResult => "changed_result",
             Self::SuppressedResult => "suppressed_result",
             Self::DeniedResult => "denied_result",

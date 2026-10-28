@@ -3,6 +3,9 @@ use std::sync::Arc;
 
 use super::WorthQueryCompiledApplicationQueryBinding;
 
+mod inspection;
+pub use inspection::WorthQueryInstalledApplicationInspectionContract;
+
 /// Original installed interpretation, without a Native reader or permission.
 ///
 /// Equality identifies the same immutable catalog binding, including its schema
@@ -18,6 +21,12 @@ impl WorthQueryInstalledApplicationQueryBindingObservation {
         binding: Arc<WorthQueryCompiledApplicationQueryBinding>,
     ) -> Self {
         Self { binding }
+    }
+
+    /// Retains this exact binding's optional inspection meaning. This supplies
+    /// no read, disclosure, history or materialization permission.
+    pub fn inspection_contract(&self) -> Option<WorthQueryInstalledApplicationInspectionContract> {
+        WorthQueryInstalledApplicationInspectionContract::retain(self)
     }
 }
 

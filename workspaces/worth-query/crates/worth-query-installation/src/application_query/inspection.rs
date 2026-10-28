@@ -9,26 +9,30 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use worth_query_declaration::facade::application_query::ErasedApplicationQueryInspectionDefinition;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaMember,
 };
 
+mod meaning;
 #[cfg(test)]
 mod tests;
+pub(crate) use meaning::CompiledInspectionMeaning;
 
-pub(super) fn validate<Schema: ApplicationSchema>(
-    schema: &WorthQueryInstalledApplicationSchema<Schema>,
+/// Validate all definitions before constructing any optional installed leaf.
+pub(super) fn validate<'a, Schema: ApplicationSchema>(
+    schema: &'a WorthQueryInstalledApplicationSchema<Schema>,
     bindings: &BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
-) -> Result<(), Denial> {
-    validate_definitions(schema.installed_declaration().members(), bindings)
+) -> Result<Vec<&'a ErasedApplicationQueryInspectionDefinition>, Denial> {
+    validate_all(schema.installed_declaration().members(), bindings)
 }
 
-pub(super) fn validate_definitions(
-    members: &[ApplicationSchemaMember],
+fn validate_all<'a>(
+    members: &'a [ApplicationSchemaMember],
     bindings: &BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
-) -> Result<(), Denial> {
+) -> Result<Vec<&'a ErasedApplicationQueryInspectionDefinition>, Denial> {
     let mut seen = BTreeSet::new();
-    let mut first = None;
+    let mut validated = Vec::new();
     for member in members {
         let ApplicationSchemaMember::ApplicationQueryInspection { definition } = member else {
             continue;
@@ -48,12 +52,30 @@ pub(super) fn validate_definitions(
         {
             return Err(Denial::new(Kind::InspectionBindingMeaningChanged, name));
         }
-        first.get_or_insert(name);
+        validated.push(definition);
     }
-    // Never report inert meaning as an installed runtime capability. Validate every
-    // definition first so a valid unavailable definition cannot hide a foreign one.
-    if let Some(name) = first {
-        return Err(Denial::new(Kind::InspectionUnavailable, name));
+    Ok(validated)
+}
+
+#[cfg(test)]
+fn validate_definitions(
+    members: &[ApplicationSchemaMember],
+    bindings: &BTreeMap<String, Arc<WorthQueryCompiledApplicationQueryBinding>>,
+) -> Result<(), Denial> {
+    let validated = validate_all(members, bindings)?;
+    refuse_unavailable(&validated)
+}
+
+pub(super) fn refuse_unavailable(
+    validated: &[&ErasedApplicationQueryInspectionDefinition],
+) -> Result<(), Denial> {
+    // No optional meaning becomes an installed runtime capability before its
+    // genuine fresh issuer qualifies, even after its cold leaf is complete.
+    match validated.first() {
+        Some(definition) => Err(Denial::new(
+            Kind::InspectionUnavailable,
+            definition.parts().binding.parts().binding.as_str(),
+        )),
+        None => Ok(()),
     }
-    Ok(())
 }
