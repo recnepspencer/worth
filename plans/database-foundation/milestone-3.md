@@ -460,7 +460,7 @@ creates it lands.
 | `world.custody` | Journal | World custody dispositions | Authoritative | 4 |
 | `signal.definitions` | Journal | Signal definition transitions (with Bridge section) | Authoritative | 5 |
 | `signal.advances` | Journal | Signal branch advances | Authoritative | 5 |
-| `query.obligations` | Journal | Query: support lifecycle, adoption, managed, conditional, owned-async custody | Obligation | 6–7 |
+| `query.obligations` | Journal | Query: support lifecycle, adoption, required-output custody (R8), managed, conditional, owned-async custody, original-owner custody | Obligation | 6–7, 9 |
 | `query.dispatch` | Journal | Query: dispatch attempts, inbound custody, recovery claims | Obligation | 8 |
 | `query.corrections` | Journal | Query: retained correction material and custody | Per contract | 9 |
 
@@ -495,8 +495,10 @@ exact name.
   capabilities that can create it (D15).
 - **Durable rows with process-local identities.** List every durable row
   recording `runtime_instance_id` or any other process-local identity, with
-  the phase that replaces it. Examples are the outbox's
-  `relational_runtime_instance_id` and the causality rows' `world-owner`.
+  the phase that replaces it. This includes digests derived from such
+  identities, such as transport causal digests, workflow receipt digests and
+  runtime source commitments. The causality rows' `world-owner` is an
+  example.
 - **Known defects.** Record each with its target phase:
   - the temporal idempotency key is derived from per-process runtime
     identities;
@@ -526,6 +528,131 @@ exact name.
   and finds them accurate.
 - Every family and every row with a process-local identity that a later phase
   names appears in the audit, and no family is unclassified.
+
+### Audit resolutions
+
+The Phase 1 audit raised eighteen gaps in the specification. Each one is
+resolved below and tagged with the phases it binds. A phase's requirements
+include every resolution tagged with it.
+
+- **R1 (Phase 1, index).** Part A audits Relational as the carrier of rows.
+  The rows themselves are written by callers (idempotency, outbox, workflow,
+  causality and others), and Parts B and C audit those. The index joins
+  carrier and caller into one family per row kind, named after the caller.
+  There is no generic "caller rows" family.
+- **R2 (Phase 5).** Signal's authored topology is the declared node
+  definitions plus the static dependency edges those definitions declare.
+  Everything else is derived and rediscovered by evaluation:
+  - dependency snapshots;
+  - subscriber and evaluation edges;
+  - dynamically discovered dependencies;
+  - cause sets;
+  - diagnostics.
+
+  The Phase 5 authored-image format states this split before it is final.
+- **R3 (Phase 5).** The `worth-signal-wasm` facade's `RuntimeStore` and
+  portable envelope are a separate product surface. Neither is opened through
+  the Query host, and both are outside this milestone. JS callbacks are never
+  serialized. D15 does not apply to the facade.
+- **R4 (Phase 5).** Some records are process-local diagnostics, not durable
+  state: Bridge's writeback execution, replay and comparison records, and
+  Relational's diagnostic artifact vector.
+  - Their accessors gain a typed answer that distinguishes three cases: never
+    retained, expired under count limits, and not retained across reopen.
+  - Any evidence that recovery needs must be derivable from durable commits.
+    For writeback, Phase 5 proves this.
+  - `SignalSnapshotV1` stops being a restore authority, because the Phase 5
+    artifacts replace it. Its restore door is deleted, or stays memory-only
+    if the audit shows a memory-only consumer. It is never a second durable
+    path.
+- **R5 (Phases 5 and 7).** Two Signal structures hold real request custody and
+  are not derived: `ResourceRuntimeState.in_flight_by_request` and native
+  managed admission.
+  - Until Phase 7, operations that admit Signal resource requests refuse on
+    directory homes under D15.
+  - Phase 7 extracts that custody into a durable form before any remaining
+    resource state is treated as derived.
+- **R6 (Phases 1 and 8).** The outbox wording is corrected above. Phase 8
+  removes the process-local identity from every row and digest that the audit
+  lists for it.
+- **R7 (Phases 7 and 9).** Some run kinds retain opaque process objects:
+  provider checkpoints, memory arenas, artifact contexts and `Arc<dyn Any>`
+  commit authority. Serializing such an object is never allowed. Each of
+  these run kinds takes one of two routes:
+  - an owner-defined, versioned data contract and readmission;
+  - a terminal posture that its existing lifecycle contract already defines.
+
+  The phase's first deliverable is a per-kind table naming the route each run
+  kind takes.
+- **R8 (Phase 6).** General required-output custody is a durable obligation in
+  `query.obligations`. That covers `DemandRecord` performed obligations and
+  prerequisites, and `SourceCustody`. Ready outputs remain derived.
+- **R9 (Phase 7).** Every variant of the conditional retained decision is
+  classified:
+  - **Durable obligations**, because they carry an effect or an obligation:
+    CleanupRequired, Retryable, CommitRetryable, ExecutionControlRetryable,
+    ProductStale, ProductUnpublished, Indeterminate and
+    InterruptedDuringReentry.
+  - **Process-local**, because they can be re-derived from durable state and
+    host time: Eligible, Deferred, Suppressed and Backpressured.
+  - **Terminal**: ControlStopped, TerminalFailure, Failed and NoEffect. These
+    are recorded durably exactly when a caller can still ask for them.
+
+  Phase 7 publishes this table with its evidence.
+- **R10 (Phase 7).** Workflow proposal coverage is a set of graph records: it
+  is authored, and it recovers with Relational. Installed vocabulary coverage
+  is derived and is recreated from the supplied program. An installed
+  interpreter is never persisted as authored coverage.
+- **R11 (Phase 9).** Each retained use of correction material declares its
+  D10 class.
+  - While a prepared correction or a recovery binding pins the material, it is
+    a mandatory obligation.
+  - Unpinned material is optional.
+
+  Pinning, and transfers of a pin, are recorded together with the class.
+- **R12 (Phases 4, 5 and 7).** D15's capability mapping splits branch cleanup
+  by component. World native cleanup is supported from Phase 4, Signal cleanup
+  from Phase 5, and conditional-assembly cleanup from Phase 7. On a directory
+  home, a branch operation refuses if its cleanup includes a component that
+  is not yet supported.
+- **R13 (Phase 8).** Revocation and retirement of an inbound source are
+  home-level security facts, and they are durable. Reopening never resets a
+  revoked source to Active. Verifier installation is fresh host configuration
+  applied on top of that durable posture.
+- **R14 (Phase 8).** The bank external rail is the external party. Its own
+  survival is outside WORTH, and Phase 8 does not make it durable.
+  - Phase 8's rail courts kill the application, not the rail.
+  - One court restarts the rail with its state lost. The application must not
+    claim completion: the effect stays indeterminate and is reconciled under
+    the rail's admitted contract.
+- **R15 (Phases 3, 4 and 9).** `BankHttpMutationContinuation` is transport
+  custody. It is re-created fresh at open.
+  - The durable original owner is the per-operation record in its worker
+    records and in `mutation_custody`. Phase 9 makes that record durable.
+  - Until then, actions that retain original-owner custody refuse on
+    directory homes under D15.
+- **R16 (Phases 3 and 9).** Recovery of UI and HTTP state:
+  - UI physical presentation frames and pending presentations are
+    process-local. At reopen they end with a typed `PresentationRestarted`
+    posture, and they are re-derived from durable state when the UI
+    reattaches.
+  - Logical Query admissions recover as Query custody.
+  - HTTP recovery and continuation tokens carry authority, so they are fenced
+    by incarnation (D7). After reopen they answer `StaleIncarnation`. A fresh
+    authentication then reaches the recovered durable custody by its
+    operation identity.
+- **R17 (Phase 6).** Installation splits its canonical identities into two
+  kinds:
+  - **Semantic identity** is derived from content and may be durable.
+  - **Authority identity** (installed-runtime ordinals and participation
+    pointers) is process-local and fenced.
+
+  Durable artifacts record only semantic identity. Equivalence checks compare
+  semantic identity, plus the authority re-established at open. They are
+  never dropped.
+- **R18 (Phase 3).** Server upload staging is process-local. Interrupted
+  upload sessions end at reopen with a typed `UploadSessionExpired`. Durable
+  ingress is outside this roadmap.
 
 ---
 
@@ -1139,8 +1266,9 @@ external effects are never repeated.
 
 - **Outbox contract on reopen.** The outbox's inbound contract is rebound from
   the installed program on reopen. It is no longer `None` after restore.
-  Outbox rows record home-scoped identity, not
-  `relational_runtime_instance_id`.
+  Outbox rows, transport causal digests and runtime source commitments carry
+  no process-local identity. The audit's identity table for Phase 8 lists
+  them.
 - **Dispatch custody.** A dispatch attempt is recorded durably in
   `query.dispatch` before the external call. Its outstanding custody,
   correlation and idempotency association survive.
