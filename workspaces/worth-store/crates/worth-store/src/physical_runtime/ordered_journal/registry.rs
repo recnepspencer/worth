@@ -28,7 +28,7 @@ pub enum OrderedJournalRegistryDenial {
 
 impl OrderedJournalRegistry {
     /// Declares the complete journal set for this home format. Anchored names
-    /// are checked here; all anchored-record doors also enforce disjointness.
+    /// are checked here; anchored-record publications also enforce disjointness.
     pub fn declare(
         version: u16,
         journals: &[&str],

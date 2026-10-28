@@ -67,6 +67,7 @@ impl ObservedMediaOwnerAdmissionFailure {
 }
 
 impl FilesystemMediaOwner {
+    #[cfg(feature = "recovery-runtime-owner")]
     pub(crate) fn enter_serving_boundary(
         &mut self,
         request: &super::FilesystemQualificationRequest,
