@@ -45,12 +45,31 @@ const STAGES: [Stage; 12] = [
     Stage::ObligationDischarge,
 ];
 
+// No wildcard: a new Store stage must extend the crash oracle's roster.
+fn asserted_stage_index(stage: Stage) -> usize {
+    match stage {
+        Stage::StagingMaterialization => 0,
+        Stage::StagingSynchronization => 1,
+        Stage::CandidateMaterialization => 2,
+        Stage::CandidateSynchronization => 3,
+        Stage::RootProtocolReplacement => 4,
+        Stage::RecordNamespaceSynchronization => 5,
+        Stage::FreshReopenCurrentSelector => 6,
+        Stage::FreshReopenRootManifest => 7,
+        Stage::FreshReopenExactBinding => 8,
+        Stage::CleanupFreshnessRead => 9,
+        Stage::CleanupRemoval => 10,
+        Stage::ObligationDischarge => 11,
+    }
+}
+
 #[test]
 fn a_recovery_killed_at_each_of_its_stages_recovers_the_same_home_three_times() {
     let script = process_kill::script();
     let request = workload::serial_request();
     let execution = ExecutionRequest::serial(&request);
     for stage in STAGES {
+        assert_eq!(STAGES[asserted_stage_index(stage)], stage);
         if matches!(stage, Stage::CleanupFreshnessRead | Stage::CleanupRemoval) {
             // A checkpoint published before the serving runtime reclaims WAL
             // leaves real whole covered segments for recovery to remove.
