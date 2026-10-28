@@ -5,7 +5,6 @@ use crate::product::{CiTestLane, TestProduct};
 
 mod execution_unit;
 mod integration_product;
-mod offline_observer_build;
 mod owner_product;
 mod process_scenario_product;
 mod smoke_product;

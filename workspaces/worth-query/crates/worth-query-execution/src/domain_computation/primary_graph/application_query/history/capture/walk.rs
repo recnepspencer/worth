@@ -113,8 +113,8 @@ impl CaptureWalk<'_, '_, '_> {
         request_stage::checkpoint(context, bound)?;
         let metadata = self
             .projection
-            .with_exact_entity_state(node.entity_id(), |metadata, _| metadata)
-            .map_err(|_| Denial::SubjectMismatch)?
+            .read_exact_entity_state(&self.execution,node.entity_id(), |metadata, _| metadata)
+            .map_err(|cause| match cause { worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired=>Denial::SubjectMismatch, worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause)=>Denial::Native(worth_relational::facade::history::RelationalRecordHistoryDenial::Storage(cause)), })?
             .ok_or(Denial::SubjectMismatch)?;
         if metadata.entity_id != node.entity_id()
             || self.layout.entity_kind(name) != Some(metadata.kind_id)
@@ -140,8 +140,8 @@ impl CaptureWalk<'_, '_, '_> {
         request_stage::checkpoint(context, bound)?;
         let metadata = self
             .projection
-            .exact_relation_metadata(relation)
-            .map_err(|_| Denial::SubjectMismatch)?
+            .read_exact_relation_metadata(&self.execution,relation)
+            .map_err(|cause| match cause { worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired=>Denial::SubjectMismatch, worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial::Execution(cause)=>Denial::Native(worth_relational::facade::history::RelationalRecordHistoryDenial::Storage(cause)), })?
             .ok_or(Denial::SubjectMismatch)?;
         let layout = self
             .layout

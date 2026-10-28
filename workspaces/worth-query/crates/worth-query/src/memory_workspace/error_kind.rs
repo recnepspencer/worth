@@ -14,7 +14,6 @@ pub enum WorthQueryWorkspaceErrorKind {
     ),
     UnsupportedCollection,
     UnsupportedWriteFamily,
-    EmptySchema,
     BatchAtomicityUnsupported,
     RetentionCapacityExhausted,
     RetentionIdentityExhausted,
@@ -24,6 +23,7 @@ pub enum WorthQueryWorkspaceErrorKind {
         requested_payload_bytes: Option<u64>,
     },
     TransactionStagingCardinalityOverflow,
+    TransactionSymbolIdentityExhausted,
     TransactionInputDirectoryAllocationDenied {
         requested_batches: usize,
     },
@@ -45,4 +45,8 @@ pub enum WorthQueryWorkspaceErrorKind {
     RelationalBasisUnavailable,
     InvalidationCompanionPending,
     InvalidationCompanionCapacityExhausted,
+    /// The durable medium could not say whether the commit became durable. It
+    /// was not installed live and may already be durable; the Relational owner
+    /// refuses further publication until it is reopened.
+    DurabilityUnresolved,
 }

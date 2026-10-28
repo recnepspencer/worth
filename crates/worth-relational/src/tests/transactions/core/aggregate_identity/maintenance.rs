@@ -12,7 +12,8 @@ fn native_storage_owner_suspends_and_restores_private_records_without_renaming()
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry())
         .custom_invariant(maintenance_registration(&control))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, "main", birth(&[1, 0]));
     let ids = members(&born, 2);
     control.arm(vec![ids[0]]);

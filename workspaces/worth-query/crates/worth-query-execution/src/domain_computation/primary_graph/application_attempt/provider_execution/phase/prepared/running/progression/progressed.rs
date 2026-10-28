@@ -72,8 +72,7 @@ const fn terminal_for(
         | WorthQueryProviderProgressionOutcome::AlreadyCommitted(_)
         | WorthQueryProviderProgressionOutcome::Stale(_)
         | WorthQueryProviderProgressionOutcome::ProductStale(_)
-        | WorthQueryProviderProgressionOutcome::NoEffect(_)
-        | WorthQueryProviderProgressionOutcome::SettlementDeferred(_) => {
+        | WorthQueryProviderProgressionOutcome::NoEffect(_) => {
             WorthQueryManagedRunTerminalKind::Completed
         }
         WorthQueryProviderProgressionOutcome::Cancelled => {

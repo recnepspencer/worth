@@ -141,7 +141,14 @@ impl World {
 /// Distinct whole chunks, so every one is its own selected record. The first
 /// two of the first object are the bytes of the two-chunk world.
 fn chunk(object: usize, ordinal: usize) -> Vec<u8> {
-    let mut chunk = vec![if ordinal % 2 == 0 { 0x83 } else { 0x94 }; CHUNK];
+    let mut chunk = vec![
+        if ordinal.is_multiple_of(2) {
+            0x83
+        } else {
+            0x94
+        };
+        CHUNK
+    ];
     let salt = ((object * 128 + ordinal / 2) as u64).to_le_bytes();
     for (byte, salt) in chunk.iter_mut().zip(salt) {
         *byte ^= salt;

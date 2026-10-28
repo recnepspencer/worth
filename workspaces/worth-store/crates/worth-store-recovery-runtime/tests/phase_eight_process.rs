@@ -12,3 +12,5 @@ mod production;
 mod support_binaries;
 #[path = "phase_eight_process/terminal_profiles.rs"]
 mod terminal_profiles;
+#[path = "phase_eight_process/writer_readiness.rs"]
+mod writer_readiness;

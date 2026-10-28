@@ -33,7 +33,7 @@ struct Segment<'a> {
 /// bindings and extends the footer with their count, bytes and digest. Every
 /// record must use the selected header's schema before its WAL frontier is
 /// admitted.
-pub(super) fn tail<'a>(files: &'a [(String, Vec<u8>)]) -> Option<Vec<(&'a str, &'a [u8])>> {
+pub(super) fn tail(files: &[(String, Vec<u8>)]) -> Option<Vec<(&str, &[u8])>> {
     let frontier = checkpoint_frontier(files)?;
     let mut segments = files
         .iter()
@@ -170,13 +170,13 @@ fn certificate_records(bytes: &[u8], mut offset: usize, footer: &[u8]) -> Option
         .then_some(offset)
 }
 
-fn fixed_record<'a>(
-    bytes: &'a [u8],
+fn fixed_record(
+    bytes: &[u8],
     offset: usize,
     schema: u8,
     kind: u8,
     payload: usize,
-) -> Option<&'a [u8]> {
+) -> Option<&[u8]> {
     let record = bytes.get(offset..offset.checked_add(record_bytes(payload))?)?;
     valid_record(record, schema, kind, payload)?;
     record.get(CHECKPOINT_PREFIX_BYTES..CHECKPOINT_PREFIX_BYTES + payload)

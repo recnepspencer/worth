@@ -1,6 +1,7 @@
 mod binding;
 mod binding_compaction;
 mod binding_frame;
+mod certificate_summary;
 mod dirty_basis;
 mod footer;
 mod footer_basis;

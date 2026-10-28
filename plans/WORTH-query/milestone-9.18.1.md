@@ -2208,6 +2208,14 @@ are not closed by these public results. No older acceptance draft or earlier
 green result qualifies the repaired private integration. Applying this qualified
 delta to the pending Phase9 integration does not qualify its new connected slice.
 
+The active candidate is synchronized to public master
+`7d94f26770d718d2ea63691258f9f715bf9a501d`. Native envelope residency,
+checkpoint encoding, cold Head reads and Query denial ownership changed at that
+boundary. Prior SDK and Phase9 receipts remain evidence for their original
+sources; the ported candidate requires fresh Source review and affected owner
+qualification before any current acceptance. The unqualified pre-sync merge is
+preserved at `bdb3385c741d8d5ec6ed6dbf1296d8ea2e97cb1c`.
+
 The adversarial boundary is a scalar `EntityMutationIntent::UpdateFields` that
 initializes an absent aspect. Its canonical authored scope is only the exact
 Field, while Native lowering uses `SetWhole`. Selecting only Lifecycle and

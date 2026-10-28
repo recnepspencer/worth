@@ -61,6 +61,10 @@ impl WorthQueryResourceProviderAttempt {
 }
 
 #[derive(Debug)]
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(in crate::domain_computation::primary_graph::application_resource) enum AttemptIssuanceDenial {
     NativeWitnessUnavailable,
     AccountingOverflow,

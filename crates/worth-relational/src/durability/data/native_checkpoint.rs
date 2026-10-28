@@ -16,6 +16,18 @@ pub struct RelationalNativeCheckpoint {
     bytes: ExecutionImmutableBytes,
     region: std::ops::Range<usize>,
     captured_sections: Option<NativeCheckpointSectionBytes>,
+    captured_coverage: Option<NativeCheckpointCoverage>,
+    members: Arc<[super::RelationalCheckpointMember]>,
+    publications: Arc<[crate::storage::residency::RelationalCheckpointRegionPublication]>,
+    manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+}
+
+/// What a captured checkpoint covers: its last commit position and its last
+/// branch transition sequence.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NativeCheckpointCoverage {
+    position: crate::publication::patch::data::PatchStreamPosition,
+    transitions: crate::branch::RelationalBranchTransitionSequence,
 }
 
 /// Actual MessagePack value bytes emitted during one native capture. The
@@ -37,6 +49,10 @@ impl Clone for RelationalNativeCheckpoint {
             bytes: self.bytes.clone(),
             region: self.region.clone(),
             captured_sections: self.captured_sections,
+            captured_coverage: self.captured_coverage,
+            members: self.members.clone(),
+            publications: self.publications.clone(),
+            manifest_publication: self.manifest_publication.clone(),
         }
     }
 }
@@ -66,6 +82,10 @@ impl RelationalNativeCheckpoint {
             bytes: ExecutionImmutableBytes::from_external_bytes(Arc::new(bytes)),
             region,
             captured_sections: None,
+            captured_coverage: None,
+            members: Arc::from([]),
+            publications: Arc::from([]),
+            manifest_publication: None,
         }
     }
 
@@ -83,11 +103,57 @@ impl RelationalNativeCheckpoint {
             bytes,
             region,
             captured_sections: None,
+            captured_coverage: None,
+            members: Arc::from([]),
+            publications: Arc::from([]),
+            manifest_publication: None,
         })
     }
 
     pub fn bytes(&self) -> &[u8] {
         &self.bytes[self.region.clone()]
+    }
+
+    /// Members to publish atomically with the manifest. Inline artifacts also
+    /// expose their selected members; their bytes already contain the same set.
+    pub fn members(&self) -> &[super::RelationalCheckpointMember] {
+        &self.members
+    }
+
+    pub(crate) fn with_captured_members(
+        mut self,
+        members: Vec<super::RelationalCheckpointMember>,
+    ) -> Self {
+        self.members = members.into();
+        self
+    }
+
+    /// Confirm that the manifest and its complete member set were selected in
+    /// one durable publication. The home calls this only after that decision,
+    /// even if its subsequent physical checkpoint is interrupted.
+    pub fn acknowledge_publication(&self) {
+        if let Some(publication) = &self.manifest_publication {
+            publication.acknowledge();
+        }
+        for publication in self.publications.iter() {
+            publication.acknowledge();
+        }
+    }
+
+    pub(crate) fn with_region_publications(
+        mut self,
+        publications: Vec<crate::storage::residency::RelationalCheckpointRegionPublication>,
+    ) -> Self {
+        self.publications = publications.into();
+        self
+    }
+
+    pub(crate) fn with_manifest_publication(
+        mut self,
+        publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
+    ) -> Self {
+        self.manifest_publication = publication;
+        self
     }
 
     /// Available only on a checkpoint captured by this runtime, not bytes
@@ -99,12 +165,37 @@ impl RelationalNativeCheckpoint {
     pub(crate) fn from_captured_bytes(
         bytes: ExecutionImmutableBytes,
         sections: NativeCheckpointSectionBytes,
+        position: crate::publication::patch::data::PatchStreamPosition,
+        transitions: crate::branch::RelationalBranchTransitionSequence,
     ) -> Self {
         let region = 0..bytes.len();
         Self {
             bytes,
             region,
+            members: Arc::from([]),
+            publications: Arc::from([]),
+            manifest_publication: None,
             captured_sections: Some(sections),
+            captured_coverage: Some(NativeCheckpointCoverage {
+                position,
+                transitions,
+            }),
         }
+    }
+
+    /// The last canonical position this checkpoint includes, known only for a
+    /// checkpoint this process captured. A medium files the checkpoint under
+    /// this position; recovery checks the decoded checkpoint against it.
+    pub fn covered_position(&self) -> Option<crate::publication::patch::data::PatchStreamPosition> {
+        self.captured_coverage.map(|coverage| coverage.position)
+    }
+
+    /// The last branch transition sequence this checkpoint includes, known
+    /// only for a checkpoint this process captured. A medium files it beside
+    /// the covered position; recovery checks the decoded checkpoint against it.
+    pub fn covered_branch_transitions(
+        &self,
+    ) -> Option<crate::branch::RelationalBranchTransitionSequence> {
+        self.captured_coverage.map(|coverage| coverage.transitions)
     }
 }

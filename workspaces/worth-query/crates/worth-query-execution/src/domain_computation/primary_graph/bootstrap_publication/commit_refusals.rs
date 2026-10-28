@@ -38,7 +38,8 @@ pub(in crate::domain_computation::primary_graph) fn refused_commit(
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -104,7 +105,7 @@ fn bootstrap_commit_preserves_real_leased_work_refusal() {
                 assert_eq!(
                     partition_identity,
                     Some(1),
-                    "the entity-kind packet boundary survives"
+                    "residency admission attributes the refused Head read to main"
                 );
                 let validation = crate::domain_computation::primary_graph::provider::invariant_execution_failure::map_validation_failure(error.clone());
                 assert_eq!(

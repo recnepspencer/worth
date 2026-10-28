@@ -28,7 +28,9 @@ pub(crate) fn canonical_empty_supply_chain_runtime(scale: SupplyChainScale) -> R
     let definition = SupplyChainWorldDefinition::empty(empty_supply_chain_scale(scale));
     let program = CompiledSupplyChainProgram::compile(definition)
         .expect("empty Supply Chain definition compiles");
-    let mut runtime = RelationalRuntimeApi::builder().build();
+    let mut runtime = RelationalRuntimeApi::builder()
+        .build()
+        .expect("valid native runtime configuration");
     runtime
         .prepare_initial_schema_installation()
         .expect("empty Supply Chain schema installation prepares")

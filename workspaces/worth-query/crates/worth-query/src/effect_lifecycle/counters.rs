@@ -31,7 +31,7 @@ pub struct EffectLifecycleCounters {
     pub(super) authority_reopen_count: usize,
     pub(super) executed_effect_count: usize,
     pub(super) execution_denied_count: usize,
-    pub(super) publication_settlement_deferred_count: usize,
+    pub(super) durability_unresolved_count: usize,
     pub(super) effect_execution_width: usize,
     pub(super) advisory_count: usize,
     pub(super) rebind_required_count: usize,
@@ -121,8 +121,8 @@ impl EffectLifecycleCounters {
                 self.execution_denied_count,
             )
             .field_usize(
-                WorthQueryEvidenceTag::new("publication_settlement_deferred"),
-                self.publication_settlement_deferred_count,
+                WorthQueryEvidenceTag::new("durability_unresolved"),
+                self.durability_unresolved_count,
             )
             .field_usize(
                 WorthQueryEvidenceTag::new("effect_execution_width"),
@@ -174,8 +174,8 @@ impl EffectLifecycleCounters {
             authority_reopen_count: self.authority_reopen_count + other.authority_reopen_count,
             executed_effect_count: self.executed_effect_count + other.executed_effect_count,
             execution_denied_count: self.execution_denied_count + other.execution_denied_count,
-            publication_settlement_deferred_count: self.publication_settlement_deferred_count
-                + other.publication_settlement_deferred_count,
+            durability_unresolved_count: self.durability_unresolved_count
+                + other.durability_unresolved_count,
             effect_execution_width: self.effect_execution_width + other.effect_execution_width,
             advisory_count: self.advisory_count + other.advisory_count,
             rebind_required_count: self.rebind_required_count + other.rebind_required_count,
@@ -217,10 +217,7 @@ impl EffectLifecycleCounters {
     counter_getter!(authority_reopen_count, authority_reopen_count);
     counter_getter!(executed_effect_count, executed_effect_count);
     counter_getter!(execution_denied_count, execution_denied_count);
-    counter_getter!(
-        publication_settlement_deferred_count,
-        publication_settlement_deferred_count
-    );
+    counter_getter!(durability_unresolved_count, durability_unresolved_count);
     counter_getter!(effect_execution_width, effect_execution_width);
     counter_getter!(advisory_count, advisory_count);
     counter_getter!(rebind_required_count, rebind_required_count);

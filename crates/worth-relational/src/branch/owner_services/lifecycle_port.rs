@@ -1,7 +1,7 @@
 use super::owner_binding::{RelationalOwnerServiceBinding, RelationalOwnerServiceLifecyclePosture};
 use crate::branch::{
     ArchivedRelationalBranch, RelationalBranchArchiveDenial, RelationalBranchDeleteDenial,
-    RelationalBranchDeletionOutcome, RelationalBranchIdentity,
+    RelationalBranchDeletionOutcome, RelationalBranchIdentity, RelationalBranchTransitionStop,
 };
 
 /// Descriptive lifecycle posture of the runtime owner behind a service port.
@@ -25,24 +25,36 @@ impl RelationalBranchLifecyclePort {
 
     pub fn archive_branch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &RelationalBranchIdentity,
-    ) -> Result<ArchivedRelationalBranch, RelationalBranchArchiveDenial> {
-        let mut owner = self
-            .owner
-            .admitted_runtime()
-            .ok_or(RelationalBranchArchiveDenial::OwnerUnavailable)?;
-        owner.archive_branch(identity)
+    ) -> Result<
+        ArchivedRelationalBranch,
+        RelationalBranchTransitionStop<RelationalBranchArchiveDenial>,
+    > {
+        let mut owner =
+            self.owner
+                .admitted_runtime()
+                .ok_or(RelationalBranchTransitionStop::Denied(
+                    RelationalBranchArchiveDenial::OwnerUnavailable,
+                ))?;
+        owner.archive_branch(execution, identity)
     }
 
     pub fn delete_branch(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         identity: &RelationalBranchIdentity,
-    ) -> Result<RelationalBranchDeletionOutcome, RelationalBranchDeleteDenial> {
-        let mut owner = self
-            .owner
-            .admitted_runtime()
-            .ok_or(RelationalBranchDeleteDenial::OwnerUnavailable)?;
-        owner.delete_branch(identity)
+    ) -> Result<
+        RelationalBranchDeletionOutcome,
+        RelationalBranchTransitionStop<RelationalBranchDeleteDenial>,
+    > {
+        let mut owner =
+            self.owner
+                .admitted_runtime()
+                .ok_or(RelationalBranchTransitionStop::Denied(
+                    RelationalBranchDeleteDenial::OwnerUnavailable,
+                ))?;
+        owner.delete_branch(execution, identity)
     }
 
     pub fn owner_lifecycle_observation(&self) -> RelationalOwnerLifecycleObservation {

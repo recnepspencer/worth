@@ -15,12 +15,16 @@ pub(crate) fn commit_main_batch(
     commit_branch_batch(execution, runtime, BranchId("main".to_owned()), batch);
 }
 
-pub(crate) fn fork_supply_chain_branch_from_main(runtime: &RelationalRuntime, branch_id: BranchId) {
+pub(crate) fn fork_supply_chain_branch_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch_id: BranchId,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains an admitted fork source");
     runtime
-        .fork_branch(branch_id, source)
+        .fork_branch(execution, branch_id, source)
         .expect("the Supply Chain branch forks from the admitted main basis");
 }
 

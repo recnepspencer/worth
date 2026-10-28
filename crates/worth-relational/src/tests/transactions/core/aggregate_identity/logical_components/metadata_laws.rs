@@ -28,6 +28,7 @@ fn runtime(maximum: bool) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(law_registry(maximum))
         .build()
+        .expect("valid native runtime configuration")
 }
 
 #[test]

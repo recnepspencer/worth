@@ -28,7 +28,7 @@ fn branch_traversal_enumerates_edges_from_the_selected_immutable_root() {
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
     let edge = edge_movement(&world.handles, &baseline);
-    let child_snapshot = fork_from_main(&world.runtime, "storm");
+    let child_snapshot = fork_from_main(execution, &world.runtime, "storm");
     assert_ancestor_edge_is_visible(execution, &world.runtime, &child_snapshot, &edge);
     publish_main_rewire(execution, &world.runtime, &edge);
     let main_snapshot = current_snapshot(&world.runtime, "main");
@@ -300,12 +300,16 @@ fn traversal_packet(
     }
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, branch: &str) -> SnapshotHandle {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &str,
+) -> SnapshotHandle {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .expect("fork retains the exact ancestor root");
     current_snapshot(runtime, branch)
 }

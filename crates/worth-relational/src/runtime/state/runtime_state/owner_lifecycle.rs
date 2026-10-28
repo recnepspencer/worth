@@ -143,7 +143,11 @@ impl Drop for AdmittedRelationalRuntimeOperation {
 
 fn release_operation(lifecycle: &RelationalRuntimeLifecycle) {
     let previous = lifecycle.in_flight.fetch_sub(1, Ordering::AcqRel);
-    debug_assert!(previous > 0, "runtime operation admission underflow");
+    debug_assert!(
+        /* Proof: The private non-Clone AdmittedRelationalRuntimeOperation increments this counter exactly once after successful admission; Drop releases it once, and no other operation decrements that admission. */
+        previous > 0,
+        "runtime operation admission underflow"
+    );
     if previous == 1 && !lifecycle.accepting_operations.load(Ordering::Acquire) {
         let _wait = lifecycle
             .close_wait

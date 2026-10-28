@@ -30,6 +30,7 @@ pub(super) fn prepare(
         let catalog = runtime.index_definitions.snapshot();
         let output = funding::Output::new(execution, context)?;
         let mut builder = projection::Projection {
+            execution,
             runtime,
             catalog: &catalog,
             unavailable: false,

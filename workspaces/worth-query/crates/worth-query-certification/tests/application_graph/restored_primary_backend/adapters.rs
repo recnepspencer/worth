@@ -87,6 +87,7 @@ impl runtime::WorthQueryPrimaryGraphSourceProjection for EmptyProjection {
 
     fn project_granular_scope(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _graph: &WorthQueryPrimaryGraphIntegrationHandle,
         _target: &runtime::WorthQueryLiveArtifactTarget,
         _scope: &domain::WorthQueryMaintenanceScope,

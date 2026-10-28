@@ -34,6 +34,29 @@ pub(super) fn read_sequence<T, S: PhysicalRecoveryDecodeStorage>(
     Ok(values)
 }
 
+pub(super) fn read_bounded_sequence<T, S: PhysicalRecoveryDecodeStorage>(
+    cursor: &mut Cursor<'_>,
+    maximum: u64,
+    remaining_total: &mut u64,
+    storage: &mut S,
+    mut read: impl FnMut(&[u8], &mut S) -> Result<T, PhysicalRecoveryDecodeFailure<S::Denial>>,
+) -> Result<Vec<T>, PhysicalRecoveryDecodeFailure<S::Denial>> {
+    let count = cursor.u64()?;
+    if count > maximum || count > *remaining_total {
+        return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
+    }
+    cursor.require_sequence_backing(count)?;
+    *remaining_total -= count;
+    let mut values = decode_storage::reserve_vec(
+        usize::try_from(count).map_err(|_| PhysicalRecoveryProjectionDenial::EntryLimit)?,
+        storage,
+    )?;
+    for _ in 0..count {
+        values.push(read(cursor.field()?, storage)?);
+    }
+    Ok(values)
+}
+
 #[cfg(test)]
 mod count_admission_tests {
     use super::*;
@@ -63,27 +86,4 @@ mod count_admission_tests {
         }
         assert_eq!(storage.0, 0);
     }
-}
-
-pub(super) fn read_bounded_sequence<T, S: PhysicalRecoveryDecodeStorage>(
-    cursor: &mut Cursor<'_>,
-    maximum: u64,
-    remaining_total: &mut u64,
-    storage: &mut S,
-    mut read: impl FnMut(&[u8], &mut S) -> Result<T, PhysicalRecoveryDecodeFailure<S::Denial>>,
-) -> Result<Vec<T>, PhysicalRecoveryDecodeFailure<S::Denial>> {
-    let count = cursor.u64()?;
-    if count > maximum || count > *remaining_total {
-        return Err(PhysicalRecoveryProjectionDenial::EntryLimit.into());
-    }
-    cursor.require_sequence_backing(count)?;
-    *remaining_total -= count;
-    let mut values = decode_storage::reserve_vec(
-        usize::try_from(count).map_err(|_| PhysicalRecoveryProjectionDenial::EntryLimit)?,
-        storage,
-    )?;
-    for _ in 0..count {
-        values.push(read(cursor.field()?, storage)?);
-    }
-    Ok(values)
 }

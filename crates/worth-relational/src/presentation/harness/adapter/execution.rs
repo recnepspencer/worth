@@ -30,7 +30,10 @@ pub(super) fn execute_request(
 ) -> Result<RunRecord<String>, RelationalHarnessError> {
     let scenario_id_value = worth_harness::facade::scenario_id(&fixture.name);
     let run_id_value = run_id(&scenario_id_value, &profile.name, &request.name);
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let targets = resolve_targets(request);
     let parsed_targets = targets
         .iter()

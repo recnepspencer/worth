@@ -51,7 +51,7 @@ fn path_kinds(
         }
         kinds.push(next);
     }
-    let final_kind = *kinds.last().expect("principal kind is always present");
+    let final_kind = *kinds.last().expect(/* Proof: Witness and plan construction seed the principal before appending path entries; no operation removes that initial entry. */ "principal kind is always present");
     if final_kind != plan.scope_kind() {
         return Err(RelationalAuthorizationPlanDenial::PathEndsAtWrongKind {
             path: path_index,

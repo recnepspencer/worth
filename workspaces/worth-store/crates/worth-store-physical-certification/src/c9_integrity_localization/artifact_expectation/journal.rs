@@ -65,10 +65,10 @@ pub(super) fn require(
         }
         Op::EnvelopeVersion => {
             assert_eq!(outcome["posture"], "unsupported", "{label}: {artifact}");
-            assert_eq!(outcome["observed"], if wal { 2 } else { 3 }, "{label}");
+            assert_eq!(outcome["observed"], if wal { 2 } else { 255 }, "{label}");
             assert_eq!(
                 outcome["supported"],
-                if wal { "1" } else { "1|2" },
+                if wal { "1" } else { "1|2|3" },
                 "{label}"
             );
             assert_eq!(

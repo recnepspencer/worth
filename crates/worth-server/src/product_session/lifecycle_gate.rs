@@ -145,22 +145,20 @@ fn validate_session_branch_and_basis(
             ),
         ));
     }
-    if basis_kind == WorthServerProductOperationBasisKind::QueryDerived {
-        if let (Some(request_basis_digest), Some(session_basis_digest)) =
+    if basis_kind == WorthServerProductOperationBasisKind::QueryDerived
+        && let (Some(request_basis_digest), Some(session_basis_digest)) =
             (request.identity().basis_digest(), session.basis_digest())
-        {
-            if request_basis_digest != session_basis_digest {
-                return Err(WorthServerProductSessionDenial::new(
-                    WorthServerProductSessionDenialCode::SessionRebindRequired,
-                    format!(
-                        "product session `{}` is bound to basis `{}` and cannot authorize `{}` without explicit rebind",
-                        session.identity().as_str(),
-                        session_basis_digest,
-                        request_basis_digest
-                    ),
-                ));
-            }
-        }
+        && request_basis_digest != session_basis_digest
+    {
+        return Err(WorthServerProductSessionDenial::new(
+            WorthServerProductSessionDenialCode::SessionRebindRequired,
+            format!(
+                "product session `{}` is bound to basis `{}` and cannot authorize `{}` without explicit rebind",
+                session.identity().as_str(),
+                session_basis_digest,
+                request_basis_digest
+            ),
+        ));
     }
     Ok(())
 }

@@ -58,16 +58,16 @@ impl RecordPublicationDirector {
             .lock()
             .unwrap_or_else(|e| e.into_inner());
         let state = pending.as_mut().ok_or(PhysicalRetirementDenial::Absent)?;
-        if let ReleaseProgress::Recovered(operation) = state.progress {
-            if let Err(denial) = self.resume_extent_release(state, operation) {
-                if denial != PhysicalRetirementDenial::Waiting {
-                    state.progress = ReleaseProgress::InspectionRequired;
-                    if let Some(runtime) = self.runtime.upgrade() {
-                        runtime.health.revoke();
-                    }
+        if let ReleaseProgress::Recovered(operation) = state.progress
+            && let Err(denial) = self.resume_extent_release(state, operation)
+        {
+            if denial != PhysicalRetirementDenial::Waiting {
+                state.progress = ReleaseProgress::InspectionRequired;
+                if let Some(runtime) = self.runtime.upgrade() {
+                    runtime.health.revoke();
                 }
-                return Err(denial);
             }
+            return Err(denial);
         }
         if matches!(state.progress, ReleaseProgress::InspectionRequired) {
             return Err(PhysicalRetirementDenial::WalWrite);

@@ -52,7 +52,6 @@ pub(in crate::domain_computation::primary_graph) fn retained_fact_denial(
             super::verification_denial(stop, unavailable.to_owned())
         }
         RetainedFactStop::Work => work_denial(),
-        RetainedFactStop::Memory => memory_denial(),
         RetainedFactStop::Execution(cause) => read_denial(cause),
         RetainedFactStop::Interrupted(event) => interruption_denial(event),
         RetainedFactStop::Refused(refusal) => WorthQueryOutputDemandDenial::new(
@@ -71,7 +70,6 @@ pub(in crate::domain_computation::primary_graph) enum RetainedFactStop<'fact> {
     /// The request's meter, or the fact's own recorded bound, stopped it.
     Work,
     OutputObservation(crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop),
-    Memory,
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Interrupted(worth_relational::facade::mvcc::RelationalInterruptionEvent),
     Refused(CompanionPreflightStop),
@@ -125,14 +123,8 @@ pub(in crate::domain_computation::primary_graph) fn preflight_stop(
 ) -> RetainedFactStop<'static> {
     match stop {
         CompanionPreflightStop::Execution(cause) => RetainedFactStop::Execution(cause),
-        CompanionPreflightStop::PreparationMemoryExhausted { .. }
-        | CompanionPreflightStop::RetainedCompanionCapacityExhausted { .. } => {
-            RetainedFactStop::Memory
-        }
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. } => RetainedFactStop::Work,
-        CompanionPreflightStop::PreparationMemoryCounterOverflow
-        | CompanionPreflightStop::RetainedCompanionCounterOverflow { .. } => {
+
+        CompanionPreflightStop::PreparationMemoryCounterOverflow => {
             RetainedFactStop::Execution(NativeReadStop::ChargedBytesOverflow)
         }
         CompanionPreflightStop::WorkCounterOverflow => {
@@ -162,6 +154,7 @@ pub(in crate::domain_computation::primary_graph) fn memory_denial() -> WorthQuer
 /// A row no sealed witness covers is decided by its source facts and by the
 /// full verification its lineage row requires.
 pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witness(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
     witness: Option<&SealedNativeOutputWitness>,
@@ -170,7 +163,7 @@ pub(in crate::domain_computation::primary_graph) fn compare_retained_output_witn
         return Ok(OutputDependencySelection::Reuse);
     };
     let unchanged = owner_read(
-        witness.unchanged_in(runtime, snapshot),
+        witness.unchanged_in(runtime, snapshot, execution),
         "retained output witness could not be compared",
     )?;
     Ok(if unchanged {

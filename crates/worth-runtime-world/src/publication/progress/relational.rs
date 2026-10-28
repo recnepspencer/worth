@@ -42,7 +42,6 @@ impl RelationalAttemptProgress {
             Some(
                 RelationalProgressEvidence::Performed(_)
                     | RelationalProgressEvidence::SettlementRequired { .. }
-                    | RelationalProgressEvidence::SettlementPending { .. }
             )
         )
     }

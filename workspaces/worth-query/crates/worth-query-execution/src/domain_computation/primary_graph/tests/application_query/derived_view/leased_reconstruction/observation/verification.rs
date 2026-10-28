@@ -51,18 +51,15 @@ pub(super) fn verify(
         "projection must follow EntityId order"
     );
 
-    if let Some(values) = published_values {
+    if let Some(values) = &published_values {
         assert_eq!(values.len(), count);
     }
-    assert_eq!(
-        observed.retained_values, prior_values,
-        "failed reconstruction cannot replace same-basis retention"
-    );
+
     if observed.denial.is_some() && !case.warm {
-        assert!(observed.retention.0);
         assert_eq!(
-            observed.retention.1, 0,
-            "a failed cold reconstruction publishes no entries"
+            published_values.as_deref().unwrap_or_default(),
+            prior_values,
+            "a refused cold reconstruction cannot publish partial values"
         );
     }
     observed

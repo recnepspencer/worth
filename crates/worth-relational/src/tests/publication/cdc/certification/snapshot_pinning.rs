@@ -33,7 +33,10 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
     );
     let baseline_checkpoint =
         checkpoint_for_schema_version(PatchStreamPosition(2), SchemaVersionId(1));
-    let pinned_snapshot = pinned_runtime.visibility_authority().snapshot();
+    let pinned_snapshot = pinned_runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     for step in 0..48 {
         let left_name = format!("left-rewrite-{step}");
@@ -103,7 +106,10 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
         unpinned_batch.recovery_decision
     );
 
-    let latest_snapshot = pinned_runtime.visibility_authority().snapshot();
+    let latest_snapshot = pinned_runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let pinned_snapshot_read = pinned_runtime
         .read_truth()
         .read_snapshot(&pinned_snapshot, execution)
@@ -132,7 +138,7 @@ fn cdc_certification_snapshot_pinning_is_neutral_under_rewrite_churn() {
         Some("right-rewrite-47".into())
     );
 
-    let retention = pinned_runtime.retention().inspect_plan();
+    let retention = pinned_runtime.retention().inspect_plan(execution).unwrap();
     assert!(retention.active_snapshot_count >= 2);
     assert_eq!(retention.snapshot_pinned_entities, 0);
     assert!(pinned_runtime

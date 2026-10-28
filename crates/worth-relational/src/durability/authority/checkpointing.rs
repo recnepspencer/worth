@@ -1,42 +1,83 @@
 mod append;
-use std::fs;
 
-use super::diagnostics::{
-    durable_segment_append_succeeded, durable_store_compacted, in_memory_checkpoint_created,
-    persisted_checkpoint_created,
-};
+use super::diagnostics::checkpoint_created;
 use super::DurabilityAuthority;
-use crate::capabilities::{
-    DurabilityRead, RuntimeConfigSource, RuntimeIdentitySource, SchemaVersionSource,
-};
+use crate::capabilities::RuntimeConfigSource;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
-use crate::durability::data::{
-    CompactionOutcome, CompactionPlan, DurabilityError, DurabilityMode, DurableCheckpoint,
-    DurableCheckpointId, DurableCheckpointManifest, DurableIntegrityStatus, DurableSegmentId,
-    DurableSegmentManifest,
-};
-use crate::durability::log::local_store::{
-    checkpoint_file_path, current_segment_ids, ensure_loaded_store, persist_store_manifest,
-    segment_file_path,
-};
-use crate::durability::log::native_file_codec::write_checkpoint_file;
+use crate::durability::data::{DurabilityError, DurableCheckpoint};
 
 impl<'runtime> DurabilityAuthority<'runtime> {
     pub fn native_checkpoint(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<
         crate::durability::data::RelationalNativeCheckpoint,
         crate::durability::data::RelationalNativeCheckpointCaptureDenial,
     > {
+        self.native_checkpoint_with_policy(
+            execution,
+            policy,
+            crate::durability::data::RelationalCheckpointArtifactPolicy::Embedded,
+        )
+    }
+
+    pub fn native_checkpoint_with_policy(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        artifact_policy: crate::durability::data::RelationalCheckpointArtifactPolicy,
+    ) -> Result<
+        crate::durability::data::RelationalNativeCheckpoint,
+        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
+    > {
         policy.check_live()?;
-        let checkpoint = self.capture_checkpoint_basis()?.build_checkpoint_image()?;
-        let (bytes, sections) =
-            crate::durability::log::native_file_codec::encode_checkpoint(&checkpoint, policy)?;
+        crate::execution::check_request(execution)
+            .map_err(crate::durability::data::RelationalNativeCheckpointCaptureDenial::Request)?;
+        let captured = self.capture_checkpoint_basis()?.build_native_capture(
+            execution,
+            policy,
+            self.runtime.durability.cold_source(),
+            &artifact_policy,
+        )?;
+        let manifest_publication = if !artifact_policy.is_embedded() {
+            artifact_policy.publication_source().map(|source| {
+                self.runtime.durability.checkpoint_selection().prepare(
+                    captured.manifest.clone(),
+                    source,
+                    captured.history_members.clone(),
+                )
+            })
+        } else {
+            None
+        };
+        let coverage = captured.manifest.covered_position;
+        let transitions = captured.manifest.coverage.up_to_branch_transition;
+        let (bytes, sections, members, publications) =
+            crate::durability::log::native_checkpoint_codec::encode_captured(
+                captured,
+                policy,
+                &artifact_policy,
+            )?;
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(transitions);
+        }
         Ok(
             crate::durability::data::RelationalNativeCheckpoint::from_captured_bytes(
-                bytes, sections,
-            ),
+                bytes,
+                sections,
+                coverage,
+                transitions,
+            )
+            .with_captured_members(members)
+            .with_region_publications(if manifest_publication.is_some() {
+                publications
+            } else {
+                Vec::new()
+            })
+            .with_manifest_publication(manifest_publication),
         )
     }
 
@@ -47,8 +88,10 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         execution.check_live().map_err(|stop| {
             crate::durability::data::RelationalRecoveryStop::Request(stop.into())
         })?;
-        let captured = self.capture_checkpoint_basis()?;
-        self.finalize_captured_checkpoint(execution, captured)
+        let captured = self
+            .capture_checkpoint_basis()?
+            .demand_memory_image(self.runtime, execution)?;
+        self.finalize_captured_checkpoint(captured)
     }
 
     pub(super) fn capture_checkpoint_basis(
@@ -67,103 +110,25 @@ impl<'runtime> DurabilityAuthority<'runtime> {
 
     pub(super) fn finalize_captured_checkpoint(
         &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
         captured: super::checkpoint_capture::CapturedCheckpointBasis,
     ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
         let checkpoint = captured.build_checkpoint_image()?;
-        if self.runtime.runtime_config().durability.policy.mode
-            == DurabilityMode::PersistedSegmentedLocalFs
-        {
-            let manifest = self.persist_checkpoint_file(execution, &checkpoint)?;
-            self.runtime
-                .publication_authority()
-                .push_bounded_diagnostic(
-                    DiagnosticsScope::History,
-                    DiagnosticsArtifactKind::MinimalSummary,
-                    vec![persisted_checkpoint_created(&manifest, &checkpoint)],
-                );
-        } else {
-            self.runtime
-                .publication_authority()
-                .push_bounded_diagnostic(
-                    DiagnosticsScope::History,
-                    DiagnosticsArtifactKind::MinimalSummary,
-                    vec![in_memory_checkpoint_created(&checkpoint)],
-                );
-        }
-        self.runtime.durability.push_checkpoint(checkpoint.clone());
-        Ok(checkpoint)
-    }
-
-    pub fn compact_store(&self) -> Result<CompactionOutcome, DurabilityError> {
-        if self.runtime.runtime_config().durability.policy.mode
-            != DurabilityMode::PersistedSegmentedLocalFs
-        {
-            return Ok(CompactionOutcome {
-                removed_segments: Vec::new(),
-                retained_segments: Vec::new(),
-            });
-        }
-        let _store_io = crate::durability::log::local_store::lock_store(self.runtime)?;
-        let Some(checkpoint) = self.runtime.durability.latest_checkpoint() else {
-            return Ok(CompactionOutcome {
-                removed_segments: Vec::new(),
-                retained_segments: current_segment_ids(self.runtime.durable_store().as_deref()),
-            });
-        };
-        let Some(up_to_commit) = checkpoint.coverage.up_to_commit.as_ref() else {
-            return Ok(CompactionOutcome {
-                removed_segments: Vec::new(),
-                retained_segments: current_segment_ids(self.runtime.durable_store().as_deref()),
-            });
-        };
-        let mut store = ensure_loaded_store(self.runtime)?;
-        let plan = CompactionPlan {
-            checkpoint_id: store
-                .checkpoints
-                .last()
-                .map(|manifest| manifest.checkpoint_id)
-                .unwrap_or(DurableCheckpointId(0)),
-            removable_segments: store
-                .segments
-                .iter()
-                .filter(|segment| {
-                    segment
-                        .last_commit_id
-                        .map(|commit_id| commit_id <= up_to_commit.commit_id)
-                        .unwrap_or(false)
-                })
-                .map(|segment| segment.segment_id)
-                .collect(),
-        };
-        let mut retained_segments = Vec::new();
-        let mut removed_segments = Vec::new();
-        store.segments.retain(|segment| {
-            if plan.removable_segments.contains(&segment.segment_id) {
-                let _ = fs::remove_file(&segment.path);
-                removed_segments.push(segment.segment_id);
-                false
-            } else {
-                retained_segments.push(segment.segment_id);
-                true
-            }
-        });
-        persist_store_manifest(&store)?;
-        self.runtime.durability.set_store(Some(store));
         self.runtime
             .publication_authority()
             .push_bounded_diagnostic(
                 DiagnosticsScope::History,
                 DiagnosticsArtifactKind::MinimalSummary,
-                vec![durable_store_compacted(
-                    plan.checkpoint_id,
-                    &removed_segments,
-                )],
+                vec![checkpoint_created(&checkpoint)],
             );
-        Ok(CompactionOutcome {
-            removed_segments,
-            retained_segments,
-        })
+        self.runtime.durability.push_checkpoint(checkpoint.clone());
+        // Memory-only history has no external copy, including forks needed
+        // by replay chains older than any retained checkpoint.
+        if self.runtime.durability.medium().is_some() {
+            self.runtime
+                .history
+                .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);
+        }
+        Ok(checkpoint)
     }
 
     pub(crate) fn compact_log_if_needed(&self) {
@@ -190,18 +155,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 }
             }
         }
-        if self.runtime.runtime_config().durability.policy.mode
-            == DurabilityMode::PersistedSegmentedLocalFs
-            && self
-                .runtime
-                .runtime_config()
-                .durability
-                .policy
-                .checkpoints
-                .compact_after_checkpoint
-        {
-            let _ = self.compact_store();
-        }
     }
 
     #[cfg(test)]
@@ -210,40 +163,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
         commit_id: crate::history::data::CommitId,
     ) -> bool {
         self.runtime.durability.remove_log_commit(commit_id)
-    }
-
-    fn persist_checkpoint_file(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        checkpoint: &DurableCheckpoint,
-    ) -> Result<DurableCheckpointManifest, crate::durability::data::RelationalRecoveryStop> {
-        let _store_io =
-            crate::durability::log::local_store::lock_store_for_recovery(self.runtime, execution)?;
-        let mut store = ensure_loaded_store(self.runtime)?;
-        let checkpoint_id = DurableCheckpointId(
-            store
-                .checkpoints
-                .last()
-                .map(|manifest| manifest.checkpoint_id.0)
-                .unwrap_or(0)
-                + 1,
-        );
-        let path = checkpoint_file_path(&store.layout, checkpoint_id);
-        write_checkpoint_file(execution, &path, checkpoint)?;
-        let manifest = DurableCheckpointManifest {
-            checkpoint_id,
-            path,
-            coverage: checkpoint.coverage.clone(),
-            partition_count: checkpoint.partition_images.len(),
-            runtime_name: self.runtime.runtime_name().to_string(),
-            profile: self.runtime.runtime_profile(),
-            schema_version: self.runtime.primary_schema_version_id(),
-            integrity: DurableIntegrityStatus::Verified,
-        };
-        store.checkpoints.push(manifest.clone());
-        persist_store_manifest(&store)?;
-        self.runtime.durability.set_store(Some(store));
-        Ok(manifest)
     }
 }
 

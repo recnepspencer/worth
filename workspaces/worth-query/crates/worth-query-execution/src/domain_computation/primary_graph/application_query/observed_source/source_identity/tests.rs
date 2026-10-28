@@ -229,3 +229,51 @@ fn product_selection() -> WorthQueryApplicationBasisSelectionIdentity {
         crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product.observation()),
     )
 }
+
+#[test]
+fn ordered_epoch_identity_survives_shared_meaning_registry_mutation() {
+    use std::hash::{DefaultHasher, Hash, Hasher};
+    let hash = |epoch: &WorthQueryObservedSourceEpoch| {
+        let mut state = DefaultHasher::new();
+        epoch.hash(&mut state);
+        state.finish()
+    };
+    let root = EntityId::new(PartitionId::main(), 1, 1);
+    let occurrence = product_selection();
+    let registry = WorthQueryObservedSourceMeaningRegistry::new(
+        crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity::mint_for_test(),
+    );
+    let original = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, true), &occurrence)
+        .unwrap();
+    let epoch = WorthQueryObservedSourceEpoch::from_observation(
+        &[7; 32],
+        &[8; 32],
+        root,
+        &occurrence,
+        original,
+    )
+    .unwrap();
+    let records = BTreeMap::from([(epoch.clone(), "original")]);
+    let before = hash(&epoch);
+    // A second meaning mutates the shared registry without editing the first
+    // epoch's coordinate or retained identity. Dropping it mutates it again.
+    let changed = registry
+        .intern(&[7; 32], &[8; 32], footprint(root, false), &occurrence)
+        .unwrap();
+    let changed = WorthQueryObservedSourceEpoch::from_observation(
+        &[7; 32],
+        &[8; 32],
+        root,
+        &occurrence,
+        changed,
+    )
+    .unwrap();
+    assert_ne!(epoch, changed);
+    assert!(!records.contains_key(&changed));
+    assert_eq!(hash(&epoch), before);
+    assert_eq!(records.get(&epoch), Some(&"original"));
+    drop(changed);
+    assert_eq!(hash(&epoch), before);
+    assert_eq!(records.get(&epoch), Some(&"original"));
+}

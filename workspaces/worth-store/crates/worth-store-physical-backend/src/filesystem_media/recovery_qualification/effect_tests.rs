@@ -345,3 +345,6 @@ fn checkpoint_residue_cleanup_revalidates_current_and_candidate_before_unlink() 
         );
     }
 }
+
+#[cfg(all(feature = "recovery-runtime-owner", feature = "store-runtime-owner"))]
+mod absent_checkpoint_residue;

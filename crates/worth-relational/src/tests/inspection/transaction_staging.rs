@@ -88,7 +88,8 @@ fn transaction_inspection_savepoint_rollback_scrubs_abandoned_work_and_commit_tr
     let committed_entity = changed_entities(&committed)[0];
     let commit_inspection = runtime
         .inspect_what_happened()
-        .inspect_commit(committed.commit.commit_id)
+        .inspect_commit(execution, committed.commit.commit_id)
+        .unwrap()
         .expect("commit inspection");
 
     assert_eq!(
@@ -113,13 +114,16 @@ fn transaction_inspection_marks_lineage_affecting_intents_without_previewing_com
         .history()
         .latest_commit()
         .map(|commit| commit.commit_id);
-    let baseline_window =
-        runtime
-            .inspect_what_happened()
-            .inspect_recent_commits(&RecentCommitInspectionRequest {
+    let baseline_window = runtime
+        .inspect_what_happened()
+        .inspect_recent_commits(
+            execution,
+            &RecentCommitInspectionRequest {
                 branch_id: Some(BranchId("main".to_string())),
                 limit: 8,
-            });
+            },
+        )
+        .unwrap();
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
@@ -154,13 +158,16 @@ fn transaction_inspection_marks_lineage_affecting_intents_without_previewing_com
         .history()
         .latest_commit()
         .map(|commit| commit.commit_id);
-    let window_during_staging =
-        runtime
-            .inspect_what_happened()
-            .inspect_recent_commits(&RecentCommitInspectionRequest {
+    let window_during_staging = runtime
+        .inspect_what_happened()
+        .inspect_recent_commits(
+            execution,
+            &RecentCommitInspectionRequest {
                 branch_id: Some(BranchId("main".to_string())),
                 limit: 8,
-            });
+            },
+        )
+        .unwrap();
     let current = retained_record_inspection(
         execution,
         &runtime,

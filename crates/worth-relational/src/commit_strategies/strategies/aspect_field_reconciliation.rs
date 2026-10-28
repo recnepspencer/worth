@@ -216,7 +216,12 @@ impl CommitStrategyExecutor for AspectFieldReconciliationStrategy {
                 input.entity_id,
                 [input.field_locator.aspect().aspect_key().clone()],
             )?
-            .expect("entity was visible during strategy basis read");
+            .ok_or_else(|| {
+                StrategyExecutorFailure::new(
+                    StrategyExecutorFailureClass::DomainRejection,
+                    "strategy target is unavailable in its selected basis",
+                )
+            })?;
         let desired_comparison_key =
             authoritative_aspect_value_field_comparison_key(&input.desired_value);
         let updated = existing.projected_field_comparison_key(&input.field_locator)

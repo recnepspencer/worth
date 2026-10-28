@@ -7,8 +7,8 @@ use worth_foundational::{
 use crate::authority::mutation::outcomes::RecordMutation;
 use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::publication::patch::data::ordered_aspect_keys;
+use crate::runtime::RuntimeSymbolTable;
 use crate::schema::data::{AspectBinding, RelationalSchemaRegistry};
-use crate::symbols::data::StringInterner;
 use crate::transactions::data::AspectTraceEvidence;
 
 use super::super::canonical_delta_for_mutation;
@@ -24,7 +24,7 @@ use super::support::{
 fn entity_field_delta_materializes_authoritative_aspect_patch() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let schema = RelationalSchemaRegistry::new();
     let contract = scalar_string_contract(FoundationalAspectKey::new("name").unwrap(), 1, 7);
     let authoritative_patch = authoritative_string_patch(&contract, "native-authority");
@@ -75,7 +75,7 @@ fn entity_field_delta_materializes_authoritative_aspect_patch() {
 fn entity_struct_delta_materializes_authoritative_patch_value() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let schema = RelationalSchemaRegistry::new();
     let contract = summary_struct_contract(FoundationalAspectKey::new("summary").unwrap());
     let authoritative_patch = authoritative_summary_patch(&contract, "native-summary");
@@ -135,7 +135,7 @@ fn entity_struct_delta_materializes_authoritative_patch_value() {
 fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let schema = RelationalSchemaRegistry::new();
     let contract = summary_struct_contract(FoundationalAspectKey::new("summary").unwrap());
     let authoritative_patch = authoritative_summary_field_patch(&contract, "field-level-summary");
@@ -199,7 +199,7 @@ fn entity_struct_delta_materializes_foundational_field_level_patch_evidence() {
 fn relation_field_delta_materializes_authoritative_aspect_patch() {
     let config = mutation_config();
     let mut state = empty_working_state(&config);
-    let mut symbols = StringInterner::default();
+    let mut symbols = RuntimeSymbolTable::default().begin_pending_meanings();
     let schema = RelationalSchemaRegistry::new();
     let contract =
         scalar_string_contract(FoundationalAspectKey::new("relation.label").unwrap(), 11, 3);

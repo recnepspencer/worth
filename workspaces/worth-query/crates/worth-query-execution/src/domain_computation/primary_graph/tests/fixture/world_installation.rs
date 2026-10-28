@@ -120,7 +120,7 @@ pub(in crate::domain_computation::primary_graph::tests) fn restored_world(
         let mut bootstrap = authority.prepare_primary_graph_from_native_checkpoint_with_invariants(&phase.bootstrap_for_test(),
         &runtime,
         &schema,
-        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+        worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
         crate::domain_computation::execution_runtime::product_world::test_product_world_resources(),
         crate::domain_computation::primary_graph::WorthQueryApplicationInvariantFactories::for_installed_schema(&schema),
         &decoded,

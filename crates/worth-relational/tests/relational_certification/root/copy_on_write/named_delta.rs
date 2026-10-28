@@ -68,8 +68,8 @@ fn prove_named_delta_cow(
 ) {
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork_from_main(&world.runtime, branch);
-    fork_from_main(&world.runtime, "cost-sibling");
+    fork_from_main(execution, &world.runtime, branch);
+    fork_from_main(execution, &world.runtime, "cost-sibling");
     let selected = world
         .runtime
         .branch_identity(&BranchId(branch.to_owned()))
@@ -261,11 +261,15 @@ fn declared_partitions(
     }
 }
 
-fn fork_from_main(runtime: &RelationalRuntime, branch: &str) {
+fn fork_from_main(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .unwrap();
 }

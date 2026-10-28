@@ -5,6 +5,12 @@ use crate::transactions::data::{
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CommitStage {
+    /// A detached transaction read consults the same original request court.
+    TransactionRead,
+    /// Explicit preview admission, before dictionary or plan preparation.
+    PlanPreview,
+    /// Each fresh residency candidate consults before it spends identities.
+    PreparationRound,
     Validation,
     Admission,
     Draft,
@@ -16,6 +22,9 @@ pub(crate) enum CommitStage {
     PublicationPreparation,
     CandidateRegistration,
     Publication,
+    /// The final pre-effect consult, after any companion preflight, where the
+    /// caller's original request keeps its first cause before the head moves.
+    PublicationCutover,
 }
 
 pub(crate) fn consult_stage(

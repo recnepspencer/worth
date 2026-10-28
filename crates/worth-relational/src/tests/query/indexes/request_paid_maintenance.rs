@@ -19,14 +19,17 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = runtime_with_index_field_aspects();
     let created = create_entity_outcome(execution, &runtime, "paid");
-    let definition = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "paid.name".into(),
-        branch_scoped: true,
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-    });
+    let definition = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "paid.name".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+        })
+        .expect("index fixture has identity capacity");
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,
         branch_id: BranchId("main".into()),
@@ -72,7 +75,8 @@ fn cold_reconstruction_is_paid_and_short_requests_publish_nothing() {
     );
     assert!(runtime
         .index_access()
-        .latest_generation(definition.index_id, &BranchId("main".into()))
+        .read_latest_generation(execution, definition.index_id, &BranchId("main".into()))
+        .unwrap()
         .is_none());
     let next_host = crate::test_execution_policy::serial_request();
     let next_request = &worth_execution::ExecutionRequest::serial(&next_host);
@@ -118,6 +122,7 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
                 field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
             },
         })
+        .expect("index fixture has identity capacity")
         .index_id;
     let request = DerivedIndexBuildRequest {
         source_commit_id: created.commit.commit_id,
@@ -182,7 +187,8 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
     assert_eq!(retry_kind, Some(Denial::Execution(Cause::WorkExhausted)));
     assert!(runtime
         .index_access()
-        .latest_generation(index, &BranchId("main".into()))
+        .read_latest_generation(execution, index, &BranchId("main".into()))
+        .unwrap()
         .is_none());
     let mut charges = 0;
     let rendezvous = crate::indexes::at_next_charges(move || {
@@ -209,10 +215,20 @@ fn cold_retry_and_cancellation_use_the_same_request_payer() {
             Some(Denial::Execution(Cause::Cancelled))
         )
     );
-    assert!(runtime
-        .index_access()
-        .latest_generation(index, &BranchId("main".into()))
-        .is_none());
+    assert_eq!(
+        runtime
+            .index_access()
+            .read_latest_generation(execution, index, &BranchId("main".into()))
+            .unwrap_err(),
+        Cause::Cancelled
+    );
+    assert_eq!(
+        runtime
+            .index_access()
+            .generation_residency_for_observation(index, &basis.observation()),
+        crate::indexes::data::DerivedIndexGenerationResidency::Absent
+    );
+
     release_test_commit_snapshot(&runtime, &created);
 }
 

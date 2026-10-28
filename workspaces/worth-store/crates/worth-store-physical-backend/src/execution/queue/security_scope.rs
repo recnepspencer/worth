@@ -102,10 +102,10 @@ fn require_secure_backend_requirement(
     if binding.primary().backend_requirement() != SECURE_FRAME_BACKEND_REQUIREMENT_TAG {
         return Err(BackendSecureIoPreservationDenial::UnsupportedSecureIoPosture);
     }
-    if let Some(secondary) = binding.secondary() {
-        if secondary.backend_requirement() != SECURE_FRAME_BACKEND_REQUIREMENT_TAG {
-            return Err(BackendSecureIoPreservationDenial::UnsupportedSecureIoPosture);
-        }
+    if let Some(secondary) = binding.secondary()
+        && secondary.backend_requirement() != SECURE_FRAME_BACKEND_REQUIREMENT_TAG
+    {
+        return Err(BackendSecureIoPreservationDenial::UnsupportedSecureIoPosture);
     }
     Ok(())
 }

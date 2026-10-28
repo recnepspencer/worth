@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use crate::durability::data::{DurableCheckpoint, DurableStore};
+use crate::durability::data::DurableCheckpoint;
 use crate::history::data::{CommitId, PositionedCanonicalCommit};
-use crate::runtime::RelationalRuntimeConfig;
+use crate::history::RelationalCommitEnvelopeResidency;
+use crate::publication::patch::data::PatchStreamPosition;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct CheckpointEnvelopeLocation {
@@ -13,42 +14,50 @@ pub(super) struct CheckpointEnvelopeLocation {
 
 /// The durability subsystem's authoritative contents.
 ///
-/// Envelopes, checkpoints, and the store are held by shared ownership so a
-/// reader can carry them out of the subsystem lock without copying them and
-/// without holding the lock across durability I/O.
+/// Envelopes and checkpoints are held by shared ownership so a reader can
+/// carry them out of the subsystem lock without copying them.
 #[derive(Debug, Clone, Default)]
 pub(crate) struct DurabilityState {
-    pub(super) log: Vec<Arc<PositionedCanonicalCommit>>,
+    pub(super) log: Vec<(
+        CommitId,
+        PatchStreamPosition,
+        Arc<RelationalCommitEnvelopeResidency>,
+    )>,
     pub(super) checkpoints: Vec<Arc<DurableCheckpoint>>,
     log_commit_index: HashMap<CommitId, usize>,
     checkpoint_commit_index: HashMap<CommitId, CheckpointEnvelopeLocation>,
-    pub(super) store: Option<Arc<DurableStore>>,
 }
 
 impl DurabilityState {
-    pub(super) fn build_from_config(config: &RelationalRuntimeConfig) -> Self {
-        Self {
-            log: Vec::new(),
-            checkpoints: Vec::new(),
-            log_commit_index: HashMap::new(),
-            checkpoint_commit_index: HashMap::new(),
-            store: config.durability.policy.store_layout.clone().map(|layout| {
-                Arc::new(DurableStore {
-                    layout,
-                    segments: Vec::new(),
-                    checkpoints: Vec::new(),
-                })
-            }),
-        }
-    }
-
-    pub(super) fn push_log_envelope(&mut self, commit: PositionedCanonicalCommit) {
-        let commit_id = commit.envelope().commit.commit_id;
-        self.log_commit_index.insert(commit_id, self.log.len());
-        self.log.push(Arc::new(commit));
+    pub(super) fn push_log_envelope(
+        &mut self,
+        commit: (
+            CommitId,
+            PatchStreamPosition,
+            Arc<RelationalCommitEnvelopeResidency>,
+        ),
+    ) {
+        self.log_commit_index.insert(commit.0, self.log.len());
+        self.log.push(commit);
     }
 
     pub(super) fn push_checkpoint(&mut self, checkpoint: DurableCheckpoint) {
+        // Encoding runs outside publication locks, so captures can complete
+        // out of order. Never replace the basis for an already compacted tail
+        // with an older coverage frontier. Equal coverage can carry updated
+        // derived index images and remains a valid new checkpoint.
+        if self.checkpoints.last().is_some_and(|current| {
+            crate::durability::access::checkpoint_coverage(current)
+                >= crate::durability::access::checkpoint_coverage(&checkpoint)
+                && current.coverage.up_to_branch_transition
+                    >= checkpoint.coverage.up_to_branch_transition
+                && (crate::durability::access::checkpoint_coverage(current)
+                    > crate::durability::access::checkpoint_coverage(&checkpoint)
+                    || current.coverage.up_to_branch_transition
+                        > checkpoint.coverage.up_to_branch_transition)
+        }) {
+            return;
+        }
         let checkpoint_index = self.checkpoints.len();
         for (envelope_index, envelope) in checkpoint.envelopes.iter().enumerate() {
             self.checkpoint_commit_index.insert(
@@ -62,24 +71,29 @@ impl DurabilityState {
         self.checkpoints.push(Arc::new(checkpoint));
     }
 
-    pub(super) fn set_log(&mut self, log: Vec<PositionedCanonicalCommit>) {
-        self.log = log.into_iter().map(Arc::new).collect();
+    pub(super) fn set_log(
+        &mut self,
+        log: Vec<(
+            CommitId,
+            PatchStreamPosition,
+            Arc<RelationalCommitEnvelopeResidency>,
+        )>,
+    ) {
+        self.log = log;
         self.rebuild_log_commit_index();
     }
 
     pub(super) fn rebuild_log_commit_index(&mut self) {
         self.log_commit_index.clear();
         for (index, envelope) in self.log.iter().enumerate() {
-            self.log_commit_index
-                .insert(envelope.envelope().commit.commit_id, index);
+            self.log_commit_index.insert(envelope.0, index);
         }
     }
 
     #[cfg(test)]
     pub(super) fn remove_log_commit(&mut self, commit_id: CommitId) -> bool {
         let before = self.log.len();
-        self.log
-            .retain(|entry| entry.envelope().commit.commit_id != commit_id);
+        self.log.retain(|entry| entry.0 != commit_id);
         let changed = before != self.log.len();
         if changed {
             self.rebuild_log_commit_index();
@@ -89,7 +103,7 @@ impl DurabilityState {
 
     /// Drop every envelope at or below a checkpoint's coverage frontier.
     pub(super) fn retain_log_after(&mut self, commit_id: CommitId) {
-        self.log.retain(|entry| entry.commit.commit_id > commit_id);
+        self.log.retain(|entry| entry.0 > commit_id);
         self.rebuild_log_commit_index();
     }
 
@@ -108,7 +122,8 @@ impl DurabilityState {
         self.log_commit_index
             .get(&commit_id)
             .and_then(|index| self.log.get(*index))
-            .map(Arc::clone)
+            .and_then(|entry| entry.2.positioned_if_resident())
+            .map(Arc::new)
     }
 
     pub(super) fn checkpoint_envelope(

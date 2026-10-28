@@ -67,7 +67,7 @@ impl BranchHeadVersionIndex {
         let count = self
             .counts
             .get_mut(&version.0)
-            .expect("removed branch head must be present in the authoritative version index");
+            .expect(/* Proof: Head installation increments this exact version index and removal consumes the same registered head once under exclusive owner mutation. */ "removed branch head must be present in the authoritative version index");
         *count -= 1;
         if *count != 0 {
             return;

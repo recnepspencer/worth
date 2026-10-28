@@ -56,6 +56,8 @@ fn assert_aba_observation_is_refused(
     first: &ProductBranchObservation,
     second: &ProductBranchObservation,
 ) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let mismatch = first
         .compare(second)
         .expect_err("two occurrences of one name are not the same observation");
@@ -69,6 +71,7 @@ fn assert_aba_observation_is_refused(
     let denial = RuntimeWorldBranchService::create_product_branch(
         owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             first.clone(),
             fork_intent(
                 "branch-aba-child",
@@ -126,6 +129,8 @@ fn partial_creation_under_the_shared_name(
     owner: &TestOwner,
     source: &ProductBranchObservation,
 ) -> crate::recovery::ProductUnpublishedOwnerEffects {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let held = owner
         .state
         .signal
@@ -139,6 +144,7 @@ fn partial_creation_under_the_shared_name(
     let outcome = RuntimeWorldBranchService::create_product_branch(
         owner,
         RuntimeWorldBranchCreationRequest::new(
+            execution,
             source.clone(),
             fork_intent(
                 PARTIAL_NAME,

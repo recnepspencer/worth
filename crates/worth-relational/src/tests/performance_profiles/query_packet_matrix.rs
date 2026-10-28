@@ -28,7 +28,10 @@ fn perf_query_packet_matrix() {
                 })
                 .rev()
                 .collect::<Vec<_>>();
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let packet = explicit_query_packet(&runtime, &snapshot, "explicit-targets", targets);
 
             runtime.performance_access().reset_counters();
@@ -109,7 +112,10 @@ fn perf_query_packet_matrix() {
                     partition_id,
                 );
             }
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let context = runtime
                 .read_truth()
                 .query_plan_context(&snapshot)
@@ -233,7 +239,10 @@ fn perf_query_packet_matrix() {
                     PartitionId(70 + index as u32),
                 );
             }
-            let snapshot = runtime.visibility_authority().snapshot();
+            let snapshot = runtime
+                .visibility_authority()
+                .snapshot()
+                .expect("current snapshot fixture is admitted");
             let context = runtime
                 .read_truth()
                 .query_plan_context(&snapshot)

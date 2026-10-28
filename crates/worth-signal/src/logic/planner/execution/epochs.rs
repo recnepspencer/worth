@@ -43,7 +43,7 @@ pub(crate) struct CheckedAdmittedEpoch<'tasks, 'request, 'authority> {
 }
 
 impl<'tasks, 'request, 'authority> CheckedAdmittedEpoch<'tasks, 'request, 'authority> {
-    pub(crate) fn tasks(&self) -> &[EligibleTask] {
+    pub(crate) fn tasks(&self) -> &'tasks [EligibleTask] {
         self.selection.tasks()
     }
 
@@ -189,6 +189,7 @@ pub(crate) fn run_stage_slices<'a, P: SignalPrecompute>(
                         &stage.tasks[offset..],
                         stage.task_offset + offset,
                         precompute.allows_bounded_inputs(),
+                        precompute.maximum_result_heap_bytes(),
                         context.request,
                         context.comparator_resolver,
                         Some(&mut *context.preparation),

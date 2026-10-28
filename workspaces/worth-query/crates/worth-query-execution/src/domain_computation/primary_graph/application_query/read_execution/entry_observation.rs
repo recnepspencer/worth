@@ -90,6 +90,7 @@ fn clear_observations() {
 }
 
 /// Passive entry count into the actual Native component reader in this owned scope.
+#[cfg(test)]
 pub(in crate::domain_computation::primary_graph) fn component_native_acquisitions_on_this_thread_for_test(
 ) -> u64 {
     COMPONENT_NATIVE_ACQUISITIONS.with(Cell::get)

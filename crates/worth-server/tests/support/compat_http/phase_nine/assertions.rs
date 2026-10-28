@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use worth_foundational::facade::DiagnosticRichnessProfile;
 use worth_server::{
     WorthServerCompatibilityFileEnvelope, WorthServerFileTransferDisposition,

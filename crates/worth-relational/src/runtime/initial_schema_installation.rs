@@ -263,7 +263,7 @@ impl RelationalInitialSchemaInstallation<'_> {
             .schema_contract_runtime
             .custom_invariant_generation
             .checked_add(1)
-            .expect(
+            .expect(/* Proof: Initial installation is a one-way empty-to-installed transition; generation starts at zero and this path increments it only once. */
                 "initial custom-invariant generation cannot overflow on its one legal transition",
             );
         let mut registrations = installed

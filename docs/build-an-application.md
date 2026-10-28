@@ -1894,11 +1894,11 @@ do not renew its allowance. Capture is capped by the caller-named policy, which 
 be `Execution(&lease)` for the funding lease itself or a lease descending from it,
 for example a child with its own smaller memory limit; there is no default and no
 silent inheritance. Entry checks that descent before any work or charge: a sibling,
-a parent, another lineage's lease or `SystemAllocation` refuses with
+a parent or another lineage's lease refuses with
 `ExecutionDenied(ExecutionResource { NestedLeaseMisuse })`. A capture child that runs
 out after the native ACK returns the acknowledged capsule with the child's own
 refusal (`Policy { ancestor: 0 }`) for repair.
-A bare serial backing has no admitted capture allocation policy and refuses before
+`SystemAllocation` and bare serial backing have no admitted capture allocation policy and refuse before
 effects with `ExecutionDenied(ResourceEnvelopeMismatch)`, rather than falling back
 to SystemAllocation. The ordinary convenience constructor retains its explicit
 owned-request/policy contract. Its `Execution(&lease)` policy funds the whole
@@ -1923,7 +1923,7 @@ caller lease that funds the call or one of its ancestors, and any other lease
 refuses `UnrelatedNestedLease`. The runnable
 [original request fixture](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/original_request.rs)
 uses the real nonempty native transition; its
-[deferred repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
+[capture repair companion](../workspaces/worth-query/crates/worth-query-host/tests/temporal_conditional_operation/contribution_installation/checkpoint_transition/admission.rs)
 retains the native capsule across stopped attempts.
 
 Its bounded `WorthQueryCheckpointMigrationWriter` authors new typed entity seeds
@@ -1966,9 +1966,9 @@ subsequently overwritten payload, affected custom invariants, changed ordering
 keys, join consequences and multiple current branch heads remain refused.
 Codec cutover cannot append authored rows. Unaffected surviving relations are
 rejudged by the target program's actual installed rules before publication.
-Normal transition capture and the existing deferred/acknowledged recovery capsule
+Transition capture and the acknowledged recovery capsule
 retain the same funded historical output roster. Capture refusal returns that
-same unpublished capsule for funded repair; repair does not reauthor or copy
+same acknowledged capsule for funded repair; repair does not reauthor or copy
 predecessor currentness.
 
 Historical roots and the original checkpoint keep their old meaning. Demand
@@ -2004,20 +2004,19 @@ and decode custody through completion. A swallowed seed refusal or late
 cancellation denies the final page, image or successful delivery. Closing a
 live consumer and closing its publisher are separate lifecycle operations.
 
-A deferred native settlement returns `CheckpointTransitionDeferred` with the
-exact unpublished repair custody. Consuming `repair_to_checkpoint` returns a
-target checkpoint after acknowledgment, or the same capsule if repair/capture
-stops. `CheckpointTransitionCaptureStopped` specifically retains the acknowledged
-phase when its first checkpoint capture stops. A later installation failure returns
+`CheckpointTransitionCaptureStopped` retains the acknowledged phase when its
+first checkpoint capture stops. Consuming `repair_to_checkpoint` returns a
+target checkpoint, or the same capsule if capture stops again. A later installation failure returns
 `CheckpointTransitionFinalizationStopped` if target finalization refused before
 capture; its capsule retains the acknowledged successor and exposes the original
 typed `finalization_denial()`. Capture retries preserve that original cause.
 A later installation failure after checkpoint capture returns
 `CheckpointTransitionAcknowledged`
 with the already acknowledged target checkpoint and the original phase denial;
-fix the installation configuration and ordinary-restore that checkpoint. A
-terminal performed settlement failure has its own typed denial and issues no
-acknowledged successor.
+fix the installation configuration and ordinary-restore that checkpoint. An
+unknown durable fate for the native transition is a typed
+`RelationalDurabilityUnresolved` installation denial and issues no acknowledged
+successor.
 
 ---
 
@@ -2856,7 +2855,7 @@ Workflow: the runnable authored example obtains the actual awaited slot, capture
         .idempotency_owned(key + 1).unwrap_or_else(|(_, _, denial)| panic!("input capture: {denial:?}"))
         .for_workflow_operation(application, &required)
         .unwrap_or_else(|_|panic!("exact original approved occurrence"))
-        .retain_operation::<document_retention_model::programs::WorkflowOwnerProgram,document_retention_model::programs::ReviewedAction>(application.program_runtime())
+        .retain_operation::<document_retention_model::programs::RetentionProgramP0,actions::ReviewedAction>(application.program_runtime())
         .unwrap_or_else(|_|panic!("installed approved effect action"));
     let effect=match effect.advance(&runtime.request(&principal,&scope).on_branch(instance.branch())) {
         worth_query_host::facade::application_entry::WorthQueryWorkflowOperationAdvance::Completed(done)=>done,
@@ -2957,7 +2956,7 @@ without performing an effect. A refused constructor returns the original
 against the correct declaration. It retains no authenticated principal or grant.
 
 Shape, with illustrative names; the executable counterpart is
-[`required_unpublished.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/required_unpublished.rs):
+[`fixed_delivery.rs`](../workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/proof/application_program/fixed_delivery.rs):
 
 <!-- illustrative -->
 ```rust,ignore
@@ -3293,11 +3292,23 @@ ceiling. The subscription retains every delivered position, so no reader falls
 outside a window or reconstructs to catch up. The value carries only the
 receiver's differential verification controls.
 
-No ceiling does not mean unaccounted memory. Preparation and retained backing
-are admitted at their allocating owners, and a real allocator refusal stays
-with the operation that allocated. Request cancellation and precommit atomicity
-are unchanged. This installation does not bound aggregate process RSS or
-guarantee available RAM.
+Absence does not disable admission accounting or authorize memory allocation.
+Preparation still checked-adds every original byte quote; retained tickets share
+one ledger and stay charged while current, historical, prepared or consumed-output
+owners hold them. Carried admissions retain the same original counters and
+optional ceilings. Only the final holder's drop refunds its ticket. Request
+cancellation and precommit atomicity are unchanged; real allocator refusals remain
+owned by their allocating operation. This installation does not bound aggregate
+process RSS or guarantee available RAM.
+
+`RetentionCounterOverflow` reports an unrepresentable retained total with its
+original requested/retained operands. It is distinct from finite
+`RetentionCapacityExhausted` and does not trigger finite-capacity eviction.
+Companion admission reports a finite retained ceiling through
+`RetainedCompanionCapacityExhausted`.
+Preparation counter overflow likewise remains distinct from a supplied ceiling.
+Keep the returned original owner and its policy values on refusal; retry that
+owner with a fresh authorized request.
 
 #### Producer publication diagnostics
 

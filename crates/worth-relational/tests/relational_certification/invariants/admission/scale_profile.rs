@@ -103,7 +103,7 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     assert_eq!(graph_preparation_calls.load(Ordering::Relaxed), 0);
     assert_eq!(graph_evaluation_calls.load(Ordering::Relaxed), 0);
 
-    assert_scale_fork_shares_complete_authority(&world.runtime);
+    assert_scale_fork_shares_complete_authority(execution, &world.runtime);
 
     let main = BranchId("main".to_owned());
     assert_eq!(
@@ -195,14 +195,17 @@ fn large_runtime_keeps_global_enforcement_and_filters_graph_planning() {
     );
 }
 
-fn assert_scale_fork_shares_complete_authority(runtime: &RelationalRuntime) {
+fn assert_scale_fork_shares_complete_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) {
     let main = BranchId("main".to_owned());
     let (_, source) = runtime
         .observe_fork_source(&main)
         .expect("Scale main remains an owner-observed fork source");
     let child = BranchId("scale-zero-copy".to_owned());
     runtime
-        .fork_branch(child.clone(), source)
+        .fork_branch(execution, child.clone(), source)
         .expect("Scale fork remains metadata-only");
     let identities = [
         runtime.main_branch_identity(),

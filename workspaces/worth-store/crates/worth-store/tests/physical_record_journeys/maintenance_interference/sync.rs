@@ -14,6 +14,45 @@ use worth_store_physical_backend::{
 
 use super::{append, initialize, limits, placement};
 
+pub(super) struct FileSyncPauseRelease<'gate>(&'gate MediaPauseGate);
+
+impl<'gate> FileSyncPauseRelease<'gate> {
+    pub(super) fn new(gate: &'gate MediaPauseGate) -> Self {
+        Self(gate)
+    }
+}
+
+impl Drop for FileSyncPauseRelease<'_> {
+    fn drop(&mut self) {
+        self.0.release();
+    }
+}
+
+#[test]
+fn unwinding_releases_file_sync_before_joining_the_scoped_worker() {
+    let admission =
+        FilesystemMediaAdmission::production(FilesystemAccessPosture::CoordinatedServiceAccount);
+    let gate = admission.fault_schedule_authority().pause_gate();
+    let completed = AtomicBool::new(false);
+    let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        std::thread::scope(|scope| {
+            let _release = FileSyncPauseRelease::new(&gate);
+            scope.spawn(|| {
+                gate.pause_for_certification();
+                completed.store(true, Ordering::Release);
+            });
+            gate.wait_until_reached();
+            panic!("exercise file sync pause unwinding");
+        });
+    }));
+    let panic = outcome.expect_err("scope must preserve the original panic");
+    assert_eq!(
+        panic.downcast_ref::<&str>(),
+        Some(&"exercise file sync pause unwinding")
+    );
+    assert!(completed.load(Ordering::Acquire));
+}
+
 #[test]
 fn paused_file_sync_is_not_a_completed_barrier() {
     let parent = tempfile::tempdir().unwrap();

@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard, RwLockWriteGuard, TryLockError};
+use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
 use dashmap::DashMap;
 
@@ -9,8 +9,15 @@ use crate::publication::patch::data::PatchStreamPosition;
 
 #[path = "canonical_publication_routes/authored_writes.rs"]
 mod authored_writes;
+#[path = "canonical_publication_routes/branch_transition_stream.rs"]
+mod branch_transition_stream;
 #[path = "canonical_publication_routes/checkpoint_admission.rs"]
 mod checkpoint_admission;
+#[cfg(test)]
+#[path = "canonical_publication_routes/lifecycle_order_control.rs"]
+mod lifecycle_order_control;
+#[path = "canonical_publication_routes/patch_position_reservation.rs"]
+mod patch_position_reservation;
 #[path = "canonical_publication_routes/performed_stream.rs"]
 mod performed_stream;
 #[path = "canonical_publication_routes/position_admission.rs"]
@@ -18,18 +25,36 @@ mod position_admission;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
 pub(crate) use authored_writes::AuthoredWriteGeneration;
 
+#[path = "canonical_publication_routes/position_retention.rs"]
+mod position_retention;
+pub(crate) use position_retention::RetainedCanonicalPosition;
+
+#[path = "canonical_publication_routes/indexed_catalog.rs"]
+mod indexed_catalog;
+use branch_transition_stream::BranchTransitionStream;
+pub(crate) use branch_transition_stream::{
+    BranchTransitionPublication, BranchTransitionRecordError,
+};
+pub(crate) use patch_position_reservation::PatchPositionReservationAdmission;
+pub use patch_position_reservation::RelationalPatchPositionReservationCounters;
 pub(crate) use performed_stream::PerformedCheckpointSelection;
-pub use performed_stream::RelationalPatchPositionReservationCounters;
-use performed_stream::{PerformedPublicationRecordError, PerformedPublicationStream};
+use performed_stream::PerformedPublicationStream;
+pub use position_admission::RelationalCanonicalPositionAdmissionDenial;
 pub(crate) use position_admission::{
     readmit_positioned_canonical_commit, CanonicalPositionAdmission,
 };
 
 pub(crate) struct RelationalCanonicalPublicationRoutes {
+    checkpoint_catalog: RwLock<
+        Arc<std::collections::BTreeMap<CommitId, Arc<crate::history::RelationalCommitArtifact>>>,
+    >,
     by_commit: DashMap<CommitId, Arc<CanonicalPublicationRoute>>,
     by_version: DashMap<VersionId, Arc<CanonicalPublicationRoute>>,
     performed_stream: PerformedPublicationStream,
+    branch_transitions: Arc<BranchTransitionStream>,
     lifecycle: RwLock<()>,
+    #[cfg(test)]
+    lifecycle_order: lifecycle_order_control::LifecycleOrderControl,
 }
 
 impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
@@ -44,7 +69,9 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 
 struct CanonicalPublicationRoute {
     authored_writes: Mutex<Option<AuthoredWriteGeneration>>,
-    envelope: Arc<CanonicalCommitEnvelope>,
+    envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    commit: crate::history::data::RelationalCommitReceipt,
+    roots: crate::branch::RelationalBranchRootDescriptor,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
     performed_position: AtomicU64,
     performed: AtomicBool,
@@ -57,8 +84,15 @@ struct CanonicalPublicationHandoff {
 }
 
 pub(crate) enum CanonicalPublicationRecordError {
+    /// A memory-only publisher met a held reservation; nothing moved.
     ReservationContended,
+    /// A durable publisher's request stopped while it waited for the
+    /// reservation; it was assigned nothing.
+    ReservationWaitStopped(worth_execution::WorkCeilingDenial),
     PositionCapacityExhausted,
+    /// The durable step did not make the positioned commit durable, so the
+    /// position was not consumed and nothing was installed.
+    Durable(crate::durability::medium::RelationalDurableStepStop),
 }
 
 pub(crate) enum CanonicalCheckpointAdmissionError {
@@ -69,15 +103,20 @@ pub(crate) enum CanonicalCheckpointAdmissionError {
 pub(crate) struct PreparedCanonicalPublicationRoute {
     routes: Arc<RelationalCanonicalPublicationRoutes>,
     route: Arc<CanonicalPublicationRoute>,
+    resident: Arc<CanonicalCommitEnvelope>,
 }
 
 impl Default for RelationalCanonicalPublicationRoutes {
     fn default() -> Self {
         Self {
+            checkpoint_catalog: Default::default(),
             by_commit: DashMap::new(),
             by_version: DashMap::new(),
             performed_stream: PerformedPublicationStream::default(),
+            branch_transitions: Arc::default(),
             lifecycle: RwLock::new(()),
+            #[cfg(test)]
+            lifecycle_order: Default::default(),
         }
     }
 }
@@ -90,13 +129,23 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_recovered(
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
+        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        roots: crate::branch::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
+        let canonical = envelope
+            .get()
+            .ok_or("recovered route has no admitted resident body")?;
+        let positioned = Arc::new(PositionedCanonicalCommit::admit(
+            position_admission::CanonicalPositionAdmission::equivalent(&positioned, canonical)?,
+        ));
         let installs_version_route = positioned.envelope().authority_kind()
             != crate::history::data::CanonicalCommitAuthorityKind::BranchReferenceMovement;
+        envelope.bind_performed(&positioned, None);
         let route = Arc::new(CanonicalPublicationRoute {
-            // Cold recovery may explicitly rebuild this discardable accelerator.
             authored_writes: Mutex::new(None),
-            envelope: Arc::clone(positioned.canonical_arc()),
+            envelope,
+            commit: positioned.commit.clone(),
+            roots,
             handoff: Mutex::new(None),
             performed_position: AtomicU64::new(0),
             performed: AtomicBool::new(true),
@@ -128,13 +177,21 @@ impl RelationalCanonicalPublicationRoutes {
 
     pub(crate) fn reserve(
         routes: &Arc<Self>,
-        envelope: Arc<CanonicalCommitEnvelope>,
+        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<crate::branch::RelationalBranchRoot>,
         authored_writes: Option<AuthoredWriteGeneration>,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
+        let resident = envelope.get().ok_or("prepared envelope is not resident")?;
+        let commit = resident.commit.clone();
+        let roots = root
+            .descriptor()
+            .cloned()
+            .ok_or("prepared root has no committed descriptor")?;
         let route = Arc::new(CanonicalPublicationRoute {
             authored_writes: Mutex::new(authored_writes),
             envelope,
+            commit,
+            roots,
             handoff: Mutex::new(Some(CanonicalPublicationHandoff {
                 root,
                 publication_cell: None,
@@ -143,8 +200,8 @@ impl RelationalCanonicalPublicationRoutes {
             performed: AtomicBool::new(false),
             settled: AtomicBool::new(false),
         });
-        let commit_id = route.envelope.commit.commit_id;
-        let version_id = route.envelope.commit.version_id;
+        let commit_id = route.commit.commit_id;
+        let version_id = route.commit.version_id;
         if routes
             .by_commit
             .insert(commit_id, Arc::clone(&route))
@@ -163,87 +220,8 @@ impl RelationalCanonicalPublicationRoutes {
         Ok(PreparedCanonicalPublicationRoute {
             routes: Arc::clone(routes),
             route,
+            resident,
         })
-    }
-
-    pub(crate) fn by_commit(&self, commit_id: CommitId) -> Option<Arc<CanonicalCommitEnvelope>> {
-        visible_envelope(self.by_commit.get(&commit_id).map(|entry| entry.clone()))
-    }
-
-    /// Includes reserved routes; bounds traversal through the visible subset.
-    pub(crate) fn catalog_len_bound(&self) -> usize {
-        self.by_commit.len()
-    }
-
-    pub(crate) fn by_version(&self, version_id: VersionId) -> Option<Arc<CanonicalCommitEnvelope>> {
-        visible_envelope(self.by_version.get(&version_id).map(|entry| entry.clone()))
-    }
-
-    pub(crate) fn by_patch(
-        &self,
-        position: PatchStreamPosition,
-    ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.performed_stream.envelope_at(position)
-    }
-
-    pub(crate) fn positioned_by_patch(
-        &self,
-        position: PatchStreamPosition,
-    ) -> Option<Arc<PositionedCanonicalCommit>> {
-        self.performed_stream.positioned_at(position)
-    }
-
-    pub(crate) fn visible_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
-        self.performed_stream.visible_envelopes()
-    }
-
-    pub(crate) fn latest_visible_patch(&self) -> Option<(PatchStreamPosition, CommitId)> {
-        self.performed_stream.latest()
-    }
-
-    pub(crate) fn visible_patches_after(
-        &self,
-        after_position: Option<PatchStreamPosition>,
-        max_commits: usize,
-    ) -> Vec<(PatchStreamPosition, CommitId)> {
-        self.performed_stream.after(after_position, max_commits)
-    }
-
-    pub(crate) fn stream_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
-        let route = self
-            .by_commit
-            .get(&commit_id)
-            .map(|entry| Arc::clone(entry.value()))?;
-        route.is_visible().then(|| route.position()).flatten()
-    }
-
-    pub(crate) fn positioned_commit(
-        &self,
-        commit_id: CommitId,
-    ) -> Option<Arc<PositionedCanonicalCommit>> {
-        self.performed_stream.positioned(commit_id)
-    }
-
-    pub(crate) fn requires_settlement(&self, commit_id: CommitId) -> bool {
-        self.by_commit
-            .get(&commit_id)
-            .is_some_and(|route| !route.settled.load(Ordering::Acquire))
-    }
-
-    pub(crate) fn enter_fork(
-        &self,
-    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
-        match self.lifecycle.try_write() {
-            Ok(guard) => Ok(guard),
-            Err(TryLockError::WouldBlock) => {
-                Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
-            }
-            Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
-        }
-    }
-
-    pub(crate) fn performed_snapshot(&self) -> Vec<Arc<PositionedCanonicalCommit>> {
-        self.performed_stream.positioned_snapshot()
     }
 
     pub(crate) fn reservation_counters(&self) -> RelationalPatchPositionReservationCounters {
@@ -263,7 +241,7 @@ impl RelationalCanonicalPublicationRoutes {
         let Some((_, route)) = self.by_commit.remove(&commit_id) else {
             return false;
         };
-        self.by_version.remove(&route.envelope.commit.version_id);
+        self.by_version.remove(&route.commit.version_id);
         true
     }
 
@@ -272,11 +250,11 @@ impl RelationalCanonicalPublicationRoutes {
             return;
         }
         self.by_commit
-            .remove_if(&route.envelope.commit.commit_id, |_, existing| {
+            .remove_if(&route.commit.commit_id, |_, existing| {
                 Arc::ptr_eq(existing, route)
             });
         self.by_version
-            .remove_if(&route.envelope.commit.version_id, |_, existing| {
+            .remove_if(&route.commit.version_id, |_, existing| {
                 Arc::ptr_eq(existing, route)
             });
     }
@@ -286,8 +264,14 @@ impl PreparedCanonicalPublicationRoute {
     /// Owner-issued commit identity of the candidate this route publishes.
     /// Settlement is keyed by it before movement, so it must be readable
     /// without waiting for the route to perform.
+    pub(crate) fn envelope_residency(
+        &self,
+    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+        Arc::clone(&self.route.envelope)
+    }
+
     pub(crate) fn commit_id(&self) -> CommitId {
-        self.route.envelope.commit.commit_id
+        self.route.commit.commit_id
     }
 
     pub(crate) fn selected_position(&self, commit_id: CommitId) -> Option<PatchStreamPosition> {
@@ -301,31 +285,33 @@ impl PreparedCanonicalPublicationRoute {
             .unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
-    pub(crate) fn record_performed_with_cutover(
+    pub(crate) fn record_performed_with_cutover<T>(
         &self,
         publication_cell: crate::branch::RelationalBranchPublicationCell,
-        cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition),
-    ) -> Result<Arc<PositionedCanonicalCommit>, CanonicalPublicationRecordError> {
+        admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        durable: impl FnOnce(
+            &PositionedCanonicalCommit,
+            &crate::branch::RelationalBranchRootDescriptor,
+        ) -> Result<
+            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            crate::durability::medium::RelationalDurableStepStop,
+        >,
+        cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
+    ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         self.route
             .handoff
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .as_mut()
-            .expect("prepared route retains its handoff until movement")
+            .expect(/* Proof: Prepared route construction installs one handoff; this consuming movement is its only extraction and disarms Drop afterwards. */ "prepared route retains its handoff until movement")
             .publication_cell = Some(publication_cell);
-        let positioned = self
-            .routes
-            .performed_stream
-            .record_with_cutover(Arc::clone(&self.route), cutover)
-            .map_err(|error| match error {
-                PerformedPublicationRecordError::ReservationContended => {
-                    CanonicalPublicationRecordError::ReservationContended
-                }
-                PerformedPublicationRecordError::PositionCapacityExhausted => {
-                    CanonicalPublicationRecordError::PositionCapacityExhausted
-                }
-            })?;
-        Ok(positioned)
+        self.routes.performed_stream.record_with_cutover(
+            Arc::clone(&self.route),
+            self.resident.clone(),
+            admission,
+            durable,
+            cutover,
+        )
     }
 }
 
@@ -366,6 +352,7 @@ impl CanonicalPublicationRoute {
     }
 
     pub(super) fn mark_settled(&self) {
+        self.envelope.settle();
         self.settled.store(true, Ordering::Release);
     }
 
@@ -393,5 +380,5 @@ impl CanonicalPublicationRoute {
 fn visible_envelope(
     route: Option<Arc<CanonicalPublicationRoute>>,
 ) -> Option<Arc<CanonicalCommitEnvelope>> {
-    route.and_then(|route| route.is_visible().then(|| Arc::clone(&route.envelope)))
+    route.and_then(|route| route.is_visible().then(|| route.envelope.get()).flatten())
 }

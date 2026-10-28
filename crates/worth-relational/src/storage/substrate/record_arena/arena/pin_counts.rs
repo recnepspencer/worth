@@ -39,7 +39,11 @@ impl RecordPinCounts {
         (index < self.len).then(|| self.values.get(&index).unwrap_or(&0))
     }
     pub(crate) fn set(&mut self, index: usize, value: u32) {
-        assert!(index < self.len, "pin row is absent");
+        assert!(
+            /* Proof: RecordPinCounts is private arena metadata. Construction/readmission creates one pin row per materialized physical arena row; callers select physical indices from that same arena, and remap_from maps only to rows installed in the destination arena. */
+            index < self.len,
+            "pin row is absent"
+        );
         if value == 0 {
             self.values.remove(&index);
         } else {
@@ -52,20 +56,19 @@ impl RecordPinCounts {
         Some(())
     }
     pub(super) fn remap_from(&mut self, source: &Self, map: impl Fn(usize) -> Option<usize>) {
-        self.fill(0);
+        self.clear();
         for (&physical, &count) in &source.values {
             if let Some(destination) = map(physical) {
                 self.set(destination, count);
             }
         }
     }
-    pub(super) fn fill(&mut self, value: u32) {
-        assert_eq!(value, 0, "retention counters only bulk-reset to zero");
+    pub(super) fn clear(&mut self) {
         self.values = SharedMap::new();
     }
     pub(crate) fn into_vec(self) -> Vec<u32> {
         (0..self.len)
-            .map(|index| *self.get(index).unwrap())
+            .map(|index| *self.get(index).unwrap(/* Proof: Pin rows are selected from initialized arena column indices and remain present for the retained arena lifetime; no sparse missing index is admitted here. */ ))
             .collect()
     }
     pub(super) fn allocation_bytes(&self) -> u64 {
@@ -98,6 +101,6 @@ impl From<Vec<u32>> for RecordPinCounts {
 impl std::ops::Index<usize> for RecordPinCounts {
     type Output = u32;
     fn index(&self, index: usize) -> &u32 {
-        self.get(index).expect("pin row is absent")
+        self.get(index).expect(/* Proof: Pin rows are selected from initialized arena column indices and remain present for the retained arena lifetime; no sparse missing index is admitted here. */ "pin row is absent")
     }
 }

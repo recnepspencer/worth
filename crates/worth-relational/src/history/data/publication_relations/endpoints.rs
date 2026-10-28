@@ -2,11 +2,11 @@
 use super::Stop;
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::storage::overlay::{entity_partition_source_for_slot, PartitionAccess};
+use crate::storage::overlay::{current_entity_partition_source_for_slot, CurrentPartitionAccess};
 use worth_execution::MapKernelContext;
 
 pub(super) fn validate(
-    state: &dyn PartitionAccess,
+    state: &dyn CurrentPartitionAccess,
     registry: &RelationalSchemaRegistry,
     kind: KindId,
     source: EntityId,
@@ -17,8 +17,8 @@ pub(super) fn validate(
         .checkpoint(4)
         .map_err(|cause| Stop::Request(cause.into()))?;
     let live_kind = |id: EntityId| {
-        entity_partition_source_for_slot(state, id.partition_id, id.slot_index())
-            .and_then(|(_, partition)| partition.entity_arena.get(&id))
+        current_entity_partition_source_for_slot(state, id.partition_id, id.slot_index())
+            .and_then(|(_, partition)| partition.entity_arena().get(&id))
             .filter(|row| row.is_live())
             .and_then(|row| row.kind_id())
             .ok_or_else(|| {

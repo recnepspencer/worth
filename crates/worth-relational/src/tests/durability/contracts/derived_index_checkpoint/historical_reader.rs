@@ -5,7 +5,7 @@ fn historical_reader_from_live_head_survives_head_retirement() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, "historical-reader-anchor");
     let branch = create_branch_from_main(&runtime, "historical-reader-fork");
     let first = create_entity_outcome_on_branch(

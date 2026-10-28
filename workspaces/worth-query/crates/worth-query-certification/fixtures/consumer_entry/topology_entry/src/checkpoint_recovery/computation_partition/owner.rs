@@ -111,7 +111,7 @@ impl RegionTotalsBinding for PartitionedOwner {
     type Computation = RegionTotals;
 
     fn install(setup: &mut Setup<'_>) -> Installed {
-        running::<RegionTotals, _>(setup, RegionTotalsOwner)
+        running::<4_096, RegionTotals, _>(setup, RegionTotalsOwner)
     }
 }
 

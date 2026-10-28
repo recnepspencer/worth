@@ -26,7 +26,6 @@ impl WorthQueryRequiredOutputPreparationDenial {
         match self {
             Denial::ForeignProgram
             | Denial::UndeclaredOutputRoot
-            | Denial::MissingConnection
             | Denial::MissingPerformedDelivery
             | Denial::MissingSource
             | Denial::ReadObservation(_)

@@ -5,10 +5,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
     retained_decision_facts::StorageControl, WorthQueryApplicationObservedFact,
 };
 use worth_relational::facade::identity::KindId;
-#[expect(
-    clippy::mutable_key_type,
-    reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-)]
 fn sealed() -> SealedComputationFacts {
     let mut reads = ComputationFactAttribution::default();
     reads.record(key(1), partition(7));

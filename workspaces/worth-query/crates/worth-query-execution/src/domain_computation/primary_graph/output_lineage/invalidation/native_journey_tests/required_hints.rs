@@ -18,7 +18,6 @@ use worth_relational::facade::mvcc::PreparedPublicationCompanionEffect;
 use worth_relational::facade::mvcc::PreparedRelationalCommitCandidate;
 use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
-use worth_relational::facade::mvcc::RelationalPublicationDeferred;
 use worth_relational::facade::mvcc::RelationalPublicationOutcome;
 use worth_relational::facade::transactions::AspectFieldPatch;
 use worth_relational::facade::transactions::EntityMutationIntent;
@@ -152,7 +151,7 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                 let main = BranchId("main".to_owned());
                 let fork = BranchId("hint-fork".to_owned());
                 let (_, source) = runtime.observe_fork_source(&main).unwrap();
-                runtime.fork_branch(fork.clone(), source).unwrap();
+                runtime.fork_branch(execution, fork.clone(), source).unwrap();
                 let (_main_handle, main_root) = snapshot(runtime);
                 let fork_identity = runtime.branch_identity(&fork).unwrap();
                 let fork_basis = runtime.admit_branch_basis(&fork_identity).unwrap();
@@ -228,13 +227,8 @@ fn two_branch_cells_preserve_prepared_fences_and_selected_branch_identity() {
                                 runtime.settle_performed_publication(published).unwrap();
                             release_test_commit_snapshot(runtime, &committed);
                         }
-                        RelationalPublicationOutcome::Deferred(
-                            RelationalPublicationDeferred::CompanionPreflight(
-                                CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-                                    ..
-                                },
-                            ),
-                        ) => {}
+                        // ee07da2b0e retired hint byte-forecast capacity refusal;
+                        // both admitted hints must install in this journey.
                         _ => panic!("only native hint retention can stop the selected write"),
                     }
                 }

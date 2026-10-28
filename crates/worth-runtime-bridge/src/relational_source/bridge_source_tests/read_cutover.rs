@@ -29,7 +29,12 @@ fn a_retained_observation_reads_its_own_root_after_the_branch_moves_on() {
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let entity = create_entity(&resource_request, &runtime, "before");
     let storm = BranchId("storm".to_owned());
-    fork_branch(&runtime, storm.clone(), &BranchId("main".to_owned()));
+    fork_branch(
+        execution,
+        &runtime,
+        storm.clone(),
+        &BranchId("main".to_owned()),
+    );
     let identity = runtime.branch_identity(&storm).unwrap();
     let (_, before_basis) = runtime.observe_branch(&identity).unwrap();
     rename_on_branch(execution, &runtime, entity, "after", storm);

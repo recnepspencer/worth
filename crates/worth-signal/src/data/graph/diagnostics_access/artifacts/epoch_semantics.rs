@@ -18,7 +18,9 @@ use crate::diagnostics::state::DiagnosticsState;
 use crate::logic::explain::RewiringSummary;
 use crate::logic::planner::{ExecutionRecordId, SemanticSegmentId};
 
+mod capacity;
 mod copy_work;
+use capacity::semantic_projection_allocation;
 use copy_work::checkpoint_copy;
 
 pub(crate) struct EpochSemanticSeed {
@@ -43,42 +45,6 @@ pub(crate) struct PreparedEpochSemanticNode {
 }
 
 impl SignalGraph {
-    /// The projected node may replace all of its old warm/cold heap with an
-    /// admitted result. This is the fixed part of the same allocation envelope
-    /// used when the semantic image and its two fact payloads are prepared.
-    pub(crate) fn epoch_semantic_diagnostic_fixed_bound(
-        &self,
-        node: NodeId,
-        old_node_heap: u64,
-        rewiring_heap: u64,
-        links: usize,
-        work: &mut RetainedStoragePreparation<'_>,
-    ) -> Result<u64, SignalError> {
-        let contract = self.get_contract(node)?;
-        let scope = contract
-            .semantics
-            .partition_scope
-            .retained_heap_charge(work)
-            .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?
-            .bytes();
-        let condition = self
-            .node_eval_config(node)?
-            .condition
-            .retained_heap_charge(work)
-            .map_err(crate::data::graph::runtime::graph::map_node_edit_accounting)?
-            .bytes();
-        let source = old_node_heap
-            .checked_add(scope)
-            .and_then(|bytes| bytes.checked_add(condition))
-            .and_then(|bytes| bytes.checked_add(rewiring_heap))
-            .ok_or_else(|| SignalError::invalid_input("epoch diagnostic source overflow"))?;
-        // One envelope is claimed while the projection is constructed and a
-        // second covers the later two-fact retained writer charge.
-        semantic_projection_allocation(source, links)?
-            .checked_mul(2)
-            .ok_or_else(|| SignalError::invalid_input("epoch diagnostic bound overflow"))
-    }
-
     #[cfg(test)]
     pub(crate) fn fail_second_semantic_preparation_for_test(&self) {
         self.epoch_output_preparation_fault_after.store(
@@ -368,25 +334,4 @@ fn checkpoint_rewiring_links(
         }
     }
     Ok(())
-}
-
-fn semantic_projection_allocation(source: u64, links: usize) -> Result<u64, SignalError> {
-    source
-        .checked_mul(16)
-        .and_then(|bytes| {
-            bytes.checked_add((links as u64).checked_mul(
-                (std::mem::size_of::<crate::logic::explain::CausalLink>() + 256) as u64 * 16,
-            )?)
-        })
-        .and_then(|bytes| {
-            bytes.checked_add(
-                (std::mem::size_of::<crate::logic::explain::NodeExplanation>()
-                    + std::mem::size_of::<ExplanationFact>()
-                    + std::mem::size_of::<ProvenanceFact>()
-                    + std::mem::size_of::<crate::data::node::NodeColdData>()
-                    + std::mem::size_of::<RuntimeArtifactFinalizeImage>()
-                    + std::mem::size_of::<LineageRecord>()) as u64,
-            )
-        })
-        .ok_or_else(|| SignalError::invalid_input("epoch diagnostic projection size overflow"))
 }

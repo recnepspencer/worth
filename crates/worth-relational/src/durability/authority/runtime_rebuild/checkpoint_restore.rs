@@ -1,21 +1,21 @@
-use std::sync::Arc;
-
 use crate::durability::data::{
-    CheckpointRestoreWork, DurabilityError, DurabilityMode, DurableCheckpoint,
-    RelationalRecoveryStop,
+    CheckpointRestoreWork, DurabilityError, DurableCheckpoint, RelationalRecoveryStop,
 };
-use crate::history::data::VersionNode;
 use crate::runtime::{HistorySubsystem, IndexingState, LineageState, RelationalRuntime};
 
 use super::super::super::derived_index_artifacts::restore_checkpoint_derived_index_artifacts;
 use super::super::authority_continuity::validate_checkpoint_lineage_artifact;
 
 mod branch_root_images;
+mod cold_directory;
+mod history_readmission;
+use history_readmission::prepare_history;
 mod partition_images;
 mod record_identity;
 mod recovered_codec_meaning;
 mod recovered_relation_laws;
 mod recovered_schema_meaning;
+mod root_readmission;
 mod root_schema_readmission;
 
 #[cfg(test)]
@@ -43,6 +43,13 @@ pub(super) fn restore_checkpoint_state(
     checkpoint: DurableCheckpoint,
     work: &mut CheckpointRestoreWork,
 ) -> Result<(), RelationalRecoveryStop> {
+    if let Some(directory) = checkpoint.directory.clone() {
+        cold_directory::restore(execution, restored, &checkpoint, directory, work)?;
+        super::unshared_state(restored)?
+            .durability
+            .push_checkpoint(checkpoint);
+        return Ok(());
+    }
     let prepared = prepare_checkpoint_state(execution, restored, &checkpoint, work)?;
     let restored = super::unshared_state(restored)?;
     install_checkpoint_state(restored, prepared);
@@ -57,7 +64,7 @@ fn prepare_checkpoint_state(
     work: &mut CheckpointRestoreWork,
 ) -> Result<PreparedCheckpointState, RelationalRecoveryStop> {
     validate_checkpoint_lineage_artifact(checkpoint)?;
-    let symbols = prepare_symbols(restored, checkpoint);
+    let symbols = prepare_symbols(restored, checkpoint)?;
     let record_identity = prepare_record_identity(checkpoint)?;
     let branch_root_images = restore_branch_root_images(restored, checkpoint, work)?;
     recovered_schema_meaning::check_current_schema_meaning(
@@ -83,10 +90,18 @@ fn prepare_checkpoint_state(
 fn prepare_symbols(
     restored: &mut RelationalRuntime,
     checkpoint: &DurableCheckpoint,
-) -> crate::symbols::data::StringInterner {
+) -> Result<crate::symbols::data::StringInterner, DurabilityError> {
     let mut symbols = restored.services.symbols.interner_snapshot();
     symbols.restore_snapshot(checkpoint.symbol_table.clone());
     symbols
+        .reserve_frontier(checkpoint.symbol_identity_frontier)
+        .map_err(|detail| {
+            DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                detail,
+            )
+        })?;
+    Ok(symbols)
 }
 
 fn prepare_partitions(
@@ -111,76 +126,6 @@ fn prepare_partitions(
         &aspect_contracts,
         work,
     )
-}
-
-fn prepare_history(
-    restored: &mut RelationalRuntime,
-    checkpoint: &DurableCheckpoint,
-    mut branch_roots: branch_root_images::RestoredBranchRootImages,
-    symbols: &crate::symbols::data::StringInterner,
-    work: &mut CheckpointRestoreWork,
-) -> Result<HistorySubsystem, DurabilityError> {
-    let mut history = restored.history.detached_owner_snapshot();
-    history.with_ledger_mut(|ledger| {
-        ledger.commit_envelopes = checkpoint
-            .envelopes
-            .iter()
-            .map(|commit| {
-                (
-                    commit.envelope().commit.commit_id,
-                    Arc::clone(commit.canonical_arc()),
-                )
-            })
-            .collect();
-        ledger.patch_stream_index = checkpoint
-            .envelopes
-            .iter()
-            .map(|commit| (commit.position(), commit.envelope().commit.commit_id))
-            .collect();
-    });
-    for commit in &checkpoint.envelopes {
-        history
-            .install_recovered_canonical_route(Arc::new(commit.clone()))
-            .map_err(|detail| {
-                DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                    detail,
-                )
-            })?;
-        work.history_envelopes_routed += 1;
-    }
-    if let Some(position) = history.latest_recorded_patch_position() {
-        history.advance_canonical_stream_floor(position);
-    }
-    let commit_graph = checkpoint
-        .envelopes
-        .iter()
-        .map(|envelope| {
-            (
-                envelope.commit.commit_id,
-                VersionNode {
-                    commit: envelope.commit.clone(),
-                },
-            )
-        })
-        .collect();
-    history.with_ledger_mut(|ledger| ledger.commit_graph = commit_graph);
-    history
-        .restore_branch_cells(
-            &checkpoint.branch_cells,
-            &mut branch_roots.partitions,
-            &branch_roots.schema_authorities,
-            &restored.config.schema.registry,
-            symbols,
-        )
-        .map_err(|detail| {
-            DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                detail,
-            )
-        })?;
-    work.branch_cells_readmitted += checkpoint.branch_cells.len();
-    Ok(history)
 }
 
 fn prepare_lineage(
@@ -227,6 +172,7 @@ fn prepare_indexes(
         ));
     }
     let mut indexes = IndexingState::default();
+    indexes.restore_generation_frontier(checkpoint.index_generation_frontier);
     for definition in &checkpoint.index_definitions {
         indexes.insert_definition(definition.clone());
         work.index_definitions_readmitted += 1;
@@ -236,7 +182,7 @@ fn prepare_indexes(
         history,
         &checkpoint.derived_index_artifacts,
         checkpoint.derived_index_checkpoint.as_ref(),
-        &checkpoint.envelopes,
+        checkpoint.index_generation_frontier,
         work,
     )?;
     Ok(indexes)
@@ -255,8 +201,18 @@ fn install_checkpoint_state(
 }
 
 pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
+    // Native members carry zero runtime pins. The cold directory has admitted
+    // no region yet; clearing it must not materialize or mutate its leaves.
+    if restored
+        .durability
+        .checkpoint_selection()
+        .snapshot()
+        .is_some()
+    {
+        return;
+    }
     let mut writer = restored.rebuild_partitions();
-    for partition in writer.partitions_mut() {
+    for partition in writer.resident_partitions_mut() {
         partition.entity_arena.clear_all_pins();
         partition.relation_arena.clear_all_pins();
     }
@@ -265,37 +221,45 @@ pub(super) fn clear_recovery_partition_pins(restored: &mut RelationalRuntime) {
 pub(super) fn finalize_restored_runtime(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     restored: &mut RelationalRuntime,
-    original_durability_mode: DurabilityMode,
 ) -> Result<(), crate::durability::data::RelationalRecoveryStop> {
-    restored.set_durability_mode(original_durability_mode);
-    restored
-        .index_authority()
-        .rebuild_unique_entity_aspect_field_indexes(execution)
-        .map_err(|denial| {
-            use crate::durability::data::RelationalRecoveryStop as Stop;
-            use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
-            match denial {
-                Denial::Execution(cause) => Stop::Request(cause),
-                Denial::Basis(basis) => restored_index_stop(basis),
-                Denial::SnapshotUnavailable
-                | Denial::CommitMismatch
-                | Denial::BeforeRootMismatch
-                | Denial::IndexUnavailable(_)
-                | Denial::GenerationKindMismatch(_)
-                | Denial::PriorEntryMismatch
-                | Denial::ColdReconstructionRequired
-                | Denial::WorkBudgetExceeded
-                | Denial::ForeignCandidate
-                | Denial::CandidateLifetimeExpired { .. }
-                | Denial::CandidateUnavailable
-                | Denial::CandidateIndexesAlreadyPrepared
-                | Denial::GenerationIdentityExhausted => DurabilityError::new(
-                    crate::durability::data::RecoveryFailureClass::ReplayFailure,
-                    format!("recovered unique-index admission failed: {denial:?}"),
-                )
-                .into(),
-            }
-        })?;
+    // The eager image lane rebuilds this optional inspection cache. In the
+    // native member lane, selected-state invariant scans remain authoritative;
+    // index generations retain their explicit deferred readmission cell.
+    if restored
+        .durability
+        .checkpoint_selection()
+        .snapshot()
+        .is_none()
+    {
+        restored
+            .index_authority()
+            .rebuild_unique_entity_aspect_field_indexes(execution)
+            .map_err(|denial| {
+                use crate::durability::data::RelationalRecoveryStop as Stop;
+                use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
+                match denial {
+                    Denial::Execution(cause) => Stop::Request(cause),
+                    Denial::Basis(basis) => restored_index_stop(basis),
+                    Denial::SnapshotUnavailable
+                    | Denial::CommitMismatch
+                    | Denial::BeforeRootMismatch
+                    | Denial::IndexUnavailable(_)
+                    | Denial::GenerationKindMismatch(_)
+                    | Denial::PriorEntryMismatch
+                    | Denial::ColdReconstructionRequired
+                    | Denial::WorkBudgetExceeded
+                    | Denial::ForeignCandidate
+                    | Denial::CandidateLifetimeExpired { .. }
+                    | Denial::CandidateUnavailable
+                    | Denial::CandidateIndexesAlreadyPrepared
+                    | Denial::GenerationIdentityExhausted => DurabilityError::new(
+                        crate::durability::data::RecoveryFailureClass::ReplayFailure,
+                        format!("recovered unique-index admission failed: {denial:?}"),
+                    )
+                    .into(),
+                }
+            })?;
+    }
     restored.history.rebuild_branch_head_version_index();
     restored.visibility.cache.clear();
     restored

@@ -3,28 +3,6 @@ use super::*;
 use crate::domain_computation::primary_graph::tests::fixture::correction_source;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-/// Opens an exact snapshot of `basis` under the runtime's own custody, reads
-/// through the production publication read, and releases the snapshot.
-fn read_at_basis(
-    provider: &WorthQueryPrimaryGraphProvider,
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
-    pending: &WorthQueryPendingAftermathCausality,
-) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial> {
-    provider.graph.with_runtime_mut(execution, |runtime| {
-        let snapshot =
-            crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
-                runtime, basis,
-            )
-            .expect("the published basis admits an exact snapshot");
-        let resolution = provider.resolve_aftermath_causality_in_snapshot(
-            execution, runtime, basis, &snapshot, pending, None,
-        );
-        crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-        resolution
-    })
-}
-
 #[test]
 fn aftermath_resolution_preserves_stops_at_every_consult() {
     let world = correction_source::install();
@@ -40,16 +18,26 @@ fn aftermath_resolution_preserves_stops_at_every_consult() {
             let provider = &world.application.primary_provider;
             let selected = world.selected_product(&phase.test_host_request());
             let basis = selected.product().relational_basis();
-            assert_eq!(
-                read_at_basis(provider, &execution, basis, &pending).unwrap(),
-                Some(expected)
-            );
+            let snapshot = provider.graph.with_runtime_mut(&execution, |runtime| {
+                crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).unwrap()
+            });
+            let read = |request: &worth_execution::ExecutionRequest<'_, '_>| {
+                provider.graph.with_runtime_mut(request, |runtime| {
+                    provider.resolve_aftermath_causality_in_snapshot(
+                        request, runtime, basis, &snapshot, &pending, None,
+                    )
+                })
+            };
+            assert_eq!(read(&execution).unwrap(), Some(expected));
             crate::test_read_stops::every_consult_under(
                 &execution,
-                |request| read_at_basis(provider, request, basis, &pending),
+                read,
                 aftermath_read_stop(Cause::Cancelled),
                 aftermath_read_stop(Cause::WorkExhausted),
             );
+            provider.graph.with_runtime_mut(&execution, |runtime| {
+                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            });
         })
         .unwrap();
 }

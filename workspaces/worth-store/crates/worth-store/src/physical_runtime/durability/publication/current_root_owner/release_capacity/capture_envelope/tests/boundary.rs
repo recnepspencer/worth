@@ -180,8 +180,8 @@ fn drop_then_checkpoint(limit: u64) -> Outcome {
 
 #[test]
 fn drop_at_the_boundary_is_denied_before_effects_or_checkpoints() {
-    let ample = fixture_with(1 << 20, HEADROOM);
-    let admitted = admit_drop(&ample, 1 << 20).expect("an ample pool admits the drop");
+    let ample = fixture_with(POOL, HEADROOM);
+    let admitted = admit_drop(&ample, POOL).expect("an ample pool admits the drop");
     let retained = active(&ample);
     drop(admitted);
     // The first limit whose usable bytes hold exactly the retained custody.

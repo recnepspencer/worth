@@ -182,10 +182,10 @@ fn binding_redo_digest(bytes: &[u8], identity: &[u8], redo: Option<&[u8]>) -> Op
     if !cursor.is_empty() || start >= end {
         return None;
     }
-    if let Some(redo) = redo {
-        if Sha256::digest(redo)[..] != redo_digest[..] {
-            return None;
-        }
+    if let Some(redo) = redo
+        && Sha256::digest(redo)[..] != redo_digest[..]
+    {
+        return None;
     }
     redo_digest.try_into().ok()
 }

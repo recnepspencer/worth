@@ -66,7 +66,8 @@ fn detailed_trace_profile_emits_commit_side_aspect_trace_diagnostics() {
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .diagnostics(diagnostics)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let result = create_entity_outcome(execution, &runtime, "diagnostic-traced");
 
     assert!(result.diagnostics().iter().any(|artifact| {

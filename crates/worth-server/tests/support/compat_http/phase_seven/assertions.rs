@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use worth_server::{WorthServerBinaryDownload, WorthServerQueryHandoffDenial};
 
 pub(crate) fn assert_download_denial(

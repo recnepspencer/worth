@@ -57,7 +57,8 @@ impl RelationalRuntime {
     ///
     /// let runtime = RelationalRuntimeApi::builder()
     ///     .schema_registry(RelationalSchemaRegistry::new())
-    ///     .build();
+    ///     .build()
+    ///     .expect("valid native runtime configuration");
     ///
     /// let identity = runtime.main_branch_identity();
     /// let (_descriptor, basis) = runtime
@@ -152,7 +153,9 @@ impl RelationalRuntime {
         let basis = self
             .history
             .branch_cell(identity.branch_id())
-            .expect("observed branch remains registered")
+            .ok_or_else(|| {
+                RelationalBranchBasisDenial::UnknownBranch(identity.branch_id().clone())
+            })?
             .register_basis(basis)?;
         self.services.instrumentation.count_basis(|counters| {
             counters.basis_observations = counters.basis_observations.saturating_add(1);
@@ -193,7 +196,8 @@ fn map_retention_denial(
         crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
             RelationalBranchBasisDenial::RetentionIdentityExhausted
         }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             RelationalBranchBasisDenial::OwnerFailure
         }
     }

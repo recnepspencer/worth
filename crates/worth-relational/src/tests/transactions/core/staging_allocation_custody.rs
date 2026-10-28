@@ -56,7 +56,10 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
     );
     let savepoint = transaction.create_savepoint().unwrap();
     let cached = transaction
-        .merged_plan(&runtime, Policy::Execution(&parent))
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::leased(&parent),
+            &runtime,
+        )
         .unwrap()
         .clone();
     let before_batches = transaction.batches().to_vec();
@@ -129,7 +132,10 @@ fn native_staging_allocation_refusal_and_shared_footprint_custody() {
     assert_eq!(transaction.footprint(), &retained);
     assert_eq!(
         transaction
-            .merged_plan(&runtime, Policy::Execution(&parent),)
+            .prepare_merged_plan(
+                &worth_execution::ExecutionRequest::leased(&parent),
+                &runtime
+            )
             .unwrap()
             .merged_intents
             .len(),

@@ -1,3 +1,4 @@
+use super::PublicationPreparationDenial;
 use std::sync::Arc;
 
 use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
@@ -38,6 +39,11 @@ pub(crate) struct PreparedIndexRefreshBasis {
 }
 
 impl PreparedRelationalPublication {
+    pub(crate) fn envelope_residency(
+        &self,
+    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+        self.publication.artifact.envelope_residency()
+    }
     pub(crate) fn descriptive_touches(
         &self,
     ) -> &crate::history::data::RelationalDescriptiveTouchGraph {
@@ -153,7 +159,7 @@ trait PublicationPreparationRuntime {
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, String>;
+    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>;
 
     fn publication_runtime_instance_id(&self) -> u64;
 }
@@ -172,7 +178,8 @@ impl PublicationPreparationRuntime for RelationalRuntime {
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, String> {
+    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
+    {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(
@@ -181,9 +188,9 @@ impl PublicationPreparationRuntime for RelationalRuntime {
                 previous_root.as_ref(),
                 Arc::clone(envelope),
                 schema_registry,
-                &self.services.symbols.interner_snapshot(),
+                &self.services.symbols,
             )
-            .map_err(|denial| format!("branch-root capture denied: {denial:?}"))
+            .map_err(PublicationPreparationDenial::from)
     }
 
     fn publication_runtime_instance_id(&self) -> u64 {
@@ -205,7 +212,8 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
         published_partition_delta: &crate::storage::RelationalPublishedPartitionDelta,
         envelope: &Arc<CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, String> {
+    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
+    {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(
@@ -214,9 +222,9 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
                 previous_root.as_ref(),
                 Arc::clone(envelope),
                 schema_registry,
-                &self.services.symbols.interner_snapshot(),
+                &self.services.symbols,
             )
-            .map_err(|denial| format!("branch-root capture denied: {denial:?}"))
+            .map_err(PublicationPreparationDenial::from)
     }
 
     fn publication_runtime_instance_id(&self) -> u64 {
@@ -236,7 +244,7 @@ fn prepare_versioned_publication(
     schema_registry: &crate::schema::data::RelationalSchemaRegistry,
     sequence: PublicationSequence,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-) -> Result<crate::runtime::PreparedVersionedArtifactPublication, String> {
+) -> Result<crate::runtime::PreparedVersionedArtifactPublication, PublicationPreparationDenial> {
     let validated = runtime.validate_publication_request(PublicationRequest {
         commit_id,
         commit_reference: &commit_reference,
@@ -244,6 +252,7 @@ fn prepare_versioned_publication(
         envelope: envelope.as_ref(),
         sequence,
     })?;
+    let sequence_successors = crate::runtime::PreparedCommitSequence::new(&commit_reference)?;
     let prepared_root = runtime.prepare_publication_root(
         selected_branch_state,
         &published_partition_delta,
@@ -261,11 +270,12 @@ fn prepare_versioned_publication(
             .root()
             .descriptor()
             .cloned()
-            .expect("prepared branch root has a descriptor"),
+            .ok_or_else(|| "prepared branch root has no descriptor".to_owned())?,
     );
     validated
         .next_cell
-        .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target));
+        .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target))
+        .map_err(|denial| format!("prepared target binding denied: {denial:?}"))?;
     let root = prepared_root.into_root();
     let artifact =
         RelationalCommitArtifact::from_envelope_with_root(Arc::clone(&envelope), Arc::clone(&root))
@@ -290,6 +300,7 @@ fn prepare_versioned_publication(
         artifact,
         new_authoritative_bytes,
         recovery_readmission: matches!(sequence, PublicationSequence::RecoveryTruth),
+        sequence: sequence_successors,
     })
 }
 
@@ -304,7 +315,7 @@ impl RelationalPreparationPublicationAuthority<'_> {
         envelope: Arc<CanonicalCommitEnvelope>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    ) -> Result<PreparedRelationalPublication, String> {
+    ) -> Result<PreparedRelationalPublication, PublicationPreparationDenial> {
         let publication = prepare_versioned_publication(
             self.runtime,
             commit_id,
@@ -350,7 +361,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
         binding: &AdmittedRelationalBranchBasis,
         published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
         envelope: Arc<CanonicalCommitEnvelope>,
-    ) -> Result<PreparedRecoveredRelationalPublication, String> {
+    ) -> Result<PreparedRecoveredRelationalPublication, PublicationPreparationDenial> {
         let selected_branch_state = self
             .runtime
             .selected_branch_state(binding)
@@ -375,7 +386,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
             publication:
                 crate::runtime::PreparedRecoveredVersionedArtifactPublication::from_recovery_readmission(
                     prepared,
-                )?,
+                ).map_err(|detail| PublicationPreparationDenial::Invalid(detail.to_owned()))?,
         })
     }
 }

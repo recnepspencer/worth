@@ -39,7 +39,8 @@ fn runtime_build_lowers_schema_aspect_plans() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let plan = runtime.entity_aspect_plan(KindId(1)).unwrap();
 
     assert_eq!(plan.kind_id, KindId(1));
@@ -71,7 +72,8 @@ fn schema_and_runtime_expose_consistent_aspect_declaration_and_lowering_traces()
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity_lowering_trace = runtime.entity_aspect_plan_trace(KindId(1)).unwrap();
     let relation_lowering_trace = runtime.relation_aspect_plan_trace(KindId(2)).unwrap();
 
@@ -124,7 +126,8 @@ fn schema_traces_emit_diagnostic_artifacts_without_reinterpreting_semantics() {
     let declaration_trace = registry.entity_aspect_declaration_trace(KindId(1)).unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(registry)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lowering_trace = runtime.entity_aspect_plan_trace(KindId(1)).unwrap();
     let declaration_artifact = declaration_trace.diagnostic_artifact();
     let lowering_artifact = lowering_trace.diagnostic_artifact();

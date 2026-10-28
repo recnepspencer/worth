@@ -13,7 +13,6 @@ mod completion_observer;
 mod concurrent_head;
 mod head_cell;
 mod positioned_admission;
-mod preflight_overflow;
 mod request_cancellation;
 
 struct DropCounter(Arc<AtomicUsize>);

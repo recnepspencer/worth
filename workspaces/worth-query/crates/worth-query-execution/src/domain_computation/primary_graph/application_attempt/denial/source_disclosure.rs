@@ -22,17 +22,17 @@ impl Denial {
     pub(in crate::domain_computation::primary_graph) fn source_disclosure_parameters(
         cause: WorthQueryApplicationQueryParameterDenial,
     ) -> Self {
-        Self {
-            kind: Kind::SourceDisclosureCaptureDenied,
-            subject: "original source disclosure parameters".to_owned(),
-            cause: AttemptDenialCause::SourceDisclosureParameters(Box::new(cause)),
-        }
+        Self::from_cause(
+            Kind::SourceDisclosureCaptureDenied,
+            "original source disclosure parameters".to_owned(),
+            AttemptDenialCause::SourceDisclosureParameters(Box::new(cause)),
+        )
     }
     pub fn source_disclosure_parameter_denial(
         &self,
     ) -> Option<&WorthQueryApplicationQueryParameterDenial> {
-        match &self.cause {
-            AttemptDenialCause::SourceDisclosureParameters(cause) => Some(cause),
+        match self.cause() {
+            Some(AttemptDenialCause::SourceDisclosureParameters(cause)) => Some(cause),
             _ => None,
         }
     }

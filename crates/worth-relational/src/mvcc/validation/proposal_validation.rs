@@ -1,13 +1,9 @@
-use crate::authority::commit::phases::prepare::{
-    prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
-};
-use crate::authority::commit::phases::proposed_invariant_state::prepare_proposed_invariant_state;
 use crate::runtime::{RelationalPreparationRuntime, RelationalRuntime};
 use crate::transactions::data::{
     CommitConflict, CommitValidation, ConflictClass, TransactionCommitError,
 };
 
-use super::proposal_invariants::{stale_validated_proposal, validate_proposed_state};
+use super::proposal_invariants::stale_validated_proposal;
 use super::validated_proposal::{
     RelationalMutationInvariantEvidence, StrategyProposalDecoration, ValidatedRelationalProposal,
 };
@@ -59,7 +55,6 @@ impl RelationalPreparationRuntime {
         )>,
         strategy: Option<StrategyProposalDecoration>,
     ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        let allocation_policy = execution.allocation_policy();
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
@@ -83,64 +78,43 @@ impl RelationalPreparationRuntime {
                 "transaction basis is no longer current",
             ));
         }
+        self.durability_admission
+            .require_open()
+            .map_err(TransactionCommitError::durability_unresolved)?;
+        if transaction.schema_authority_input.is_some() {
+            // Schema reframing is a declared whole-root operation; its capture
+            // must not reconstruct a cold region after candidate acceptance.
+            transaction.demand_preparation_regions(
+                execution,
+                &self.services.symbols,
+                &self.index_definitions,
+                &self.mirror_residency,
+            )?;
+        } else {
+            transaction.demand_preparation_inputs(
+                execution,
+                &self.services.symbols,
+                &self.index_definitions,
+            )?;
+        }
         let validated_against_version = basis.observation().version_id();
         let validated_against_commit = basis.observation().commit_id();
-        let prepared: PreparedWorkingStateScope = match lowered {
-            Some((selected_branch_state, merged_plan)) => prepare_lowered_working_state_scope(
-                self,
-                &transaction,
-                selected_branch_state,
-                merged_plan,
-            ),
-            None => prepare_working_state_scope(self, &mut transaction, allocation_policy)?,
-        };
+        let super::proposal_round::PreparedProposalRound {
+            prepared,
+            mutation: proposed_mutation,
+            identity: proposal_identity,
+            validation_input,
+            commit_boundary,
+            mutation_sensitive,
+            publication,
+        } = self.prepare_proposal_round(execution, &mut transaction, lowered.as_ref())?;
         require_not_interrupted(
             &transaction.control,
             &transaction.basis.inner.retention_binding,
             crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
         )?;
         let transaction_id = transaction.transaction_id;
-        let validation_input =
-            super::RelationalTransactionValidationInput::from_transaction(&transaction);
-        let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
-            &validation_input,
-            allocation_policy,
-            crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
-        );
-        let proposal_identity =
-            self.issue_mutation_proposal_identity(transaction_id, &validation_input)?;
         let proposed_version = proposal_identity.proposed_version_id();
-        let proposed_invariant_state = prepare_proposed_invariant_state(
-            self,
-            &prepared.selected_branch_state,
-            &prepared.working_state,
-            &prepared.merged_plan,
-            prepared.schema_authority.as_ref(),
-            &proposal_identity,
-            execution,
-            validation_input.intent().materialization_mode(),
-        )?;
-        let commit_boundary = self
-            .invariant_authority()
-            .enforce_commit_boundary_for_selected_branch(
-                &prepared.selected_branch_state,
-                proposed_invariant_state.working_state(),
-                proposed_version,
-                &prepared.merged_plan,
-                Some(&proposal_identity),
-                proposed_invariant_state.aggregate_source(),
-                execution,
-                &scope_control,
-            )?;
-        let (mutation_sensitive, publication) = validate_proposed_state(
-            self,
-            &prepared,
-            &proposed_invariant_state,
-            proposed_version,
-            Some(&proposal_identity),
-            execution,
-            &scope_control,
-        )?;
         let summary = CommitValidation::summarize(&[
             commit_boundary.clone(),
             mutation_sensitive.clone(),
@@ -189,7 +163,7 @@ impl RelationalPreparationRuntime {
             transaction_id,
             validation_input,
             prepared,
-            proposed_invariant_state,
+            proposed_mutation,
             commit_boundary,
             mutation_sensitive,
             snapshot_publication: publication,

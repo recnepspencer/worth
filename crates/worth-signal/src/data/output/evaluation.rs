@@ -71,6 +71,14 @@ pub struct NodeEvaluationResult {
 }
 
 impl NodeEvaluationResult {
+    /// Smallest useful exact-aspect change: one region and a nonempty scope.
+    /// Empty reports remain valid; this is the admission floor for an
+    /// undeclared heap-capable callback, not a lower bound on every report.
+    pub(crate) const fn minimum_useful_heap_bytes() -> u64 {
+        (std::mem::size_of::<(Aspect, ChangedRegion)>() + super::ScopePath::minimum_heap_bytes())
+            as u64
+    }
+
     pub fn from_version(aspect_version: AspectVersion) -> Self {
         Self {
             aspect_version,
@@ -119,11 +127,24 @@ impl NodeEvaluationResult {
 
 pub trait IntoNodeEvaluationResult {
     fn into_evaluation_result(self) -> NodeEvaluationResult;
+
+    /// A declared upper bound for the converted result's additional heap.
+    /// Returning a finite bound makes exceeding it a callback-contract violation.
+    fn maximum_result_heap_bytes() -> Option<u64>
+    where
+        Self: Sized,
+    {
+        None
+    }
 }
 
 impl IntoNodeEvaluationResult for AspectVersion {
     fn into_evaluation_result(self) -> NodeEvaluationResult {
         NodeEvaluationResult::from_version(self)
+    }
+
+    fn maximum_result_heap_bytes() -> Option<u64> {
+        Some(0)
     }
 }
 

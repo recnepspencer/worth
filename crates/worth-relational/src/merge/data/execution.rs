@@ -76,7 +76,6 @@ pub struct MergeExecutionReadinessReport {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergeExecutionPreparationError {
-    OwnerBinding(crate::merge::data::RelationalMergeRequestBindingDenial),
     Planning(MergePlanningError),
     NotExecutionReady(MergeExecutionReadinessReport),
     Compilation(MergeExecutionCompilationError),
@@ -163,11 +162,9 @@ pub enum MergeExecutionCompilationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MergeExecutionMutationPlanError {
-    MissingSourceHeadEnvelope,
+    /// Target read failed before executable mutation intents were produced.
+    Read(crate::execution::RelationalExecutionDenialCause),
     MissingTargetEntitySnapshot {
-        record: RecordRef,
-    },
-    MissingTargetRelationSnapshot {
         record: RecordRef,
     },
     UnsupportedReconcileRecordKind {

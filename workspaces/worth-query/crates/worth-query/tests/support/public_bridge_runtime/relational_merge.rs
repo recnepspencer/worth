@@ -38,13 +38,14 @@ pub fn public_relational_merge_runtime() -> RelationalRuntime {
         .commit_strategy_executor(IntentReconciliationStrategy::execution_registration(
             &descriptor,
         ))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     create_empty_entity(execution, &mut runtime, "main", "main-seed");
     let (_, basis) = runtime
         .observe_fork_source(&BranchId("main".to_string()))
         .expect("main branch should expose an exact fork source");
     runtime
-        .fork_branch(BranchId("candidate".to_string()), basis)
+        .fork_branch(execution, BranchId("candidate".to_string()), basis)
         .expect("candidate branch should be created");
     create_empty_entity(execution, &mut runtime, "candidate", "candidate-seed");
     runtime

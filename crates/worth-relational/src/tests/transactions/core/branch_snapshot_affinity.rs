@@ -11,7 +11,7 @@ fn current_branch_snapshot_never_substitutes_another_branch_head() {
     let feature = BranchId("feature".to_owned());
     runtime
         .history_authority()
-        .fork_branch_from(feature.clone(), &main)
+        .fork_branch_from(execution, feature.clone(), &main)
         .unwrap();
     update_entity_on_branch(execution, &runtime, entity, "feature", feature.clone());
 

@@ -34,7 +34,8 @@ pub(super) fn index_fixture(
         .unwrap();
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
@@ -64,14 +65,17 @@ pub(super) fn index_fixture(
         )
         .unwrap();
     let committed = transaction.commit(execution, &runtime).unwrap();
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "large.index.name".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator,
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "large.index.name".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator,
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build_request = DerivedIndexBuildRequest {
         source_commit_id: committed.commit.commit_id,
         branch_id: BranchId("main".to_owned()),

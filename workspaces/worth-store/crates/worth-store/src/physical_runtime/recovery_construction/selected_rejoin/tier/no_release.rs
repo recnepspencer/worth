@@ -121,10 +121,10 @@ pub(in crate::physical_runtime::recovery_construction::selected_rejoin) fn verif
             format,
         )
         .map_err(|_| Denial::WalFate)?;
-        if let Some(binding) = tail_drop(projection.operation())? {
-            if !controls.admits_drop(*binding) || !seen_drops.insert(binding.record()) {
-                return Err(Denial::WalFate);
-            }
+        if let Some(binding) = tail_drop(projection.operation())?
+            && (!controls.admits_drop(*binding) || !seen_drops.insert(binding.record()))
+        {
+            return Err(Denial::WalFate);
         }
     }
     Ok(())
@@ -146,7 +146,8 @@ fn tail_drop(
         | Operation::SessionAbandoned(_)
         | Operation::ChunkReused(_)
         | Operation::DedupeQuarantined(_)
-        | Operation::DerivedDirectory { .. } => Ok(None),
+        | Operation::DerivedDirectory { .. }
+        | Operation::RecordAnchorAdvanced(_) => Ok(None),
     }
 }
 

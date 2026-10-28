@@ -23,6 +23,12 @@ impl Drop for Value {
 }
 #[test]
 fn measured_backing_refusal_and_panicking_cleanup_keep_request_ownership() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "measured_backing_refusal_and_panicking_cleanup_keep_request_ownership",
+    ) {
+        return;
+    }
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
         max_workers: NonZeroUsize::new(1).unwrap(),
         charged_memory_bytes: Some(0),
@@ -75,6 +81,12 @@ use crate::{ExecutionMap, MapKernelFailure, MapOutcome};
 
 #[test]
 fn keyless_values_materialize_variable_results_without_result_estimates() {
+    if crate::tests::fresh_process::ran_in_fresh_child(
+        module_path!(),
+        "keyless_values_materialize_variable_results_without_result_estimates",
+    ) {
+        return;
+    }
     use std::collections::BTreeMap;
     use worth_foundational::PartitionIdentity;
     let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {

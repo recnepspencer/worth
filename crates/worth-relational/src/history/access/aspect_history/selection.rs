@@ -54,7 +54,7 @@ impl RelationalRuntime {
         if basis.identity().runtime_instance_id() != self.runtime_instance_id() {
             return Err(Denial::ForeignOwner);
         }
-        require_exact_subject(basis, &record)?;
+        require_exact_subject(&execution, self, basis, &record)?;
         let memory = execution
             .reserve_retained_memory(RelationalRecordHistorySubject::owned_backing_bytes() as u64)
             .map_err(Denial::Request)?;
@@ -73,30 +73,44 @@ impl RelationalRuntime {
 }
 
 fn require_exact_subject(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
     basis: &AdmittedRelationalBranchBasis,
     record: &RecordRef,
 ) -> Result<(), Denial> {
     let observation = basis.observation();
     let root = observation.selected_root();
+    let partition_id = match record {
+        RecordRef::Entity(id) => id.partition_id,
+        RecordRef::Relation(id) => id.partition_id,
+    };
+    root.demand_regions_head(execution, &runtime.services.symbols, [partition_id])
+        .map_err(|cause| Denial::Storage(cause.into()))?;
     let resolved = match record {
-        RecordRef::Entity(id) => root.partition_state(id.partition_id).and_then(|partition| {
-            let slot = partition.entity_arena.get_slot(id.slot_index())?;
-            Some((
-                id.generation_value(),
-                slot.generation(),
-                slot.lifecycle(),
-                slot.kind_id(),
-            ))
-        }),
-        RecordRef::Relation(id) => root.partition_state(id.partition_id).and_then(|partition| {
-            let slot = partition.relation_arena.get_slot(id.slot_index())?;
-            Some((
-                id.generation_value(),
-                slot.generation(),
-                slot.lifecycle(),
-                slot.kind_id(),
-            ))
-        }),
+        RecordRef::Entity(id) => {
+            root.accepted_head_region_view(id.partition_id)
+                .and_then(|partition| {
+                    let slot = partition.entity_arena().get_slot(id.slot_index())?;
+                    Some((
+                        id.generation_value(),
+                        slot.generation(),
+                        slot.lifecycle(),
+                        slot.kind_id(),
+                    ))
+                })
+        }
+        RecordRef::Relation(id) => {
+            root.accepted_head_region_view(id.partition_id)
+                .and_then(|partition| {
+                    let slot = partition.relation_arena().get_slot(id.slot_index())?;
+                    Some((
+                        id.generation_value(),
+                        slot.generation(),
+                        slot.lifecycle(),
+                        slot.kind_id(),
+                    ))
+                })
+        }
     };
     let Some((requested, actual, lifecycle, kind)) = resolved else {
         return Err(Denial::SubjectUnavailable);

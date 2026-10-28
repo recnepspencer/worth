@@ -21,6 +21,7 @@ pub struct PreparedRelationalChangeSummaryBudget {
 /// A denial leaves the prepared candidate registered, unmodified, and discardable.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PreparedRelationalChangeSummaryDenial {
+    StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     OwnerUnavailable,
     ForeignCandidate,
     CandidateLifetimeExpired,
@@ -93,7 +94,7 @@ pub(super) fn summarize(
         .ok_or(Denial::CanonicalEnvelopeMismatch)?;
     if envelope.branch_context != *candidate.branch()
         || envelope.commit.branch_id != *candidate.branch()
-        || envelope.merged_plan.transaction_id != candidate.transaction_id()
+        || envelope.merged_plan.transaction_id != crate::branch::CANONICAL_TRANSACTION_ID
         || after_root.commit_id() != Some(envelope.commit.commit_id)
         || after_root.axes().map(|axes| axes.storage_version) != Some(envelope.commit.version_id.0)
     {
@@ -207,7 +208,10 @@ fn live_relation_endpoints(
 ) -> Result<Option<PreparedRelationalRelationEndpoints>, PreparedRelationalChangeSummaryDenial> {
     use PreparedRelationalChangeSummaryDenial::MissingLiveRelationEndpoints;
 
-    let Some(partition) = root.partition_state(relation_id.partition_id) else {
+    let Some(partition) = root
+        .partition_state(relation_id.partition_id)
+        .map_err(PreparedRelationalChangeSummaryDenial::StorageUnavailable)?
+    else {
         return Ok(None);
     };
     let Some(slot) = partition.relation_arena.get(&relation_id) else {

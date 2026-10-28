@@ -121,7 +121,8 @@ mod tests {
         };
         let before = super::super::retirement_observation::sweep_contacts();
         registry.release_product_occurrence(receipt.product_branch().occurrence());
-        // Four three-row passes; the owned notes are untouched by record retain.
+        // Two lifecycle and two prerequisite-custody passes over three rows.
+        // Cleanup notes remain separate.
         assert_eq!(
             super::super::retirement_observation::sweep_contacts() - before,
             12
@@ -199,7 +200,7 @@ mod tests {
                 .values()
                 .all(|row| row.terminal()));
         }
-        // Four complete record passes plus one contact per custody entry.
-        assert_eq!(contacts, [9, 21, 40]);
+        // Two lifecycle and two prerequisite-custody passes, plus each custody entry.
+        assert_eq!(contacts, [4 * 2 + 1, 4 * 5 + 1, 4 * 9 + 4]);
     }
 }

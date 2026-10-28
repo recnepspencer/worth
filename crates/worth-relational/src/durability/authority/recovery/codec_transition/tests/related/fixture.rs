@@ -142,20 +142,23 @@ fn build_world(
         let (outputs, relations) = produce(execution, &runtime, &receipt, 1);
         (outputs, relations, None)
     };
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: ORDER,
-        name: "unchanged ordered derived children".into(),
-        branch_scoped: true,
-        kind: DerivedIndexKind::RelatedEntityOrdering {
-            relation_kind: KindId(4),
-            parent_endpoint: RelatedEntityEndpoint::SourceParent,
-            child_kind: KindId(3),
-            ordering: vec![RelatedEntityOrderingField::new(
-                locator("order"),
-                RelatedEntityOrderingDirection::Ascending,
-            )],
-        },
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: ORDER,
+            name: "unchanged ordered derived children".into(),
+            branch_scoped: true,
+            kind: DerivedIndexKind::RelatedEntityOrdering {
+                relation_kind: KindId(4),
+                parent_endpoint: RelatedEntityEndpoint::SourceParent,
+                child_kind: KindId(3),
+                ordering: vec![RelatedEntityOrderingField::new(
+                    locator("order"),
+                    RelatedEntityOrderingDirection::Ascending,
+                )],
+            },
+        })
+        .expect("index fixture has identity capacity");
     assert_eq!(index.index_id, ORDER);
     build_index(execution, &runtime);
     (
@@ -216,6 +219,7 @@ pub(super) fn assert_values(
             .inner
             .root
             .partition_state(id.partition_id)
+            .expect("fixture root has admitted Full custody")
             .unwrap()
             .entity_arena
             .get(id)
@@ -243,6 +247,7 @@ pub(super) fn relation_payload(runtime: &RelationalRuntime, id: RelationId) -> V
         .inner
         .root
         .partition_state(id.partition_id)
+        .expect("fixture root has admitted Full custody")
         .unwrap()
         .relation_arena
         .get(&id)
@@ -270,7 +275,7 @@ pub(super) fn recover(
         .durability_recovery()
         .restore_native_checkpoint_for_codec_transition_with_authority(
             execution,
-            &capture(&world.runtime),
+            &capture(execution, &world.runtime),
         )
         .unwrap();
     (target, recovered, receipt)

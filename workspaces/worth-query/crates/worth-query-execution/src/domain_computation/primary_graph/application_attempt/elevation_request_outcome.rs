@@ -208,8 +208,6 @@ pub enum WorthQueryElevationRequestOutcome {
     Aborted,
     /// A capacity or lifetime limit stopped the attempt. Retry later.
     Deferred(super::WorthQueryApplicationCommitDeferred),
-    /// The branch moved, but settlement did not finish. Recover the settlement.
-    SettlementDeferred(super::WorthQueryApplicationSettlementDeferred),
     /// Whether the commit landed is unresolved. Do not retry blindly.
     Indeterminate,
 }
@@ -251,9 +249,6 @@ pub(in crate::domain_computation::primary_graph) fn requested_outcome(
         }
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryElevationRequestOutcome::NoEffect(no_effect)
-        }
-        WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred) => {
-            WorthQueryElevationRequestOutcome::SettlementDeferred(deferred)
         }
         WorthQueryApplicationCommitOutcome::CleanupRequired(cleanup) => {
             WorthQueryElevationRequestOutcome::CleanupRequired(cleanup)

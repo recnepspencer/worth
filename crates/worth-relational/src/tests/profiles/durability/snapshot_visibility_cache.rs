@@ -15,7 +15,8 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
             protect_active_snapshots: true,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
@@ -29,7 +30,7 @@ fn visibility_cache_zero_window_does_not_accumulate_unprotected_history() {
         .read_truth()
         .read_version(execution, first.version_id)
         .expect("read request remains live");
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.recent_visibility_cache_count, 0);
@@ -54,10 +55,14 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&first)[0];
     let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
@@ -80,8 +85,12 @@ fn explicit_snapshots_can_skip_cache_protection_and_still_read_until_release() {
         .read_snapshot(&snapshot, execution)
         .expect("read request remains live")
         .unwrap();
-    let inspection = runtime.read_truth().inspect_snapshot(&snapshot).unwrap();
-    let stats = runtime.storage_access().storage_stats();
+    let inspection = runtime
+        .read_truth()
+        .inspect_snapshot(execution, &snapshot)
+        .unwrap()
+        .unwrap();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(
         read_entity_field(read.get_entity(entity).unwrap(), field_key("name")),
@@ -117,10 +126,14 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
             protect_active_snapshots: false,
             recent_version_window: 1,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let entity = changed_entities(&first)[0];
     let _updated = update_entity(execution, &runtime, entity, "first-updated");
 
@@ -136,7 +149,7 @@ fn unprotected_active_snapshots_can_use_recent_cache_when_enabled() {
         .expect("read request remains live")
         .unwrap();
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.snapshot_count, 1);
@@ -162,7 +175,8 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
             protect_active_snapshots: true,
             recent_version_window: 1,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let first = create_entity_outcome(execution, &runtime, "first");
     let second = create_entity_outcome(execution, &runtime, "second");
@@ -183,7 +197,7 @@ fn visibility_cache_recent_window_is_bounded_and_reports_hits() {
         .read_truth()
         .read_version(execution, second.version_id)
         .expect("read request remains live");
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.recent_visibility_cache_count, 1);
@@ -208,7 +222,8 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
     let runtime = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::ChipSimulation)
         .schema_registry(test_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut versions = Vec::new();
     for index in 0..6 {
         versions.push(create_entity_outcome(execution, &runtime, &format!("e{index}")).version_id);
@@ -221,7 +236,7 @@ fn heavy_profiles_keep_recent_visibility_cache_small_under_sustained_history_rea
             .read_version(execution, *version_id)
             .expect("read request remains live");
     }
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(
         runtime

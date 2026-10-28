@@ -1,5 +1,3 @@
-use std::num::NonZeroUsize;
-
 use worth_query_consumer_values::PlanarVertex;
 use worth_query_host::facade::{
     admission::authenticated_principal::WorthQueryRequestScope,
@@ -22,8 +20,6 @@ use crate::ConsumerSchema;
 
 mod expected;
 mod manifest;
-mod recovery_admission;
-mod recovery_publication;
 mod retained;
 mod successor;
 

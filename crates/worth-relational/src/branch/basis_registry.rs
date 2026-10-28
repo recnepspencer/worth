@@ -89,6 +89,7 @@ impl RelationalBranchBasisRegistry {
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         assert!(
+            /* Proof: All bind_metrics callers bind a fresh registry from RelationalBranchReferenceCell construction, detached_owner_snapshot, rebind_runtime or reset_basis_registry. clone_for_head_replacement keeps the existing metrics and does not rebind a populated registry; there is no facade rebinding door. */
             retained.entries.is_empty(),
             "a live basis registry cannot change metric ownership"
         );

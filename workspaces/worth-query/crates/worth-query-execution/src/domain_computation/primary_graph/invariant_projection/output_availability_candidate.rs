@@ -101,7 +101,7 @@ impl ObservedOutputCandidate {
         if !witness
             .get()
             .expect("checked sealed witness")
-            .roles_remain_present_in(runtime, snapshot)
+            .roles_remain_present_in(runtime, snapshot, execution)
             .map_err(super::consumed_output::map_admission_stop)?
         {
             return Err(Stop::Unavailable);

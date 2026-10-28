@@ -44,9 +44,10 @@ struct EntityReconcileTarget<'plan> {
 impl<'runtime> MergeAccess<'runtime> {
     pub(crate) fn derive_merge_commit_mutation_plan(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledMergeExecution,
     ) -> Result<PreparedMergeMutationPlan, MergeExecutionMutationPlanError> {
-        let mutations = self.derive_record_mutations(compiled)?;
+        let mutations = self.derive_record_mutations(execution, compiled)?;
         let merge_execution_summary = self.retain_execution_summary(compiled, &mutations.summary);
         Ok(assemble_prepared_mutation_plan(
             compiled,
@@ -57,6 +58,7 @@ impl<'runtime> MergeAccess<'runtime> {
 
     fn derive_record_mutations(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         compiled: &CompiledMergeExecution,
     ) -> Result<PreparedRecordMutations, MergeExecutionMutationPlanError> {
         let mut merged_intents = Vec::new();
@@ -94,7 +96,7 @@ impl<'runtime> MergeAccess<'runtime> {
                 }
                 BoundExecutableMergeRecordPlan::Reconcile(plan) => {
                     summary.reconciled_record_count += 1;
-                    if let Some(intent) = self.derive_reconcile_intent(plan)? {
+                    if let Some(intent) = self.derive_reconcile_intent(execution, plan)? {
                         if matches!(
                             intent,
                             MutationIntent::Entity(EntityMutationIntent::UpdateFields(_))
@@ -229,13 +231,19 @@ impl<'runtime> MergeAccess<'runtime> {
 impl<'runtime> MergeAccess<'runtime> {
     fn derive_reconcile_intent(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: &ReconcileRecordPlan,
     ) -> Result<Option<MutationIntent>, MergeExecutionMutationPlanError> {
         match (&plan.source_visible_snapshot, &plan.target_record) {
             (
                 crate::merge::data::VisibleMergeRecordSnapshot::Entity(source_entity),
                 crate::transactions::data::RecordRef::Entity(target_entity_id),
-            ) => self.derive_entity_reconcile_intent(plan, source_entity, *target_entity_id),
+            ) => self.derive_entity_reconcile_intent(
+                execution,
+                plan,
+                source_entity,
+                *target_entity_id,
+            ),
             (
                 crate::merge::data::VisibleMergeRecordSnapshot::Relation(_),
                 crate::transactions::data::RecordRef::Relation(_),
@@ -256,25 +264,29 @@ impl<'runtime> MergeAccess<'runtime> {
 
     fn derive_entity_reconcile_intent(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: &ReconcileRecordPlan,
         source_entity: &EntityReadRecord,
         target_entity_id: crate::identity::data::EntityId,
     ) -> Result<Option<MutationIntent>, MergeExecutionMutationPlanError> {
-        let target = self.entity_reconcile_target(plan, target_entity_id)?;
+        let target = self.entity_reconcile_target(execution, plan, target_entity_id)?;
         let resolved_fields = resolved_entity_reconcile_fields(plan, source_entity, &target)?;
         Ok(entity_reconcile_intent(target_entity_id, resolved_fields))
     }
 
     fn entity_reconcile_target<'plan>(
         &'plan self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         plan: &ReconcileRecordPlan,
         target_entity_id: crate::identity::data::EntityId,
     ) -> Result<EntityReconcileTarget<'plan>, MergeExecutionMutationPlanError> {
-        let entity = current_entity_snapshot(self.runtime, target_entity_id).ok_or_else(|| {
-            MergeExecutionMutationPlanError::MissingTargetEntitySnapshot {
-                record: plan.target_record.clone(),
-            }
-        })?;
+        let entity = current_entity_snapshot(self.runtime, execution, target_entity_id)
+            .map_err(MergeExecutionMutationPlanError::Read)?
+            .ok_or_else(
+                || MergeExecutionMutationPlanError::MissingTargetEntitySnapshot {
+                    record: plan.target_record.clone(),
+                },
+            )?;
         let binding_plan = self
             .runtime
             .entity_aspect_plan(entity.kind.kind_id)

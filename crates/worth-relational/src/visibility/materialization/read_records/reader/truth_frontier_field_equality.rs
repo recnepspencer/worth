@@ -33,9 +33,16 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         Result<BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded>,
         crate::execution::RelationalExecutionDenialCause,
     > {
+        let edition = self.runtime.storage_access().current_edition();
+        let partitions = entity_ids
+            .iter()
+            .map(|id| id.partition_id)
+            .collect::<BTreeSet<_>>();
+        let state = edition
+            .demand_selected(execution, &self.runtime.services.symbols, partitions)
+            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_request::checked(execution, || {
             let expected = AuthoritativeFieldComparisonKey::from_aspect_value(expected);
-            let state = self.runtime.storage_access().current_edition();
             let mut matching_entity_ids = BTreeSet::new();
             let mut entity_records_examined = 0_usize;
             let mut field_reads = 0_usize;

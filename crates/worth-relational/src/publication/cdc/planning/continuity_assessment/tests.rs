@@ -70,7 +70,8 @@ fn unsupported_continuation_failure_deduplicates_boundary_already_present_in_pri
         ..SubscriberContractDeclaration::default()
     };
     let prior_proof =
-        NormalizedContinuationProof::new(vec![fingerprint], DescriptorSemanticsVersion::default());
+        NormalizedContinuationProof::new(vec![fingerprint], DescriptorSemanticsVersion::default())
+            .unwrap();
 
     let failure = assess_subscriber_continuity(
         &runtime,

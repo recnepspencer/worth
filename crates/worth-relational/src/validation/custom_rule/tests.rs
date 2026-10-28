@@ -115,7 +115,8 @@ fn custom_scope_planner_preserves_owner_selected_current_version() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, None);
     let selected_version = crate::identity::data::VersionId(77);
@@ -236,7 +237,8 @@ fn traversal_budget_is_session_wide() {
 
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let observation = InvariantObservation::committed(runtime.storage_access().current_edition());
     let prepared_scope = prepared_scope(&runtime, &observation, None);
     let view = crate::validation::engine::InvariantRuntimeView::from_runtime(&runtime);

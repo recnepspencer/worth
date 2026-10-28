@@ -1,4 +1,4 @@
-use crate::branch::SelectedRelationalBranchState;
+use crate::branch::SelectedRelationalBranchRead;
 use crate::runtime::{RelationalPreparationRuntime, WorkingState};
 use crate::transactions::data::{MergedCommitPlan, TransactionCommitError};
 use crate::validation::data::{InvariantGroupSet, InvariantPlanContract};
@@ -21,7 +21,7 @@ impl RelationalPreparationRuntime {
 impl PreparationInvariantAuthority<'_> {
     pub(crate) fn enforce_commit_boundary_for_selected_branch(
         &self,
-        selected: &SelectedRelationalBranchState,
+        selected: &SelectedRelationalBranchRead<'_>,
         proposed: &WorkingState,
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
@@ -69,7 +69,7 @@ impl PreparationInvariantAuthority<'_> {
 
     pub(crate) fn enforce_mutation_sensitive_for_working_state(
         &self,
-        selected: &SelectedRelationalBranchState,
+        selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
         version: crate::identity::data::VersionId,
         plan: &MergedCommitPlan,
@@ -117,7 +117,7 @@ impl PreparationInvariantAuthority<'_> {
 
     pub(crate) fn enforce_snapshot_publication_for_working_state(
         &self,
-        selected: &SelectedRelationalBranchState,
+        selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
         created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
         version: crate::identity::data::VersionId,
@@ -169,7 +169,7 @@ impl PreparationInvariantAuthority<'_> {
     fn execute(
         &self,
         profile: InvariantRequestProfile,
-        selected: &SelectedRelationalBranchState,
+        selected: &SelectedRelationalBranchRead<'_>,
         working: &WorkingState,
         applied_created_entities: Option<&crate::transactions::data::CommitCreatedEntityBindings>,
         version: crate::identity::data::VersionId,
@@ -187,8 +187,7 @@ impl PreparationInvariantAuthority<'_> {
         let observation = match profile {
             InvariantRequestProfile::MutationSensitive
             | InvariantRequestProfile::SnapshotPublication => {
-                let overlay =
-                    crate::storage::overlay::OverlayStateView::new(selected.state(), working);
+                let overlay = crate::storage::overlay::OverlayStateView::new(selected, working);
                 match applied_created_entities {
                     Some(created_entities) => InvariantObservation::applied_with_proposal(
                         overlay,
@@ -204,7 +203,7 @@ impl PreparationInvariantAuthority<'_> {
                 }
             }
             _ => InvariantObservation::committed_branch_with_proposed(
-                selected.state(),
+                selected,
                 working,
                 version,
                 proposal.cloned(),
@@ -213,7 +212,10 @@ impl PreparationInvariantAuthority<'_> {
         let aggregate = aggregate.map(|source| source.invocation(plan));
         let observation = observation.with_aggregate(aggregate);
         let observation_kind = observation.kind();
-        let view = InvariantRuntimeView::from_preparation_for_state(self.runtime, selected.state());
+        let view = InvariantRuntimeView::from_preparation_for_state(
+            self.runtime,
+            selected.selected().state(),
+        );
         let plan_contract = Some(InvariantPlanContract::from_merged_plan(plan));
         let consumed_groups = profile.consumed_groups();
         if plan_contract

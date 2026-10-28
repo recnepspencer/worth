@@ -49,7 +49,8 @@ fn index_request_memory_refusal_reaches_application_caller() {
                 .unwrap();
             let runtime = RelationalRuntimeApi::builder()
                 .schema_registry(schema)
-                .build();
+                .build()
+                .expect("valid native runtime configuration");
             let (_, basis) = runtime
                 .observe_branch(&runtime.main_branch_identity())
                 .unwrap();
@@ -79,14 +80,17 @@ fn index_request_memory_refusal_reaches_application_caller() {
                 )
                 .unwrap();
             let committed = transaction.commit(execution, &runtime).unwrap();
-            let index = runtime.index_authority().register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: "large.index.name".to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: locator,
-                },
-                branch_scoped: true,
-            });
+            let index = runtime
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: "large.index.name".to_owned(),
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: locator,
+                    },
+                    branch_scoped: true,
+                })
+                .expect("index fixture has identity capacity");
             let build_request = DerivedIndexBuildRequest {
                 source_commit_id: committed.commit.commit_id,
                 branch_id: BranchId("main".to_owned()),
@@ -131,7 +135,8 @@ fn index_request_memory_refusal_reaches_application_caller() {
             assert_eq!(
                 runtime
                     .index_access()
-                    .latest_generation(index.index_id, &build_request.branch_id)
+                    .read_latest_generation(execution, index.index_id, &build_request.branch_id)
+                    .unwrap()
                     .unwrap()
                     .generation_id,
                 published

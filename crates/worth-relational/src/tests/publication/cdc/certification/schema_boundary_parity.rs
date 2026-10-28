@@ -80,7 +80,7 @@ fn diff_cdc_truth_parity_test() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let baseline = create_entity_outcome(execution, &runtime, "anchor");
     let baseline_checkpoint =
         checkpoint_for_schema_version(baseline.patch_position(), SchemaVersionId(1));
@@ -163,10 +163,13 @@ fn diff_cdc_truth_parity_test() {
         .unwrap();
     let live_patch_batch = runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(baseline.patch_position()),
-            max_commits: 64,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(baseline.patch_position()),
+                max_commits: 64,
+            },
+        )
         .unwrap();
     let live_counters = runtime.performance_access().counters();
 
@@ -194,12 +197,8 @@ fn diff_cdc_truth_parity_test() {
         RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(registry)
-            .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-            .durable_store_layout(DurableStoreLayout {
-                root_path: unique_test_store_path("worth-relational-diff-cdc-truth-parity"),
-                segment_commit_capacity: 2,
-            })
-            .build()
+            .build_durable(TestDurableMedium::new().attachment())
+            .expect("valid native runtime configuration")
     });
 
     let recovered_batch = recovered
@@ -211,10 +210,13 @@ fn diff_cdc_truth_parity_test() {
         .unwrap();
     let recovered_patch_batch = recovered
         .publication()
-        .read_patch_stream(PatchStreamRequest {
-            after_position: Some(baseline.patch_position()),
-            max_commits: 64,
-        })
+        .read_patch_stream(
+            execution,
+            PatchStreamRequest {
+                after_position: Some(baseline.patch_position()),
+                max_commits: 64,
+            },
+        )
         .unwrap();
     let recovered_counters = recovered.performance_access().counters();
 

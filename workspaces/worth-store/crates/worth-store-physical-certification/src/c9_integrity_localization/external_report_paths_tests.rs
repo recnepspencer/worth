@@ -57,14 +57,14 @@ fn report_paths_are_external_canonical_and_symlink_safe() {
         Err(ExternalReportPathDenial::InsideStoreRoot)
     );
 
-    assert_report_alias_is_rejected_when_supported(&fixture);
+    assert_report_alias_is_rejected(&fixture);
 }
 
-fn assert_report_alias_is_rejected_when_supported(fixture: &super::test_world::RootFixture) {
+fn assert_report_alias_is_rejected(fixture: &super::test_world::RootFixture) {
     let alias = fixture.root.path().join("store-alias");
-    if create_directory_alias(fixture.scenario.clean_store_root(), &alias).is_err() {
-        return;
-    }
+    create_directory_alias(fixture.scenario.clean_store_root(), &alias).expect(
+        "real directory symlink required; enable Windows Developer Mode or run with symlink privilege",
+    );
     assert_eq!(
         ExternalReportPaths::new(
             fixture.scenario.clean_store_root(),

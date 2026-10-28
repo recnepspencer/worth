@@ -225,7 +225,9 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
 
     let live_envelope = runtime
         .replay()
-        .canonical_commit_envelope(merge.commit.commit.commit_id)
+        .canonical_commit_envelope(execution, merge.commit.commit.commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("live merge envelope");
     let (_recovery, recovered) = checkpoint_and_recover_with(execution, &runtime, || {
         runtime_with_aspect_field_merge_policy(
@@ -236,7 +238,9 @@ fn built_in_last_writer_wins_auto_resolution_is_stable_across_recovery() {
     });
     let recovered_envelope = recovered
         .replay()
-        .canonical_commit_envelope(live_commit_id)
+        .canonical_commit_envelope(execution, live_commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .expect("recovered merge envelope");
 
     assert_eq!(

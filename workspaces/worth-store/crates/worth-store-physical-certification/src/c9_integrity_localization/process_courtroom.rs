@@ -65,6 +65,22 @@ pub(super) fn run(observer_executable: &Path) {
         inventory.granules.len() > 200,
         "the primary courtroom covers the actual published topology"
     );
+    let root_files = u64::try_from(
+        manifest
+            .paths()
+            .filter(|path| path.parent() == Some(Path::new("families/records/roots")))
+            .filter(|path| {
+                path.file_name()
+                    .and_then(|name| name.to_str())
+                    .and_then(|name| name.strip_prefix("root-"))
+                    .and_then(|name| name.strip_suffix(".manifest"))
+                    .is_some_and(|hex| {
+                        hex.len() == 16 && hex.bytes().all(|byte| byte.is_ascii_hexdigit())
+                    })
+            })
+            .count(),
+    )
+    .unwrap();
 
     let observer_digest = executable_sha256(observer_executable).expect("observer digest");
     assert_ne!(
@@ -176,21 +192,20 @@ pub(super) fn run(observer_executable: &Path) {
                 assert!(counters.checksum_calculations > 0);
                 assert!(counters.checksum_validated_frames > 0);
                 assert!(counters.selector_payload_entries > 0);
-                assert!(counters.root_manifest_payload_entries > 0);
+                // All root files decode once; the completed checkpoint also
+                // decodes its source root after admitting the selected root.
+                assert_eq!(counters.root_manifest_payload_entries, root_files + 1);
                 clean_counters = Some(counters);
             }
             ProcessRootCase::PoisonCurrentSelector => {
                 let clean = clean_counters.expect("clean row precedes poison rows");
-                // Lost current reachability intentionally stops descendant traversal. Global
-                // checksum totals therefore cannot serve as a root decoder-entry oracle.
+                // Every intact root file still decodes, but an unadmitted
+                // current selector cannot authorize the checkpoint source read.
                 assert_eq!(
                     counters.selector_payload_entries + 1,
                     clean.selector_payload_entries
                 );
-                assert_eq!(
-                    counters.root_manifest_payload_entries,
-                    clean.root_manifest_payload_entries
-                );
+                assert_eq!(counters.root_manifest_payload_entries, root_files);
             }
             ProcessRootCase::PoisonAddressedRoot => {
                 let clean = clean_counters.expect("clean row precedes poison rows");
@@ -198,10 +213,7 @@ pub(super) fn run(observer_executable: &Path) {
                     counters.selector_payload_entries,
                     clean.selector_payload_entries
                 );
-                assert_eq!(
-                    counters.root_manifest_payload_entries + 1,
-                    clean.root_manifest_payload_entries
-                );
+                assert_eq!(counters.root_manifest_payload_entries + 1, root_files);
             }
         }
         let recovery_run = fresh_identity(&format!("{}-recovery", case.label()), world.path());

@@ -252,7 +252,7 @@ impl OperationHandler<Schema, Binding<Schema>> for Handler {
                         before.dispatched(node);
                     },
                     move || {
-                        after.exit_member();
+                        after.exit_member(node);
                     },
                     |_| {},
                 )

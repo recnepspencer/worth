@@ -23,6 +23,7 @@ pub(super) struct Population {
     partials: Vec<ProductUnpublishedOwnerEffects>,
 }
 pub(super) fn child(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     court: &CompositeSupplyChainCourt,
     root: &ProductBranchObservation,
     name: &str,
@@ -49,6 +50,7 @@ pub(super) fn child(
         .world
         .branch_port()
         .create_product_branch(
+            request_execution,
             root.clone(),
             ProductBranchCreationIntent::from_source(name, plans).unwrap(),
             &RuntimeWorldCancellationSource::new().token(),
@@ -79,6 +81,7 @@ impl Population {
             let name = format!("population-{index}");
             match axis {
                 Axis::B => population.branches.push(child(
+                    request_execution,
                     &population.court,
                     &population.root,
                     &name,
@@ -93,7 +96,14 @@ impl Population {
                     drop(receipt);
                 }
                 Axis::U => {
-                    let head = child(&population.court, &population.root, &name, true, false);
+                    let head = child(
+                        request_execution,
+                        &population.court,
+                        &population.root,
+                        &name,
+                        true,
+                        false,
+                    );
                     drop(
                         population
                             .court
@@ -112,7 +122,14 @@ impl Population {
                     "5",
                 )),
                 Axis::P => {
-                    let head = child(&population.court, &population.root, &name, true, false);
+                    let head = child(
+                        request_execution,
+                        &population.court,
+                        &population.root,
+                        &name,
+                        true,
+                        false,
+                    );
                     population.partials.push(
                         population
                             .court

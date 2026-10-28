@@ -5,7 +5,7 @@ fn deleted_on_both_sides_prepared_merge_rejects_target_head_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity(execution, &runtime, entity);
@@ -56,7 +56,7 @@ fn deleted_on_both_sides_prepared_merge_rejects_schema_semantic_drift() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     delete_entity(execution, &runtime, entity);
@@ -85,7 +85,7 @@ fn non_executable_deletion_denial_is_stable_across_recovery() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let entity = create_entity(execution, &runtime, "shared");
     create_branch_from_main(&runtime, "feature");
     update_entity(execution, &runtime, entity, "main-modified");
@@ -117,7 +117,7 @@ fn non_executable_deletion_denial_is_stable_across_recovery() {
         .expect("live lowered index");
 
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_artifact = recovered
         .merge()
         .inspect_planning_scope(

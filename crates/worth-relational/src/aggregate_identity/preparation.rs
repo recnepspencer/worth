@@ -1,7 +1,7 @@
 //! Request-funded preparation of deterministic, atomic aggregate consequences.
 use worth_execution::{ChargedBytes, ExecutionMemoryReservation};
 
-use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
+use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead};
 use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
 use crate::storage::overlay::{OverlayStateView, WorkingState};
@@ -64,7 +64,7 @@ pub(super) fn prepare(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     budget: Option<&crate::execution::RequestWorkBudget>,
     authority: &RelationalBranchRootSchemaAuthority,
-    selected: &SelectedRelationalBranchState,
+    selected: &SelectedRelationalBranchRead<'_>,
     working: &WorkingState,
     business: &MergedCommitPlan,
     effect: &AggregateChanges,

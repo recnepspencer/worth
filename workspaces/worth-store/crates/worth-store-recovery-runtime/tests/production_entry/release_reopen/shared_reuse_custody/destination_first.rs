@@ -27,13 +27,13 @@ fn destination_first_release_keeps_the_source_routed_through_fresh_c8_custody() 
 
 fn run() {
     let format = shared_format();
-    let world =
-        PhysicalResidencyStoreWorld::initialize_for_recovery_with_format_and_manifest_capacity(
-            "c11-shared-destination-first-c8",
-            format,
-            512,
-        )
-        .expect("genuine shared-reuse recovery world");
+    let world = PhysicalResidencyStoreWorld::initialize_for_recovery_with_operation_budget(
+        "c11-shared-destination-first-c8",
+        format,
+        512,
+        world::release_operation_budget(),
+    )
+    .expect("genuine shared-reuse recovery world");
     let scope = admitted_blob_scope(SCOPE_NAME);
     let payload = world::payload();
     let original = world::publish_one(&world, &scope, &payload);

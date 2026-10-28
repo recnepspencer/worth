@@ -47,8 +47,8 @@ impl VisibilityProjectionView {
                     checkpoint(context, view.exact_entity_state_read_work_bound().ok_or(Denial::SourceUnavailable)?)
                         .map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
                 }
-                self.with_exact_entity_state(entity, |original, before| {
-                    target.with_exact_entity_state(entity, |current, after| {
+                self.read_exact_entity_state(execution, entity, |original, before| {
+                    target.read_exact_entity_state(execution, entity, |current, after| {
                         if original != current { return Ok(false); }
                         if !same_installed_contract(self, target, original.kind_id, locator, context)? { return Ok(false); }
                         admit_field_lookup(before, locator, context)?;
@@ -60,8 +60,14 @@ impl VisibilityProjectionView {
                             .ok_or(Denial::Execution(Cause::WorkCounterOverflow))?;
                         checkpoint(context, work).map_err(|stop| Denial::Execution(crate::execution::denial::kernel_stop(stop)))?;
                         Ok(left == right)
-                    }).map_err(|_| Denial::SourceUnavailable)?.ok_or(Denial::SourceUnavailable)?
-                }).map_err(|_| Denial::SourceUnavailable)?.ok_or(Denial::SourceUnavailable)?
+                    }).map_err(|cause| match cause {
+            super::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::SourceUnavailable,
+            super::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
+        })?.ok_or(Denial::SourceUnavailable)?
+                }).map_err(|cause| match cause {
+            super::RelationalBorrowedRecordReadDenial::ExactBasisRequired => Denial::SourceUnavailable,
+            super::RelationalBorrowedRecordReadDenial::Execution(cause) => Denial::Execution(cause),
+        })?.ok_or(Denial::SourceUnavailable)?
             };
             compare()
         }, |_| 0).map_err(Denial::Execution)?

@@ -43,6 +43,7 @@ fn cutoff_candidate_pins_the_selected_ancestor_partition() {
         .application
         .product_runtime()
         .create_product_branch(
+            execution,
             &product,
             None,
             intent,

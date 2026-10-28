@@ -26,7 +26,8 @@ fn an_unchecked_custom_kernel_runs_only_when_the_request_cannot_run_in_parallel(
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
         .custom_invariant(CustomInvariantRegistration::new(AlwaysViolatesCustomRule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let run = |execution: &ExecutionRequest<'_, '_>| {
         let request = InvariantExecutionRequest::from_profile_with_contract(
             InvariantRequestProfile::CommitBoundary,

@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use arc_swap::ArcSwapOption;
@@ -7,7 +7,12 @@ use arc_swap::ArcSwapOption;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::publication::patch::data::PatchStreamPosition;
 
-use super::CanonicalPublicationRoute;
+use super::patch_position_reservation::{
+    PatchPositionReservation, PatchPositionReservationAdmission, PatchPositionReservationGuard,
+    RelationalPatchPositionReservationCounters,
+};
+use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
+use crate::durability::medium::RelationalDurableStepStop as DurableStepStop;
 
 #[derive(Default)]
 pub(super) struct PerformedPublicationStream {
@@ -18,7 +23,7 @@ pub(super) struct PerformedPublicationStream {
 }
 
 pub(super) struct PerformedPublicationNode {
-    positioned: Arc<PositionedCanonicalCommit>,
+    position: PatchStreamPosition,
     route: Arc<CanonicalPublicationRoute>,
     previous: Option<Arc<PerformedPublicationNode>>,
 }
@@ -26,6 +31,8 @@ pub(super) struct PerformedPublicationNode {
 #[derive(Clone)]
 pub(crate) struct PerformedCheckpointSelection {
     head: Option<Arc<PerformedPublicationNode>>,
+    /// The last branch transition the selection covers (D8).
+    covered_transitions: crate::branch::RelationalBranchTransitionSequence,
 }
 
 #[derive(Default)]
@@ -35,36 +42,14 @@ struct PerformedPublicationIndex {
     indexed_head: Option<Arc<PerformedPublicationNode>>,
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct RelationalPatchPositionReservationCounters {
-    pub contacts: u64,
-    pub deferrals: u64,
-    pub assignments: u64,
-    pub overflows: u64,
-}
-
-pub(super) enum PerformedPublicationRecordError {
-    ReservationContended,
-    PositionCapacityExhausted,
-}
-
-#[derive(Default)]
-struct PatchPositionReservation {
-    contacts: AtomicU64,
-    deferrals: AtomicU64,
-    assignments: AtomicU64,
-    overflows: AtomicU64,
-    active: AtomicBool,
-}
-
-struct PatchPositionReservationGuard<'reservation> {
-    reservation: &'reservation PatchPositionReservation,
-}
-
 impl PerformedPublicationStream {
-    pub(super) fn checkpoint_selection(&self) -> PerformedCheckpointSelection {
+    pub(super) fn checkpoint_selection(
+        &self,
+        covered_transitions: crate::branch::RelationalBranchTransitionSequence,
+    ) -> PerformedCheckpointSelection {
         PerformedCheckpointSelection {
             head: self.head.load_full(),
+            covered_transitions,
         }
     }
 
@@ -73,7 +58,7 @@ impl PerformedPublicationStream {
         let mut cursor = self.head.load_full();
         while let Some(node) = cursor {
             if node.route.is_performed() && !node.route.is_settled() {
-                let commit_id = node.positioned.envelope().commit.commit_id;
+                let commit_id = node.route.commit.commit_id;
                 first = Some(first.map_or(commit_id, |current: CommitId| current.min(commit_id)));
             }
             cursor = node.previous.clone();
@@ -85,44 +70,80 @@ impl PerformedPublicationStream {
         same_head(&self.head.load_full(), &selection.head)
     }
 
+    /// Hold the reservation within `execution`, with the performed commit
+    /// head a branch transition follows: fixed until the guard drops.
+    pub(super) fn hold_reservation_within(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (PatchPositionReservationGuard<'_>, PatchStreamPosition),
+        worth_execution::WorkCeilingDenial,
+    > {
+        let reservation = self.reservation.wait_within(execution)?;
+        let head = self.performed_head_position(&self.head.load_full());
+        Ok((reservation, PatchStreamPosition(head)))
+    }
+
+    /// The last assigned position: the performed head or the recovered floor,
+    /// whichever is later.
+    fn performed_head_position(&self, current: &Option<Arc<PerformedPublicationNode>>) -> u64 {
+        current
+            .as_ref()
+            .map(|head| head.position.0)
+            .unwrap_or(0)
+            .max(self.recovered_position_floor.load(Ordering::Acquire))
+    }
+
     pub(super) fn advance_position_floor(&self, floor: PatchStreamPosition) {
         self.recovered_position_floor
             .fetch_max(floor.0, Ordering::AcqRel);
     }
 
-    pub(super) fn record_with_cutover(
+    pub(super) fn record_with_cutover<T>(
         &self,
         route: Arc<CanonicalPublicationRoute>,
-        cutover: impl FnOnce(PatchStreamPosition),
-    ) -> Result<Arc<PositionedCanonicalCommit>, PerformedPublicationRecordError> {
-        let _reservation = self.reservation.try_enter()?;
+        resident: Arc<CanonicalCommitEnvelope>,
+        admission: PatchPositionReservationAdmission<'_, '_, '_>,
+        durable: impl FnOnce(
+            &PositionedCanonicalCommit,
+            &crate::branch::RelationalBranchRootDescriptor,
+        ) -> Result<
+            Option<crate::durability::medium::RelationalDurableCommitReadmission>,
+            DurableStepStop,
+        >,
+        cutover: impl FnOnce(PatchStreamPosition) -> T,
+    ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
+        let _reservation = self.reservation.enter(admission)?;
         let current = self.head.load_full();
-        let prior_position = current
-            .as_ref()
-            .map(|head| head.positioned.position().0)
-            .unwrap_or(0)
-            .max(self.recovered_position_floor.load(Ordering::Acquire));
+        let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
-            return Err(PerformedPublicationRecordError::PositionCapacityExhausted);
+            return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),
-                Arc::clone(&route.envelope),
+                resident,
             ),
         ));
+        // Durable before live: the position is assigned only once the medium
+        // holds it, and the cutover below runs only after that.
+        let journal =
+            durable(&positioned, &route.roots).map_err(CanonicalPublicationRecordError::Durable)?;
+        route
+            .envelope
+            .bind_performed(&positioned, journal.map(|receipt| receipt.into_parts()));
         let node = Arc::new(PerformedPublicationNode {
-            positioned: Arc::clone(&positioned),
+            position: positioned.position(),
             route: Arc::clone(&route),
             previous: current,
         });
         route.set_position(PatchStreamPosition(next_position));
         self.head.store(Some(node));
         self.reservation.assignments.fetch_add(1, Ordering::Relaxed);
-        cutover(PatchStreamPosition(next_position));
+        let completed = cutover(PatchStreamPosition(next_position));
         route.mark_performed();
-        Ok(positioned)
+        Ok((positioned, completed))
     }
 
     pub(super) fn link_recovered(
@@ -132,17 +153,17 @@ impl PerformedPublicationStream {
     ) -> Result<(), &'static str> {
         let _reservation = self
             .reservation
-            .try_enter()
+            .enter(PatchPositionReservationAdmission::DeferWhenHeld)
             .map_err(|_| "recovered canonical stream reservation is unexpectedly contended")?;
         let current = self.head.load_full();
         if current
             .as_ref()
-            .is_some_and(|head| head.positioned.position() >= positioned.position())
+            .is_some_and(|head| head.position >= positioned.position())
         {
             return Err("recovered canonical stream order is not strictly increasing");
         }
         let node = Arc::new(PerformedPublicationNode {
-            positioned: Arc::clone(&positioned),
+            position: positioned.position(),
             route,
             previous: current,
         });
@@ -159,7 +180,7 @@ impl PerformedPublicationStream {
             .by_patch
             .get(&position)
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(node.positioned.canonical_arc()))
+            .and_then(|node| node.route.envelope.get())
     }
 
     pub(super) fn positioned_at(
@@ -170,7 +191,7 @@ impl PerformedPublicationStream {
             .by_patch
             .get(&position)
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(&node.positioned))
+            .and_then(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
     }
 
     pub(super) fn visible_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
@@ -178,7 +199,7 @@ impl PerformedPublicationStream {
             .by_patch
             .values()
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(node.positioned.canonical_arc()))
+            .filter_map(|node| node.route.envelope.get())
             .collect()
     }
 
@@ -188,7 +209,7 @@ impl PerformedPublicationStream {
             .iter()
             .rev()
             .find(|(_, node)| node.route.is_visible())
-            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
     }
 
     pub(super) fn after(
@@ -204,7 +225,18 @@ impl PerformedPublicationStream {
             .range((start, std::ops::Bound::Unbounded))
             .filter(|(_, node)| node.route.is_visible())
             .take(max_commits)
-            .map(|(position, node)| (*position, node.positioned.envelope().commit.commit_id))
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
+            .collect()
+    }
+
+    pub(super) fn latest_references(&self, limit: usize) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.refresh_index()
+            .by_patch
+            .iter()
+            .rev()
+            .filter(|(_, node)| node.route.is_visible())
+            .take(limit)
+            .map(|(position, node)| (*position, node.route.commit.commit_id))
             .collect()
     }
 
@@ -215,7 +247,7 @@ impl PerformedPublicationStream {
             .get(&commit_id)
             .and_then(|position| index.by_patch.get(position))
             .filter(|node| node.route.is_visible())
-            .map(|node| Arc::clone(&node.positioned))
+            .and_then(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
     }
 
     fn refresh_index(&self) -> std::sync::MutexGuard<'_, PerformedPublicationIndex> {
@@ -238,10 +270,10 @@ impl PerformedPublicationStream {
             pending.push(node);
         }
         for node in pending.into_iter().rev() {
-            let position = node.positioned.position();
+            let position = node.position;
             index
                 .by_commit
-                .insert(node.route.envelope.commit.commit_id, position);
+                .insert(node.route.commit.commit_id, position);
             index.by_patch.insert(position, Arc::clone(&node));
         }
         index.indexed_head = head;
@@ -253,7 +285,7 @@ impl PerformedPublicationStream {
             .by_patch
             .values()
             .filter(|node| node.route.is_performed())
-            .map(|node| Arc::clone(&node.positioned))
+            .filter_map(|node| node.route.envelope.positioned_if_resident().map(Arc::new))
             .collect()
     }
 
@@ -263,12 +295,25 @@ impl PerformedPublicationStream {
 }
 
 impl PerformedCheckpointSelection {
+    pub(crate) fn latest_receipt(&self) -> Option<crate::history::data::RelationalCommitReceipt> {
+        self.head
+            .as_ref()
+            .filter(|head| head.route.is_performed())
+            .map(|head| head.route.commit.clone())
+    }
+    /// The last branch transition sequence the checkpoint covers.
+    pub(crate) fn covered_transitions(&self) -> crate::branch::RelationalBranchTransitionSequence {
+        self.covered_transitions
+    }
+
     pub(crate) fn positioned_snapshot(&self) -> Vec<PositionedCanonicalCommit> {
         let mut positioned = Vec::new();
         let mut cursor = self.head.clone();
         while let Some(node) = cursor {
-            if node.route.is_performed() {
-                positioned.push(node.positioned.as_ref().clone());
+            if node.route.is_performed()
+                && let Some(resident) = node.route.envelope.positioned_if_resident()
+            {
+                positioned.push(resident);
             }
             cursor = node.previous.clone();
         }
@@ -285,37 +330,5 @@ fn same_head(
         (Some(left), Some(right)) => Arc::ptr_eq(left, right),
         (None, None) => true,
         _ => false,
-    }
-}
-
-impl PatchPositionReservation {
-    fn try_enter(
-        &self,
-    ) -> Result<PatchPositionReservationGuard<'_>, PerformedPublicationRecordError> {
-        self.contacts.fetch_add(1, Ordering::Relaxed);
-        if self
-            .active
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .is_err()
-        {
-            self.deferrals.fetch_add(1, Ordering::Relaxed);
-            return Err(PerformedPublicationRecordError::ReservationContended);
-        }
-        Ok(PatchPositionReservationGuard { reservation: self })
-    }
-
-    fn counters(&self) -> RelationalPatchPositionReservationCounters {
-        RelationalPatchPositionReservationCounters {
-            contacts: self.contacts.load(Ordering::Relaxed),
-            deferrals: self.deferrals.load(Ordering::Relaxed),
-            assignments: self.assignments.load(Ordering::Relaxed),
-            overflows: self.overflows.load(Ordering::Relaxed),
-        }
-    }
-}
-
-impl Drop for PatchPositionReservationGuard<'_> {
-    fn drop(&mut self) {
-        self.reservation.active.store(false, Ordering::Release);
     }
 }

@@ -1,3 +1,4 @@
+mod adjacency_demand;
 mod adjacency_revision;
 mod admitted_snapshot;
 mod aspect_presence_support;
@@ -8,6 +9,7 @@ mod borrowed_adjacency;
 mod borrowed_records;
 mod contracts;
 mod creation;
+mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;
 mod entity_retirement;
@@ -24,6 +26,7 @@ mod projection_records;
 mod query_locus_projection;
 mod read_record_identity_ordering;
 mod record_source;
+mod residency;
 mod schema_custody;
 mod streamed_basis_reads;
 mod view;
@@ -37,7 +40,8 @@ pub use borrowed_records::{
 };
 pub use contracts::{
     ProjectionAspectFilter, ProjectionAspectFilterMode, ProjectionAspectRequirement,
-    ProjectionAspectScope,
+    ProjectionAspectScope, ProjectionContractRefusal, ProjectionRecordDomain,
+    RelationalProjectionContractDenial,
 };
 pub use entity_retirement::RelationalEntityRetirement;
 pub use projection_records::{

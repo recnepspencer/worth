@@ -35,6 +35,7 @@ fn retained_entity_projection_denies_mixed_branch_and_snapshot_axes() {
 
     assert!(source
         .read_retained_entity_aspect_state(
+            execution,
             lease.snapshot_identity(),
             &TruthBranchIdentity::from_relational_branch_id("main"),
             record,
@@ -43,6 +44,7 @@ fn retained_entity_projection_denies_mixed_branch_and_snapshot_axes() {
         .is_some());
     let denial = source
         .read_retained_entity_aspect_state(
+            execution,
             lease.snapshot_identity(),
             &TruthBranchIdentity::from_relational_branch_id("feature"),
             record,
@@ -84,6 +86,7 @@ fn retained_entity_projection_enforces_partition_authority_before_projection() {
 
     assert!(source
         .read_retained_entity_aspect_state(
+            execution,
             lease.snapshot_identity(),
             &branch,
             bridge_entity_identity(admitted),
@@ -92,6 +95,7 @@ fn retained_entity_projection_enforces_partition_authority_before_projection() {
         .is_some());
     let denial = source
         .read_retained_entity_aspect_state(
+            execution,
             lease.snapshot_identity(),
             &branch,
             bridge_entity_identity(foreign),

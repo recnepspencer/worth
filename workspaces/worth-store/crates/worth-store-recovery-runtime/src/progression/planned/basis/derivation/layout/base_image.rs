@@ -23,6 +23,8 @@ pub(super) fn assemble(
             verified_drops,
             release_head_replay,
         )?;
+    let record_anchors =
+        super::record_anchors::projected_record_anchors(selection, pending, verified_drops)?;
     let selected = selection.page_facts().placements();
     let count = selected
         .len()
@@ -130,13 +132,14 @@ pub(super) fn assemble(
         latest_blob_publication,
         latest_blob_quarantine,
         tier_epoch_anchor: selection.root().selected().manifest().tier_epoch_anchor(),
+        record_anchors,
         derived_family_directory,
-        selected_root_topology: allowance.into_box(topology)?,
+        selected_root_topology: allowance.charge_boxed_slice(topology)?,
         destination_generation: pending.staging_generation,
-        actions: allowance.into_box(actions)?,
-        segment_updates: allowance.into_box(updates)?,
-        manifests: allowance.into_box(manifests)?,
-        root_states: allowance.into_box(root_states)?,
+        actions: allowance.charge_boxed_slice(actions)?,
+        segment_updates: allowance.charge_boxed_slice(updates)?,
+        manifests: allowance.charge_boxed_slice(manifests)?,
+        root_states: allowance.charge_boxed_slice(root_states)?,
         release_head_replay: replay,
         source_artifacts,
     })

@@ -21,9 +21,7 @@ impl AggregateObservation {
                 .read_truth()
                 .pin_read_capability(snapshot, &[], execution)
                 .map_err(|stop| match stop {
-                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
-                        Failure::Execution(WorkCeilingDenial::Stopped(stop).into())
-                    }
+                    RelationalPinnedReadAdmissionDenial::Request(stop) => Failure::Execution(stop),
                     _ => Failure::Unavailable,
                 })?;
             self.remains_equal_at(&pin, execution, context, control)

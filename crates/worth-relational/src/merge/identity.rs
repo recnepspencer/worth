@@ -24,7 +24,7 @@ impl<'runtime> MergeAccess<'runtime> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: NormalizedRelationalMergeRequest,
     ) -> Result<IdentityScopedMergePlan, MergePlanningError> {
-        let history_plan = self.plan_history_scope(request)?;
+        let history_plan = self.plan_history_scope(execution, request)?;
         self.discover_identity_scope(execution, history_plan)
     }
 

@@ -256,7 +256,6 @@ fn verify_inner<S: RouteWalkStorage>(
                 }
             }
         }
-        drop(block);
         storage.discard_frame(frame)?;
     }
     if count != root.record_count() {

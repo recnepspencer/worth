@@ -123,7 +123,11 @@ fn installed_invariants_cannot_be_bypassed_with_an_explicit_relational_runtime()
     let result = WorthQueryRuntime::builder(test_product_world_resources())
         .domain_package(full_substrate_package())
         .unwrap()
-        .relational_runtime(RelationalRuntimeApi::builder().build())
+        .relational_runtime(
+            RelationalRuntimeApi::builder()
+                .build()
+                .expect("valid native runtime configuration"),
+        )
         .build_backend_from_parts()
         .build(request_execution);
     let error = result

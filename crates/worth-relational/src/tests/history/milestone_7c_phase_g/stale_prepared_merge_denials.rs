@@ -2,7 +2,7 @@ use crate::facade::history::BranchId;
 use crate::facade::merge::{MergeExecutionError, MergeExecutionRequest, MergeIntent};
 use crate::tests::support::{
     create_branch_from_main, create_entity, create_entity_outcome_on_branch,
-    persisted_runtime_with_test_schema,
+    durable_runtime_with_test_schema,
 };
 
 use super::schema_fixtures::drifted_schema_registry;
@@ -13,7 +13,7 @@ fn authoritative_merge_execution_certification_rejects_stale_prepared_merge_afte
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -49,7 +49,7 @@ fn authoritative_merge_execution_certification_rejects_stale_prepared_merge_afte
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -89,7 +89,7 @@ fn authoritative_merge_execution_certification_rejects_metadata_reference_moveme
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -162,7 +162,7 @@ fn authoritative_merge_execution_certification_rejects_schema_semantic_drift_aft
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let mut runtime = persisted_runtime_with_test_schema();
+    let mut runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(

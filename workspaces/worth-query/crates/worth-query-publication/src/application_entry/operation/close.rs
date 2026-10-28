@@ -8,7 +8,8 @@ pub enum WorthQueryOperationCloseDenial {
     ManagedCleanup(worth_query_execution::facade::primary_graph::WorthQueryMutationCleanupFailureKind),
     CleanupCapacity,
     NativeObligationRetained,
-    Outputs(WorthQueryRequiredOutputPreparationDenial),
+    /// Rich output preparation evidence does not enlarge every close refusal.
+    Outputs(Box<WorthQueryRequiredOutputPreparationDenial>),
     Execution(worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial),
     Recovery(worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseDenial),
     Owner(worth_query_execution::facade::product::WorthQueryProductBranchOwnerCleanupDenial),

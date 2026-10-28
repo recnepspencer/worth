@@ -3,7 +3,7 @@ use crate::execution::{denial::lease_denial, RelationalExecutionDenialCause as C
 use worth_execution::{ExecutionResultMemory, LeaseDenial};
 
 pub(crate) fn partition_ids_in_result_memory(
-    state: &(impl crate::storage::overlay::PartitionAccess + ?Sized),
+    state: &(impl crate::storage::overlay::CurrentPartitionAccess + ?Sized),
     memory: Option<&mut ExecutionResultMemory<'_>>,
 ) -> Result<(Vec<crate::identity::data::PartitionId>, u64), Cause> {
     use crate::storage::overlay::{PartitionIdMemory, PartitionIdsDenial};

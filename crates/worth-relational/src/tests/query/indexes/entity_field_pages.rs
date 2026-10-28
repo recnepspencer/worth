@@ -16,14 +16,17 @@ fn exact_posting_pages_resume_without_prefix_replay_and_reject_selector_or_gener
     ];
     expected.sort();
     let locator = aspect_field_locator(aspect_key("name"), field_key("name"));
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.pages".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.pages".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     let build = || {
         runtime.index_authority().build_for_commit(
             execution,
@@ -100,7 +103,8 @@ fn exact_posting_pages_resume_without_prefix_replay_and_reject_selector_or_gener
                 field_locator: locator.clone(),
             },
             branch_scoped: false,
-        });
+        })
+        .expect("index fixture has identity capacity");
     assert!(foreign_runtime
         .index_authority()
         .build_for_commit(

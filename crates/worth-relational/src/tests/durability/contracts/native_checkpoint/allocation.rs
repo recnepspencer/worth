@@ -27,12 +27,12 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let committed = create_entity_outcome(execution, &runtime, "native-custody-source");
     let head = runtime.history().branch_head(&BranchId("main".into()));
     let system = runtime
         .durability_authority()
-        .native_checkpoint(Policy::SystemAllocation)
+        .native_checkpoint(execution, Policy::SystemAllocation)
         .unwrap();
     let quote = u64::try_from(system.bytes().len()).unwrap();
     let authority = crate::tests::support::test_execution_authority();
@@ -42,7 +42,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     let zero = parent.child(request(0, CancellationToken::new())).unwrap();
     let Denial::Allocation(error) = runtime
         .durability_authority()
-        .native_checkpoint(Policy::Execution(&zero))
+        .native_checkpoint(
+            &worth_execution::ExecutionRequest::leased(&zero),
+            Policy::Execution(&zero),
+        )
         .unwrap_err()
     else {
         panic!("the encoded backing admission is the reached owner");
@@ -69,7 +72,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
     cancellation.cancel();
     let Denial::Allocation(error) = runtime
         .durability_authority()
-        .native_checkpoint(Policy::Execution(&stopped))
+        .native_checkpoint(
+            &worth_execution::ExecutionRequest::leased(&stopped),
+            Policy::Execution(&stopped),
+        )
         .unwrap_err()
     else {
         panic!("caller cancellation must remain typed");
@@ -84,7 +90,10 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
             .unwrap();
         let captured = runtime
             .durability_authority()
-            .native_checkpoint(Policy::Execution(&child))
+            .native_checkpoint(
+                &worth_execution::ExecutionRequest::leased(&child),
+                Policy::Execution(&child),
+            )
             .unwrap();
         assert_eq!(captured.bytes(), system.bytes());
         assert_eq!(captured.captured_sections(), system.captured_sections());
@@ -101,7 +110,8 @@ fn native_checkpoint_admits_exact_backing_retains_clones_and_restores_editable_t
             level: MemoryLimitLevel::Policy { ancestor: 0 }
         }
     );
-    let mut recovered = persisted_runtime_with_test_schema();
+    let mut recovered = durable_runtime_with_test_schema();
+    bind_durable_medium(&mut recovered, attached_test_medium(&runtime).attachment());
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
         .durability_recovery()

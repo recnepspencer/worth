@@ -90,3 +90,7 @@ impl PartialOrd for StructuralWalkKey {
         Some(self.cmp(other))
     }
 }
+
+#[cfg(test)]
+#[path = "key_ordering_tests.rs"]
+mod key_ordering_tests;

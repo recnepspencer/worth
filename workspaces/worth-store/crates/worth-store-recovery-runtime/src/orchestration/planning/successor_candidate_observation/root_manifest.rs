@@ -45,7 +45,11 @@ pub(super) fn read(
     pays_for(charge, generation);
     let artifact = RecordArtifactFile::RootManifest { generation };
     let source = read_artifact(discovery, artifact, format, charge, allowance)?;
-    if source.bytes().is_none() {
+    // An empty successor root is a creation whose first write never landed:
+    // a torn, unpublished candidate, not a root. Recovery plans as if it were
+    // absent; staging then completes it only from an exact prefix, so any
+    // other content is still refused as damage.
+    if source.bytes().is_none_or(<[u8]>::is_empty) {
         return Ok(None);
     }
     // Root admission decodes in place, then canonically re-encodes in bind.

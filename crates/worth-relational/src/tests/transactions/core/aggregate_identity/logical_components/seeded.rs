@@ -87,7 +87,7 @@ fn toggle(
             .unwrap();
         let edge = truth
             .relations()
-            .into_iter()
+            .iter()
             .find(|edge| {
                 edge.source == carrier
                     && edge.target == vertices[vertex]
@@ -196,7 +196,7 @@ fn seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_l
                 .unwrap()
                 .unwrap();
             let mut batch = WorkerIntentBatch::new("seeded-actual-retirement");
-            for relation in truth.relations().into_iter().filter(|edge| {
+            for relation in truth.relations().iter().filter(|edge| {
                 edge.source == retired
                     && [
                         INCIDENCE,
@@ -315,7 +315,7 @@ fn seeded_full_key_differential_fork_recovery_and_replay_keep_actual_names_and_l
         expected
     );
     assert_eq!(
-        runtime.history().commit_envelopes_snapshot(),
-        recovered.history().commit_envelopes_snapshot()
+        demand_canonical_history_snapshot(execution, &runtime),
+        demand_canonical_history_snapshot(execution, &recovered)
     );
 }

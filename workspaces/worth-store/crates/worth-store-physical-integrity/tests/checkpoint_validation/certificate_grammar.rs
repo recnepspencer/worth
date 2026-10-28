@@ -17,8 +17,35 @@ use super::support::{
     FOOTER_OFFSET,
 };
 
+#[path = "certificate_grammar/bounded_scrub.rs"]
+mod bounded_scrub;
+
 #[path = "certificate_grammar/prepared_retention.rs"]
 mod prepared_retention;
+
+#[test]
+fn encoded_no_release_footer_is_admitted() {
+    assert_certificate_sequence_admitted(&[no_release_frame()]);
+}
+
+#[test]
+fn checksum_valid_no_release_under_another_checkpoint_is_denied() {
+    let header = validate_header(&HEADER, header_scope_staged());
+    let other = worth_store_physical_format::PhysicalCheckpointIdentity::new(
+        identity().store_identity(),
+        std::num::NonZeroU64::new(8).unwrap(),
+    );
+    let marker = ReleaseCheckpointNoReleaseV1::new(
+        other,
+        header.source().root().generation(),
+        [1; 32],
+        0,
+        [0; 32],
+        [0; 32],
+    )
+    .unwrap();
+    assert_certificate_sequence_denied(&[release_frame(&marker.encode())]);
+}
 
 #[test]
 fn encoded_v2_accumulator_only_footer_is_admitted() {
@@ -266,9 +293,11 @@ fn assert_certificate_sequence_admitted(frames: &[Vec<u8>]) {
         CheckpointFooterIntegrityValidation::Intact(_)
     ));
     prepared_retention::assert_exact_prepared_retention(frames, &footer);
+    bounded_scrub::assert_admitted(frames, &footer);
 }
 
 fn assert_certificate_sequence_denied(frames: &[Vec<u8>]) {
+    bounded_scrub::assert_denied(frames, &FOOTER);
     let checkpoint = identity();
     let header = validate_header(&HEADER, header_scope_staged());
     let dirty = validate_dirty(&DIRTY_BASIS, dirty_scope(checkpoint));

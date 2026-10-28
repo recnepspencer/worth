@@ -166,6 +166,9 @@ fn witness_denial(cause: CorrectionWitnessDenial) -> Denial {
             Denial::RestoredSupport(Stop::CanonicalEvidenceUnavailable)
         }
         CorrectionWitnessDenial::Basis(cause) => Denial::Basis(cause),
+        CorrectionWitnessDenial::NativeRead(cause) => {
+            Denial::RestoredSupport(Stop::NativeRead(cause))
+        }
     }
 }
 

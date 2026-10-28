@@ -70,6 +70,7 @@ pub(super) fn derive(
     .release_custody_head_root(super::release_head::result_fields(base).0)
     .next_release_custody_head_block(super::release_head::result_fields(base).1)
     .tier_epoch_anchor(base.tier_epoch_anchor())
+    .record_anchors(base.record_anchors())
     .latest_blob_publication(base.latest_blob_publication())
     .latest_blob_quarantine(base.latest_blob_quarantine())
     .derived_family_directory(base.derived_family_directory())

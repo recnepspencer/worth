@@ -9,7 +9,7 @@ use phase::{assemble_authoritative_publication_phase, ArtifactAssemblyInput};
 use preparation::PublicationPreparation;
 
 pub(super) struct AssembledCommitExecution {
-    admitted: super::execution_admission::AdmittedCommitExecution,
+    admitted: super::execution_admission::AdmittedCommitState,
     selected_branch_state: crate::branch::SelectedRelationalBranchState,
     public_structural_summary: crate::transactions::data::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
@@ -17,7 +17,8 @@ pub(super) struct AssembledCommitExecution {
     version_id: crate::identity::data::VersionId,
     created_entities: crate::transactions::data::CommitCreatedEntityBindings,
     created_relations: crate::transactions::data::CommitCreatedRelationBindings,
-    record_allocations: crate::runtime::PendingRecordAllocations,
+    mutation_identities:
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     merge_parent_branches: Vec<crate::history::data::BranchId>,
     publication: PublicationPreparation,
@@ -31,7 +32,7 @@ impl AssembledCommitExecution {
     pub(super) fn into_parts(
         self,
     ) -> (
-        super::execution_admission::AdmittedCommitExecution,
+        super::execution_admission::AdmittedCommitState,
         crate::branch::SelectedRelationalBranchState,
         crate::transactions::data::CommitStructuralSummary,
         crate::storage::overlay::WorkingState,
@@ -39,7 +40,7 @@ impl AssembledCommitExecution {
         crate::identity::data::VersionId,
         crate::transactions::data::CommitCreatedEntityBindings,
         crate::transactions::data::CommitCreatedRelationBindings,
-        crate::runtime::PendingRecordAllocations,
+        crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         Vec<crate::history::data::BranchId>,
         PublicationPreparation,
@@ -56,7 +57,7 @@ impl AssembledCommitExecution {
             self.version_id,
             self.created_entities,
             self.created_relations,
-            self.record_allocations,
+            self.mutation_identities,
             self.history,
             self.merge_parent_branches,
             self.publication,
@@ -83,7 +84,7 @@ pub(super) fn assemble_commit_artifacts(
         effect,
         created_entities,
         created_relations,
-        record_allocations,
+        mutation_identities,
         history,
         merge_parent_branches,
         additional_diagnostics_entries,
@@ -107,7 +108,7 @@ pub(super) fn assemble_commit_artifacts(
             merge_parent_branches: &merge_parent_branches,
             merge_base_commits: &history.merge_base_commits,
             merged_plan,
-            record_allocations: record_allocations.canonical(),
+            record_allocations: mutation_identities.records.canonical(),
             strategy_commit_artifacts: strategy_artifacts,
             merge_execution_authority,
             schema_continuity: &schema_continuity,
@@ -128,7 +129,7 @@ pub(super) fn assemble_commit_artifacts(
         version_id,
         created_entities,
         created_relations,
-        record_allocations,
+        mutation_identities,
         history,
         merge_parent_branches,
         publication,

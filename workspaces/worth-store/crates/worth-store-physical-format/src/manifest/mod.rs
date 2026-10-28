@@ -20,6 +20,7 @@ mod physical_inventory_transcript;
 mod rebuild_source;
 mod reclaim_region;
 mod reclaimed_byte_interpretation;
+mod record_anchor;
 mod record_free_space_entry;
 mod release_custody_head;
 mod routing_tree_height;
@@ -79,6 +80,10 @@ pub use physical_inventory_transcript::{
 pub use rebuild_source::*;
 pub use reclaim_region::*;
 pub use reclaimed_byte_interpretation::*;
+pub use record_anchor::{
+    RecordAnchor, RecordAnchorAdvance, RecordAnchorAdvanceDenial, RecordAnchorName,
+    RecordAnchorTable, MAXIMUM_RECORD_ANCHORS, RECORD_ANCHOR_NAME_BYTES,
+};
 pub use record_free_space_entry::{
     InlinePageFreeFrontier, RecordAllocationClass, RecordFreeSpaceManifestEntry,
     RecordFreeSpaceRegion,

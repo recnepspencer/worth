@@ -82,7 +82,7 @@ impl VisibilityReadContext<'_> {
                 let read = match self.pin_read_capability(&plan.snapshot, &[], execution) {
                     Ok(read) => read,
                     Err(RelationalPinnedReadAdmissionDenial::Request(stop)) => {
-                        return Err(super::query_preparation::query_preparation_request_stop(
+                        return Err(super::query_preparation::query_preparation_read_stop(
                             stop, execution,
                         ));
                     }

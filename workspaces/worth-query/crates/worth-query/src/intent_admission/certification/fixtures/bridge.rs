@@ -9,7 +9,8 @@ use worth_runtime_bridge::facade::{
 pub(crate) fn certification_bridge() -> RuntimeBridge {
     let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .runtime_name("worth-query-certification-projection")
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = worth_query_execution::facade::integration::WorthQueryRelationalSourceOwner::new(
         runtime,
         "certification-projection",

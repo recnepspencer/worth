@@ -255,16 +255,16 @@ fn derive_registry_snapshot(
         );
     }
 
-    if let Some(required_posture) = request.required_migration_posture() {
-        if admitted.migration_posture() != required_posture {
-            return Err(
-                LayoutAdmissionDenial::MigrationPostureIncompatibleWithStrategy {
-                    family: admitted.family(),
-                    required_migration_posture: required_posture,
-                    admitted_migration_posture: admitted.migration_posture(),
-                },
-            );
-        }
+    if let Some(required_posture) = request.required_migration_posture()
+        && admitted.migration_posture() != required_posture
+    {
+        return Err(
+            LayoutAdmissionDenial::MigrationPostureIncompatibleWithStrategy {
+                family: admitted.family(),
+                required_migration_posture: required_posture,
+                admitted_migration_posture: admitted.migration_posture(),
+            },
+        );
     }
 
     require_materialization_compatibility(admitted, &request)?;

@@ -186,7 +186,8 @@ fn execute(
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = checked_lease(8 * 1024 * 1024, work_ceiling, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
@@ -245,3 +246,6 @@ fn checked_custom_rule_stops_mid_scan_when_work_is_exhausted() {
 
 #[path = "custom_checked_execution/preparation.rs"]
 mod preparation;
+
+mod cancellation;
+mod memory;

@@ -17,7 +17,8 @@ fn expired_candidate_summary_is_typed_and_cannot_retain_stale_scope() {
             max_prepared_candidates: Some(1),
             candidate_max_lifetime_millis: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let mut transaction = test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(

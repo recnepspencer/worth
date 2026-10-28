@@ -44,7 +44,7 @@ pub(super) fn verify(
     let covered_end = context.selection.covered_wal_end_exclusive();
     for index in 0..observation_count {
         let (range, observed, completed) = basis.sample.blob_manifest_residue_cleanups()[index];
-        let intent: BlobManifestResidueCleanup = observed.into();
+        let intent: BlobManifestResidueCleanup = observed;
         let selected_generation = context
             .selection
             .root()
@@ -121,7 +121,7 @@ pub(super) fn verify(
             ),
             _ => return Err(context.redo_block(basis.planning_counters(), None)),
         };
-        if !manifest_matches_intent(intent, &manifest, &manifest_bytes) {
+        if !manifest_matches_intent(intent, manifest, &manifest_bytes) {
             return Err(context.redo_block(basis.planning_counters(), None));
         }
         let allowed_reserved = match intent.proof() {
@@ -236,7 +236,7 @@ pub(super) fn verify(
         };
         if !custody_matches(
             intent,
-            &manifest,
+            manifest,
             declaration_record,
             &declaration,
             abandoned_record,
@@ -249,7 +249,7 @@ pub(super) fn verify(
             context = selected::verify_manifest_residue(
                 context,
                 basis,
-                &manifest,
+                manifest,
                 declaration_record,
                 intent.manifest_record(),
                 allowed_reserved,
@@ -331,8 +331,8 @@ fn verify_historical_result(
             if route.is_some() {
                 return Ok(false);
             }
-            if let Some(reserved) = intent.reserved_record() {
-                if historical_publication::find_route(
+            if let Some(reserved) = intent.reserved_record()
+                && historical_publication::find_route(
                     discovery,
                     root,
                     reserved.record(),
@@ -342,9 +342,8 @@ fn verify_historical_result(
                     scratch,
                 )?
                 .is_some()
-                {
-                    return Ok(false);
-                }
+            {
+                return Ok(false);
             }
             Ok(<[u8; 32]>::from(Sha256::digest(root.encode(format)))
                 == intent.candidate_root_sha256()

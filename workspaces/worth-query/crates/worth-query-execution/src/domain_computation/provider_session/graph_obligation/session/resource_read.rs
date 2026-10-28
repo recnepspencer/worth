@@ -55,7 +55,7 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Result<WorthQueryResourceReadCompletion, WorthQueryManagedGraphReadDenial> {
         execution
             .check_live()
-            .map_err(WorthQueryManagedGraphReadDenial::RequestStop)?;
+            .map_err(|cause| WorthQueryManagedGraphReadDenial::RequestStop(cause.into()))?;
         let WorthQueryGraphWorkBasis::ProductRead {
             intent: ProductReadIntent::Resource(contract),
             read,

@@ -263,6 +263,6 @@ impl RelationalMergeSupportInspectionRow {
 }
 
 fn row_digest(value: &impl Serialize) -> String {
-    let digest = Sha256::digest(rmp_serde::to_vec_named(value).expect("support row must encode"));
+    let digest = Sha256::digest(rmp_serde::to_vec_named(value).expect(/* Proof: The serialized value contains only closed native scalar, sequence, map and derived-Serialize record fields; encoding uses an in-memory Vec/hash writer, with no user serializer or fallible I/O. */ "support row must encode"));
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }

@@ -82,22 +82,34 @@ fn pending_roots_are_identity_ordered_and_result_limited_before_projection() {
 /// to its empty result with only a result limit: no caller supplies a work
 /// estimate or ceiling.
 #[test]
-fn guarded_frontier_reads_without_a_caller_work_ceiling() {
-    let fixture = over_budget_discovery_world_with_role(
-        "pending-guard-unbudgeted",
-        265,
-        CustomerRole::Approver,
-    );
-    let actor = fixture.authenticate();
-    let result = fixture
-        .world
-        .runtime
-        .query(queries::pending_payments())
-        .as_principal(&actor)
-        .controls(controls(1))
-        .execute()
-        .expect("the 265-account guarded frontier reads with no caller work ceiling");
-    assert!(result.rows().is_empty());
+fn empty_guarded_frontier_work_grows_at_most_linearly() {
+    let mut baseline = None;
+    for count in [16, 64, 265] {
+        let fixture = over_budget_discovery_world_with_role(
+            "pending-guard-scale",
+            count,
+            CustomerRole::Approver,
+        );
+        let actor = fixture.authenticate();
+        let result = fixture
+            .world
+            .runtime
+            .query(queries::pending_payments())
+            .as_principal(&actor)
+            .controls(controls(1))
+            .execute()
+            .expect("guarded discovery needs no caller work estimate");
+        assert!(result.rows().is_empty());
+        let inspection = result.receipt().inspect();
+        let work = inspection.ordinary_work_units();
+        assert!(work > 0);
+        assert!(inspection.terminal_resources_released());
+        let (base_count, base_work) = *baseline.get_or_insert((count, work));
+        assert!(
+            work * base_count <= base_work * count * 4,
+            "guarded-frontier work must remain linear with headroom: {count} accounts cost {work}, baseline {base_count} cost {base_work}"
+        );
+    }
 }
 
 fn controls(maximum_results: usize) -> BankReadControls {

@@ -9,5 +9,5 @@ pub use contract::{
     WorthQueryResourceFrameKind, WorthQueryResourceProviderFailure,
     WorthQueryResourceVerificationFailure, WorthQueryResourceVerifiedFrame,
 };
-pub(super) use ingress::{IngressAllocationDenial, IngressBacking, SealedIngressFrame};
+pub(super) use ingress::{IngressBacking, SealedIngressFrame};
 pub use ingress::{WorthQueryResourceIngressDenial, WorthQueryResourceIngressWriter};

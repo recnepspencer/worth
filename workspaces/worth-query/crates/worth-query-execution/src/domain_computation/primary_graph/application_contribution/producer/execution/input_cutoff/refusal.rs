@@ -14,11 +14,7 @@ pub(super) fn cutoff_basis_denial(
                 "producer input cutoff",
             )
         }
-        InputCutoffVerificationStop::Admission(
-            Admission::WorkExhausted { .. }
-            | Admission::WorkExhaustedWithoutRequirement { .. }
-            | Admission::WorkCounterOverflow,
-        )
+        InputCutoffVerificationStop::Admission(Admission::WorkCounterOverflow)
         | InputCutoffVerificationStop::WorkExhausted => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
@@ -46,9 +42,7 @@ pub(super) fn cutoff_admission_denial(
     use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
     denial(
         match stop {
-            Stop::WorkExhausted { .. }
-            | Stop::WorkExhaustedWithoutRequirement { .. }
-            | Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            Stop::WorkCounterOverflow => WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
             Stop::Interrupted(event) => {
                 WorthQueryOutputDemandDenialKind::of_interruption(event.interruption())
             }

@@ -142,10 +142,10 @@ impl RecoveredCheckpointCustodyEvidence {
         RecoveredCheckpointCustodyDenial,
     > {
         #[cfg(feature = "recovery-runtime-owner")]
-        if let Some(shared) = self.checkpoint_ownership.checkpoint() {
-            if shared.facts() == *facts {
-                return Ok(shared.stream());
-            }
+        if let Some(shared) = self.checkpoint_ownership.checkpoint()
+            && shared.facts() == *facts
+        {
+            return Ok(shared.stream());
         }
         let _ = facts;
         Err(RecoveredCheckpointCustodyDenial::SelectedCheckpointMismatch)

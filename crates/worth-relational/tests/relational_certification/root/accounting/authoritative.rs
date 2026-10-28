@@ -25,7 +25,7 @@ fn phase5_full_authoritative_accounting_deduplicates_one_shared_envelope_and_roo
         let branch_id = BranchId(branch_name.to_owned());
         world
             .runtime
-            .fork_branch(branch_id.clone(), source_basis)
+            .fork_branch(execution, branch_id.clone(), source_basis)
             .expect("fork retains the complete immutable owner allocation inventory");
         identities.push(
             world

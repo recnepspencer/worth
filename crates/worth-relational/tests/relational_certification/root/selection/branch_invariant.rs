@@ -56,7 +56,7 @@ fn supply_chain_child_commit_uses_child_root_after_main_advances() {
         .expect("main remains forkable");
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_observation)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_observation)
         .expect("storm fork shares the Supply Chain root");
 
     let main_commit = commit_relation(
@@ -156,7 +156,7 @@ fn supply_chain_child_custom_invariant_uses_child_selected_version() {
         .expect("main remains forkable");
     world
         .runtime
-        .fork_branch(BranchId("storm".to_owned()), source_observation)
+        .fork_branch(execution, BranchId("storm".to_owned()), source_observation)
         .expect("storm fork shares the Supply Chain root");
 
     let main_commit = commit_relation(

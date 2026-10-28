@@ -84,7 +84,12 @@ impl WorthQueryRuntimeBackendParts {
             });
         }
         let runtime = match self.relational_runtime.take() {
-            None => worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+            None => worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+                .build()
+                .map_err(|denial| WorthQueryRuntimeError::InvariantRegistration {
+                    stage: "relational_product_bridge_construction",
+                    message: denial.to_string(),
+                })?,
             Some(super::relational_owner::WorthQueryBackendRelationalOwner::Unpublished(
                 runtime,
             )) => runtime,

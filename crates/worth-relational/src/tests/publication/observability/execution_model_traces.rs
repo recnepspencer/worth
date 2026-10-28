@@ -15,14 +15,16 @@ fn aspect_traces_and_diagnostics_are_stable_across_serial_and_leased_preparation
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .diagnostics(serial_diagnostics.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let staged = RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(declared_aspect_schema_registry(
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
         .diagnostics(serial_diagnostics.clone())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let serial_outcome = create_entity_outcome(execution, &serial, "trace-stable");
     let staged_outcome = create_entity_outcome(
@@ -89,7 +91,8 @@ fn geometry_operational_hot_path_policy_suppresses_detailed_traces() {
         .profile(RelationalRuntimeProfile::GeometryKernel)
         .schema_registry(test_schema_registry())
         .diagnostics(RelationalDiagnosticsProfile::geometry_operational_hot_path())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let _ = create_entity_outcome(execution, &runtime, "geometry-hot-policy");
     let diagnostics = runtime.publication().diagnostics();
@@ -113,7 +116,8 @@ fn chip_rich_certification_policy_keeps_detailed_traces_available() {
         .profile(RelationalRuntimeProfile::ChipSimulation)
         .schema_registry(test_schema_registry())
         .diagnostics(RelationalDiagnosticsProfile::chip_rich_certification())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let _ = create_entity_outcome(execution, &runtime, "chip-rich-policy");
     let diagnostics = runtime.publication().diagnostics();

@@ -41,6 +41,7 @@ pub(super) fn execute(
         checkpoint(context, scope, work, 1)?;
         discover(
             projection,
+            execution,
             scope,
             root,
             0,
@@ -102,8 +103,8 @@ pub(super) fn execute(
                                 .ok_or(Denial::EndpointUnavailable)?,
                         )?;
                         let record = projection
-                            .exact_relation_metadata(id)
-                            .map_err(|_| Denial::EndpointUnavailable)?;
+                            .read_exact_relation_metadata(execution, id)
+                            .map_err(borrowed_read_denial)?;
                         if record.is_some() {
                             increment(&mut reads.relation_records)?;
                             #[cfg(test)]
@@ -126,19 +127,20 @@ pub(super) fn execute(
                             return Err(Denial::EndpointUnavailable);
                         }
                         // Emit physical self/back/diamond edges even if discovery deduplicates.
-                        if let std::collections::btree_map::Entry::Vacant(e) =
+                        if let std::collections::btree_map::Entry::Vacant(entry) =
                             relations.entry(record.relation_id)
                         {
                             memory.claim_scratch(memory::tree_entry::<
                                 RelationId,
                                 RelationalRelationMetadata,
                             >()?)?;
-                            e.insert(record);
+                            entry.insert(record);
                         }
                         if !frontier.contains(&neighbor) {
                             let next = distance.checked_add(1).ok_or(Denial::DistanceOverflow)?;
                             discover(
                                 projection,
+                                execution,
                                 scope,
                                 neighbor,
                                 next,
@@ -190,6 +192,7 @@ pub(super) fn execute(
 
 fn discover(
     projection: &VisibilityProjectionView,
+    execution: &ExecutionRequest<'_, '_>,
     scope: &PinnedStructuralWalkScope<'_>,
     id: EntityId,
     distance: usize,
@@ -212,8 +215,8 @@ fn discover(
             .ok_or(Denial::EndpointUnavailable)?,
     )?;
     let entity = projection
-        .with_exact_entity_state(id, |metadata, _| metadata)
-        .map_err(|_| Denial::EndpointUnavailable)?;
+        .read_exact_entity_state(execution, id, |metadata, _| metadata)
+        .map_err(borrowed_read_denial)?;
     if entity.is_some() {
         increment(&mut reads.entity_records)?;
         #[cfg(test)]
@@ -271,5 +274,15 @@ fn increment(counter: &mut usize) -> Result<(), Denial> {
 fn observe(scope: &PinnedStructuralWalkScope<'_>, event: super::PinnedWalkEventForTest) {
     if let Some(observer) = scope.observer {
         observer(event);
+    }
+}
+
+fn borrowed_read_denial(
+    denial: crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial,
+) -> Denial {
+    use crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial as Read;
+    match denial {
+        Read::Execution(cause) => Denial::Read(cause),
+        Read::ExactBasisRequired => Denial::EndpointUnavailable,
     }
 }

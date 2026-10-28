@@ -149,10 +149,6 @@ fn source_fact_count<Query>(
 }
 
 impl<Query> PreparedSourceFactMaterialization<'_, Query> {
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(in crate::domain_computation::primary_graph::application_query) fn into_facts(
         self,
         control: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl<'_, '_>,

@@ -66,7 +66,6 @@ fn borrowed_checkpoint_denies_payload_before_read_then_retains_exact_native_back
     assert_eq!(observed.observed().bytes(), Some(input.as_slice()));
     assert_eq!(observed.charged_bytes(), 8192);
     assert_eq!(observed.owned_heap_bytes(), Some(8192));
-    drop(observation);
     drop(window);
     drop(coordination);
     runtime.close();
@@ -170,7 +169,6 @@ fn borrowed_head_reread_denies_native_address_backing_then_retries_and_retains_b
         ports.counters().active_operation_bytes_for(Scope::Recovery),
         75
     );
-    drop(observation);
     drop(window);
     drop(coordination);
     runtime.close();

@@ -13,20 +13,20 @@ proptest! {
         for (key, value) in actions {
             let retained = index.clone();
             let before = retained.digest();
-            index.set(key, value);
+            index.set(key, value).unwrap();
             if let Some(value) = value { expected.insert(key, value); } else { expected.remove(&key); }
             prop_assert_eq!(index.digest(), reference(&expected.iter().map(|(&k, &v)| (k,v)).collect::<Vec<_>>()));
             prop_assert_eq!(retained.digest(), before);
         }
         let mut reversed = DigestIndex::default();
-        for (&key, &value) in expected.iter().rev() { reversed.set(key, Some(value)); }
+        for (&key, &value) in expected.iter().rev() { reversed.set(key, Some(value)).unwrap(); }
         prop_assert_eq!(reversed.digest(), index.digest());
         let ordered = expected.iter().map(|(&key, &value)| (key, value)).collect::<Vec<_>>();
         let bulk = DigestIndex::from_sorted_entries(&ordered);
         prop_assert_eq!(bulk.digest(), reference(&ordered));
         prop_assert_eq!(bulk.digest(), index.digest());
         prop_assert_eq!(bulk.allocation_bytes(), index.allocation_bytes());
-        for key in expected.keys() { index.set(*key, None); }
+        for key in expected.keys() { index.set(*key, None).unwrap(); }
         prop_assert_eq!(index.digest(), reference(&[]));
         prop_assert_eq!(index.allocation_bytes(), 0);
     }

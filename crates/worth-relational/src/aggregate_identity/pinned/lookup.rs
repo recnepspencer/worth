@@ -20,10 +20,10 @@ pub(super) fn find(
         let RelationalPartitionVisit::Partition(partition_id) = event else {
             return Ok(());
         };
-        let Some(partition) = view.state().get_partition(partition_id) else {
+        let Some(partition) = view.state().get_current_partition(partition_id) else {
             return work.invalid(PlanDenial::InvalidStoredIdentity);
         };
-        partition.entity_arena.try_visit_occupied(|event| {
+        partition.entity_arena().try_visit_occupied(|event| {
             match event {
                 RecordSlotVisit::Navigation(units) => {
                     work.checkpoint(units)?;

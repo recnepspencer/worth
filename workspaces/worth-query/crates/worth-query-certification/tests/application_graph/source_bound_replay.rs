@@ -14,23 +14,23 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_query_host::facade::{
-    application_contribution::{
-        WorthQueryAdvancementDenial as Advancement, WorthQueryApplicationProducerProvider,
-        WorthQueryManagedComputationInterruption as Interruption,
-        WorthQueryManagedComputationResourceDenial as Resource, WorthQueryMemoryLimitLevel,
-    },
+    application_contribution::WorthQueryApplicationProducerProvider,
     application_entry::{
         WorthQueryApplicationMutationOutcome as Outcome, WorthQueryApplicationRequestExt,
         WorthQueryApplicationRequestMutationDenial as Denial,
     },
-    primary_graph::WorthQueryMutationHandlerWork,
-    runtime::{ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseRequest},
+    primary_graph::{
+        MutationHandlerExecutionDenial, WorthQueryInvariantProjectionDenialKind as InvariantKind,
+        WorthQueryMutationHandlerWork, WorthQueryOperationProjectionDenialKind as ProjectionKind,
+    },
+    runtime::{
+        ExecutionAllocationDenialKind, ExecutionAllocationPolicy as Policy, LeaseDenial,
+        LeaseRequest,
+    },
 };
 
 #[path = "source_bound_replay/program.rs"]
 mod program;
-#[path = "source_bound_replay/recovery.rs"]
-mod recovery;
 
 #[test]
 fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocation() {
@@ -58,28 +58,17 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let authority =
         worth_query_host::facade::primary_graph::query_test_execution_authority_for_test();
     let token = worth_query_host::facade::runtime::CancellationSource::new();
-    let lease = |memory, cancellation| {
-        authority
-            .request_lease(LeaseRequest {
-                policy: ExecutionRequestPolicy::new(
-                    ExecutionPosture::Serial,
-                    DeterminismContract::CanonicalBitwise,
-                    // The lease funds the whole call, so its work admits the handler.
-                    ExecutionBudget::new(
-                        NonZeroUsize::new(1).unwrap(),
-                        Some(memory),
-                        Some(16_000_000),
-                    ),
-                ),
-                deadline: None,
-                cancellation,
-            })
-            .unwrap()
-    };
-    let zero = lease(0, token.token());
-    let stopping = worth_query_host::facade::runtime::CancellationSource::new();
-    let stopped = lease(16 * 1024 * 1024, stopping.token());
-    stopping.cancel();
+    let zero = authority
+        .request_lease(LeaseRequest {
+            policy: ExecutionRequestPolicy::new(
+                ExecutionPosture::Serial,
+                DeterminismContract::CanonicalBitwise,
+                ExecutionBudget::new(NonZeroUsize::new(1).unwrap(), Some(0), Some(1)),
+            ),
+            deadline: None,
+            cancellation: token.token(),
+        })
+        .unwrap();
     let host = publish(
         program::validated_program(),
         worth_query_host::facade::application_installation::WorthQueryApplicationProgramRoster::new()
@@ -110,52 +99,70 @@ fn source_bound_recorded_retry_preserves_checked_identity_before_fresh_allocatio
     let source = observed.observed_sources()[0].clone();
     let initial = observe_head(runtime, branch);
     let fresh_key = 0xb0ad_0001;
-    macro_rules! fresh {
-        ($lease:expr) => {
-            runtime
+    let (denial, fresh_work) = runtime
+        .with_application_advancement(&scope, |phase| {
+            let zero = crate::test_request_policy::memory_child(
+                phase
+                    .checked_execution_request_for(runtime.product_runtime())
+                    .unwrap(),
+                0,
+            );
+            let mut request = runtime
                 .request(&principal, &scope)
                 .on_branch(branch)
                 .advanced()
                 .mutate(input.clone())
                 .expect_source(source.clone())
-                .idempotency(&fresh_key)
-                .execute_in_program_report(&host, Policy::Execution($lease))
-                .into_parts()
-        };
-    }
-    // A zero lease cannot open the call it would fund; its quote is the call's
-    // own admission, refused before any read.
-    let (unopened, unopened_work) = fresh!(&zero);
-    let Some(Denial::ExecutionRequest(Advancement::Resource(Resource::MemoryLimit {
-        requested: admission,
-        admitted: 0,
-        level: WorthQueryMemoryLimitLevel::Policy,
-    }))) = unopened.err()
-    else {
-        panic!("the call's own admission refuses first")
-    };
-    assert!(admission > 0);
-    assert_eq!(unopened_work, WorthQueryMutationHandlerWork::NotStarted);
-    // A stopped lease interrupts the call it would fund, at its opening.
-    let (interrupted, interrupted_work) = fresh!(&stopped);
-    assert!(
-        matches!(
-            interrupted,
-            Err(Denial::ExecutionRequest(Advancement::Interrupted(
-                Interruption::Cancelled
-            )))
-        ),
-        "{interrupted:?}"
+                .idempotency(&fresh_key);
+            let (answer, work) = request
+                .prepare_in_program_report_in_advancement(&phase, &host, Policy::Execution(&zero))
+                .into_parts();
+            let cause = answer
+                .err()
+                .expect("fresh source-bound payload admission must refuse");
+            let Denial::Handler(MutationHandlerExecutionDenial::Projection(denial)) = cause else {
+                panic!("unexpected source-bound owner: {cause:?}");
+            };
+            (denial, work)
+        })
+        .unwrap();
+    assert_eq!(
+        denial.kind(),
+        ProjectionKind::InvariantAdmission(InvariantKind::SourceRetentionDenied)
     );
-    assert_eq!(interrupted_work, WorthQueryMutationHandlerWork::NotStarted);
-    // Neither refusal published or charged its lease.
+    let invariant = denial
+        .invariant_denial()
+        .expect("original invariant refusal");
+    assert_eq!(invariant.kind(), InvariantKind::SourceRetentionDenied);
+    let allocation = invariant.allocation_denial().expect("exact lower cause");
+    assert_eq!(denial.allocation_denial(), Some(allocation));
+    assert_eq!(
+        allocation.kind(),
+        ExecutionAllocationDenialKind::Lease(LeaseDenial::MemoryExhausted(
+            worth_query_host::facade::runtime::MemoryLimitDenial::Capacity {
+                requested: 38,
+                admitted: 0,
+                level: worth_query_host::facade::runtime::MemoryLimitLevel::Policy { ancestor: 0 }
+            }
+        ))
+    );
+    // The same actual Document identity predicate as the ordinary mutation control.
+    assert_eq!(allocation.requested_payload_bytes(), Some(38));
+    let WorthQueryMutationHandlerWork::Captured(work) = fresh_work else {
+        panic!("the real decision projection executed before source retention refused");
+    };
+    assert!(work.handler_contacted());
+    let projection = work.projection_work();
+    assert_eq!(denial.projection_work(), Some(projection));
+    assert_eq!(invariant.projection_work(), Some(projection));
+    assert_eq!(projection.equality_lookups(), 1);
+    assert_eq!(projection.index_candidates_examined(), 1);
+    assert_eq!(projection.field_reads(), 0);
     assert_eq!(
         observe_head(runtime, branch).selected_commit(),
         initial.selected_commit()
     );
     assert_eq!(read_retention(runtime, branch), SEED_RETENTION);
-    assert_eq!(zero.charged_memory_bytes(), 0);
-    assert_eq!(stopped.charged_memory_bytes(), 0);
 
     let committed_key = 0xb0ad_0003;
     let outcome = runtime

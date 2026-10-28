@@ -100,7 +100,8 @@ fn native_advisory_continues_custom_preparation_and_harness_audit_collects_even_
                 })
                 .unwrap(),
             )
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         // The ordinary one-intent node bootstrap satisfies the same limit.
         let fixture = DagFixture::from_runtime(runtime, 3);
         let before = fixture.head();

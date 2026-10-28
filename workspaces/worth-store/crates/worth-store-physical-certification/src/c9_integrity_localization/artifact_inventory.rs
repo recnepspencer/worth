@@ -2,6 +2,7 @@
 //! decoder is used to derive an expected outcome; canonical decoders are confined to
 //! reading this immutable lawful baseline's published child coordinates.
 use super::ClosedStoreProcessManifest;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use worth_store::physical_runtime::PhysicalIntegrityScrubTarget;
 use worth_store_physical_format::{
@@ -52,6 +53,7 @@ pub(super) struct ArtifactInventory {
     pub(super) format: PhysicalRecordFormatDeclaration,
     root: PathBuf,
     manifest: ClosedStoreProcessManifest,
+    checkpoint_certificates: BTreeMap<u64, PhysicalByteRange>,
 }
 
 impl ArtifactInventory {
@@ -82,6 +84,7 @@ impl ArtifactInventory {
             format,
             root: root.to_owned(),
             manifest,
+            checkpoint_certificates: BTreeMap::new(),
         };
         for (file, family) in [
             (RecordArtifactFile::BootstrapCatalog, "bootstrap_catalog"),
@@ -119,6 +122,22 @@ impl ArtifactInventory {
         inventory.root_manifest(previous);
         streams::collect(&mut inventory);
         inventory
+    }
+
+    pub(super) fn with_checkpoint_context(
+        &self,
+        target: PhysicalIntegrityScrubTarget,
+    ) -> PhysicalIntegrityScrubTarget {
+        if target.scope().artifact_family()
+            == worth_store_physical_format::integrity_declarations::PhysicalIntegrityArtifactFamily::CheckpointFooter
+            && let Some(identity) = target.scope().checkpoint_identity()
+            && let Some(certificates) = self.checkpoint_certificates.get(&identity.sequence().get())
+        {
+            return PhysicalIntegrityScrubTarget::checkpoint_footer_with_certificates(
+                identity, target.scope().byte_range(), *certificates,
+            ).unwrap();
+        }
+        target
     }
 
     fn root_manifest(&mut self, root: DurablePhysicalRootManifest) {

@@ -8,7 +8,7 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, "immutable-parent-name");
     let entity = changed_entities(&anchor)[0];
     let branch = create_branch_from_main(&runtime, "lagging-scoped-fork");
@@ -38,7 +38,7 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
                            source: &RelationalCommitReceipt,
                            current: &RelationalCommitReceipt,
                            expected_name: &str| {
-        let mut reopened = persisted_runtime_with_test_schema();
+        let mut reopened = durable_runtime_with_test_schema();
         reopened
             .durability_recovery()
             .recover(execution, plan)
@@ -56,14 +56,19 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
         assert!(
             reopened
                 .index_access()
-                .published_generation_for_observation(index.index_id, &basis.observation())
+                .read_published_generation_for_observation(
+                    execution,
+                    index.index_id,
+                    &basis.observation()
+                )
+                .unwrap()
                 .is_none(),
             "retained lagging cache is not current index authority"
         );
         let read = reopened
             .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
             .unwrap()
-            .read_entity(entity)
+            .read_entity(execution, entity)
             .unwrap();
         assert_eq!(
             read.base().and_then(read_entity_name),
@@ -80,18 +85,14 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     );
     assert_eq!(first.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &first);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     assert_reopened(
-        runtime
-            .durability()
-            .recovery_plan(
-                execution,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
-            .unwrap(),
+        crate::tests::support::recovery_plan_for(
+            execution,
+            &runtime,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap(),
         inherited_generation,
         &anchor.commit,
         &first.commit,
@@ -111,18 +112,14 @@ fn lagging_inherited_and_own_stream_scoped_generations_survive_checkpoint_reopen
     );
     assert_eq!(second.commit.branch_id, branch);
     release_test_commit_snapshot(&runtime, &second);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
     assert_reopened(
-        runtime
-            .durability()
-            .recovery_plan(
-                execution,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
-            .unwrap(),
+        crate::tests::support::recovery_plan_for(
+            execution,
+            &runtime,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap(),
         own_generation,
         &first.commit,
         &second.commit,

@@ -7,10 +7,13 @@ fn signal_fork_child(
     source: &ProductBranchObservation,
     name: &str,
 ) -> ProductBranchObservation {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
     let RuntimeWorldBranchCreationOutcome::Performed(child) = court
         .world
         .branch_port()
         .create_product_branch(
+            &execution,
             source.clone(),
             ProductBranchCreationIntent::from_source(
                 name,

@@ -216,7 +216,7 @@ fn an_ordinary_read_is_rechecked_after_an_earlier_member_writes_it() {
     let _guard = checkpoint_recovery_test_guard();
     if let Ok(workers) = std::env::var("WORTH_ORDINARY_READ_WIDTH") {
         println!(
-            "WORTH_ORDINARY_READ_HISTORY:{:?}",
+            "\nWORTH_ORDINARY_READ_HISTORY:{:?}",
             run(workers.parse().unwrap(), false)
         );
         return;

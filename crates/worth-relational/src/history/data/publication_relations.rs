@@ -6,8 +6,8 @@ use crate::branch::RelationalBranchRoot;
 use crate::history::data::CommitId;
 use crate::identity::data::{RelationId, VersionId};
 use crate::storage::overlay::{
-    relation_partition_source_for_slot, OverlayStateView, PartitionAccess, PartitionCloneMode,
-    WorkingState,
+    current_relation_partition_source_for_slot, CurrentPartitionAccess, OverlayStateView,
+    PartitionCloneMode, WorkingState,
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
@@ -29,14 +29,14 @@ pub(super) fn validate(
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<(), Stop> {
     let overlay;
-    let state: &dyn PartitionAccess = match candidate {
+    let state: &dyn CurrentPartitionAccess = match candidate {
         Some(candidate) => {
             overlay = OverlayStateView::new(root, candidate);
             &overlay
         }
         None => root,
     };
-    let incidence: &dyn PartitionAccess =
+    let incidence: &dyn CurrentPartitionAccess =
         if candidate.is_some_and(|state| state.clone_mode == PartitionCloneMode::EntityOnly) {
             root
         } else {
@@ -61,18 +61,20 @@ pub(super) fn validate(
         {
             return Err("claimed publication relation has no output endpoint".into());
         }
-        let (_, partition) =
-            relation_partition_source_for_slot(state, entry.id.partition_id, entry.id.slot_index())
-                .ok_or("publication relation partition absent")?;
+        let (_, partition) = current_relation_partition_source_for_slot(
+            state,
+            entry.id.partition_id,
+            entry.id.slot_index(),
+        )
+        .ok_or("publication relation partition absent")?;
         let row = partition
-            .relation_arena
+            .relation_arena()
             .get(&entry.id)
             .filter(|row| row.is_live())
             .ok_or("publication relation generation absent or retired")?;
         let write = partition
-            .relation_arena
-            .metadata_history_at(entry.id.slot_index())
-            .and_then(|h| h.get(h.len().checked_sub(1)?))
+            .relation_arena()
+            .current_metadata_at(entry.id.slot_index())
             .map(|m| m.effective_at);
         if row.kind_id() != Some(entry.kind)
             || !write

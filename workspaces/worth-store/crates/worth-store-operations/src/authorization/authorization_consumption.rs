@@ -202,16 +202,15 @@ fn find_consumption(
                 expires_at,
                 ..
             } = record.kind()
+                && *observed == authorization_identity
             {
-                if *observed == authorization_identity {
-                    found = Some(ExistingConsumption {
-                        operation_id: record.operation_id().clone(),
-                        plan_fingerprint: *plan_fingerprint,
-                        generation: raw.generation(),
-                        replay_same_operation_identity: *replay_same_operation_identity,
-                        expires_at: *expires_at,
-                    });
-                }
+                found = Some(ExistingConsumption {
+                    operation_id: record.operation_id().clone(),
+                    plan_fingerprint: *plan_fingerprint,
+                    generation: raw.generation(),
+                    replay_same_operation_identity: *replay_same_operation_identity,
+                    expires_at: *expires_at,
+                });
             }
         })
         .map_err(AuthorizationConsumptionDenial::DamagedControlState)?;

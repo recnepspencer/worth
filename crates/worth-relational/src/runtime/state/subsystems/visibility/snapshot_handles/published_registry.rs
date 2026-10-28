@@ -42,10 +42,12 @@ impl PublishedSnapshotHandleRegistry {
         let mut entries = self.lock();
         let version_id = binding.version_id;
         assert!(
+            /* Proof: Published insertion receives a reserved snapshot slot after one authorized commit settlement. Snapshot ids come from the shared checked non-wrapping allocator; each commit version has one settlement executor and live version allocation is unique. Recovery does not insert published snapshot handles. */
             !entries.by_id.contains_key(&snapshot_id),
             "snapshot identity allocator collided with a live published handle"
         );
         assert!(
+            /* Proof: Published insertion receives a reserved snapshot slot after one authorized commit settlement. Snapshot ids come from the shared checked non-wrapping allocator; each commit version has one settlement executor and live version allocation is unique. Recovery does not insert published snapshot handles. */
             !entries.by_version.contains_key(&version_id),
             "one published snapshot already owns this exact version"
         );
@@ -53,8 +55,14 @@ impl PublishedSnapshotHandleRegistry {
         entries.mutations = entries.mutations.saturating_add(2);
         let previous_binding = entries.by_id.insert(snapshot_id, binding);
         let previous_snapshot = entries.by_version.insert(version_id, snapshot_id);
-        debug_assert!(previous_binding.is_none());
-        debug_assert!(previous_snapshot.is_none());
+        debug_assert!(
+            /* Proof: Published insertion receives a reserved snapshot slot after one authorized commit settlement. Snapshot ids come from the shared checked non-wrapping allocator; each commit version has one settlement executor and live version allocation is unique. Recovery does not insert published snapshot handles. */
+            previous_binding.is_none()
+        );
+        debug_assert!(
+            /* Proof: Published insertion receives a reserved snapshot slot after one authorized commit settlement. Snapshot ids come from the shared checked non-wrapping allocator; each commit version has one settlement executor and live version allocation is unique. Recovery does not insert published snapshot handles. */
+            previous_snapshot.is_none()
+        );
     }
 
     pub(super) fn remove(&self, snapshot_id: SnapshotId) -> Option<SnapshotHandleBinding> {

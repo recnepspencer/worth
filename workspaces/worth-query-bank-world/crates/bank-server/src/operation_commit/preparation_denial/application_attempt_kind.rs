@@ -1,0 +1,258 @@
+//! Exhaustive projection from Query attempt categories to Bank categories.
+use super::{BankApplicationAttemptDenialKind, WorthQueryApplicationAttemptDenialKind};
+
+pub(super) const fn application_attempt_kind(
+    kind: WorthQueryApplicationAttemptDenialKind,
+) -> BankApplicationAttemptDenialKind {
+    use WorthQueryApplicationAttemptDenialKind as Query;
+    match kind {
+        Query::ValueDecode(cause) => BankApplicationAttemptDenialKind::ValueDecode(cause),
+        Query::ForeignPhase => BankApplicationAttemptDenialKind::ForeignPhase,
+        Query::StorageUnavailable => BankApplicationAttemptDenialKind::StorageUnavailable,
+        Query::ExecutionRequest(cause) => BankApplicationAttemptDenialKind::ExecutionRequest(cause),
+        Query::Cancelled => BankApplicationAttemptDenialKind::Cancelled,
+        Query::DeadlineExceeded => BankApplicationAttemptDenialKind::DeadlineExceeded,
+        Query::ForeignApplication => BankApplicationAttemptDenialKind::ForeignApplication,
+        Query::ProjectionAdmissionMismatch => {
+            BankApplicationAttemptDenialKind::ProjectionAdmissionMismatch
+        }
+        Query::CurrentAuthorityDenied => BankApplicationAttemptDenialKind::CurrentAuthorityDenied,
+        Query::CorrectionCaptureDenied => BankApplicationAttemptDenialKind::CorrectionCaptureDenied,
+        Query::SourceDisclosureCaptureDenied => {
+            BankApplicationAttemptDenialKind::SourceDisclosureCaptureDenied
+        }
+        Query::OutsideRealizedReadScope => {
+            BankApplicationAttemptDenialKind::OutsideRealizedReadScope
+        }
+        Query::UndeclaredDecisionRead => BankApplicationAttemptDenialKind::UndeclaredDecisionRead,
+        Query::StaleEntityIdentity => BankApplicationAttemptDenialKind::StaleEntityIdentity,
+        Query::MissingAuthoritativeFact => {
+            BankApplicationAttemptDenialKind::MissingAuthoritativeFact
+        }
+        Query::InvalidAuthoritativeValue => {
+            BankApplicationAttemptDenialKind::InvalidAuthoritativeValue
+        }
+        Query::IncompleteDecisionReadSet => {
+            BankApplicationAttemptDenialKind::IncompleteDecisionReadSet
+        }
+        Query::DecisionDependencyMismatch => {
+            BankApplicationAttemptDenialKind::DecisionDependencyMismatch
+        }
+        Query::DecisionFactBudgetExceeded => {
+            BankApplicationAttemptDenialKind::DecisionFactBudgetExceeded
+        }
+        Query::AllocationDenied => BankApplicationAttemptDenialKind::AllocationDenied,
+        Query::RetainedSourceStorageDenied => {
+            BankApplicationAttemptDenialKind::RetainedSourceStorageDenied
+        }
+        Query::MutationPreconditionMismatch => {
+            BankApplicationAttemptDenialKind::MutationPreconditionMismatch
+        }
+        Query::SourceRetired => BankApplicationAttemptDenialKind::SourceRetired,
+        Query::SourceChanged => BankApplicationAttemptDenialKind::SourceChanged,
+        Query::AmbiguousRelation => BankApplicationAttemptDenialKind::AmbiguousRelation,
+        Query::UndeclaredEffect => BankApplicationAttemptDenialKind::UndeclaredEffect,
+        Query::InvalidEffectValue => BankApplicationAttemptDenialKind::InvalidEffectValue,
+        Query::ForeignEffectTarget => BankApplicationAttemptDenialKind::ForeignEffectTarget,
+        Query::InvalidOutputRole => BankApplicationAttemptDenialKind::InvalidOutputRole,
+        Query::ForeignOutputRole => BankApplicationAttemptDenialKind::ForeignOutputRole,
+        Query::UndeclaredOutputRole => BankApplicationAttemptDenialKind::UndeclaredOutputRole,
+        Query::MissingOutputRole => BankApplicationAttemptDenialKind::MissingOutputRole,
+        Query::DuplicateOutputRole => BankApplicationAttemptDenialKind::DuplicateOutputRole,
+        Query::OutputRoleEntityMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleEntityMismatch
+        }
+        Query::OutputRoleActionMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleActionMismatch
+        }
+        Query::OutputRoleCardinalityMismatch => {
+            BankApplicationAttemptDenialKind::OutputRoleCardinalityMismatch
+        }
+        Query::DuplicateEffectKey => BankApplicationAttemptDenialKind::DuplicateEffectKey,
+        Query::CandidateCapacityExceeded => {
+            BankApplicationAttemptDenialKind::CandidateCapacityExceeded
+        }
+        Query::ExternalEffectPayloadProjectionRejected => {
+            BankApplicationAttemptDenialKind::ExternalEffectPayloadProjectionRejected
+        }
+        Query::ForeignConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::ForeignConditionalDefinitionChange
+        }
+        Query::DuplicateConditionalDefinitionChange => {
+            BankApplicationAttemptDenialKind::DuplicateConditionalDefinitionChange
+        }
+        Query::IncompleteEffectBasis => BankApplicationAttemptDenialKind::IncompleteEffectBasis,
+        Query::UniqueValueTaken => BankApplicationAttemptDenialKind::UniqueValueTaken,
+        Query::UniqueIndexUnavailable => BankApplicationAttemptDenialKind::UniqueIndexUnavailable,
+        Query::DelegationActivationRequired => {
+            BankApplicationAttemptDenialKind::DelegationActivationRequired
+        }
+        Query::DelegationActivationProgramMismatch => {
+            BankApplicationAttemptDenialKind::DelegationActivationProgramMismatch
+        }
+        Query::CapabilityRevocationRequired => {
+            BankApplicationAttemptDenialKind::CapabilityRevocationRequired
+        }
+        Query::CapabilityRevocationProgramMismatch => {
+            BankApplicationAttemptDenialKind::CapabilityRevocationProgramMismatch
+        }
+        Query::ElevationTransitionRequired => {
+            BankApplicationAttemptDenialKind::ElevationTransitionRequired
+        }
+        Query::ElevationRequestProgramMismatch => {
+            BankApplicationAttemptDenialKind::ElevationRequestProgramMismatch
+        }
+        Query::ElevationApprovalProgramMismatch => {
+            BankApplicationAttemptDenialKind::ElevationApprovalProgramMismatch
+        }
+        Query::ElevationCloseProgramMismatch => {
+            BankApplicationAttemptDenialKind::ElevationCloseProgramMismatch
+        }
+        Query::MandatoryReviewProgramMismatch => {
+            BankApplicationAttemptDenialKind::MandatoryReviewProgramMismatch
+        }
+        Query::WorkflowDefinitionAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionAffinityMismatch
+        }
+        Query::WorkflowDefinitionAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionAuthorityMismatch
+        }
+        Query::WorkflowDefinitionIntentIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionIntentIdentityUnavailable
+        }
+        Query::WorkflowLineageUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowLineageUnavailable
+        }
+        Query::WorkflowDefinitionCompilationUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionCompilationUnavailable
+        }
+        Query::WorkflowDefinitionMissingOperationInput => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionMissingOperationInput
+        }
+        Query::CapturedOperationInputsNotSupported => {
+            BankApplicationAttemptDenialKind::CapturedOperationInputsNotSupported
+        }
+        Query::WorkflowDefinitionSuperseded => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
+        }
+        Query::WorkflowDefinitionRetired => {
+            BankApplicationAttemptDenialKind::WorkflowDefinitionRetired
+        }
+        Query::WorkflowInstanceAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch
+        }
+        Query::WorkflowInstanceAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch
+        }
+        Query::WorkflowInstanceNotCompleted => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceNotCompleted
+        }
+        Query::WorkflowInstanceAlreadySucceeded => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceAlreadySucceeded
+        }
+        Query::WorkflowPredecessorOutputUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowPredecessorOutputUnavailable
+        }
+        Query::WorkflowPredecessorOutputMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowPredecessorOutputMismatch
+        }
+        Query::WorkflowInstanceIntentIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceIntentIdentityUnavailable
+        }
+        Query::WorkflowInstanceOriginalIntentNotFound => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentNotFound
+        }
+        Query::WorkflowInstanceOriginalIntentAmbiguous => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentAmbiguous
+        }
+        Query::WorkflowInstanceOriginalIntentUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceOriginalIntentUnavailable
+        }
+        Query::WorkflowInstanceCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
+        }
+        Query::WorkflowLineageCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable
+        }
+        Query::WorkflowInstanceCancelled => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCancelled
+        }
+        Query::WorkflowInstanceTerminated => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceTerminated
+        }
+        Query::WorkflowInstanceCompleted => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceCompleted
+        }
+        Query::WorkflowOperationInOwnerCustody => {
+            BankApplicationAttemptDenialKind::WorkflowOperationInOwnerCustody
+        }
+        Query::WorkflowInstanceHistoryUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceHistoryUnavailable
+        }
+        Query::WorkflowInstanceMigrated => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrated
+        }
+        Query::WorkflowInstanceMigrationUnmapped => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceMigrationUnmapped
+        }
+        Query::WorkflowInstanceDeadlineElapsed => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceDeadlineElapsed
+        }
+        Query::WorkflowTrustedTimeUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowTrustedTimeUnavailable
+        }
+        Query::WorkflowInstanceEvidenceCapacityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowInstanceEvidenceCapacityUnavailable
+        }
+        Query::WorkflowTransitionAffinityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch
+        }
+        Query::WorkflowTransitionAuthorityMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAuthorityMismatch
+        }
+        Query::WorkflowTransitionAlreadySettled => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled
+        }
+        Query::WorkflowTransitionNodeUnsupported => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported
+        }
+        Query::WorkflowTransitionOperationUnsettled => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionOperationUnsettled
+        }
+        Query::WorkflowTransitionIdentityUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowTransitionIdentityUnavailable
+        }
+        Query::WorkflowConditionExpressionDenied => {
+            BankApplicationAttemptDenialKind::WorkflowConditionExpressionDenied
+        }
+        Query::OperationBodyRequirementExpressionDenied => {
+            BankApplicationAttemptDenialKind::OperationBodyRequirementExpressionDenied
+        }
+        Query::OperationBodyValueExpressionDenied => {
+            BankApplicationAttemptDenialKind::OperationBodyValueExpressionDenied
+        }
+        Query::WorkflowAssessmentEvidenceIncomplete => {
+            BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceIncomplete
+        }
+        Query::WorkflowAssessmentEvidenceMismatch => {
+            BankApplicationAttemptDenialKind::WorkflowAssessmentEvidenceMismatch
+        }
+        Query::WorkflowApprovalPrincipalStale => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalPrincipalStale
+        }
+        Query::WorkflowApprovalGrantUnavailable => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalGrantUnavailable
+        }
+        Query::WorkflowApprovalExpired => BankApplicationAttemptDenialKind::WorkflowApprovalExpired,
+        Query::WorkflowApprovalDelegationChanged => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalDelegationChanged
+        }
+        Query::WorkflowApprovalAuthorityDenied => {
+            BankApplicationAttemptDenialKind::WorkflowApprovalAuthorityDenied
+        }
+        Query::ConflictingEffectStep => BankApplicationAttemptDenialKind::ConflictingEffectStep,
+        Query::WorkflowHistoryReconstructionBudgetExceeded => {
+            BankApplicationAttemptDenialKind::WorkflowHistoryReconstructionBudgetExceeded
+        }
+    }
+}

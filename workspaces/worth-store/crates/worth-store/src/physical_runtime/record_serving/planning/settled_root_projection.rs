@@ -18,6 +18,7 @@ pub enum SettledRootProjectionMergeDenial {
     DuplicateDerivedDirectoryUpdate,
     DuplicateBlobPublicationUpdate,
     DuplicateBlobQuarantineUpdate,
+    DuplicateRecordAnchorAdvance,
     DuplicateDroppedRecord,
     DropConflictsWithPlacement,
     AllocationBudgetOverflow,
@@ -73,6 +74,10 @@ pub(in crate::physical_runtime::record_serving) fn merge_settled_root_projection
             merged.derived_updates.latest_blob_quarantine =
                 projection.derived_updates.latest_blob_quarantine;
         }
+        if projection.derived_updates.record_anchor_advance.is_some() {
+            merged.derived_updates.record_anchor_advance =
+                projection.derived_updates.record_anchor_advance;
+        }
         if projection.derived_updates.directory.is_some() {
             merged.derived_updates.directory = projection.derived_updates.directory;
             merged.derived_updates.expected_previous_directory =
@@ -122,6 +127,7 @@ fn validate(
     let mut saw_directory_update = false;
     let mut saw_blob_publication_update = false;
     let mut saw_blob_quarantine_update = false;
+    let mut saw_anchor_advance = false;
     for projection in projections.as_slice() {
         if projection.source_root != first.source_root {
             return Err(SettledRootProjectionMergeDenial::SourceRootMismatch);
@@ -144,6 +150,11 @@ fn validate(
             &mut saw_blob_quarantine_update,
             projection.derived_updates.latest_blob_quarantine.is_some(),
         )?;
+        if projection.derived_updates.record_anchor_advance.is_some()
+            && std::mem::replace(&mut saw_anchor_advance, true)
+        {
+            return Err(SettledRootProjectionMergeDenial::DuplicateRecordAnchorAdvance);
+        }
         allocation_bytes = allocation_bytes
             .checked_add(projection.root_publication_allocation_bytes().get())
             .ok_or(SettledRootProjectionMergeDenial::AllocationBudgetOverflow)?;

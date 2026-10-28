@@ -63,7 +63,8 @@ fn installed_rule_world() -> (RelationalRuntime, EntityId) {
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(schema)
         .custom_invariant(CustomInvariantRegistration::new(rule).unwrap())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity = |kind_id, key| EntitySpec {
         partition_id: PartitionId::main(),
         kind_id,

@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn lookup_snapshot_is_detached_from_subsequent_owner_registration() {
-        let runtime = crate::tests::support::persisted_runtime_with_test_schema();
+        let runtime = crate::tests::support::durable_runtime_with_test_schema();
         let expected = DerivedIndexDefinition {
             index_id: DerivedIndexId(0),
             name: "snapshot-index".to_owned(),
@@ -119,12 +119,18 @@ mod tests {
             },
             branch_scoped: false,
         };
-        let installed = runtime.index_authority().register(expected.clone());
+        let installed = runtime
+            .index_authority()
+            .register(expected.clone())
+            .expect("index fixture has identity capacity");
         let snapshot = runtime.index_access().definition_lookup_snapshot();
-        runtime.index_authority().register(DerivedIndexDefinition {
-            name: "later-index".to_owned(),
-            ..expected.clone()
-        });
+        runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                name: "later-index".to_owned(),
+                ..expected.clone()
+            })
+            .expect("index fixture has identity capacity");
 
         assert_eq!(snapshot.definition_count(), 1);
         assert_eq!(snapshot.candidate_count_for_name("snapshot-index"), 1);

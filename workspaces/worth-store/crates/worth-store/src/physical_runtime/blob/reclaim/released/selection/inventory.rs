@@ -220,12 +220,11 @@ impl SelectedReleaseInventory {
                         BlobRecordV1::DropSetManifestV3(manifest) => {
                             if let BlobReclaimSourceBasisV1::ReleasedGeneration(candidate) =
                                 manifest.source_basis()
+                                && candidate == expected_basis
                             {
-                                if candidate == expected_basis {
-                                    merge_basis(&mut selected_basis, candidate)?;
-                                    manifests.push(manifest_link(record, frame_sha256, &manifest));
-                                    occupied_attempts.push(manifest.reclaim_attempt());
-                                }
+                                merge_basis(&mut selected_basis, candidate)?;
+                                manifests.push(manifest_link(record, frame_sha256, &manifest));
+                                occupied_attempts.push(manifest.reclaim_attempt());
                             }
                         }
                         BlobRecordV1::ReclaimDescriptorV2(descriptor)

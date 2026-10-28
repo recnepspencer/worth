@@ -14,12 +14,15 @@ fn intent(fork: bool) -> ProductBranchCreationIntent {
 
 #[test]
 fn pre_cancelled_creation_denies_both_routes_and_releases_capacity() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     for fork in [false, true] {
         let (_fixture, owner, root) = setup_with_relational_source(3);
         let cancellation = RuntimeWorldCancellationSource::new();
         cancellation.cancel();
         let before = owner.state.retention.active_component_obligation_count();
         let result = owner.create_product_branch(RuntimeWorldBranchCreationRequest::new(
+            execution,
             root.clone(),
             intent(fork),
             &cancellation.token(),
@@ -38,6 +41,7 @@ fn pre_cancelled_creation_denies_both_routes_and_releases_capacity() {
         // The same destination is usable when the caller has not cancelled.
         let healthy = owner
             .create_product_branch(RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root,
                 intent(fork),
                 &RuntimeWorldCancellationSource::new().token(),
@@ -62,7 +66,10 @@ fn cancellation_at_install_releases_reuse_but_retains_a_performed_fork() {
         let token = cancellation.token();
         let worker_owner = Arc::clone(&owner);
         let worker = std::thread::spawn(move || {
+            let host_request = crate::test_execution_policy::serial_request();
+            let execution = &worth_execution::ExecutionRequest::serial(&host_request);
             worker_owner.create_product_branch(RuntimeWorldBranchCreationRequest::new(
+                execution,
                 root,
                 intent(fork),
                 &token,
@@ -113,7 +120,10 @@ fn cancellation_at_signal_owner_cutoff_retains_only_the_real_relational_fork() {
     let worker_owner = Arc::clone(&owner);
     let source = root.clone();
     let worker = std::thread::spawn(move || {
+        let host_request = crate::test_execution_policy::serial_request();
+        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
         worker_owner.create_product_branch(RuntimeWorldBranchCreationRequest::new(
+            execution,
             source,
             fork_intent(
                 "child",
@@ -149,8 +159,11 @@ fn cancellation_at_signal_owner_cutoff_retains_only_the_real_relational_fork() {
     drop(report);
     // A fresh fork to the same Signal destination proves the cancelled owner
     // call neither installed it nor leaked its reservation.
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let result = owner
         .create_product_branch(RuntimeWorldBranchCreationRequest::new(
+            execution,
             root,
             fork_intent(
                 "signal-child",

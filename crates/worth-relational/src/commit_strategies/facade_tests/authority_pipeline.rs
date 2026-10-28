@@ -8,7 +8,8 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let lowered = {
@@ -16,6 +17,7 @@ fn validate_lowered_plan_preserves_strategy_provenance_and_commit_boundary_summa
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -63,7 +65,8 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let mut seed = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     seed.push_batch(
@@ -84,7 +87,11 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
         .observe_fork_source(&BranchId("main".to_owned()))
         .expect("main remains forkable");
     runtime
-        .fork_branch(BranchId("strategy-version-child".to_owned()), basis)
+        .fork_branch(
+            request_execution,
+            BranchId("strategy-version-child".to_owned()),
+            basis,
+        )
         .expect("child branch installs from main");
 
     let request = canonical_request();
@@ -95,6 +102,7 @@ fn validated_strategy_proposal_keeps_its_unique_version_across_unrelated_sibling
             crate::tests::support::test_owner_strategy_authority(&runtime, Some(child));
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -148,7 +156,8 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let validated = {
@@ -156,6 +165,7 @@ fn execute_validated_commit_routes_prevalidated_strategy_plan_through_authoritat
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -211,7 +221,8 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let lowered = {
@@ -219,6 +230,7 @@ fn validate_lowered_plan_rejects_stale_basis_with_zero_residue() {
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,
@@ -290,7 +302,8 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
     let runtime = RelationalRuntimeBuilder::new()
         .schema_registry(strategy_schema_registry())
         .commit_strategy(strategy_registration())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let request = canonical_request();
     let execution = execution_draft(&request);
     let validated = {
@@ -298,6 +311,7 @@ fn execute_validated_commit_rejects_stale_validation_basis_after_intervening_com
             crate::tests::support::test_owner_strategy_authority(&runtime, None);
         let lowered = authority
             .lower_execution_with_input(
+                request_execution,
                 &runtime,
                 &request,
                 &execution,

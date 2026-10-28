@@ -95,11 +95,13 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
         .expect("the committed basis remains projectable");
 
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("name").unwrap()),
+        view.read_entity_aspect_version(execution, entity, &AspectKey::new("name").unwrap())
+            .unwrap(),
         Some(Some(updated.version_id.0))
     );
     assert_eq!(
-        view.entity_aspect_version(entity, &AspectKey::new("unrelated").unwrap()),
+        view.read_entity_aspect_version(execution, entity, &AspectKey::new("unrelated").unwrap())
+            .unwrap(),
         Some(None)
     );
     let stale = EntityId::new(
@@ -108,7 +110,8 @@ fn selected_basis_aspect_revision_reads_only_the_requested_aspect() {
         entity.generation.0 + 1,
     );
     assert_eq!(
-        view.entity_aspect_version(stale, &AspectKey::new("name").unwrap()),
+        view.read_entity_aspect_version(execution, stale, &AspectKey::new("name").unwrap())
+            .unwrap(),
         None
     );
 }

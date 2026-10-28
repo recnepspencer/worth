@@ -78,6 +78,7 @@ pub(super) fn relation_integrity_runtime() -> crate::runtime::RelationalRuntime 
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn create_relation_of_kind(

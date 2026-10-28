@@ -47,11 +47,13 @@ fn sibling_heads_sharing_a_commit_keep_exact_branch_snapshot_bindings() {
         let runtime = runtime.lock().unwrap();
         create_entity_outcome(&execution, &runtime, "shared-sibling-root");
         fork_branch(
+            &execution,
             &runtime,
             BranchId("storm".to_owned()),
             &BranchId("main".to_owned()),
         );
         fork_branch(
+            &execution,
             &runtime,
             BranchId("maintenance".to_owned()),
             &BranchId("main".to_owned()),
@@ -240,6 +242,7 @@ fn explicit_snapshot_request_rejects_an_earlier_sibling_commit() {
     let ancestor = create_entity_outcome(&execution, &runtime.lock().unwrap(), "shared-ancestor");
     let feature = BranchId("feature".to_owned());
     fork_branch(
+        &execution,
         &runtime.lock().unwrap(),
         feature.clone(),
         &BranchId("main".to_owned()),

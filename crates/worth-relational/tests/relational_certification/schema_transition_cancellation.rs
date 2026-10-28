@@ -22,7 +22,10 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         .runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
-    world.runtime.fork_branch(branch.clone(), source).unwrap();
+    world
+        .runtime
+        .fork_branch(request_execution, branch.clone(), source)
+        .unwrap();
     let identity = world.runtime.branch_identity(&branch).unwrap();
     let basis = world.runtime.admit_branch_basis(&identity).unwrap();
     let before = world.runtime.branch_reference_state(&branch).unwrap();
@@ -30,14 +33,14 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
     let stream_before = world
         .runtime
         .publication()
-        .read_patch_stream(PatchStreamRequest::default())
+        .read_patch_stream(request_execution, PatchStreamRequest::default())
         .unwrap();
     let replay_before = world.runtime.publication().latest_replay();
     let cost_scope = RelationalMvccCostScope::capture(&world.runtime, vec![identity]);
     let control = RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         RelationalInterruptionBoundary::BeforeCriticalSection,
         RelationalOperationInterruption::Cancelled,
-        1,
+        std::num::NonZeroUsize::MIN,
     );
     let mut transaction = world
         .runtime
@@ -81,7 +84,7 @@ fn cancelled_schema_transition_leaves_no_target_or_branch_residue() {
         world
             .runtime
             .publication()
-            .read_patch_stream(PatchStreamRequest::default())
+            .read_patch_stream(request_execution, PatchStreamRequest::default())
             .unwrap(),
         stream_before
     );

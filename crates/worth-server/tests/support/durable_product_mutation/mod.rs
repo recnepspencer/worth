@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports)]
-
 mod concurrency_probe;
 mod driver;
 mod executor;

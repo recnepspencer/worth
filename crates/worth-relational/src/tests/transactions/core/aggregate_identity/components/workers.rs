@@ -67,7 +67,8 @@ fn run(workers: usize) -> Vec<PublishedState> {
         .schema_registry(registry)
         .custom_invariant(parallel::registration(10, &control, &overlap))
         .custom_invariant(parallel::registration(11, &control, &overlap))
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = crate::tests::support::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(

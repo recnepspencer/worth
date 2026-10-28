@@ -68,7 +68,8 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(RelationalSchemaRegistry::new())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let services = OwnerServices::obtain(&runtime);
     let main_branch = runtime.main_branch_identity();
 
@@ -80,7 +81,7 @@ fn main() {
     release_commit_snapshot(&runtime, &seeded);
 
     // Fork is a separate owner transition that shares an immutable root.
-    let reports = fork_reports_branch(&runtime, &services);
+    let reports = fork_reports_branch(execution, &runtime, &services);
 
     // Two unrelated branch cells move at once through one runtime.
     let branches = [main_branch, reports];
@@ -112,6 +113,7 @@ fn ordinary_convenience_commit(
 /// source root and canonical commit artifact; it copies no authoritative truth
 /// and never infers its source from a branch label.
 fn fork_reports_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     services: &OwnerServices,
 ) -> RelationalBranchIdentity {
@@ -122,7 +124,7 @@ fn fork_reports_branch(
         .expect("a committed source branch issues one fork-only source basis");
     services
         .forking
-        .fork_branch(BranchId(REPORTS_BRANCH.to_owned()), source)
+        .fork_branch(execution, BranchId(REPORTS_BRANCH.to_owned()), source)
         .expect("an unused target name accepts the owner-sealed fork source")
         .target_identity()
         .clone()

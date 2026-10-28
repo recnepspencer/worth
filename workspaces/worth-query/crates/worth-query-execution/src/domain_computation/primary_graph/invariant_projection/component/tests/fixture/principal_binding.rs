@@ -1,6 +1,6 @@
 //! The application fixture installs and seeds its required real principal binding.
 use super::*;
-use worth_query_declaration::{facade::authentication::*, *};
+use worth_query_declaration::facade::authentication::*;
 
 worth_query_entity!(Mapping for Schema);
 worth_query_entity!(Principal for Schema);

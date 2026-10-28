@@ -1,9 +1,4 @@
 //! Primary Graph application contracts.
-pub use crate::domain_computation::application_aftermath::{
-    WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
-    WorthQueryCorrectionLineageBinding, WorthQueryCorrectionSourceCoordinates,
-    WorthQueryRecordedCorrectionSource,
-};
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
 pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
@@ -69,6 +64,12 @@ pub use worth_relational::facade::{
         CompanionPreflightStop, RelationalOperationInterruption, RelationalPublicationDeferred,
     },
     publication::RecordStructuralChange,
+    runtime::{
+        HistoricalVisibilityDenial, RelationalProjectionContractDenial, StructuralWalkDenialKind,
+    },
+    storage::{
+        RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
+    },
     transactions::RelationalExecutionDenialCause,
 };
 
@@ -78,7 +79,9 @@ pub use crate::domain_computation::application_aftermath::{
     safe_retry_recovery_handle, ExternalEffectCausalLink, ExternalEffectClassification,
     ExternalEffectCorrelationIdentity, ExternalEffectPosture, ExternalEffectPostureIdentity,
     ExternalEffectPostureKind, ExternalRailTransportFault, WorthQueryAdmittedIdempotencyRead,
-    WorthQueryAftermathDerivationFailure, WorthQueryDispatchOutboxDurabilityPosture,
+    WorthQueryAftermathCausalRole, WorthQueryAftermathDerivationFailure,
+    WorthQueryCommittedAftermathCausality, WorthQueryCorrectionLineageBinding,
+    WorthQueryCorrectionSourceCoordinates, WorthQueryDispatchOutboxDurabilityPosture,
     WorthQueryDispatchOutboxRecord, WorthQueryExternalDispatchCausalRelation,
     WorthQueryExternalDispatchPosture, WorthQueryExternalDispatchPostureKind,
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectCausalLadder,
@@ -86,15 +89,16 @@ pub use crate::domain_computation::application_aftermath::{
     WorthQueryExternalTransportOutcome, WorthQueryInboundOccurrenceClaims,
     WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial,
     WorthQueryOpaqueRecoveryWireIdentity, WorthQueryPerformedExternalRedispatch,
-    WorthQueryRecoveryClaimStatus, WorthQueryRecoveryCompensateAdmission,
-    WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryDisclosureAdmission,
-    WorthQueryRecoveryDisposalDenial, WorthQueryRecoveryDisposalReceipt,
-    WorthQueryRecoveryDurabilityPosture, WorthQueryRecoveryEffectAuthority,
-    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle,
-    WorthQueryRecoveryHandleBinding, WorthQueryRecoveryHandleDenial,
-    WorthQueryRecoveryHandleDenialKind, WorthQueryRecoveryInspectAuthority,
-    WorthQueryRecoveryInspectionView, WorthQueryRecoveryReconcileAdmission,
-    WorthQueryRecoverySafeRetryAdmission, WorthQueryRecoverySafeRetryDenial,
+    WorthQueryRecordedCorrectionSource, WorthQueryRecoveryClaimStatus,
+    WorthQueryRecoveryCompensateAdmission, WorthQueryRecoveryCurrentDecision,
+    WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryDisposalDenial,
+    WorthQueryRecoveryDisposalReceipt, WorthQueryRecoveryDurabilityPosture,
+    WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryExpiryDecision,
+    WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandle, WorthQueryRecoveryHandleBinding,
+    WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
+    WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryInspectionView,
+    WorthQueryRecoveryReconcileAdmission, WorthQueryRecoverySafeRetryAdmission,
+    WorthQueryRecoverySafeRetryDenial,
 };
 pub use crate::domain_computation::primary_graph::output_lineage::{
     WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind,
@@ -389,7 +393,8 @@ pub use crate::domain_computation::primary_graph::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
     CheckpointReservationAdvanceDenial, WorthQueryApplicationCheckpointInspection,
     WorthQueryCheckpointInspectionDenial, WorthQueryCheckpointModelBytes,
-    WorthQueryCheckpointRecordClass, WorthQueryRecordReservationObservation,
+    WorthQueryCheckpointRecordClass, WorthQueryDiscoveredRetentionControlDenial,
+    WorthQueryDiscoveredRetentionReservationForTest, WorthQueryRecordReservationObservation,
     WorthQueryRecordReservationObservationDenial, WorthQueryRecordReservationObservationFailure,
     WorthQueryRecordReservationReport, WorthQueryReservedRecord,
 };

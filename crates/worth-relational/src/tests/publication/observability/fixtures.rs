@@ -44,7 +44,9 @@ impl worth_harness::facade::HarnessAdapter for InvariantHarnessAdapter {
         let builder = RelationalRuntimeApi::builder()
             .schema_registry(test_schema_registry())
             .invariant_catalog(self.invariant_catalog.clone());
-        Ok(builder.build())
+        Ok(builder
+            .build()
+            .expect("valid invariant harness configuration"))
     }
 
     fn prepare_runtime(

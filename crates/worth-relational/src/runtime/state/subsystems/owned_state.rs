@@ -29,11 +29,11 @@ impl<T> RuntimeOwnedState<T> {
     }
 
     pub(crate) fn read(&self) -> RwLockReadGuard<'_, T> {
-        self.state.read().expect("runtime subsystem lock poisoned")
+        self.state.read().expect(/* Proof: Authoritative subsystem guards are private owner operations: user callbacks, I/O and fallible preparation run outside them; guarded native updates operate on admitted phase values and do not unwind. */ "runtime subsystem lock poisoned")
     }
 
     pub(crate) fn write(&self) -> RwLockWriteGuard<'_, T> {
-        self.state.write().expect("runtime subsystem lock poisoned")
+        self.state.write().expect(/* Proof: Authoritative subsystem guards are private owner operations: user callbacks, I/O and fallible preparation run outside them; guarded native updates operate on admitted phase values and do not unwind. */ "runtime subsystem lock poisoned")
     }
 }
 

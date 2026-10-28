@@ -19,6 +19,7 @@ pub(crate) fn register_case_book_index(world: &mut FintechWorld) -> DerivedIndex
             },
             branch_scoped: true,
         })
+        .expect("index fixture has identity capacity")
 }
 
 pub(crate) fn build_branch_scoped_case_index(

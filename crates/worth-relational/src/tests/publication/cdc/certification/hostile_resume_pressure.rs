@@ -22,7 +22,7 @@ fn cdc_certification_subscriber_api_fuzz_matrix_stays_consistent_under_hostile_h
                 SeededScenarioConfig::hostile_geometry(seed ^ 0xBAD5EED, profile),
             );
             let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
-            let patch_head = collect_patch_stream_from_head(&world.runtime, 4096);
+            let patch_head = collect_patch_stream_from_head(execution, &world.runtime, 4096);
             assert_eq!(
                 head, patch_head,
                 "hostile seed {seed} patch/subscriber drifted"
@@ -52,14 +52,13 @@ fn cdc_certification_concurrent_branch_merge_pressure_keeps_subscriber_order_sta
             runtime_mode: RuntimeHarnessMode::InMemory(RelationalRuntimeProfile::GeometryKernel),
             relation_pressure: true,
             durable_checkpoint_every: None,
-            durable_compact_every: None,
             retention_pass_every: Some(4),
             branch_pressure: true,
             replacement_pressure: true,
         },
     );
     let head = collect_subscriber_patches_from_head(&world.runtime, 4096);
-    let patch_head = collect_patch_stream_from_head(&world.runtime, 4096);
+    let patch_head = collect_patch_stream_from_head(execution, &world.runtime, 4096);
     assert_eq!(head, patch_head);
 
     let views = collect_fuzzed_subscriber_views(&world.runtime, &head, 0xB12A6E55);

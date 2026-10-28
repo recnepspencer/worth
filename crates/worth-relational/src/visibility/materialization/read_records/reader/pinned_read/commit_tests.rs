@@ -26,15 +26,21 @@ fn pinned_read_keeps_rows_and_generation_across_a_commit_and_discard() {
         aspect_key("name"),
         CanonicalFieldPath::single(field_key("name")),
     );
-    let definition = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(17),
-        name: "commit-control".into(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: locator.clone(),
-        },
-        branch_scoped: false,
-    });
-    let snapshot = runtime.visibility_authority().snapshot();
+    let definition = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(17),
+            name: "commit-control".into(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: locator.clone(),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let cold = runtime
         .read_truth()
         .pin_read_capability(&snapshot, &[definition.index_id], &request)
@@ -146,7 +152,12 @@ fn pinned_read_keeps_rows_and_generation_across_a_commit_and_discard() {
     assert_eq!(
         runtime
             .read_truth()
-            .query_plan_context(&runtime.visibility_authority().snapshot())
+            .query_plan_context(
+                &runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted")
+            )
             .unwrap()
             .version_id,
         crate::identity::data::VersionId(2)
@@ -161,7 +172,10 @@ fn pinned_traversal_keeps_its_frontier_across_a_commit() {
     let a = create_entity_in_partition(&request, &runtime, "a", PartitionId(7));
     let b = create_entity_in_partition(&request, &runtime, "b", PartitionId(7));
     let ab = create_relation_in_partition(&request, &runtime, a, b, "ab", PartitionId(7));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let pinned = runtime
         .read_truth()
         .pin_read_capability(&snapshot, &[], &request)

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use worth_foundational::FoundationalBranchTarget;
 
 use crate::history::data::CanonicalCommitEnvelope;
+#[cfg(test)]
 use crate::history::RelationalCommitCatalog;
 
 use super::HistorySubsystem;
@@ -11,33 +12,46 @@ impl HistorySubsystem {
     pub(crate) fn install_recovered_canonical_inventory(
         &mut self,
         commits: Vec<Arc<crate::history::data::PositionedCanonicalCommit>>,
+        symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
-        self.rebuild_recovered_canonical_routes(commits.iter().cloned())
-            .map_err(str::to_owned)?;
         self.with_ledger_mut(|ledger| {
-            ledger.commit_envelopes = commits
-                .iter()
-                .map(|commit| {
-                    (
-                        commit.envelope().commit.commit_id,
-                        Arc::clone(commit.canonical_arc()),
-                    )
-                })
-                .collect();
-            ledger.patch_stream_index = commits
-                .iter()
-                .map(|commit| (commit.position(), commit.envelope().commit.commit_id))
-                .collect();
-            for commit in commits {
+            ledger.patch_stream_index.extend(
+                commits
+                    .iter()
+                    .map(|commit| (commit.position(), commit.envelope().commit.commit_id)),
+            );
+            for commit in &commits {
                 ledger
                     .commit_catalog
-                    .synchronize_recovered_envelope(Arc::clone(commit.canonical_arc()))
+                    .synchronize_recovered_envelope(commit)
                     .map_err(|denial| {
                         format!("recovered canonical catalog synchronization denied: {denial:?}")
                     })?;
             }
-            Ok(())
-        })
+            ledger.commit_envelopes = commits
+                .iter()
+                .map(|commit| {
+                    let id = commit.commit.commit_id;
+                    let artifact = ledger.commit_catalog.get(id).ok_or_else(|| {
+                        "recovered canonical inventory has no catalog entry".to_owned()
+                    })?;
+                    Ok((id, artifact.envelope_residency()))
+                })
+                .collect::<Result<_, String>>()?;
+            Ok::<_, String>(())
+        })?;
+        let admitted = commits
+            .iter()
+            .map(|commit| (commit.commit.commit_id, Arc::clone(commit)))
+            .collect();
+        self.rebuild_catalog_with_live_roots_and_descriptors(
+            &std::collections::BTreeMap::new(),
+            &std::collections::BTreeMap::new(),
+            &admitted,
+            symbols,
+        )?;
+        self.rebuild_recovered_canonical_routes(commits)
+            .map_err(str::to_owned)
     }
 
     pub(super) fn rebuild_catalog_with_live_roots(
@@ -45,6 +59,7 @@ impl HistorySubsystem {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         self.rebuild_catalog_with_live_roots_and_descriptors(
+            &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             &std::collections::BTreeMap::new(),
             symbols,
@@ -60,6 +75,10 @@ impl HistorySubsystem {
         additional_roots: &std::collections::BTreeMap<
             crate::history::data::CommitId,
             Arc<crate::branch::RelationalBranchRoot>,
+        >,
+        admitted: &std::collections::BTreeMap<
+            crate::history::data::CommitId,
+            Arc<crate::history::data::PositionedCanonicalCommit>,
         >,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
@@ -90,6 +109,11 @@ impl HistorySubsystem {
                     Arc::clone(existing)
                 } else if root.links_envelope(&canonical) {
                     Arc::clone(&root)
+                } else if let Some(source) = admitted.get(&commit_id) {
+                    root.readmit_canonical_envelope(source, symbols)
+                        .map_err(|denial| {
+                            format!("recovery source root readmission denied: {denial:?}")
+                        })?
                 } else {
                     root.relink_canonical_envelope(canonical, symbols)
                         .map_err(|denial| {
@@ -119,7 +143,7 @@ impl HistorySubsystem {
             .map(|(branch_id, previous_root, next_root)| {
                 let cell = cells
                     .get(&branch_id)
-                    .expect("planned recovery branch remains in detached registry");
+                    .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "planned recovery branch remains in detached registry");
                 self.reserve_branch_head_retirement(
                     cell.identity(),
                     &previous_root,
@@ -136,17 +160,25 @@ impl HistorySubsystem {
                 return Err(error);
             }
         };
-        for (branch_id, mut reservation, previous_root, next_root) in reservations {
+        for (branch_id, reservation, _previous_head_custody, next_root) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&next_root));
-            reservation.transfer_head(&previous_root, &next_root);
-            reservation.replace_head(previous_root);
+            reservation.transfer_head(&next_root).replace_head();
         }
         self.branch_cells.restore_all(cells);
-        let mut catalog = RelationalCommitCatalog::default();
-        for envelope in self.recorded_commit_envelopes() {
+        let envelopes = self.recorded_commit_envelopes();
+        let replaced = envelopes
+            .iter()
+            .map(|envelope| envelope.commit.commit_id)
+            .collect();
+        let mut catalog = self
+            .ledger
+            .read()
+            .commit_catalog
+            .retained_entries_except(&replaced);
+        for envelope in envelopes {
             let commit_id = envelope.commit.commit_id;
             let preencoded = self.commit_artifact(commit_id).ok_or_else(|| {
                 format!(
@@ -221,13 +253,12 @@ impl HistorySubsystem {
                 return Err(error);
             }
         };
-        for (branch_id, mut reservation, previous_root) in reservations {
+        for (branch_id, reservation, _previous_head_custody) in reservations {
             cells
                 .get_mut(&branch_id)
-                .expect("reserved recovery branch remains in detached registry")
+                .expect(/* Proof: rebuild_catalog_with_live_roots_and_descriptors/readmit_replayed_root_descriptor selects these branch ids directly from cells.values(), then retains the detached BTreeMap in this local variable. No key insertion or removal occurs before this lookup; installing roots changes only the selected cell values. */ "reserved recovery branch remains in detached registry")
                 .install_root(Arc::clone(&canonical_root));
-            reservation.transfer_head(&previous_root, &canonical_root);
-            reservation.replace_head(previous_root);
+            reservation.transfer_head(&canonical_root).replace_head();
         }
         self.branch_cells.restore_all(cells);
         let descriptors = self
@@ -240,6 +271,7 @@ impl HistorySubsystem {
         self.rebuild_catalog_with_live_roots_and_descriptors(
             &descriptors,
             &recovered_roots,
+            &std::collections::BTreeMap::new(),
             symbols,
         )?;
         Ok(canonical_root)
@@ -253,10 +285,13 @@ impl HistorySubsystem {
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
         let catalog_artifact = self.commit_artifact(envelope.commit.commit_id);
-        if catalog_artifact
+        let conflicts = catalog_artifact
             .as_ref()
-            .is_some_and(|artifact| artifact.envelope().as_ref() != envelope)
-        {
+            .map(|artifact| artifact.matches_envelope(envelope))
+            .transpose()
+            .map_err(|denial| format!("recovered catalog comparison denied: {denial:?}"))?
+            .is_some_and(|matches| !matches);
+        if conflicts {
             if !allow_reconstructed_replacement {
                 return Err(format!(
                     "recovery commit artifact conflicts for commit {}",

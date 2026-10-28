@@ -44,10 +44,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
                 .read_truth()
                 .pin_read_capability(self.snapshot, &[], self.execution)
                 .map_err(|denial| match denial {
-                    RelationalPinnedReadAdmissionDenial::Request(stop) => self.walk_stop(
-                        worth_execution::WorkCeilingDenial::Stopped(stop).into(),
-                        subject,
-                    ),
+                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
+                        self.walk_stop(stop, subject)
+                    }
                     _ => Denial::new(Kind::EndpointUnavailable, subject),
                 })?;
             let read = pin.read_aggregate_lineage(self.execution, scope);

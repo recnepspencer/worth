@@ -6,33 +6,23 @@ use crate::history::data::CanonicalCommitEnvelope;
 use crate::indexes::data::DerivedIndexArtifacts;
 use crate::runtime::RelationalRuntime;
 
-pub(crate) fn checkpoint_derived_index_artifacts(
-    runtime: &RelationalRuntime,
-    retained: &crate::history::retention::RetainedIndexRoots,
-) -> Result<DerivedIndexCheckpointArtifacts, crate::durability::data::DurabilityError> {
-    DerivedIndexCheckpointArtifacts::capture(runtime.indexes.retained_generations(retained))
-}
-
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
     indexes: &mut crate::runtime::IndexingState,
     history: &crate::runtime::HistorySubsystem,
     legacy: &DerivedIndexArtifacts,
     checkpoint: Option<&DerivedIndexCheckpointArtifacts>,
-    envelopes: &[crate::history::data::PositionedCanonicalCommit],
+    generation_frontier: u64,
     work: &mut crate::durability::data::CheckpointRestoreWork,
 ) -> Result<(), crate::durability::data::DurabilityError> {
+    if generation_frontier == 0 {
+        return Err(corrupt("checkpoint index generation frontier is zero"));
+    }
     if let Some(checkpoint) = checkpoint {
         if !legacy.is_empty() {
             return Err(corrupt("checkpoint mixes legacy and delta index artifacts"));
         }
-        let source_commits = envelopes
-            .iter()
-            .map(|envelope| (envelope.commit.commit_id, envelope))
-            .collect::<std::collections::BTreeMap<_, _>>();
-        if source_commits.len() != envelopes.len() {
-            return Err(corrupt("checkpoint index source commits are duplicated"));
-        }
         for generation in checkpoint.readmit()? {
+            require_generation_below_frontier(generation.generation_id, generation_frontier)?;
             let definition = indexes
                 .definition(generation.index_id)
                 .ok_or_else(|| corrupt("checkpoint index generation has no definition"))?;
@@ -52,11 +42,11 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
                     "checkpoint index generation kind mismatches definition",
                 ));
             }
-            let source = source_commits
-                .get(&generation.source_commit_id)
+            let source = history
+                .commit_artifact(generation.source_commit_id)
                 .ok_or_else(|| corrupt("checkpoint index source commit is unavailable"))?;
-            if source.commit.version_id != generation.applicability.version_id
-                || source.envelope().schema_version != generation.applicability.schema_version
+            if source.version_id() != generation.applicability.version_id
+                || source.schema_version() != generation.applicability.schema_version
             {
                 return Err(corrupt(
                     "checkpoint index generation basis mismatches commit",
@@ -77,9 +67,22 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
         }
     } else {
         for generation in legacy.generations() {
+            require_generation_below_frontier(generation.generation_id, generation_frontier)?;
             indexes.restore_generation(generation.clone());
             work.index_generations_readmitted += 1;
         }
+    }
+    Ok(())
+}
+
+fn require_generation_below_frontier(
+    generation: crate::indexes::data::DerivedIndexGenerationId,
+    frontier: u64,
+) -> Result<(), crate::durability::data::DurabilityError> {
+    if generation.0 == 0 || generation.0 >= frontier {
+        return Err(corrupt(
+            "checkpoint index generation exceeds its eager identity frontier",
+        ));
     }
     Ok(())
 }

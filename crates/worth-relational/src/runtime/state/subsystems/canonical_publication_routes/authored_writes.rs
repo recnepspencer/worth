@@ -84,6 +84,7 @@ pub(crate) fn commit_denial(cause: Denial) -> crate::transactions::data::Transac
         })
     };
     match cause {
+        Denial::NativeRead(cause) => request(cause),
         Denial::BackingAllocation(_) => {
             request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
         }

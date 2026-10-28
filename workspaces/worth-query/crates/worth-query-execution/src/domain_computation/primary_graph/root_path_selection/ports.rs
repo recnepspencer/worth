@@ -40,17 +40,20 @@ pub(in crate::domain_computation::primary_graph) enum RootPathReadObservation<'a
         subject: &'a str,
     },
 }
+/// One admitted guard acquisition, including its source-preparation callback.
+type RootPathGuardRead<'a, E> = dyn FnMut(
+        &WorthQueryInstalledRootPathGuard,
+        &BTreeSet<EntityId>,
+        &mut dyn FnMut() -> Result<(), RootPathReadDenial<E>>,
+    ) -> Result<BoundedFrontierFieldEqualityTruthRead, RootPathReadDenial<E>>
+    + 'a;
+
 /// `prepare_sources` must run exactly once, after the concrete guard admission
 /// and before its physical equality read. No protected revision precedes admission.
 pub(in crate::domain_computation::primary_graph) struct RootPathReadPorts<'a, E> {
     pub(in crate::domain_computation::primary_graph) checkpoint: &'a dyn Fn(&str) -> Result<(), E>,
     pub(in crate::domain_computation::primary_graph) read_guard_with_sources:
-        &'a mut dyn FnMut(
-            &WorthQueryInstalledRootPathGuard,
-            &BTreeSet<EntityId>,
-            &mut dyn FnMut() -> Result<(), RootPathReadDenial<E>>,
-        )
-            -> Result<BoundedFrontierFieldEqualityTruthRead, RootPathReadDenial<E>>,
+        &'a mut RootPathGuardRead<'a, E>,
     pub(in crate::domain_computation::primary_graph) observation:
         &'a mut dyn FnMut(RootPathReadObservation<'_>) -> Result<(), E>,
 }

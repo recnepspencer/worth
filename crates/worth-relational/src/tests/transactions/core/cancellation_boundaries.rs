@@ -318,7 +318,7 @@ fn injected_control(
     RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         boundary,
         interruption,
-        trigger_on_visit,
+        std::num::NonZeroUsize::new(trigger_on_visit).expect("positive fixture visit"),
     )
 }
 

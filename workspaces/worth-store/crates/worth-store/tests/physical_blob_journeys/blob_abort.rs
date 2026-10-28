@@ -96,7 +96,6 @@ fn abort_is_durable_terminal_but_preserves_selected_bytes_and_read_pins() {
     assert_eq!(root_generation(&serving), root_after);
     assert_resume_abandoned(&serving, token, &scope);
     drop(held);
-    drop(blobs);
     serving.close();
 
     recover_closed_store(directory.path());
@@ -216,7 +215,6 @@ fn abort_denials_preserve_custody_and_release_inspecting_claim() {
         media_after.positioned_write_attempts(),
         media_before.positioned_write_attempts()
     );
-    drop(blobs);
     serving.close();
 }
 

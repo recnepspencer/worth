@@ -12,7 +12,6 @@ use crate::config::data::{
     RelationalRuntimeProfile, StorageLayoutConfig, VisibilityCachePolicy,
 };
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
-use crate::durability::data::{DurabilityMode, DurableStoreLayout};
 use crate::runtime::{RelationalRuntime, RelationalRuntimeConfig, RuntimeExtensions};
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::symbols::data::ClientKeySymbolPolicy;
@@ -83,11 +82,6 @@ impl RelationalRuntimeBuilder {
 
     pub fn runtime_name(mut self, runtime_name: impl Into<String>) -> Self {
         self.overrides.execution.runtime_name = Some(runtime_name.into());
-        self
-    }
-
-    pub fn durability_mode(mut self, durability_mode: DurabilityMode) -> Self {
-        self.overrides.durability.mode = Some(durability_mode);
         self
     }
 
@@ -188,11 +182,6 @@ impl RelationalRuntimeBuilder {
         self
     }
 
-    pub fn durable_store_layout(mut self, durable_store_layout: DurableStoreLayout) -> Self {
-        self.overrides.durability.store_layout = Some(durable_store_layout);
-        self
-    }
-
     pub fn adjacency_policy(mut self, adjacency_policy: AdjacencyPolicy) -> Self {
         self.overrides.storage.adjacency_policy = Some(adjacency_policy);
         self
@@ -213,11 +202,34 @@ impl RelationalRuntimeBuilder {
         self
     }
 
-    pub fn build(self) -> RelationalRuntime {
+    /// Build a memory-only runtime: its canonical history is its in-memory
+    /// log.
+    pub fn build(self) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
+        self.build_with(None)
+    }
+
+    /// Build a runtime that owns `medium` and publishes every commit to it
+    /// before the commit becomes live.
+    ///
+    /// The medium is moved into this one runtime (D1): the builder never holds
+    /// it, so cloning the builder cannot share it, recovery moves it into the
+    /// rebuilt runtime, and a forked runtime never inherits it.
+    pub fn build_durable(
+        self,
+        medium: Box<dyn crate::durability::medium::RelationalDurableMedium>,
+    ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
+        self.build_with(Some(medium))
+    }
+
+    fn build_with(
+        self,
+        medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+    ) -> Result<RelationalRuntime, super::RelationalRuntimeConstructionDenial> {
         RelationalRuntime::build_from_extensions(
             RelationalRuntimeConfig::resolved(self.profile, self.overrides),
             RuntimeExtensions::new(self.custom_invariants, self.commit_strategy_executors)
-                .with_post_commit_consumer(self.post_commit_consumer),
+                .with_post_commit_consumer(self.post_commit_consumer)
+                .with_durable_medium(medium),
         )
     }
 }

@@ -19,6 +19,8 @@ pub(super) enum InstalledReadTarget {
         entity: String,
         aspect: String,
     },
+    DerivedSource(String),
+    Components(String),
     Relation {
         relation: String,
         from: String,
@@ -65,6 +67,16 @@ pub(super) fn installed_read_targets(
         .iter()
         .flat_map(|role| role.read_scopes())
         .flat_map(|scope| match scope {
+            WorthQueryOperationGraphReadScope::DerivedSource(scope) => {
+                vec![InstalledReadTarget::DerivedSource(
+                    scope.relation().to_owned(),
+                )]
+            }
+            WorthQueryOperationGraphReadScope::Components(scope) => {
+                vec![InstalledReadTarget::Components(
+                    scope.meaning().canonical_record(),
+                )]
+            }
             WorthQueryOperationGraphReadScope::Entity(scope) => {
                 vec![InstalledReadTarget::Entity(scope.semantic_key().to_owned())]
             }

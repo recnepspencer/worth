@@ -38,10 +38,9 @@ impl<S: ApplicationSchema> Reader<'_, S> {
                 .read_truth()
                 .pin_read_capability(self.snapshot, &[], self.execution)
                 .map_err(|cause| match cause {
-                    RelationalPinnedReadAdmissionDenial::Request(stop) => self.walk_stop(
-                        worth_execution::WorkCeilingDenial::Stopped(stop).into(),
-                        relation.name(),
-                    ),
+                    RelationalPinnedReadAdmissionDenial::Request(stop) => {
+                        self.walk_stop(stop, relation.name())
+                    }
                     _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
                 })?;
             pin.derived_source(

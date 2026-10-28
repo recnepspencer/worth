@@ -8,6 +8,7 @@ use worth_foundational::ExecutionRequestPolicy;
 use super::lease::LeaseMemory;
 use super::{ExecutionResourceLease, LeaseDenial};
 mod ledger_issue_order;
+mod observation;
 mod result;
 use ledger_issue_order::LedgerIssueOrder;
 pub use result::ExecutionResultMemory;
@@ -127,6 +128,8 @@ impl SerialMemoryBudget {
             .unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
+    /// This budget's own policy ceiling, without ancestor ceilings or live holds.
+    /// Use `available_memory_bytes` on the active lineage for admission planning.
     pub fn limit(&self) -> Option<u64> {
         self.ledgers[0].ceiling
     }

@@ -93,10 +93,10 @@ pub fn wal_contains_rewrite(root: &Path) -> bool {
                 stack.push(path);
                 continue;
             }
-            if let Ok(bytes) = std::fs::read(&path) {
-                if bytes.windows(domain.len()).any(|window| window == domain) {
-                    return true;
-                }
+            if let Ok(bytes) = std::fs::read(&path)
+                && bytes.windows(domain.len()).any(|window| window == domain)
+            {
+                return true;
             }
         }
     }

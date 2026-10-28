@@ -38,7 +38,7 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
         .any(|event| event.event_id() >= u64::MAX - 1)
     {
         return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptSegment,
+            RecoveryFailureClass::CorruptCanonicalArtifact,
             "recovery tail lineage event id exhausted the allocator",
         ));
     }
@@ -50,7 +50,7 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
         .any(|lineage_id| lineage_id.0 >= u64::MAX - 1)
     {
         return Err(DurabilityError::new(
-            RecoveryFailureClass::CorruptSegment,
+            RecoveryFailureClass::CorruptCanonicalArtifact,
             "recovery tail lineage id exhausted the allocator",
         ));
     }
@@ -60,25 +60,42 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
 pub(super) fn refresh_checkpoint_counters(
     restored: &mut RelationalRuntime,
 ) -> Result<(), DurabilityError> {
-    let recorded_envelopes = restored.history.recorded_commit_envelope_entries();
+    let recorded_envelopes = restored.history.commit_artifacts();
     let next_commit_id = checked_checkpoint_successor(
         recorded_envelopes
             .iter()
-            .map(|(commit_id, _)| commit_id.0)
+            .map(|artifact| artifact.commit_id().0)
             .max(),
         "commit id",
     )?;
     let next_version_id = checked_checkpoint_successor(
         recorded_envelopes
             .iter()
-            .map(|(_, envelope)| envelope.commit.version_id.0)
+            .map(|artifact| artifact.version_id().0)
             .max(),
         "version id",
     )?;
-    let next_lineage_id =
-        checked_checkpoint_successor(restored.lineage.maximum_node_id(), "lineage id")?;
-    let next_event_id =
-        checked_checkpoint_successor(restored.lineage.maximum_event_id(), "lineage event id")?;
+    let directory = restored.durability.checkpoint_selection().snapshot();
+    let cold_node_max = directory
+        .as_ref()
+        .and_then(|directory| directory.manifest.lineage.last().map(|page| page.last));
+    let cold_event_max = directory.as_ref().and_then(|directory| {
+        directory
+            .manifest
+            .lineage_basis
+            .canonical_published_event_ids
+            .iter()
+            .max()
+            .copied()
+    });
+    let next_lineage_id = checked_checkpoint_successor(
+        restored.lineage.maximum_node_id().max(cold_node_max),
+        "lineage id",
+    )?;
+    let next_event_id = checked_checkpoint_successor(
+        restored.lineage.maximum_event_id().max(cold_event_max),
+        "lineage event id",
+    )?;
     restored
         .history
         .install_recovered_sequence_floor(next_commit_id, next_version_id);

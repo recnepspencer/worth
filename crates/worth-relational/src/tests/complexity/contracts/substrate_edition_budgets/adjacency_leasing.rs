@@ -67,7 +67,8 @@ fn complexity_budget_whole_neighborhood_read_charges_every_id_it_copies() {
     runtime.performance_access().reset_counters();
     let relations = runtime
         .storage_access()
-        .outgoing_relations_for_entity(anchor, version_id);
+        .outgoing_relations_for_entity(execution, anchor, version_id)
+        .expect("funded adjacency read succeeds");
     let counters = runtime.performance_access().counters();
 
     // The negative twin of the leasing readers: this caller asked for every id,

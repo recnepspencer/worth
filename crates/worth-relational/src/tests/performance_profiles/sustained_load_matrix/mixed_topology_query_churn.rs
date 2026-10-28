@@ -62,7 +62,10 @@ pub(super) fn certify_mixed_topology_query_churn_stability(
                 );
                 total_update_micros += update_started_at.elapsed().as_micros();
 
-                let snapshot = runtime.visibility_authority().snapshot();
+                let snapshot = runtime
+                    .visibility_authority()
+                    .snapshot()
+                    .expect("current snapshot fixture is admitted");
                 let explicit_targets = vec![
                     RecordRef::Entity(entities[(index * 3) % entities.len()]),
                     RecordRef::Entity(entities[(index * 3 + 1) % entities.len()]),

@@ -47,6 +47,7 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             .inner
             .root
             .partition_state(anchor.partition_id)
+            .expect("fixture root has admitted Full custody")
             .unwrap();
         let before_record = before_partition.entity_arena.get(&anchor).unwrap();
         let before_payload = before_record.extra().authoritative_aspect_state.clone();
@@ -87,6 +88,7 @@ fn original_request_cancellation_dominates_companion_result_and_preserves_retry(
             .inner
             .root
             .partition_state(anchor.partition_id)
+            .expect("fixture root has admitted Full custody")
             .unwrap();
         let record = partition.entity_arena.get(&anchor).unwrap();
         assert_eq!(record.extra().authoritative_aspect_state, before_payload);

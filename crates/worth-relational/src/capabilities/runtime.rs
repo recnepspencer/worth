@@ -64,7 +64,7 @@ impl SchemaVersionSource for RelationalRuntimeConfig {
     }
 }
 
-fn primary_schema_version_id_for_registry(
+pub(crate) fn primary_schema_version_id_for_registry(
     registry: &crate::schema::data::RelationalSchemaRegistry,
 ) -> crate::schema::data::SchemaVersionId {
     registry

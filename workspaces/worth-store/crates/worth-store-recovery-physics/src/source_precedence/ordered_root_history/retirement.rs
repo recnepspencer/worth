@@ -278,10 +278,10 @@ impl OrderedRootHistoryBuilder {
         }
         // Each covered release names the root its predecessor published, so
         // its intent follows that predecessor's intent in WAL order.
-        if let Some(VerifiedOrderedRootEdge::Retirement(prior)) = self.edges.last() {
-            if intent.lsn.start() < prior.basis.intent.lsn.end_exclusive() {
-                return Err(Denial::WalOrder);
-            }
+        if let Some(VerifiedOrderedRootEdge::Retirement(prior)) = self.edges.last()
+            && intent.lsn.start() < prior.basis.intent.lsn.end_exclusive()
+        {
+            return Err(Denial::WalOrder);
         }
         if edge.source != self.current_topology
             || !edge

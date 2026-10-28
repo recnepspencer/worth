@@ -156,13 +156,13 @@ fn inspect_checkpoint(bytes: &[u8]) -> Option<(CheckpointFacts, Vec<&[u8]>)> {
     ))
 }
 
-fn fixed_record<'bytes>(
-    bytes: &'bytes [u8],
+fn fixed_record(
+    bytes: &[u8],
     offset: usize,
     schema: u8,
     kind: u8,
     payload_bytes: usize,
-) -> Option<&'bytes [u8]> {
+) -> Option<&[u8]> {
     let end = offset.checked_add(record_bytes(payload_bytes))?;
     let record = bytes.get(offset..end)?;
     if record.get(..8) != Some(b"WCP7REC\0")

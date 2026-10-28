@@ -147,11 +147,11 @@ pub(super) fn classify(
         inventory.scan_root(reader, false)?;
         retained_roots_scanned += 1;
     }
-    if let Some(reader) = recovery {
-        if recovery_is_distinct {
-            inventory.scan_root(reader, false)?;
-            retained_roots_scanned += 1;
-        }
+    if let Some(reader) = recovery
+        && recovery_is_distinct
+    {
+        inventory.scan_root(reader, false)?;
+        retained_roots_scanned += 1;
     }
     let (records, edges_traversed) = graph::classify(&inventory)?;
     Ok(BlobReachabilityObservation {

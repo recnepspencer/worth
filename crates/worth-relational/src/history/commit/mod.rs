@@ -10,3 +10,10 @@ pub(crate) use catalog::{RelationalCommitCatalog, RelationalCommitCatalogEnvelop
 pub use catalog::{RelationalCommitCatalogAppendDenial, RelationalCommitCatalogEntry};
 pub use identity::RelationalCommitIdentity;
 pub use parentage::{RelationalCommitParentage, RelationalCommitParentageDenial};
+
+mod envelope_residency;
+#[cfg(test)]
+mod envelope_residency_tests;
+mod index_entry;
+pub(crate) use envelope_residency::RelationalCommitEnvelopeResidency;
+pub(crate) use index_entry::RelationalCommitIndexEntry;

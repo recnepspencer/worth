@@ -24,12 +24,16 @@ const CELL_TEST: &str =
     "checkpoint_recovery::parallel_history::matrix::runtime::required_matrix_cell";
 
 fn run(row: Cell, scale: u64) -> Result<PricedObservation, String> {
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
+    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+    command
         .args(["--exact", CELL_TEST, "--nocapture"])
         .env("WORTH_REQUIRED_MATRIX_CELL", row.encode())
-        .env("WORTH_REQUIRED_PRICE_SCALE", scale.to_string())
-        .output()
-        .unwrap();
+        .env("WORTH_REQUIRED_PRICE_SCALE", scale.to_string());
+    let output = super::cell_process::output(
+        &mut command,
+        &format!("matrix cell {row:?}, price scale={scale}"),
+        std::time::Duration::from_secs(180),
+    )?;
     let stdout = String::from_utf8_lossy(&output.stdout);
     if !output.status.success() {
         return Err(format!(

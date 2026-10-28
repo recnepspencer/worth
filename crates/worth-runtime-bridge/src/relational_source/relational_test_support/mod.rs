@@ -161,6 +161,7 @@ fn commit_named_entity(
 
 /// Fork `new_branch` from the current root of `from_branch`.
 pub(crate) fn fork_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     new_branch: BranchId,
     from_branch: &BranchId,
@@ -169,7 +170,7 @@ pub(crate) fn fork_branch(
         .observe_fork_source(from_branch)
         .expect("fork source branch is owner-admissible");
     runtime
-        .fork_branch(new_branch, source)
+        .fork_branch(execution, new_branch, source)
         .expect("fork target branch is new");
 }
 

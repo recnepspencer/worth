@@ -68,6 +68,17 @@ impl VisibilityRetentionAuthority<'_> {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<RelationalRetentionPassProgress, RelationalStoppedRetentionPass> {
         let mut progress = RelationalRetentionPassProgress::empty();
+        let residency = self
+            .runtime
+            .storage_access()
+            .current_edition()
+            .demand_all(execution, &self.runtime.services.symbols)
+            .map_err(|failure| RelationalStoppedRetentionPass {
+                progress: progress.clone(),
+                stop: Stop::Request(Cause::from(failure)),
+            })?;
+        drop(residency);
+
         let result = optional_stage(
             execution,
             |context, memory| self.run_requested(context, memory, &mut progress),
@@ -212,7 +223,8 @@ impl VisibilityRetentionAuthority<'_> {
         // Portable upper bound for this keyed standard-map lookup, matching
         // explicit writer admission without assuming private B-tree geometry.
         checkpoint(context, edition.len() as u64).map_err(kernel_stop)?;
-        let Some(partition) = edition.partition(partition_id) else {
+        let full = edition.resident_full().map_err(Cause::StorageUnavailable)?;
+        let Some(partition) = full.partition(partition_id) else {
             return Ok((Vec::new(), 0));
         };
         let arena = K::arena(partition);

@@ -4,12 +4,16 @@ mod branch_root_checkpoint;
 mod branch_root_content_binding;
 mod branch_root_schema_binding;
 mod branch_root_shared_target_binding;
+mod branch_transition;
+mod canonical_artifact_neutrality;
+mod canonical_commit_artifact;
 mod checkpoint_recovery;
+mod declared_schema_binding;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod fork_provenance_checkpoint;
+mod fork_tail_after_source_moved;
 mod global_generation_reclamation;
-mod legacy_segment_recovery;
 mod lineage_allocator_denials;
 mod lineage_artifact_recovery;
 mod lineage_event_allocator_recovery;
@@ -26,10 +30,9 @@ mod tail_checkpoint_validation;
 use crate::diagnostics::data::RelationalDiagnosticValue;
 use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsScope};
 use crate::facade::durability::{
-    DurabilityMode, DurableStore, DurableStoreLayout, RecoveryAuthorityContinuityCheck,
-    RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCursor,
-    RecoveryFailureClass, RecoveryIntegrityReport, RecoveryPlan, RecoveryVerificationMode,
-    RecoveryVerificationOutcome, RelationIntegrityContractFamily,
+    RecoveryAuthorityContinuityCheck, RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity,
+    RecoveryFailureClass, RecoveryPlan, RecoveryVerificationMode, RecoveryVerificationOutcome,
+    RelationIntegrityContractFamily,
 };
 use crate::facade::history::BranchId;
 use crate::facade::identity::KindId;

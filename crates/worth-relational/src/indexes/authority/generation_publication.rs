@@ -38,12 +38,10 @@ pub(super) fn publish_index_generations(
             failed_indexes.push(result.index_id);
             continue;
         };
-        generations.push(publish_prepared_generation(
-            runtime,
-            basis,
-            result.index_id,
-            entries,
-        ));
+        match publish_prepared_generation(runtime, basis, result.index_id, entries) {
+            Some(generation) => generations.push(generation),
+            None => failed_indexes.push(result.index_id),
+        }
     }
     generations
 }
@@ -53,15 +51,15 @@ pub(super) fn publish_prepared_generation(
     basis: &IndexGenerationPublicationBasis,
     index_id: DerivedIndexId,
     entries: DerivedIndexEntries,
-) -> DerivedIndexGeneration {
+) -> Option<DerivedIndexGeneration> {
     let generation = prepared_generation(
         basis,
-        DerivedIndexGenerationId(runtime.indexes.next_generation_id()),
+        DerivedIndexGenerationId(runtime.indexes.next_generation_id()?),
         index_id,
         entries,
     );
     runtime.indexes.publish_generation(generation.clone());
-    generation
+    Some(generation)
 }
 
 pub(super) fn prepared_generation(

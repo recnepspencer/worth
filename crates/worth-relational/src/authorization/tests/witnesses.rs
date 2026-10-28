@@ -71,7 +71,10 @@ fn observe_same_witness_names(
         RelationalAuthorizationFieldOperand::new(2, ENTITY_KIND, name_field),
     )]);
     let plan = RelationalAuthorizationObservationPlan::try_new(
-        runtime.visibility_authority().snapshot(),
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted"),
         principal,
         scope,
         ENTITY_KIND,

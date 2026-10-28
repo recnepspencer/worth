@@ -32,6 +32,7 @@ pub(in crate::physical_runtime::record_serving) fn prepare_canonical_payload(
     batch: RecordAppendBatch,
 ) -> Result<CanonicalRecordAppendPayload, CanonicalPayloadPreparationError> {
     let record_count = batch.records.len() as u32;
+    let anchor_advance = batch.anchor_advance;
     let mut digest = Sha256::new();
     write_field(&mut digest, PAYLOAD_DOMAIN);
     write_field(&mut digest, &record_count.to_le_bytes());
@@ -52,8 +53,16 @@ pub(in crate::physical_runtime::record_serving) fn prepare_canonical_payload(
         write_field(&mut digest, &bytes);
         records.push(RecordAppendInput::Bytes(bytes));
     }
+    if let Some(advance) = anchor_advance {
+        write_field(&mut digest, advance.name.as_str().as_bytes());
+        write_field(&mut digest, &advance.expected_generation.to_le_bytes());
+        write_field(&mut digest, &advance.record_index.to_le_bytes());
+    }
     Ok(CanonicalRecordAppendPayload {
-        batch: RecordAppendBatch { records },
+        batch: RecordAppendBatch {
+            records,
+            anchor_advance,
+        },
         digest: digest.finalize().into(),
         record_count,
         payload_bytes,

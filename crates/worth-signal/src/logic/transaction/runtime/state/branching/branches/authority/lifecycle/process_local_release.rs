@@ -142,13 +142,12 @@ where
         {
             return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
         }
-        if let Some(terminal) = &terminal {
-            if terminal
+        if let Some(terminal) = &terminal
+            && terminal
                 .timeout_wake_id()
                 .is_some_and(|wake| !self.derived.temporal.can_release_resource_wake(node, wake))
-            {
-                return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
-            }
+        {
+            return Err(SignalConditionalServiceExecutionDenial::DefinitionMismatch);
         }
         Ok(terminal)
     }

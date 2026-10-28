@@ -269,7 +269,10 @@ fn pending_publication_denial(
         Kind::SnapshotIdentityExhausted => {
             WorthQueryProviderIdempotencyResolutionDenial::SnapshotIdentityExhausted
         }
-        kind @ (Kind::ExecutionResource { .. }
+        kind @ (Kind::ProjectionContract { .. }
+        | Kind::HistoricalVisibility { .. }
+        | Kind::StorageUnavailable(_)
+        | Kind::ExecutionResource { .. }
         | Kind::ExecutionNestedPatternStopped { .. }
         | Kind::ExecutionWorkerPanicked { .. }
         | Kind::ExecutionIdentitiesNotCanonical { .. }

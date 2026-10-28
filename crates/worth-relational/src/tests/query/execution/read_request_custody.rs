@@ -16,7 +16,10 @@ fn fixture(
     create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
     create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
     create_entity_in_partition(execution, &runtime, "right-a", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context_id = runtime.read_truth().query_plan_context(&snapshot).unwrap();
     let packet = PlannedQueryPacket {
         label: "read-request-custody".to_owned(),
@@ -155,7 +158,10 @@ fn serial_scope_admission_precedes_unavailable_snapshot() {
     let (runtime, plan) = fixture(&setup);
     let other = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let mut unavailable = plan.clone();
-    unavailable.snapshot = other.visibility_authority().snapshot();
+    unavailable.snapshot = other
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let host = worth_execution::SerialRequest::from_memory(
         worth_execution::SerialMemoryBudget::new(Some(0)),
         CancellationToken::new(),

@@ -30,7 +30,7 @@ pub(super) fn remove(
     media: &AdmittedRecoveryFilesystemMedia,
     admitted: AdmittedCheckpointResidue,
 ) -> RecoveryCheckpointResidueOutcome {
-    let execution = match admit_execution(coordination, admitted.checkpoint) {
+    let execution = match admit_execution(coordination, admitted.candidate) {
         Ok(execution) => execution,
         Err(denial) => return RecoveryCheckpointResidueOutcome::DeniedBeforeEffect(denial),
     };
@@ -72,7 +72,7 @@ pub(super) fn remove(
                 && signal_completion_is_terminal(signal)
             {
                 RecoveryCheckpointResidueOutcome::Removed {
-                    checkpoint: admitted.checkpoint,
+                    candidate: admitted.candidate,
                     candidate_digest: admitted.candidate_digest,
                 }
             } else {
@@ -129,12 +129,9 @@ pub(super) fn remove(
 
 fn admit_execution(
     coordination: &PhysicalRecoveryCoordination,
-    selected: PhysicalCheckpointIdentity,
+    candidate: PhysicalCheckpointIdentity,
 ) -> Result<crate::physical_runtime::ResourceAdmittedPhysicalWork, RecoveryCheckpointResidueDenial>
 {
-    let next = std::num::NonZeroU64::new(selected.sequence().get() + 1)
-        .ok_or(RecoveryCheckpointResidueDenial::Admission)?;
-    let candidate = PhysicalCheckpointIdentity::new(selected.store_identity(), next);
     let scope =
         PhysicalCheckpointWorkScope::new(candidate, PhysicalCheckpointWorkAction::RemoveCandidate)
             .ok_or(RecoveryCheckpointResidueDenial::Admission)?;

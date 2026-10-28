@@ -1,12 +1,8 @@
 use crate::diagnostics::data::{RelationalDiagnosticFields, RelationalDiagnosticValue};
 use crate::durability::authority::diagnostics::recovery::authority_continuity_mismatch_fields::authority_continuity_mismatch_fields;
-use crate::durability::authority::diagnostics::recovery::durable_identity_fields::{
-    checkpoint_id_array, segment_id_array, verification_layer_value,
-};
-use crate::durability::data::{
-    DurableCheckpointId, DurableSegmentId, RecoveryAuthorityParity, RecoveryPlan,
-    RecoveryVerificationOutcome,
-};
+use crate::durability::authority::diagnostics::recovery::durable_identity_fields::verification_layer_value;
+use crate::durability::data::{RecoveryAuthorityParity, RecoveryPlan, RecoveryVerificationOutcome};
+use crate::publication::patch::data::PatchStreamPosition;
 
 pub(super) fn recovery_authority_continuity_evaluated_fields(
     plan: &RecoveryPlan,
@@ -89,35 +85,22 @@ pub(super) fn recovery_authority_continuity_evaluated_fields(
 }
 
 pub(super) fn recovery_checkpoint_selected_fields(
-    checkpoint_id: Option<DurableCheckpointId>,
-    skipped_corrupt_checkpoints: &[DurableCheckpointId],
+    checkpoint_covered_position: Option<PatchStreamPosition>,
 ) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "checkpoint_id",
-            RelationalDiagnosticValue::optional(
-                checkpoint_id.map(RelationalDiagnosticValue::DurableCheckpointId),
-            ),
+    RelationalDiagnosticValue::object([(
+        "checkpoint_covered_position",
+        RelationalDiagnosticValue::optional(
+            checkpoint_covered_position.map(RelationalDiagnosticValue::PatchStreamPosition),
         ),
-        (
-            "skipped_corrupt_checkpoints",
-            checkpoint_id_array(skipped_corrupt_checkpoints),
-        ),
-    ])
+    )])
     .into()
 }
 
-pub(super) fn recovery_range_replayed_fields(
-    segment_ids: &[DurableSegmentId],
-    tail_commits: usize,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        ("segment_ids", segment_id_array(segment_ids)),
-        (
-            "tail_commits",
-            RelationalDiagnosticValue::unsigned(tail_commits),
-        ),
-    ])
+pub(super) fn recovery_range_replayed_fields(tail_commits: usize) -> RelationalDiagnosticFields {
+    RelationalDiagnosticValue::object([(
+        "tail_commits",
+        RelationalDiagnosticValue::unsigned(tail_commits),
+    )])
     .into()
 }
 

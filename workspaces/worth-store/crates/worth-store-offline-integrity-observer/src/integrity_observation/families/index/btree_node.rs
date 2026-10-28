@@ -117,18 +117,18 @@ pub(crate) fn inspect_btree_node_payload(
             2 => Some((64, 56)),
             _ => None,
         };
-        if let Some((key_width, leaf_width)) = expected_shape {
-            if key_len != key_width || (kind == 1 && value_len != leaf_width) {
-                return Err(damaged_field(
-                    Cause::MalformedPayload,
-                    key_start as u64,
-                    (key_len + value_len) as u64,
-                    Field::PayloadLength,
-                ));
-            }
+        if let Some((key_width, leaf_width)) = expected_shape
+            && (key_len != key_width || (kind == 1 && value_len != leaf_width))
+        {
+            return Err(damaged_field(
+                Cause::MalformedPayload,
+                key_start as u64,
+                (key_len + value_len) as u64,
+                Field::PayloadLength,
+            ));
         }
         shape(
-            previous_key.map_or(true, |prior| prior < key),
+            previous_key.is_none_or(|prior| prior < key),
             key_start,
             key_len,
         )?;

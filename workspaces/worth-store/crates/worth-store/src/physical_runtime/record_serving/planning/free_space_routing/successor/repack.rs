@@ -33,7 +33,7 @@ fn damaged() -> RecordAppendError {
 fn divide_ceil(value: u64, divisor: u64) -> Option<u64> {
     value
         .checked_div(divisor)?
-        .checked_add(u64::from(value % divisor != 0))
+        .checked_add(u64::from(!value.is_multiple_of(divisor)))
 }
 
 /// A local bound for rebuilding this tree, not an aggregate mutation heap grant.
@@ -160,7 +160,6 @@ pub(super) fn repack<S: FreeSpaceBlockSource>(
     let source_count = traversal.source_count;
     let observed_changes = (traversal.inserted, traversal.removed);
     let discovery = traversal.discovery;
-    drop(traversal);
     if source_count != current.entry_count()
         || observed_changes != expected_changes
         || writer.emitted != entry_count

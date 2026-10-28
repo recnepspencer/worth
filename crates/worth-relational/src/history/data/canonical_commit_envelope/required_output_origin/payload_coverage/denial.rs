@@ -265,7 +265,7 @@ impl UnsupportedPayload {
             envelope.schema_version.0, plan.plan_revision.0, plan.executable_bindings.len(), self.detail());
         if let Some(ordinal) = member_ordinal {
             use std::fmt::Write;
-            write!(detail, " member_ordinal={ordinal}").expect("String formatting is infallible");
+            write!(detail, " member_ordinal={ordinal}").expect(/* Proof: The destination is String and all formatted arguments are native integers; String::write_str always returns Ok and integer formatting introduces no fallible writer. */ "String formatting is infallible");
         }
         detail
     }

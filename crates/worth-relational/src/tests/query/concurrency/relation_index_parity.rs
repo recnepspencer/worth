@@ -24,14 +24,17 @@ fn concurrent_relation_index_certification_parity_stays_stable_under_scheduler_p
         );
     }
     let commit = create_entity_outcome(execution, &runtime, "anchor");
-    let relation_index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "relation.name".to_string(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: false,
-    });
+    let relation_index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "relation.name".to_string(),
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
     runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {

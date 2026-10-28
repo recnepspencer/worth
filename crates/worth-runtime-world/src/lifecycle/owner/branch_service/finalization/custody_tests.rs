@@ -43,7 +43,15 @@ fn settled_creation(
         branch: branch.clone(),
         incarnation: lifecycle,
     };
-    match execute_creation(owner, attempt, &destination, &cancellation.token()) {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    match execute_creation(
+        owner,
+        execution,
+        attempt,
+        &destination,
+        &cancellation.token(),
+    ) {
         BranchCreationExecution::Settled {
             attempt,
             progress,

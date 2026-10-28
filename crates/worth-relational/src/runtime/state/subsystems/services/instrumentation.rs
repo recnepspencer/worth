@@ -1,3 +1,4 @@
+// Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use std::sync::{Arc, Mutex};
 
 use crate::runtime::RuntimeComplexityCounters;
@@ -11,6 +12,13 @@ pub(crate) struct RuntimeInstrumentation {
 }
 
 impl RuntimeInstrumentation {
+    pub(crate) fn preparation_round(&self) -> Self {
+        Self {
+            complexity_counters: Arc::default(),
+            basis_counters: Arc::default(),
+            external_retention_terminals: self.external_retention_terminals.clone(),
+        }
+    }
     pub(crate) fn new() -> Self {
         Self {
             complexity_counters: Arc::new(Mutex::new(RuntimeComplexityCounters::default())),
@@ -26,7 +34,7 @@ impl RuntimeInstrumentation {
             complexity_counters: Arc::new(Mutex::new(
                 self.complexity_counters
                     .lock()
-                    .expect("complexity counter lock poisoned")
+                    .unwrap_or_else(|error| error.into_inner())
                     .clone(),
             )),
             basis_counters: Arc::new(Mutex::new(self.basis_counters())),
@@ -39,7 +47,7 @@ impl RuntimeInstrumentation {
             &mut self
                 .complexity_counters
                 .lock()
-                .expect("complexity counter lock poisoned"),
+                .unwrap_or_else(|error| error.into_inner()),
         );
     }
 
@@ -51,7 +59,7 @@ impl RuntimeInstrumentation {
             &mut self
                 .basis_counters
                 .lock()
-                .expect("basis counter lock poisoned"),
+                .unwrap_or_else(|error| error.into_inner()),
         );
     }
 
@@ -59,7 +67,7 @@ impl RuntimeInstrumentation {
         let mut counters = *self
             .basis_counters
             .lock()
-            .expect("basis counter lock poisoned");
+            .unwrap_or_else(|error| error.into_inner());
         let terminals = self.external_retention_terminals.snapshot();
         counters.external_retention_releases = counters
             .external_retention_releases

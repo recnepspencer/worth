@@ -38,7 +38,8 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                     return Err(Denial::NotSelectedPrefix);
                 }
                 let envelope = self
-                    .by_commit(commit)
+                    .demand_envelope(&execution, commit)
+                    .map_err(|cause| Denial::NativeRead(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
                 next = match envelope.commit.parents.as_slice() {
                     [] => None,
@@ -57,7 +58,8 @@ impl super::super::RelationalCanonicalPublicationRoutes {
                 crate::history::visit_authored_write_lookup(context, chain.len(), 8)?;
                 let (_, commit) = chain.entry_at(rank).expect("retained chain rank");
                 let envelope = self
-                    .by_commit(*commit)
+                    .demand_envelope(&execution, *commit)
+                    .map_err(|cause| Denial::NativeRead(cause.into()))?
                     .ok_or(Denial::CanonicalEvidenceUnavailable)?;
                 generation.extend(execution, context, &envelope)?;
             }

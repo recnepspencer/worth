@@ -42,7 +42,7 @@ impl<'r, S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>, D>
             .runtime()
             .with_application_advancement(request.scope, |phase| {
                 self.backend
-                    .run(&phase, request, NativeCommandAction::Validate)
+                    .validate(&phase, request)
                     .map_err(WorthQueryCapabilityCommandDenial::Native)?;
                 self.cleanup
                     .close_in_advancement(&phase, keepalive.runtime())

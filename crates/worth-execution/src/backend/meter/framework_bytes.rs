@@ -74,8 +74,11 @@ impl RunLimits {
             .checked_add(token_bytes)? // cloned checkpoint lineage
             .checked_add(size_of::<(usize, u64)>())?; // worker context stack
         let partition_bytes = partitions.checked_mul(per_partition)?;
-        let worker_guards =
-            max_workers.checked_mul(size_of::<crate::authority::ResourceReservation>())?;
+        // Only this frontier's workers need guard storage. The lease keeps its
+        // original ceiling so a singleton callback can still decompose work.
+        let worker_guards = max_workers
+            .min(partitions.max(1))
+            .checked_mul(size_of::<crate::authority::ResourceReservation>())?;
         let fixed = size_of::<WorkerActivity>()
             .checked_add(2 * size_of::<usize>())? // Arc allocation header
             .checked_add(token_bytes)?

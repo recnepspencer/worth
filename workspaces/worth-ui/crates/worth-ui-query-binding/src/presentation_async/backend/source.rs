@@ -27,7 +27,8 @@ fn initialize_in_request(
 ) -> Result<RelationalRuntime, Denial> {
     let source = RelationalRuntimeApi::builder()
         .runtime_name("worth-ui-presentation-async")
-        .build();
+        .build()
+        .map_err(|denial| Denial::NativeSourceConstruction(Box::new(denial)))?;
     let basis = source
         .observe_branch(&source.main_branch_identity())
         .map_err(|denial| Denial::NativeSourceBasis(Box::new(denial)))?

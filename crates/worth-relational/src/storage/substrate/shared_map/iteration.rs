@@ -40,7 +40,7 @@ impl<'a, K: Ord + Copy, V: Clone> SharedMapIter<'a, K, V> {
         let node = self
             .pending
             .pop()
-            .expect("the admitted next node remains present");
+            .expect(/* Proof: The iterator admits a next node only after pushing it onto pending; exclusive &mut iteration pops that same nonempty stack. */ "the admitted next node remains present");
         self.descend(node.right.as_deref());
         self.remaining -= 1;
         Ok(Some((&node.key, &node.value)))

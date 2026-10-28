@@ -30,9 +30,18 @@ if [[ "$actual_sha256" != "$expected_sha256" ]]; then
   exit 1
 fi
 
+java_executable="$(command -v java)"
+if command -v cygpath >/dev/null 2>&1; then
+  # MSYS resolves extensionless commands; the native runner needs the real file.
+  if [[ "$java_executable" != *.exe ]]; then
+    java_executable+=".exe"
+  fi
+  java_executable="$(cygpath -w "$java_executable")"
+fi
+
 cargo run --quiet \
   --manifest-path "$crate_root/Cargo.toml" \
   --bin worth_store_protocol_check -- \
-  "$(command -v java)" "$jar_path" "$state_root"
+  "$java_executable" "$jar_path" "$state_root"
 
 echo "verified direct Worth Store protocol checks with TLC $version ($actual_sha256)"

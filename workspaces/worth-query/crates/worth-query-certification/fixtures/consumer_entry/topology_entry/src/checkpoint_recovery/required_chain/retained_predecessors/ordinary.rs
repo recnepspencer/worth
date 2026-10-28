@@ -1,6 +1,5 @@
 //! Genuine ordinary complete-tree ownership and retirement-safe terminal disposal.
 mod successor_custody;
-mod unpublished;
 use super::super::*;
 use super::program::{Program, Root};
 use worth_query_host::facade::application_contribution::{

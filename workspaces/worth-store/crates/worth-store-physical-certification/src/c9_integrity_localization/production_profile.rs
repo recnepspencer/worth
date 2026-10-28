@@ -37,6 +37,16 @@ impl ProductionWorldProfile {
         4 * self.page_size().bytes() as u64
     }
 
+    pub(crate) const fn operation_bytes(self) -> u64 {
+        match self {
+            // The 64 KiB producer's second batch reserves 202 pages (13,238,272
+            // bytes) alongside 4,666,496 retained bytes: 17,904,768 total.
+            // Round that measured overlap up to the next whole MiB.
+            Self::Pages64KiB => 18 * 1024 * 1024,
+            Self::Primary16KiB | Self::Pages32KiB | Self::ReusedTails16KiB => 16 * 1024 * 1024,
+        }
+    }
+
     pub(crate) const fn batches(self) -> usize {
         match self {
             Self::Primary16KiB | Self::ReusedTails16KiB => 8,
@@ -72,7 +82,7 @@ impl ProductionWorldProfile {
         use PhysicalOperationAllocationScope as Scope;
         use PhysicalSpeculativeWorkKind as Speculation;
         let resident = self.resident_bytes();
-        let operation = 16 * 1024 * 1024;
+        let operation = self.operation_bytes();
         let metadata = 64 * 1024;
         PhysicalRecordResidencyPolicy::builder()
             .total_bytes(bytes(operation + metadata + 2 * resident))

@@ -36,6 +36,7 @@ pub enum RelationalAuthoredWriteDenial {
     OrderedStorage(worth_execution::ExecutionOrderedMapDenial),
     Request(worth_execution::WorkCeilingDenial),
     Interrupted(worth_execution::MapKernelStop),
+    NativeRead(crate::execution::RelationalExecutionDenialCause),
     Retention(crate::branch::RelationalBranchBasisDenial),
 }
 

@@ -126,11 +126,6 @@ impl ComponentSelectionKey {
             }
         }
     }
-    pub(in crate::domain_computation::primary_graph) fn locator(&self) -> String {
-        let mut result = String::new();
-        self.write_locator(&mut result).expect("String write");
-        result
-    }
 }
 
 fn write_entity(output: &mut dyn std::fmt::Write, entity: EntityId) -> std::fmt::Result {

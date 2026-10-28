@@ -4,11 +4,11 @@ use crate::strategy::LayoutStrategyFamily;
 use super::super::denial::SelectionCandidateRejection;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(in crate::planning) enum EligibleStrategyOperation {
-    LsmLookup,
-    LsmRunPublication,
-    LsmReplayRecovery,
-    LsmCompaction,
+pub(in crate::planning) enum EligibleLsmOperation {
+    Lookup,
+    RunPublication,
+    ReplayRecovery,
+    Compaction,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -29,19 +29,15 @@ impl CandidateStrategyFamily {
 pub(in crate::planning) const fn classify_candidate_operation(
     family: CandidateStrategyFamily,
     shape: AccessShape,
-) -> Result<EligibleStrategyOperation, SelectionCandidateRejection> {
+) -> Result<EligibleLsmOperation, SelectionCandidateRejection> {
     let operation = match (family, shape) {
-        (CandidateStrategyFamily::Lsm, AccessShape::PointLookup) => {
-            EligibleStrategyOperation::LsmLookup
-        }
-        (CandidateStrategyFamily::Lsm, AccessShape::Append) => {
-            EligibleStrategyOperation::LsmRunPublication
-        }
+        (CandidateStrategyFamily::Lsm, AccessShape::PointLookup) => EligibleLsmOperation::Lookup,
+        (CandidateStrategyFamily::Lsm, AccessShape::Append) => EligibleLsmOperation::RunPublication,
         (CandidateStrategyFamily::Lsm, AccessShape::RebuildRead) => {
-            EligibleStrategyOperation::LsmReplayRecovery
+            EligibleLsmOperation::ReplayRecovery
         }
         (CandidateStrategyFamily::Lsm, AccessShape::CompactionRead) => {
-            EligibleStrategyOperation::LsmCompaction
+            EligibleLsmOperation::Compaction
         }
         (
             CandidateStrategyFamily::BTree,

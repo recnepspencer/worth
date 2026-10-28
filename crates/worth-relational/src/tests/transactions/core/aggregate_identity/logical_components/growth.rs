@@ -127,13 +127,13 @@ fn run(unrelated: usize) -> [usize; 4] {
     );
     oracle.check(execution, &runtime, &changed);
     for (index, carrier) in probes.into_iter().enumerate() {
-        for side in 0..2 {
+        for (side, &name) in names[index].iter().enumerate() {
             let actual = read(execution, &runtime, &changed.snapshot, key(carrier, side));
             assert_eq!(
                 actual.members().cloned().collect::<Vec<_>>(),
                 [key(carrier, side)]
             );
-            assert_eq!(actual.identity(), names[index][side]);
+            assert_eq!(actual.identity(), name);
         }
     }
     let actual = &changed.execution().complexity_delta;

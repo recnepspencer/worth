@@ -61,7 +61,6 @@ pub(super) fn derive(
     let next_block = planner.next_block;
     let topology_bytes = PlanningResidentAllowance::vector_bytes(&topology)?;
     let updates_bytes = PlanningResidentAllowance::vector_bytes(&updates)?;
-    drop(planner);
     drop((topology, updates));
     allowance.release(topology_bytes);
     allowance.release(updates_bytes);

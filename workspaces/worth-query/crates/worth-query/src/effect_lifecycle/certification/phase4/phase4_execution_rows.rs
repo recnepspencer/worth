@@ -37,6 +37,7 @@ pub(super) fn branch_mutation_execution_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -93,6 +94,7 @@ pub(super) fn relational_merge_execution_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("candidate".to_string()),
         &BranchId("main".to_string()),
@@ -205,6 +207,7 @@ pub(super) fn batch_execution_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),
@@ -263,6 +266,7 @@ pub(super) fn relational_oracle_row(
         BranchId("main".to_string()),
     );
     crate::runtime::fork_branch_from_exact_source(
+        execution,
         &mut runtime,
         BranchId("branch-a".to_string()),
         &BranchId("main".to_string()),

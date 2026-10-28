@@ -32,13 +32,12 @@ pub(super) fn validate(members: &[Member]) -> Result<(), Denial> {
         let disclosure = &parts.metadata_disclosure;
         if let (Some(name), Some(identity)) =
             (disclosure.capability_name(), disclosure.capability_type())
-        {
-            if !members.iter().any(|member| {
+            && !members.iter().any(|member| {
                 matches!(member, Member::ApplicationCapability { contract }
                 if contract.name() == name && contract.capability_type() == identity)
-            }) {
-                return Err(Denial::MissingApplicationQueryInspectionDependency);
-            }
+            })
+        {
+            return Err(Denial::MissingApplicationQueryInspectionDependency);
         }
     }
     Ok(())

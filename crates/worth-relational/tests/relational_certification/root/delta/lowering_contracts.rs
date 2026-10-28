@@ -21,7 +21,7 @@ fn phase5_lowering_reads_actual_branch_pre_state_instead_of_expected_oracle() {
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork(&world.runtime, "storm");
+    fork(execution, &world.runtime, "storm");
     let voyage = EntityKey::new(EntityKind::Voyage, 0);
     commit_branch_batch(
         execution,
@@ -72,7 +72,7 @@ fn phase5_lowering_rejects_wrong_branch_and_duplicate_delta_preconditions() {
 
     let (world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork(&world.runtime, "storm");
+    fork(execution, &world.runtime, "storm");
     assert!(matches!(
         lower_supply_chain_production_delta(
             execution,
@@ -144,7 +144,7 @@ fn maintenance_rewire_and_medical_lower_from_each_actual_branch_pre_state() {
 
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork(&world.runtime, "medical-hold");
+    fork(execution, &world.runtime, "medical-hold");
     let cargo = EntityKey::new(EntityKind::CargoLot, 0);
     commit_branch_batch(
         execution,
@@ -201,7 +201,7 @@ fn prove_number_prestate(
     } = case;
     let (mut world, baseline) = certified_supply_chain_world(execution, SupplyChainScale::court());
     assert_oracle_matches(execution, &world, &baseline);
-    fork(&world.runtime, branch);
+    fork(execution, &world.runtime, branch);
     commit_branch_batch(
         execution,
         &world.runtime,
@@ -230,12 +230,16 @@ fn prove_number_prestate(
     );
 }
 
-fn fork(runtime: &worth_relational::facade::runtime::RelationalRuntime, branch: &str) {
+fn fork(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    branch: &str,
+) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".to_owned()))
         .unwrap();
     runtime
-        .fork_branch(BranchId(branch.to_owned()), source)
+        .fork_branch(execution, BranchId(branch.to_owned()), source)
         .unwrap();
 }
 

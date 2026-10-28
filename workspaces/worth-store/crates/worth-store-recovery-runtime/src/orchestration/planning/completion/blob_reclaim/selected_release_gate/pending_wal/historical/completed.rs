@@ -59,9 +59,8 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
             >() as u64)
         })
         .unwrap_or(u64::MAX);
-    let root_encoding = u64::from(context.authority.record_format.page_size().bytes())
-        .checked_mul(2)
-        .unwrap_or(u64::MAX);
+    let root_encoding =
+        u64::from(context.authority.record_format.page_size().bytes()).saturating_mul(2);
     if resident
         .transient(replacement_headers.max(root_encoding))
         .is_err()

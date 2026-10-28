@@ -38,7 +38,8 @@ pub(super) fn attach_rejection(
         | TransactionCommitError::PublicationFailed { .. } => {
             commit_log.record_rejection(phase, None, None, error.detail());
         }
-        TransactionCommitError::PerformedButDurabilityDeferred { .. } => {}
+        // Not a rejection: the commit's durable fate is not yet known.
+        TransactionCommitError::DurabilityUnresolved { .. } => {}
     }
     error.with_commit_log(commit_log.clone())
 }

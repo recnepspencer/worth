@@ -15,13 +15,15 @@ fn branch_head_visibility_updates_incrementally_under_branch_churn() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("analysis".to_string()),
             &BranchId("main".to_string()),
         )
@@ -32,7 +34,7 @@ fn branch_head_visibility_updates_incrementally_under_branch_churn() {
         let _ = update_entity(execution, &runtime, entity, &format!("base-r{revision}"));
     }
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(stats.protected_visibility_version_count, 2);
@@ -55,20 +57,22 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let base = create_entity_outcome(execution, &runtime, "base");
     let entity = changed_entities(&base)[0];
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("analysis".to_string()),
             &BranchId("main".to_string()),
         )
         .unwrap();
     let _ = update_entity(execution, &runtime, entity, "base-updated");
 
-    let stats = runtime.storage_access().storage_stats();
+    let stats = runtime.storage_access().storage_stats(execution).unwrap();
 
     assert_eq!(stats.protected_visibility_version_count, 2);
     assert_eq!(stats.cached_visibility_version_count, 0);
@@ -78,7 +82,7 @@ fn branch_head_protection_can_be_lazy_without_populating_visibility_cache() {
         .read_truth()
         .read_version(execution, base.version_id)
         .expect("read request remains live");
-    let warmed_stats = runtime.storage_access().storage_stats();
+    let warmed_stats = runtime.storage_access().storage_stats(execution).unwrap();
     assert_eq!(warmed_stats.cached_visibility_version_count, 0);
     assert_eq!(warmed_stats.protected_visibility_version_count, 2);
 }

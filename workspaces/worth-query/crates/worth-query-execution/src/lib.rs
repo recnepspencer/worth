@@ -9,8 +9,9 @@
 //! mints attempt-local provider sessions, and carries execution evidence.
 
 #![forbid(unsafe_code)]
-// Rustdoc's auto-trait walk through relational trees exceeds its default depth.
-#![cfg_attr(doc, recursion_limit = "256")]
+// Auto-trait walks through retained Relational trees exceed the default
+// depth in both ownership courts and rustdoc.
+#![recursion_limit = "256"]
 
 mod basis;
 mod domain_computation;
@@ -34,3 +35,7 @@ mod process_deadline;
 
 #[cfg(test)]
 mod test_read_stops;
+
+#[cfg(test)]
+#[path = "test_support/published_checkpoint.rs"]
+mod published_checkpoint;

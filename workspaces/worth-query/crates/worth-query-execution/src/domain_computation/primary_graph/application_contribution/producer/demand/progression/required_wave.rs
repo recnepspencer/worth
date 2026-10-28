@@ -140,9 +140,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution::produ
 ) -> WorthQueryOutputDemandDenial {
     use CompanionPreflightStop as Stop;
     match stop {
-        Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
-        | Stop::WorkCounterOverflow => work_denial(),
+        Stop::WorkCounterOverflow => work_denial(),
         _ => capacity_denial(),
     }
 }

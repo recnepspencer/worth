@@ -44,11 +44,14 @@ fn registry_drop_closed_claim_release_is_two_rows_without_a_registry_pass() {
         retain_owned_key(&mut state, &old[0]);
         let wake = Arc::clone(&state.records[&old[0]].wake);
         drop(state);
-        let whole = super::super::record_map::whole_rows();
+        let whole = super::super::record_map::whole_rows().expect("bounded registry observation");
         let occurrence = super::super::record_map::occurrence_rows_visited();
         drop(interest(&registry, old[0].clone(), wake));
         contacts.push(super::super::record_map::occurrence_rows_visited() - occurrence);
-        assert_eq!(super::super::record_map::whole_rows(), whole);
+        assert_eq!(
+            super::super::record_map::whole_rows().expect("bounded registry observation"),
+            whole
+        );
         let state = registry.state.lock().unwrap();
         for key in &old[..2] {
             assert!(!state.records[key].has_cached_ready());

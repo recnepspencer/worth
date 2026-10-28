@@ -77,15 +77,15 @@ pub(crate) fn observe_artifact(bytes: &[u8]) -> ArtifactFacts {
     if bytes.get(..8) == Some(&WAL_MAGIC[..]) {
         return wire::observe_wal(bytes);
     }
-    if bytes.get(..8) == Some(&CHECKPOINT_STREAM_MAGIC[..]) {
-        if let Some(facts) = wire::observe_checkpoint(bytes) {
-            return ArtifactFacts {
-                generation: true,
-                generation_links: facts.generation_links,
-                checkpoint: Some(facts),
-                ..empty_facts()
-            };
-        }
+    if bytes.get(..8) == Some(&CHECKPOINT_STREAM_MAGIC[..])
+        && let Some(facts) = wire::observe_checkpoint(bytes)
+    {
+        return ArtifactFacts {
+            generation: true,
+            generation_links: facts.generation_links,
+            checkpoint: Some(facts),
+            ..empty_facts()
+        };
     }
     if bytes.get(..8) == Some(&DURABLE_MAGIC[..]) {
         return durable::observe(bytes);

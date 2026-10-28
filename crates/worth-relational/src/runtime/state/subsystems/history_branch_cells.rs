@@ -71,10 +71,10 @@ impl HistorySubsystem {
                         let previous_root = existing
                             .get(cell.identity().branch_id())
                             .and_then(RelationalBranchReferenceCell::root)
-                            .expect("live empty branch retains its pre-transition root");
+                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
                         let next_root = cell
                             .root()
-                            .expect("transitioned empty branch retains its schema root");
+                            .ok_or(RelationalBranchCellDenial::RetentionOwnerUnavailable)?;
                         self.reserve_branch_head_retirement(
                             cell.identity(),
                             &previous_root,
@@ -92,9 +92,8 @@ impl HistorySubsystem {
                     }
                 };
                 self.branch_cells.restore_all(cells);
-                for (mut reservation, previous_root, next_root) in reservations {
-                    reservation.transfer_head(&previous_root, &next_root);
-                    reservation.replace_head(previous_root);
+                for (reservation, _previous_head_custody, next_root) in reservations {
+                    reservation.transfer_head(&next_root).replace_head();
                 }
                 Ok(())
             }
@@ -114,6 +113,30 @@ impl HistorySubsystem {
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), String> {
+        // A replayed commit's prior cell state that equals a cell recovery
+        // already admitted (from the checkpoint or an earlier tail commit),
+        // once rebound to this runtime, was validated then, including its fork
+        // provenance. Readmitting it again would demand the provenance root,
+        // which a checkpoint taken after the source branch moved on no longer
+        // retains.
+        if self
+            .branch_cell(expected_branch_id)
+            .is_some_and(|existing| {
+                RelationalBranchReferenceCell::from_checkpoint_with_root(
+                    self.runtime_instance_id,
+                    checkpoint.clone(),
+                    None,
+                )
+                .is_ok_and(|rebound| {
+                    history_recovery_validation::branch_cell_truth_matches(
+                        &existing.checkpoint(),
+                        &rebound.checkpoint(),
+                    )
+                })
+            })
+        {
+            return Ok(());
+        }
         if let Some(FoundationalBranchTarget::Basis(target)) = checkpoint
             .fork_provenance
             .as_ref()
@@ -289,16 +312,7 @@ impl HistorySubsystem {
         Ok(roots
             .into_iter()
             .map(|(commit_id, root)| {
-                let partitions = root
-                    .partition_ids()
-                    .into_iter()
-                    .filter_map(|partition_id| root.partition_state(partition_id).cloned())
-                    .collect();
-                crate::branch::RelationalBranchRootCheckpoint::new(
-                    commit_id,
-                    partitions,
-                    root.retained_schema_authority(),
-                )
+                crate::branch::RelationalBranchRootCheckpoint::new(commit_id, root)
             })
             .collect())
     }
@@ -328,7 +342,8 @@ fn branch_head_retirement_denial(
         crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable => {
             RelationalBranchCellDenial::RetentionOwnerUnavailable
         }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge => {
+        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
+        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
             RelationalBranchCellDenial::RetentionRootSetTooLarge
         }
     }

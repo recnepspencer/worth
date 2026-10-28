@@ -19,7 +19,8 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     let entity = changed_entities(&created)[0];
     let start_lineage = runtime
         .lineage_access()
-        .for_record(entity)
+        .for_record(execution, entity)
+        .unwrap()
         .unwrap()
         .lineage_id;
 
@@ -29,14 +30,17 @@ fn complexity_budget_lineage_historical_resolution_reports_branch_scoped_work() 
     }
 
     runtime.performance_access().reset_counters();
-    let resolution =
-        runtime
-            .lineage_access()
-            .resolve_historical_lineage(HistoricalResolutionRequest {
+    let resolution = runtime
+        .lineage_access()
+        .resolve_historical_lineage(
+            execution,
+            HistoricalResolutionRequest {
                 branch_id: BranchId("main".to_string()),
                 lineage_id: start_lineage,
                 boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            });
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_historical_resolution_requests, 1);
@@ -61,6 +65,7 @@ fn complexity_budget_lineage_branch_divergence_reports_breadth() {
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )
@@ -73,14 +78,17 @@ fn complexity_budget_lineage_branch_divergence_reports_breadth() {
     );
 
     runtime.performance_access().reset_counters();
-    let divergence = runtime.lineage_access().divergence_between_branches(
-        execution,
-        LineageDivergenceRequest {
-            left_branch: BranchId("main".to_string()),
-            right_branch: BranchId("feature".to_string()),
-            traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
-        },
-    );
+    let divergence = runtime
+        .lineage_access()
+        .divergence_between_branches(
+            execution,
+            LineageDivergenceRequest {
+                left_branch: BranchId("main".to_string()),
+                right_branch: BranchId("feature".to_string()),
+                traversal_basis: LineageDivergenceTraversalBasis::FullBranchGraphComparison,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_branch_divergence_requests, 1);
@@ -124,13 +132,16 @@ fn complexity_budget_lineage_graph_snapshot_reports_full_breadth() {
     create_entity_outcome(execution, &runtime, "right");
 
     runtime.performance_access().reset_counters();
-    let graph = runtime.lineage_access().graph(
-        execution,
-        LineageGraphRequest {
-            branch_id: BranchId("main".to_string()),
-            traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        },
-    );
+    let graph = runtime
+        .lineage_access()
+        .graph(
+            execution,
+            LineageGraphRequest {
+                branch_id: BranchId("main".to_string()),
+                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+            },
+        )
+        .unwrap();
     let counters = runtime.performance_access().counters();
 
     assert_eq!(counters.lineage_graph_snapshot_requests, 1);
@@ -249,4 +260,27 @@ fn complexity_budget_replay_lineage_parity_reports_authority_basis_and_digest_wi
         1
     );
     assert_eq!(counters.replay_lineage_authoritative_basis_rejections, 0);
+}
+
+#[test]
+fn complexity_budget_lineage_finalization_and_publication_report_artifact_width() {
+    let request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&request);
+    for population in [1, 16] {
+        let runtime = runtime_with_test_schema();
+        for index in 0..population {
+            let created = create_entity_outcome(execution, &runtime, &format!("prior-{index}"));
+            release_test_commit_snapshot(&runtime, &created);
+        }
+        runtime.performance_access().reset_counters();
+        let created = create_entity_outcome(execution, &runtime, "measured");
+        release_test_commit_snapshot(&runtime, &created);
+        let counters = runtime.performance_access().counters();
+        let events = counters.lineage_finalization_event_batch_width;
+        let decisions = counters.lineage_finalization_decision_log_width;
+        assert!((1..8).contains(&events), "{counters:?}");
+        assert!((1..8).contains(&decisions), "{counters:?}");
+        assert_eq!(counters.lineage_publication_event_width, events);
+        assert_eq!(counters.lineage_publication_decision_width, decisions);
+    }
 }

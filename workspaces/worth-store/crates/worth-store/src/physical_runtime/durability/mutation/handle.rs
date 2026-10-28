@@ -228,10 +228,10 @@ impl PhysicalMutationAttempt {
                 .then(|| completed_unobserved_event(&state, self.identity))
                 .flatten()
         };
-        if let Some(event) = completed_unobserved {
-            if let Some(owner) = self.owner.upgrade() {
-                owner.record_completed_unobserved(event);
-            }
+        if let Some(event) = completed_unobserved
+            && let Some(owner) = self.owner.upgrade()
+        {
+            owner.record_completed_unobserved(event);
         }
     }
 

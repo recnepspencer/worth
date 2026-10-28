@@ -31,7 +31,7 @@ impl<'runtime> SourceReadVerification<'runtime> {
             StructuralWalkObservation::checkpoint(context).map_err(Failure::Execution)?;
             runtime.read_truth().pin_read_capability(snapshot, &[], execution)
                 .map_err(|stop| match stop {
-                    worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop) => Failure::Execution(stop.into()),
+                    worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(stop) => Failure::Execution(stop),
                     _ => Failure::Unavailable,
                 })
         });

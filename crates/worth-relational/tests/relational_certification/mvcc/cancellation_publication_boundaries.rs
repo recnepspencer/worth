@@ -24,7 +24,7 @@ fn cancellation_immediately_before_the_supply_chain_critical_section_moves_nothi
     let control = RelationalOperationControl::uninterrupted().with_injected_interruption_for_test(
         RelationalInterruptionBoundary::BeforeCriticalSection,
         RelationalOperationInterruption::Cancelled,
-        1,
+        std::num::NonZeroUsize::MIN,
     );
     let transaction = world
         .runtime

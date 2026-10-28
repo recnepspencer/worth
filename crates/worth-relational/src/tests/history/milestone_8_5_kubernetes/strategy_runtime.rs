@@ -18,7 +18,9 @@ pub(super) fn strategy_schema_registry() -> crate::schema::data::RelationalSchem
     .build_registry()
 }
 
-pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> RelationalRuntime {
+pub(super) fn persisted_strategy_runtime(
+    medium: std::sync::Arc<crate::tests::support::TestDurableMedium>,
+) -> RelationalRuntime {
     let intent_descriptor = IntentReconciliationStrategy::descriptor(
         crate::facade::commit_strategies::CommitStrategyId(881),
     );
@@ -28,11 +30,6 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(strategy_schema_registry())
-        .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-        .durable_store_layout(DurableStoreLayout {
-            root_path,
-            segment_commit_capacity: 2,
-        })
         .commit_strategy(
             crate::facade::commit_strategies::CommitStrategyRegistration::new(
                 intent_descriptor.clone(),
@@ -51,7 +48,8 @@ pub(super) fn persisted_strategy_runtime(root_path: std::path::PathBuf) -> Relat
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &replica_descriptor,
         ))
-        .build()
+        .build_durable(medium.attachment())
+        .expect("valid native runtime configuration")
 }
 
 pub(super) fn execute_strategy_commit(
@@ -76,7 +74,10 @@ pub(super) fn execute_strategy_commit(
             .snapshot_for_observation(&basis.observation())
             .expect("open target branch strategy snapshot")
     } else {
-        runtime.visibility_authority().snapshot()
+        runtime
+            .visibility_authority()
+            .snapshot()
+            .expect("current snapshot fixture is admitted")
     };
     let execution = runtime
         .commit_strategies()
@@ -99,7 +100,13 @@ pub(super) fn execute_strategy_commit(
         });
     let mut authority = runtime.commit_strategies_authority();
     let lowered = authority
-        .lower_execution_with_input(runtime, &request, &execution, transaction_validation_input)
+        .lower_execution_with_input(
+            request_execution,
+            runtime,
+            &request,
+            &execution,
+            transaction_validation_input,
+        )
         .expect("lowered strategy plan");
     let validated = authority
         .validate_lowered_plan(request_execution, runtime, lowered)

@@ -223,7 +223,10 @@ fn validate_group(
         )?;
     }
     Ok(Arc::clone(
-        original.required_output_origin.as_ref().unwrap(),
+        original
+            .required_output_origin
+            .as_ref()
+            .ok_or("required producer origin is absent")?,
     ))
 }
 

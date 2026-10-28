@@ -26,6 +26,7 @@ fn with_readers(
             |builder, id| builder.custom_invariant(registration(id, mode, limit, control)),
         )
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn publish(

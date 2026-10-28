@@ -37,14 +37,14 @@ impl RelationalBranchRetentionLease {
     pub fn identity(&self) -> &RelationalBranchIdentity {
         self.observation
             .as_ref()
-            .expect("live retention lease carries its observation")
+            .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "live retention lease carries its observation")
             .identity()
     }
 
     pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
         self.observation
             .as_ref()
-            .expect("live retention lease carries its observation")
+            .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "live retention lease carries its observation")
             .descriptor()
     }
 
@@ -56,11 +56,11 @@ impl RelationalBranchRetentionLease {
         let observation = self
             .observation
             .take()
-            .expect("retention lease can be released only once");
+            .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "retention lease can be released only once");
         let outcome = self
             .obligation
             .take()
-            .expect("live retention lease carries its owner obligation")
+            .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "live retention lease carries its owner obligation")
             .release();
         self.terminal_accounting.record_explicit_release();
         RelationalBranchRetentionReleaseReceipt {
@@ -82,7 +82,7 @@ impl RelationalBranchRetentionLease {
     pub(crate) fn admitted_basis(&self) -> crate::branch::AdmittedRelationalBranchBasis {
         self.observation
             .as_ref()
-            .expect("live retention lease carries its observation")
+            .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "live retention lease carries its observation")
             .admitted_basis()
     }
 }

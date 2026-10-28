@@ -17,15 +17,19 @@ use super::{
 
 pub struct RecoveredPhysicalRuntimeHandoff {
     core: RecoveredPhysicalRuntimeCore,
-    evidence: RecoveredPhysicalRuntimeHandoffEvidence,
+    // Boxed so a recovery outcome stays small while it is matched and moved.
+    evidence: Box<RecoveredPhysicalRuntimeHandoffEvidence>,
 }
 
 impl RecoveredPhysicalRuntimeHandoff {
-    pub(crate) const fn new(
+    pub(crate) fn new(
         core: RecoveredPhysicalRuntimeCore,
         evidence: RecoveredPhysicalRuntimeHandoffEvidence,
     ) -> Self {
-        Self { core, evidence }
+        Self {
+            core,
+            evidence: Box::new(evidence),
+        }
     }
 
     pub const fn core(&self) -> &RecoveredPhysicalRuntimeCore {

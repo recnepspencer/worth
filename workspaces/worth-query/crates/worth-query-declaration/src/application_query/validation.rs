@@ -51,7 +51,6 @@ pub enum ApplicationQueryDefinitionDenial {
     LiveCauseRequiresContinuation,
     LiveCauseScopeSelectorMismatch,
     LiveCauseTargetSelectorMismatch,
-    InvalidLiveResourceContract,
 }
 
 pub(crate) fn validate_portable_application_query_freshly(
@@ -151,10 +150,10 @@ fn validate_result_and_root_selection(
     if let Some(orbit) = definition.orbit() {
         slots.insert(orbit.slot_type());
     }
-    if let Some(components) = definition.component_selection() {
-        if !slots.insert(components.slot_type()) {
-            return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
-        }
+    if let Some(components) = definition.component_selection()
+        && !slots.insert(components.slot_type())
+    {
+        return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);
     }
     if !shape_slots_are_unique(definition.result_shape(), &mut slots) {
         return Err(ApplicationQueryDefinitionDenial::DuplicateResultSlot);

@@ -31,8 +31,10 @@ use planar_read::*;
 #[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/region_output.rs"]
 mod region_output;
 use region_output::*;
-#[path = "../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer.rs"]
-mod output_producer;
+mod output_producer {
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/binding.rs");
+    include!("../../../../../../worth-query-certification/fixtures/consumer_entry/topology_entry/src/checkpoint_recovery/computation_partition/output_producer/readiness.rs");
+}
 use output_producer::*;
 mod facts {
     use super::*;
@@ -85,3 +87,4 @@ pub(in crate::domain_computation::primary_graph) fn with_genuine_native_observat
     let owner = runtime.bridge.conditional();
     inspect(&owner, observation)
 }
+mod commit_interruption;

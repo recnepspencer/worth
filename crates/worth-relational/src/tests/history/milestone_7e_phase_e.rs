@@ -4,7 +4,7 @@ use crate::facade::runtime::RelationalRuntime;
 use crate::merge::data::RelationalMergeAdmittedSurfaceRow;
 use crate::tests::support::{
     checkpoint_and_recover_with, create_branch_from_main, create_entity,
-    create_entity_outcome_on_branch, persisted_runtime_with_test_schema,
+    create_entity_outcome_on_branch, durable_runtime_with_test_schema,
 };
 use crate::transactions::data::PublishedMergeExecutionAuthority;
 
@@ -83,7 +83,8 @@ fn published_merge_outcome_retains_proof_packet_as_authority() {
     let runtime = merge_ready_runtime(execution);
     let outcome = execute_merge(execution, &runtime);
     let summary_packet = outcome.execution_summary.proof_packet().clone();
-    let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let live_authority =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
 
     assert_eq!(
         summary_packet,
@@ -249,11 +250,12 @@ fn merge_proof_packet_survives_publication_and_recovery_without_drift() {
     let runtime = merge_ready_runtime(execution);
     let outcome = execute_merge(execution, &runtime);
     let live_packet = outcome.execution_summary.proof_packet.clone();
-    let live_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let live_authority =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
     let (_recovery, recovered) =
-        checkpoint_and_recover_with(execution, &runtime, persisted_runtime_with_test_schema);
+        checkpoint_and_recover_with(execution, &runtime, durable_runtime_with_test_schema);
     let recovered_authority =
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id);
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id);
 
     assert_eq!(live_packet, live_authority.execution_summary.proof_packet);
     assert_eq!(
@@ -270,7 +272,7 @@ fn merge_proof_packet_survives_publication_and_recovery_without_drift() {
 }
 
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
     create_branch_from_main(&runtime, "feature");
     create_entity_outcome_on_branch(
@@ -304,12 +306,15 @@ fn execute_merge(
 }
 
 fn published_merge_authority(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     commit_id: crate::facade::history::CommitId,
 ) -> PublishedMergeExecutionAuthority {
     runtime
         .replay()
-        .canonical_commit_envelope(commit_id)
+        .canonical_commit_envelope(execution, commit_id)
+        .unwrap()
+        .map(|envelope| envelope.as_ref().clone())
         .and_then(|envelope| envelope.merge_execution_authority.clone())
         .expect("published merge authority")
 }

@@ -44,10 +44,10 @@ pub(super) fn scan(
                 denial = Some(RepairJournalDenial::InvalidHistory);
                 return;
             };
-            if record.operation_id() == operation {
-                if let Err(error) = observe_record(&mut state, record.kind()) {
-                    denial = Some(error);
-                }
+            if record.operation_id() == operation
+                && let Err(error) = observe_record(&mut state, record.kind())
+            {
+                denial = Some(error);
             }
         })
         .map_err(|_| RepairJournalDenial::Media)?;

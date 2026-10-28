@@ -7,8 +7,10 @@ mod draft_preparation_phase;
 mod execution;
 mod execution_admission;
 mod history_binding;
+mod history_preparation;
 mod history_resolution_phase;
 mod invariant_phase;
+mod merge_draft;
 mod mutation_execution;
 mod publication_execution;
 mod rejection;
@@ -22,7 +24,6 @@ pub(crate) use execution::{
     publish_prepared_authoritative_commit,
 };
 pub(crate) use publication_execution::publish_commit_execution;
-pub(crate) use publication_execution::CommitDurableAppendAdmission;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
 pub(crate) use request_resources::request_lease;

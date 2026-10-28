@@ -37,9 +37,10 @@ fn validated_sibling_proposals_keep_their_observed_identity_through_reverse_comm
     for (outcome, id, name) in [(&a, a_id, "a-record"), (&b, b_id, "b-record")] {
         let records = runtime
             .read_truth()
-            .project_historical_version(outcome.version_id)
-            .all_authoritative_entity_records(execution)
-            .unwrap();
+            .read_version(execution, outcome.version_id)
+            .unwrap()
+            .entities()
+            .to_vec();
         let record = records
             .iter()
             .find(|record| record.entity_id == id)
@@ -93,9 +94,10 @@ fn discarded_and_stale_validated_proposals_release_custody_and_burn_append_gaps(
     for outcome in [&winner, &continued] {
         let records = runtime
             .read_truth()
-            .project_historical_version(outcome.version_id)
-            .all_authoritative_entity_records(execution)
-            .unwrap();
+            .read_version(execution, outcome.version_id)
+            .unwrap()
+            .entities()
+            .to_vec();
         assert!(!records
             .iter()
             .any(|record| [discarded_id, stale_id].contains(&record.entity_id)));
@@ -133,9 +135,10 @@ fn runtime_fork_releases_only_its_copied_pending_entries_while_source_keeps_cust
     assert!(runtime.record_identity.pending_snapshot().is_empty());
     let detached_records = detached
         .read_truth()
-        .project_historical_version(detached_commit.version_id)
-        .all_authoritative_entity_records(execution)
-        .unwrap();
+        .read_version(execution, detached_commit.version_id)
+        .unwrap()
+        .entities()
+        .to_vec();
     assert!(!detached_records
         .iter()
         .any(|record| record.entity_id == source_id));
@@ -164,12 +167,13 @@ fn propose(
 }
 fn proposed_record(proposal: &ValidatedRelationalProposal, key: &str) -> EntityId {
     let id = proposal
-        .proposed_invariant_state
-        .created_entities()
+        .proposed_mutation
+        .outcome
+        .created_entities
         .resolve(&reference(key))
         .unwrap();
     let view = crate::validation::engine::state_view::InvariantStateView::new(
-        proposal.proposed_invariant_state.working_state(),
+        proposal.proposed_mutation.state(),
         proposal.proposal_identity.proposed_version_id(),
     );
     assert!(
@@ -198,5 +202,9 @@ fn fork(runtime: &mut RelationalRuntime, name: &str) {
     let (_, source) = runtime
         .observe_fork_source(&BranchId("main".into()))
         .unwrap();
-    runtime.fork_branch(BranchId(name.into()), source).unwrap();
+    let host = crate::test_execution_policy::serial_request();
+    let execution = ExecutionRequest::serial(&host);
+    runtime
+        .fork_branch(&execution, BranchId(name.into()), source)
+        .unwrap();
 }

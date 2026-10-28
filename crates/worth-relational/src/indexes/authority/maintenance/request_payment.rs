@@ -70,7 +70,7 @@ pub(super) fn run<T>(
             LAST_ALLOCATION_BYTES.with(|bytes| bytes.set(memory.bytes()));
             match outcome {
                 ScanOutcome::Complete { .. } => prepared
-                    .expect("singleton scan prepared one maintenance pass")
+                    .expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "singleton scan prepared one maintenance pass")
                     .map(|value| MaintenancePreparation {
                         value,
                         _memory: memory,
@@ -82,9 +82,9 @@ pub(super) fn run<T>(
                             ..
                         },
                     ..
-                } => match prepared.expect("the failed pass retained its denial") {
+                } => match prepared.expect(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the failed pass retained its denial") {
                     Err(denial) => Err(denial),
-                    Ok(_) => unreachable!("a domain failure carries the preparation refusal"),
+                    Ok(_) => unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "a domain failure carries the preparation refusal"),
                 },
                 ScanOutcome::Stopped { reason, .. } => Err(Denial::Execution(match reason {
                     MapStop::Admission(denial) => execution::denial::lease_denial(denial),
@@ -97,7 +97,7 @@ pub(super) fn run<T>(
                         MapKernelFailure::Panic => Cause::WorkerFailed,
                         MapKernelFailure::ResultCapacityExceeded => Cause::ResultCapacityExceeded,
                         MapKernelFailure::Domain(()) => {
-                            unreachable!("the preparation denial is returned above")
+                            unreachable!(/* Proof: The singleton maintenance adapter stores its prepared result before reporting success/domain failure; execution stops return separately, and only the stored denial emits domain failure. */ "the preparation denial is returned above")
                         }
                     },
                 })),
@@ -125,29 +125,4 @@ thread_local! {
 #[cfg(test)]
 pub(crate) fn last_allocation_bytes() -> u64 {
     LAST_ALLOCATION_BYTES.with(std::cell::Cell::get)
-}
-
-/// The memory one maintenance pass on `execution` may reserve for its own
-/// additions: the request's limit less what the pass's execution context
-/// already holds. Measured, not restated, by asking for `beyond_limit` bytes,
-/// which must exceed the request's memory limit.
-#[cfg(test)]
-pub(crate) fn pass_memory_room(execution: &ExecutionRequest<'_, '_>, beyond_limit: u64) -> u64 {
-    let budget = DerivedIndexMaintenanceBudget {
-        maximum_work_units: None,
-        maximum_cold_record_slots: None,
-        maximum_derived_rows: None,
-    };
-    let denial = run(execution, budget, |work| work.prepare(0, beyond_limit))
-        .expect_err("the probe asks for more than the request's memory limit");
-    let Denial::Execution(Cause::PolicyMemoryExhausted {
-        requested,
-        admitted,
-        ancestor: 0,
-    }) = denial.kind
-    else {
-        panic!("the probe must meet the request's own memory limit: {denial:?}");
-    };
-    assert_eq!(requested, beyond_limit);
-    admitted
 }

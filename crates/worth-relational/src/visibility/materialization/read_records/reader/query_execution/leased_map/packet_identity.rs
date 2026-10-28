@@ -18,7 +18,7 @@ pub(super) fn identities(packets: Vec<PacketizedQueryWork>) -> Vec<NamedQueryPac
         .enumerate()
         .map(|(ordinal, work)| NamedQueryPacket {
             identity: PacketIdentity(
-                u64::try_from(ordinal).expect("a packet ordinal fits u64") + 1,
+                u64::try_from(ordinal).expect(/* Proof: Packet ordinals index an addressable Vec on supported targets (usize no wider than u64), so every ordinal is representable. */ "a packet ordinal fits u64") + 1,
             ),
             input: QueryPacketMapInput { ordinal, work },
         })

@@ -23,6 +23,29 @@ pub(in super::super) fn historical_retired_at(
     retired_at.filter(|retired_at| *retired_at <= version_id)
 }
 
+/// A retained audit edge is still queryable after its historical retirement.
+pub(in super::super) fn historical_relation_lifecycle(
+    partition: &crate::storage::overlay::PartitionState,
+    slot: usize,
+    metadata: &crate::storage::substrate::VersionedRelationMetadata,
+    version: VersionId,
+) -> RecordLifecycleState {
+    let retired = historical_retired_at(metadata.retired_at, version);
+    if retired.is_some()
+        && partition
+            .relation_arena
+            .get_slot(slot)
+            .is_some_and(|current| {
+                current.generation() == metadata.generation
+                    && current.lifecycle() == RecordLifecycleState::RetainedDanglingForAudit
+            })
+    {
+        RecordLifecycleState::RetainedDanglingForAudit
+    } else {
+        historical_lifecycle(retired, version)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -2,7 +2,6 @@ use crate::facade::config::RelationalRuntimeProfile;
 use crate::facade::config::{
     MvccConfig, RetentionBackend, SnapshotReleasePolicy, VisibilityCachePolicy,
 };
-use crate::facade::durability::{DurabilityMode, DurableStoreLayout};
 use crate::facade::runtime::RelationalRuntime;
 use crate::tests::harness::fixtures::runtime::RuntimeHarnessMode;
 use crate::tests::support::test_schema_registry;
@@ -22,19 +21,14 @@ pub(crate) fn build_property_runtime(mode: RuntimeHarnessMode) -> RelationalRunt
                     recent_version_window: 2,
                 })
                 .build()
+                .expect("valid native runtime configuration")
         }
         RuntimeHarnessMode::Persisted => crate::facade::runtime::RelationalRuntimeApi::builder()
             .profile(RelationalRuntimeProfile::CertificationCore)
             .schema_registry(test_schema_registry())
-            .durability_mode(DurabilityMode::PersistedSegmentedLocalFs)
-            .durable_store_layout(DurableStoreLayout {
-                root_path: crate::tests::support::unique_test_store_path(
-                    "worth-relational-property",
-                ),
-                segment_commit_capacity: 2,
-            })
             .mvcc(property_mvcc_config())
-            .build(),
+            .build_durable(crate::tests::support::TestDurableMedium::new().attachment())
+            .expect("valid native runtime configuration"),
     }
 }
 

@@ -252,7 +252,7 @@ fn foreign_continuation_basis_denies_without_registering_a_lease() {
 }
 
 #[test]
-fn page_and_work_exhaustion_mint_no_resumed_plan_or_basis() {
+fn unsupported_page_width_mints_no_resumed_plan_or_basis() {
     let width_context = ContinuationTestContext::new(Duration::from_secs(60));
     let width_continuation = width_context
         .world

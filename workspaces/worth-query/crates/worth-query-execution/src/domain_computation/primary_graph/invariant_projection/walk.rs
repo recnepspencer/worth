@@ -133,10 +133,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
             .map_err(|denial| match denial {
                 worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial::Request(
                     stop,
-                ) => self.walk_stop(
-                    Cause::from(WorkCeilingDenial::Stopped(stop)),
-                    relation.name(),
-                ),
+                ) => self.walk_stop(stop, relation.name()),
                 _ => Denial::new(Kind::EndpointUnavailable, relation.name()),
             })?;
         let observed = StructuralWalkObservation::read(

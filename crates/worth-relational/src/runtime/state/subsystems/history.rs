@@ -25,6 +25,9 @@ mod history_catalog_recovery;
 mod history_checkpoint_catalog;
 #[path = "history_construction.rs"]
 mod history_construction;
+#[path = "history_identity_allocation.rs"]
+mod history_identity_allocation;
+use history_identity_allocation::reserve_identity;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]
@@ -57,21 +60,24 @@ mod history_recovery_validation;
 mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
-pub use canonical_publication_routes::RelationalPatchPositionReservationCounters;
 pub(crate) use canonical_publication_routes::{
-    authored_write_commit_denial, AuthoredWriteGeneration,
+    authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
+    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPositionAdmission, CanonicalPublicationRecordError, PatchPositionReservationAdmission,
+    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
+    RelationalCanonicalPublicationRoutes, RetainedCanonicalPosition,
 };
-pub(crate) use canonical_publication_routes::{
-    readmit_positioned_canonical_commit, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+pub use canonical_publication_routes::{
+    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
 pub(crate) use history_publication::PreparedRecoveredVersionedArtifactPublication;
-pub(crate) use history_publication::PreparedVersionedArtifactAccelerators;
 pub(crate) use history_publication::PreparedVersionedArtifactPublication;
+pub(crate) use history_publication::{
+    PreparedCommitSequence, PreparedVersionedArtifactAccelerators,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct RelationalPhase4ReferenceCostCounters {
@@ -123,6 +129,7 @@ impl HistorySubsystem {
             self.branch_head_versions.clone(),
             self.retention_owner.binding(),
             Arc::clone(&self.basis_registry_metrics),
+            Arc::clone(&self.canonical_publication_routes),
         )
     }
 
@@ -141,10 +148,9 @@ impl HistorySubsystem {
         )
     }
 
-    pub(super) fn build_with_main_branch(main_branch: BranchId) -> Self {
+    pub(crate) fn from_main_cell(mut main_cell: RelationalBranchReferenceCell) -> Self {
+        let main_branch = main_cell.identity().branch_id().clone();
         let basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
-        let mut main_cell = RelationalBranchReferenceCell::empty(0, main_branch.clone())
-            .expect("configured main branch must have a valid identity");
         main_cell.bind_basis_registry_metrics(Arc::clone(&basis_registry_metrics));
         Self {
             runtime_instance_id: 0,
@@ -235,24 +241,31 @@ impl HistorySubsystem {
         Ok(())
     }
 
-    pub(crate) fn set_runtime_instance_id(&mut self, runtime_instance_id: u64) {
-        self.runtime_instance_id = runtime_instance_id;
-        self.basis_registry_metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
+    pub(crate) fn set_runtime_instance_id(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+        let metrics = Arc::new(RelationalBranchBasisRegistryMetrics::default());
         self.record_branch_population_scan();
-        let cells = self.branch_cells.take_all();
-        self.branch_cells.restore_all(
-            cells
-                .into_values()
-                .map(|cell| {
-                    let mut rebound = cell
-                        .rebind_runtime(runtime_instance_id)
-                        .expect("existing branch identities must remain valid when rebound");
-                    rebound.bind_basis_registry_metrics(Arc::clone(&self.basis_registry_metrics));
-                    (rebound.identity().branch_id().clone(), rebound)
-                })
-                .collect(),
-        );
-        self.reset_retention_owner(runtime_instance_id);
+        // Complete every fallible identity rebind before replacing live cells.
+        let cells = self
+            .branch_cells
+            .values()
+            .into_iter()
+            .map(|cell| {
+                let mut rebound = cell.rebind_runtime(runtime_instance_id)?;
+                rebound.bind_basis_registry_metrics(Arc::clone(&metrics));
+                Ok((rebound.identity().branch_id().clone(), rebound))
+            })
+            .collect::<Result<_, crate::branch::RelationalBranchObservationConstructionDenial>>()?;
+        self.branch_cells.restore_all(cells);
+        self.runtime_instance_id = runtime_instance_id;
+        self.basis_registry_metrics = metrics;
+        self.try_reset_retention_owner(runtime_instance_id)
+            .map_err(|_| {
+                crate::branch::RelationalBranchObservationConstructionDenial::RetentionUnavailable
+            })?;
+        Ok(())
     }
 
     pub(crate) fn fork_snapshot(
@@ -270,7 +283,7 @@ impl HistorySubsystem {
             );
         }
         let positioned = self.canonical_publication_routes.performed_snapshot();
-        let mut fork = self.detached_owner_snapshot();
+        let mut fork = self.detached_owner_snapshot()?;
         let (next_commit_id, next_version_id) = {
             let mut ledger = fork.ledger.write();
             if let Some(maximum) = positioned
@@ -295,21 +308,37 @@ impl HistorySubsystem {
         };
         fork.commit_identity_allocator = Arc::new(AtomicU64::new(next_commit_id));
         fork.version_identity_allocator = Arc::new(AtomicU64::new(next_version_id));
-        let routes = Arc::new(RelationalCanonicalPublicationRoutes::default());
+        let routes = Arc::new(
+            self.canonical_publication_routes
+                .detached_branch_transitions(),
+        );
+        routes.install_checkpoint_catalog(fork.commit_artifacts());
         for commit in positioned {
-            routes.install_recovered(commit).map_err(|_| {
-                crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
-            })?;
+            let artifact = fork
+                .commit_artifact(commit.commit.commit_id)
+                .ok_or(crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid)?;
+            routes
+                .install_recovered(
+                    commit,
+                    artifact.envelope_residency(),
+                    artifact.roots().clone(),
+                )
+                .map_err(|_| {
+                    crate::runtime::RelationalRuntimeForkDenial::CanonicalInventoryInvalid
+                })?;
         }
         fork.canonical_publication_routes = routes;
         Ok(fork)
     }
 
-    pub(crate) fn bind_fork_runtime(&mut self, runtime_instance_id: u64) {
-        self.set_runtime_instance_id(runtime_instance_id);
+    pub(crate) fn bind_fork_runtime(
+        &mut self,
+        runtime_instance_id: u64,
+    ) -> Result<(), crate::branch::RelationalBranchObservationConstructionDenial> {
+        self.set_runtime_instance_id(runtime_instance_id)?;
         self.phase4_costs = RelationalPhase4ReferenceCostOwner::default();
         self.branch_population_scans = Arc::new(AtomicU64::new(0));
-        self.branch_cells.clear_retired_names();
+        Ok(())
     }
 
     pub(crate) fn branch_cell(
@@ -366,13 +395,4 @@ impl HistorySubsystem {
             .then_some(())
             .ok_or_else(|| format!("recovery checkpoint omitted branch cell `{}`", branch_id.0))
     }
-}
-
-fn reserve_identity(allocator: &AtomicU64, legacy_floor: u64) -> Option<u64> {
-    allocator.fetch_max(legacy_floor, Ordering::Relaxed);
-    allocator
-        .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |next| {
-            next.checked_add(1)
-        })
-        .ok()
 }

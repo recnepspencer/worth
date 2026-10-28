@@ -3,7 +3,7 @@ mod access_policy;
 mod admission;
 mod arena;
 pub(in crate::physical_runtime) use arena::{
-    ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
+    arena_range_budget, ReleasedControlArenaPlacement, ReleasedControlArenaReservations,
 };
 mod canonical_read_execution;
 mod evidence;
@@ -63,7 +63,7 @@ pub use admission::residency_policy::{
     AdmittedPhysicalRecordResidencyPolicy, PhysicalOperationAllocationScope,
     PhysicalRecordResidencyPolicy, PhysicalRecordResidencyPolicyBuilder,
     PhysicalRecordResidencyPolicyDenial, PhysicalRecordResidencyPolicyOutcome,
-    PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
+    PhysicalResidencyDenial, PhysicalResidencyDimension, PhysicalSpeculativeWorkKind,
 };
 pub use admission::RecoveredPhysicalCheckpointCustody;
 pub(in crate::physical_runtime) use admission::VerifiedRecoveredCheckpointCustody;
@@ -93,6 +93,8 @@ pub use lifecycle::record_lifecycle::RecordServingCounterSnapshot;
 pub(in crate::physical_runtime) use lifecycle::record_lifecycle::RecordServingOwner;
 pub use lifecycle::record_observation::{PhysicalRecordObservation, PhysicalRecordObserver};
 pub(in crate::physical_runtime) use lifecycle::serving_health::ServingHealth;
+#[cfg(feature = "certification-test-authority")]
+pub use lifecycle::serving_runtime::CertificationRetirementPause;
 pub use lifecycle::serving_runtime::ServingPhysicalRuntime;
 pub use lifecycle::serving_shutdown::{
     RecordServingOwnerDisposition, RecordServingTerminalObservation, RecordServingTerminalPosture,
@@ -115,9 +117,13 @@ pub use planning::SettledRootProjectionMergeDenial;
 pub(in crate::physical_runtime) use planning::{
     PreparedPhysicalRootProjection, RejectedSettledRootProjections,
 };
+pub(in crate::physical_runtime) use publication::anchored_append::AnchoredRecordAppend;
 pub use publication::append::{RecordAppendDenial, RecordAppendError, RecordPlacementClass};
 pub use publication::append_observation::{RecordAppendObservation, RecordRootPlanningObservation};
 pub use publication::batch::{RecordAppendBatch, RecordAppendBatchBuilder};
+pub(in crate::physical_runtime) use publication::durable_append::{
+    DurableRecordAppend, DurableRecordAppendFailure,
+};
 pub use publication::publication_residue::RecordPublicationResidueObservation;
 pub use publication::streaming::{
     RecordStreamFailure, RecordStreamFailureKind, RecordWriteSource, RecordWriteSourceError,
@@ -208,6 +214,8 @@ pub use worth_store_physical_format::{
 pub(in crate::physical_runtime) use admission::bootstrap::RecordServingState;
 pub(in crate::physical_runtime) use admission::{initialize, open};
 pub(super) use planning::allocation_frontier::RecordAllocationFrontier;
+pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
+pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;
 
 #[cfg(test)]
 mod tests {
@@ -274,5 +282,3 @@ mod tests {
         assert_eq!(fixed_limits.current_root_entries(), 185);
     }
 }
-pub use read_work_port::PhysicalIntegrityScrubReadDeferral;
-pub(in crate::physical_runtime) use record_queue_policy::admit_scrub_background_policy;

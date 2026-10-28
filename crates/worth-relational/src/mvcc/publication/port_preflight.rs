@@ -14,6 +14,7 @@ impl PreparedCanonicalBranchMovement {
         retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         companion_epoch: &super::super::CompanionRegistrationEpoch<'_>,
+        medium: Option<std::sync::Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
     ) -> Result<PreparedBranchPublicationPreflight, RelationalPublicationOutcome> {
         let PreparedRelationalPublicationParts {
             companion_read,
@@ -187,7 +188,7 @@ impl PreparedCanonicalBranchMovement {
                 ));
             }
         };
-        let head_retirement = match retention_binding.reserve_head_retirement(
+        let head_retirement = match retention_binding.reserve_head_retirement_capacity(
             movement.next_cell.identity(),
             &expected_root,
             publication_cell.head_retention(),
@@ -243,6 +244,7 @@ impl PreparedCanonicalBranchMovement {
                 completion,
                 published_snapshot_basis,
                 control: control.clone(),
+                envelope_cell: movement.canonical_publication_route.envelope_residency(),
             },
         ) {
             Ok(reservation) => reservation,
@@ -277,6 +279,7 @@ impl PreparedCanonicalBranchMovement {
             expires_at,
             maximum_lifetime_millis,
             branch_head_versions,
+            medium,
         })
     }
 }
@@ -323,13 +326,8 @@ const fn follows_concurrent_publication(stop: &super::super::CompanionPreflightS
         | Stop::SelectedPositionUnavailable { .. }
         | Stop::ForeignCell
         | Stop::RegistrationChanged
-        | Stop::WorkExhausted { .. }
-        | Stop::WorkExhaustedWithoutRequirement { .. }
         | Stop::WorkCounterOverflow
-        | Stop::PreparationMemoryExhausted { .. }
         | Stop::PreparationMemoryCounterOverflow
-        | Stop::RetainedCompanionCounterOverflow { .. }
-        | Stop::RetainedCompanionCapacityExhausted { .. }
         | Stop::Interrupted(_) => false,
     }
 }

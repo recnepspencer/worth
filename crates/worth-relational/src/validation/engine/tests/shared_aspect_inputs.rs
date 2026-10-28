@@ -174,7 +174,8 @@ fn assert_overlapping_field_reads(
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let created = commit_entity_with_summary(execution, &runtime, "subject", "before", "open")
         .expect("subject publication");
     let entity = created
@@ -247,7 +248,8 @@ fn cached_candidate_metadata_does_not_bypass_sibling_access_denial() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let created =
         commit_entity_with_summary(execution, &runtime, "subject", "before", "open").unwrap();
     let entity = created

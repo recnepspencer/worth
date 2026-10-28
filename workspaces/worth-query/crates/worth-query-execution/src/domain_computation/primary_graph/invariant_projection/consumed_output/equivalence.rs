@@ -124,11 +124,7 @@ mod tests {
 
     #[test]
     fn observer_capacity_is_not_missing_evidence() {
-        let stop = CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-            requested: 1,
-            retained: 1,
-            maximum: 1,
-        };
+        let stop = CompanionPreflightStop::PreparationMemoryCounterOverflow;
         assert_eq!(
             compare(
                 Ok(ConsumedOutputVerification::Current),

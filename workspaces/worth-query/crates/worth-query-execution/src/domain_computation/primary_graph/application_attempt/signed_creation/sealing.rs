@@ -36,7 +36,6 @@ pub enum WorthQuerySignedCreationPreparationDenial {
     CanonicalBasis(worth_foundational::facade::CanonicalBasisConstructionDenial),
     CanonicalDigest(worth_foundational::facade::CanonicalDigestDerivationDenial),
     CanonicalAccountingOverflow,
-    CanonicalSortUnsupported,
     CanonicalAllocationUnavailable,
 }
 impl std::fmt::Display for WorthQuerySignedCreationPreparationDenial {
@@ -71,7 +70,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .read_set
         .signed_creation
         .as_ref()
-        .expect("retained native signing slot");
+        .ok_or(Denial::CandidateMismatch)?;
     let request = phase
         .execution_request_for(&application.product_runtime)
         .map_err(|_| Denial::CandidateMismatch)?;
@@ -246,7 +245,7 @@ pub(in crate::domain_computation::primary_graph) fn seal<
         .read_set
         .signed_creation
         .as_mut()
-        .expect("retained native slot")
+        .ok_or(Denial::CandidateMismatch)?
         .sealed = Some(SealedSigningContext {
         subject_binding,
         _dependencies_memory: dependencies_memory,

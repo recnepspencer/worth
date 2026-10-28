@@ -69,7 +69,12 @@ impl ChangedRecords {
                 return work.prepare(1, 0);
             };
             work.prepare(33, 0)?;
-            let Some(partition) = root.partition_state(partition_id) else {
+            let Some(partition) = root.partition_state(partition_id).map_err(|failure| {
+                Denial::Execution(
+                    crate::execution::RelationalExecutionDenialCause::StorageUnavailable(failure),
+                )
+            })?
+            else {
                 return Ok(());
             };
             for slot in partition.entity_arena.live_bitset.iter_set_slots() {

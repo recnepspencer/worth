@@ -60,7 +60,10 @@ impl RelationalPinnedRead {
             })?;
         validation::prefix(&projection, request, &prepared, meter)?;
         let DerivedIndexEntries::RelatedEntityOrdering(all) = &prepared.generation.entries else {
-            unreachable!("prepared ordering kind")
+            unreachable!(
+                /* Proof: Prepared index admission checks the definition and generation discriminants together; the private prepared handle retains that same generation. */
+                "prepared ordering kind"
+            )
         };
 
         let rows = all.get(&request.ordered.parent_entity_id());
@@ -71,7 +74,7 @@ impl RelationalPinnedRead {
         let mut ids =
             ExecutionArrayBuilder::allocate(count, allocation).map_err(Denial::Allocation)?;
         for offset in start..start + count {
-            let entry = range::entry(rows.expect("nonempty selected range"), offset, meter)?;
+            let entry = range::entry(rows.expect(/* Proof: The selected range was tested nonempty against this same immutable posting map before extracting its rows. */ "nonempty selected range"), offset, meter)?;
             validation::row(
                 self,
                 &projection,

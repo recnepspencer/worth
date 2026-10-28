@@ -67,7 +67,7 @@ fn prepare_patch_fragments(
         ));
     }
 
-    let lease = lease.expect("serial path returns before packet preparation");
+    let lease = lease.expect(/* Proof: The no-lease serial branch returns above; only the Some(lease) branch reaches packet preparation. */ "serial path returns before packet preparation");
     let preparation_bytes = crate::execution::packet_preparation_bytes::<(
         usize,
         &[FoundationalPatchFragment],
@@ -131,7 +131,7 @@ fn prepare_patch_fragments(
     record_patch_shape(
         runtime,
         fragments.len(),
-        partition_count.expect("checked partition fold"),
+        partition_count.expect(/* Proof: The checked fold fills this output on success; every stopped fold returns before this extraction. */ "checked partition fold"),
     );
     if use_parallel_packets {
         runtime

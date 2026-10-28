@@ -229,6 +229,7 @@ impl PhysicalCurrentRootOwner {
             || durable.transition.source_root() != &state.current_root
             || durable.candidate.source_root() != &state.current_root
             || candidate.tier_epoch_anchor() != state.current_root.tier_epoch_anchor()
+            || candidate.record_anchors() != state.current_root.record_anchors()
             || intent.source_root_generation() != state.current_root.generation()
             || intent.candidate_root_generation() != candidate.generation()
             || intent.candidate_root_sha256() != digest

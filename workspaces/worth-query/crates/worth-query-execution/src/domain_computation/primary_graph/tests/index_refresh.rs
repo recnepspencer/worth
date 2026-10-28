@@ -26,9 +26,9 @@ fn bootstrap_seeds_exact_workflow_transition_lookup_before_any_settlement() {
     let execution = worth_execution::ExecutionRequest::serial(&host_request);
     handle.with_runtime_mut(&execution, |runtime| {
         let basis = runtime.admit_branch_basis(&runtime.main_branch_identity()).unwrap();
-        assert!(runtime.index_access().published_generation_for_observation(
+        assert!(runtime.index_access().read_published_generation_for_observation(&execution,
             transition.identity_index_id, &basis.observation(),
-        ).is_some(), "bootstrap must seed the exact installed transition index");
+        ).unwrap().is_some(), "bootstrap must seed the exact installed transition index");
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, &basis).unwrap();
         let request = BoundedEntityFieldLookupRequest::new(
             snapshot.clone(), transition.identity_index_id, transition.entity_kind,
@@ -62,14 +62,19 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                 .observe_fork_source(&BranchId("main".to_owned()))
                 .expect("main exposes an exact fork source");
             runtime
-                .fork_branch(BranchId("index-refresh-feature".to_owned()), source)
+                .fork_branch(
+                    execution,
+                    BranchId("index-refresh-feature".to_owned()),
+                    source,
+                )
                 .expect("feature branch forks from main");
             let feature = commit_empty(execution, runtime, "index-refresh-feature");
             let main = commit_empty(execution, runtime, "main");
             assert!(index_ids.iter().any(|index_id| {
                 runtime
                     .index_access()
-                    .published_generation_for_commit(*index_id, &feature)
+                    .read_published_generation_for_commit(execution, *index_id, &feature)
+                    .unwrap()
                     .is_none()
             }));
             Ok::<_, &'static str>((feature, main))
@@ -83,7 +88,8 @@ fn mutation_refreshes_every_exact_performed_commit_across_branches() {
                 assert!(
                     runtime
                         .index_access()
-                        .published_generation_for_commit(*index_id, committed)
+                        .read_published_generation_for_commit(execution, *index_id, committed)
+                        .unwrap()
                         .is_some(),
                     "index {index_id:?} must be current for exact commit {:?} on branch {:?}",
                     committed.commit_id,
@@ -124,7 +130,8 @@ fn multi_commit_callback_reconstructs_each_retained_generation_with_cold_budget(
             for index_id in &index_ids {
                 assert!(runtime
                     .index_access()
-                    .published_generation_for_commit(*index_id, commit)
+                    .read_published_generation_for_commit(execution, *index_id, commit)
+                    .unwrap()
                     .is_some());
             }
         }
@@ -153,17 +160,21 @@ fn captured_before_root_with_missing_generation_uses_explicit_cold_fallback() {
             .snapshots()
             .snapshot_for_observation(&before_basis.observation())
             .unwrap();
-        let index = runtime.index_authority().register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "missing-prior-generation".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: worth_relational::facade::transactions::planned_single_field_locator(
-                    AspectKey::new("missing-prior").unwrap(),
-                    FieldKey::new("value").unwrap(),
-                ),
-            },
-            branch_scoped: true,
-        });
+        let index = runtime
+            .index_authority()
+            .register(DerivedIndexDefinition {
+                index_id: DerivedIndexId(0),
+                name: "missing-prior-generation".into(),
+                kind: DerivedIndexKind::EntityField {
+                    field_locator:
+                        worth_relational::facade::transactions::planned_single_field_locator(
+                            AspectKey::new("missing-prior").unwrap(),
+                            FieldKey::new("value").unwrap(),
+                        ),
+                },
+                branch_scoped: true,
+            })
+            .expect("index fixture has identity capacity");
         let committed = commit_empty(execution, runtime, "main");
         let (_, basis) = runtime.observe_branch(&identity).unwrap();
         let refreshed = super::super::index_maintenance_budget::refresh_with_cold_fallback(

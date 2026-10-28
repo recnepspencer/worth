@@ -134,15 +134,23 @@ pub struct RelationalPatchPositionReservationGateForTest {
 }
 
 impl RelationalPatchPositionReservationGateForTest {
+    // The entire protected state is one bool. Either value remains a valid
+    // latch state after unwinding; no observer callback runs under this lock.
     pub fn open(&self) {
-        let mut opened = self.opened.lock().expect("the release gate stays usable");
+        let mut opened = self
+            .opened
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         *opened = true;
         self.signal.notify_all();
     }
 
     fn wait_for_open(&self, budget: std::time::Duration) {
         let deadline = Instant::now() + budget;
-        let mut opened = self.opened.lock().expect("the release gate stays usable");
+        let mut opened = self
+            .opened
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
         while !*opened {
             let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
                 return;
@@ -150,7 +158,7 @@ impl RelationalPatchPositionReservationGateForTest {
             opened = self
                 .signal
                 .wait_timeout(opened, remaining)
-                .expect("the release gate stays usable")
+                .unwrap_or_else(|error| error.into_inner())
                 .0;
         }
     }

@@ -17,7 +17,7 @@ pub(super) fn validate(members: &[Member]) -> Result<(), String> {
             }
             _ => None,
         });
-        if !from.is_some_and(|member| member.entity().is_some()) {
+        if from.is_none_or(|member| member.entity().is_none()) {
             return Err(association.relation.clone());
         }
     }

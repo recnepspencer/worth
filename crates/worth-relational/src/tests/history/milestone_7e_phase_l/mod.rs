@@ -26,7 +26,8 @@ fn merge_support_inspection_witness_parity_survives_live_replay_recovery_and_com
         .inspect_what_happened()
         .prepare_merge_support_inspection_witness(&outcome.execution_summary)
         .expect("live support");
-    let published_authority = published_merge_authority(&runtime, outcome.commit.commit.commit_id);
+    let published_authority =
+        published_merge_authority(execution, &runtime, outcome.commit.commit.commit_id);
     let published_support = runtime
         .inspect_what_happened()
         .prepare_published_merge_support_inspection_witness(&published_authority)
@@ -35,7 +36,7 @@ fn merge_support_inspection_witness_parity_survives_live_replay_recovery_and_com
         runtime_with_schema_declared_entity_policy(true)
     });
     let recovered_authority =
-        published_merge_authority(&recovered, outcome.commit.commit.commit_id);
+        published_merge_authority(execution, &recovered, outcome.commit.commit.commit_id);
     let recovered_support = recovered
         .inspect_what_happened()
         .prepare_published_merge_support_inspection_witness(&recovered_authority)

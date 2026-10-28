@@ -43,5 +43,4 @@ pub(crate) enum ScenarioOperation {
     },
     RunRetentionPass,
     DurableCheckpoint,
-    CompactDurableStore,
 }

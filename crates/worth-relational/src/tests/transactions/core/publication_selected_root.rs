@@ -18,11 +18,14 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     let pending_routes_before = runtime.history.pending_canonical_publication_route_count();
     let patch_stream_before = runtime
         .publication()
-        .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
+        .read_patch_stream(
+            execution,
+            crate::publication::patch::data::PatchStreamRequest::default(),
+        )
         .expect("selected-root evidence reads the canonical patch stream");
     let publication_bundle_before = runtime.publication().latest_bundle();
     let durable_count_before = runtime.durability().durable_log().len();
-    let retention_before = runtime.retention().inspect_plan();
+    let retention_before = runtime.retention().inspect_plan(execution).unwrap();
     let position_reservations_before = runtime.patch_position_reservation_counters();
     let retention_before_candidate = runtime
         .branch_retention_cost_counters(&identity)
@@ -46,6 +49,12 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     let retention_before_failure = runtime
         .branch_retention_cost_counters(&identity)
         .expect("main branch retention counters remain observable");
+    let probe_root = runtime
+        .history
+        .branch_cell(&branch)
+        .unwrap()
+        .root()
+        .unwrap();
     runtime
         .history
         .branch_cell_mut(&branch)
@@ -88,7 +97,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
     assert_eq!(
         runtime
             .publication()
-            .read_patch_stream(crate::publication::patch::data::PatchStreamRequest::default())
+            .read_patch_stream(
+                execution,
+                crate::publication::patch::data::PatchStreamRequest::default()
+            )
             .expect("selected-root evidence rereads the canonical patch stream"),
         patch_stream_before
     );
@@ -100,7 +112,10 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         runtime.durability().durable_log().len(),
         durable_count_before
     );
-    assert_eq!(runtime.retention().inspect_plan(), retention_before);
+    assert_eq!(
+        runtime.retention().inspect_plan(execution).unwrap(),
+        retention_before
+    );
     assert_eq!(
         runtime.patch_position_reservation_counters(),
         position_reservations_before
@@ -137,10 +152,6 @@ fn rootless_selected_publication_fails_before_movement_and_releases_preflight_re
         registry_entries_before_candidate
     );
 
-    let probe_root = crate::branch::RelationalBranchRoot::empty_with_schema(
-        &runtime.config().schema.registry,
-        crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
-    );
     let head_retention = std::sync::Arc::clone(
         runtime
             .history

@@ -3,7 +3,7 @@
 use std::sync::Weak;
 
 use crate::history::data::{CommitId, RelationalCommitReceipt};
-use crate::publication::data::{DeferredPublicationSettlement, DeferredPublicationSettlementError};
+use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::{
     RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
     RelationalRuntimeState,
@@ -46,8 +46,8 @@ impl RelationalSettlementPort {
         self.runtime_instance_id
     }
 
-    /// Complete durability and derived publication for a movement already
-    /// performed through the publication service.
+    /// Complete derived publication for a movement already performed, and
+    /// made durable, through the publication service.
     ///
     /// The work was installed in the runtime's pending-settlement registry
     /// before that movement, so this is the witness holder taking its turn at
@@ -66,24 +66,13 @@ impl RelationalSettlementPort {
         owner.settle_performed_publication(performed)
     }
 
-    /// Retry the one missing durable append for an exact performed route.
-    pub fn repair_deferred_publication_settlement(
-        &self,
-        settlement: &DeferredPublicationSettlement,
-    ) -> Result<RelationalCommitReceipt, DeferredPublicationSettlementError> {
-        let Some(owner) = self.owner() else {
-            return Err(self.owner_unavailable());
-        };
-        owner.repair_deferred_publication_settlement(settlement)
-    }
-
-    /// Retry a performed publication this runtime retains, addressed by commit
-    /// identity, even when the caller that first held the repair capability was
+    /// Settle a performed publication this runtime retains, addressed by
+    /// commit identity, when the caller that held its performed witness was
     /// lost.
     pub fn repair_pending_publication_settlement(
         &self,
         commit_id: CommitId,
-    ) -> Result<RelationalCommitReceipt, DeferredPublicationSettlementError> {
+    ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {
         let Some(owner) = self.owner() else {
             return Err(self.owner_unavailable());
         };
@@ -113,8 +102,8 @@ impl RelationalSettlementPort {
         ))
     }
 
-    fn owner_unavailable(&self) -> DeferredPublicationSettlementError {
-        DeferredPublicationSettlementError::OwnerUnavailable {
+    fn owner_unavailable(&self) -> PublicationSettlementRepairError {
+        PublicationSettlementRepairError::OwnerUnavailable {
             runtime_instance_id: self.runtime_instance_id,
         }
     }
@@ -126,10 +115,9 @@ impl RelationalRuntime {
     /// Settlement is the obligation a performed publication transfers to its
     /// caller. The service owns
     /// [`RelationalSettlementPort::settle_performed_publication`] for the
-    /// ordinary path and the two named repair entries,
-    /// [`RelationalSettlementPort::repair_deferred_publication_settlement`] and
-    /// [`RelationalSettlementPort::repair_pending_publication_settlement`], for
-    /// the recovery lane. Dropping performed evidence without settling it is
+    /// ordinary path and
+    /// [`RelationalSettlementPort::repair_pending_publication_settlement`] for a
+    /// performed witness that was lost. Dropping performed evidence without settling it is
     /// not success.
     ///
     /// Like

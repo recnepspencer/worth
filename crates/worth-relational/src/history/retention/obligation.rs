@@ -128,11 +128,13 @@ impl RelationalCandidateRetentionObligation {
             .map(|guard| Self { guard })
     }
 
-    pub(crate) fn into_performed_settlement(
+    pub(super) fn into_performed_settlement(
         mut self,
         current_root: Arc<RelationalBranchRoot>,
+        owner: &Arc<super::owner::RelationalBranchRetentionOwnerInner>,
     ) -> RelationalPerformedSettlementObligation {
-        self.guard.transfer_to_performed_settlement(current_root);
+        self.guard
+            .transfer_to_performed_settlement(current_root, owner);
         RelationalPerformedSettlementObligation { _guard: self.guard }
     }
 }

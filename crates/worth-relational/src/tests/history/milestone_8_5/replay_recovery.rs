@@ -2,7 +2,7 @@ use super::*;
 
 pub(super) struct StrategyReplayRecoveryInput {
     pub(super) runtime: RelationalRuntime,
-    pub(super) recovered_root: std::path::PathBuf,
+    pub(super) recovered_root: std::sync::Arc<crate::tests::support::TestDurableMedium>,
     pub(super) entity: crate::facade::identity::EntityId,
     pub(super) feature_branch: BranchId,
     pub(super) aspect_overlap_branch: BranchId,

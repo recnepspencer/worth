@@ -86,8 +86,6 @@ mod resolution_denial;
 mod root;
 mod root_path_selection;
 mod schema_layout;
-pub(crate) mod settlement_repair;
-pub(in crate::domain_computation) mod source_disclosure;
 mod typed_bootstrap;
 mod value_decode;
 pub(in crate::domain_computation) mod workflow;
@@ -194,3 +192,5 @@ pub(in crate::domain_computation) mod selected_read_indexes;
 pub(in crate::domain_computation) mod admitted_capture;
 pub(crate) mod causal_inspection;
 mod record_reservations;
+
+pub(in crate::domain_computation) mod source_disclosure;

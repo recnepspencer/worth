@@ -102,7 +102,7 @@ pub(super) fn collect<'plan>(
         root_states: allowance.reserve(counts.root_states)?,
     };
     for projection in &pending.projections {
-        let projection: &'plan worth_store_recovery_physics::PhysicalRedoProjection = *projection;
+        let projection: &'plan worth_store_recovery_physics::PhysicalRedoProjection = projection;
         let materialization = projection.materialization();
         basis.root_states.push(materialization.root_state());
         for frame in materialization
@@ -148,7 +148,7 @@ pub(super) fn collect<'plan>(
         }
     }
     for copy in &pending.source_copies {
-        let copy: &'plan worth_store_recovery_physics::PhysicalExtentCopyAdmission = *copy;
+        let copy: &'plan worth_store_recovery_physics::PhysicalExtentCopyAdmission = copy;
         let projection = copy.projection();
         basis.root_states.push(projection.root_state());
         for placement in projection.placements() {

@@ -39,6 +39,7 @@ fn performed_definition_successor_isolated_from_sibling_product_and_pinned_gener
         .owner
         .branch_port()
         .create_product_branch(
+            &execution,
             fixture.root.clone(),
             ProductBranchCreationIntent::from_source(
                 "definition-sibling",

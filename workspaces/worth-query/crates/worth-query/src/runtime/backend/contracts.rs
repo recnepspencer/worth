@@ -239,6 +239,7 @@ pub trait WorthQueryRuntimeBackend:
 
     fn live_entities_for_granular_scope(
         &self,
+        _request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &WorthQueryLiveArtifactTarget,
         _scope: &crate::live::WorthQueryMaintenanceScope,
         _basis: &crate::runtime::WorthQueryGranularSourceReadBasis,

@@ -177,7 +177,6 @@ fn implicit_runtime_drop_revokes_sessions_without_releasing_borrowed_memory() {
     drop(serving);
     assert!(observer.snapshot().revoked());
     assert_eq!(chunk.bytes(), b"retained bytes");
-    drop(chunk);
     assert!(
         matches!(session.next_chunk(), Err(error) if error.kind() == RecordStreamFailureKind::RuntimeReleased)
     );
@@ -255,7 +254,6 @@ fn borrowed_shutdown(abort: bool) {
     assert_eq!(shutdown.observation().live_acquisitions(), 1);
     assert!(observer.snapshot().revoked());
     assert_eq!(chunk.bytes(), &expected[..fixture::CHUNK_PAYLOAD_BYTES]);
-    drop(chunk);
     let before = session.observation();
     assert!(
         matches!(session.next_chunk(), Err(error) if error.kind() == RecordStreamFailureKind::RuntimeReleased)

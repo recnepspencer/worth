@@ -1,8 +1,6 @@
 //! The exact root source action declares its fixed output and current read.
 use super::*;
-use worth_query_decl::facade::application_program::{
-    ApplicationActionReference, ApplicationFixedActionDelivery,
-};
+use worth_query_decl::facade::application_program::ApplicationFixedActionDelivery;
 use worth_query_topology_entry::{
     PlanarOutputRead, PlanarOutputReadBinding, PlanarSourceAdjustment,
 };
@@ -31,13 +29,15 @@ impl
     }
 }
 
-pub type ConsumerFixedAction = ApplicationActionReference<
-    ConsumerSchema,
-    ApplicationRootComposition,
-    PlanarSourceFeature,
-    PlanarSourceAdjustmentBinding<ConsumerSchema>,
-    ConsumerFixedDelivery,
->;
+#[cfg(test)]
+pub type ConsumerFixedAction =
+    worth_query_decl::facade::application_program::ApplicationActionReference<
+        ConsumerSchema,
+        ApplicationRootComposition,
+        PlanarSourceFeature,
+        PlanarSourceAdjustmentBinding<ConsumerSchema>,
+        ConsumerFixedDelivery,
+    >;
 
 impl
     worth_query_decl::facade::application_program::ApplicationActionDelivery<

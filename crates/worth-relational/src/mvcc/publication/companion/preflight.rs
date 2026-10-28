@@ -19,8 +19,8 @@ pub use observer::{CompanionPublicationCompletion, CompanionPublicationCompletio
 
 /// The original reason native companion admission or preparation stopped.
 ///
-/// Resource variants retain their supplied work amounts or byte capacities;
-/// counter overflow carries no inferred requirement. Structural variants name
+/// Execution retains the actual request refusal; counter overflow carries no
+/// inferred requirement. Structural variants name
 /// pending topology, a mismatched source or position, a foreign cell, or changed
 /// registration, without implying resource exhaustion. Execution and interruption
 /// variants retain the native cause and, when supplied, its boundary.
@@ -33,34 +33,11 @@ pub enum CompanionPreflightStop {
     Execution(crate::execution::RelationalExecutionDenialCause),
     TopologyPending,
     SelectedSourceMismatch,
-    SelectedPositionUnavailable {
-        commit_id: CommitId,
-    },
+    SelectedPositionUnavailable { commit_id: CommitId },
     ForeignCell,
     RegistrationChanged,
-    WorkExhausted {
-        required: u64,
-        maximum: u64,
-    },
-    /// A bounded comparison refused without exposing its continuation amount.
-    WorkExhaustedWithoutRequirement {
-        maximum: u64,
-    },
     WorkCounterOverflow,
-    PreparationMemoryExhausted {
-        required: u64,
-        maximum: u64,
-    },
     PreparationMemoryCounterOverflow,
-    RetainedCompanionCapacityExhausted {
-        requested: u64,
-        retained: u64,
-        maximum: u64,
-    },
-    RetainedCompanionCounterOverflow {
-        requested: u64,
-        retained: u64,
-    },
     Interrupted(RelationalInterruptionEvent),
 }
 

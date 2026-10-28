@@ -13,12 +13,12 @@ use crate::config::data::{
     AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CrossContextPolicy,
 };
 use crate::identity::data::{KindId, VersionId};
+use crate::runtime::PendingSymbolMeanings;
 use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding, LoweredAspectContractPlan, RelationalSchemaRegistry,
 };
 use crate::storage::overlay::WorkingState;
-use crate::symbols::data::StringInterner;
 
 pub(super) fn mutation_config() -> crate::config::data::MutationConfig {
     crate::config::data::MutationConfig {
@@ -33,7 +33,7 @@ pub(super) fn mutation_config() -> crate::config::data::MutationConfig {
 
 pub(super) fn empty_workspace<'a>(
     state: &'a mut WorkingState,
-    symbols: &'a mut StringInterner,
+    symbols: &'a mut PendingSymbolMeanings,
     aspect_plans: &'a AspectContractPlanCatalog,
     config: &'a crate::config::data::MutationConfig,
     schema: &'a RelationalSchemaRegistry,

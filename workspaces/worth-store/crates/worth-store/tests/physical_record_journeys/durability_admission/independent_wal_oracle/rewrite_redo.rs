@@ -129,10 +129,10 @@ fn collect(root: &Path, found: &mut Vec<IndependentRewriteRedo>) {
             .position(|window| window == REWRITE_DOMAIN)
         {
             let domain_at = offset + index;
-            if let Some(payload) = framed_payload(&bytes, domain_at) {
-                if let Ok(rewrite) = inspect_rewrite_redo(payload) {
-                    found.push(rewrite);
-                }
+            if let Some(payload) = framed_payload(&bytes, domain_at)
+                && let Ok(rewrite) = inspect_rewrite_redo(payload)
+            {
+                found.push(rewrite);
             }
             offset = domain_at + REWRITE_DOMAIN.len();
         }

@@ -17,7 +17,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
     let reports = world.join("reports");
     std::fs::create_dir(&reports).unwrap();
     let baseline = world.join("closed-baseline");
-    let scenario = fresh_identity("PW-process-matrix", &world);
+    let scenario = fresh_identity("PW-process-matrix", world);
     let parent_executable = std::env::current_exe().unwrap();
     assert_ne!(
         executable_sha256(observer_executable).unwrap(),
@@ -29,7 +29,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         "clean-producer",
         ProcessSubjectRequest::producer(
             scenario,
-            fresh_identity("clean-producer", &world),
+            fresh_identity("clean-producer", world),
             baseline.clone(),
             reports.join("clean-producer.report"),
         ),
@@ -42,7 +42,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         .require(
             super::super::RootWireRole::Producer,
             scenario,
-            fresh_identity("clean-producer", &world),
+            fresh_identity("clean-producer", world),
             manifest.store_identity(),
             produced.process_id,
             executable_sha256(&parent_executable).unwrap(),
@@ -58,7 +58,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         root: pending.clone(),
         report: reports.join("pending-producer.json"),
         scenario,
-        run: fresh_identity("pending-producer", &world),
+        run: fresh_identity("pending-producer", world),
     };
     let mut producer_process = PendingProducerProcess {
         child: spawn(&request),
@@ -123,7 +123,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             root: root.clone(),
             report: reports.join(format!("{}.editor.json", operator.label())),
             scenario,
-            run: fresh_identity(&format!("{}-editor", operator.label()), &world),
+            run: fresh_identity(&format!("{}-editor", operator.label()), world),
         };
         let edited = execute(&editor);
         assert_eq!(edited["operator"], operator.label());
@@ -137,7 +137,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
         let snapshot = ProcessTreeSnapshot::observe(&root).unwrap();
         let lease_path = root.join("namespace/mutation.lock");
         let lease_before = std::fs::read(&lease_path).unwrap();
-        let offline_run = fresh_identity(&format!("{}-offline", operator.label()), &world);
+        let offline_run = fresh_identity(&format!("{}-offline", operator.label()), world);
         let offline = run_offline_observer(
             observer_executable,
             &root,
@@ -165,7 +165,7 @@ pub(in crate::c9_integrity_localization) fn run(observer_executable: &Path) {
             root: root.clone(),
             report: reports.join(format!("{}.runtime.json", operator.label())),
             scenario,
-            run: fresh_identity(&format!("{}-runtime", operator.label()), &world),
+            run: fresh_identity(&format!("{}-runtime", operator.label()), world),
         });
         assert_eq!(runtime["store"], hex(artifact.store));
         // Ordinary Store admission updates this one preexisting OS lease

@@ -206,7 +206,8 @@ fn prepared_adjacency_reachability_and_component_sources_preserve_shape_and_empt
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native fixture configuration");
     let host = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
         CancellationSource::new().token(),

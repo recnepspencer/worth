@@ -70,7 +70,8 @@ pub(crate) fn correspondence_bridge(
                 })
                 .expect("conditional correspondence schema should register"),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let field = dependency_field(dependency.binding());
     let locator = AspectFieldLocator::new(
         LocatorAuthority::Planned,

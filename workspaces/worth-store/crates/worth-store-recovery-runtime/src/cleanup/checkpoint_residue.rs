@@ -7,34 +7,18 @@ use crate::entry::{
 use crate::progression::ReopenedPhysicalRecovery;
 
 /// This cleanup is not WAL reclamation. It removes only the unselected
-/// `selected checkpoint sequence + 1` staging candidate under the same
-/// recovery media owner, before closing the fresh-reopen authority.
+/// `selected checkpoint sequence + 1` staging candidate (candidate 1 when no
+/// checkpoint is selected) under the same recovery media owner, before
+/// closing the fresh-reopen authority.
 pub(super) fn prepare(reopened: &ReopenedPhysicalRecovery) -> RecoveryCheckpointResidueOutcome {
-    let Some(checkpoint) = reopened.state.coordination.owner().checkpoint() else {
-        return RecoveryCheckpointResidueOutcome::Absent;
-    };
-    let maximum = reopened
-        .state
-        .authority
-        .limits
-        .declaration()
-        .cleanup_bytes
-        .min(
-            reopened
-                .state
-                .authority
-                .limits
-                .declaration()
-                .observation_bytes,
-        );
+    let limits = reopened.state.authority.limits.declaration();
     reopened
         .state
         .coordination
         .owner()
         .remove_unselected_checkpoint_candidate(
             &reopened.state.authority.media,
-            checkpoint,
-            maximum,
+            limits.cleanup_bytes.min(limits.observation_bytes),
         )
 }
 

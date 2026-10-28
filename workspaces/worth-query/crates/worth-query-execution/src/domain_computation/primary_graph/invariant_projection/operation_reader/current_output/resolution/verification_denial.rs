@@ -45,11 +45,7 @@ mod tests {
 
     #[test]
     fn a_full_ledger_reports_capacity_to_the_handler_not_output_unavailable() {
-        let stop = CompanionPreflightStop::RetainedCompanionCapacityExhausted {
-            requested: 1,
-            retained: 1,
-            maximum: 1,
-        };
+        let stop = CompanionPreflightStop::PreparationMemoryCounterOverflow;
         let denied = from_stop(map_admission_stop(stop), "consumed-family");
         assert_eq!(
             denied.kind(),

@@ -7,14 +7,17 @@ fn derived_index_contract_prefers_older_supported_generation_over_newer_unsuppor
 
     let runtime = runtime_with_index_field_aspects();
     let main_alpha = create_entity_outcome(execution, &runtime, "alpha");
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.lookup".to_string(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.lookup".to_string(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let main_build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -28,6 +31,7 @@ fn derived_index_contract_prefers_older_supported_generation_over_newer_unsuppor
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("feature".to_string()),
             &BranchId("main".to_string()),
         )

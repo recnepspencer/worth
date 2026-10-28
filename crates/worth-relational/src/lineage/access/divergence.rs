@@ -11,17 +11,17 @@ impl<'runtime> LineageAccess<'runtime> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: LineageDivergenceRequest,
-    ) -> LineageDivergenceSummary {
+    ) -> Result<LineageDivergenceSummary, crate::execution::RelationalExecutionDenialCause> {
         let left_graph = self.graph(execution, LineageGraphRequest {
             branch_id: request.left_branch.clone(),
             traversal_basis:
                 crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        });
+        })?;
         let right_graph = self.graph(execution, LineageGraphRequest {
             branch_id: request.right_branch.clone(),
             traversal_basis:
                 crate::lineage::data::LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-        });
+        })?;
         self.runtime
             .performance_access()
             .count_lineage_branch_divergence(
@@ -55,7 +55,7 @@ impl<'runtime> LineageAccess<'runtime> {
             .copied()
             .collect::<Vec<_>>();
         let shared_lineage_count = shared_lineage_ids.len();
-        LineageDivergenceSummary {
+        Ok(LineageDivergenceSummary {
             left_branch: request.left_branch,
             right_branch: request.right_branch,
             traversal_basis: request.traversal_basis,
@@ -75,6 +75,6 @@ impl<'runtime> LineageAccess<'runtime> {
                 right_node_count: right_graph.metrics.node_count,
                 shared_lineage_count,
             },
-        }
+        })
     }
 }

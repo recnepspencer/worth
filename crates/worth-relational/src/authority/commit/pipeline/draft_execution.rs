@@ -1,150 +1,78 @@
 use super::authority_context::PreparedAuthorityScope;
 use super::draft_preparation_phase::record_draft_preparation_phase;
-use super::execution_admission::AdmittedCommitExecution;
-use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::authority::commit::phases::proposed_invariant_state::prepare_proposed_invariant_state;
+use super::execution_admission::{AdmittedCommitExecution, AdmittedCommitState};
+use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
-pub(super) struct PreparedCommitExecution {
-    admitted: AdmittedCommitExecution,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
-    working_state: crate::storage::overlay::WorkingState,
-    proposed_invariant_state:
-        crate::authority::commit::phases::proposed_invariant_state::AppliedInvariantState,
-    proposed_version_id: crate::identity::data::VersionId,
-    proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
+pub(super) struct PreparedCommitState {
+    pub(super) admitted: AdmittedCommitState,
+    pub(super) public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    pub(super) proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
 }
 
-impl PreparedCommitExecution {
-    pub(super) fn take_proposed_record_allocations(
-        &mut self,
-    ) -> crate::runtime::PendingRecordAllocations {
-        self.proposed_invariant_state.take_record_allocations()
-    }
-
-    pub(super) fn admitted_mut(&mut self) -> &mut AdmittedCommitExecution {
-        &mut self.admitted
-    }
-
+impl PreparedCommitState {
     pub(super) fn selected_branch_state(&self) -> &crate::branch::SelectedRelationalBranchState {
         self.admitted.selected_branch_state()
     }
-
-    pub(super) fn proposed_version_id(&self) -> crate::identity::data::VersionId {
-        self.proposed_version_id
+    pub(super) fn version_id(&self) -> crate::identity::data::VersionId {
+        self.proposal_identity.proposed_version_id()
     }
+}
 
-    pub(super) fn proposal_identity(&self) -> &crate::mvcc::RelationalMutationProposalIdentity {
-        &self.proposal_identity
-    }
+pub(super) struct PreparedCommitExecution {
+    state: PreparedCommitState,
+    mutation: AppliedMutationDraft,
+}
 
-    pub(super) fn mutation_parts(
-        &mut self,
-    ) -> (
-        &mut AdmittedCommitExecution,
-        &mut crate::storage::overlay::WorkingState,
-        Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
-    ) {
-        (
-            &mut self.admitted,
-            &mut self.working_state,
-            self.proposed_invariant_state.aggregate_source(),
-        )
-    }
-
+impl PreparedCommitExecution {
     pub(super) fn boundary_parts(
         &mut self,
     ) -> (
-        &mut AdmittedCommitExecution,
+        &mut AdmittedCommitState,
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
         &crate::mvcc::RelationalMutationProposalIdentity,
         Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
-            &mut self.admitted,
-            self.proposed_invariant_state.working_state(),
-            self.proposed_version_id,
-            &self.proposal_identity,
-            self.proposed_invariant_state.aggregate_source(),
+            &mut self.state.admitted,
+            self.mutation.state(),
+            self.state.proposal_identity.proposed_version_id(),
+            &self.state.proposal_identity,
+            self.mutation
+                .aggregate
+                .as_ref()
+                .map(|owner| owner.borrow_retained(self.mutation.state())),
         )
     }
 
-    pub(super) fn into_parts(
-        self,
-    ) -> (
-        AdmittedCommitExecution,
-        crate::transactions::data::CommitStructuralSummary,
-        crate::storage::overlay::WorkingState,
-    ) {
-        let Self {
-            admitted,
-            public_structural_summary,
-            working_state,
-            ..
-        } = self;
-        (admitted, public_structural_summary, working_state)
+    pub(super) fn candidate_symbols(&self) -> &crate::runtime::PendingSymbolMeanings {
+        self.mutation.candidate_symbols()
+    }
+
+    pub(super) fn into_parts(self) -> (PreparedCommitState, AppliedMutationDraft) {
+        (self.state, self.mutation)
     }
 }
 
 pub(super) fn prepare_commit_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    mut admitted: AdmittedCommitExecution,
+    admitted: AdmittedCommitExecution,
 ) -> Result<PreparedCommitExecution, crate::transactions::data::TransactionCommitError> {
     super::consult_stage(execution, super::CommitStage::Draft)?;
-    let merge_parent_count = admitted
-        .merge_history_plan()
-        .map(|plan| plan.requested_merge_parent_count)
-        .unwrap_or(admitted.validation_input().merge_parent_bases().len());
+    let (mut admitted, prepared_scope) = admitted.into_parts();
     let PreparedAuthorityScope {
         structural_summary,
         working_state,
-        proposed_invariant_state,
-        proposal_identity,
+        mutation_proposal: (proposal_identity, mutation),
         phase_timing: prepared_timing,
         ..
-    } = match admitted.take_prepared_scope() {
+    } = match prepared_scope {
         Some(scope) => scope,
         None => {
-            let selected_branch_state = admitted.selected_branch_state();
-            let (structural_summary, working_state, phase_timing) =
-                prepare_authoritative_working_state_scope_for_base(
-                    runtime,
-                    selected_branch_state.state(),
-                    admitted.merged_plan(),
-                    merge_parent_count,
-                    Some(admitted.validation_input().footprint()),
-                );
-            PreparedAuthorityScope {
-                selected_branch_state: selected_branch_state.clone(),
-                structural_summary,
-                working_state,
-                proposed_invariant_state: None,
-                proposal_identity: None,
-                phase_timing,
-            }
+            let draft = super::merge_draft::prepare_merge_draft(execution, runtime, &admitted)?;
+            admitted.accept_merge_draft(draft)
         }
-    };
-    let proposal_identity = match proposal_identity {
-        Some(identity) => identity,
-        None => runtime.issue_mutation_proposal_identity(
-            admitted.transaction_id(),
-            admitted.validation_input(),
-        )?,
-    };
-    let proposed_version_id = proposal_identity.proposed_version_id();
-    let proposed_invariant_state = match proposed_invariant_state {
-        Some(proposed) => proposed,
-        None => prepare_proposed_invariant_state(
-            runtime,
-            admitted.selected_branch_state(),
-            &working_state,
-            admitted.merged_plan(),
-            admitted.validation_input().schema_authority(),
-            &proposal_identity,
-            execution,
-            admitted.validation_input().intent().materialization_mode(),
-        )?,
     };
     admitted.phase_timing_mut().draft_structural_summary_micros =
         prepared_timing.draft_structural_summary_micros;
@@ -167,11 +95,11 @@ pub(super) fn prepare_commit_execution(
         &public_structural_summary,
     );
     Ok(PreparedCommitExecution {
-        admitted,
-        public_structural_summary,
-        working_state,
-        proposed_invariant_state,
-        proposed_version_id,
-        proposal_identity,
+        state: PreparedCommitState {
+            admitted,
+            public_structural_summary,
+            proposal_identity,
+        },
+        mutation,
     })
 }

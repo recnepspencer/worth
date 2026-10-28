@@ -135,10 +135,3 @@ fn denial(
 ) -> WorthQueryApplicationQueryAdmissionDenial {
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
-
-fn work_denial() -> WorthQueryApplicationQueryAdmissionDenial {
-    WorthQueryApplicationQueryAdmissionDenial::new(
-        WorthQueryApplicationQueryAdmissionDenialKind::WorkLimitExceeded,
-        String::new(),
-    )
-}

@@ -76,9 +76,7 @@ pub(in super::super::super) fn observe_retained_full_tree<R, F, E, Tree>(
                     .mapped_report
                     .and_then(|report| report.accounted_cost())
                     .map_or(0, |(work, _)| work);
-                let visits = work
-                    .checked_sub(map_work)
-                    .expect("native scope covers settled map");
+                let visits = work.checked_sub(map_work)?;
                 (visits != 0).then_some(TreeMetrics::from_accounted(TreeAccounting {
                     structural_visits: visits.into(),
                     recombined_nodes: 0,

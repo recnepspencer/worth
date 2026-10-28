@@ -60,6 +60,7 @@ worth-store-offline-verifier.workspace = true
 worth-store-offline-integrity-observer.workspace = true
 worth-store-physical-format = { workspace = true, features = ["certification-test-authority"] }
 worth-store-recovery-physics = { workspace = true, features = ["test-support"] }
+worth-store-test-support.workspace = true
 
 [lints]
 workspace = true

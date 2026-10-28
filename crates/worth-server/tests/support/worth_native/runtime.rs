@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 use std::sync::{atomic::AtomicUsize, Arc, Mutex};
 use worth_proof::{TransitionOutcome, TransitionReadiness};
 use worth_query::facade::runtime::WorthQueryRuntimeSupportProfile;

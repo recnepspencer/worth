@@ -26,6 +26,7 @@ impl WorthQueryProductBranchOwnerCleanup {
                 None,
                 |context| {
                     self.runtime.owner_cleanup.retry_admitted(
+                        &execution,
                         self.identity,
                         &self.runtime,
                         |units| {

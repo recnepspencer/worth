@@ -50,7 +50,8 @@ fn added_private_rows_must_pass_final_snapshot_admission_after_prevalidation() {
                 InvariantRule::MaxSnapshotEntities(4),
             )],
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let born = commit(execution, &runtime, "main", birth(&[1, 2, 0]));
     let ids = members(&born, 3);
     let before = runtime.history().branch_head(&BranchId("main".into()));

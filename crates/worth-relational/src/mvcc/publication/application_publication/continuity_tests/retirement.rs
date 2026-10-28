@@ -1,6 +1,5 @@
 //! Complete publication position survives total membership replacement.
 use super::*;
-use crate::durability::data::{CheckpointAllocatorInspection, CheckpointRecordIdentity};
 #[path = "retirement/ordinary.rs"]
 mod ordinary;
 
@@ -135,6 +134,7 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             .root
             .partition_state(id.partition_id)
             .unwrap()
+            .unwrap()
             .entity_arena
             .get(&id)
             .expect("the actual old tombstone generation is retained")
@@ -195,7 +195,7 @@ fn cold_replacement(
 ) {
     let checkpoint = original
         .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
+        .native_checkpoint(execution, execution.allocation_policy())
         .unwrap();
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -228,14 +228,12 @@ fn cold_replacement(
         format!("{denied:?}").contains("superseded complete family publication"),
         "{denied:?}"
     );
-    let before = runtime
-        .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
-        .unwrap();
-    let reservations = runtime
-        .inspect_what_happened()
-        .observe_record_reservations(16, execution.allocation_policy())
-        .unwrap();
+    let before = checkpoint_manifest(
+        &runtime
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .unwrap(),
+    );
     // Existing spellings still request fresh native allocations. Equal keys
     // cannot authorize Birth, and ordinary key interning is not this court.
     let (batch, targets) = creates(["new-left", "new-right"]);
@@ -263,32 +261,19 @@ fn cold_replacement(
         absence.is_none(),
         "a published route requires its exact predecessor"
     );
-    let after = runtime
-        .durability_authority()
-        .native_checkpoint(execution.allocation_policy())
-        .unwrap();
-    let report = reservations.report(execution.allocation_policy()).unwrap();
-    assert_eq!(
-        report.records().len(),
-        2,
-        "the rejected Birth reserved two entities"
+    let mut after = checkpoint_manifest(
+        &runtime
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .unwrap(),
     );
-    let before = before.inspect(execution).unwrap();
-    let after = after.inspect(execution).unwrap();
-    assert_eq!(before.model, after.model);
-    assert_eq!(before.live_records, after.live_records);
-    CheckpointAllocatorInspection {
-        frontiers: &before.frontiers,
-        generations: &before.generations,
-    }
-    .verify_reported_advance(
-        &CheckpointAllocatorInspection {
-            frontiers: &after.frontiers,
-            generations: &after.generations,
-        },
-        report.records().map(CheckpointRecordIdentity::from),
-    )
-    .unwrap();
+    // Phase-2 D7 records spent draft identities even when publication refuses.
+    // Every other committed directory fact must remain byte-for-byte equal.
+    assert_ne!(after.record_identity, before.record_identity);
+    assert!(after.symbol_identity_frontier >= before.symbol_identity_frontier);
+    after.record_identity = before.record_identity.clone();
+    after.symbol_identity_frontier = before.symbol_identity_frontier;
+    assert_eq!(after, before);
     let roles = replacement_ids
         .into_iter()
         .enumerate()
@@ -339,4 +324,21 @@ fn cold_replacement(
     let born = publish(&runtime, execution, &installed, batch, birth).unwrap();
     assert_eq!(born.changed_records.len(), 2);
     release_test_commit_snapshot(&runtime, &born);
+}
+
+fn checkpoint_manifest(
+    checkpoint: &crate::durability::data::RelationalNativeCheckpoint,
+) -> crate::durability::data::RelationalCheckpointManifest {
+    #[derive(serde::Deserialize)]
+    struct Input {
+        manifest: crate::durability::data::RelationalCheckpointManifest,
+    }
+    rmp_serde::from_slice::<Input>(
+        checkpoint
+            .bytes()
+            .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+            .expect("current native checkpoint framing"),
+    )
+    .unwrap()
+    .manifest
 }

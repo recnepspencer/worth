@@ -39,10 +39,10 @@ impl HistoricalBlobCollector {
         expected: &ChildExpectation,
         outcome: &Outcome,
     ) {
-        if self.matches(origin, generation) {
-            if let Some(walk) = self.walk.as_mut() {
-                walk.note_outcome(expected, outcome);
-            }
+        if self.matches(origin, generation)
+            && let Some(walk) = self.walk.as_mut()
+        {
+            walk.note_outcome(expected, outcome);
         }
     }
 
@@ -55,10 +55,10 @@ impl HistoricalBlobCollector {
         store: Option<[u8; 16]>,
         counters: &mut OfflineIntegrityObservationCounters,
     ) {
-        if self.matches(origin, generation) {
-            if let Some(walk) = self.walk.as_mut() {
-                walk.observe_valid_extent_chunk(expected, bytes, store, counters);
-            }
+        if self.matches(origin, generation)
+            && let Some(walk) = self.walk.as_mut()
+        {
+            walk.observe_valid_extent_chunk(expected, bytes, store, counters);
         }
     }
 

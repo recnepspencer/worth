@@ -3,3 +3,8 @@ store-owner = "run -q -p store-test-runner -- owner"
 store-smoke = "run -q -p store-test-runner -- smoke"
 store-ui = "run -q -p store-test-runner -- ui"
 store-ci = "run -q -p store-test-runner -- ci"
+
+[env]
+# Process scenarios each drive a complete Store with bounded checkpoint seams.
+# Bound fixture concurrency independently of the host's logical CPU count.
+RUST_TEST_THREADS = { value = "8", force = false }

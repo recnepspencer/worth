@@ -15,7 +15,7 @@ fn fork_checkpoint(
     DerivedIndexId,
     crate::indexes::data::DerivedIndexGenerationId,
 ) {
-    let runtime = persisted_runtime_with_test_schema();
+    let runtime = durable_runtime_with_test_schema();
     let anchor = create_entity_outcome(execution, &runtime, NAME);
     let entity = changed_entities(&anchor)[0];
     let branch = create_branch_from_main(&runtime, FORK);
@@ -41,21 +41,18 @@ fn fork_checkpoint(
     let generation = built.generations[0].generation_id;
     drop(basis);
     release_test_commit_snapshot(&runtime, &anchor);
-    runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    crate::tests::support::checkpoint_durably(execution, &runtime).unwrap();
+    let plan = crate::tests::support::recovery_plan_for(
+        execution,
+        &runtime,
+        RecoveryVerificationMode::NormalRecoveryVerification,
+    )
+    .unwrap();
     (plan, entity, index.index_id, generation)
 }
 
 fn name_on_branch(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     branch: &BranchId,
     entity: EntityId,
@@ -65,7 +62,7 @@ fn name_on_branch(
     let read = runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .unwrap()
-        .read_entity(entity)
+        .read_entity(execution, entity)
         .unwrap();
     read.base().and_then(read_entity_name)
 }
@@ -76,7 +73,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let (plan, entity, index, generation) = fork_checkpoint(execution);
-    let mut restored = persisted_runtime_with_test_schema();
+    let mut restored = durable_runtime_with_test_schema();
     restored
         .durability_recovery()
         .recover(execution, plan)
@@ -91,7 +88,8 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
     assert_ne!(artifact.identity().authoring_branch(), &branch);
     let admitted = restored
         .index_access()
-        .published_generation_for_observation(index, &basis.observation())
+        .read_published_generation_for_observation(execution, index, &basis.observation())
+        .unwrap()
         .unwrap();
     assert_eq!(admitted.generation_id, generation);
     assert_eq!(admitted.source_branch_id, branch);
@@ -127,7 +125,7 @@ fn real_shared_parent_root_scoped_checkpoint_restores_lookup_and_content() {
         .unwrap();
     assert_eq!(parity.candidate_entity_ids(), &[entity]);
     assert_eq!(
-        name_on_branch(&restored, &branch, entity),
+        name_on_branch(execution, &restored, &branch, entity),
         Some(NAME.into())
     );
     restored.snapshots().release_snapshot(&snapshot).unwrap();
@@ -166,7 +164,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     assert_eq!(decoded[0].applicability.branch_id, foreign);
     checkpoint.derived_index_checkpoint = Some(artifact);
 
-    let mut target = persisted_runtime_with_test_schema();
+    let mut target = durable_runtime_with_test_schema();
     let retained = create_entity_outcome(execution, &target, "target-must-remain");
     let entity = changed_entities(&retained)[0];
     let index = scoped_name_index(&target);
@@ -177,7 +175,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     let definitions = target.index_access().definitions_snapshot();
     let generations = target.index_access().generations_snapshot();
     assert_eq!(
-        name_on_branch(&target, &BranchId("main".into()), entity),
+        name_on_branch(execution, &target, &BranchId("main".into()), entity),
         Some("target-must-remain".into())
     );
     let error = target
@@ -190,7 +188,7 @@ fn digest_valid_unissued_scoped_branch_denies_without_replacing_target_state() {
     assert_eq!(target.index_access().definitions_snapshot(), definitions);
     assert_eq!(target.index_access().generations_snapshot(), generations);
     assert_eq!(
-        name_on_branch(&target, &BranchId("main".into()), entity),
+        name_on_branch(execution, &target, &BranchId("main".into()), entity),
         Some("target-must-remain".into())
     );
     assert!(target.branch_identity(&foreign).is_err());

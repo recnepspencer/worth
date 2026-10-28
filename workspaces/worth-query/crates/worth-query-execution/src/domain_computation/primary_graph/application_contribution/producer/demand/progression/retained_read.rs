@@ -182,9 +182,7 @@ fn work_denial() -> WorthQueryOutputDemandDenial {
 
 fn resource_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     let kind = match stop {
-        CompanionPreflightStop::WorkExhausted { .. }
-        | CompanionPreflightStop::WorkExhaustedWithoutRequirement { .. }
-        | CompanionPreflightStop::WorkCounterOverflow => {
+        CompanionPreflightStop::WorkCounterOverflow => {
             WorthQueryOutputDemandDenialKind::WorkBudgetExceeded
         }
         _ => WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,

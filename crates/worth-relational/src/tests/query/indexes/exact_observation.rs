@@ -8,14 +8,17 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
     let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.exact-observation".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.exact-observation".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -29,6 +32,7 @@ fn index_query_keeps_the_admitted_root_after_same_and_sibling_reference_movement
     runtime
         .history_authority()
         .fork_branch_from(
+            execution,
             BranchId("index-sibling".to_owned()),
             &BranchId("main".to_owned()),
         )
@@ -100,14 +104,17 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
     let runtime = runtime_with_index_field_aspects();
     let alpha = create_entity_outcome(execution, &runtime, "alpha");
     let alpha_id = changed_entities(&alpha)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.late-historical-rebuild".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.late-historical-rebuild".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let first = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -134,7 +141,10 @@ fn current_query_prefers_its_exact_generation_over_a_later_historical_rebuild() 
         },
     );
 
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)
@@ -197,14 +207,17 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
     let runtime = runtime_with_index_field_aspects();
     let first = create_entity_outcome(execution, &runtime, "shared-name");
     let first_id = changed_entities(&first)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "entity.name.no-stale-generation".to_owned(),
-        kind: DerivedIndexKind::EntityField {
-            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-        },
-        branch_scoped: true,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "entity.name.no-stale-generation".to_owned(),
+            kind: DerivedIndexKind::EntityField {
+                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+            },
+            branch_scoped: true,
+        })
+        .expect("index fixture has identity capacity");
     let older_build = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
@@ -216,7 +229,10 @@ fn current_query_rejects_an_older_generation_and_returns_every_exact_match() {
     let second = create_entity_outcome(execution, &runtime, "shared-name");
     let second_id = changed_entities(&second)[0];
 
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
     let context = runtime
         .read_truth()
         .query_plan_context(&snapshot)

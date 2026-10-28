@@ -87,7 +87,8 @@ impl Source {
     ) -> Self {
         let runtime = RelationalRuntimeApi::builder()
             .schema_registry(schema())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let mut entities = Vec::new();
         for partition in 1..=partitions {
             let (_, basis) = runtime
@@ -159,7 +160,7 @@ impl Source {
             .unwrap();
         if matches!(dependencies, Dependencies::Reads) {
             for entity in &self.entities {
-                assert!(tx.read_entity(*entity).unwrap().base().is_some());
+                assert!(tx.read_entity(execution, *entity).unwrap().base().is_some());
             }
         }
         let mut batch = WorkerIntentBatch::new("publish").push(MutationIntent::Entity(

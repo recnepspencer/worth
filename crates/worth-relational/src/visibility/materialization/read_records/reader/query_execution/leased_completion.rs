@@ -45,7 +45,7 @@ pub(super) fn complete_leased_query(
             let result = reduce_query_fragments_checked(
                 shape,
                 ordering,
-                fragments.take().expect("one completion step"),
+                fragments.take().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one completion step"),
                 |work, intermediate| {
                     context.checkpoint(work).map_err(MapKernelFailure::Stop)?;
                     if captured_bytes.saturating_add(intermediate) > scratch_ceiling {
@@ -61,7 +61,7 @@ pub(super) fn complete_leased_query(
             mut prefixes,
             report,
             ..
-        } => Ok((prefixes.pop().expect("one completion output"), report)),
+        } => Ok((prefixes.pop().expect(/* Proof: This private adapter submits exactly one packet; successful completion invokes its FnOnce step once and returns exactly one output. Stops return before extraction. */ "one completion output"), report)),
         ScanOutcome::Stopped { reason, report, .. } => {
             Err(QueryReadExecutionStop::CompletionStopped { reason, report })
         }

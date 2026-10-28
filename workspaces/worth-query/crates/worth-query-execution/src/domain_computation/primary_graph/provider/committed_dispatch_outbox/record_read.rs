@@ -27,14 +27,14 @@ impl CommittedOutboxRead<'_> {
         let committed = self
             .runtime
             .history()
-            .historical_committed_version(created_at)
+            .immutable_commit_receipt_for_version(created_at)
             .ok_or(Denial::NotAuthoritative)?;
-        if committed.commit() != self.expected_commit {
+        if &committed != self.expected_commit {
             return Err(Denial::CommitMismatch);
         }
         Ok(WorthQueryCommittedDispatchOutboxOwnerObservation::seal(
             self.binding.record().clone(),
-            committed.commit().clone(),
+            committed,
             RecordRef::Entity(entity_id),
             self.expected_runtime,
             WorthQueryCommittedDispatchOutboxReadWork::from_owner(owner_work),

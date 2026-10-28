@@ -7,6 +7,7 @@ use super::SnapshotReadCorrelationId;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BridgeSnapshotReadErrorKind {
     ExternalSnapshotReadFailure,
+    ObservationRead(worth_relational::facade::change_source::RelationalObservationReadDenial),
     SnapshotIdentityMismatch,
     DuplicateRecord,
     RecordCountMismatch,
@@ -47,6 +48,14 @@ impl BridgeSnapshotReadError {
 
     pub(crate) fn execution_scope_denied(denial: worth_execution::WorkCeilingDenial) -> Self {
         Self::execution_denied(denial.into())
+    }
+
+    pub(crate) fn observation_read(
+        denial: worth_relational::facade::change_source::RelationalObservationReadDenial,
+    ) -> Self {
+        let mut error = Self::new(format!("retained snapshot read refused: {denial:?}"));
+        error.kind = BridgeSnapshotReadErrorKind::ObservationRead(denial);
+        error
     }
 
     pub fn new(message: impl Into<Arc<str>>) -> Self {

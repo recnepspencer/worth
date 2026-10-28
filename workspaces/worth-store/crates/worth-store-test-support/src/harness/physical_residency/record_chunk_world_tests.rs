@@ -23,11 +23,14 @@ fn real_store_record_publication_and_borrowed_read_fit_the_fixture_envelope() {
 
     assert_eq!(basis.store_identity(), world.serving().store_identity());
     assert_eq!(observed_bytes, payload.len());
+    // C11's allocator retains its policy-declared index capacity until the
+    // Store closes; that charge cannot also fund publication frame work.
+    let arena_index_bytes = u64::from(world.placement().arena_index_bytes().get());
     let counters = world.serving().residency_observation().counters();
-    assert_eq!(counters.active_operation_bytes(), 0);
+    assert_eq!(counters.active_operation_bytes(), arena_index_bytes);
     assert_eq!(
         counters.active_operation_bytes_for(Scope::ForegroundWrite),
-        0
+        arena_index_bytes
     );
     assert_eq!(
         counters.active_operation_bytes_for(Scope::ForegroundRead),
@@ -35,7 +38,7 @@ fn real_store_record_publication_and_borrowed_read_fit_the_fixture_envelope() {
     );
     assert_eq!(
         counters.peak_operation_bytes_for(Scope::ForegroundWrite),
-        ONE_INLINE_RECORD_PUBLICATION_BYTES,
+        ONE_INLINE_RECORD_PUBLICATION_BYTES + arena_index_bytes,
     );
     assert_eq!(
         counters.peak_operation_bytes_for(Scope::ForegroundRead),
@@ -43,7 +46,9 @@ fn real_store_record_publication_and_borrowed_read_fit_the_fixture_envelope() {
     );
     assert_eq!(
         counters.peak_operation_bytes(),
-        ONE_INLINE_RECORD_PUBLICATION_BYTES,
+        ONE_INLINE_RECORD_PUBLICATION_BYTES + arena_index_bytes,
     );
-    assert!(!world.close().residency().requires_inspection());
+    let shutdown = world.close();
+    assert_eq!(shutdown.residency().counters().active_operation_bytes(), 0);
+    assert!(!shutdown.residency().requires_inspection());
 }

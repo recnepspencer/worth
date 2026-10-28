@@ -179,7 +179,7 @@ fn attach_validation_rejection(error: TransactionCommitError) -> TransactionComm
         | TransactionCommitError::PublicationFailed { .. } => {
             commit_log.record_rejection(phase, None, None, error.detail());
         }
-        TransactionCommitError::PerformedButDurabilityDeferred { .. } => {}
+        TransactionCommitError::DurabilityUnresolved { .. } => {}
     }
     error.with_commit_log(commit_log)
 }

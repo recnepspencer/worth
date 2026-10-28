@@ -1,4 +1,5 @@
 mod admission;
+mod anchored_records;
 mod artifact_family;
 mod availability;
 mod blob;
@@ -15,6 +16,7 @@ mod lifecycle;
 mod media_evidence;
 mod media_ownership;
 mod observation;
+mod ordered_journal;
 mod record_serving;
 #[cfg(feature = "recovery-runtime-owner")]
 mod recovery_construction;
@@ -39,6 +41,7 @@ pub use admission::{
     AdmissionError, CancelledPhysicalRuntimeAdmission, DeclaredStoreRootDenialKind,
     PhysicalRuntimeAdmission, PhysicalStore,
 };
+pub use anchored_records::*;
 pub use availability::{CapabilityAvailability, InstalledCapabilityStatus, PhysicalCapability};
 pub use blob::{
     AdmittedBlobScope, BlobAppendFailure, BlobCheckpointLimit, BlobDeclarationDenial,
@@ -218,6 +221,12 @@ pub use observation::{
     LifecycleObservation, ObservationError, ObservationHandle, RootAdmissionObservation,
     RuntimeObservation,
 };
+pub use ordered_journal::{
+    OrderedJournal, OrderedJournalDenial, OrderedJournalEntry, OrderedJournalName,
+    OrderedJournalNameDenial, OrderedJournalPayload, OrderedJournalPublication,
+    OrderedJournalPublicationFailure, OrderedJournalPublished, OrderedJournalReadFailure,
+    OrderedJournalResolution, RELATIONAL_BRANCH_TRANSITIONS, RELATIONAL_CANONICAL_COMMITS,
+};
 pub use record_serving::PhysicalIntegrityScrubReadDeferral;
 pub use record_serving::*;
 #[cfg(feature = "recovery-runtime-owner")]
@@ -256,19 +265,20 @@ pub use recovery_coordination::{
     PhysicalRecoveryStagingCommandDenialKind, PhysicalRecoveryStagingCommandIndeterminate,
     PhysicalRecoveryStagingCommandOutcome, PhysicalRecoveryStagingCommandStage,
     PhysicalRecoveryStagingMaterialization, PhysicalRecoveryStagingMaterializationEvidence,
-    PhysicalResidencyDenial, RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome,
+    RecoveryCheckpointResidueDenial, RecoveryCheckpointResidueOutcome,
     RecoveryCleanupRemovalAction, RecoveryCleanupRemovalOccurrence, RecoveryFreshReopenAction,
-    RecoveryFreshReopenOccurrence, RecoveryPhysicalEffectOccurrence,
+    RecoveryFreshReopenOccurrence, RecoveryPhysicalEffectOccurrence, RecoveryPriorObligation,
     RecoveryPublicationCandidateMaterializationAction,
     RecoveryPublicationCandidateMaterializationOccurrence, RecoveryPublicationCandidateOccurrence,
     RecoveryPublicationCandidateSynchronizationAction,
     RecoveryPublicationCandidateSynchronizationOccurrence, RecoveryPublicationOccurrence,
     RecoveryRecordNamespaceSynchronizationAction, RecoveryRootProtocolReplacementAction,
+    RecoveryStagingResidueDenial, RecoveryStagingResidueOutcome,
     RecoveryStagingSynchronizationAction, RecoveryStagingSynchronizationOccurrence,
     RecoveryStagingWriteAction, RecoveryStagingWriteOccurrence, RecoveryWalArtifactView,
     RecoveryWalDiscoveryFailureView, RecoveryWalReadFailureView,
-    SelectedCheckpointInstallationDenial, SharedCheckpointAdmissionDenial,
-    SharedRecoveryCheckpoint,
+    SelectedCheckpointInstallationDenial, SelectedCheckpointPublicationDenial,
+    SharedCheckpointAdmissionDenial, SharedRecoveryCheckpoint,
 };
 #[cfg(feature = "recovery-runtime-owner")]
 pub use recovery_freshness::{

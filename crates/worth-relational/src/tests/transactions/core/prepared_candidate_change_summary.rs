@@ -65,8 +65,14 @@ fn prepared_summary_reads_exact_whole_scalar_scope_without_publishing() {
         .iter()
         .any(|scope| { scope.aspect_key.as_str() == "name" && scope.field_path.is_none() }));
     let (_, before_root, after_root) = candidate.change_summary_basis_and_roots().unwrap();
-    let before_partition = before_root.partition_state(entity.partition_id).unwrap();
-    let after_partition = after_root.partition_state(entity.partition_id).unwrap();
+    let before_partition = before_root
+        .partition_state(entity.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
+    let after_partition = after_root
+        .partition_state(entity.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let slot = entity.slot_index() as usize;
     assert_ne!(
         before_partition.entity_arena.aspect_versions_at(slot),
@@ -133,8 +139,14 @@ fn unchanged_entity_update_has_empty_scope_and_preserves_native_field_revision()
         .find(|patch| patch.target == RecordRef::Entity(entity))
         .unwrap();
     assert!(patch.semantic_changes.is_empty());
-    let before = before_root.partition_state(entity.partition_id).unwrap();
-    let after = after_root.partition_state(entity.partition_id).unwrap();
+    let before = before_root
+        .partition_state(entity.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
+    let after = after_root
+        .partition_state(entity.partition_id)
+        .expect("fixture root has admitted Full custody")
+        .unwrap();
     let slot = entity.slot_index() as usize;
     assert_eq!(
         before.entity_arena.aspect_versions_at(slot),

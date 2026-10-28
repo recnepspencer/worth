@@ -37,6 +37,7 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     merged_plan: MergedCommitPlan,
     #[serde(borrow)]
     symbol_texts: crate::symbols::data::SymbolSnapshotWire<'a>,
+    revision_symbol_references: Vec<crate::symbols::data::Symbol>,
     record_allocations: Vec<crate::history::data::CanonicalRecordAllocation>,
     patch: CanonicalAuthoritativePatch,
     descriptive_touches: RelationalDescriptiveTouchGraph,
@@ -49,6 +50,12 @@ pub(crate) struct CanonicalEnvelopeWire<'a> {
     descriptor_semantics_version: DescriptorSemanticsVersion,
 }
 impl CanonicalEnvelopeWire<'_> {
+    /// Commit identity as decoded, before any admission. An enclosing frame
+    /// compares it so disagreement refuses before text readmission runs.
+    pub(crate) fn commit_id(&self) -> CommitId {
+        self.commit.commit_id
+    }
+
     pub(crate) fn readmit(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -56,8 +63,18 @@ impl CanonicalEnvelopeWire<'_> {
         super::CanonicalCommitEnvelope,
         crate::symbols::data::RelationalFieldTextAdmissionDenial,
     > {
-        let required =
+        let mut required =
             crate::symbols::data::required_commit_symbols(&self.merged_plan, &self.patch);
+        if self
+            .revision_symbol_references
+            .windows(2)
+            .any(|pair| pair[0] >= pair[1])
+        {
+            return Err(
+                crate::symbols::data::RelationalFieldTextAdmissionDenial::InvalidSymbolDictionary,
+            );
+        }
+        required.extend(self.revision_symbol_references.iter().copied());
         let supplied = self
             .symbol_texts
             .entries
@@ -87,6 +104,7 @@ impl CanonicalEnvelopeWire<'_> {
             schema_authority: self.schema_authority,
             merged_plan: self.merged_plan,
             symbol_texts,
+            revision_symbol_references: self.revision_symbol_references,
             record_allocations: self.record_allocations,
             patch: self.patch,
             descriptive_touches: self.descriptive_touches,

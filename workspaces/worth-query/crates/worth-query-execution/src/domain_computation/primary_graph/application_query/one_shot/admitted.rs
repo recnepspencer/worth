@@ -139,14 +139,8 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
                 Err(Control::TimedOut) => WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
             }
         }
-
-
-
         SelectedAuthorizedReadStop::Security(
-            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::AccountingOverflow,
-        ) => return WorthQueryAdmittedOneShotStop::WorkCounterOverflow,
-        SelectedAuthorizedReadStop::Security(
-            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop::World,
+            crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop,
         ) | SelectedAuthorizedReadStop::StaleSecurity => {
             WorthQueryApplicationOneShotDenialKind::Authorization(
                 crate::domain_computation::primary_graph::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StaleAuthorization),
@@ -170,8 +164,10 @@ use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Contr
             ),
         ) => WorthQueryApplicationOneShotDenialKind::DeadlineExceeded,
         SelectedAuthorizedReadStop::Session => WorthQueryApplicationOneShotDenialKind::ForeignPlan,
-        SelectedAuthorizedReadStop::Read { .. } => {
-            unreachable!("the read-denial branch settles its reservation before mapping")
+        SelectedAuthorizedReadStop::Read(denial) => {
+            return WorthQueryAdmittedOneShotStop::Execution(map_authorized_read_denial(
+                WorthQueryAuthorizedApplicationReadDenial::Read(denial), query,
+            ));
         }
     };
     WorthQueryAdmittedOneShotStop::Execution(denial(kind, query, query))

@@ -13,5 +13,5 @@ fn failed_advancement_cost_cell() {
         Some((0, Failure::Complete)),
         [3, suffix],
     );
-    println!("FAILED_PREFIX_COST:{},{}", observed.work, observed.span);
+    println!("\nFAILED_PREFIX_COST:{},{}", observed.work, observed.span);
 }

@@ -65,4 +65,5 @@ fn runtime_with_registry_width(additional_kind_count: u32) -> RelationalRuntime 
         .profile(RelationalRuntimeProfile::CertificationCore)
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }

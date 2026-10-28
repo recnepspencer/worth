@@ -6,7 +6,7 @@ pub(super) const ENTITY_FIELD: ComplexityContract = ComplexityContract {
     declared_time_complexity: "O(index_hits + matched_record_materialization)",
     budget_summary: "Index-backed field equality reads must resolve candidate IDs from derived index entries, must avoid whole-snapshot materialization, and must report index attempts, parity verification, and emitted record counts explicitly.",
     status: ComplexityStatus::Verified,
-    proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_entity_field_equals_avoids_snapshot_materialization"],
+    proof_tests: &["tests::complexity::contracts::visibility_budgets::derived_index_field_lookup::complexity_budget_index_entity_field_equals_avoids_snapshot_materialization"],
 };
 
 pub(super) const RELATION_FIELD: ComplexityContract = ComplexityContract {
@@ -15,7 +15,7 @@ pub(super) const RELATION_FIELD: ComplexityContract = ComplexityContract {
     declared_time_complexity: "O(index_hits + matched_relation_materialization)",
     budget_summary: "Index-backed relation field equality reads must resolve candidate relation IDs from derived index entries, must avoid whole-snapshot relation materialization, and must report index attempts, parity verification, and emitted relation counts explicitly.",
     status: ComplexityStatus::Verified,
-    proof_tests: &["tests::complexity::contracts::visibility_budgets::complexity_budget_index_relation_field_equals_avoids_snapshot_materialization"],
+    proof_tests: &["tests::complexity::contracts::visibility_budgets::derived_index_field_lookup::complexity_budget_index_relation_field_equals_avoids_snapshot_materialization"],
 };
 
 pub(super) const GENERATION_SELECTION: ComplexityContract = ComplexityContract {

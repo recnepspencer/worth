@@ -79,27 +79,26 @@ impl PhysicalReclaimAttempt {
 
     pub(in crate::physical_runtime) fn clear_unprepared_drop_records(&self) {
         let mut state = self.lock_fence();
-        if let Some(fence) = state.as_mut().filter(|fence| fence.id == self.id) {
-            if fence.purpose == ReclaimPurpose::PayloadDrop
-                && fence.phase == ReclaimPhase::ReservePublished
-                && fence.drop_mutation.is_none()
-            {
-                fence.drop_records.clear();
-            }
+        if let Some(fence) = state.as_mut().filter(|fence| fence.id == self.id)
+            && fence.purpose == ReclaimPurpose::PayloadDrop
+            && fence.phase == ReclaimPhase::ReservePublished
+            && fence.drop_mutation.is_none()
+        {
+            fence.drop_records.clear();
         }
     }
 
     pub(in crate::physical_runtime) fn mark_effect_started(&self) {
         let mut state = self.lock_fence();
-        if let Some(fence) = state.as_mut().filter(|fence| fence.id == self.id) {
-            if fence.purpose == ReclaimPurpose::PayloadDrop {
-                fence.phase = match fence.phase {
-                    ReclaimPhase::BeforeEffect => ReclaimPhase::ManifestEffect,
-                    ReclaimPhase::ManifestPublished => ReclaimPhase::ReserveEffect,
-                    ReclaimPhase::ReservePublished => ReclaimPhase::DropEffect,
-                    other => other,
-                };
-            }
+        if let Some(fence) = state.as_mut().filter(|fence| fence.id == self.id)
+            && fence.purpose == ReclaimPurpose::PayloadDrop
+        {
+            fence.phase = match fence.phase {
+                ReclaimPhase::BeforeEffect => ReclaimPhase::ManifestEffect,
+                ReclaimPhase::ManifestPublished => ReclaimPhase::ReserveEffect,
+                ReclaimPhase::ReservePublished => ReclaimPhase::DropEffect,
+                other => other,
+            };
         }
     }
 

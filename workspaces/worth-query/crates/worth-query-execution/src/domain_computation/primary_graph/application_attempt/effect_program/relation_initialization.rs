@@ -42,10 +42,7 @@ impl<Schema, Operation, Input, Scope>
             to,
         )?;
         original.consult().map_err(|cause| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::EffectExecution(cause),
-                relation.name(),
-            )
+            crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAttemptDenial::relational_read_stopped(cause.into(),relation.name())
         })?;
         Ok(WorthQueryApplicationCreatedRelation {
             relation,
@@ -116,10 +113,8 @@ impl<Schema, Operation, Input, Scope>
                 WorthQueryApplicationAttemptDenialKind::ConflictingEffectStep,
             ));
         }
-        let scope_denied = |cause| {
-            failed(WorthQueryApplicationAttemptDenialKind::EffectExecution(
-                cause,
-            ))
+        let scope_denied = |cause: worth_execution::WorkCeilingDenial| {
+            WorthQueryApplicationAttemptDenial::relational_read_stopped(cause.into(), field.field())
         };
         let mut initialized = None;
         let outcome = original.run_native_with_checkpoint(|context| {

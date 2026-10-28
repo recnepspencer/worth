@@ -79,7 +79,7 @@ impl RelationalRuntimeHandle {
     pub fn observe_locks_for_test(
         &self,
         acquired: impl Fn() + Send + Sync + 'static,
-    ) -> RelationalRuntimeLockObservationForTest {
+    ) -> Option<RelationalRuntimeLockObservationForTest> {
         self.lock_observation.install(acquired)
     }
 

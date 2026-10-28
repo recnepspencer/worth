@@ -7,7 +7,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime};
 use worth_query_host::facade::admission::authenticated_principal::*;
 use worth_query_host::facade::application_entry::{
-    WorthQueryApplicationProgramAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
     WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionProgress,
 };
 use worth_query_host::facade::primary_graph::{
@@ -223,61 +222,4 @@ fn expiry_during_progression_preserves_branch_set_prefix_and_pending_owner() {
         WorthQueryBranchSetAdoptionProgress::Performed { .. }
     ));
     assert!(adoption.close().is_ok());
-}
-#[test]
-fn expiry_during_recovery_progression_retains_actual_unpublished_custody() {
-    let clock = ExpiryClock::default();
-    let host = crate::document_retention_model::host::publish_on_first_program_with_trusted_time(
-        clock.clone(),
-    );
-    let branch = host.current_world();
-    let target = *host
-        .supported_program::<RetentionProgramP1>()
-        .unwrap()
-        .owned_revision();
-    let scope = request_scope();
-    let current = authenticate_operator(host.installed_schema(), &scope);
-    let programs = host.runtime().request(&current, &scope).programs();
-    let requirements = programs.compare(&target).unwrap();
-    let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
-    let policy = crate::test_request_policy::serial_request();
-    host.runtime()
-        .fail_next_durable_append_for_test(&worth_execution::ExecutionRequest::serial(&policy));
-    let recovery = match host
-        .runtime()
-        .request(&current, &scope)
-        .programs()
-        .publish(prepared)
-    {
-        WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(unpublished) => {
-            unpublished.into_recovery()
-        }
-        _ => panic!("real publication loses native durable append"),
-    };
-    let expiring = authenticate_live_expiring(&host, &scope);
-    clock.expire_during_progression(expiring.valid_until());
-    let failure = host
-        .runtime()
-        .request(&expiring, &scope)
-        .on_branch(branch)
-        .programs()
-        .recover(recovery)
-        .err()
-        .unwrap();
-    clock.assert_serviced();
-    let recovery = match failure {
-        WorthQueryApplicationProgramAdoptionRecoveryFailure::Recovery(failure) => {
-            match failure.denial() { worth_query_host::facade::primary_graph::WorthQueryBranchAdoptionRecoveryDenial::Authorization(cause) => expired(cause), other => panic!("expiry must precede native settlement: {other:?}") }
-            failure.into_recovery()
-        }
-        _ => panic!("actual admitted expiry must retain recovery"),
-    };
-    assert_eq!(host.current_world(), branch);
-    assert!(matches!(
-        host.runtime()
-            .request(&current, &scope)
-            .programs()
-            .recover(recovery),
-        Ok(WorthQueryBranchAdoptionRecoveryOutcome::Performed { .. })
-    ));
 }

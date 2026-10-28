@@ -117,14 +117,18 @@ pub(super) fn execute_lowered_mutation_batch(
                 failure,
             ));
         }
+        worth_relational::facade::mvcc::RelationalPublicationOutcome::DurabilityUnresolved(
+            unresolved,
+        ) => {
+            return Err(RelationalEffectExecutionFailure::durability_unresolved(
+                unresolved,
+            ));
+        }
     };
     runtime
         .settle_performed_publication(performed)
         .map_err(|error| {
-            let settlement = error.deferred_settlement().cloned();
-            let (kind, message) =
-                lower_runtime_error(error, EffectExecutionDenialKind::RelationalCommitFailed);
-            RelationalEffectExecutionFailure::from_publication_failure(kind, message, settlement)
+            lower_runtime_error(error, EffectExecutionDenialKind::RelationalCommitFailed).into()
         })
 }
 
@@ -134,7 +138,7 @@ fn lower_batch_component(
     declaration: &LoweredMutationIntentDeclaration,
     transaction_basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
-) -> Result<Vec<MutationIntent>, (EffectExecutionDenialKind, String)> {
+) -> Result<Vec<MutationIntent>, RelationalEffectExecutionFailure> {
     let canonical: CanonicalStrategyCommitRequest = runtime
         .commit_strategies()
         .canonicalize_request(declaration.strategy_request())
@@ -156,17 +160,19 @@ fn lower_batch_component(
     let mut authority = runtime.commit_strategies_authority();
     let lowered = authority
         .lower_execution(
+            request_execution,
             runtime,
             &canonical,
             &execution,
             transaction_basis,
             worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
         )
-        .map_err(|error| {
-            lower_runtime_error(
-                error,
-                EffectExecutionDenialKind::RelationalStrategyAuthorityLoweringFailed,
-            )
-        })?;
-    Ok(lowered.merged_plan().merged_intents.clone())
+        .map_err(super::relational_execution_deferred::strategy_lowering)?;
+    Ok(lowered
+        .execution()
+        .mutation_program()
+        .worker_batches()
+        .iter()
+        .flat_map(|batch| batch.intents.iter().cloned())
+        .collect())
 }

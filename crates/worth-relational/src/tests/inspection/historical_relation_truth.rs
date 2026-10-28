@@ -66,7 +66,8 @@ fn historical_relation_inspection_reconstructs_record_truth_without_inventing_li
             protect_active_snapshots: false,
             recent_version_window: 0,
         })
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let source = create_entity(execution, &runtime, "source");
     let target = create_entity(execution, &runtime, "target");
     let relation_outcome =

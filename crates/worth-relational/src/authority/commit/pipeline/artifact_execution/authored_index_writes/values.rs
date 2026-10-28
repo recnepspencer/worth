@@ -1,7 +1,7 @@
 //! Borrowed exact-generation membership values at the real preparation roots.
 use super::*;
 use crate::identity::data::{EntityId, KindId};
-use crate::storage::overlay::PartitionAccess;
+use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::{EntityRecordKind, SlotView};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, AuthoritativeRecordAspectState,
@@ -9,15 +9,27 @@ use worth_foundational::facade::{
 };
 
 pub(super) fn live<'a>(
-    access: &'a impl PartitionAccess,
+    execution: &ExecutionRequest<'_, '_>,
+    access: &'a impl CurrentPartitionAccess,
     entity: EntityId,
-) -> Option<(KindId, SlotView<'a, EntityRecordKind>)> {
-    let partition = access.get_partition(entity.partition_id)?;
-    let slot = partition.entity_arena.get_slot(entity.slot_index())?;
-    if !slot.is_live() || slot.generation() != entity.generation_value() {
-        return None;
+) -> Result<Option<(KindId, SlotView<'a, EntityRecordKind>)>, Denial> {
+    access
+        .demand_head_partition(execution, entity.partition_id)
+        .map_err(|cause| Denial::NativeRead(cause.into()))?;
+    let Some(partition) = access.get_current_partition(entity.partition_id) else {
+        return Ok(None);
+    };
+    let Some(slot) = partition.entity_arena().get_slot(entity.slot_index()) else {
+        return Ok(None);
+    };
+    if slot.is_materialization_unavailable() {
+        return Err(Denial::SourceUnavailable);
     }
-    Some((slot.kind_id()?, slot))
+    if !slot.is_live() || slot.generation() != entity.generation_value() {
+        return Ok(None);
+    }
+    let kind = slot.kind_id().ok_or(Denial::SourceUnavailable)?;
+    Ok(Some((kind, slot)))
 }
 
 pub(super) fn field<'a>(

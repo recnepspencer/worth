@@ -9,7 +9,10 @@ fn complexity_budget_query_packetization_reports_parallel_shape_for_cross_partit
     let left_a = create_entity_in_partition(execution, &runtime, "left-a", PartitionId(7));
     let left_b = create_entity_in_partition(execution, &runtime, "left-b", PartitionId(7));
     let right = create_entity_in_partition(execution, &runtime, "right", PartitionId(11));
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     runtime.performance_access().reset_counters();
     let lease = test_execution_lease();
@@ -57,7 +60,10 @@ fn complexity_budget_query_packetization_reports_narrow_shape_with_a_lease() {
             PartitionId(partition),
         );
     }
-    let snapshot = runtime.visibility_authority().snapshot();
+    let snapshot = runtime
+        .visibility_authority()
+        .snapshot()
+        .expect("current snapshot fixture is admitted");
 
     runtime.performance_access().reset_counters();
     let lease = test_execution_lease();

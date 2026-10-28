@@ -82,10 +82,10 @@ impl<Schema: ApplicationSchema, Binding: ApplicationResourceBinding<Schema>> Dro
     for WorthQueryApplicationResource<Schema, Binding>
 {
     fn drop(&mut self) {
-        if self.open {
-            if let Some(binding) = self.receipt.binding.upgrade() {
-                binding.storage.abandon(self.receipt.key);
-            }
+        if self.open
+            && let Some(binding) = self.receipt.binding.upgrade()
+        {
+            binding.storage.abandon(self.receipt.key);
         }
     }
 }

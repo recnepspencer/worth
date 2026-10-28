@@ -102,7 +102,8 @@ fn a_store_holding_the_retired_correlation_index_opens_and_runs() {
         assert!(
             runtime
                 .index_access()
-                .published_generation_for_commit(retired, &head)
+                .read_published_generation_for_commit(request_execution, retired, &head)
+                .unwrap()
                 .is_none(),
             "nothing maintains the retired index"
         );
@@ -153,14 +154,17 @@ pub(super) fn persist_as_the_retired_code_did(
         .integration_handle()
         .with_runtime_mut(execution, |runtime| {
             let head = main_head(runtime);
-            let retired = runtime.index_authority().register(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: RETIRED_CORRELATION_INDEX.to_owned(),
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: correlation,
-                },
-                branch_scoped: false,
-            });
+            let retired = runtime
+                .index_authority()
+                .register(DerivedIndexDefinition {
+                    index_id: DerivedIndexId(0),
+                    name: RETIRED_CORRELATION_INDEX.to_owned(),
+                    kind: DerivedIndexKind::EntityField {
+                        field_locator: correlation,
+                    },
+                    branch_scoped: false,
+                })
+                .expect("index fixture has identity capacity");
             let built = runtime.index_authority().build_for_commit(
                 execution,
                 DerivedIndexBuildRequest {

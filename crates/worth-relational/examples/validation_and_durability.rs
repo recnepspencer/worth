@@ -9,7 +9,8 @@ fn main() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(support::demo_schema_registry())
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
 
     let (_created, entity_id) = support::create_entity(execution, &runtime, "durable");
     let _updated = support::update_entity(execution, &runtime, entity_id, "durable-updated");
@@ -28,10 +29,10 @@ fn main() {
         .expect("original request admits native recovery input");
 
     println!(
-        "validation_results={} blocking_violation={} durable_log_len={} recovery_segments={}",
+        "validation_results={} blocking_violation={} durable_log_len={} recovery_checkpoint={:?}",
         validation.summary().result_count(),
         validation.summary().has_blocking_violation(),
         runtime.durability().durable_commit_count(),
-        recovery_plan.cursor.segment_ids.len()
+        recovery_plan.checkpoint_covered_position()
     );
 }

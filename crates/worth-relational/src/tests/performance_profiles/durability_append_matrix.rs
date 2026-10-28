@@ -9,22 +9,16 @@ fn perf_durability_append_matrix() {
     let suite = "durability_append_matrix";
 
     let fresh_append_samples =
-        capture_perf_samples(suite, "append_canonical_envelope_fresh_store", || {
-            let runtime = persisted_runtime_with_test_schema();
+        capture_perf_samples(suite, "append_canonical_envelope_fresh_medium", || {
+            let runtime = durable_runtime_with_test_schema();
 
             let outcome = create_entity_outcome(execution, &runtime, "fresh-source");
             let elapsed_micros = outcome.execution().phase_timing.durable_append_micros as u128;
 
-            let store = runtime.durable_store().expect("durable store after append");
-            let latest_segment = store
-                .segments
-                .last()
-                .expect("segment manifest after append");
             PerfMeasurement {
                 elapsed_micros,
                 metrics: perf_metrics!({
-                    "segment_count": store.segments.len(),
-                    "latest_segment_commit_count": latest_segment.commit_count,
+                    "medium_head": attached_test_medium(&runtime).head().0,
                     "durable_log_len": runtime.durable_log().len(),
                 }),
             }
@@ -34,32 +28,25 @@ fn perf_durability_append_matrix() {
         .all(|sample| sample.elapsed_micros > 0));
     assert_budget(
         &fresh_append_samples,
-        "fresh durable append should create one segment with one canonical envelope",
+        "a fresh durable commit is the medium's first position and the log's one envelope",
         |metrics| {
-            metrics["segment_count"].as_u64() == Some(1)
-                && metrics["latest_segment_commit_count"].as_u64() == Some(1)
+            metrics["medium_head"].as_u64() == Some(1)
                 && metrics["durable_log_len"].as_u64() == Some(1)
         },
     );
 
     let warm_append_samples =
-        capture_perf_samples(suite, "append_canonical_envelope_existing_segment", || {
-            let runtime = persisted_runtime_with_test_schema();
+        capture_perf_samples(suite, "append_canonical_envelope_existing_medium", || {
+            let runtime = durable_runtime_with_test_schema();
             create_entity_outcome(execution, &runtime, "warm-source-a");
 
             let outcome = create_entity_outcome(execution, &runtime, "warm-source-b");
             let elapsed_micros = outcome.execution().phase_timing.durable_append_micros as u128;
 
-            let store = runtime.durable_store().expect("durable store after append");
-            let latest_segment = store
-                .segments
-                .last()
-                .expect("segment manifest after append");
             PerfMeasurement {
                 elapsed_micros,
                 metrics: perf_metrics!({
-                    "segment_count": store.segments.len(),
-                    "latest_segment_commit_count": latest_segment.commit_count,
+                    "medium_head": attached_test_medium(&runtime).head().0,
                     "durable_log_len": runtime.durable_log().len(),
                 }),
             }
@@ -69,10 +56,9 @@ fn perf_durability_append_matrix() {
         .all(|sample| sample.elapsed_micros > 0));
     assert_budget(
         &warm_append_samples,
-        "warm durable append should stay on the same segment up to capacity and extend the log by one",
+        "a warm durable commit extends the medium and the log by exactly one",
         |metrics| {
-            metrics["segment_count"].as_u64() == Some(1)
-                && metrics["latest_segment_commit_count"].as_u64() == Some(2)
+            metrics["medium_head"].as_u64() == Some(2)
                 && metrics["durable_log_len"].as_u64() == Some(2)
         },
     );

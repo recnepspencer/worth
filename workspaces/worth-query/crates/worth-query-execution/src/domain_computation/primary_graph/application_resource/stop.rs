@@ -26,6 +26,10 @@ pub enum WorthQueryResourceEffectRefusal {
     TerminalIndexUnavailable,
 }
 
+#[expect(
+    dead_code,
+    reason = "original typed refusal is retained opaquely; disclosure uses approved projections"
+)]
 pub(super) enum ResourceCause {
     Unavailable,
     Request(WorkCeilingDenial),

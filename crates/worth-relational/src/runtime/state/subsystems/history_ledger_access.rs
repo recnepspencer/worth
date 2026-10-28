@@ -47,16 +47,6 @@ impl HistorySubsystem {
         self.ledger.read().commit_catalog.snapshot()
     }
 
-    pub(crate) fn catalog_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
-        self.ledger
-            .read()
-            .commit_catalog
-            .snapshot()
-            .into_iter()
-            .map(|artifact| Arc::clone(artifact.envelope()))
-            .collect()
-    }
-
     pub(crate) fn catalog_len(&self) -> usize {
         self.ledger.read().commit_catalog.len()
     }
@@ -89,7 +79,11 @@ impl HistorySubsystem {
         &self,
         commit_id: CommitId,
     ) -> Option<Arc<CanonicalCommitEnvelope>> {
-        self.ledger.read().commit_envelopes.get(&commit_id).cloned()
+        self.ledger
+            .read()
+            .commit_envelopes
+            .get(&commit_id)
+            .and_then(|cell| cell.get())
     }
 
     pub(crate) fn recorded_commit_envelopes(&self) -> Vec<Arc<CanonicalCommitEnvelope>> {
@@ -97,18 +91,7 @@ impl HistorySubsystem {
             .read()
             .commit_envelopes
             .values()
-            .cloned()
-            .collect()
-    }
-
-    pub(crate) fn recorded_commit_envelope_entries(
-        &self,
-    ) -> Vec<(CommitId, Arc<CanonicalCommitEnvelope>)> {
-        self.ledger
-            .read()
-            .commit_envelopes
-            .iter()
-            .map(|(commit_id, envelope)| (*commit_id, Arc::clone(envelope)))
+            .filter_map(|cell| cell.get())
             .collect()
     }
 
@@ -152,6 +135,20 @@ impl HistorySubsystem {
             .patch_stream_index
             .range((start, std::ops::Bound::Unbounded))
             .take(max_commits)
+            .map(|(position, commit_id)| (*position, *commit_id))
+            .collect()
+    }
+
+    pub(crate) fn latest_recorded_patch_references(
+        &self,
+        limit: usize,
+    ) -> Vec<(PatchStreamPosition, CommitId)> {
+        self.ledger
+            .read()
+            .patch_stream_index
+            .iter()
+            .rev()
+            .take(limit)
             .map(|(position, commit_id)| (*position, *commit_id))
             .collect()
     }

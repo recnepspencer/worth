@@ -13,6 +13,16 @@ use crate::visibility::materialization::read_records::visibility::{
 /// claim. Record bytes use the established owner-accounted payload measure;
 /// that measure does not prove allocator or BTree node structural backing.
 pub(crate) trait ProjectionRecordSource {
+    fn demand_all_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+    fn demand_regions_full(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        partitions: impl IntoIterator<Item = PartitionId>,
+    ) -> Result<(), crate::execution::RelationalExecutionDenialCause>;
+
     fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
     fn is_exact_basis(&self) -> bool;
     fn version_id(&self) -> crate::identity::data::VersionId;
@@ -29,6 +39,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
     ) -> Result<Option<T>, ReadStop<E>> {
+        self.demand_regions_full(execution, [id.partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let bytes = self
             .candidate_entity_heap_for_id(id)
@@ -47,10 +59,11 @@ pub(crate) trait ProjectionRecordSource {
             .checked_add(std::mem::size_of::<EntityReadRecord>() as u64)
             .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
             .map_err(ReadStop::Request)?;
-        assert!(
-            actual <= bytes,
-            "the owner-accounted payload quote bounds the clone payload"
-        );
+        if actual > bytes {
+            return Err(ReadStop::Request(
+                crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+            ));
+        }
         before_candidate(0, actual).map_err(ReadStop::Admission)?;
         let result = record.as_ref().map(inspect);
         drop(record);
@@ -67,6 +80,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_regions_full(execution, [partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -126,10 +141,11 @@ pub(crate) trait ProjectionRecordSource {
                 .and_then(|row| row.checked_add(iterator_bytes))
                 .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
                 .map_err(ReadStop::Request)?;
-            assert!(
-                actual <= bytes,
-                "the owner-accounted payload quote bounds the clone payload"
-            );
+            if actual > bytes {
+                return Err(ReadStop::Request(
+                    crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                ));
+            }
             before_candidate(0, actual).map_err(ReadStop::Admission)?;
             if let Some(record) = record
                 && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
@@ -150,6 +166,8 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_regions_full(execution, [partition_id])
+            .map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -209,10 +227,11 @@ pub(crate) trait ProjectionRecordSource {
                 .and_then(|row| row.checked_add(iterator_bytes))
                 .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
                 .map_err(ReadStop::Request)?;
-            assert!(
-                actual <= bytes,
-                "the owner-accounted payload quote bounds the clone payload"
-            );
+            if actual > bytes {
+                return Err(ReadStop::Request(
+                    crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded,
+                ));
+            }
             before_candidate(0, actual).map_err(ReadStop::Admission)?;
             if let Some(record) = record
                 && kind_id.is_none_or(|kind| record.kind.kind_id == kind)
@@ -232,6 +251,7 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -254,6 +274,7 @@ pub(crate) trait ProjectionRecordSource {
         mut before_candidate: impl FnMut(u64, u64) -> Result<(), E>,
         mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
     ) -> Result<(), ReadStop<E>> {
+        self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::check_request(execution).map_err(ReadStop::Request)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
@@ -276,6 +297,17 @@ pub(crate) trait ProjectionRecordSource {
         let Some(root) = self.selected_root() else {
             return Ok(0);
         };
+        if self.is_exact_basis() {
+            return root
+                .accepted_head_region_view(id.partition_id)
+                .map_or(Ok(0), |head| {
+                    super::super::read_work::record_quote::entity_head(
+                        root.schema_authority().registry(),
+                        head,
+                        id.slot_index(),
+                    )
+                });
+        }
         let visibility = if self.is_exact_basis() {
             super::super::reader::KindScanVisibility::Live
         } else {
@@ -296,6 +328,17 @@ pub(crate) trait ProjectionRecordSource {
         let Some(root) = self.selected_root() else {
             return Ok(0);
         };
+        if self.is_exact_basis() {
+            return root
+                .accepted_head_region_view(id.partition_id)
+                .map_or(Ok(0), |head| {
+                    super::super::read_work::record_quote::relation_head(
+                        root.schema_authority().registry(),
+                        head,
+                        id.slot_index(),
+                    )
+                });
+        }
         let visibility = if self.is_exact_basis() {
             super::super::reader::KindScanVisibility::Live
         } else {

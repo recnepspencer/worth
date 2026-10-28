@@ -20,6 +20,7 @@ use super::super::RuntimeWorldOwnerRoot;
 /// silent capacity failure.
 pub(super) fn create_forked_branch<D, I, E, Ctx, T>(
     owner: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
     source: ProductBranchObservation,
     intent: ProductBranchCreationIntent,
     cancellation: &RuntimeWorldCancellationToken,
@@ -53,7 +54,7 @@ where
         cancellation,
         None,
     )?;
-    match execute_creation(owner, attempt, &destination, cancellation) {
+    match execute_creation(owner, execution, attempt, &destination, cancellation) {
         BranchCreationExecution::NoEffect(denial) => Err(denial),
         BranchCreationExecution::ProductUnpublished(effects) => Ok(
             RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects),

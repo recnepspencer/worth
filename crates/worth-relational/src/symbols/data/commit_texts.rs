@@ -11,8 +11,11 @@ impl StringInterner {
         &self,
         plan: &MergedCommitPlan,
         patch: &crate::publication::patch::data::CanonicalAuthoritativePatch,
+        revision_references: impl IntoIterator<Item = Symbol>,
     ) -> Result<SymbolTableSnapshot, &'static str> {
-        let entries = required_commit_symbols(plan, patch)
+        let mut required = required_commit_symbols(plan, patch);
+        required.extend(revision_references);
+        let entries = required
             .into_iter()
             .map(|symbol| {
                 self.retained_text(symbol)

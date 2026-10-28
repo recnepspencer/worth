@@ -5,6 +5,21 @@ const MAXIMUM_RECORD_BYTES: u64 = u32::MAX as u64;
 
 pub struct RecordAppendBatch {
     pub(in crate::physical_runtime::record_serving) records: Vec<RecordAppendInput>,
+    pub(in crate::physical_runtime::record_serving) anchor_advance:
+        Option<RecordBatchAnchorAdvance>,
+}
+
+/// A request that this batch's root publication also advance one record anchor
+/// from `expected_generation` to the record at `record_index`.
+///
+/// Only Store-owned journals issue anchor requests; the request is part of the
+/// batch's idempotency fingerprint and is checked against the current root
+/// before any WAL effect.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::physical_runtime) struct RecordBatchAnchorAdvance {
+    pub(in crate::physical_runtime) name: worth_store_physical_format::RecordAnchorName,
+    pub(in crate::physical_runtime) expected_generation: u64,
+    pub(in crate::physical_runtime) record_index: u16,
 }
 
 pub struct RecordAppendBatchBuilder {
@@ -102,6 +117,33 @@ impl RecordAppendBatch {
         Ok(aggregate_bytes)
     }
 
+    /// Attaches one anchor advance request naming a record of this batch.
+    pub(in crate::physical_runtime) fn with_anchor_advance(
+        mut self,
+        advance: RecordBatchAnchorAdvance,
+    ) -> Result<Self, RecordAppendDenial> {
+        if usize::from(advance.record_index) >= self.records.len()
+            || advance.expected_generation == u64::MAX
+            || self.anchor_advance.is_some()
+        {
+            return Err(RecordAppendDenial::InvalidRecordAnchorAdvance);
+        }
+        self.anchor_advance = Some(advance);
+        Ok(self)
+    }
+
+    /// SHA-256 of a materialized record, used to bind an anchor to its bytes.
+    pub(in crate::physical_runtime) fn prepared_record_sha256(
+        &self,
+        index: u16,
+    ) -> Option<[u8; 32]> {
+        use sha2::Digest;
+        match self.records.get(usize::from(index))? {
+            RecordAppendInput::Bytes(bytes) => Some(sha2::Sha256::digest(bytes).into()),
+            RecordAppendInput::Source { .. } => None,
+        }
+    }
+
     pub(in crate::physical_runtime) fn into_prepared_record_bytes(self) -> Vec<Vec<u8>> {
         self.records
             .into_iter()
@@ -115,7 +157,7 @@ impl RecordAppendBatch {
     }
 
     pub(in crate::physical_runtime) fn duplicate_prepared(&self) -> Self {
-        Self::from_prepared_record_bytes(
+        let mut duplicate = Self::from_prepared_record_bytes(
             self.records
                 .iter()
                 .map(|record| match record {
@@ -125,12 +167,15 @@ impl RecordAppendBatch {
                     }
                 })
                 .collect(),
-        )
+        );
+        duplicate.anchor_advance = self.anchor_advance;
+        duplicate
     }
 
     pub(in crate::physical_runtime) fn from_prepared_record_bytes(records: Vec<Vec<u8>>) -> Self {
         Self {
             records: records.into_iter().map(RecordAppendInput::Bytes).collect(),
+            anchor_advance: None,
         }
     }
 }
@@ -209,6 +254,7 @@ impl RecordAppendBatchBuilder {
         }
         Ok(RecordAppendBatch {
             records: self.records,
+            anchor_advance: None,
         })
     }
 }

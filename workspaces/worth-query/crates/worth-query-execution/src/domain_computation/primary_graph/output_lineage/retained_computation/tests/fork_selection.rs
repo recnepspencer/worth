@@ -37,6 +37,7 @@ fn nested_forks_select_the_captured_generation_and_stop_at_local_absence() {
             .application
             .product_runtime()
             .create_product_branch(
+                execution,
                 source,
                 None,
                 intent,

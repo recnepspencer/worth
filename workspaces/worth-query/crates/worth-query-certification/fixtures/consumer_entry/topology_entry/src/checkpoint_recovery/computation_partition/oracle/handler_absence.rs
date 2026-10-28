@@ -89,6 +89,77 @@ fn differential<const WORK: usize, const RUNS: usize>(expected: &[Cause]) {
 }
 
 #[test]
+fn a_funded_request_reuses_facts_above_the_compute_allowance() {
+    let _guard = checkpoint_recovery_test_guard();
+    // Incoming membership examines 160 edges and endpoints, so its sealed
+    // observation bound exceeds the 1,024-unit compute allowance. Observation
+    // uses the funded caller request, while the owned compute limit applies to
+    // the kernel and reduction; it must not force a full run here.
+    let seed = |graph: &mut Graph| {
+        seed(graph);
+        for number in 0..LARGEST_SET {
+            let name = format!("incoming-{number}");
+            facts::seed_set(graph, &name, -0.0);
+            facts::seed_member(graph, &name, "oracle-entry-0");
+        }
+    };
+    let application =
+        installation::install_variant::<false, 1_024, 1, 1>(None, Default::default(), seed);
+    let (scope, principal) = authenticate(&application);
+    let request = application.request(&principal, &scope);
+    let (_, first) = demand(&request, &application);
+    assert_eq!(first[0].runs, [Run::Full(Cause::FirstRun)], "{first:?}");
+    edit(
+        &request,
+        &application,
+        at_demand_scope(EntryEdit::new(
+            "even",
+            0,
+            EntryFact::Value,
+            2.5_f64.to_bits(),
+        )),
+        9902,
+    );
+    let (_, kept) = demand(&request, &application);
+    assert_eq!(kept[0].runs, [Run::Incremental]);
+    let fresh = installation::install_variant::<false, 1_024, 1, 1>(None, Default::default(), seed);
+    let (fresh_scope, fresh_principal) = authenticate(&fresh);
+    let fresh_request = fresh.request(&fresh_principal, &fresh_scope);
+    edit(
+        &fresh_request,
+        &fresh,
+        at_demand_scope(EntryEdit::new(
+            "even",
+            0,
+            EntryFact::Value,
+            2.5_f64.to_bits(),
+        )),
+        9902,
+    );
+    let (_, reference) = demand(&fresh_request, &fresh);
+    assert_eq!(
+        kept[0].calls,
+        OwnerCalls {
+            plans: 0,
+            keys: 0,
+            gathers: 1,
+            kernels: 1
+        }
+    );
+    assert_eq!(
+        reference[0].calls,
+        OwnerCalls {
+            plans: 1,
+            keys: 1,
+            gathers: 1,
+            kernels: 1
+        }
+    );
+    assert_eq!(kept[0].outcome, reference[0].outcome);
+    assert_published_state(&kept, &reference);
+}
+
+#[test]
 fn several_invocations_receive_prior_once_and_publish_several_computations() {
     let _guard = checkpoint_recovery_test_guard();
     differential::<TOTALS_WORK, 2>(&[Cause::SeveralComputations, Cause::NoPriorHanded]);

@@ -37,15 +37,9 @@ pub(super) fn admit(
     // the drop manifest. Include conversion backing, not just wire length.
     let controls_decode = u64::try_from(manifest.bytes().len())
         .unwrap_or(u64::MAX)
-        .checked_mul(3)
-        .unwrap_or(u64::MAX)
-        .checked_add(worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES as u64)
-        .unwrap_or(u64::MAX)
-        .max(
-            u64::from(context.authority.record_format.page_size().bytes())
-                .checked_mul(2)
-                .unwrap_or(u64::MAX),
-        );
+        .saturating_mul(3)
+        .saturating_add(worth_store_physical_format::BLOB_CONTROL_FRAME_MAX_BYTES as u64)
+        .max(u64::from(context.authority.record_format.page_size().bytes()).saturating_mul(2));
     if resident.transient(controls_decode).is_err() {
         let limit = resident_basis::limit_failure(&context, &resident);
         return Err(context.redo_block(basis.planning_counters(), limit));

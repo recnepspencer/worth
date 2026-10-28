@@ -75,19 +75,14 @@ impl HistorySubsystem {
         branch_id: &BranchId,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<(), RelationalRetentionAcquisitionDenial> {
-        let identity = self
+        let mut cell = self
             .branch_cell(branch_id)
-            .map(|cell| cell.identity().clone())
             .ok_or(RelationalRetentionAcquisitionDenial::OwnerUnavailable)?;
-        self.branch_cell_mut(branch_id)
-            .expect("branch identity came from the live registry")
-            .install_root(Arc::clone(&root));
-        let head_retention = Arc::clone(
-            self.branch_cell(branch_id)
-                .expect("branch identity came from the live registry")
-                .head_retention(),
-        );
-        self.install_branch_head(identity, &root, &head_retention)
+        let identity = cell.identity().clone();
+        let head_retention = Arc::clone(cell.head_retention());
+        self.install_branch_head(identity, &root, &head_retention)?;
+        cell.install_root(root);
+        Ok(())
     }
 
     pub(crate) fn reserve_branch_head_retirement(
@@ -112,13 +107,6 @@ impl HistorySubsystem {
 
     pub(crate) fn retired_branch_root_count(&self) -> usize {
         self.retention_owner.retired_root_count()
-    }
-
-    pub(super) fn reset_retention_owner(&mut self, runtime_instance_id: u64) {
-        self.try_reset_retention_owner_from(
-            crate::history::retention::RelationalBranchRetentionOwner::new(runtime_instance_id),
-        )
-        .expect("proven live branch-head population fits the owner retention budget");
     }
 
     pub(super) fn try_reset_retention_owner(

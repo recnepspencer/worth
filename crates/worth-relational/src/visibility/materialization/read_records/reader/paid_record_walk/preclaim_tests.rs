@@ -10,7 +10,11 @@ fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&ExecutionRequest::serial(&host), &runtime, "native-row");
     let version = runtime.current_version_id();
-    let state = runtime.storage_access().current_edition();
+    let state = runtime
+        .storage_access()
+        .current_edition()
+        .resident_full()
+        .expect("memory fixture retains Full custody");
     let heap = read_work::record_quote::entity_for_id(
         &state,
         &runtime.config.schema.registry,

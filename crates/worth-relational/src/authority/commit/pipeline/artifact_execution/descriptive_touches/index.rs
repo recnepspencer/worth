@@ -180,14 +180,14 @@ fn binding_targets_field(
 }
 
 pub(super) fn authoritative_state<'a>(
-    access: &'a impl PartitionAccess,
+    access: &'a impl CurrentPartitionAccess,
     target: &RecordRef,
 ) -> Option<&'a worth_foundational::facade::AuthoritativeRecordAspectState> {
     match target {
         RecordRef::Entity(entity) => {
             let arena = &access
-                .get_partition(partition_of::<EntityRecordKind>(entity))?
-                .entity_arena;
+                .get_current_partition(partition_of::<EntityRecordKind>(entity))?
+                .entity_arena();
             let index = slot_of::<EntityRecordKind>(entity);
             let slot = arena.get_slot(index)?;
             (slot.generation() == entity.generation.0
@@ -197,8 +197,8 @@ pub(super) fn authoritative_state<'a>(
         }
         RecordRef::Relation(relation) => {
             let arena = &access
-                .get_partition(partition_of::<RelationRecordKind>(relation))?
-                .relation_arena;
+                .get_current_partition(partition_of::<RelationRecordKind>(relation))?
+                .relation_arena();
             let index = slot_of::<RelationRecordKind>(relation);
             let slot = arena.get_slot(index)?;
             (slot.generation() == relation.generation.0

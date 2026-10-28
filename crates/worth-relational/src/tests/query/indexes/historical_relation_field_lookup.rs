@@ -10,14 +10,17 @@ fn relation_field_index_executes_retained_history_after_relation_deletion() {
     let target = changed_entities(&create_entity_outcome(execution, &runtime, "target"))[0];
     let historical = create_relation_outcome(execution, &runtime, source, target, "historical");
     let relation_id = changed_relations(&historical)[0];
-    let index = runtime.index_authority().register(DerivedIndexDefinition {
-        index_id: DerivedIndexId(0),
-        name: "relation.label.historical".to_string(),
-        kind: DerivedIndexKind::RelationField {
-            field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
-        },
-        branch_scoped: false,
-    });
+    let index = runtime
+        .index_authority()
+        .register(DerivedIndexDefinition {
+            index_id: DerivedIndexId(0),
+            name: "relation.label.historical".to_string(),
+            kind: DerivedIndexKind::RelationField {
+                field_locator: aspect_field_locator(aspect_key("label"), field_key("label")),
+            },
+            branch_scoped: false,
+        })
+        .expect("index fixture has identity capacity");
 
     delete_relation_on_branch(
         execution,

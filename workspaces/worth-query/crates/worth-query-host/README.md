@@ -210,9 +210,8 @@ The `RequiredOutputDenied` variant carries an opaque
 denial accessors leave the original demand and native custody paired; pass the
 whole failure to the retry entrance, which returns complete custody on refusal.
 
-Both output-source lanes retain unsupported `SettlementDeferred` and
-`Indeterminate` outcomes with their original preparation in non-actionable
-`Blocked` custody. They are not no-effect outcomes or evidence that recovery
+Both output-source lanes retain unsupported `Indeterminate` outcomes with
+their original preparation in non-actionable `Blocked` custody. They are not no-effect outcomes or evidence that recovery
 finished. Workflow recovery remains outside these entrances.
 
 > **Ordinary owning actions.** Fixed, discovered, source-only and guarded workflow actions use
@@ -225,7 +224,7 @@ A native candidate-preparation refusal before product publication is a typed
 `native_preparation_error()` on the application denial. That error retains its
 context and commit log; diagnostic `Debug` does not dump the log. Native
 cancellation and deadline refusal remain `Cancelled` and `TimedOut`. Deferred,
-performed-but-unsettled and uncertain publication outcomes retain their existing
+durability-unresolved and uncertain publication outcomes retain their existing
 recovery obligations; preparation classification does not turn them into denials.
 
 Ordinary graph demands use `WorthQueryOutputDemandControls::default()` and inherit

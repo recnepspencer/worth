@@ -20,6 +20,7 @@ pub(in crate::domain_computation::primary_graph) enum CorrectionWitnessDenial {
     Interrupted(MapKernelStop),
     SizeOverflow,
     Unavailable,
+    NativeRead(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Basis(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
 }
 

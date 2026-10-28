@@ -11,36 +11,14 @@ pub(super) fn managed(cause: WorthQueryManagedApplicationRecoveryDenial) -> Bank
             cause,
         )),
         D::World(cause) => world(cause),
-        D::Adoption(RuntimeWorldSettledRelationalAdoptionDenial::Recovery(cause)) => world(cause),
-        D::Adoption(RuntimeWorldSettledRelationalAdoptionDenial::Publication(cause)) => {
-            adoption(cause.cause())
-        }
+        D::Adoption(cause) => match *cause {
+            RuntimeWorldSettledRelationalAdoptionDenial::Recovery(cause) => world(cause),
+            RuntimeWorldSettledRelationalAdoptionDenial::Publication(cause) => {
+                adoption(cause.cause())
+            }
+        },
         D::ProviderBusy | D::ProviderCapacity | D::ProductUnavailable => unavailable(),
         D::ForeignAdmission | D::BindingMismatch => operator(),
-    }
-}
-
-pub(super) fn settlement(cause: WorthQueryCommandSettlementDenial) -> BankHttpDenial {
-    use WorthQueryCommandSettlementDenial as D;
-    match cause {
-        D::Execution(cause) => advancement_denial::advancement(cause),
-        D::Authorization(cause) => authorization_denial::authorization_denial(cause.kind().into()),
-        D::ForeignAdmission | D::BindingMismatch => operator(),
-        D::Recovery(cause) => settlement_recovery(cause),
-    }
-}
-
-fn settlement_recovery(cause: WorthQueryApplicationSettlementRecoveryError) -> BankHttpDenial {
-    use WorthQueryApplicationSettlementRecoveryError as D;
-    match cause {
-        D::ExecutionDenied(cause) => mutation_application::pending_execution_stop(cause),
-        D::ActiveSnapshotCapacityExhausted { .. } | D::RetentionCapacityExhausted => unavailable(),
-        D::RetentionIdentityExhausted
-        | D::SnapshotIdentityExhausted
-        | D::Durability(_)
-        | D::Publication(_)
-        | D::IdempotencyAbsent
-        | D::IdempotencyDrift => operator(),
     }
 }
 
@@ -71,19 +49,12 @@ fn companion(cause: CompanionPreflightStop) -> BankHttpDenial {
                 BankHttpDenial::new(Kind::DeadlineExceeded, Next::Retry)
             }
         },
-        D::TopologyPending | D::RetainedCompanionCapacityExhausted { .. } => unavailable(),
+        D::TopologyPending => unavailable(),
         D::SelectedSourceMismatch
         | D::SelectedPositionUnavailable { .. }
         | D::RegistrationChanged => BankHttpDenial::new(Kind::Stale, Next::Refresh),
-        D::WorkExhausted { .. }
-        | D::WorkExhaustedWithoutRequirement { .. }
-        | D::PreparationMemoryExhausted { .. } => {
-            BankHttpDenial::new(Kind::ResourceExhausted, Next::NarrowRequest)
-        }
-        D::ForeignCell
-        | D::WorkCounterOverflow
-        | D::PreparationMemoryCounterOverflow
-        | D::RetainedCompanionCounterOverflow { .. } => operator(),
+
+        D::ForeignCell | D::WorkCounterOverflow | D::PreparationMemoryCounterOverflow => operator(),
     }
 }
 

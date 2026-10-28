@@ -283,11 +283,18 @@ impl<'observation, 'runtime> StrategyVisibilityReadView<'observation, 'runtime> 
     ) -> Result<T, StrategyExecutorFailure> {
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(run))
             .map_err(|unwind_value| self.projection_failure(operation, unwind_value))?
-            .map_err(|cause| {
-                StrategyExecutorFailure::new(
+            .map_err(|cause| match cause {
+                crate::execution::RelationalExecutionDenialCause::ProjectionContract(denial) => {
+                    StrategyExecutorFailure::with_evidence(
+                        StrategyExecutorFailureClass::ProjectionContractViolation,
+                        operation,
+                        crate::commit_strategies::data::StrategyExecutorFailureEvidence::ProjectionContract { denial },
+                    )
+                }
+                cause => StrategyExecutorFailure::new(
                     StrategyExecutorFailureClass::Execution(cause),
                     operation,
-                )
+                ),
             })
     }
 }

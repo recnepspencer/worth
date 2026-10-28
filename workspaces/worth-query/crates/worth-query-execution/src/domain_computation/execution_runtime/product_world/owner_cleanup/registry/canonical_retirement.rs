@@ -9,6 +9,8 @@ fn retirement_releases_in_branch_then_incarnation_order() {
             true,
         );
     let runtime = world.application.product_runtime();
+    let host_request = crate::test_request_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let root = runtime
         .admit_product_branch(runtime.default_branch())
         .unwrap();
@@ -23,6 +25,7 @@ fn retirement_releases_in_branch_then_incarnation_order() {
         .unwrap();
         let RuntimeWorldBranchCreationOutcome::Performed(child) = runtime
             .create_product_branch(
+                execution,
                 &root,
                 None,
                 intent,

@@ -1,6 +1,8 @@
-#[allow(dead_code)]
+#[expect(
+    dead_code,
+    reason = "this target uses genesis fixtures; other recovery targets exercise checkpoint, WAL and topology fixtures"
+)]
 #[path = "phase_three_support/mod.rs"]
-#[allow(dead_code)]
 mod phase_three_support;
 
 use self::phase_three_support::*;

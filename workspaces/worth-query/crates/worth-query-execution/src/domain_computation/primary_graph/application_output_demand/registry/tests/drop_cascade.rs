@@ -145,11 +145,11 @@ fn registry_drop_cascade_names_its_whole_map_claimant_bound() {
         state.records.insert(dependent.clone(), row);
         retain_owned_key(&mut state, &dependent);
         drop(state);
-        let whole = super::super::record_map::whole_rows();
+        let whole = super::super::record_map::whole_rows().expect("bounded registry observation");
         let occurrence = super::super::record_map::occurrence_rows_visited();
         drop(interest(&registry, dependent, wake));
         contacts.push((
-            super::super::record_map::whole_rows() - whole,
+            super::super::record_map::whole_rows().expect("bounded registry observation") - whole,
             super::super::record_map::occurrence_rows_visited() - occurrence,
         ));
     }

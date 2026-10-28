@@ -24,7 +24,8 @@ fn checked_custom_preparation_reads_declared_structural_state() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let entity_id = create_entity_of_kind(execution, &runtime, KindId(1), "checked-structural");
     target.set(entity_id).unwrap();
     let request = InvariantExecutionRequest::from_profile_with_contract(
@@ -73,7 +74,8 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = checked_lease(8 * 1024 * 1024, 10_000, cancellation.token());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
@@ -123,7 +125,8 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
             })
             .unwrap(),
         )
-        .build();
+        .build()
+        .expect("valid native runtime configuration");
     let lease = checked_lease(REQUEST_MEMORY, 10_000, CancellationToken::new());
     let request = InvariantExecutionRequest::from_profile_with_contract(
         InvariantRequestProfile::CommitBoundary,
@@ -159,5 +162,3 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     assert!(requested > REQUEST_MEMORY, "{requested}");
     assert!(admitted <= REQUEST_MEMORY, "{admitted}");
 }
-
-mod cancellation;

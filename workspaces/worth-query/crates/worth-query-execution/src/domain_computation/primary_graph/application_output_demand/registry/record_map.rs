@@ -7,6 +7,10 @@ use std::ops::Bound::Included;
 use std::ops::Bound::Unbounded;
 mod mutation;
 pub(super) use mutation::RecordMutation;
+// The two maps are private: insert/From populate both, remove/retain erase both,
+// and mutable row guards never expose keys or index membership. Thus every
+// secondary key names a primary row, and every primary key has its secondary
+// coordinate. An iterator borrows the owner, excluding structural mutation.
 type Map = BTreeMap<WorthQueryOutputDemandKey, DemandRecord>;
 #[derive(Default)]
 pub(super) struct DemandRecords(Map, BTreeMap<
@@ -17,7 +21,7 @@ pub(super) struct DemandRecords(Map, BTreeMap<
     #[cfg(test)] std::cell::Cell<u64>,
 );
 
-thread_local! { static WHOLE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
+thread_local! { static WHOLE_ROWS: std::cell::Cell<Option<u64>> = const { std::cell::Cell::new(Some(0)) }; }
 #[cfg(test)]
 thread_local! { static OCCURRENCE_ROWS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) }; }
 #[cfg(test)]
@@ -31,9 +35,9 @@ fn observe_row() {
     if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
         crate::domain_computation::execution_observation::register_cleanup(clear_observations);
     }
-    WHOLE_ROWS.with(|count| count.set(count.get().checked_add(1).expect("row visit counter")));
+    WHOLE_ROWS.with(|count| count.set(count.get().and_then(|prior| prior.checked_add(1))));
 }
-pub(super) fn whole_rows() -> u64 {
+pub(super) fn whole_rows() -> Option<u64> {
     WHOLE_ROWS.with(std::cell::Cell::get)
 }
 impl DemandRecords {
@@ -42,10 +46,6 @@ impl DemandRecords {
         self.4.get()
     }
 
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(super) fn retain(
         &mut self,
         mut predicate: impl FnMut(&WorthQueryOutputDemandKey, &mut DemandRecord) -> bool,
@@ -133,10 +133,6 @@ impl DemandRecords {
             .insert(key.clone());
         self.0.insert(key, row)
     }
-    #[expect(
-        clippy::mutable_key_type,
-        reason = "StructuralWalkKey orders only immutable parameters; its memory lease does not participate in Eq or Ord"
-    )]
     pub(super) fn remove(&mut self, key: &WorthQueryOutputDemandKey) -> Option<DemandRecord> {
         let row = self.0.remove(key)?;
         self.3.remove(row.product_occurrence);
@@ -241,7 +237,7 @@ mod observation {
                 .len()
         }
         #[doc(hidden)]
-        pub fn whole_registry_rows_visited_for_test(&self) -> u64 {
+        pub fn whole_registry_rows_visited_for_test(&self) -> Option<u64> {
             whole_rows()
         }
     }
@@ -333,5 +329,21 @@ impl DemandRecords {
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 fn clear_observations() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
-    WHOLE_ROWS.with(|count| count.set(0));
+    WHOLE_ROWS.with(|count| count.set(Some(0)));
+}
+
+#[cfg(test)]
+mod observation_overflow_tests {
+    use super::*;
+    #[test]
+    fn row_observation_overflow_is_unavailable_until_the_owner_clears_it() {
+        let observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
+        WHOLE_ROWS.with(|count| count.set(Some(u64::MAX)));
+        observe_row();
+        assert_eq!(whole_rows(), None);
+        observe_row();
+        assert_eq!(whole_rows(), None);
+        drop(observation);
+        assert_eq!(whole_rows(), Some(0));
+    }
 }

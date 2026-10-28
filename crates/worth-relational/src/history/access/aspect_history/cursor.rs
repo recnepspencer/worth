@@ -79,15 +79,18 @@ impl RelationalRuntime {
                     RelationalCanonicalRecordHistoryCursor::owned_source_backing_bytes() as u64,
                 )
                 .map_err(Denial::Request)?;
-            let envelope = self
-                .history
-                .canonical_envelope(selected.commit_id())
-                .or_else(|| {
-                    self.history
-                        .commit_artifact(selected.commit_id())
-                        .map(|artifact| Arc::clone(artifact.envelope()))
-                })
-                .ok_or(Denial::CommitUnavailable)?;
+            let envelope = match self.history.canonical_envelope(selected.commit_id()) {
+                Some(envelope) => envelope,
+                None => self
+                    .history
+                    .commit_artifact(selected.commit_id())
+                    .ok_or(Denial::CommitUnavailable)?
+                    .demand_envelope(
+                        &execution,
+                        crate::storage::residency::history_capture_bound::FULL_HISTORY_READ_LIMIT,
+                    )
+                    .map_err(|cause| Denial::Storage(cause.into()))?,
+            };
             let retained = self
                 .retain_observation_snapshot(&selected.observation().admitted_basis())
                 .map_err(Denial::Retention)?;

@@ -104,7 +104,7 @@ fn install_world(graph: Graph, probe: super::probe::Probe) -> World {
             .unwrap();
         let mut bootstrap = authority.prepare_primary_graph_with_relational_runtime_and_invariants(
             &phase.bootstrap_for_test(), &runtime, &schema,
-            worth_relational::facade::runtime::RelationalRuntimeApi::builder().build(),
+            worth_relational::facade::runtime::RelationalRuntimeApi::builder().build().expect("valid native runtime configuration"),
             crate::domain_computation::execution_runtime::product_world::test_product_world_resources(), factories,
         ).unwrap();
         bootstrap
@@ -143,10 +143,17 @@ pub(super) fn node_key(key: u64) -> WorthQueryApplicationEntityKey<WalkSchema, N
 }
 
 impl World {
-    // Rejected reservations burn identities; publication is the committed version.
-    pub(super) fn committed_version(&self) -> worth_relational::facade::identity::VersionId {
+    pub(super) fn checkpoint(&self) -> crate::published_checkpoint::PublishedCheckpoint {
         self.application
-            .with_host_advancement(|phase| self.invariant.snapshot(&phase).unwrap().version())
+            .with_host_advancement(|phase| {
+                let execution = phase.borrowed_request_for_test();
+                self.application
+                    .primary_provider
+                    .graph
+                    .with_runtime(&execution, |runtime| {
+                        crate::published_checkpoint::capture(runtime, &execution)
+                    })
+            })
             .unwrap()
     }
 

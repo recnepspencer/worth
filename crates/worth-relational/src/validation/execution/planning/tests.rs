@@ -79,6 +79,7 @@ fn relation_runtime() -> crate::runtime::RelationalRuntime {
     RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .build()
+        .expect("valid native runtime configuration")
 }
 
 fn request_for_plan<'runtime>(
@@ -148,9 +149,11 @@ fn planner_packets_only_include_relation_integrity_registrations_authorized_by_p
     )
     .expect("test staging stays within configured resource budgets");
     let plan = txn
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone();
@@ -204,9 +207,11 @@ fn planner_proof_boundary_reports_partition_scoped_relation_integrity_packets() 
     )
     .expect("test staging stays within configured resource budgets");
     let plan = txn
-        .merged_plan(
+        .prepare_merged_plan(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
             &runtime,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap()
         .clone();

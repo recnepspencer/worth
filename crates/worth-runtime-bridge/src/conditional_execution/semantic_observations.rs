@@ -33,7 +33,8 @@ pub(super) fn read_condition_observations(
             match error.kind() {
                 crate::snapshot::BridgeSnapshotReadErrorKind::ExecutionDenied(denial) =>
                     BridgeConditionalDenialKind::ExecutionDenied(denial),
-                crate::snapshot::BridgeSnapshotReadErrorKind::ExternalSnapshotReadFailure
+                crate::snapshot::BridgeSnapshotReadErrorKind::ObservationRead(_)
+                | crate::snapshot::BridgeSnapshotReadErrorKind::ExternalSnapshotReadFailure
                 | crate::snapshot::BridgeSnapshotReadErrorKind::SnapshotIdentityMismatch
                 | crate::snapshot::BridgeSnapshotReadErrorKind::DuplicateRecord
                 | crate::snapshot::BridgeSnapshotReadErrorKind::RecordCountMismatch

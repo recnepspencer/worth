@@ -60,10 +60,13 @@ pub enum TransactionCommitError {
         context: ErrorContext,
         commit_log: CommitLog,
     },
+    /// The durable medium could not say whether this commit became durable.
+    /// It was not installed, and the runtime refuses later publications until
+    /// it is reopened; the reopened home resolves this position's fate.
     #[serde(skip)]
-    PerformedButDurabilityDeferred {
-        settlement: crate::publication::data::DeferredPublicationSettlement,
-        error: PublicationError,
+    DurabilityUnresolved {
+        unresolved: crate::durability::medium::RelationalDurabilityUnresolved,
+        context: ErrorContext,
         commit_log: CommitLog,
     },
 }
@@ -147,22 +150,13 @@ impl TransactionCommitError {
         }
     }
 
-    pub(crate) fn performed_but_durability_deferred(
-        settlement: crate::publication::data::DeferredPublicationSettlement,
-        cause: Self,
+    pub(crate) fn durability_unresolved(
+        unresolved: crate::durability::medium::RelationalDurabilityUnresolved,
     ) -> Self {
-        let commit_log = cause.commit_log().clone();
-        let error = match cause {
-            Self::Publication { error, .. } => error,
-            other => PublicationError::new(
-                crate::publication::bundle::PublicationStage::DurableAppend,
-                other.detail(),
-            ),
-        };
-        Self::PerformedButDurabilityDeferred {
-            settlement,
-            error,
-            commit_log,
+        Self::DurabilityUnresolved {
+            unresolved,
+            context: publication_context(),
+            commit_log: CommitLog::new(),
         }
     }
 
@@ -208,11 +202,13 @@ impl TransactionCommitError {
                 context,
                 commit_log,
             },
-            Self::PerformedButDurabilityDeferred {
-                settlement, error, ..
-            } => Self::PerformedButDurabilityDeferred {
-                settlement,
-                error,
+            Self::DurabilityUnresolved {
+                unresolved,
+                context,
+                ..
+            } => Self::DurabilityUnresolved {
+                unresolved,
+                context,
                 commit_log,
             },
         }
@@ -227,8 +223,8 @@ impl TransactionCommitError {
             Self::Interrupted { context, .. } => context,
             Self::PublicationDenied { context, .. }
             | Self::PublicationDeferred { context, .. }
-            | Self::PublicationFailed { context, .. } => context,
-            Self::PerformedButDurabilityDeferred { error, .. } => &error.context,
+            | Self::PublicationFailed { context, .. }
+            | Self::DurabilityUnresolved { context, .. } => context,
         }
     }
 
@@ -255,7 +251,11 @@ impl TransactionCommitError {
                     failure.detail()
                 )
             }
-            Self::PerformedButDurabilityDeferred { error, .. } => error.detail.clone(),
+            Self::DurabilityUnresolved { unresolved, .. } => format!(
+                "durable publication of {} is unresolved: {}",
+                unresolved.subject(),
+                unresolved.detail()
+            ),
         }
     }
 
@@ -268,23 +268,17 @@ impl TransactionCommitError {
             Self::Interrupted { commit_log, .. } => commit_log,
             Self::PublicationDenied { commit_log, .. }
             | Self::PublicationDeferred { commit_log, .. }
-            | Self::PublicationFailed { commit_log, .. } => commit_log,
-            Self::PerformedButDurabilityDeferred { commit_log, .. } => commit_log,
+            | Self::PublicationFailed { commit_log, .. }
+            | Self::DurabilityUnresolved { commit_log, .. } => commit_log,
         }
     }
 
-    pub fn performed_commit(&self) -> Option<&crate::history::data::RelationalCommitReceipt> {
-        match self {
-            Self::PerformedButDurabilityDeferred { settlement, .. } => Some(settlement.commit()),
-            _ => None,
-        }
-    }
-
-    pub fn deferred_settlement(
+    /// The unresolved durable publication, when that is why this commit stopped.
+    pub fn durability_unresolved_fate(
         &self,
-    ) -> Option<&crate::publication::data::DeferredPublicationSettlement> {
+    ) -> Option<&crate::durability::medium::RelationalDurabilityUnresolved> {
         match self {
-            Self::PerformedButDurabilityDeferred { settlement, .. } => Some(settlement),
+            Self::DurabilityUnresolved { unresolved, .. } => Some(unresolved),
             _ => None,
         }
     }

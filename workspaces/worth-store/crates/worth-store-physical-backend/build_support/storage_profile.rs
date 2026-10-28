@@ -3,6 +3,7 @@ use std::path::Path;
 mod compiler_cache;
 
 /// These are observed at build time, not supplied as another environment input.
+#[cfg(not(test))]
 pub fn observe_compiler_cache(inputs: &mut Vec<(&str, String)>) {
     let program = inputs
         .iter()

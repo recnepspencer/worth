@@ -27,7 +27,7 @@ pub(super) fn validate(
         .find(|relation| relation.id == id)
         .ok_or("incident relation is outside complete publication membership")?;
     let partition = root
-        .partition_state(id.partition_id)
+        .partition_state(id.partition_id)?
         .ok_or("relation partition absent")?;
     let row = partition
         .relation_arena

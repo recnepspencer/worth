@@ -127,7 +127,9 @@ where
     {
         relational_builder = relational_builder.publication(publication);
     }
-    let relational_runtime = relational_builder.build();
+    let relational_runtime = relational_builder
+        .build()
+        .map_err(|cause| Denial::Graph(cause.into()))?;
     let execution = phase.execution_request();
     let mut decoded_checkpoint = checkpoint
         .map(|checkpoint| checkpoint.decode_with_execution(&execution))

@@ -9,7 +9,7 @@ use crate::domain_computation::provider_session::WorthQueryMutationGraphWorkComp
 pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
     ProductStale(crate::domain_computation::WorthQueryProductStaleApplication),
     ProductUnpublished(crate::domain_computation::WorthQueryProductUnpublishedApplication),
-    NoEffect(worth_runtime_world::facade::NoEffectCompositePublication),
+    NoEffect(WorthQueryApplicationNoEffect),
     Committed(WorthQueryPendingApplicationCommitReceipt),
     AlreadyCommitted(WorthQueryApplicationCommitReceipt),
     Stale(WorthQueryApplicationStaleAttempt),
@@ -18,7 +18,6 @@ pub(in crate::domain_computation) enum WorthQueryProviderProgressionOutcome {
     Denied(WorthQueryApplicationCommitDenial),
     Aborted,
     Deferred(super::super::WorthQueryApplicationCommitDeferred),
-    SettlementDeferred(super::super::WorthQueryApplicationSettlementDeferred),
     Indeterminate(super::super::WorthQueryApplicationUnresolvedCommitEvidence),
 }
 
@@ -32,9 +31,7 @@ impl WorthQueryProviderProgressionOutcome {
             Self::ProductUnpublished(unpublished) => {
                 WorthQueryApplicationCommitOutcome::ProductUnpublished(unpublished)
             }
-            Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(
-                WorthQueryApplicationNoEffect::from_world(no_effect),
-            ),
+            Self::NoEffect(no_effect) => WorthQueryApplicationCommitOutcome::NoEffect(no_effect),
             Self::Committed(receipt) => {
                 WorthQueryApplicationCommitOutcome::Committed(receipt.complete(completion)?)
             }
@@ -49,9 +46,6 @@ impl WorthQueryProviderProgressionOutcome {
             Self::Denied(denial) => WorthQueryApplicationCommitOutcome::Denied(denial),
             Self::Aborted => WorthQueryApplicationCommitOutcome::Aborted,
             Self::Deferred(deferred) => WorthQueryApplicationCommitOutcome::Deferred(deferred),
-            Self::SettlementDeferred(deferred) => {
-                WorthQueryApplicationCommitOutcome::SettlementDeferred(deferred)
-            }
             Self::Indeterminate(evidence) => {
                 WorthQueryApplicationCommitOutcome::Indeterminate(evidence)
             }

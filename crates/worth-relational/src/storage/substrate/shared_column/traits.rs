@@ -9,13 +9,13 @@ impl<T: Clone> Default for SharedColumn<T> {
 impl<T: Clone> std::ops::Index<usize> for SharedColumn<T> {
     type Output = T;
     fn index(&self, index: usize) -> &T {
-        self.get(index).expect("column index out of bounds")
+        self.get(index).expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "column index out of bounds")
     }
 }
 
 impl<T: Clone> std::ops::IndexMut<usize> for SharedColumn<T> {
     fn index_mut(&mut self, index: usize) -> &mut T {
-        self.get_mut(index).expect("column index out of bounds")
+        self.get_mut(index).expect(/* Proof: Owner callers derive these indices from the same arena/column length or admitted source slot; the private indexing API is not an external unchecked read door. */ "column index out of bounds")
     }
 }
 

@@ -211,7 +211,7 @@ impl FullVerificationImage<'_> {
                     }
                 }
             } else if let Some(witness) = fallback_witness.filter(|_| direct) {
-                if !witness.unchanged_in(self.runtime, self.snapshot)? {
+                if !witness.unchanged_in(self.runtime, self.snapshot, execution)? {
                     return Ok(FullVerificationDecision::Changed);
                 }
             } else {

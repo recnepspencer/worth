@@ -13,7 +13,8 @@ pub(super) fn stale_validated_proposal(detail: &str) -> TransactionCommitError {
 pub(super) fn validate_proposed_state(
     runtime: &RelationalPreparationRuntime,
     prepared: &PreparedWorkingStateScope,
-    proposed: &crate::authority::commit::phases::proposed_invariant_state::AppliedInvariantState,
+    selected: &crate::branch::SelectedRelationalBranchRead<'_>,
+    proposed: &crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
     proposed_version: VersionId,
     proposal_identity: Option<&super::proposal_identity::RelationalMutationProposalIdentity>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -22,25 +23,25 @@ pub(super) fn validate_proposed_state(
     let mutation_sensitive = runtime
         .invariant_authority()
         .enforce_mutation_sensitive_for_working_state(
-            &prepared.selected_branch_state,
-            proposed.working_state(),
+            selected,
+            proposed.state(),
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-            proposed.aggregate_source(),
+            proposed.aggregate_source(*selected),
             execution,
             control,
         )?;
     let publication = runtime
         .invariant_authority()
         .enforce_snapshot_publication_for_working_state(
-            &prepared.selected_branch_state,
-            proposed.working_state(),
-            proposed.created_entities(),
+            selected,
+            proposed.state(),
+            &proposed.outcome.created_entities,
             proposed_version,
             &prepared.merged_plan,
             proposal_identity,
-            proposed.aggregate_source(),
+            proposed.aggregate_source(*selected),
             execution,
             control,
         )?;

@@ -5,6 +5,7 @@ use crate::commit_strategies::data::{
 use crate::runtime::RelationalRuntime;
 
 pub(crate) fn lower_execution(
+    request_execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     request: &CanonicalStrategyCommitRequest,
     execution: &StrategyExecutionDraft,
@@ -14,7 +15,6 @@ pub(crate) fn lower_execution(
     transaction
         .ensure_current_basis_for_runtime(runtime)
         .map_err(StrategyLoweringError::mutation_conflict)?;
-    let preparation = runtime.preparation_runtime_snapshot();
     let selected_branch_state = runtime
         .selected_branch_state(transaction.basis())
         .map_err(StrategyLoweringError::preparation)?;
@@ -25,38 +25,19 @@ pub(crate) fn lower_execution(
         .cloned()
     {
         transaction
-            .push_batch(
-                worker_batch,
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-            )
+            .push_batch(worker_batch, request_execution.allocation_policy())
             .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;
     }
-    runtime
-        .services
-        .symbols
-        .with_read(|symbols| {
-            transaction.validate_staged_branch_locality(selected_branch_state.state(), symbols)
-        })
-        .map_err(StrategyLoweringError::mutation_conflict)?;
-
+    let merged_plan = transaction
+        .prepare_merged_plan(request_execution, runtime)
+        .map_err(strategy_plan_preparation_denial)?
+        .clone();
     let bulk_mutation_batch = transaction
         .admit_provenance_complete_bulk_mutation_batch(runtime)
         .map_err(StrategyLoweringError::mutation_conflict)?;
-    let intents = transaction
-        .normalized_intents_for_merge(
-            &preparation,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .map_err(StrategyLoweringError::mutation_conflict)?;
-    let merged_plan = transaction
-        .build_merged_plan_for_state(&preparation, selected_branch_state.state(), intents)
-        .map_err(StrategyLoweringError::mutation_conflict)?;
     transaction
         .footprint
-        .derive_validation_dependencies(
-            &merged_plan,
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
+        .derive_validation_dependencies(&merged_plan, request_execution.allocation_policy())
         .map_err(|denial| StrategyLoweringError::mutation_conflict(denial.into_conflict()))?;
     let lowering_provenance =
         StrategyLoweringProvenance::from_request_and_execution(request, execution);
@@ -72,6 +53,17 @@ pub(crate) fn lower_execution(
         lowering_provenance,
         lowering_summary,
     ))
+}
+
+fn strategy_plan_preparation_denial(
+    error: crate::transactions::data::TransactionCommitError,
+) -> StrategyLoweringError {
+    match error {
+        crate::transactions::data::TransactionCommitError::Conflict { error, .. } => {
+            StrategyLoweringError::mutation_conflict(error)
+        }
+        error => StrategyLoweringError::Preparation(error),
+    }
 }
 
 pub(crate) fn strategy_transaction_admission_error(
@@ -240,7 +232,8 @@ mod tests {
     fn lower_execution_routes_strategy_batches_through_transaction_admission() {
         let runtime = RelationalRuntimeBuilder::new()
             .schema_registry(crate::tests::support::test_schema_registry())
-            .build();
+            .build()
+            .expect("valid native runtime configuration");
         let request = canonical_request();
         let execution = execution_draft(&request);
         let transaction_validation_input =
@@ -249,8 +242,16 @@ mod tests {
             .begin_branch_transaction_with_owner_inputs(transaction_validation_input)
             .expect("owner context opens a branch-bound transaction");
 
-        let lowered = lower_execution(&runtime, &request, &execution, transaction)
-            .expect("lowered strategy plan");
+        let lowered = lower_execution(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &request,
+            &execution,
+            transaction,
+        )
+        .expect("lowered strategy plan");
 
         assert_eq!(lowered.request().strategy_id(), CommitStrategyId(41));
         assert_eq!(lowered.merged_plan().merged_intents.len(), 1);
@@ -272,7 +273,9 @@ mod tests {
 
     #[test]
     fn lower_execution_rejects_request_execution_mismatch() {
-        let runtime = RelationalRuntimeBuilder::new().build();
+        let runtime = RelationalRuntimeBuilder::new()
+            .build()
+            .expect("valid native runtime configuration");
         let request = canonical_request();
         let other_request = CanonicalStrategyCommitRequest::new(
             CommitStrategyId(42),
@@ -287,7 +290,16 @@ mod tests {
             .begin_branch_transaction_with_owner_inputs(transaction_validation_input)
             .expect("owner context opens a branch-bound transaction");
 
-        let error = lower_execution(&runtime, &other_request, &execution, transaction).unwrap_err();
+        let error = lower_execution(
+            &worth_execution::ExecutionRequest::serial(
+                &crate::test_execution_policy::serial_request(),
+            ),
+            &runtime,
+            &other_request,
+            &execution,
+            transaction,
+        )
+        .unwrap_err();
 
         assert!(matches!(
             error,
@@ -308,7 +320,7 @@ mod tests {
             .expect("committed main remains forkable");
         let child = BranchId("strategy-root-child".to_owned());
         runtime
-            .fork_branch(child.clone(), basis)
+            .fork_branch(execution, child.clone(), basis)
             .expect("child branch installs a committed root");
         runtime
             .history

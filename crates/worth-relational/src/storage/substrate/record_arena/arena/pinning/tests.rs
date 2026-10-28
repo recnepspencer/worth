@@ -33,7 +33,9 @@ fn preserving_unpinned_rows_never_materializes_zero_counters() {
         assert_eq!(pins.allocation_bytes(), 0);
         assert_eq!(pins.get(9999), Some(&0));
     }
-    changed.reset_slot(9999);
+    changed
+        .reset_slot(9999)
+        .expect("fixture slot is materialized");
     assert_eq!(changed.branch_pins.allocation_bytes(), 0);
     assert_eq!(changed.replay_pins.allocation_bytes(), 0);
     assert_eq!(changed.snapshot_pins.allocation_bytes(), 0);

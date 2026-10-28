@@ -1,9 +1,13 @@
 //! Proposal-lived initialization, retained read custody and single write consumption.
+mod symbol_admission;
 use super::changes::AggregateChanges;
 use super::preparation::{PreparedAggregateArtifact, PreparedConsequences};
 use super::projection::AggregateProjection;
 use crate::authority::mutation::MutationEffect;
-use crate::branch::{RelationalBranchRootSchemaAuthority, SelectedRelationalBranchState};
+use crate::branch::{
+    RelationalBranchRootSchemaAuthority, SelectedRelationalBranchRead,
+    SelectedRelationalBranchState,
+};
 use crate::mvcc::{RelationalMaterializationTransactionMode, RelationalMutationProposalIdentity};
 use crate::schema::data::AggregateIdentityContractDeclaration;
 use crate::storage::overlay::WorkingState;
@@ -32,6 +36,7 @@ enum ArtifactState {
 pub(crate) struct AggregateProposalBorrow<'a> {
     owner: &'a AggregateProposal,
     after: &'a WorkingState,
+    selected: SelectedRelationalBranchRead<'a>,
 }
 
 #[derive(Clone, Copy)]
@@ -68,14 +73,33 @@ impl AggregateProposal {
         })
     }
 
-    pub(crate) fn borrow<'a>(&'a self, after: &'a WorkingState) -> AggregateProposalBorrow<'a> {
-        AggregateProposalBorrow { owner: self, after }
+    pub(crate) fn borrow<'a>(
+        &'a self,
+        after: &'a WorkingState,
+        selected: SelectedRelationalBranchRead<'a>,
+    ) -> AggregateProposalBorrow<'a> {
+        AggregateProposalBorrow {
+            owner: self,
+            after,
+            selected,
+        }
+    }
+
+    pub(crate) fn borrow_retained<'a>(
+        &'a self,
+        after: &'a WorkingState,
+    ) -> AggregateProposalBorrow<'a> {
+        self.borrow(
+            after,
+            SelectedRelationalBranchRead::in_round(&self.selected, &self.selected),
+        )
     }
 
     fn projection(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         budget: Option<&crate::execution::RequestWorkBudget>,
+        selected: &SelectedRelationalBranchRead<'_>,
         after: &WorkingState,
         business: &MergedCommitPlan,
     ) -> Result<Arc<AggregateProjection>, TransactionCommitError> {
@@ -102,7 +126,7 @@ impl AggregateProposal {
             execution,
             budget,
             &self.authority,
-            &self.selected,
+            selected,
             after,
             business,
             changes,
@@ -157,6 +181,19 @@ impl<'a> AggregateProposalBorrow<'a> {
         }
     }
 
+    pub(crate) fn ensure_prepared(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        budget: Option<&crate::execution::RequestWorkBudget>,
+        business: &MergedCommitPlan,
+    ) -> Result<(), TransactionCommitError> {
+        if self.owner.changes.is_some() {
+            self.owner
+                .projection(execution, budget, &self.selected, self.after, business)?;
+        }
+        Ok(())
+    }
+
     /// The only top-level initialization/consumption entry. Kernel reads never
     /// receive this request account; their invoking packet settles its report.
     pub(crate) fn take_for_commit(
@@ -184,7 +221,7 @@ impl<'a> AggregateProposalBorrow<'a> {
             return Ok((None, super::AggregateReadObservations::default()));
         }
         self.owner
-            .projection(execution, budget, self.after, business)?;
+            .projection(execution, budget, &self.selected, self.after, business)?;
         let mut state = self
             .owner
             .state
@@ -266,9 +303,13 @@ impl AggregateInvocation<'_> {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Arc<AggregateProjection>, TransactionCommitError> {
-        self.source
-            .owner
-            .projection(execution, None, self.source.after, self.business)
+        self.source.owner.projection(
+            execution,
+            None,
+            &self.source.selected,
+            self.source.after,
+            self.business,
+        )
     }
 
     pub(super) fn latch_failure(&self, error: TransactionCommitError) {

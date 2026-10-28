@@ -52,13 +52,16 @@ pub(super) fn admit_span(
     if u64::from(length) > SPAN_LIMIT {
         return Err(SpanAdmissionDenial::OverSpanLimit);
     }
-    if length % page_bytes != 0 {
+    if !length.is_multiple_of(page_bytes) {
         return Err(SpanAdmissionDenial::PartialPage);
     }
     if rewrite.destination_offset() != 0 {
         return Err(SpanAdmissionDenial::OffsetMismatch);
     }
-    if rewrite.source_offset() % u64::from(page_bytes) != 0 {
+    if !rewrite
+        .source_offset()
+        .is_multiple_of(u64::from(page_bytes))
+    {
         return Err(SpanAdmissionDenial::Misaligned);
     }
     Ok(length / page_bytes)
